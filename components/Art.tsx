@@ -398,6 +398,17 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
+    // Helper to get Reset Laser text color based on complication state
+    const getLaserTextColor = (): string => {
+        const TEAL = "#14b8a6";  // Inactive
+        const RED = "#ef4444";   // Active, unsolved
+        const GREEN = "#22c55e"; // Solved
+
+        if (!laserComplication.active) return TEAL;
+        if (laserComplication.solved) return GREEN;
+        return RED;
+    };
+
     // Helper to get laser slider indicator light colors
     // Returns { left: color, right: color } based on target and active state
     const getLaserLightColors = (sliderIndex: number): { left: string; right: string } => {
@@ -585,7 +596,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                     </g>
 
                     {/* Reset Laser Text */}
-                    <text fill="#6acbda" fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(245.29 261.57)">
+                    <text fill={getLaserTextColor()} fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(245.29 261.57)">
                         <tspan x="0" y="0">RESET </tspan>
                         <tspan letterSpacing=".02em" x="65.7" y="0">L</tspan>
                         <tspan x="77.19" y="0">ASER</tspan>
