@@ -453,6 +453,34 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
+    // Helper to get Reset Lights button indicator light color
+    // lightIndex: 0=L1 (below blue), 1=L2 (below green), 2=L3 (below purple)
+    const getLightsButtonLightColor = (lightIndex: 0 | 1 | 2): string => {
+        const OFF = "#231f20";
+        const ON = "#d8672b";
+
+        if (!lightsComplication.active) return OFF;
+        return lightsComplication.lights[lightIndex] ? ON : OFF;
+    };
+
+    // Helper to get Reset Lights slider indicator light colors
+    // Returns { top: color, bottom: color } based on buttonPhaseComplete and sliderTarget
+    const getLightsSliderLightColors = (): { top: string; bottom: string } => {
+        const OFF = "#231f20";
+        const ON = "#d8672b";
+
+        if (!lightsComplication.active || !lightsComplication.buttonPhaseComplete) {
+            return { top: OFF, bottom: OFF };
+        }
+
+        // Show the target position
+        if (lightsComplication.sliderTarget === 1) {
+            return { top: ON, bottom: OFF };
+        } else {
+            return { top: OFF, bottom: ON };
+        }
+    };
+
     // Lights Out button toggle logic
     // B1 (blue) → L1 + L2, B2 (green) → L2 + L3, B3 (purple) → L1 + L3
     const handleLightsButton = (buttonIndex: 0 | 1 | 2) => {
@@ -716,12 +744,12 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
 
                 {/* Slider Bottom Light (Off) */}
                 <g>
-                    <path fill="#231f20" d="M382.12,1706.83c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getLightsSliderLightColors().bottom} d="M382.12,1706.83c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M382.12,1685.25c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04s-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04M382.12,1682.25c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.03,13.03,13.03,13.04-5.85,13.04-13.03-5.85-13.04-13.03-13.04h0Z"/>
                 </g>
                 {/* Slider Top Light (On) */}
                 <g>
-                    <path fill="#d8672b" d="M382.12,1489.51c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getLightsSliderLightColors().top} d="M382.12,1489.51c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M382.12,1467.94c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04s-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04M382.12,1464.94c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.03,13.04-5.85,13.04-13.03-5.85-13.03-13.03-13.03h0Z"/>
                 </g>
 
@@ -736,7 +764,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
 
                 {/* Light below Blue */}
                 <g>
-                    <path fill="#d8672b" d="M546.19,1547c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getLightsButtonLightColor(0)} d="M546.19,1547c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M546.19,1525.42c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04s-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04M546.19,1522.42c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.04h0Z"/>
                 </g>
 
@@ -751,7 +779,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 
                 {/* Light below Green */}
                 <g>
-                    <path fill="#231f20" d="M554.61,1616.4c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getLightsButtonLightColor(1)} d="M554.61,1616.4c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M554.61,1594.82c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04s-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04M554.61,1591.82c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.04h0Z"/>
                 </g>
 
@@ -766,7 +794,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
 
                 {/* Light below Purple */}
                 <g>
-                    <path fill="#d8672b" d="M565.12,1689.3c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getLightsButtonLightColor(2)} d="M565.12,1689.3c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M565.12,1667.73c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.04h0M565.12,1664.73c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.04h0Z"/>
                 </g>
             </g>
