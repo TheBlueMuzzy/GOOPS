@@ -509,6 +509,25 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         });
     };
 
+    // Handle light slider changes with validation after button phase
+    const handleLightsSliderChange = (newValue: -1 | 0 | 1) => {
+        setLightSlider(newValue);
+
+        // Only validate if button phase complete and complication active
+        if (!lightsComplication.active || lightsComplication.solved) return;
+        if (!lightsComplication.buttonPhaseComplete) return;
+
+        // Check if slider matches target (target is 1 or -1, slider can be -1, 0, or 1)
+        if (newValue === lightsComplication.sliderTarget) {
+            // Solved!
+            setLightsComplication(prev => ({ ...prev, solved: true }));
+        } else if (newValue !== 0) {
+            // Wrong non-center position - shake the slider
+            setLightsSliderShaking(true);
+            setTimeout(() => setLightsSliderShaking(false), 500);
+        }
+    };
+
     // Helper to get Reset Laser text color based on complication state
     const getLaserTextColor = (): string => {
         const TEAL = "#14b8a6";  // Inactive
@@ -734,12 +753,13 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 </g>
 
                 {/* Functional Vertical Slider */}
-                <ConsoleSlider 
-                    x={382.11} 
-                    y={1587.01} 
-                    rotation={90} 
+                <ConsoleSlider
+                    x={382.11}
+                    y={1587.01}
+                    rotation={90}
                     value={lightSlider}
-                    onChange={setLightSlider}
+                    onChange={handleLightsSliderChange}
+                    className={lightsSliderShaking ? 'shake' : ''}
                 />
 
                 {/* Slider Bottom Light (Off) */}
