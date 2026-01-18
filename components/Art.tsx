@@ -130,6 +130,21 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     const [laserSliders, setLaserSliders] = useState<(-1|0|1)[]>([0, 0, 0, 0]);
     const [lightSlider, setLightSlider] = useState<-1|0|1>(0);
 
+    // Reset Laser complication state
+    interface LaserComplication {
+        active: boolean;
+        solved: boolean;
+        targets: (-1 | 0 | 1)[]; // 4 target positions: -1=left, 0=center, 1=right
+    }
+    const [laserComplication, setLaserComplication] = useState<LaserComplication>({
+        active: false,
+        solved: false,
+        targets: [0, 0, 0, 0]
+    });
+
+    // Track which slider is shaking (for wrong position feedback)
+    const [shakingSlider, setShakingSlider] = useState<number | null>(null);
+
     // Local state for dial rotation (drag-based, replaces prop)
     const [localDialRotation, setLocalDialRotation] = useState(0);
     const [isDialDragging, setIsDialDragging] = useState(false);
@@ -365,6 +380,22 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         const next = [...laserSliders];
         next[index] = val;
         setLaserSliders(next);
+
+        // Check if this slider matches its target (when complication is active)
+        if (laserComplication.active && !laserComplication.solved) {
+            const target = laserComplication.targets[index];
+            if (val !== target) {
+                // Wrong position - trigger shake
+                setShakingSlider(index);
+                setTimeout(() => setShakingSlider(null), 300);
+            } else {
+                // Check if all sliders now match their targets
+                const allMatch = next.every((sliderVal, i) => sliderVal === laserComplication.targets[i]);
+                if (allMatch) {
+                    setLaserComplication(prev => ({ ...prev, solved: true }));
+                }
+            }
+        }
     };
 
     const transitionStyle = { transition: isMonitorDragging ? 'none' : 'transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)' };
