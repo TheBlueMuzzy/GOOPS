@@ -398,6 +398,37 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
+    // Test function: Activate Reset Laser complication with random targets
+    // Click on Reset Laser text to toggle
+    const toggleLaserComplication = () => {
+        if (laserComplication.active) {
+            // Deactivate
+            setLaserComplication({
+                active: false,
+                solved: false,
+                targets: [0, 0, 0, 0]
+            });
+            // Reset sliders to center
+            setLaserSliders([0, 0, 0, 0]);
+        } else {
+            // Activate with random targets that don't match current slider positions
+            const generateRandomTargets = (): (-1 | 0 | 1)[] => {
+                return [0, 1, 2, 3].map((i) => {
+                    // Pick a random target different from current slider position
+                    const current = laserSliders[i];
+                    const options: (-1 | 0 | 1)[] = ([-1, 0, 1] as (-1 | 0 | 1)[]).filter(v => v !== current);
+                    return options[Math.floor(Math.random() * options.length)];
+                });
+            };
+
+            setLaserComplication({
+                active: true,
+                solved: false,
+                targets: generateRandomTargets()
+            });
+        }
+    };
+
     // Helper to get Reset Laser text color based on complication state
     const getLaserTextColor = (): string => {
         const TEAL = "#14b8a6";  // Inactive
@@ -595,8 +626,15 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                         <path fill="#1f1f38" fillRule="evenodd" d="M554.29,288.75c5.54,0,10.03,4.49,10.03,10.03s-4.49,10.03-10.03,10.03h0c-5.54,0-10.03-4.49-10.03-10.03s4.49-10.03,10.03-10.03h0M554.29,285.75h0c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.03,13.03,13.03,13.04-5.85,13.04-13.03-5.85-13.03-13.03-13.03h0Z"/>
                     </g>
 
-                    {/* Reset Laser Text */}
-                    <text fill={getLaserTextColor()} fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(245.29 261.57)">
+                    {/* Reset Laser Text - Click to toggle complication (for testing) */}
+                    <text
+                        fill={getLaserTextColor()}
+                        fontFamily="'Amazon Ember'"
+                        fontSize="20.93"
+                        transform="translate(245.29 261.57)"
+                        style={{ cursor: 'pointer' }}
+                        onClick={toggleLaserComplication}
+                    >
                         <tspan x="0" y="0">RESET </tspan>
                         <tspan letterSpacing=".02em" x="65.7" y="0">L</tspan>
                         <tspan x="77.19" y="0">ASER</tspan>
