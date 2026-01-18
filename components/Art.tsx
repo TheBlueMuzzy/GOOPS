@@ -140,9 +140,11 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     const DIAL_CENTER_X = 194.32;
     const DIAL_CENTER_Y = 1586.66;
     const DIAL_RADIUS = 86.84;
+    // Edge zone: outer 30% of radius (from 70% radius to 100% radius)
+    const DIAL_EDGE_INNER = DIAL_RADIUS * 0.7; // ~60.8
 
-    // Helper to convert client coordinates to SVG coordinates and get angle to dial center
-    const getAngleFromPointer = (clientX: number, clientY: number): number | null => {
+    // Helper to convert client coordinates to SVG coordinates and get angle + distance to dial center
+    const getPointerInfo = (clientX: number, clientY: number): { angle: number; distance: number } | null => {
         const svg = document.querySelector('svg');
         if (!svg) return null;
 
@@ -156,26 +158,35 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         const dx = svgX - DIAL_CENTER_X;
         const dy = svgY - DIAL_CENTER_Y;
 
-        return Math.atan2(dy, dx) * (180 / Math.PI);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        return { angle, distance };
     };
 
     // Dial drag handlers
     const handleDialStart = (clientX: number, clientY: number) => {
-        const angle = getAngleFromPointer(clientX, clientY);
-        if (angle === null) return;
+        const info = getPointerInfo(clientX, clientY);
+        if (info === null) return;
+
+        // Edge-only drag: only allow drag if pointer is in the outer 30% of the dial
+        // Reject if too close to center (< DIAL_EDGE_INNER) or outside dial (> DIAL_RADIUS)
+        if (info.distance < DIAL_EDGE_INNER || info.distance > DIAL_RADIUS) {
+            return; // Don't start drag - pointer is not in edge zone
+        }
 
         setIsDialDragging(true);
-        dialStartAngle.current = angle;
+        dialStartAngle.current = info.angle;
         dialStartRotation.current = localDialRotation;
     };
 
     const handleDialMove = (clientX: number, clientY: number) => {
         if (!isDialDragging) return;
 
-        const angle = getAngleFromPointer(clientX, clientY);
-        if (angle === null) return;
+        const info = getPointerInfo(clientX, clientY);
+        if (info === null) return;
 
-        const deltaAngle = angle - dialStartAngle.current;
+        const deltaAngle = info.angle - dialStartAngle.current;
         setLocalDialRotation(dialStartRotation.current + deltaAngle);
     };
 
