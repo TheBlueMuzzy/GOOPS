@@ -4,56 +4,56 @@
 
 ### Where We Stopped
 
-Executing Plan 01-01-PLAN.md, Task 3 (Human verify dial rotation on mobile).
+Task 3 (Human verify dial rotation) - **ROTATION WORKS!**
 
-**IMPORTANT**: Just implemented tangent-based rotation approach. Needs user testing.
+Debug visualization still in place (green dot, magenta line, cyan center).
+Next steps: clean up debug code, add snap functionality, test on mobile.
 
-### What Was Done
+### What Was Done This Session
 
-**Task 1 & 2 COMPLETE**: Dial rotation state and drag handlers implemented.
+**MAJOR FIX: SVG Coordinate Conversion**
 
-Latest change: Switched from "angle-matching" to "tangent-based" rotation:
-- Old: newRotation = cursor_angle - grab_offset (grab point follows cursor angle)
-- New: rotation based on tangential distance from grab point to cursor
+The dial rotation wasn't working because `preserveAspectRatio="xMidYMid slice"` on the SVG meant simple coordinate math was wrong. Multiple approaches tried:
 
-The new approach means:
-- Dragging along the dial edge (tangentially) rotates proportionally
-- Dragging toward/away from center (radially) has minimal effect
-- Creates the "triangle" behavior user described
+1. Manual viewBox math - wrong due to aspect ratio
+2. SVG's `getScreenCTM()` on SVG element - didn't include viewBox transform
+3. CTM from dial circle - included dial's rotation, caused jitter
+4. **SOLUTION**: Hidden reference element (`#coord-reference`) outside dial group
 
-### Key Code (Art.tsx lines ~170-242)
+**Key Code (Art.tsx)**
 
 ```tsx
-// Store grab point ON the dial edge
-const grabAngleRad = info.angle * Math.PI / 180;
-dialGrabX.current = DIAL_CENTER_X + DIAL_RADIUS * Math.cos(grabAngleRad);
-dialGrabY.current = DIAL_CENTER_Y + DIAL_RADIUS * Math.sin(grabAngleRad);
+// Hidden reference point outside rotating groups
+<circle id="coord-reference" cx={DIAL_CENTER_X} cy={DIAL_CENTER_Y} r="1" fill="transparent" />
 
-// During move: project drag vector onto tangent
-const dx = cursor.x - dialGrabX.current;
-const dy = cursor.y - dialGrabY.current;
-const tanX = -Math.sin(grabAngleRad);
-const tanY = Math.cos(grabAngleRad);
-const tangentDist = dx * tanX + dy * tanY;
-
-// Convert to rotation
-const deltaAngle = (tangentDist / DIAL_RADIUS) * (180 / Math.PI);
+// Coordinate conversion using non-rotating reference
+const refPoint = document.getElementById('coord-reference');
+const ctm = refPoint.getScreenCTM();
+const svgPoint = point.matrixTransform(ctm.inverse());
 ```
 
-### Remaining Tasks
+**Rotation Math (working)**
+```tsx
+// Vector approach: grab point aims at cursor
+grabAngleRef.current = Math.atan2(dy, dx) * (180 / Math.PI);
+// newRotation = cursorAngle - grabAngle + rotationAtGrab
+const newRotation = cursorAngle - grabAngleRef.current + rotationAtGrabRef.current;
+```
 
-1. **User testing** - Does the tangent-based rotation feel right?
-2. If rotation direction is wrong, negate deltaAngle
-3. Once rotation feels good, re-enable snap functionality
-4. Remove console.log statements
-5. Create SUMMARY.md and commit
+### Remaining Tasks for Phase 1
+
+1. **Remove debug visualization** - cyan dot, magenta dot/line, green dot, console.logs
+2. **Re-enable snap** - snap to 45°, 135°, 225°, 315° on release
+3. **Test on mobile** - verify touch works smoothly
+4. **Edge-only drag zone** (optional) - restrict to curved arrow area
 
 ### Files Modified
 
-- `components/Art.tsx` - Dial rotation handlers (lines ~170-242)
+- `components/Art.tsx` - dial rotation handlers, coordinate conversion, debug elements
 
-### Notes
+### Key Learnings
 
-- Snap is disabled for testing (line ~247)
-- Console logs are active for debugging
-- SVG path errors were fixed earlier in session
+- `preserveAspectRatio="xMidYMid slice"` breaks simple coordinate math
+- Use SVG's built-in `getScreenCTM().inverse()` for coordinate conversion
+- Reference element must be OUTSIDE any rotating groups
+- Using refs instead of React state avoids stale closure issues in event handlers
