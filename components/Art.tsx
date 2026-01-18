@@ -453,6 +453,36 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
+    // Test function: Activate Reset Lights complication with random state
+    // Click on Reset Lights text to toggle
+    const toggleLightsComplication = () => {
+        if (lightsComplication.active) {
+            // Deactivate
+            setLightsComplication({
+                active: false,
+                solved: false,
+                lights: [false, false, false],
+                buttonPhaseComplete: false,
+                sliderTarget: 1
+            });
+            // Reset slider to center
+            setLightSlider(0);
+        } else {
+            // Activate with random light states and slider target
+            setLightsComplication({
+                active: true,
+                solved: false,
+                lights: [
+                    Math.random() > 0.5,
+                    Math.random() > 0.5,
+                    Math.random() > 0.5
+                ],
+                buttonPhaseComplete: false,
+                sliderTarget: Math.random() > 0.5 ? 1 : -1
+            });
+        }
+    };
+
     // Helper to get Reset Lights button indicator light color
     // lightIndex: 0=L1 (below blue), 1=L2 (below green), 2=L3 (below purple)
     const getLightsButtonLightColor = (lightIndex: 0 | 1 | 2): string => {
@@ -745,7 +775,14 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
             <g id="Reset_Lights">
                 {/* Purple Base */}
                 <polygon fill="#45486c" points="608.7 1720.12 341.17 1720.12 341.17 1452.22 564.14 1452.22 608.7 1720.12"/>
-                <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(414.68 1486.69)">RESET LIGHTS</text>
+                <text
+                    fill="#aad9d9"
+                    fontFamily="'Amazon Ember'"
+                    fontSize="20.93"
+                    transform="translate(414.68 1486.69)"
+                    style={{ cursor: 'pointer' }}
+                    onClick={toggleLightsComplication}
+                >RESET LIGHTS</text>
                 
                 {/* Pattern (Behind Slider) */}
                 <g clipPath="url(#reset-lights-slider-clip)">
