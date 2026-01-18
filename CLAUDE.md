@@ -5,6 +5,7 @@
 - Prefers **human-readable, paragraph-style code** over clever abstractions
 - Uses **Google AI Studio** for some development (tends to make unwanted changes)
 - Values **targeted, minimal changes** — don't refactor beyond what's asked
+- **Creative, not a coder** — always provide terminal commands ready to copy/paste
 
 ## Project Overview
 Goops (Gooptris) is a puzzle-action game built with React/TypeScript/Vite. Player operates as a tank maintenance technician clearing colored goop from a cylindrical pressure tank.
@@ -17,13 +18,30 @@ Goops (Gooptris) is a puzzle-action game built with React/TypeScript/Vite. Playe
 ## Development Workflow
 1. **After ANY code change**, run `npm run test:run`
 2. If tests fail, **fix immediately** without asking user
-3. If tests pass, tell user it's ready for manual testing
-4. Pre-commit hook also runs tests automatically
+3. If tests pass, **commit to git** with a clear message
+4. Then tell user it's ready for manual testing
+5. Pre-commit hook also runs tests automatically
+
+### Git Workflow
+- Commit after each working feature/fix (not at end of session)
+- Use descriptive commit messages that capture WHAT and WHY
+- Push regularly so work isn't lost
+
+### When to Suggest GSD
+Offer `/gsd:progress` or other GSD commands at natural breakpoints:
+- Starting a new feature or phase
+- After completing a milestone
+- When returning to work after a break
+- When the scope feels unclear or needs planning
 
 ## Commands
 - `npm run dev -- --host` — Dev server (accessible from phone at local IP)
 - `npm run test:run` — Run tests once
 - `npm test` — Watch mode
+- `git status` — See what's changed
+- `git add .` — Stage all changes
+- `git commit -m "message"` — Commit with message
+- `git push` — Push to remote
 
 ## Mobile Performance
 Mobile rendering is heavily optimized (40fps, simplified rendering). Key optimizations in:
