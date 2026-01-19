@@ -1156,16 +1156,15 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                             justDraggedRef.current = false;
                             return;
                         }
-                        // Only show press animation on valid confirm tap (aligned and active)
-                        if (controlsComplication.active && !controlsComplication.solved && isDialAligned()) {
-                            setDialPressed(true);
-                            setTimeout(() => {
-                                setDialPressed(false);
-                                handleDialPress();
-                            }, 100);
-                        } else {
-                            handleDialPress(); // Will trigger shake if not aligned
-                        }
+                        // Only respond when complication is active and not solved
+                        if (!controlsComplication.active || controlsComplication.solved) return;
+
+                        // Always show press animation on tap, then check alignment
+                        setDialPressed(true);
+                        setTimeout(() => {
+                            setDialPressed(false);
+                            handleDialPress(); // Will advance if aligned, shake if not
+                        }, 100);
                     }}
                 >
                     <circle fill="#d36b28" cx="194.32" cy="1586.66" r="86.84"/>
