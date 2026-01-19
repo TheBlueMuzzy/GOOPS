@@ -25,6 +25,9 @@ Progress: ████████░░░░░░░░░░░░ 40% (1 of
 - Works on both PC and mobile
 - Reset Laser minigame logic complete (02-01)
 - Reset Lights minigame logic complete (02-02)
+  - Redesigned from Lights Out toggle → sequence memory puzzle
+  - Flow: slider → watch 4-button sequence → repeat → slider
+  - Guaranteed 6 interactions per solve
 
 ## What's Next
 
@@ -48,6 +51,7 @@ Execute remaining Phase 2 plans:
 - SVG coordinate conversion requires hidden reference element due to preserveAspectRatio
 - No CSS transition on dial snap (causes fly-away visual bug)
 - Use refs instead of state for values needed in event handler closures
+- Reset Lights: Sequence memory over Lights Out toggle (toggle had null space, 1-press solutions)
 
 ### Key Technical Discovery
 

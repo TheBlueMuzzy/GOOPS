@@ -1,23 +1,32 @@
 # Phase 2 Plan 2: Reset Lights Logic Summary
 
-**Reset Lights Lights Out puzzle: 3 buttons toggle 3 lights, then slider validation for solution**
+**Reset Lights sequence memory puzzle: slider → watch 4-button sequence → repeat sequence → slider**
 
 ## Performance
 
-- **Duration:** ~15 min
+- **Duration:** ~1.5 hours (including redesign from Lights Out to sequence memory)
 - **Started:** 2026-01-18T18:25:00Z
-- **Completed:** 2026-01-18T18:29:00Z
-- **Tasks:** 6
+- **Completed:** 2026-01-18T23:27:00Z
+- **Tasks:** 10 commits
 - **Files modified:** 1
 
 ## Accomplishments
 
-- LightsComplication state with lights array, buttonPhaseComplete, sliderTarget
-- Lights Out toggle logic: B1→L1+L2, B2→L2+L3, B3→L1+L3
-- Dynamic indicator lights (3 button lights + 2 slider lights)
-- Slider validation with shake on wrong position
+- Complete puzzle flow: slider1 → showing → input → slider2 → solved
+- 4-button sequence generation (max 2 of any button)
+- Timed sequence display with button-colored light flashes
+- Buttons visually pressed down during slider1/showing phases
+- Button indicator lights flash when pressed during input
+- Wrong sequence replays the same sequence
+- Wrong slider direction shakes and returns to center
 - Text color changes: TEAL (inactive) → RED (active) → GREEN (solved)
-- Test activation via clicking "RESET LIGHTS" text
+
+## Design Evolution
+
+Original design was Lights Out toggle puzzle, but:
+- Toggle pattern had null space (only 50% of states solvable)
+- Even solvable states were 1 press from solution (too easy)
+- Redesigned as sequence memory puzzle guaranteeing 6 interactions
 
 ## Task Commits
 
@@ -27,30 +36,36 @@
 4. **Add slider validation** - `1a6fef5` (feat)
 5. **Add test activation** - `7df6efa` (feat)
 6. **Implement text colors** - `1e4c786` (feat)
+7. **Only generate solvable starts** - `ea4183d` (fix)
+8. **Rewrite as sequence memory puzzle** - `39d701e` (feat) ← Major rewrite
+9. **Buttons press down on activation** - `2d5a1bf` (fix)
+10. **Correct slider light mapping** - `6aa6173` (fix)
+11. **Light up indicator on button press** - `695c0fa` (feat)
 
 ## Files Created/Modified
 
-- `components/Art.tsx` — LightsComplication state, handleLightsButton(), handleLightsSliderChange(), getLightsButtonLightColor(), getLightsSliderLightColors(), getLightsTextColor(), toggleLightsComplication(), dynamic SVG fills
+- `components/Art.tsx` — LightsComplication state machine, sequence generation, timed display, input validation, slider phases, dynamic lights
 
 ## Decisions Made
 
 | Decision | Rationale |
 |----------|-----------|
-| Button phase must complete before slider validation | PRD flow: solve lights first, then confirm with slider |
-| Slider only validates non-center positions | Center is neutral; wrong position = top/bottom mismatch |
-| Random light initialization | Any Lights Out state is solvable, adds variety |
+| Sequence memory over toggle puzzle | Toggle puzzle too easy (1 press solutions) |
+| 4-button sequence, max 2 repeats | Enough complexity without being frustrating |
+| Same sequence on wrong input | Rewards memory, not luck |
+| Buttons down during slider1/showing | Visual cue that buttons aren't ready yet |
+| Light feedback on button press | Confirms input registered |
 
-## Deviations from Plan
+## Timing Configuration
 
-None - implementation followed plan exactly.
-
-## Issues Encountered
-
-None
+- Flash duration: 400ms per light
+- Gap between flashes: 200ms
+- Beat after sequence: 500ms
+- Initial delay: 300ms
 
 ## Next Phase Readiness
 
-- Reset Lights minigame fully functional for testing
+- Reset Lights minigame fully functional
 - Ready for Plan 02-03 (Reset Controls Logic)
 
 ---
