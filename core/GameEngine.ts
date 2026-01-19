@@ -40,6 +40,11 @@ export class GameEngine {
 
     private pendingTotalScore: number | null = null;
 
+    // Generate random complication threshold in range [12, 24]
+    private randomThreshold(): number {
+        return Math.floor(Math.random() * 13) + 12; // 12 to 24 inclusive
+    }
+
     constructor(initialTotalScore: number, powerUps: Record<string, number> = {}) {
         this.initialTotalScore = initialTotalScore;
         this.powerUps = powerUps;
@@ -75,7 +80,11 @@ export class GameEngine {
             totalUnitsAdded: 0,
             totalUnitsPopped: 0,
             totalRotations: 0,
-            complicationThresholds: { lights: 20, controls: 30, laser: 15 },
+            complicationThresholds: {
+                lights: this.randomThreshold(),
+                controls: this.randomThreshold(),
+                laser: this.randomThreshold()
+            },
             primedGroups: new Set()
         };
 
@@ -150,7 +159,11 @@ export class GameEngine {
             totalUnitsAdded: 0,
             totalUnitsPopped: 0,
             totalRotations: 0,
-            complicationThresholds: { lights: 20, controls: 30, laser: 15 },
+            complicationThresholds: {
+                lights: this.randomThreshold(),
+                controls: this.randomThreshold(),
+                laser: this.randomThreshold()
+            },
             primedGroups: new Set()
         };
 
@@ -217,11 +230,22 @@ export class GameEngine {
     public resolveComplication(complicationId: string) {
         if (this.state.gameOver) return;
 
-        // Check if this is a LASER complication being resolved
+        // Check which complication type is being resolved
         const complication = this.state.complications.find(c => c.id === complicationId);
-        if (complication?.type === ComplicationType.LASER) {
-            // Clear primed groups when LASER complication is fixed
-            this.state.primedGroups.clear();
+        if (complication) {
+            // Reset the corresponding counter so next trigger starts fresh
+            switch (complication.type) {
+                case ComplicationType.LASER:
+                    this.state.totalUnitsPopped = 0;
+                    this.state.primedGroups.clear(); // Clear primed groups when LASER fixed
+                    break;
+                case ComplicationType.CONTROLS:
+                    this.state.totalRotations = 0;
+                    break;
+                case ComplicationType.LIGHTS:
+                    this.state.totalUnitsAdded = 0;
+                    break;
+            }
         }
 
         this.state.complications = this.state.complications.filter(c => c.id !== complicationId);
@@ -237,13 +261,14 @@ export class GameEngine {
 
     private spawnComplication(type: ComplicationType) {
         const id = Math.random().toString(36).substr(2, 9);
-        this.state.complications.push({
+        // Create new array so React detects the change
+        this.state.complications = [...this.state.complications, {
             id,
             type,
             startTime: Date.now(),
             severity: 1
-        });
-        
+        }];
+
         gameEventBus.emit(GameEventType.COMPLICATION_SPAWNED, { type });
         this.emitChange();
     }
@@ -256,28 +281,30 @@ export class GameEngine {
         // Don't spawn if there's already an active complication
         if (this.state.complications.length > 0) return;
 
+        // Complications unlock progressively by rank:
+        // Rank 1+: LASER only
+        // Rank 2+: LASER, CONTROLS
+        // Rank 3+: LASER, CONTROLS, LIGHTS
         const rank = calculateRankDetails(this.initialTotalScore + this.state.score).rank;
-        if (rank < 2) return;
 
-        // Check thresholds in priority order (most likely to trigger first)
-        // LASER: Triggered by units popped
+        // LASER: Triggered by units popped (rank 1+)
         if (this.state.totalUnitsPopped >= this.state.complicationThresholds.laser) {
             this.spawnComplication(ComplicationType.LASER);
-            this.state.complicationThresholds.laser += 15; // Increment threshold for next trigger
+            this.state.complicationThresholds.laser = this.randomThreshold(); // New random threshold for next trigger
             return;
         }
 
-        // LIGHTS: Triggered by units added (pieces placed)
-        if (this.state.totalUnitsAdded >= this.state.complicationThresholds.lights) {
-            this.spawnComplication(ComplicationType.LIGHTS);
-            this.state.complicationThresholds.lights += 20; // Increment threshold for next trigger
-            return;
-        }
-
-        // CONTROLS: Triggered by rotations
-        if (this.state.totalRotations >= this.state.complicationThresholds.controls) {
+        // CONTROLS: Triggered by rotations (rank 2+)
+        if (rank >= 2 && this.state.totalRotations >= this.state.complicationThresholds.controls) {
             this.spawnComplication(ComplicationType.CONTROLS);
-            this.state.complicationThresholds.controls += 30; // Increment threshold for next trigger
+            this.state.complicationThresholds.controls = this.randomThreshold(); // New random threshold for next trigger
+            return;
+        }
+
+        // LIGHTS: Triggered by units added (rank 3+)
+        if (rank >= 3 && this.state.totalUnitsAdded >= this.state.complicationThresholds.lights) {
+            this.spawnComplication(ComplicationType.LIGHTS);
+            this.state.complicationThresholds.lights = this.randomThreshold(); // New random threshold for next trigger
             return;
         }
     }
@@ -482,8 +509,10 @@ export class GameEngine {
                         this.handleGoals(consumedGoals, destroyedGoals, finalPiece);
                     }
 
-                    // Increment units added counter for complication tracking
-                    this.state.totalUnitsAdded += finalPiece.cells.length;
+                    // Increment units added counter for complication tracking (only when no complications active)
+                    if (this.state.complications.length === 0) {
+                        this.state.totalUnitsAdded += finalPiece.cells.length;
+                    }
 
                     gameEventBus.emit(GameEventType.PIECE_DROPPED);
                     this.state.grid = newGrid;

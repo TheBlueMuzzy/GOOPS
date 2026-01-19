@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GameState, GamePhase } from '../types';
 import { GameEngine } from '../core/GameEngine';
 import { calculateRankDetails } from '../utils/progression';
-import { SetPhaseCommand, StartRunCommand } from '../core/commands/actions';
+import { SetPhaseCommand, StartRunCommand, ResolveComplicationCommand } from '../core/commands/actions';
 import { ConsoleLayoutSVG } from './Art';
 import { ArrowUp } from 'lucide-react';
 
@@ -267,6 +267,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalSc
 
                         // Complications
                         complications={state.complications}
+                        onResolveComplication={(id) => engine.execute(new ResolveComplicationCommand(id))}
                     />
                 </div>
             </div>

@@ -39,6 +39,9 @@ interface ConsoleLayoutProps {
 
     // Complications from GameState
     complications?: Complication[];
+
+    // Callback to resolve a complication when minigame is solved
+    onResolveComplication?: (complicationId: string) => void;
 }
 
 const ArcadeButton = ({ 
@@ -124,7 +127,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     goalsCleared = 0,
     goalsTarget = 0,
     unspentPower = 0,
-    complications = []
+    complications = [],
+    onResolveComplication
 }) => {
     const [pressedBtn, setPressedBtn] = useState<string | null>(null);
     const [wipeConfirm, setWipeConfirm] = useState(false);
@@ -229,6 +233,72 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     // Local state for dial rotation (drag-based, replaces prop)
     const [localDialRotation, setLocalDialRotation] = useState(0);
     const [isDialDragging, setIsDialDragging] = useState(false);
+
+    // Initialize minigames when complications exist in GameState but minigame isn't active
+    // Reset minigame state when complication is removed so it's fresh for next trigger
+    useEffect(() => {
+        // LASER: Reset if no complication but minigame was active/solved
+        if (!hasActiveComplication(ComplicationType.LASER) && (laserComplication.active || laserComplication.solved)) {
+            setLaserComplication({ active: false, solved: false, targets: [0, 0, 0, 0] });
+            setLaserSliders([0, 0, 0, 0]);
+        }
+        // LIGHTS: Reset if no complication but minigame was active
+        if (!hasActiveComplication(ComplicationType.LIGHTS) && lightsComplication.phase !== 'inactive') {
+            setLightsComplication({ phase: 'inactive', slider1Target: 1, sequence: [], inputIndex: 0, showingIndex: -1 });
+            setLightSlider(0);
+        }
+        // CONTROLS: Reset if no complication but minigame was active/solved
+        if (!hasActiveComplication(ComplicationType.CONTROLS) && (controlsComplication.active || controlsComplication.solved)) {
+            setControlsComplication({ active: false, solved: false, targetCorner: null, completedCorners: 0 });
+        }
+
+        // LASER: Initialize if complication exists but minigame not active
+        if (hasActiveComplication(ComplicationType.LASER) && !laserComplication.active && !laserComplication.solved) {
+            // Generate random targets (can be any of -1, 0, 1)
+            const allPositions: (-1 | 0 | 1)[] = [-1, 0, 1];
+            const targets = [0, 1, 2, 3].map(() => {
+                return allPositions[Math.floor(Math.random() * 3)];
+            }) as (-1 | 0 | 1)[];
+
+            // Set sliders to wrong positions (one of the two that ISN'T the target)
+            const wrongPositions = targets.map(target => {
+                const options = allPositions.filter(v => v !== target);
+                return options[Math.floor(Math.random() * 2)];
+            }) as (-1 | 0 | 1)[];
+
+            setLaserSliders(wrongPositions);
+            setLaserComplication({
+                active: true,
+                solved: false,
+                targets: targets
+            });
+        }
+
+        // LIGHTS: Initialize if complication exists but minigame inactive
+        // Matches Phase 2 toggle behavior exactly
+        if (hasActiveComplication(ComplicationType.LIGHTS) && lightsComplication.phase === 'inactive') {
+            setLightsComplication({
+                phase: 'slider1',
+                slider1Target: Math.random() > 0.5 ? 1 : -1,
+                sequence: generateLightsSequence(),
+                inputIndex: 0,
+                showingIndex: -1
+            });
+            setLightSlider(0);
+        }
+
+        // CONTROLS: Initialize if complication exists but minigame not active
+        if (hasActiveComplication(ComplicationType.CONTROLS) && !controlsComplication.active && !controlsComplication.solved) {
+            // Pick a random starting corner
+            const randomCorner = CORNER_ANGLES[Math.floor(Math.random() * CORNER_ANGLES.length)];
+            setControlsComplication({
+                active: true,
+                solved: false,
+                targetCorner: randomCorner,
+                completedCorners: 0
+            });
+        }
+    }, [complications, laserComplication.active, laserComplication.solved, lightsComplication.phase, controlsComplication.active, controlsComplication.solved]);
 
     // Dial center in SVG coordinates
     const DIAL_CENTER_X = 194.32;
@@ -476,8 +546,9 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         next[index] = val;
         setLaserSliders(next);
 
-        // Check if this slider matches its target (when complication is active)
-        if (laserComplication.active && !laserComplication.solved) {
+        // Check if this slider matches its target (when LASER complication is active in GameState)
+        const laserComp = complications.find(c => c.type === ComplicationType.LASER);
+        if (laserComp && !laserComplication.solved) {
             const target = laserComplication.targets[index];
             if (val !== target) {
                 // Wrong position - trigger shake
@@ -487,7 +558,14 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 // Check if all sliders now match their targets
                 const allMatch = next.every((sliderVal, i) => sliderVal === laserComplication.targets[i]);
                 if (allMatch) {
+                    // Mark minigame as solved
                     setLaserComplication(prev => ({ ...prev, solved: true }));
+                    // Reset sliders to center
+                    setLaserSliders([0, 0, 0, 0]);
+                    // Resolve the complication in GameState
+                    if (onResolveComplication) {
+                        onResolveComplication(laserComp.id);
+                    }
                 }
             }
         }
@@ -673,6 +751,13 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
             if (newValue === slider2Target) {
                 // Solved!
                 setLightsComplication(prev => ({ ...prev, phase: 'solved' }));
+                // Reset slider to center
+                setLightSlider(0);
+                // Resolve the complication in GameState
+                const lightsComp = complications.find(c => c.type === ComplicationType.LIGHTS);
+                if (lightsComp && onResolveComplication) {
+                    onResolveComplication(lightsComp.id);
+                }
             }
             // No shake for slider2 - just need to reach the target
         } else {
@@ -717,9 +802,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         const OFF = "#231f20";
         const ON = "#d8672b";
 
-        // Only show lights if there's a real CONTROLS complication
+        // Only show lights if there's a real CONTROLS complication in GameState
         if (!hasActiveComplication(ComplicationType.CONTROLS)) return OFF;
-        if (!controlsComplication.active) return OFF;
         if (controlsComplication.solved) return OFF;
 
         return controlsComplication.targetCorner === cornerIndex ? ON : OFF;
@@ -745,7 +829,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
 
     // Handle dial press during controls complication
     const handleDialPress = () => {
-        if (!controlsComplication.active || controlsComplication.solved) return;
+        if (!hasActiveComplication(ComplicationType.CONTROLS) || controlsComplication.solved) return;
         if (isDialDragging) return; // Don't trigger on drag end
 
         if (isDialAligned()) {
@@ -760,6 +844,11 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                     targetCorner: null,
                     completedCorners: 4
                 }));
+                // Resolve the complication in GameState
+                const controlsComp = complications.find(c => c.type === ComplicationType.CONTROLS);
+                if (controlsComp && onResolveComplication) {
+                    onResolveComplication(controlsComp.id);
+                }
             } else {
                 // Pick next random corner (not same as current)
                 const availableCorners = ([0, 1, 2, 3] as const).filter(
@@ -797,13 +886,13 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     };
 
     // Helper to get laser slider indicator light colors
-    // Lights only on when real LASER complication is active
+    // Lights only on when real LASER complication is active in GameState
     const getLaserLightColors = (sliderIndex: number): { left: string; right: string } => {
         const OFF = "#231f20";
         const ON = "#d8672b";
 
-        // Only show lights if there's a real LASER complication AND the minigame is active
-        if (!hasActiveComplication(ComplicationType.LASER) || !laserComplication.active) {
+        // Only show lights if there's a real LASER complication
+        if (!hasActiveComplication(ComplicationType.LASER)) {
             return { left: OFF, right: OFF };
         }
 
@@ -1137,8 +1226,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                             justDraggedRef.current = false;
                             return;
                         }
-                        // Only respond when complication is active and not solved
-                        if (!controlsComplication.active || controlsComplication.solved) return;
+                        // Only respond when CONTROLS complication is active in GameState and not solved
+                        if (!hasActiveComplication(ComplicationType.CONTROLS) || controlsComplication.solved) return;
 
                         // Always show press animation on tap, then check alignment
                         setDialPressed(true);
@@ -1165,7 +1254,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 </g>
 
                 {/* PRESS text - shows when dial is aligned with target */}
-                {controlsComplication.active && !controlsComplication.solved && isDialAligned() && (
+                {hasActiveComplication(ComplicationType.CONTROLS) && !controlsComplication.solved && isDialAligned() && (
                     <text
                         fill="#ffffff"
                         fontFamily="'Amazon Ember'"

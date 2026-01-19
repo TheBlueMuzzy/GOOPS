@@ -40,8 +40,10 @@ export class MoveBoardCommand implements Command {
             engine.state.activePiece = newPiece;
         }
 
-        // Increment rotation counter for complication tracking
-        engine.state.totalRotations++;
+        // Increment rotation counter for complication tracking (only when no complications active)
+        if (engine.state.complications.length === 0) {
+            engine.state.totalRotations++;
+        }
 
         gameEventBus.emit(GameEventType.PIECE_MOVED);
         engine.emitChange();
@@ -106,8 +108,10 @@ export class HardDropCommand implements Command {
             engine.handleGoals(consumedGoals, destroyedGoals, droppedPiece);
         }
 
-        // Increment units added counter for complication tracking
-        engine.state.totalUnitsAdded += droppedPiece.cells.length;
+        // Increment units added counter for complication tracking (only when no complications active)
+        if (engine.state.complications.length === 0) {
+            engine.state.totalUnitsAdded += droppedPiece.cells.length;
+        }
 
         const distance = Math.floor(y - engine.state.activePiece.y);
         engine.updateScoreAndStats(distance * 2, { speed: distance * 2 });
@@ -194,26 +198,39 @@ export class BlockTapCommand implements Command {
          const group = findContiguousGroup(engine.state.grid, this.x, this.y);
 
          if (group.length > 0) {
-            // LASER complication: require 2 taps to pop
+            // LASER complication: first tap resets fill animation, then can pop when full
             const laserComplication = engine.state.complications.find(c => c.type === ComplicationType.LASER);
             if (laserComplication) {
                 const groupId = cell.groupId;
                 if (!engine.state.primedGroups.has(groupId)) {
-                    // First tap: prime the group, don't pop yet
+                    // First tap: prime the group and restart fill animation
                     engine.state.primedGroups.add(groupId);
+
+                    // Reset timestamp on all cells in this group to restart fill animation
+                    const resetTime = Date.now();
+                    group.forEach(pt => {
+                        const groupCell = engine.state.grid[pt.y][pt.x];
+                        if (groupCell) {
+                            groupCell.timestamp = resetTime;
+                        }
+                    });
+
                     gameEventBus.emit(GameEventType.ACTION_REJECTED); // Feedback sound
                     engine.emitChange();
                     return;
                 }
-                // Second tap: remove from primed set and proceed with pop
+                // Group is primed - remove from primed set and proceed with pop
+                // (fill check already happened above, so it's ready to pop)
                 engine.state.primedGroups.delete(groupId);
             }
 
             gameEventBus.emit(GameEventType.GOOP_POPPED, { combo: engine.state.combo, count: group.length });
             engine.state.cellsCleared++;
 
-            // Increment popped counter for complication tracking
-            engine.state.totalUnitsPopped += group.length;
+            // Increment popped counter for complication tracking (only when no complications active)
+            if (engine.state.complications.length === 0) {
+                engine.state.totalUnitsPopped += group.length;
+            }
             
             const groupSize = group.length;
             engine.state.gameStats.maxGroupSize = Math.max(engine.state.gameStats.maxGroupSize, groupSize);
