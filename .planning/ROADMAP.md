@@ -15,7 +15,7 @@ None
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Dial Rotation** - Implement drag/spin behavior for Reset Controls dial
-- [ ] **Phase 2: Minigame Logic** - Puzzle rules for all three minigames
+- [x] **Phase 2: Minigame Logic** - Puzzle rules for all three minigames
 - [ ] **Phase 3: Complications** - Define complications and how they trigger during gameplay
 - [ ] **Phase 4: Minigame-Complication Integration** - Connect minigame solutions to complications
 

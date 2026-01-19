@@ -22,31 +22,34 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 - ✓ Console/Periscope phase UI — existing
 - ✓ Minigame sliders (Reset Laser, Reset Lights) — existing
 - ✓ Unit test infrastructure (36 tests, pre-commit hooks) — existing
+- ✓ Dial spins when dragged (Reset Controls dial) — snaps to 4 corners
+- ✓ Reset Laser puzzle logic (4 sliders match indicator lights)
+- ✓ Reset Lights puzzle logic (sequence memory: slider → watch → repeat → slider)
+- ✓ Reset Controls puzzle logic (dial alignment: 4 corners in sequence)
 
 ### Active
 
-- [ ] Buttons toggle on/off (blue, green, purple arcade buttons)
-- [x] Dial spins when dragged (Reset Controls dial) — snaps to 4 corners
-- [ ] Visual feedback for control states (lit indicators, position memory)
+- [ ] Complications — what triggers minigames during gameplay
+- [ ] Minigame-Complication integration — wire puzzle solutions to resolve complications
 
 ### Out of Scope
 
-- Minigame logic (how controls affect gameplay) — separate phase
 - Control state persistence (save/load between sessions) — not needed for v1
 - Multi-color pieces — needs piece redesign first
-- Action-based complication triggers — depends on minigame logic
 
 ## Context
 
-**Current state:** Minigame UI is built but non-functional. Sliders work (snap to 3 positions), but:
-- Arcade buttons have press animation but no toggle state
-- Dial is hardcoded to `dialRotation={0}`, no spin logic
-- Button clicks just `console.log()` as placeholders
+**Current state:** All 3 minigame puzzles are complete and tested:
+- **Reset Laser**: 4 sliders match indicator lights (left/right/both-on=center)
+- **Reset Lights**: Sequence memory (slider → watch 4 buttons → repeat → slider)
+- **Reset Controls**: Dial alignment (rotate to 4 lit corners in sequence, tap to confirm)
+
+Click minigame title text to toggle each puzzle for testing.
 
 **Key files:**
-- `components/Art.tsx` — Contains `ArcadeButton` component, dial SVG, slider positions
-- `components/ConsoleView.tsx` — Parent component, passes handlers to Art.tsx
-- `components/ConsoleSlider.tsx` — Working slider implementation (good reference)
+- `components/Art.tsx` — All minigame state machines, puzzle logic, visual feedback
+- `components/ConsoleSlider.tsx` — Slider component with drag, snap, shake animation
+- `components/GameBoard.tsx` — Contains @keyframes shake definition
 
 **User preferences:**
 - Not a professional engineer, prefers readable code over abstractions
@@ -67,4 +70,4 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 | Buttons/dial should follow same pattern | Consistency, keep UI state separate from game state | — Pending |
 
 ---
-*Last updated: 2026-01-18 after initialization*
+*Last updated: 2026-01-19 — Phase 2 complete, all minigames tested*

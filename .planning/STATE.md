@@ -2,17 +2,17 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-18)
+See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** Phase 2 COMPLETE - all 3 minigames implemented!
+**Current focus:** Phase 2 COMPLETE - all 3 minigames tested and working!
 
 ## Current Position
 
 Phase: 2 of 4 (Minigame Logic) - COMPLETE
 Plan: 3 of 3 complete (02-03-SUMMARY.md)
-Status: Phase 2 complete, ready for Phase 3
-Last activity: 2026-01-19 — Completed 02-03 (Reset Controls Logic)
+Status: Phase 2 complete, user-tested, ready for Phase 3
+Last activity: 2026-01-19 — Bug fixes for Reset Laser after user testing
 
 Progress: ██████████░░░░░░░░░░ 50% (2 of 4 phases complete)
 
@@ -24,6 +24,7 @@ Progress: ██████████░░░░░░░░░░ 50% (2 of
 - Debug code cleaned up
 - Works on both PC and mobile
 - Reset Laser minigame logic complete (02-01)
+  - Bug fixes (2026-01-19): both lights ON for center target, sliders start in wrong positions
 - Reset Lights minigame logic complete (02-02)
   - Redesigned from Lights Out toggle → sequence memory puzzle
   - Flow: slider → watch 4-button sequence → repeat → slider
@@ -102,6 +103,18 @@ const hasMovedRef = useRef(false);
 // In drag end: only set justDraggedRef if hasMovedRef.current
 ```
 
+**Slider Jump on Drag Start**
+
+When dragging starts, initialize dragOffset to current position before enabling drag mode:
+```tsx
+const handlePointerDown = (e: React.PointerEvent) => {
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    startValueOffset.current = currentPos;
+    setDragOffset(currentPos); // Initialize BEFORE enabling drag
+    setIsDragging(true);
+};
+```
+
 ### Deferred Issues
 
 - Edge-only drag zone (optional enhancement for Phase 1)
@@ -109,5 +122,6 @@ const hasMovedRef = useRef(false);
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Phase 2 complete
+Stopped at: Phase 2 complete, all minigames user-tested and working
+Resume with: `/gsd:progress` → will route to `/gsd:plan-phase 3`
 Resume file: None needed - clean state

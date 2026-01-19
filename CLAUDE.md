@@ -69,17 +69,18 @@ Do NOT remove the `isMobile` checks without understanding why they exist.
 - Unit test infrastructure (36 tests)
 - Pre-commit hooks
 - GSD project initialization (`.planning/PROJECT.md`, codebase map)
-- Minigame sliders (Reset Laser, Reset Lights) — functional
+- Phase 1: Dial rotation (drag to spin, snap to 4 corners)
+- Phase 2: All 3 minigame puzzles working:
+  - **Reset Laser**: 4 sliders match indicator lights (left/right/both-on for center)
+  - **Reset Lights**: Sequence memory (slider → watch 4-button sequence → repeat → slider)
+  - **Reset Controls**: Dial alignment (align to 4 lit corners in sequence, tap to confirm)
 
-### In Progress
-- Minigame controls (next: `/gsd:create-roadmap`)
-  - Buttons click but don't toggle — needs toggle state
-  - Dial doesn't spin yet — needs drag/rotation logic
+### Next Up
+- Phase 3: Complications — define what triggers minigames during gameplay
+- Phase 4: Integration — wire minigame solutions to resolve complications
 
 ### Not Started
-- Minigame logic (how controls affect gameplay)
 - Multi-color pieces (needs piece redesign first)
-- Action-based complication triggers
 
 ## Testing Philosophy
 - Tests cover core game logic (collision, gravity, scoring, coordinates)
