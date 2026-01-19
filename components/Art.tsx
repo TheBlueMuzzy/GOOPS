@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EndGameScreen } from './EndGameScreen';
 import { ConsoleSlider } from './ConsoleSlider';
-import { GameStats } from '../types';
+import { GameStats, Complication, ComplicationType } from '../types';
 
 interface ConsoleLayoutProps {
     dialRotation: number;
@@ -26,7 +26,7 @@ interface ConsoleLayoutProps {
     screenContent?: React.ReactNode;
     isGameOver?: boolean;
     isSessionActive?: boolean;
-    
+
     // Stats for End Game Screen
     rank: number;
     currentXP: number;
@@ -36,6 +36,9 @@ interface ConsoleLayoutProps {
     goalsCleared?: number;
     goalsTarget?: number;
     unspentPower?: number;
+
+    // Complications from GameState
+    complications?: Complication[];
 }
 
 const ArcadeButton = ({ 
@@ -120,11 +123,45 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     gameStats = { startTime: 0, totalBonusTime: 0, maxGroupSize: 0, penalty: 0 },
     goalsCleared = 0,
     goalsTarget = 0,
-    unspentPower = 0
+    unspentPower = 0,
+    complications = []
 }) => {
     const [pressedBtn, setPressedBtn] = useState<string | null>(null);
     const [wipeConfirm, setWipeConfirm] = useState(false);
     const [abortConfirm, setAbortConfirm] = useState(false);
+
+    // Track recently fixed complications for brief green "FIXED" text display
+    const [recentlyFixed, setRecentlyFixed] = useState<Set<ComplicationType>>(new Set());
+    const prevComplicationsRef = useRef<Complication[]>([]);
+
+    // Detect when complications are removed and mark them as "recently fixed"
+    useEffect(() => {
+        const prevTypes = new Set(prevComplicationsRef.current.map(c => c.type));
+        const currentTypes = new Set(complications.map(c => c.type));
+
+        // Find which types were removed (were in prev but not in current)
+        prevTypes.forEach(type => {
+            if (!currentTypes.has(type)) {
+                // This complication was just fixed
+                setRecentlyFixed(prev => new Set(prev).add(type));
+                // Clear "recently fixed" state after 2.5 seconds
+                setTimeout(() => {
+                    setRecentlyFixed(prev => {
+                        const next = new Set(prev);
+                        next.delete(type);
+                        return next;
+                    });
+                }, 2500);
+            }
+        });
+
+        prevComplicationsRef.current = complications;
+    }, [complications]);
+
+    // Helper to check if a complication type is currently active
+    const hasActiveComplication = (type: ComplicationType): boolean => {
+        return complications.some(c => c.type === type);
+    };
 
     // Local state for visual sliders (functional but not yet tied to game logic)
     const [laserSliders, setLaserSliders] = useState<(-1|0|1)[]>([0, 0, 0, 0]);
@@ -456,40 +493,6 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
-    // Test function: Activate Reset Laser complication with random targets
-    // Click on Reset Laser text to toggle
-    const toggleLaserComplication = () => {
-        if (laserComplication.active) {
-            // Deactivate
-            setLaserComplication({
-                active: false,
-                solved: false,
-                targets: [0, 0, 0, 0]
-            });
-            // Reset sliders to center
-            setLaserSliders([0, 0, 0, 0]);
-        } else {
-            // Generate random targets (can be any of -1, 0, 1)
-            const allPositions: (-1 | 0 | 1)[] = [-1, 0, 1];
-            const targets = [0, 1, 2, 3].map(() => {
-                return allPositions[Math.floor(Math.random() * 3)];
-            }) as (-1 | 0 | 1)[];
-
-            // Set sliders to wrong positions (one of the two that ISN'T the target)
-            const wrongPositions = targets.map(target => {
-                const options = allPositions.filter(v => v !== target);
-                return options[Math.floor(Math.random() * 2)];
-            }) as (-1 | 0 | 1)[];
-
-            setLaserSliders(wrongPositions);
-            setLaserComplication({
-                active: true,
-                solved: false,
-                targets: targets
-            });
-        }
-    };
-
     // Generate a 4-button sequence with max 2 of any single button
     const generateLightsSequence = (): (0 | 1 | 2)[] => {
         const sequence: (0 | 1 | 2)[] = [];
@@ -543,31 +546,6 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }, delay + BEAT_DURATION);
     };
 
-    // Test function: Activate/deactivate Reset Lights complication
-    const toggleLightsComplication = () => {
-        if (lightsComplication.phase !== 'inactive') {
-            // Deactivate
-            setLightsComplication({
-                phase: 'inactive',
-                slider1Target: 1,
-                sequence: [],
-                inputIndex: 0,
-                showingIndex: -1
-            });
-            setLightSlider(0);
-        } else {
-            // Activate - start with slider1 phase
-            setLightsComplication({
-                phase: 'slider1',
-                slider1Target: Math.random() > 0.5 ? 1 : -1,
-                sequence: generateLightsSequence(),
-                inputIndex: 0,
-                showingIndex: -1
-            });
-            setLightSlider(0);
-        }
-    };
-
     // Button colors for sequence display
     const BUTTON_COLORS = {
         0: '#96d7dd', // Blue button top color
@@ -581,6 +559,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     const getLightsButtonLightColor = (lightIndex: 0 | 1 | 2): string => {
         const OFF = "#231f20";
 
+        // Only show lights if there's a real LIGHTS complication
+        if (!hasActiveComplication(ComplicationType.LIGHTS)) return OFF;
         if (lightsComplication.phase === 'inactive') return OFF;
 
         // During showing phase, light up when this button is being shown
@@ -604,6 +584,11 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         const OFF = "#231f20";
         const ON = "#d8672b";
         const { phase, slider1Target } = lightsComplication;
+
+        // Only show lights if there's a real LIGHTS complication
+        if (!hasActiveComplication(ComplicationType.LIGHTS)) {
+            return { top: OFF, bottom: OFF };
+        }
 
         if (phase === 'inactive') {
             return { top: OFF, bottom: OFF };
@@ -696,26 +681,34 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
-    // Helper to get Reset Laser text color based on complication state
-    const getLaserTextColor = (): string => {
-        const TEAL = "#14b8a6";  // Inactive
-        const RED = "#ef4444";   // Active, unsolved
-        const GREEN = "#22c55e"; // Solved
+    // Helper to get Reset Laser text and color based on real complication state
+    const getLaserTextState = (): { text: string; color: string } => {
+        const TEAL = "#14b8a6";  // Idle
+        const RED = "#ef4444";   // Active
+        const GREEN = "#22c55e"; // Recently fixed
 
-        if (!laserComplication.active) return TEAL;
-        if (laserComplication.solved) return GREEN;
-        return RED;
+        if (hasActiveComplication(ComplicationType.LASER)) {
+            return { text: "RESET LASER", color: RED };
+        }
+        if (recentlyFixed.has(ComplicationType.LASER)) {
+            return { text: "LASER FIXED", color: GREEN };
+        }
+        return { text: "RESET LASER", color: TEAL };
     };
 
-    // Helper to get Reset Lights text color based on complication state
-    const getLightsTextColor = (): string => {
-        const TEAL = "#14b8a6";  // Inactive
-        const RED = "#ef4444";   // Active, unsolved
-        const GREEN = "#22c55e"; // Solved
+    // Helper to get Reset Lights text and color based on real complication state
+    const getLightsTextState = (): { text: string; color: string } => {
+        const TEAL = "#14b8a6";  // Idle
+        const RED = "#ef4444";   // Active
+        const GREEN = "#22c55e"; // Recently fixed
 
-        if (lightsComplication.phase === 'inactive') return TEAL;
-        if (lightsComplication.phase === 'solved') return GREEN;
-        return RED;
+        if (hasActiveComplication(ComplicationType.LIGHTS)) {
+            return { text: "RESET LIGHTS", color: RED };
+        }
+        if (recentlyFixed.has(ComplicationType.LIGHTS)) {
+            return { text: "LIGHTS FIXED", color: GREEN };
+        }
+        return { text: "RESET LIGHTS", color: TEAL };
     };
 
     // Helper to get Reset Controls corner light color
@@ -724,6 +717,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         const OFF = "#231f20";
         const ON = "#d8672b";
 
+        // Only show lights if there's a real CONTROLS complication
+        if (!hasActiveComplication(ComplicationType.CONTROLS)) return OFF;
         if (!controlsComplication.active) return OFF;
         if (controlsComplication.solved) return OFF;
 
@@ -786,46 +781,29 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
-    // Toggle Reset Controls complication (for testing)
-    const toggleControlsComplication = () => {
-        if (controlsComplication.active) {
-            // Deactivate
-            setControlsComplication({
-                active: false,
-                solved: false,
-                targetCorner: null,
-                completedCorners: 0
-            });
-        } else {
-            // Activate with random first corner
-            const firstCorner = Math.floor(Math.random() * 4) as 0 | 1 | 2 | 3;
-            setControlsComplication({
-                active: true,
-                solved: false,
-                targetCorner: firstCorner,
-                completedCorners: 0
-            });
+    // Helper to get Reset Controls text and color based on real complication state
+    const getControlsTextState = (): { text: string; color: string } => {
+        const TEAL = "#14b8a6";  // Idle
+        const RED = "#ef4444";   // Active
+        const GREEN = "#22c55e"; // Recently fixed
+
+        if (hasActiveComplication(ComplicationType.CONTROLS)) {
+            return { text: "RESET CONTROLS", color: RED };
         }
-    };
-
-    // Helper to get Reset Controls text color based on complication state
-    const getControlsTextColor = (): string => {
-        const TEAL = "#14b8a6";  // Inactive
-        const RED = "#ef4444";   // Active, unsolved
-        const GREEN = "#22c55e"; // Solved
-
-        if (!controlsComplication.active) return TEAL;
-        if (controlsComplication.solved) return GREEN;
-        return RED;
+        if (recentlyFixed.has(ComplicationType.CONTROLS)) {
+            return { text: "CONTROLS FIXED", color: GREEN };
+        }
+        return { text: "RESET CONTROLS", color: TEAL };
     };
 
     // Helper to get laser slider indicator light colors
-    // Returns { left: color, right: color } based on target and active state
+    // Lights only on when real LASER complication is active
     const getLaserLightColors = (sliderIndex: number): { left: string; right: string } => {
         const OFF = "#231f20";
         const ON = "#d8672b";
 
-        if (!laserComplication.active) {
+        // Only show lights if there's a real LASER complication AND the minigame is active
+        if (!hasActiveComplication(ComplicationType.LASER) || !laserComplication.active) {
             return { left: OFF, right: OFF };
         }
 
@@ -1005,18 +983,14 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                         <path fill="#1f1f38" fillRule="evenodd" d="M554.29,288.75c5.54,0,10.03,4.49,10.03,10.03s-4.49,10.03-10.03,10.03h0c-5.54,0-10.03-4.49-10.03-10.03s4.49-10.03,10.03-10.03h0M554.29,285.75h0c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.03,13.03,13.03,13.04-5.85,13.04-13.03-5.85-13.03-13.03-13.03h0Z"/>
                     </g>
 
-                    {/* Reset Laser Text - Click to toggle complication (for testing) */}
+                    {/* Reset Laser Text */}
                     <text
-                        fill={getLaserTextColor()}
+                        fill={getLaserTextState().color}
                         fontFamily="'Amazon Ember'"
                         fontSize="20.93"
                         transform="translate(245.29 261.57)"
-                        style={{ cursor: 'pointer' }}
-                        onClick={toggleLaserComplication}
                     >
-                        <tspan x="0" y="0">RESET </tspan>
-                        <tspan letterSpacing=".02em" x="65.7" y="0">L</tspan>
-                        <tspan x="77.19" y="0">ASER</tspan>
+                        {getLaserTextState().text}
                     </text>
                 </g>
             </g>
@@ -1026,13 +1000,13 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 {/* Purple Base */}
                 <polygon fill="#45486c" points="608.7 1720.12 341.17 1720.12 341.17 1452.22 564.14 1452.22 608.7 1720.12"/>
                 <text
-                    fill={getLightsTextColor()}
+                    fill={getLightsTextState().color}
                     fontFamily="'Amazon Ember'"
                     fontSize="20.93"
                     transform="translate(414.68 1486.69)"
-                    style={{ cursor: 'pointer' }}
-                    onClick={toggleLightsComplication}
-                >RESET LIGHTS</text>
+                >
+                    {getLightsTextState().text}
+                </text>
                 
                 {/* Pattern (Behind Slider) */}
                 <g clipPath="url(#reset-lights-slider-clip)">
@@ -1137,14 +1111,12 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 </g>
 
                 <text
-                    fill={getControlsTextColor()}
+                    fill={getControlsTextState().color}
                     fontFamily="'Amazon Ember'"
                     fontSize="20.93"
                     transform="translate(108.17 1480.38)"
-                    style={{ cursor: 'pointer' }}
-                    onClick={toggleControlsComplication}
                 >
-                    <tspan>RESET </tspan><tspan letterSpacing="-0.02em" x="65.7">C</tspan><tspan x="77.88">ONT</tspan><tspan letterSpacing="-0.02em" x="121.09">R</tspan><tspan x="133.6">OLS</tspan>
+                    {getControlsTextState().text}
                 </text>
                 
                 {/* The Dial Itself - outer group for rotation/press, inner group for shake */}

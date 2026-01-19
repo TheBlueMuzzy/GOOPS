@@ -264,6 +264,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalSc
                         goalsCleared={state.goalsCleared}
                         goalsTarget={state.goalsTarget}
                         unspentPower={powerUpPoints}
+
+                        // Complications
+                        complications={state.complications}
                     />
                 </div>
             </div>
