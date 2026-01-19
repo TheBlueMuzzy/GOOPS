@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { GamePhase, ComplicationType, SaveData } from './types';
 import { GameBoard } from './components/GameBoard';
 import { Controls } from './components/Controls';
@@ -35,8 +35,28 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   const animationFrameRef = useRef<number | null>(null);
   const isLoopRunningRef = useRef(false);
 
-  // Direction Multiplier based on Settings
-  const directionMultiplier = settings.invertRotation ? -1 : 1;
+  // CONTROLS complication: flip state toggles every 3 seconds when active
+  const [controlsFlipped, setControlsFlipped] = useState(false);
+  const controlsComplication = gameState.complications.find(c => c.type === ComplicationType.CONTROLS);
+
+  useEffect(() => {
+    if (!controlsComplication) {
+      // Reset flip state when complication is resolved
+      setControlsFlipped(false);
+      return;
+    }
+
+    // Toggle controls every 3 seconds while CONTROLS complication is active
+    const flipInterval = setInterval(() => {
+      setControlsFlipped(prev => !prev);
+    }, 3000);
+
+    return () => clearInterval(flipInterval);
+  }, [controlsComplication?.id]); // Re-run when complication changes
+
+  // Direction Multiplier based on Settings and CONTROLS complication
+  const baseMultiplier = settings.invertRotation ? -1 : 1;
+  const directionMultiplier = controlsComplication && controlsFlipped ? -baseMultiplier : baseMultiplier;
 
   // Sync Score on Game Over
   useEffect(() => {
