@@ -542,6 +542,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
 
     // Helper to get Reset Lights button indicator light color
     // During 'showing' phase: flash in button color when it's that button's turn
+    // During 'input' phase: light up when player is pressing that button
     const getLightsButtonLightColor = (lightIndex: 0 | 1 | 2): string => {
         const OFF = "#231f20";
 
@@ -550,6 +551,14 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         // During showing phase, light up when this button is being shown
         if (lightsComplication.phase === 'showing' && lightsComplication.showingIndex === lightIndex) {
             return BUTTON_COLORS[lightIndex];
+        }
+
+        // During input phase, light up when player is pressing this button
+        if (lightsComplication.phase === 'input') {
+            const buttonNames = ['blue', 'green', 'purple'];
+            if (pressedBtn === buttonNames[lightIndex]) {
+                return BUTTON_COLORS[lightIndex];
+            }
         }
 
         return OFF;
