@@ -8,23 +8,23 @@
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `complications` — Phase 3 work (VERIFIED, ready for merge)
+- `complications` — MILESTONE COMPLETE, ready for merge to master
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** Phase 3 COMPLETE - complications system tested and working!
+**Current focus:** MILESTONE COMPLETE - All 4 phases done, ready for merge to master!
 
 ## Current Position
 
-Phase: 3 of 4 (Complications) - COMPLETE
-Plan: 3 of 3 (all tasks complete, UAT passed)
-Status: Phase 3 verified, ready to merge to master
-Last activity: 2026-01-19 — UAT testing, bug fixes, balance adjustments
+Phase: 4 of 4 (Minigame-Complication Integration) - COMPLETE
+Plan: 1 of 1 (cleanup and bug fixes)
+Status: MILESTONE COMPLETE
+Last activity: 2026-01-19 — Phase 4 cleanup, bug fix (complications carry-over), dead code removal
 
-Progress: ███████████████░░░░░ 75% (3 of 4 phases complete)
+Progress: ████████████████████ 100% (4 of 4 phases complete)
 
 ## What's Done
 
@@ -69,17 +69,35 @@ Progress: ███████████████░░░░░ 75% (3 of
   - Solve callback chain (onResolveComplication prop)
   - Counter pauses during active complications
 
+## What's Done (Phase 4) - COMPLETE
+
+- 04-01: Final Cleanup
+  - Bug fix: Complications now cleared in finalizeGame() (no carry-over between sessions)
+  - Dead code removal: BlownFuse component and LAYER 5 overlay removed
+  - Planning docs updated for milestone completion
+
 ## What's Next
 
-**Merge `complications` branch to master after final review**
-Then proceed to Phase 4: Final Integration/Polish
+**MILESTONE COMPLETE — Merge `complications` branch to master**
+
+```bash
+git checkout master
+git merge complications
+git push origin master
+```
+
+After merge, optionally delete the feature branch:
+```bash
+git branch -d complications
+git push origin --delete complications
+```
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 8 (across all 4 phases)
 - Average duration: ~30 min per plan (including bug fixes)
-- Total execution time: ~5 hours
+- Total execution time: ~6 hours
 
 ## Accumulated Context
 
@@ -153,6 +171,6 @@ const handlePointerDown = (e: React.PointerEvent) => {
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: Phase 3 complete, UAT passed, ready for merge to master
-Resume with: `/gsd:progress` → will show Phase 3 complete, ready for Phase 4
+Stopped at: MILESTONE COMPLETE - All phases done
+Resume with: Merge `complications` branch to master
 Resume file: None needed - clean state
