@@ -17,7 +17,7 @@ None
 - [x] **Phase 1: Dial Rotation** - Implement drag/spin behavior for Reset Controls dial
 - [x] **Phase 2: Minigame Logic** - Puzzle rules for all three minigames
 - [x] **Phase 3: Complications** - Define complications and how they trigger during gameplay
-- [x] **Phase 4: Minigame-Complication Integration** - Connect minigame solutions to complications
+- [ ] **Phase 4: Minigame-Complication Integration** - Connect minigame solutions to complications
 
 ## Phase Details
 
@@ -62,7 +62,21 @@ None
 **Goal**: Connect minigame solutions to complications (trigger, random setup, resolution)
 **Depends on**: Phase 3
 **Research**: Unlikely (wiring existing systems together)
-**Plans**: TBD
+**Plans**: 4 (cleanup done, LIGHTS + CONTROLS rewrites pending)
+
+**Context from user:**
+- LASER complication: Complete and approved (two-tap mechanic)
+- LIGHTS complication: Needs rewrite with user-specified trigger/effect
+- CONTROLS complication: Needs rewrite with user-specified trigger/effect
+
+**LIGHTS Complication (Rank 3+):**
+- Trigger: 50% chance when piece locks, IF pressure is 3-5 rows above highest goop
+- Effect: Dims to 10%, desaturates to grayscale over 1.5s (periscope only, alert exempt)
+- Chance resets to 0% while active, 50% after solved
+
+**CONTROLS Complication (Rank 2+):**
+- Trigger: 20 rotation inputs within 3 seconds
+- Effect: 2 inputs per move, holding works at half speed
 
 ## Progress
 
@@ -74,4 +88,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Dial Rotation | 1/1 | Complete | 2026-01-18 |
 | 2. Minigame Logic | 3/3 | Complete | 2026-01-18 |
 | 3. Complications | 3/3 | Complete | 2026-01-19 |
-| 4. Minigame-Complication Integration | 1/1 | Complete | 2026-01-19 |
+| 4. Minigame-Complication Integration | 1/4 | In Progress | — |

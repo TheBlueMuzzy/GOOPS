@@ -8,23 +8,23 @@
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `complications` — MILESTONE COMPLETE, ready for merge to master
+- `complications` — Phase 4 in progress (LIGHTS + CONTROLS rewrites)
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** MILESTONE COMPLETE - All 4 phases done, ready for merge to master!
+**Current focus:** Phase 4 - LIGHTS + CONTROLS complication rewrites (user-specified triggers/effects)
 
 ## Current Position
 
-Phase: 4 of 4 (Minigame-Complication Integration) - COMPLETE
-Plan: 1 of 1 (cleanup and bug fixes)
-Status: MILESTONE COMPLETE
-Last activity: 2026-01-19 — Phase 4 cleanup, bug fix (complications carry-over), dead code removal
+Phase: 4 of 4 (Minigame-Complication Integration) - IN PROGRESS
+Plan: 2 of 4 (LIGHTS rewrite next)
+Status: LIGHTS + CONTROLS rewrites pending
+Last activity: 2026-01-19 — P0 bug fix (game-over soft-lock on mobile)
 
-Progress: ████████████████████ 100% (4 of 4 phases complete)
+Progress: ████████████████░░░░ 80% (Phase 4 in progress)
 
 ## What's Done
 
@@ -78,18 +78,18 @@ Progress: ████████████████████ 100% (4 o
 
 ## What's Next
 
-**MILESTONE COMPLETE — Merge `complications` branch to master**
+**Phase 4 Plan 2: LIGHTS Complication Rewrite**
 
-```bash
-git checkout master
-git merge complications
-git push origin master
+LIGHTS trigger and effect were implemented incorrectly. User provided actual specs:
+- Trigger: 50% chance on piece lock when pressure is 3-5 rows above highest goop
+- Effect: Dims to 10%, desaturates to grayscale over 1.5s (alert exempt)
+
+**After LIGHTS:**
+- Plan 3: CONTROLS complication rewrite (20 rotations in 3s → double inputs)
+- Plan 4: Documentation updates
+
 ```
-
-After merge, optionally delete the feature branch:
-```bash
-git branch -d complications
-git push origin --delete complications
+/gsd:execute-plan .planning/phases/04-minigame-complication-integration/04-02-PLAN.md
 ```
 
 ## Performance Metrics
