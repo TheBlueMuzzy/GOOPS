@@ -73,5 +73,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Dial Rotation | 1/1 | Complete | 2026-01-18 |
 | 2. Minigame Logic | 3/3 | Complete | 2026-01-18 |
-| 3. Complications | 1/3 | In progress | - |
+| 3. Complications | 2/3 | In progress | - |
 | 4. Minigame-Complication Integration | 0/TBD | Not started | - |

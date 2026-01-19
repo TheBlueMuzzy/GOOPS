@@ -20,9 +20,9 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 3 of 4 (Complications) - IN PROGRESS
-Plan: 1 of 3 complete (03-01-SUMMARY.md)
-Status: Complication types & triggers implemented, gameplay effects next
-Last activity: 2026-01-19 — Complication triggers, counters, threshold-based spawning
+Plan: 2 of 3 complete (03-02-SUMMARY.md)
+Status: Gameplay effects implemented, UI & console updates next
+Last activity: 2026-01-19 — Gameplay effects (dim, flip, +1 tap)
 
 Progress: ██████████░░░░░░░░░░ 50% (2 of 4 phases complete, Phase 3 started)
 
@@ -53,11 +53,14 @@ Progress: ██████████░░░░░░░░░░ 50% (2 of
   - Counter tracking: totalUnitsAdded, totalUnitsPopped, totalRotations
   - Threshold-based triggers (20/30/15 defaults)
   - Progressive difficulty (thresholds increment after each trigger)
+- 03-02: Gameplay Effects
+  - LIGHTS: Screen dims to 0.8 opacity over 3 seconds
+  - CONTROLS: Left/right controls flip every 3 seconds
+  - LASER: Requires 2 taps to pop (primed groups shown with red dashed outline)
 
 ## What's Next
 
 Continue Phase 3: Complications
-- 03-02: Gameplay Effects (dim lights, flip controls, +1 tap laser)
 - 03-03: UI & Console Updates (center alerts, panel indicators)
 
 ## Performance Metrics
