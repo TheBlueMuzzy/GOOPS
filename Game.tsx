@@ -173,8 +173,9 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   const currentRank = calculateRankDetails(initialTotalScore + gameState.score).rank;
 
   // Determine active effects based on complications
+  const lightsComplication = gameState.complications.find(c => c.type === ComplicationType.LIGHTS);
   const activeEffects = {
-      dimmed: gameState.complications.some(c => c.type === ComplicationType.BLOWN_FUSE),
+      dimmed: !!lightsComplication,
   };
 
   return (
@@ -212,8 +213,21 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             onSwap={() => engine.execute(new SwapPieceCommand())}
          />
          {/* Complication Effect Layers */}
-         {activeEffects.dimmed && (
-             <div className="absolute inset-0 bg-black/60 z-[5] pointer-events-none transition-opacity duration-1000 animate-pulse" />
+         {/* LIGHTS malfunction: dims screen over 3 seconds, clears instantly - only during PERISCOPE phase */}
+         <style>{`
+           @keyframes dimIn {
+             from { opacity: 0; }
+             to { opacity: 1; }
+           }
+         `}</style>
+         {activeEffects.dimmed && gameState.phase === GamePhase.PERISCOPE && (
+             <div
+               className="absolute inset-0 z-[5] pointer-events-none"
+               style={{
+                 backgroundColor: 'rgba(0,0,0,0.8)',
+                 animation: 'dimIn 3s ease-out forwards'
+               }}
+             />
          )}
       </div>
 
