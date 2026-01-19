@@ -566,13 +566,13 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
 
         if (phase === 'slider1') {
-            // Show first target
-            return slider1Target === 1 ? { top: ON, bottom: OFF } : { top: OFF, bottom: ON };
+            // Show first target (slider rotated 90°: value 1 = bottom, value -1 = top)
+            return slider1Target === 1 ? { top: OFF, bottom: ON } : { top: ON, bottom: OFF };
         }
 
         if (phase === 'slider2') {
             // Show opposite of first target
-            return slider1Target === 1 ? { top: OFF, bottom: ON } : { top: ON, bottom: OFF };
+            return slider1Target === 1 ? { top: ON, bottom: OFF } : { top: OFF, bottom: ON };
         }
 
         // During showing/input phases, no slider lights
