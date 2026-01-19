@@ -31,8 +31,16 @@ export const useGameEngine = (
     }, [initialTotalScore, engine]);
 
     // Subscription - throttle re-renders on mobile
+    // CRITICAL: Always render immediately for game over state to avoid soft-lock
     useEffect(() => {
         const unsubscribe = engine.subscribe(() => {
+            // Always render immediately for critical state changes
+            if (engine.state.gameOver) {
+                forceUpdate();
+                return;
+            }
+
+            // Throttle normal updates on mobile
             const now = performance.now();
             if (now - lastRenderRef.current >= TARGET_FRAME_TIME) {
                 lastRenderRef.current = now;
