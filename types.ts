@@ -98,7 +98,9 @@ export enum GamePhase {
 }
 
 export enum ComplicationType {
-    BLOWN_FUSE = 'BLOWN_FUSE'
+    LIGHTS = 'LIGHTS',
+    CONTROLS = 'CONTROLS',
+    LASER = 'LASER'
 }
 
 export interface Complication {
@@ -139,6 +141,18 @@ export interface GameState {
   phase: GamePhase;
   complications: Complication[];
   activeComplicationId: string | null;
+
+  // Complication counters (cumulative during run)
+  totalUnitsAdded: number;
+  totalUnitsPopped: number;
+  totalRotations: number;
+
+  // Complication thresholds (increment after each trigger)
+  complicationThresholds: {
+    lights: number;
+    controls: number;
+    laser: number;
+  };
 }
 
 // --- Meta Progression Types ---
