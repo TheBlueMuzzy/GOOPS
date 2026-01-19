@@ -25,9 +25,41 @@ Goops (Gooptris) is a puzzle-action game built with React/TypeScript/Vite. Playe
 5. Pre-commit hook also runs tests automatically
 
 ### Git Workflow
+- **Feature branches**: All new work happens on feature branches, not master
+  - `master` = stable, tested code only
+  - Feature branches (e.g., `complications`, `multicolor`) = work in progress
+  - Merge to master only after human verification/testing passes
 - Commit after each working feature/fix (not at end of session)
 - Use descriptive commit messages that capture WHAT and WHY
-- Push regularly so work isn't lost
+- Push regularly so work isn't lost (push feature branches too!)
+
+### Branch Commands Reference
+```bash
+# Check current branch
+git branch
+
+# Switch to existing branch
+git checkout <branch-name>
+
+# Create new feature branch from master
+git checkout master
+git checkout -b <new-branch-name>
+
+# Push feature branch to remote
+git push -u origin <branch-name>
+
+# Merge feature branch to master (after testing passes)
+git checkout master
+git merge <branch-name>
+git push origin master
+
+# Delete feature branch after merge
+git branch -d <branch-name>
+git push origin --delete <branch-name>
+```
+
+### Claude Code Permissions
+Permissions are set to **bypass mode** (`.claude/settings.local.json`) so Claude runs without stopping for approval prompts. This is committed to the repo as standard procedure.
 
 ### When to Suggest GSD
 Offer `/gsd:progress` or other GSD commands at natural breakpoints:

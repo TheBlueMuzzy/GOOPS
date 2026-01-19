@@ -1,5 +1,15 @@
 # Project State
 
+## Branch Workflow (SOP)
+
+**Standard procedure:** All new work happens on feature branches, not master.
+- `master` = stable, tested code only
+- Feature branches = work in progress
+- Merge to master only after human verification passes
+
+**Active feature branches:**
+- `complications` — Phase 3 work (awaiting verification)
+
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-01-19)
