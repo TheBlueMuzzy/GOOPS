@@ -1,6 +1,6 @@
 
 import React, { useMemo, useCallback, useRef, useState, useEffect } from 'react';
-import { GameState, FallingBlock, GridCell, PieceState } from '../types';
+import { GameState, FallingBlock, GridCell, PieceState, ComplicationType } from '../types';
 import { VISIBLE_WIDTH, VISIBLE_HEIGHT, COLORS, TOTAL_WIDTH, TOTAL_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { gameEventBus } from '../core/events/EventBus';
@@ -386,6 +386,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     .shake-anim, .shake {
         animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes malfunctionPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
+    .malfunction-pulse {
+        animation: malfunctionPulse 0.5s ease-in-out infinite;
     }
   `, []);
 
@@ -859,10 +866,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         {/* Hold-to-Swap Visual Indicator */}
         {holdPosition && holdProgress > 0 && (
-            <div 
+            <div
                 className="absolute z-50 pointer-events-none"
-                style={{ 
-                    left: holdPosition.x, 
+                style={{
+                    left: holdPosition.x,
                     top: holdPosition.y,
                     transform: 'translate(-50%, -50%)'
                 }}
@@ -871,16 +878,74 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     {/* Track */}
                     <circle cx="30" cy="30" r="20" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="4" />
                     {/* Filling Arc */}
-                    <circle 
-                        cx="30" cy="30" r="20" 
-                        fill="none" 
-                        stroke="white" 
+                    <circle
+                        cx="30" cy="30" r="20"
+                        fill="none"
+                        stroke="white"
                         strokeWidth="4"
                         strokeDasharray={`${(holdProgress / 100) * 125.6} 125.6`} // 2*PI*r approx 125.6
                         transform="rotate(-90 30 30)"
                         strokeLinecap="round"
                     />
                 </svg>
+            </div>
+        )}
+
+        {/* Malfunction Alert Overlay - shows pulsing red alert for active complications */}
+        {state.complications.length > 0 && (
+            <div
+                className="absolute inset-0 z-40 flex flex-col items-center justify-center pointer-events-none"
+                style={{ gap: '2rem' }}
+            >
+                {state.complications.map(complication => {
+                    // Map ComplicationType to display name
+                    const typeNames: Record<ComplicationType, string> = {
+                        [ComplicationType.LIGHTS]: 'Lights',
+                        [ComplicationType.CONTROLS]: 'Controls',
+                        [ComplicationType.LASER]: 'Laser'
+                    };
+                    const typeName = typeNames[complication.type] || complication.type;
+
+                    return (
+                        <div
+                            key={complication.id}
+                            className="malfunction-pulse text-center"
+                            style={{
+                                textShadow: '0 0 20px rgba(239, 68, 68, 0.8), 0 0 40px rgba(239, 68, 68, 0.5)'
+                            }}
+                        >
+                            <div
+                                className="text-red-500 font-bold"
+                                style={{
+                                    fontFamily: "'From Where You Are', sans-serif",
+                                    fontSize: 'clamp(2rem, 8vw, 4rem)',
+                                    lineHeight: 1.1
+                                }}
+                            >
+                                {typeName}
+                            </div>
+                            <div
+                                className="text-red-500 font-bold"
+                                style={{
+                                    fontFamily: "'From Where You Are', sans-serif",
+                                    fontSize: 'clamp(2rem, 8vw, 4rem)',
+                                    lineHeight: 1.1
+                                }}
+                            >
+                                Malfunction
+                            </div>
+                            <div
+                                className="text-red-400 mt-2"
+                                style={{
+                                    fontFamily: "'Amazon Ember', sans-serif",
+                                    fontSize: 'clamp(0.875rem, 3vw, 1.25rem)'
+                                }}
+                            >
+                                Fix at Console
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         )}
 
