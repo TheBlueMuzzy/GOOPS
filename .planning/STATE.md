@@ -19,10 +19,10 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 
 ## Current Position
 
-Phase: 3 of 4 (Complications) - IN PROGRESS
-Plan: 2 of 3 complete (03-02-SUMMARY.md)
-Status: Gameplay effects implemented, UI & console updates next
-Last activity: 2026-01-19 — Gameplay effects (dim, flip, +1 tap)
+Phase: 3 of 4 (Complications) - AWAITING VERIFICATION
+Plan: 3 of 3 (03-03 tasks 1-2 done, human-verify checkpoint pending)
+Status: All code complete, awaiting manual user testing
+Last activity: 2026-01-19 — UI alerts and console panel updates
 
 Progress: ██████████░░░░░░░░░░ 50% (2 of 4 phases complete, Phase 3 started)
 
@@ -57,11 +57,16 @@ Progress: ██████████░░░░░░░░░░ 50% (2 of
   - LIGHTS: Screen dims to 0.8 opacity over 3 seconds
   - CONTROLS: Left/right controls flip every 3 seconds
   - LASER: Requires 2 taps to pop (primed groups shown with red dashed outline)
+- 03-03: UI & Console Updates (Tasks 1-2 complete)
+  - Pulsing red "[X] Malfunction / Fix at Console" center alerts
+  - Console panels: lights only ON when complication active
+  - Text states: RESET X (teal) → RESET X (red) → X FIXED (green)
+  - Removed click-to-test toggles
 
 ## What's Next
 
-Continue Phase 3: Complications
-- 03-03: UI & Console Updates (center alerts, panel indicators)
+**Human verification checkpoint for Phase 3**
+Manual test the full complication flow: trigger → effect → alert → console → minigame → resolution
 
 ## Performance Metrics
 
