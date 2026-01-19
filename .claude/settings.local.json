@@ -25,7 +25,8 @@
       "WebFetch(domain:www.cssscript.com)",
       "WebFetch(domain:www.nngroup.com)",
       "WebFetch(domain:news.ycombinator.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.jaapsch.net)"
     ]
   }
 }

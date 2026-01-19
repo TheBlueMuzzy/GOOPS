@@ -453,8 +453,10 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
-    // Test function: Activate Reset Lights complication with random state
+    // Test function: Activate Reset Lights complication with random solvable state
     // Click on Reset Lights text to toggle
+    // Only 3 starting states can reach "all lights on" (excluding already-solved):
+    // [true,false,false], [false,true,false], [false,false,true]
     const toggleLightsComplication = () => {
         if (lightsComplication.active) {
             // Deactivate
@@ -468,15 +470,18 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
             // Reset slider to center
             setLightSlider(0);
         } else {
-            // Activate with random light states and slider target
+            // Pick random solvable starting state (one light on)
+            const solvableStarts: [boolean, boolean, boolean][] = [
+                [true, false, false],  // Only L1 on
+                [false, true, false],  // Only L2 on
+                [false, false, true],  // Only L3 on
+            ];
+            const randomStart = solvableStarts[Math.floor(Math.random() * 3)];
+
             setLightsComplication({
                 active: true,
                 solved: false,
-                lights: [
-                    Math.random() > 0.5,
-                    Math.random() > 0.5,
-                    Math.random() > 0.5
-                ],
+                lights: randomStart,
                 buttonPhaseComplete: false,
                 sliderTarget: Math.random() > 0.5 ? 1 : -1
             });
