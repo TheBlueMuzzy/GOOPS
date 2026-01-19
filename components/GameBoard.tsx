@@ -384,7 +384,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
         20%, 40%, 60%, 80% { transform: translateX(2px); }
     }
-    .shake-anim {
+    .shake-anim, .shake {
         animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
     }
   `, []);

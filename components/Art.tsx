@@ -166,6 +166,26 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     // Track if Reset Lights slider is shaking
     const [lightsSliderShaking, setLightsSliderShaking] = useState(false);
 
+    // Reset Controls complication state (dial alignment puzzle)
+    // Flow: align dial to lit corner → press → repeat 4 times → solved
+    interface ControlsComplication {
+        active: boolean;
+        solved: boolean;
+        targetCorner: 0 | 1 | 2 | 3 | null; // Which corner is lit (0=TR 45°, 1=TL 135°, 2=BL 225°, 3=BR 315°)
+        completedCorners: number; // 0-4 count of completed alignments
+    }
+    const CORNER_ANGLES = [45, 135, 225, 315]; // TR, TL, BL, BR
+
+    const [controlsComplication, setControlsComplication] = useState<ControlsComplication>({
+        active: false,
+        solved: false,
+        targetCorner: null,
+        completedCorners: 0
+    });
+
+    // Track if dial is shaking (wrong press feedback)
+    const [dialShaking, setDialShaking] = useState(false);
+
     // Local state for dial rotation (drag-based, replaces prop)
     const [localDialRotation, setLocalDialRotation] = useState(0);
     const [isDialDragging, setIsDialDragging] = useState(false);
@@ -683,6 +703,107 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         return RED;
     };
 
+    // Helper to get Reset Controls corner light color
+    // cornerIndex: 0=TR (45°), 1=TL (135°), 2=BL (225°), 3=BR (315°)
+    const getControlsCornerLightColor = (cornerIndex: 0 | 1 | 2 | 3): string => {
+        const OFF = "#231f20";
+        const ON = "#d8672b";
+
+        if (!controlsComplication.active) return OFF;
+        if (controlsComplication.solved) return OFF;
+
+        return controlsComplication.targetCorner === cornerIndex ? ON : OFF;
+    };
+
+    // Check if dial is aligned with target corner
+    const isDialAligned = (): boolean => {
+        if (controlsComplication.targetCorner === null) return false;
+
+        const targetAngle = CORNER_ANGLES[controlsComplication.targetCorner];
+        const currentAngle = ((localDialRotation % 360) + 360) % 360;
+        const diff = Math.abs(currentAngle - targetAngle);
+        const normalizedDiff = Math.min(diff, 360 - diff);
+
+        return normalizedDiff < 15; // 15° tolerance
+    };
+
+    // Trigger dial shake animation
+    const triggerDialShake = () => {
+        setDialShaking(true);
+        setTimeout(() => setDialShaking(false), 300);
+    };
+
+    // Handle dial press during controls complication
+    const handleDialPress = () => {
+        if (!controlsComplication.active || controlsComplication.solved) return;
+        if (isDialDragging) return; // Don't trigger on drag end
+
+        if (isDialAligned()) {
+            // Success - advance to next corner
+            const newCompleted = controlsComplication.completedCorners + 1;
+
+            if (newCompleted >= 4) {
+                // Solved!
+                setControlsComplication(prev => ({
+                    ...prev,
+                    solved: true,
+                    targetCorner: null,
+                    completedCorners: 4
+                }));
+            } else {
+                // Pick next random corner (not same as current)
+                const availableCorners = ([0, 1, 2, 3] as const).filter(
+                    c => c !== controlsComplication.targetCorner
+                );
+                const nextCorner = availableCorners[
+                    Math.floor(Math.random() * availableCorners.length)
+                ];
+
+                setControlsComplication(prev => ({
+                    ...prev,
+                    targetCorner: nextCorner,
+                    completedCorners: newCompleted
+                }));
+            }
+        } else {
+            // Wrong - shake the dial
+            triggerDialShake();
+        }
+    };
+
+    // Toggle Reset Controls complication (for testing)
+    const toggleControlsComplication = () => {
+        if (controlsComplication.active) {
+            // Deactivate
+            setControlsComplication({
+                active: false,
+                solved: false,
+                targetCorner: null,
+                completedCorners: 0
+            });
+        } else {
+            // Activate with random first corner
+            const firstCorner = Math.floor(Math.random() * 4) as 0 | 1 | 2 | 3;
+            setControlsComplication({
+                active: true,
+                solved: false,
+                targetCorner: firstCorner,
+                completedCorners: 0
+            });
+        }
+    };
+
+    // Helper to get Reset Controls text color based on complication state
+    const getControlsTextColor = (): string => {
+        const TEAL = "#14b8a6";  // Inactive
+        const RED = "#ef4444";   // Active, unsolved
+        const GREEN = "#22c55e"; // Solved
+
+        if (!controlsComplication.active) return TEAL;
+        if (controlsComplication.solved) return GREEN;
+        return RED;
+    };
+
     // Helper to get laser slider indicator light colors
     // Returns { left: color, right: color } based on target and active state
     const getLaserLightColors = (sliderIndex: number): { left: string; right: string } => {
@@ -978,32 +1099,43 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 {/* Shadow Circle under Dial */}
                 <circle fill="#0d1a19" cx="194.32" cy="1604.12" r="97.6" opacity="0.3"/> 
                 
-                {/* Light Indicators */}
+                {/* Corner Light Indicators - TL=135°, TR=45°, BL=225°, BR=315° */}
+                {/* Top-Left Light (135°) */}
                 <g>
-                    <path fill="#231f20" d="M103.94,1519.68c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getControlsCornerLightColor(1)} d="M103.94,1519.68c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M103.94,1498.11c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04h0M103.94,1495.11c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.03h0Z"/>
                 </g>
+                {/* Top-Right Light (45°) */}
                 <g>
-                    <path fill="#231f20" d="M288.3,1519.68c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getControlsCornerLightColor(0)} d="M288.3,1519.68c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M288.3,1498.11c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04h0M288.3,1495.11c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.03h0Z"/>
                 </g>
+                {/* Bottom-Left Light (225°) */}
                 <g>
-                    <path fill="#231f20" d="M103.94,1708.16c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getControlsCornerLightColor(2)} d="M103.94,1708.16c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M103.94,1686.59c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04h0M103.94,1683.59c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.03h0Z"/>
                 </g>
+                {/* Bottom-Right Light (315°) */}
                 <g>
-                    <path fill="#d8672b" d="M288.3,1708.16c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.53,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
+                    <path fill={getControlsCornerLightColor(3)} d="M288.3,1708.16c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.53,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M288.3,1686.59c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04h0M288.3,1683.59c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.03h0Z"/>
                 </g>
 
-                <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(108.17 1480.38)">
+                <text
+                    fill={getControlsTextColor()}
+                    fontFamily="'Amazon Ember'"
+                    fontSize="20.93"
+                    transform="translate(108.17 1480.38)"
+                    style={{ cursor: 'pointer' }}
+                    onClick={toggleControlsComplication}
+                >
                     <tspan>RESET </tspan><tspan letterSpacing="-0.02em" x="65.7">C</tspan><tspan x="77.88">ONT</tspan><tspan letterSpacing="-0.02em" x="121.09">R</tspan><tspan x="133.6">OLS</tspan>
                 </text>
                 
                 {/* The Dial Itself */}
                 <g
                     transform={`rotate(${Math.round(localDialRotation)} ${DIAL_CENTER_X} ${DIAL_CENTER_Y})`}
-                    className="cursor-grab"
+                    className={dialShaking ? 'shake' : ''}
                     style={{
                         cursor: isDialDragging ? 'grabbing' : 'grab'
                     }}
@@ -1013,6 +1145,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                             handleDialStart(e.touches[0].clientX, e.touches[0].clientY);
                         }
                     }}
+                    onClick={handleDialPress}
                 >
                     <circle fill="#d36b28" cx="194.32" cy="1586.66" r="86.84"/>
                     {/* Inner Arc */}
@@ -1026,6 +1159,22 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                     </g>
                     <path fill="#fff" d="M169.51,1524.47l20.43-20.43c1.99-1.99,5.23-1.99,7.22,0l20.43,20.43c3.22,3.22.94,8.72-3.61,8.72h-40.86c-4.55,0-6.83-5.5-3.61-8.72Z"/>
                 </g>
+
+                {/* PRESS text - shows when dial is aligned with target */}
+                {controlsComplication.active && !controlsComplication.solved && isDialAligned() && (
+                    <text
+                        fill="#22c55e"
+                        fontFamily="'Amazon Ember'"
+                        fontSize="24"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        x={DIAL_CENTER_X}
+                        y={DIAL_CENTER_Y + 8}
+                        style={{ pointerEvents: 'none' }}
+                    >
+                        PRESS
+                    </text>
+                )}
             </g>
 
             {/* Hidden reference point for coordinate conversion - MUST be outside rotating groups */}
