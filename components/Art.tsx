@@ -171,12 +171,12 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     interface ControlsComplication {
         active: boolean;
         solved: boolean;
-        targetCorner: 0 | 1 | 2 | 3 | null; // Which corner is lit (0=TR 45°, 1=TL 135°, 2=BL 225°, 3=BR 315°)
+        targetCorner: 0 | 1 | 2 | 3 | null; // Which corner is lit (0=TR 45°, 1=TL 315°, 2=BL 225°, 3=BR 135°)
         completedCorners: number; // 0-4 count of completed alignments
     }
-    // In SVG, rotation goes clockwise from 3 o'clock
-    // So 315° points top-right, 225° points top-left, etc.
-    const CORNER_ANGLES = [315, 225, 135, 45]; // TR, TL, BL, BR
+    // Based on testing: dial arrow at 45° points visually top-right
+    // 45°=TR, 315°=TL, 225°=BL, 135°=BR
+    const CORNER_ANGLES = [45, 315, 225, 135]; // TR, TL, BL, BR
 
     const [controlsComplication, setControlsComplication] = useState<ControlsComplication>({
         active: false,
@@ -223,6 +223,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     const grabAngleRef = useRef(0);      // Angle of initial grab point from center
     const rotationAtGrabRef = useRef(0); // Dial rotation when grab started
     const currentRotationRef = useRef(0); // Current rotation (ref version for snap calculation)
+    const justDraggedRef = useRef(false); // Track if we just finished a drag (to ignore click)
 
     // Convert screen coordinates to SVG coordinates
     // Use a NON-ROTATING reference element for clean CTM
@@ -295,6 +296,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     const handleDialEnd = () => {
         if (!isDraggingRef.current) return;
         isDraggingRef.current = false;
+        justDraggedRef.current = true; // Mark that we just finished dragging
         setIsDialDragging(false);
 
         // Use ref value (not state) to avoid stale closure issues
@@ -707,7 +709,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     };
 
     // Helper to get Reset Controls corner light color
-    // cornerIndex: 0=TR (45°), 1=TL (135°), 2=BL (225°), 3=BR (315°)
+    // cornerIndex: 0=TR (45°), 1=TL (315°), 2=BL (225°), 3=BR (135°)
     const getControlsCornerLightColor = (cornerIndex: 0 | 1 | 2 | 3): string => {
         const OFF = "#231f20";
         const ON = "#d8672b";
@@ -1102,8 +1104,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 {/* Shadow Circle under Dial */}
                 <circle fill="#0d1a19" cx="194.32" cy="1604.12" r="97.6" opacity="0.3"/> 
                 
-                {/* Corner Light Indicators - TL=135°, TR=45°, BL=225°, BR=315° */}
-                {/* Top-Left Light (135°) */}
+                {/* Corner Light Indicators - TR=45°, TL=315°, BL=225°, BR=135° */}
+                {/* Top-Left Light (315°) */}
                 <g>
                     <path fill={getControlsCornerLightColor(1)} d="M103.94,1519.68c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M103.94,1498.11c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04h0M103.94,1495.11c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.03h0Z"/>
@@ -1118,7 +1120,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                     <path fill={getControlsCornerLightColor(2)} d="M103.94,1708.16c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.54,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M103.94,1686.59c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04h0M103.94,1683.59c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.03h0Z"/>
                 </g>
-                {/* Bottom-Right Light (315°) */}
+                {/* Bottom-Right Light (135°) */}
                 <g>
                     <path fill={getControlsCornerLightColor(3)} d="M288.3,1708.16c-6.36,0-11.53-5.17-11.53-11.53s5.17-11.54,11.53-11.53,11.53,5.17,11.53,11.53-5.17,11.54-11.53,11.54Z"/>
                     <path fill="#1f1f38" d="M288.3,1686.59c5.54,0,10.03,4.49,10.03,10.03h0c0,5.55-4.49,10.04-10.03,10.04h0c-5.54,0-10.03-4.49-10.03-10.03h0c0-5.55,4.49-10.04,10.03-10.04h0M288.3,1683.59c-7.19,0-13.03,5.85-13.03,13.03s5.85,13.04,13.03,13.04,13.03-5.85,13.03-13.03-5.85-13.04-13.03-13.03h0Z"/>
@@ -1155,7 +1157,14 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                         }
                     }}
                     onTouchEnd={() => setDialPressed(false)}
-                    onClick={handleDialPress}
+                    onClick={() => {
+                        // Ignore click if we just finished dragging
+                        if (justDraggedRef.current) {
+                            justDraggedRef.current = false;
+                            return;
+                        }
+                        handleDialPress();
+                    }}
                 >
                     <circle fill="#d36b28" cx="194.32" cy="1586.66" r="86.84"/>
                     {/* Inner Arc */}
