@@ -832,7 +832,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         } else if (target === 1) {
             return { left: OFF, right: ON }; // Target is right
         } else {
-            return { left: OFF, right: OFF }; // Target is center
+            return { left: ON, right: ON }; // Target is center (both lights on)
         }
     };
 
