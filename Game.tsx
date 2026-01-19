@@ -4,7 +4,6 @@ import { GamePhase, ComplicationType, SaveData } from './types';
 import { GameBoard } from './components/GameBoard';
 import { Controls } from './components/Controls';
 import { ConsoleView } from './components/ConsoleView';
-import { BlownFuse } from './components/MiniGames/BlownFuse';
 import { useGameEngine } from './hooks/useGameEngine';
 import { Play, Home } from 'lucide-react';
 import { gameEventBus } from './core/events/EventBus';
@@ -288,17 +287,6 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           />
       </div>
 
-      {/* LAYER 5: MINI-GAMES OVERLAY */}
-      {gameState.phase === GamePhase.COMPLICATION_MINIGAME && gameState.activeComplicationId && (
-          <div className="absolute inset-0 z-[150] pointer-events-auto">
-             {gameState.complications.find(c => c.id === gameState.activeComplicationId)?.type === ComplicationType.BLOWN_FUSE && (
-                 <BlownFuse 
-                    onResolve={() => engine.execute(new ResolveComplicationCommand(gameState.activeComplicationId!))}
-                    onBack={() => engine.execute(new SetPhaseCommand(GamePhase.CONSOLE))}
-                 />
-             )}
-          </div>
-      )}
     </div>
   );
 };
