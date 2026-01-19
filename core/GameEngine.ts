@@ -313,7 +313,11 @@ export class GameEngine {
         if (this.state.gameOver) return;
         this.state.gameOver = true;
         this.isSessionActive = false;
-        
+
+        // Clear any active complications so they don't carry over
+        this.state.complications = [];
+        this.state.activeComplicationId = null;
+
         // Switch to console to show the End Day screen
         this.state.phase = GamePhase.CONSOLE;
 
