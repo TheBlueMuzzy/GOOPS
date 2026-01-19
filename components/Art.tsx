@@ -145,20 +145,22 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     // Track which slider is shaking (for wrong position feedback)
     const [shakingSlider, setShakingSlider] = useState<number | null>(null);
 
-    // Reset Lights complication state (Lights Out puzzle)
+    // Reset Lights complication state (sequence memory puzzle)
+    // Flow: slider1 → showing sequence → input sequence → slider2 → solved
+    type LightsPhase = 'inactive' | 'slider1' | 'showing' | 'input' | 'slider2' | 'solved';
     interface LightsComplication {
-        active: boolean;
-        solved: boolean;
-        lights: [boolean, boolean, boolean]; // L1, L2, L3 on/off state
-        buttonPhaseComplete: boolean; // all lights on?
-        sliderTarget: 1 | -1; // random top or bottom
+        phase: LightsPhase;
+        slider1Target: 1 | -1;        // First slider target (random)
+        sequence: (0 | 1 | 2)[];      // 4-button sequence (0=blue, 1=green, 2=purple)
+        inputIndex: number;           // How many correct inputs so far (0-4)
+        showingIndex: number;         // Which light in sequence is showing (-1 = none)
     }
     const [lightsComplication, setLightsComplication] = useState<LightsComplication>({
-        active: false,
-        solved: false,
-        lights: [false, false, false],
-        buttonPhaseComplete: false,
-        sliderTarget: 1
+        phase: 'inactive',
+        slider1Target: 1,
+        sequence: [],
+        inputIndex: 0,
+        showingIndex: -1
     });
 
     // Track if Reset Lights slider is shaking
@@ -453,113 +455,200 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
-    // Test function: Activate Reset Lights complication with random solvable state
-    // Click on Reset Lights text to toggle
-    // Only 3 starting states can reach "all lights on" (excluding already-solved):
-    // [true,false,false], [false,true,false], [false,false,true]
+    // Generate a 4-button sequence with max 2 of any single button
+    const generateLightsSequence = (): (0 | 1 | 2)[] => {
+        const sequence: (0 | 1 | 2)[] = [];
+        const counts = [0, 0, 0]; // Track how many times each button is used
+
+        for (let i = 0; i < 4; i++) {
+            // Get available buttons (those used less than 2 times)
+            const available: (0 | 1 | 2)[] = [];
+            if (counts[0] < 2) available.push(0);
+            if (counts[1] < 2) available.push(1);
+            if (counts[2] < 2) available.push(2);
+
+            const choice = available[Math.floor(Math.random() * available.length)];
+            sequence.push(choice);
+            counts[choice]++;
+        }
+
+        return sequence;
+    };
+
+    // Start showing the sequence with timed light flashes
+    const startShowingSequence = (sequence: (0 | 1 | 2)[]) => {
+        const FLASH_DURATION = 400; // ms each light stays on
+        const GAP_DURATION = 200;   // ms between flashes
+        const BEAT_DURATION = 500;  // ms pause after sequence before input
+
+        let delay = 300; // Initial delay before starting
+
+        sequence.forEach((buttonIndex, i) => {
+            // Turn on this light
+            setTimeout(() => {
+                setLightsComplication(prev => ({ ...prev, showingIndex: buttonIndex }));
+            }, delay);
+
+            // Turn off this light
+            setTimeout(() => {
+                setLightsComplication(prev => ({ ...prev, showingIndex: -1 }));
+            }, delay + FLASH_DURATION);
+
+            delay += FLASH_DURATION + GAP_DURATION;
+        });
+
+        // After sequence complete + 1 beat, transition to input phase
+        setTimeout(() => {
+            setLightsComplication(prev => ({
+                ...prev,
+                phase: 'input',
+                showingIndex: -1,
+                inputIndex: 0
+            }));
+        }, delay + BEAT_DURATION);
+    };
+
+    // Test function: Activate/deactivate Reset Lights complication
     const toggleLightsComplication = () => {
-        if (lightsComplication.active) {
+        if (lightsComplication.phase !== 'inactive') {
             // Deactivate
             setLightsComplication({
-                active: false,
-                solved: false,
-                lights: [false, false, false],
-                buttonPhaseComplete: false,
-                sliderTarget: 1
+                phase: 'inactive',
+                slider1Target: 1,
+                sequence: [],
+                inputIndex: 0,
+                showingIndex: -1
             });
-            // Reset slider to center
             setLightSlider(0);
         } else {
-            // Pick random solvable starting state (one light on)
-            const solvableStarts: [boolean, boolean, boolean][] = [
-                [true, false, false],  // Only L1 on
-                [false, true, false],  // Only L2 on
-                [false, false, true],  // Only L3 on
-            ];
-            const randomStart = solvableStarts[Math.floor(Math.random() * 3)];
-
+            // Activate - start with slider1 phase
             setLightsComplication({
-                active: true,
-                solved: false,
-                lights: randomStart,
-                buttonPhaseComplete: false,
-                sliderTarget: Math.random() > 0.5 ? 1 : -1
+                phase: 'slider1',
+                slider1Target: Math.random() > 0.5 ? 1 : -1,
+                sequence: generateLightsSequence(),
+                inputIndex: 0,
+                showingIndex: -1
             });
+            setLightSlider(0);
         }
+    };
+
+    // Button colors for sequence display
+    const BUTTON_COLORS = {
+        0: '#96d7dd', // Blue button top color
+        1: '#f6f081', // Green button top color
+        2: '#cb8abc'  // Purple button top color
     };
 
     // Helper to get Reset Lights button indicator light color
-    // lightIndex: 0=L1 (below blue), 1=L2 (below green), 2=L3 (below purple)
+    // During 'showing' phase: flash in button color when it's that button's turn
     const getLightsButtonLightColor = (lightIndex: 0 | 1 | 2): string => {
         const OFF = "#231f20";
-        const ON = "#d8672b";
 
-        if (!lightsComplication.active) return OFF;
-        return lightsComplication.lights[lightIndex] ? ON : OFF;
+        if (lightsComplication.phase === 'inactive') return OFF;
+
+        // During showing phase, light up when this button is being shown
+        if (lightsComplication.phase === 'showing' && lightsComplication.showingIndex === lightIndex) {
+            return BUTTON_COLORS[lightIndex];
+        }
+
+        return OFF;
     };
 
     // Helper to get Reset Lights slider indicator light colors
-    // Returns { top: color, bottom: color } based on buttonPhaseComplete and sliderTarget
     const getLightsSliderLightColors = (): { top: string; bottom: string } => {
         const OFF = "#231f20";
         const ON = "#d8672b";
+        const { phase, slider1Target } = lightsComplication;
 
-        if (!lightsComplication.active || !lightsComplication.buttonPhaseComplete) {
+        if (phase === 'inactive') {
             return { top: OFF, bottom: OFF };
         }
 
-        // Show the target position
-        if (lightsComplication.sliderTarget === 1) {
-            return { top: ON, bottom: OFF };
+        if (phase === 'slider1') {
+            // Show first target
+            return slider1Target === 1 ? { top: ON, bottom: OFF } : { top: OFF, bottom: ON };
+        }
+
+        if (phase === 'slider2') {
+            // Show opposite of first target
+            return slider1Target === 1 ? { top: OFF, bottom: ON } : { top: ON, bottom: OFF };
+        }
+
+        // During showing/input phases, no slider lights
+        return { top: OFF, bottom: OFF };
+    };
+
+    // Handle button press during input phase
+    const handleLightsButton = (buttonIndex: 0 | 1 | 2) => {
+        if (lightsComplication.phase !== 'input') return;
+
+        const expectedButton = lightsComplication.sequence[lightsComplication.inputIndex];
+
+        if (buttonIndex === expectedButton) {
+            // Correct!
+            const newInputIndex = lightsComplication.inputIndex + 1;
+
+            if (newInputIndex >= 4) {
+                // Sequence complete - move to slider2
+                setLightsComplication(prev => ({
+                    ...prev,
+                    phase: 'slider2',
+                    inputIndex: 0
+                }));
+            } else {
+                // Continue sequence
+                setLightsComplication(prev => ({
+                    ...prev,
+                    inputIndex: newInputIndex
+                }));
+            }
         } else {
-            return { top: OFF, bottom: ON };
+            // Wrong! Replay sequence
+            setLightsComplication(prev => ({
+                ...prev,
+                phase: 'showing',
+                inputIndex: 0,
+                showingIndex: -1
+            }));
+            // Start showing after a brief pause
+            setTimeout(() => {
+                startShowingSequence(lightsComplication.sequence);
+            }, 300);
         }
     };
 
-    // Lights Out button toggle logic
-    // B1 (blue) → L1 + L2, B2 (green) → L2 + L3, B3 (purple) → L1 + L3
-    const handleLightsButton = (buttonIndex: 0 | 1 | 2) => {
-        if (!lightsComplication.active || lightsComplication.solved) return;
-
-        setLightsComplication(prev => {
-            const newLights = [...prev.lights] as [boolean, boolean, boolean];
-
-            if (buttonIndex === 0) { // B1 (blue)
-                newLights[0] = !newLights[0];
-                newLights[1] = !newLights[1];
-            } else if (buttonIndex === 1) { // B2 (green)
-                newLights[1] = !newLights[1];
-                newLights[2] = !newLights[2];
-            } else { // B3 (purple)
-                newLights[0] = !newLights[0];
-                newLights[2] = !newLights[2];
-            }
-
-            const allOn = newLights.every(l => l);
-            return {
-                ...prev,
-                lights: newLights,
-                buttonPhaseComplete: allOn
-            };
-        });
-    };
-
-    // Handle light slider changes with validation after button phase
+    // Handle light slider changes
     const handleLightsSliderChange = (newValue: -1 | 0 | 1) => {
-        setLightSlider(newValue);
+        const { phase, slider1Target } = lightsComplication;
 
-        // Only validate if button phase complete and complication active
-        if (!lightsComplication.active || lightsComplication.solved) return;
-        if (!lightsComplication.buttonPhaseComplete) return;
-
-        // Check if slider matches target (target is 1 or -1, slider can be -1, 0, or 1)
-        if (newValue === lightsComplication.sliderTarget) {
-            // Solved!
-            setLightsComplication(prev => ({ ...prev, solved: true }));
-        } else if (newValue !== 0) {
-            // Wrong non-center position - shake the slider
-            setLightsSliderShaking(true);
-            setTimeout(() => setLightsSliderShaking(false), 500);
+        if (phase === 'slider1') {
+            if (newValue === slider1Target) {
+                // Correct! Move to showing phase
+                setLightSlider(newValue);
+                setLightsComplication(prev => ({ ...prev, phase: 'showing' }));
+                startShowingSequence(lightsComplication.sequence);
+            } else if (newValue !== 0) {
+                // Wrong direction - shake and return to center
+                setLightsSliderShaking(true);
+                setTimeout(() => {
+                    setLightsSliderShaking(false);
+                    setLightSlider(0);
+                }, 400);
+            } else {
+                setLightSlider(newValue);
+            }
+        } else if (phase === 'slider2') {
+            const slider2Target = slider1Target === 1 ? -1 : 1; // Opposite of first
+            setLightSlider(newValue);
+            if (newValue === slider2Target) {
+                // Solved!
+                setLightsComplication(prev => ({ ...prev, phase: 'solved' }));
+            }
+            // No shake for slider2 - just need to reach the target
+        } else {
+            // Other phases - just update slider visually
+            setLightSlider(newValue);
         }
     };
 
@@ -580,8 +669,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         const RED = "#ef4444";   // Active, unsolved
         const GREEN = "#22c55e"; // Solved
 
-        if (!lightsComplication.active) return TEAL;
-        if (lightsComplication.solved) return GREEN;
+        if (lightsComplication.phase === 'inactive') return TEAL;
+        if (lightsComplication.phase === 'solved') return GREEN;
         return RED;
     };
 
@@ -827,10 +916,10 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 </g>
 
                 {/* Blue Button (Rear) */}
-                <ArcadeButton 
-                    x={431.19} y={1495} 
+                <ArcadeButton
+                    x={431.19} y={1495}
                     colorBody="#3d8380" colorTop="#96d7dd"
-                    isPressed={pressedBtn === 'blue'}
+                    isPressed={pressedBtn === 'blue' || lightsComplication.phase === 'showing'}
                     onPress={() => handlePress('blue')}
                     onRelease={() => handleRelease('blue', onBlueClick)}
                 />
@@ -842,10 +931,10 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 </g>
 
                 {/* Green Button (Middle) */}
-                <ArcadeButton 
-                    x={437.5} y={1565} 
-                    colorBody="#4c833c" colorTop="#f6f081" 
-                    isPressed={pressedBtn === 'green'}
+                <ArcadeButton
+                    x={437.5} y={1565}
+                    colorBody="#4c833c" colorTop="#f6f081"
+                    isPressed={pressedBtn === 'green' || lightsComplication.phase === 'showing'}
                     onPress={() => handlePress('green')}
                     onRelease={() => handleRelease('green', onGreenClick)}
                 />
@@ -857,10 +946,10 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 </g>
 
                 {/* Purple Button (Front) */}
-                <ArcadeButton 
-                    x={444.51} y={1635} 
-                    colorBody="#803d83" colorTop="#cb8abc" 
-                    isPressed={pressedBtn === 'purple'}
+                <ArcadeButton
+                    x={444.51} y={1635}
+                    colorBody="#803d83" colorTop="#cb8abc"
+                    isPressed={pressedBtn === 'purple' || lightsComplication.phase === 'showing'}
                     onPress={() => handlePress('purple')}
                     onRelease={() => handleRelease('purple', onPurpleClick)}
                 />
