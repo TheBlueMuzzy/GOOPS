@@ -85,7 +85,7 @@ None
 **Goal**: Add visual meters for LASER/CONTROLS, rewrite trigger mechanics, tune complication values
 **Depends on**: Phase 4
 **Research**: Unlikely (design decisions captured in DESIGN_VISION.md)
-**Plans**: TBD
+**Plans**: 4 (01: Meter State & UI, 02: LASER Meter Logic, 03: CONTROLS Heat Logic, 04: Cooldowns & Rank Unlocks)
 
 **Key changes:**
 - Add Laser Capacitor Meter (left side of periscope) — drains as player pops
@@ -143,6 +143,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. Minigame Logic | 3/3 | Complete | 2026-01-18 |
 | 3. Complications | 3/3 | Complete | 2026-01-19 |
 | 4. Minigame-Complication Integration | 4/4 | Complete | 2026-01-19 |
-| 5. HUD & Balance | 0/? | Not Started | - |
+| 5. HUD & Balance | 0/4 | Planned | - |
 | 6. Progression System | 0/? | Not Started | - |
 | 7. System Upgrades | 0/? | Not Started | - |
