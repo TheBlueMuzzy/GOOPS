@@ -1297,7 +1297,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                         <text fill="#45486c" fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(143.75 1778.17)">
                             <tspan letterSpacing="-.02em">S</tspan><tspan x="11.41">YSTEM UPG</tspan><tspan letterSpacing=".02em" x="124.56">R</tspan><tspan x="137.7">ADES </tspan><tspan letterSpacing="-.06em" x="194.7">AV</tspan><tspan x="219.21">AI</tspan><tspan letterSpacing=".02em" x="238.45">L</tspan><tspan x="249.94">ABLE</tspan>
                         </text>
-                        <text fill="#ffd92b" fontFamily="'Amazon Ember'" fontWeight="bold" fontSize="34.88" transform="translate(492.79 1783.33)">{upgradeCount}</text>
+                        <text fill="#ffd92b" fontFamily="'Amazon Ember'" fontWeight="bold" fontSize="34.88" textAnchor="middle" x="505" y="1783.33">{upgradeCount}</text>
                     </>
                 )}
             </g>

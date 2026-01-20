@@ -42,8 +42,19 @@ export const getScoreForMidRank = (rank: number): number => {
 };
 
 export const calculateRankDetails = (totalScore: number): RankDetails => {
+  // Rank 0 = fresh start (no XP earned yet)
+  if (totalScore <= 0) {
+    return {
+      rank: 0,
+      progress: 0,
+      toNextRank: getScoreForRank(1) || 1500, // XP needed for rank 1
+      totalScore: 0,
+      isMaxRank: false
+    };
+  }
+
   let rank = 1;
-  
+
   // Iterative check is fast enough for 100 ranks
   while (rank < MAX_RANK && totalScore >= getScoreForRank(rank + 1)) {
     rank++;

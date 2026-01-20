@@ -52,11 +52,16 @@ describe('getXpToNextRank', () => {
 });
 
 describe('calculateRankDetails', () => {
-  it('returns rank 1 for 0 score', () => {
+  it('returns rank 0 for 0 score (fresh start)', () => {
     const details = calculateRankDetails(0);
-    expect(details.rank).toBe(1);
+    expect(details.rank).toBe(0);
     expect(details.progress).toBe(0);
     expect(details.toNextRank).toBe(1500);
+  });
+
+  it('returns rank 0 for negative score', () => {
+    const details = calculateRankDetails(-100);
+    expect(details.rank).toBe(0);
   });
 
   it('returns rank 2 at exactly 1500 XP', () => {
