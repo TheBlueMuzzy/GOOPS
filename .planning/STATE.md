@@ -107,7 +107,10 @@ Progress: █████████████████████ 5.5/7 
   - Rank 2: 1,500 XP (was 5,000) — much smoother tutorial
   - Rank 10: 31,500 XP | Rank 100: 2,574,000 XP
   - XP floor: `max(100 * rank, score)` prevents zero-gain runs
-  - 14 new progression tests
+  - 15 progression tests (including rank 0)
+- Bug fix: Rank 0 now works correctly
+  - `calculateRankDetails` returns rank 0 for totalScore <= 0
+  - Upgrade count text centered in button
 
 ## Approved Complication Specifications
 
@@ -187,9 +190,15 @@ None
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Phase 6 Plan 06-01 complete (XP curve + floor)
-Resume with: Execute Plan 06-02 (Milestone Infrastructure) or test XP changes first
+Stopped at: Phase 6 Plan 06-01 complete + rank 0 bug fix
+Resume with: Execute Plan 06-02 (Milestone Infrastructure)
 Resume file: `.planning/phases/06-progression/06-02-PLAN.md`
+
+**Bug fix this session:** Rank 0 now displays correctly and means "no complications"
+- Rank 0: No complications (tutorial)
+- Rank 1+: LASER
+- Rank 2+: LASER + LIGHTS
+- Rank 3+: All three
 
 ## Quick Commands
 
