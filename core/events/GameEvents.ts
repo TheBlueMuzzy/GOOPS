@@ -12,6 +12,9 @@ export enum GameEventType {
     // Complications
     COMPLICATION_SPAWNED = 'COMPLICATION_SPAWNED',
     COMPLICATION_RESOLVED = 'COMPLICATION_RESOLVED',
+
+    // Progression
+    MILESTONE_REACHED = 'MILESTONE_REACHED',
     
     // System / UI
     GAME_START = 'GAME_START',
@@ -31,4 +34,8 @@ export interface PopPayload {
 
 export interface GoalCapturePayload {
     count: number;
+}
+
+export interface MilestonePayload {
+    milestones: number[];  // Array of milestone ranks reached (e.g., [10] or [20, 30])
 }

@@ -41,6 +41,43 @@ export const getScoreForMidRank = (rank: number): number => {
   return Math.floor(currentBase + (nextBase - currentBase) * 0.5);
 };
 
+// --- Milestone Functions ---
+
+// Returns all milestone ranks [10, 20, 30, ... 100]
+export const getMilestoneRanks = (): number[] => {
+  const milestones: number[] = [];
+  for (let r = 10; r <= MAX_RANK; r += 10) {
+    milestones.push(r);
+  }
+  return milestones;
+};
+
+// Returns the next milestone rank after currentRank, or null if at/past max
+export const getNextMilestone = (currentRank: number): number | null => {
+  const nextMilestone = Math.ceil((currentRank + 1) / 10) * 10;
+  return nextMilestone <= MAX_RANK ? nextMilestone : null;
+};
+
+// Returns milestones crossed when going from fromRank to toRank
+// e.g., getMilestonesInRange(8, 12) returns [10]
+// e.g., getMilestonesInRange(18, 32) returns [20, 30]
+export const getMilestonesInRange = (fromRank: number, toRank: number): number[] => {
+  if (toRank <= fromRank) return [];
+
+  const crossed: number[] = [];
+  const milestones = getMilestoneRanks();
+
+  for (const milestone of milestones) {
+    if (milestone > fromRank && milestone <= toRank) {
+      crossed.push(milestone);
+    }
+  }
+
+  return crossed;
+};
+
+// --- Rank Calculation ---
+
 export const calculateRankDetails = (totalScore: number): RankDetails => {
   // Rank 0 = fresh start (no XP earned yet)
   if (totalScore <= 0) {

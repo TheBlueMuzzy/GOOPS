@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getScoreForRank, getXpToNextRank, calculateRankDetails } from '../utils/progression';
+import { getScoreForRank, getXpToNextRank, calculateRankDetails, getMilestoneRanks, getNextMilestone, getMilestonesInRange } from '../utils/progression';
 
 describe('getScoreForRank', () => {
   it('returns 0 for rank 1', () => {
@@ -95,5 +95,79 @@ describe('calculateRankDetails', () => {
     const details = calculateRankDetails(10000000);
     expect(details.rank).toBe(100);
     expect(details.isMaxRank).toBe(true);
+  });
+});
+
+describe('getMilestoneRanks', () => {
+  it('returns all milestone ranks from 10 to 100', () => {
+    const milestones = getMilestoneRanks();
+    expect(milestones).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+  });
+
+  it('returns exactly 10 milestones', () => {
+    expect(getMilestoneRanks().length).toBe(10);
+  });
+});
+
+describe('getNextMilestone', () => {
+  it('returns 10 for ranks below 10', () => {
+    expect(getNextMilestone(0)).toBe(10);
+    expect(getNextMilestone(1)).toBe(10);
+    expect(getNextMilestone(5)).toBe(10);
+    expect(getNextMilestone(9)).toBe(10);
+  });
+
+  it('returns next milestone for ranks at a milestone', () => {
+    expect(getNextMilestone(10)).toBe(20);
+    expect(getNextMilestone(20)).toBe(30);
+    expect(getNextMilestone(90)).toBe(100);
+  });
+
+  it('returns next milestone for ranks between milestones', () => {
+    expect(getNextMilestone(11)).toBe(20);
+    expect(getNextMilestone(15)).toBe(20);
+    expect(getNextMilestone(19)).toBe(20);
+  });
+
+  it('returns null for max rank', () => {
+    expect(getNextMilestone(100)).toBe(null);
+  });
+
+  it('returns null for ranks past max', () => {
+    expect(getNextMilestone(101)).toBe(null);
+    expect(getNextMilestone(150)).toBe(null);
+  });
+});
+
+describe('getMilestonesInRange', () => {
+  it('returns empty array when toRank <= fromRank', () => {
+    expect(getMilestonesInRange(10, 10)).toEqual([]);
+    expect(getMilestonesInRange(15, 10)).toEqual([]);
+  });
+
+  it('returns single milestone when crossing one', () => {
+    expect(getMilestonesInRange(8, 12)).toEqual([10]);
+    expect(getMilestonesInRange(9, 10)).toEqual([10]);
+  });
+
+  it('returns multiple milestones when crossing several', () => {
+    expect(getMilestonesInRange(18, 32)).toEqual([20, 30]);
+    expect(getMilestonesInRange(5, 35)).toEqual([10, 20, 30]);
+  });
+
+  it('returns empty array when no milestones crossed', () => {
+    expect(getMilestonesInRange(1, 5)).toEqual([]);
+    expect(getMilestonesInRange(11, 19)).toEqual([]);
+  });
+
+  it('includes milestone at toRank but not fromRank', () => {
+    // At rank 10, crossing to exactly 20 should include 20
+    expect(getMilestonesInRange(10, 20)).toEqual([20]);
+    // Starting AT 10, going to 11 should NOT include 10
+    expect(getMilestonesInRange(10, 11)).toEqual([]);
+  });
+
+  it('handles jumping from 0 to high rank', () => {
+    expect(getMilestonesInRange(0, 50)).toEqual([10, 20, 30, 40, 50]);
   });
 });

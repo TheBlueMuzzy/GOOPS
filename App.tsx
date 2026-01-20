@@ -6,7 +6,9 @@ import { Settings } from './components/Settings';
 import { HowToPlay } from './components/HowToPlay';
 import { SaveData } from './types';
 import { loadSaveData, saveGameData, wipeSaveData } from './utils/storage';
-import { calculateRankDetails, getScoreForMidRank } from './utils/progression';
+import { calculateRankDetails, getScoreForMidRank, getMilestonesInRange } from './utils/progression';
+import { gameEventBus } from './core/events/EventBus';
+import { GameEventType } from './core/events/GameEvents';
 import { audio } from './utils/audio';
 import { useAudioSubscription } from './hooks/useAudioSubscription';
 
@@ -38,22 +40,34 @@ const App: React.FC = () => {
   const handleRunComplete = useCallback((runScore: number) => {
     setSaveData(prev => {
       const newTotalScore = prev.totalScore + runScore;
-      
+
       const oldRankDetails = calculateRankDetails(prev.totalScore);
       const newRankDetails = calculateRankDetails(newTotalScore);
-      
+
       const rankDiff = newRankDetails.rank - oldRankDetails.rank;
-      
+
       // Award 1 Point per Rank gained
-      const pointsEarned = rankDiff > 0 ? rankDiff : 0;
-      
-      let points = prev.powerUpPoints + pointsEarned;
+      let pointsEarned = rankDiff > 0 ? rankDiff : 0;
+
+      // Check for new milestones (ranks 10, 20, 30... 100)
+      const milestoneCandidates = getMilestonesInRange(oldRankDetails.rank, newRankDetails.rank);
+      // Filter out already-reached milestones (for safety, e.g., dev rank jumps)
+      const newMilestones = milestoneCandidates.filter(m => !prev.milestonesReached.includes(m));
+
+      // Award 1 bonus point per new milestone
+      pointsEarned += newMilestones.length;
+
+      // Emit event for UI celebration (future use)
+      if (newMilestones.length > 0) {
+        gameEventBus.emit(GameEventType.MILESTONE_REACHED, { milestones: newMilestones });
+      }
 
       return {
         ...prev,
         totalScore: newTotalScore,
         rank: newRankDetails.rank,
-        powerUpPoints: points,
+        powerUpPoints: prev.powerUpPoints + pointsEarned,
+        milestonesReached: [...prev.milestonesReached, ...newMilestones],
         firstRunComplete: true
       };
     });

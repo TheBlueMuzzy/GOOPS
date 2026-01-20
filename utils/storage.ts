@@ -9,6 +9,7 @@ export const getDefaultSaveData = (): SaveData => ({
   powerUpPoints: 0,
   powerUps: {},
   firstRunComplete: false,
+  milestonesReached: [],
   settings: {
     masterVolume: 50,
     musicVolume: 80,

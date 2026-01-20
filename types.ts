@@ -174,6 +174,7 @@ export interface SaveData {
   powerUpPoints: number;   // Currency to buy upgrades
   powerUps: Record<string, number>; // Map of UpgradeID -> Grade Level
   firstRunComplete: boolean;
+  milestonesReached: number[];  // Milestone ranks achieved [10, 20, 30...]
   settings: {
     masterVolume: number;
     musicVolume: number;
