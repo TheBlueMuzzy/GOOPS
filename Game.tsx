@@ -236,6 +236,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             lightsDimmed={activeEffects.dimmed && gameState.phase === GamePhase.PERISCOPE}
             laserCapacitor={gameState.laserCapacitor}
             controlsHeat={gameState.controlsHeat}
+            complicationCooldowns={gameState.complicationCooldowns}
          />
          {/* LIGHTS complication effect is now handled via lightsDimmed prop on GameBoard */}
       </div>

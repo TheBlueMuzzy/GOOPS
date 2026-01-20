@@ -22,6 +22,7 @@ interface GameBoardProps {
   lightsDimmed?: boolean; // LIGHTS complication effect: dim to 10% + grayscale
   laserCapacitor?: number;  // HUD meter: 0-100 (100 = full)
   controlsHeat?: number;    // HUD meter: 0-100 (0 = cool)
+  complicationCooldowns?: Record<ComplicationType, number>;  // Cooldown timestamps
 }
 
 const BLOCK_SIZE = 30; 
@@ -45,7 +46,7 @@ interface RenderableCell {
 export const GameBoard: React.FC<GameBoardProps> = ({
     state, rank, maxTime, onBlockTap,
     onRotate, onDragInput, onSwipeUp, onSoftDrop, onSwap, lightsDimmed,
-    laserCapacitor = 100, controlsHeat = 0
+    laserCapacitor = 100, controlsHeat = 0, complicationCooldowns
 }) => {
   const { grid, boardOffset, activePiece, fallingBlocks, floatingTexts, timeLeft, goalMarks } = state;
   const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null);
@@ -875,27 +876,61 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 return null;
             })}
 
-            {/* HUD Meters - only visible in PERISCOPE phase */}
+            {/* HUD Meters - only visible in PERISCOPE phase at appropriate rank */}
             {state.phase === GamePhase.PERISCOPE && (
                 <>
-                    {/* Left meter: Laser Capacitor (drains as player pops) */}
-                    <HudMeter
-                        value={laserCapacitor}
-                        colorMode="drain"
-                        x={vbX + 8}
-                        y={vbH * 0.04}
-                        height={vbH * 0.2}
-                        width={12}
-                    />
-                    {/* Right meter: Controls Heat (builds while rotating) */}
-                    <HudMeter
-                        value={controlsHeat}
-                        colorMode="heat"
-                        x={vbX + vbW - 20}
-                        y={vbH * 0.04}
-                        height={vbH * 0.2}
-                        width={12}
-                    />
+                    {/* Left meter: Laser Capacitor (drains as player pops) - rank 1+ */}
+                    {rank >= 1 && (
+                        <g>
+                            {/* Cooldown timer above meter */}
+                            {complicationCooldowns && complicationCooldowns[ComplicationType.LASER] > Date.now() && (
+                                <text
+                                    x={vbX + 8 + 6}
+                                    y={vbH * 0.04 - 4}
+                                    fill="white"
+                                    fontSize="10"
+                                    textAnchor="middle"
+                                    fontFamily="monospace"
+                                >
+                                    {Math.ceil((complicationCooldowns[ComplicationType.LASER] - Date.now()) / 1000)}s
+                                </text>
+                            )}
+                            <HudMeter
+                                value={laserCapacitor}
+                                colorMode="drain"
+                                x={vbX + 8}
+                                y={vbH * 0.04}
+                                height={vbH * 0.2}
+                                width={12}
+                            />
+                        </g>
+                    )}
+                    {/* Right meter: Controls Heat (builds while rotating) - rank 3+ */}
+                    {rank >= 3 && (
+                        <g>
+                            {/* Cooldown timer above meter */}
+                            {complicationCooldowns && complicationCooldowns[ComplicationType.CONTROLS] > Date.now() && (
+                                <text
+                                    x={vbX + vbW - 20 + 6}
+                                    y={vbH * 0.04 - 4}
+                                    fill="white"
+                                    fontSize="10"
+                                    textAnchor="middle"
+                                    fontFamily="monospace"
+                                >
+                                    {Math.ceil((complicationCooldowns[ComplicationType.CONTROLS] - Date.now()) / 1000)}s
+                                </text>
+                            )}
+                            <HudMeter
+                                value={controlsHeat}
+                                colorMode="heat"
+                                x={vbX + vbW - 20}
+                                y={vbH * 0.04}
+                                height={vbH * 0.2}
+                                width={12}
+                            />
+                        </g>
+                    )}
                 </>
             )}
         </svg>
