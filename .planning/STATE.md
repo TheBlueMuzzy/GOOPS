@@ -15,13 +15,13 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** Milestone complete - ready for user verification
+**Current focus:** Phase 4 UAT in progress - testing complications integration
 
 ## Current Position
 
-Phase: 4 of 4 (Minigame-Complication Integration) - COMPLETE
-Plan: 4 of 4 (Documentation updates)
-Status: All plans executed, awaiting user verification
+Phase: 4 of 4 (Minigame-Complication Integration) - IN VERIFICATION
+Plan: 4 of 4 (Documentation updates) - executed
+Status: All plans executed, UAT in progress
 Last activity: 2026-01-19 — Phase 4 complete (LIGHTS + CONTROLS rewrites)
 
 Progress: ████████████████████ 100% (All phases complete)
@@ -97,7 +97,7 @@ Progress: ████████████████████ 100% (All
 
 ### Decisions
 
-- Phase 1: Edge-only drag deferred (rotation works anywhere on dial)
+- Phase 1: Rotation works anywhere on dial (edge-only approach not needed)
 - SVG coordinate conversion requires hidden reference element due to preserveAspectRatio
 - No CSS transition on dial snap (causes fly-away visual bug)
 - Use refs instead of state for values needed in event handler closures
@@ -149,11 +149,11 @@ Apply filter to game content only, keeping alerts exempt:
 
 ### Deferred Issues
 
-- Edge-only drag zone (optional enhancement for Phase 1)
+None
 
 ## Session Continuity
 
 Last session: 2026-01-19
-Stopped at: MILESTONE COMPLETE - All 4 phases done
-Resume with: User verification testing
+Stopped at: Phase 4 plans executed, UAT in progress
+Resume with: Continue user acceptance testing
 Resume file: None needed - clean state
