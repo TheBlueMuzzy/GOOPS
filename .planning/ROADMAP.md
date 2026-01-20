@@ -145,4 +145,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Minigame-Complication Integration | 4/4 | Complete | 2026-01-19 |
 | 5. HUD & Balance | 4/4 | Complete | 2026-01-20 |
 | 6. Progression System | 2/2 | Complete | 2026-01-20 |
-| 7. System Upgrades | 0/? | Not Started | - |
+| 7. System Upgrades | 1/4 | In Progress | - |
