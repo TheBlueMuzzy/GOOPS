@@ -15,7 +15,7 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** Phase 5 complete, ready for Phase 6
+**Current focus:** Phase 6 in progress - Plan 06-02 (Milestone Infrastructure) pending
 
 ## Current Position
 
@@ -120,9 +120,9 @@ Progress: █████████████████████ 5.5/7 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16 (across all 5 phases)
+- Total plans completed: 17 (across 6 phases)
+- Total tests: 50 (14 progression, 6 coordinates, 30 game logic)
 - Average duration: ~30 min per plan (including bug fixes)
-- Total execution time: ~10 hours
 
 ## Accumulated Context
 
@@ -187,6 +187,10 @@ None
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Phase 5 complete
-Resume with: Phase 6 planning or other work
-Resume file: None needed - clean state
+Stopped at: Phase 6 Plan 06-01 complete (XP curve + floor)
+Resume with: Execute Plan 06-02 (Milestone Infrastructure) or test XP changes first
+Resume file: `.planning/phases/06-progression/06-02-PLAN.md`
+
+## Quick Commands
+
+User shortcuts in CLAUDE.md: `<commands>`, `<npm>`, `<test>`, `<commit>`, `<merge>`, `<status>`, `<handoff>`
