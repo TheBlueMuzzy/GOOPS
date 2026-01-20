@@ -315,11 +315,11 @@ export class GameEngine {
         const isOnCooldown = (type: ComplicationType) =>
             now < this.state.complicationCooldowns[type];
 
-        // Complications unlock progressively by rank:
+        // Complications unlock progressively by starting rank (not mid-run rank):
         // Rank 1+: LASER only
         // Rank 2+: LASER, LIGHTS
         // Rank 3+: LASER, LIGHTS, CONTROLS
-        const rank = calculateRankDetails(this.initialTotalScore + this.state.score).rank;
+        const rank = calculateRankDetails(this.initialTotalScore).rank;
 
         // LASER: Triggered when capacitor drains to 0 (rank 1+)
         // Only spawn if LASER isn't already active and not on cooldown
@@ -481,8 +481,9 @@ export class GameEngine {
         this.checkComplications(dt);
 
         // CONTROLS heat dissipation: drains when NOT actively rotating (rank 3+)
-        const currentTickRank = calculateRankDetails(this.initialTotalScore + this.state.score).rank;
-        if (currentTickRank >= 3 && this.state.controlsHeat > 0) {
+        // Use starting rank so complications don't unlock mid-run
+        const startingRank = calculateRankDetails(this.initialTotalScore).rank;
+        if (startingRank >= 3 && this.state.controlsHeat > 0) {
             const now = Date.now();
             const lastRotation = this.state.rotationTimestamps.length > 0
                 ? this.state.rotationTimestamps[this.state.rotationTimestamps.length - 1]
@@ -562,11 +563,12 @@ export class GameEngine {
                     }
 
                     // LIGHTS complication trigger: 50% chance when pressure 3-5 rows above highest goop (rank 2+)
-                    const currentRank = calculateRankDetails(this.initialTotalScore + this.state.score).rank;
+                    // Use starting rank (initialTotalScore) so complications don't unlock mid-run
+                    const startingRank = calculateRankDetails(this.initialTotalScore).rank;
                     const hasLightsActive = this.state.complications.some(c => c.type === ComplicationType.LIGHTS);
                     const lightsOnCooldown = Date.now() < this.state.complicationCooldowns[ComplicationType.LIGHTS];
 
-                    if (currentRank >= 2 && !hasLightsActive && !lightsOnCooldown) {
+                    if (startingRank >= 2 && !hasLightsActive && !lightsOnCooldown) {
                         // Find highest goop row (lowest Y value with any block)
                         let highestGoopY = TOTAL_HEIGHT; // Default to bottom if no goop
                         for (let y = 0; y < TOTAL_HEIGHT; y++) {

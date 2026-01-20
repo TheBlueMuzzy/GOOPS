@@ -48,8 +48,9 @@ export class MoveBoardCommand implements Command {
         engine.state.rotationTimestamps = engine.state.rotationTimestamps.filter(t => t > cutoff);
 
         // CONTROLS heat buildup: builds when rotating (rank 3+)
-        const currentRank = calculateRankDetails(engine.initialTotalScore + engine.state.score).rank;
-        if (currentRank >= 3) {
+        // Use starting rank so complications don't unlock mid-run
+        const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
+        if (startingRank >= 3) {
             engine.state.controlsHeat = Math.min(100, engine.state.controlsHeat + 5);
         }
 
@@ -240,8 +241,9 @@ export class BlockTapCommand implements Command {
             engine.state.totalUnitsPopped += group.length;
 
             // LASER capacitor drain: drains when popping groups (rank 1+)
-            const currentRank = calculateRankDetails(engine.initialTotalScore + engine.state.score).rank;
-            if (currentRank >= 1) {
+            // Use starting rank so complications don't unlock mid-run
+            const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
+            if (startingRank >= 1) {
                 const drainAmount = group.length * 4; // 4 per unit popped
                 engine.state.laserCapacitor = Math.max(0, engine.state.laserCapacitor - drainAmount);
             }
