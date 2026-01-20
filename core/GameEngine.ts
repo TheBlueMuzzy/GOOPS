@@ -80,6 +80,7 @@ export class GameEngine {
             totalUnitsAdded: 0,
             totalUnitsPopped: 0,
             totalRotations: 0,
+            rotationTimestamps: [],
             complicationThresholds: {
                 lights: this.randomThreshold(),
                 controls: this.randomThreshold(),
@@ -159,6 +160,7 @@ export class GameEngine {
             totalUnitsAdded: 0,
             totalUnitsPopped: 0,
             totalRotations: 0,
+            rotationTimestamps: [],
             complicationThresholds: {
                 lights: this.randomThreshold(),
                 controls: this.randomThreshold(),
@@ -240,7 +242,7 @@ export class GameEngine {
                     this.state.primedGroups.clear(); // Clear primed groups when LASER fixed
                     break;
                 case ComplicationType.CONTROLS:
-                    this.state.totalRotations = 0;
+                    this.state.rotationTimestamps = []; // Clear timestamps for fresh start
                     break;
                 case ComplicationType.LIGHTS:
                     // LIGHTS trigger is 50% chance on piece lock when pressure gap met
@@ -295,10 +297,10 @@ export class GameEngine {
             return;
         }
 
-        // CONTROLS: Triggered by rotations (rank 2+)
-        if (rank >= 2 && this.state.totalRotations >= this.state.complicationThresholds.controls) {
+        // CONTROLS: Triggered by 20+ rotations in 3 seconds (rank 2+)
+        if (rank >= 2 && this.state.rotationTimestamps.length >= 20) {
             this.spawnComplication(ComplicationType.CONTROLS);
-            this.state.complicationThresholds.controls = this.randomThreshold(); // New random threshold for next trigger
+            this.state.rotationTimestamps = []; // Clear timestamps after trigger
             return;
         }
 

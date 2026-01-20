@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { GamePhase, ComplicationType, SaveData } from './types';
 import { GameBoard } from './components/GameBoard';
 import { Controls } from './components/Controls';
@@ -34,28 +34,19 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   const animationFrameRef = useRef<number | null>(null);
   const isLoopRunningRef = useRef(false);
 
-  // CONTROLS complication: flip state toggles every 3 seconds when active
-  const [controlsFlipped, setControlsFlipped] = useState(false);
+  // CONTROLS complication: requires 2 inputs per move, halves hold speed
   const controlsComplication = gameState.complications.find(c => c.type === ComplicationType.CONTROLS);
+  const controlsInputCountRef = useRef(0); // Track pending inputs for double-tap requirement
 
+  // Reset input count when CONTROLS complication is resolved
   useEffect(() => {
     if (!controlsComplication) {
-      // Reset flip state when complication is resolved
-      setControlsFlipped(false);
-      return;
+      controlsInputCountRef.current = 0;
     }
+  }, [controlsComplication?.id]);
 
-    // Toggle controls every 3 seconds while CONTROLS complication is active
-    const flipInterval = setInterval(() => {
-      setControlsFlipped(prev => !prev);
-    }, 3000);
-
-    return () => clearInterval(flipInterval);
-  }, [controlsComplication?.id]); // Re-run when complication changes
-
-  // Direction Multiplier based on Settings and CONTROLS complication
-  const baseMultiplier = settings.invertRotation ? -1 : 1;
-  const directionMultiplier = controlsComplication && controlsFlipped ? -baseMultiplier : baseMultiplier;
+  // Direction Multiplier based on Settings only (flip effect removed)
+  const directionMultiplier = settings.invertRotation ? -1 : 1;
 
   // Sync Score on Game Over
   useEffect(() => {
@@ -75,11 +66,14 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   const startMovementLoop = useCallback(() => {
       if (isLoopRunningRef.current) return;
       isLoopRunningRef.current = true;
-      
+
       const loop = () => {
           if (!isLoopRunningRef.current) return;
-          
+
           const now = Date.now();
+
+          // CONTROLS complication: use 200ms repeat rate instead of 100ms (half speed)
+          const repeatRate = controlsComplication ? 200 : 100;
 
           // Use the shared ref for timing to respect keydown delays
           if (now >= lastMoveTimeRef.current) {
@@ -87,30 +81,39 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
               if (heldKeys.current.has('ArrowLeft') || heldKeys.current.has('KeyA')) dir = 1 * directionMultiplier;
               if (heldKeys.current.has('ArrowRight') || heldKeys.current.has('KeyD')) dir = -1 * directionMultiplier;
               if (dragDirectionRef.current !== 0) dir = dragDirectionRef.current * directionMultiplier;
-              
+
               if (dir !== 0) {
-                  engine.execute(new MoveBoardCommand(dir));
-                  lastMoveTimeRef.current = now + 100; // Standard repeat rate
+                  // CONTROLS complication: require 2 inputs per move
+                  if (controlsComplication) {
+                      controlsInputCountRef.current++;
+                      if (controlsInputCountRef.current >= 2) {
+                          engine.execute(new MoveBoardCommand(dir));
+                          controlsInputCountRef.current = 0;
+                      }
+                  } else {
+                      engine.execute(new MoveBoardCommand(dir));
+                  }
+                  lastMoveTimeRef.current = now + repeatRate;
               }
           }
-          
+
           // Check if we should keep looping
-          const hasActiveInput = 
-              heldKeys.current.has('ArrowLeft') || 
-              heldKeys.current.has('ArrowRight') || 
-              heldKeys.current.has('KeyA') || 
-              heldKeys.current.has('KeyD') || 
+          const hasActiveInput =
+              heldKeys.current.has('ArrowLeft') ||
+              heldKeys.current.has('ArrowRight') ||
+              heldKeys.current.has('KeyA') ||
+              heldKeys.current.has('KeyD') ||
               dragDirectionRef.current !== 0;
-          
+
           if (hasActiveInput && gameState.phase === GamePhase.PERISCOPE && !engine.state.isPaused && engine.isSessionActive) {
               animationFrameRef.current = requestAnimationFrame(loop);
           } else {
               stopMovementLoop();
           }
       };
-      
+
       animationFrameRef.current = requestAnimationFrame(loop);
-  }, [engine, gameState.phase, stopMovementLoop, directionMultiplier]);
+  }, [engine, gameState.phase, stopMovementLoop, directionMultiplier, controlsComplication]);
 
   // Input Handling
   useEffect(() => {

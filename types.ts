@@ -146,6 +146,7 @@ export interface GameState {
   totalUnitsAdded: number;
   totalUnitsPopped: number;
   totalRotations: number;
+  rotationTimestamps: number[]; // Timestamps of recent rotations for CONTROLS trigger
 
   // Complication thresholds (increment after each trigger)
   complicationThresholds: {
