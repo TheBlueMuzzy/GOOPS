@@ -12,71 +12,80 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 
 ### Validated
 
-- ✓ Core gameplay loop (piece falling, rotation, collision, clearing) — existing
-- ✓ Cylindrical grid wrapping — existing
-- ✓ Scoring system with bonuses (height, off-screen, adjacency, speed) — existing
-- ✓ Goal/objective system (crack marks to fill) — existing
-- ✓ Rank progression (XP, levels, color unlocks) — existing
-- ✓ Upgrade system (time bonus, stability) — existing
-- ✓ Mobile performance optimization (40fps, simplified rendering) — existing
-- ✓ Console/Periscope phase UI — existing
-- ✓ Minigame sliders (Reset Laser, Reset Lights) — existing
-- ✓ Unit test infrastructure (36 tests, pre-commit hooks) — existing
+- ✓ Core gameplay loop (piece falling, rotation, collision, clearing)
+- ✓ Cylindrical grid wrapping
+- ✓ Scoring system with bonuses (height, off-screen, adjacency, speed)
+- ✓ Goal/objective system (crack marks to fill)
+- ✓ Rank progression (XP, levels, color unlocks)
+- ✓ Mobile performance optimization (40fps, simplified rendering)
+- ✓ Console/Periscope phase UI
+- ✓ Unit test infrastructure (64 tests, pre-commit hooks)
 - ✓ Dial spins when dragged (Reset Controls dial) — snaps to 4 corners
 - ✓ Reset Laser puzzle logic (4 sliders match indicator lights)
 - ✓ Reset Lights puzzle logic (sequence memory: slider → watch → repeat → slider)
 - ✓ Reset Controls puzzle logic (dial alignment: 4 corners in sequence)
-- ✓ Complications — triggers and effects defined and implemented
+- ✓ Complications — triggers and effects (LASER, LIGHTS, CONTROLS)
 - ✓ Minigame-Complication integration — puzzles resolve complications
+- ✓ HUD meters (laser capacitor, controls heat)
+- ✓ Complication cooldowns (rank-scaled)
+- ✓ XP curve retuned (linear delta) + XP floor
+- ✓ Milestone infrastructure (ranks 10, 20, 30...)
 
 ### Active
 
-- Phase 5: HUD meters (laser capacitor, controls heat) + complication balance rewrite
+- Phase 7: System Upgrades (per-complication upgrade tracks)
 
-### Out of Scope
+### Out of Scope (v1)
 
-- Control state persistence (save/load between sessions) — not needed for v1
-- Multi-color pieces — needs piece redesign first
+- Control state persistence (save/load between sessions)
+- Multi-color pieces — Band 2 feature (rank 20+)
+- Starting junk — Band 1 feature (rank 10+)
+- Growing cracks — Band 3 feature (rank 30+)
 
 ## Context
 
-**Current state:** Phases 1-4 complete. Beginning Phase 5 (HUD & Balance). Major design decisions made:
+**Current state:** Phases 1-6 complete. Phase 7 (System Upgrades) in progress.
 
-**New Design Decisions (Jan 2026):**
-- Player starts at rank 0 (no complications) — safe learning period
-- Rank unlocks shifted: LASER → rank 1, LIGHTS → rank 2, CONTROLS → rank 3
-- Complication cooldowns prevent rapid-fire triggers (20s base, scales down with rank, min 8s)
-- XP floor guarantees progression: `xpGained = max(100 * currentRank, finalScore)`
-- New HUD meters in periscope mode show complication buildup
+**Complication System (Complete):**
+| Type | Trigger | Effect | Unlock |
+|------|---------|--------|--------|
+| LASER | Capacitor drains to 0 | Two-tap mechanic | Rank 1 |
+| LIGHTS | 50% on piece lock (pressure gap) | 10% brightness + grayscale | Rank 2 |
+| CONTROLS | Heat meter reaches 100 | 2 inputs per move, half hold speed | Rank 3 |
 
-**Complication Triggers (TO BE IMPLEMENTED in Phase 5):**
-| Type | Current Trigger | New Trigger | Rank |
-|------|-----------------|-------------|------|
-| LASER | Cumulative units popped (12-24) | Capacitor drain meter empties | 1+ |
-| LIGHTS | 50% chance on piece lock | 15-50% chance (scales with rank) | 2+ |
-| CONTROLS | 20 rotations in 3 seconds | Heat meter fills to 100% | 3+ |
-
-**Complication Effects (unchanged):**
-| Type | Effect |
-|------|--------|
-| LASER | Two-tap mechanic (first tap primes, restarts fill; second tap pops) |
-| CONTROLS | Requires 2 inputs per move, held keys at half speed |
-| LIGHTS | Dims to 10% + grayscale over 1.5s (alert exempt) |
-
-**New documents:**
-- `.planning/DESIGN_VISION.md` — Synthesized design philosophy and balance framework
+**System Upgrades (In Progress):**
+| Upgrade | Effect per Level | Max Bonus |
+|---------|------------------|-----------|
+| LASER (Capacitor Efficiency) | -5% drain rate | No center targets |
+| LIGHTS (Circuit Stabilizer) | -6% trigger chance | 3-button sequence |
+| CONTROLS (Heat Sink) | +10% dissipation | 3 alignments |
 
 **Key files:**
-- `components/Art.tsx` — All minigame state machines, puzzle logic, visual feedback
-- `components/GameBoard.tsx` — Game rendering, LIGHTS dim effect via CSS filter
-- `core/GameEngine.ts` — Complication triggers and spawn logic
-- `core/commands/actions.ts` — MoveBoardCommand rotation tracking
-- `Game.tsx` — CONTROLS double-input effect, movement loop
+- `constants.ts` — SYSTEM_UPGRADE_CONFIG definitions
+- `components/Art.tsx` — Minigame state machines, puzzle logic
+- `core/GameEngine.ts` — Complication triggers, HUD meters
+- `Game.tsx` — CONTROLS double-input effect
 
 **User preferences:**
 - Not a professional engineer, prefers readable code over abstractions
 - Targeted minimal changes, don't refactor beyond what's asked
 - Run tests after every change
+
+## Rank Band System
+
+Progression is organized into bands of 10 ranks. See PRD.md for full details.
+
+| Band | Ranks | Mechanic | Status |
+|------|-------|----------|--------|
+| Tutorial | 0-9 | Complications | Implemented |
+| Band 1 | 10-19 | Starting Junk | Planned |
+| Band 2 | 20-29 | Multi-color Pieces | Planned |
+| Band 3 | 30-39 | Growing Cracks | Concept |
+| Band 4+ | 40-99 | TBD | Future |
+
+**Pattern:** First 5 ranks (X0-X4) introduce/ramp mechanic, last 5 (X5-X9) consolidation.
+
+**Focus now:** Ranks 0-20 (Tutorial + Band 1)
 
 ## Constraints
 
@@ -92,6 +101,8 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 | LIGHTS effect via CSS filter on SVG | Alert stays visible, cleaner than overlay | ✓ Good |
 | CONTROLS tracks timestamps not counter | Speed-based trigger (20 in 3s) needs timing data | ✓ Good |
 | LIGHTS trigger on piece lock | Situational trigger based on pressure gap, not counter | ✓ Good |
+| Rank Band System (10 ranks each) | Predictable progression, 5 ramp + 5 consolidate | ✓ Good |
+| System-specific upgrades only | Direct mitigation of complication difficulty | ✓ Good |
 
 ---
-*Last updated: 2026-01-20 — Design decisions locked, beginning Phase 5*
+*Last updated: 2026-01-20 — Phase 7 in progress, Band System defined*

@@ -148,6 +148,18 @@ Progress: ███████████████████████ 
 - Complication unlocks based on starting rank, not mid-run rank
 - HUD meters only visible when complication can trigger (rank-gated)
 
+**Rank Band System (Jan 2026):**
+- Ranks organized into bands of 10 (Tutorial 0-9, Band 1 10-19, etc.)
+- First 5 ranks of each band (X0-X4): introduce and ramp new mechanic
+- Last 5 ranks of each band (X5-X9): consolidation, no new mechanics
+- Tutorial band (0-9): Complications only, gentler XP curve
+- Band 1 (10-19): Starting junk + Teal color
+- Band 2 (20-29): Multi-color pieces + new color
+- Band 3 (30-39): Growing cracks + new color
+- Colors cap at 10 total (no new colors after ~rank 60)
+- Upgrades can be spent at any rank, not locked to bands
+- Focus for now: ranks 0-20
+
 ### Key Technical Discovery
 
 **SVG Coordinate Conversion with preserveAspectRatio="xMidYMid slice"**
@@ -195,7 +207,7 @@ None
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 07-01-PLAN.md (System Upgrade Definitions)
+Stopped at: Completed 07-01-PLAN.md + Band System design
 Resume with: Execute Plan 07-02 (Upgrade Effects Implementation)
 Next action: `/gsd:execute-plan .planning/phases/07-system-upgrades/07-02-PLAN.md`
 
@@ -206,9 +218,10 @@ Next action: `/gsd:execute-plan .planning/phases/07-system-upgrades/07-02-PLAN.m
 - 07-04: Max-Level Minigame Effects (has human verification checkpoint)
 
 **Key decisions this session:**
-- Replace generic upgrades with system-specific only
-- 5 levels per upgrade, 1 point each (15 total to max all systems)
 - SYSTEM_UPGRADE_CONFIG with LASER/LIGHTS/CONTROLS definitions
+- Rank Band System designed (see PRD.md for full details)
+- Focus on ranks 0-20 for now
+- Future upgrade idea: Goop Penalty Reduction (reduces end-of-session penalty)
 
 ## Quick Commands
 

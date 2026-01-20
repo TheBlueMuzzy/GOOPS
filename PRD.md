@@ -470,76 +470,130 @@ This ensures even bad sessions contribute to progression, preventing frustration
 
 ---
 
-## Rank-Based Difficulty Scaling
+## Rank Band System
 
-As the player's Operator Rank increases, the game automatically introduces new challenges.
+Progression is organized into **bands** of 10 ranks each. Each band follows a consistent pattern:
 
-### Color Palette
+- **First 5 ranks (X0-X4):** Introduce and ramp up a new mechanic
+- **Last 5 ranks (X5-X9):** Consolidation period for mastery
 
-| Rank | Colors Available | New Color |
-|------|------------------|-----------|
-| 1 | Red, Blue, Green, Yellow | (Base) |
-| 2 | + Teal | +Teal (5 total) |
-| 5 | + White | +White (6 total) |
-| 8 | + Orange | +Orange (7 total) |
+Players can spend upgrade points at any rank. The consolidation period lets players feel the effects of upgrades + skill mitigating the new difficulty.
 
-Reserved for Rank 11+: Purple, Pink, Grey
+### Band Overview
 
-### Starting Junk
+| Band | Ranks | New Mechanic | New Color | Status |
+|------|-------|--------------|-----------|--------|
+| Tutorial | 0-9 | Complications | - | Implemented |
+| Band 1 | 10-19 | Starting Junk | Teal @10 | Planned |
+| Band 2 | 20-29 | Multi-color Pieces | TBD @20 | Planned |
+| Band 3 | 30-39 | Growing Cracks | TBD @30 | Concept |
+| Band 4 | 40-49 | TBD | TBD @40 | Future |
+| Band 5 | 50-59 | TBD | TBD @50 | Future |
+| Band 6 | 60-69 | TBD | TBD @60 | Future |
+| Band 7+ | 70-99 | TBD | (colors capped) | Future |
 
-| Rank | Junk Coverage | Approx. Globs |
-|------|---------------|---------------|
-| 3 | 15% of bottom row | ~5 globs |
-| 6 | 25% of bottom row | ~8 globs |
-| 9 | 35% of bottom row | ~11 globs |
-
-### Two-Color Drops
-
-| Rank | Two-Color Chance |
-|------|------------------|
-| 4 | 25% |
-| 7 | 35% |
-| 10 | 45% |
-
-Color split: Cells [0,1] = colorA, cells [2,3] = colorB
+**Colors:** 10 total (Red, Blue, Green, Yellow, Teal, White, Orange, Purple, Pink, Grey). New color unlocks stop after they run out. Game difficulty by then makes this acceptable.
 
 ---
 
-## Future Progression (Rank 10+)
+### Tutorial Band (Ranks 0-9)
 
-New mechanics are introduced every 10 ranks to maintain variety and challenge. Each new mechanic has probability-based activation — not every session includes every feature.
+**Focus:** Learn core loop, complications introduced gradually
 
-### Milestone Unlocks
+| Rank | What Unlocks |
+|------|--------------|
+| 0 | Base game, 4 colors, no complications |
+| 1 | LASER complication |
+| 2 | LIGHTS complication |
+| 3 | CONTROLS complication |
+| 4-9 | Consolidation - master complications, spend upgrade points |
 
-| Rank | Feature | Probability | Description |
-|------|---------|-------------|-------------|
-| 10 | Multi-color pieces | 25% per piece | Pieces with 2 colors (cells 0-1 = colorA, 2-3 = colorB) |
-| 20 | Viscous fluid events | 10% per session | Pieces fall slower past pressure line |
-| 30 | Tank variations | 15% per session | Different width/height ("covering another shift") |
-| 40 | TBD | | |
-| 50 | TBD | | |
+**XP Curve:** Gentler than standard (easier to level through tutorial)
 
-### Themed Sessions
+**Upgrades Available:**
+- LASER: Capacitor Efficiency (reduces drain rate)
+- LIGHTS: Circuit Stabilizer (reduces trigger chance)
+- CONTROLS: Heat Sink Upgrade (increases heat dissipation)
 
-At certain rank thresholds, sessions may randomly activate special conditions:
+---
 
-**Viscous Fluid (Rank 20+)**
-- 10% chance per session
-- Pieces fall at 50% speed once past pressure line
-- Creates interesting timing decisions
+### Band 1: Starting Junk (Ranks 10-19)
 
-**Different Tank (Rank 30+)**
-- 15% chance per session
-- "Covering another employee's shift" narrative
-- Tank may be wider (36 columns), narrower (24 columns), or taller/shorter
-- Tests adaptability to different spatial constraints
+**Focus:** Sessions start with goop already in the tank
 
-### Design Philosophy
+| Rank | Junk Level | New Color |
+|------|------------|-----------|
+| 10 | Light junk (~10%) | +Teal (5 total) |
+| 11 | More junk (~15%) | |
+| 12 | More junk (~20%) | |
+| 13 | More junk (~25%) | |
+| 14 | More junk (~30%) | |
+| 15-19 | Stable at ~30% | Consolidation |
 
-- **Difficulty spikes every 10 levels** with new mechanics
-- **Previous mechanics get easier** via system upgrades
-- **Probability-based activation** ensures variety without overwhelming
-- **Upgrades counter new challenges** — e.g., when multi-color unlocks, color-related upgrades also unlock
+**New Upgrade:** TBD (junk-related mitigation)
+
+---
+
+### Band 2: Multi-color Pieces (Ranks 20-29)
+
+**Focus:** Falling pieces can have two colors (cells [0,1] = colorA, cells [2,3] = colorB)
+
+| Rank | Multi-color Chance | New Color |
+|------|-------------------|-----------|
+| 20 | Low chance (~15%) | +White (6 total) |
+| 21 | Increasing (~20%) | |
+| 22 | Increasing (~25%) | |
+| 23 | Increasing (~30%) | |
+| 24 | Increasing (~35%) | |
+| 25-29 | Stable at ~35% | Consolidation |
+
+**New Upgrade:** TBD (e.g., increases same-color spawn streaks)
+
+---
+
+### Band 3: Growing Cracks (Ranks 30-39)
+
+**Focus:** Cracks spread over time if not sealed quickly
+
+**Concept:**
+- Cracks now "grow" to adjacent cells over time
+- Larger crack = more goop needed to cover and seal it
+- Creates urgency to prioritize crack sealing
+
+| Rank | Growth Rate | New Color |
+|------|-------------|-----------|
+| 30 | Slow growth | +Orange (7 total) |
+| 31-34 | Faster growth | Ramping |
+| 35-39 | Stable | Consolidation |
+
+**New Upgrade:** TBD (e.g., slows crack growth rate)
+
+---
+
+### Bands 4-9 (Ranks 40-99)
+
+**Status:** Future design. Mechanics TBD.
+
+**Design Principles:**
+- Each band introduces ONE new mechanic
+- First 5 ranks ramp it up, last 5 consolidate
+- New colors unlock at X0 until colors run out
+- New upgrade track introduced with each mechanic
+
+---
+
+### Scoring & Economy Notes
+
+As difficulty increases, scoring becomes harder. Future adjustments may include:
+- New scoring methods at higher ranks
+- Increased point values for certain actions
+- **Goop Penalty Reduction upgrade:** Destroys some remaining goop at end of session, reducing negative point accrual
+
+**Upgrade Economy:**
+- 1 point per rank gained
+- Open to any number of upgrade types
+- Goal: ~100 points of meaningful value across all upgrades
+- Focus for now: Ranks 0-20
 
 ---
 
