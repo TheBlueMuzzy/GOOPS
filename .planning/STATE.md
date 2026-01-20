@@ -15,16 +15,16 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** Phase 4 - tweaking complication values
+**Current focus:** Phase 5 - HUD meters and complication balance
 
 ## Current Position
 
-Phase: 4 of 4 (Minigame-Complication Integration) - IN PROGRESS
-Plan: 4 of 4 (Documentation updates) - executed
-Status: Core functionality working, value tuning needed
-Last activity: 2026-01-20 — UAT bug fixes committed, awaiting value tweaks
+Phase: 5 of 7 (HUD & Balance) - IN PROGRESS
+Plan: 1 of 4 (Meter State & UI) - complete
+Status: HUD meters visible, meter logic pending
+Last activity: 2026-01-20 — Plan 05-01 complete, meters render in periscope
 
-Progress: ████████████████████ 100% (All phases complete)
+Progress: ████████████████░░░░ 5/7 phases (Plan 1/4 of Phase 5)
 
 ## What's Done
 
