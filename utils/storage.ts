@@ -8,6 +8,8 @@ export const getDefaultSaveData = (): SaveData => ({
   totalScore: 0,
   powerUpPoints: 0,
   powerUps: {},
+  equippedActives: [],      // No actives equipped by default
+  unlockedUpgrades: [],     // No upgrades revealed yet (first at rank 1)
   firstRunComplete: false,
   milestonesReached: [],
   settings: {
@@ -22,16 +24,20 @@ export const loadSaveData = (): SaveData => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const defaults = getDefaultSaveData();
-    
+
     if (!raw) return defaults;
-    
+
     const parsed = JSON.parse(raw);
     // Merge with default to handle schema updates/missing keys
-    return { 
-        ...defaults, 
-        ...parsed, 
+    return {
+        ...defaults,
+        ...parsed,
         settings: { ...defaults.settings, ...(parsed.settings || {}) },
-        powerUps: { ...defaults.powerUps, ...(parsed.powerUps || {}) }
+        powerUps: { ...defaults.powerUps, ...(parsed.powerUps || {}) },
+        // Arrays: use parsed if exists, otherwise default
+        equippedActives: parsed.equippedActives || defaults.equippedActives,
+        unlockedUpgrades: parsed.unlockedUpgrades || defaults.unlockedUpgrades,
+        milestonesReached: parsed.milestonesReached || defaults.milestonesReached
     };
   } catch (e) {
     console.error("Failed to load save data", e);

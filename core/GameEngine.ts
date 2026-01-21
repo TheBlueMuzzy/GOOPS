@@ -93,7 +93,11 @@ export class GameEngine {
                 [ComplicationType.LIGHTS]: 0,
                 [ComplicationType.CONTROLS]: 0,
                 [ComplicationType.LASER]: 0
-            }
+            },
+
+            // Active ability tracking
+            activeCharges: {},     // Will be populated based on equipped actives
+            crackGoopPopped: 0     // Count of glowing goop popped (for charging actives)
         };
 
         this.applyUpgrades();

@@ -164,6 +164,28 @@ export interface GameState {
 
   // Cooldown timestamps: when each type can next trigger (0 = no cooldown)
   complicationCooldowns: Record<ComplicationType, number>;
+
+  // Active ability charge tracking (charged by popping crack-goop)
+  activeCharges: Record<string, number>; // Active ID -> current charge (0 to chargeCost)
+  crackGoopPopped: number; // Count of glowing goop popped this session (for charging)
+}
+
+// --- Upgrade System Types ---
+
+export type UpgradeType = 'passive' | 'active';
+
+export interface UpgradeConfig {
+  id: string;
+  name: string;
+  desc: string;
+  type: UpgradeType;
+  unlockRank: number;
+  costPerLevel: number;
+  maxLevel: number;
+  effectPerLevel: number;
+  formatEffect: (lvl: number) => string;
+  maxLevelBonus?: string;
+  chargeCost?: number; // For actives: crack-goop pops needed to charge
 }
 
 // --- Meta Progression Types ---
@@ -172,7 +194,9 @@ export interface SaveData {
   rank: number;            // Current Player Rank (1-100)
   totalScore: number;      // Cumulative score across all runs
   powerUpPoints: number;   // Currency to buy upgrades (1 per rank)
-  powerUps: Record<string, number>; // System upgrade levels: LASER, LIGHTS, CONTROLS (0-5)
+  powerUps: Record<string, number>; // Upgrade levels by ID (0 = not purchased)
+  equippedActives: string[]; // IDs of equipped active abilities (max based on slots)
+  unlockedUpgrades: string[]; // IDs of upgrades that have been revealed to player
   firstRunComplete: boolean;
   milestonesReached: number[];  // Milestone ranks achieved [10, 20, 30...]
   settings: {
