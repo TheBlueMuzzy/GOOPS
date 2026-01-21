@@ -2,7 +2,8 @@
 import { GameState, GridCell, ActivePiece, PieceDefinition, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, GamePhase, PieceState, PieceType, Complication, ComplicationType } from '../types';
 import {
     TOTAL_WIDTH, TOTAL_HEIGHT, VISIBLE_WIDTH, VISIBLE_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, INITIAL_TIME_MS,
-    PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS
+    PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
+    PIECES
 } from '../constants';
 import { COMPLICATION_CONFIG, COOLDOWN_CONFIG, calculateCooldownMs, isComplicationUnlocked } from '../complicationConfig';
 import { 
@@ -153,7 +154,10 @@ export class GameEngine {
             gameOver: false,
             isPaused: false,
             activePiece: null,
-            storedPiece: null,
+            storedPiece: {
+                ...PIECES[Math.floor(Math.random() * PIECES.length)],
+                color: palette[Math.floor(Math.random() * palette.length)]
+            },
             canSwap: true,
             combo: 0,
             cellsCleared: 0,
