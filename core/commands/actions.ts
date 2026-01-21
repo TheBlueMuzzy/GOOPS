@@ -142,7 +142,7 @@ export class SwapPieceCommand implements Command {
     constructor() {}
 
     execute(engine: GameEngine): void {
-        if (engine.state.gameOver || engine.state.isPaused || !engine.state.activePiece || !engine.state.canSwap) return;
+        if (engine.state.gameOver || engine.state.isPaused || !engine.state.activePiece) return;
 
         const currentPiece = engine.state.activePiece;
         const currentDef = currentPiece.definition;
@@ -173,14 +173,12 @@ export class SwapPieceCommand implements Command {
             engine.state.storedPiece = currentDef;
             engine.lockStartTime = null;
             engine.state.activePiece = testPiece;
-            engine.state.canSwap = false;
         } else {
             // No stored piece - store current and spawn new
             gameEventBus.emit(GameEventType.PIECE_ROTATED);
             engine.state.storedPiece = currentDef;
             engine.lockStartTime = null;
             engine.spawnNewPiece();
-            engine.state.canSwap = false;
         }
         engine.emitChange();
     }
