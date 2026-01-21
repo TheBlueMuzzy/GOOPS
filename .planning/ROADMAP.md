@@ -87,19 +87,21 @@ Plans:
 
 #### Phase 10: GameBoard.tsx Decomposition
 
-**Goal**: Split 1,052-line GameBoard.tsx into focused modules
+**Goal**: Split 1,031-line GameBoard.tsx into focused modules
 **Depends on**: Phase 9
 **Research**: Unlikely (internal refactor)
-**Plans**: TBD
+**Plans**: 3
 
 Tasks:
 - Extract useInputHandlers.ts hook
-- Extract coordinateTransform.ts utilities
-- Extract rendering helpers (useGroupRenderer.ts)
-- Simplify main GameBoard component
+- Extract goopRenderer.ts utilities (path generation, group building)
+- Extract CSS animations to separate file
+- Simplify main GameBoard component (target: under 600 lines)
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01: Extract useInputHandlers hook (~200 lines extracted)
+- [ ] 10-02: Extract goop rendering utilities (~120 lines extracted)
+- [ ] 10-03: Extract CSS, final cleanup + human verify
 
 #### Phase 11: GameEngine Refactor
 
