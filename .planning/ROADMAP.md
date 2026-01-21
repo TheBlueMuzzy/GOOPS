@@ -11,7 +11,7 @@ None
 ## Milestones
 
 - ✅ [v1.0 MVP](milestones/v1.0-ROADMAP.md) — Phases 1-7 (shipped 2026-01-21)
-- 🚧 **v1.1 Architecture Refactor** — Phases 8-13 (in progress)
+- ✅ **v1.1 Architecture Refactor** — Phases 8-13 (completed 2026-01-21)
 
 ## Completed Milestones
 
@@ -34,7 +34,7 @@ See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
 
 ---
 
-### 🚧 v1.1 Architecture Refactor (In Progress)
+### ✅ v1.1 Architecture Refactor (Complete)
 
 **Milestone Goal:** Solidify codebase foundation before adding new gameplay features. Fix memory leaks, split large files, centralize state management, expand test coverage.
 
@@ -136,22 +136,22 @@ Plans:
 - [x] 12-01: Input Events & Prop Drilling Reduction
 - [x] 12-02: State Management Interface & Cleanup
 
-#### Phase 13: Testing & Documentation
+#### Phase 13: Testing & Documentation ✅
 
 **Goal**: Add test coverage for refactored code and update docs
 **Depends on**: Phase 12
 **Research**: Unlikely (internal work)
-**Plans**: 2
+**Plans**: 2/2 complete
 
 Tasks:
 - ✅ Coordinate transform edge case tests
 - ✅ Minigame state machine tests
 - Command execution order tests (deferred - not needed)
-- Update architecture documentation
+- ✅ Update architecture documentation
 
 Plans:
 - [x] 13-01: Test Coverage Expansion (29 tests added: 81 → 110)
-- [ ] 13-02: Documentation Updates
+- [x] 13-02: Documentation Updates (TESTING.md, ARCHITECTURE.md, STRUCTURE.md)
 
 ---
 
@@ -171,4 +171,4 @@ Plans:
 | 10. GameBoard.tsx Decomposition | v1.1 | 3/3 | Complete | 2026-01-21 |
 | 11. GameEngine Refactor | v1.1 | 2/2 | Complete | 2026-01-21 |
 | 12. State Management & Events | v1.1 | 2/2 | Complete | 2026-01-21 |
-| 13. Testing & Documentation | v1.1 | 1/2 | In progress | - |
+| 13. Testing & Documentation | v1.1 | 2/2 | Complete | 2026-01-21 |
