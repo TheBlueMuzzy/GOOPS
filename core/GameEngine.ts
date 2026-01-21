@@ -5,9 +5,9 @@ import {
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
     PIECES
 } from '../constants';
-import { COMPLICATION_CONFIG, COOLDOWN_CONFIG, calculateCooldownMs, isComplicationUnlocked } from '../complicationConfig';
-import { 
-    spawnPiece, checkCollision, mergePiece, getRotatedCells, normalizeX, findContiguousGroup, 
+import { COMPLICATION_CONFIG, isComplicationUnlocked } from '../complicationConfig';
+import {
+    spawnPiece, checkCollision, mergePiece, getRotatedCells, normalizeX, findContiguousGroup,
     updateGroups, getGhostY, updateFallingBlocks, getFloatingBlocks,
     calculateHeightBonus, calculateOffScreenBonus, calculateMultiplier, calculateAdjacencyBonus, createInitialGrid,
     spawnGoalMark, spawnGoalBurst, getPaletteForRank
@@ -18,13 +18,13 @@ import { gameEventBus } from './events/EventBus';
 import { GameEventType } from './events/GameEvents';
 import { audio } from '../utils/audio';
 import { Command } from './commands/Command';
+import { complicationManager } from './ComplicationManager';
 
 const INITIAL_SPEED = 800; // ms per block
 const MIN_SPEED = 100;
 const SOFT_DROP_FACTOR = 6; // Reduced from 20 to make it feel less like a hard drop
 const LOCK_DELAY_MS = 500;
 const GOAL_SPAWN_INTERVAL = 5000;
-const COMPLICATION_CHECK_INTERVAL = 1000;
 
 export class GameEngine {
     public state: GameState;
@@ -250,94 +250,35 @@ export class GameEngine {
     }
     
     // --- Complication Logic ---
-    
+
     public resolveComplication(complicationId: string) {
         if (this.state.gameOver) return;
 
-        // Check which complication type is being resolved
-        const complication = this.state.complications.find(c => c.id === complicationId);
-        if (complication) {
-            // Reset the corresponding counter so next trigger starts fresh
-            switch (complication.type) {
-                case ComplicationType.LASER:
-                    this.state.laserCapacitor = COMPLICATION_CONFIG[ComplicationType.LASER].capacitorMax;
-                    this.state.primedGroups.clear();
-                    break;
-                case ComplicationType.CONTROLS:
-                    this.state.controlsHeat = 0;
-                    this.state.rotationTimestamps = [];
-                    break;
-                case ComplicationType.LIGHTS:
-                    // No counter to reset - chance automatically resumes after resolution
-                    break;
-            }
-
-            // Set cooldown using centralized config
-            const rank = calculateRankDetails(this.initialTotalScore + this.state.score).rank;
-            const cooldownMs = calculateCooldownMs(complication.type, rank);
-            this.state.complicationCooldowns[complication.type] = Date.now() + cooldownMs;
-        }
-
-        this.state.complications = this.state.complications.filter(c => c.id !== complicationId);
-        this.state.activeComplicationId = null;
+        complicationManager.resolveComplication(
+            this.state,
+            complicationId,
+            this.initialTotalScore,
+            this.powerUps
+        );
 
         // Go back to Console after repair to confirm status
         this.state.phase = GamePhase.CONSOLE;
-
-        gameEventBus.emit(GameEventType.COMPLICATION_RESOLVED);
-        audio.playPop(5); // Success sound
-        this.emitChange();
-    }
-
-    private spawnComplication(type: ComplicationType) {
-        const id = Math.random().toString(36).substr(2, 9);
-        // Create new array so React detects the change
-        this.state.complications = [...this.state.complications, {
-            id,
-            type,
-            startTime: Date.now(),
-            severity: 1
-        }];
-
-        gameEventBus.emit(GameEventType.COMPLICATION_SPAWNED, { type });
         this.emitChange();
     }
 
     private checkComplications(dt: number) {
-        const now = Date.now();
-        if (now - this.lastComplicationCheckTime < COMPLICATION_CHECK_INTERVAL) return;
-        this.lastComplicationCheckTime = now;
+        const { spawned, newLastCheckTime } = complicationManager.checkComplications(
+            this.state,
+            this.initialTotalScore,
+            this.lastComplicationCheckTime
+        );
 
-        // Helper to check if a specific complication type is already active
-        const hasComplication = (type: ComplicationType) =>
-            this.state.complications.some(c => c.type === type);
+        this.lastComplicationCheckTime = newLastCheckTime;
 
-        // Helper to check if a complication type is on cooldown
-        const isOnCooldown = (type: ComplicationType) =>
-            now < this.state.complicationCooldowns[type];
-
-        // Complications unlock progressively by starting rank (not mid-run rank)
-        const rank = calculateRankDetails(this.initialTotalScore).rank;
-        const laserConfig = COMPLICATION_CONFIG[ComplicationType.LASER];
-        const controlsConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
-
-        // LASER: Triggered when capacitor drains to 0
-        if (!hasComplication(ComplicationType.LASER) &&
-            !isOnCooldown(ComplicationType.LASER) &&
-            isComplicationUnlocked(ComplicationType.LASER, rank) &&
-            this.state.laserCapacitor <= 0) {
-            this.spawnComplication(ComplicationType.LASER);
+        if (spawned) {
+            complicationManager.spawnComplication(this.state, spawned);
+            this.emitChange();
         }
-
-        // CONTROLS: Triggered when heat meter reaches max
-        if (!hasComplication(ComplicationType.CONTROLS) &&
-            !isOnCooldown(ComplicationType.CONTROLS) &&
-            isComplicationUnlocked(ComplicationType.CONTROLS, rank) &&
-            this.state.controlsHeat >= controlsConfig.heatMax) {
-            this.spawnComplication(ComplicationType.CONTROLS);
-        }
-
-        // LIGHTS: Triggered on piece lock (see tick() method)
     }
 
     public finalizeGame() {
@@ -604,44 +545,17 @@ export class GameEngine {
      * Check if LIGHTS complication should trigger on piece lock.
      */
     private checkLightsTrigger(newGrid: GridCell[][]): void {
-        const lightsStartingRank = calculateRankDetails(this.initialTotalScore).rank;
-        const hasLightsActive = this.state.complications.some(c => c.type === ComplicationType.LIGHTS);
-        const lightsOnCooldown = Date.now() < this.state.complicationCooldowns[ComplicationType.LIGHTS];
-        const lightsConfig = COMPLICATION_CONFIG[ComplicationType.LIGHTS];
+        const shouldTrigger = complicationManager.checkLightsTrigger(
+            this.state,
+            this.initialTotalScore,
+            this.maxTime,
+            this.powerUps,
+            newGrid
+        );
 
-        if (!isComplicationUnlocked(ComplicationType.LIGHTS, lightsStartingRank) || hasLightsActive || lightsOnCooldown) {
-            return;
-        }
-
-        // Find highest goop row (lowest Y value with any block)
-        let highestGoopY = TOTAL_HEIGHT;
-        for (let y = 0; y < TOTAL_HEIGHT; y++) {
-            for (let x = 0; x < TOTAL_WIDTH; x++) {
-                if (newGrid[y][x]) {
-                    highestGoopY = y;
-                    break;
-                }
-            }
-            if (highestGoopY < TOTAL_HEIGHT) break;
-        }
-
-        // Calculate pressure line Y position
-        const pressureRatio = Math.max(0, 1 - (this.state.timeLeft / this.maxTime));
-        const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
-        const pressureLineY = BUFFER_HEIGHT + (VISIBLE_HEIGHT - waterHeightBlocks);
-
-        // Gap = rows between pressure line and highest goop
-        const gap = highestGoopY - pressureLineY;
-
-        // Random threshold from config range
-        const gapRange = lightsConfig.pressureGapMax - lightsConfig.pressureGapMin + 1;
-        const gapThreshold = Math.floor(Math.random() * gapRange) + lightsConfig.pressureGapMin;
-
-        // Trigger chance with upgrade modifier
-        const lightsLevel = this.powerUps['LIGHTS'] || 0;
-        const triggerChance = lightsConfig.triggerChanceBase - (lightsConfig.triggerUpgradeEffect * lightsLevel);
-        if (gap >= gapThreshold && Math.random() < triggerChance) {
-            this.spawnComplication(ComplicationType.LIGHTS);
+        if (shouldTrigger) {
+            complicationManager.spawnComplication(this.state, ComplicationType.LIGHTS);
+            this.emitChange();
         }
     }
 
