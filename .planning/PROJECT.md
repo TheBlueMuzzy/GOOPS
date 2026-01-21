@@ -31,6 +31,11 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 - ✓ XP curve retuned + XP floor — v1.0
 - ✓ Milestone infrastructure (ranks 10, 20, 30...) — v1.0
 - ✓ System upgrades (3 tracks with max-level bonuses) — v1.0
+- ✓ No files over 400 lines — v1.1
+- ✓ Centralized configuration (complicationConfig.ts) — v1.1
+- ✓ GameEngine.tick() under 50 lines (22 achieved) — v1.1
+- ✓ Event-based input communication — v1.1
+- ✓ Test coverage 110+ tests — v1.1
 
 ### Active
 
@@ -45,15 +50,15 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 
 ## Context
 
-**Current state:** v1.0 MVP shipped. 7 phases, 22 plans complete.
+**Current state:** v1.1 Architecture Refactor shipped. 13 phases, 35 plans complete.
 
-**Shipped in v1.0:**
-- 3 minigame puzzles (Laser, Lights, Controls)
-- 3 complications with rank-gated unlocks
-- HUD meters with cooldown timers
-- Progression system with XP curve and floor
-- System upgrades with max-level bonuses
-- 65 tests with pre-commit hooks
+**Shipped in v1.1:**
+- Memory leak fixes (rotationTimestamps circular buffer)
+- Art.tsx decomposed: 1,478 → 581 lines with minigame hooks
+- GameBoard.tsx decomposed: 1,031 → 604 lines with input handlers
+- GameEngine.tick() refactored: 159 → 22 lines with managers
+- Event-based input communication (6 callback props removed)
+- Test coverage: 110 tests (was 65)
 
 **Complication System:**
 | Type | Trigger | Effect | Unlock |
@@ -115,6 +120,10 @@ Progression is organized into bands of 10 ranks. See PRD.md for full details.
 | All rank checks use starting rank | Prevents mid-run unlocks, consistent behavior | ✓ Good |
 | Max-level simplifies puzzles | Fewer steps (3 vs 4), not different mechanics | ✓ Good |
 | SVG coordinate conversion via getScreenCTM | Handles preserveAspectRatio="xMidYMid slice" | ✓ Good |
+| Managers operate on passed state, don't own it | Clean separation, testable | ✓ Good |
+| GameStateManager is documentation-first interface | Captures existing API without enforcing changes | ✓ Good |
+| Event-based input replaces callback props | Reduces prop drilling, cleaner component boundaries | ✓ Good |
+| CSS media queries for desktop-only effects | Simpler than JS conditionals | ✓ Good |
 
 ---
-*Last updated: 2026-01-21 after v1.0 milestone*
+*Last updated: 2026-01-21 after v1.1 milestone*

@@ -1,5 +1,33 @@
 # Project Milestones: Goops
 
+## v1.1 Architecture Refactor (Shipped: 2026-01-21)
+
+**Delivered:** Comprehensive codebase refactor — fixed memory leaks, decomposed large files, extracted managers, expanded test coverage.
+
+**Phases completed:** 8-13 (13 plans total)
+
+**Key accomplishments:**
+
+- Fixed rotationTimestamps memory leak with circular buffer (was ~6000 allocations/session)
+- Art.tsx decomposed: 1,478 → 581 lines (61% reduction) with minigame hooks and panel components
+- GameBoard.tsx decomposed: 1,031 → 604 lines (41% reduction) with input handlers and renderers extracted
+- GameEngine.tick() refactored: 159 → 22 lines (86% reduction) with ComplicationManager and GoalManager
+- Event-based input communication replaced 6 callback props
+- Test coverage expanded: 65 → 110 tests (69% increase)
+
+**Stats:**
+
+- ~40 TypeScript source files
+- ~9,760 lines of TypeScript
+- 6 phases, 13 plans
+- 1 day (2026-01-21)
+
+**Git range:** `feat(08-01)` → `docs(13-02)`
+
+**What's next:** Band 1 features (rank 10+): Starting junk, new colors
+
+---
+
 ## v1.0 MVP (Shipped: 2026-01-21)
 
 **Delivered:** Core gameplay loop with complications, HUD meters, progression system, and system upgrades.

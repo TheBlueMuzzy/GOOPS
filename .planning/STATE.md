@@ -8,21 +8,21 @@
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `refactor-v1.1` — v1.1 Architecture Refactor (COMPLETE, ready to merge)
+- `refactor-v1.1` — v1.1 Architecture Refactor (SHIPPED, pending merge to master)
 
 ## Project Reference
 
 See: .planning/PROJECT.md (updated 2026-01-21)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** v1.1 Architecture Refactor — solidify codebase before new features
+**Current focus:** v1.1 shipped — ready for Band 1 features (rank 10+) or new milestone
 
 ## Current Position
 
 Phase: 13 of 13 (Testing & Documentation) — COMPLETE
 Plan: 2/2 complete
-Status: **v1.1 MILESTONE COMPLETE** — Ready to merge to master
-Last activity: 2026-01-21 — Completed Plan 13-02 (Documentation Updates)
+Status: **v1.1 MILESTONE SHIPPED** — Tagged v1.1, ready to merge
+Last activity: 2026-01-21 — v1.1 milestone archived
 
 Progress: ███████████████████████████████████ 13/13 plans (100%)
 
@@ -51,20 +51,20 @@ Progress: ███████████████████████�
 
 ## What's Done
 
+### v1.1 Architecture Refactor (Shipped 2026-01-21)
+
+All 6 phases (8-13) complete. See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
+
+**Key accomplishments:**
+- Art.tsx: 1,478 → 581 lines (61% reduction)
+- GameBoard.tsx: 1,031 → 604 lines (41% reduction)
+- GameEngine.tick(): 159 → 22 lines (86% reduction)
+- Tests: 65 → 110 (69% increase)
+- Event-based input, 6 callback props removed
+
 ### v1.0 MVP (Shipped 2026-01-21)
 
 All 7 phases complete. See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
-
-### Phase 12: State Management & Events (2026-01-21)
-
-- Plan 12-01: Added 6 input event types, removed 6 callback props from GameBoard
-- Plan 12-02: Created GameStateManager interface, documented architecture, fixed R key swap
-
-**Key changes:**
-- Input events via EventBus (INPUT_ROTATE, INPUT_DRAG, INPUT_SWAP, etc.)
-- GameStateManager interface documents state access contract
-- R key swap now matches touch behavior (hold-to-swap with timer)
-- Version synced to 1.1.1 across all displays
 
 ## Audit Findings (from discuss-milestone)
 
@@ -105,33 +105,29 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed Plan 13-02 (Documentation Updates) — v1.1 milestone complete
+Stopped at: v1.1 milestone archived and tagged
 
 ### Current Task State
 
 **Completed this session:**
-- Plan 13-01: Test Coverage Expansion (29 tests added: 81 → 110)
-- Plan 13-02: Documentation Updates (TESTING.md, ARCHITECTURE.md, STRUCTURE.md)
-- v1.1 Architecture Refactor milestone: 100% complete
+- Plan 13-01: Test Coverage Expansion (29 tests added)
+- Plan 13-02: Documentation Updates
+- v1.1 milestone: Archived to milestones/v1.1-ROADMAP.md
+- Git tag: v1.1 created
 
 ### Uncommitted Changes
 
-None — all changes committed.
+Milestone completion files (pending commit).
 
 ### Bugs/Blockers
 
 None
 
-### Decisions Made
-
-1. **Skip clientToSvg DOM tests**: Would require browser environment, focus on pure functions
-2. **Test type shapes via runtime**: Verify interface contracts through object creation
-3. **Keep original doc dates**: Add update note rather than changing analysis dates
-
 ### Next Steps
 
 1. **Merge to master**: Run `<merge>` to merge `refactor-v1.1` branch to master
-2. v1.1 milestone complete — ready for v1.2 planning or new features
+2. Push tag: `git push origin v1.1`
+3. Plan next milestone: Band 1 features (rank 10+) or new direction
 
 ## Quick Commands
 
