@@ -71,7 +71,7 @@ export class GoalManager {
 
             state.floatingTexts.push({
                 id: textId,
-                text: 'CAPTURED!',
+                text: 'Laser to Seal',
                 x: cx,
                 y: cy,
                 life: 1,

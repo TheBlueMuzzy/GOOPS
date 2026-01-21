@@ -205,7 +205,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const sample = cells[0];
                 const color = sample.color;
                 const isHighlighted = gid === highlightedGroupId;
-                const isShaking = gid === shakingGroupId;
+                const isShaking = gid === shakingGroupId || state.primedGroups.has(gid); // Shake primed groups too
                 const isGlowing = cells.some(c => c.cell.isGlowing);
                 const isPrimed = state.primedGroups.has(gid); // LASER effect: primed for 2nd tap
 

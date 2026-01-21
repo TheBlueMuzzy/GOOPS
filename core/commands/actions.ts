@@ -49,10 +49,11 @@ export class MoveBoardCommand implements Command {
             engine.state.rotationTimestamps.shift();
         }
 
-        // CONTROLS heat buildup: builds when rotating
+        // CONTROLS heat buildup: builds when rotating (but not during cooldown)
         const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
         const ctrlConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
-        if (isComplicationUnlocked(ComplicationType.CONTROLS, startingRank)) {
+        const controlsOnCooldown = Date.now() < engine.state.complicationCooldowns[ComplicationType.CONTROLS];
+        if (isComplicationUnlocked(ComplicationType.CONTROLS, startingRank) && !controlsOnCooldown) {
             engine.state.controlsHeat = Math.min(ctrlConfig.heatMax, engine.state.controlsHeat + ctrlConfig.heatPerRotation);
         }
 
@@ -318,7 +319,7 @@ export class BlockTapCommand implements Command {
             ];
             
             if (infusedCount > 0) {
-                 floaters.push({ id: textId + '_bonus', text: 'GOAL CLEARED!', x: this.x, y: this.y - 2, life: 1.5, color: '#fff' });
+                 floaters.push({ id: textId + '_bonus', text: 'SEALED!', x: this.x, y: this.y - 2, life: 1.5, color: '#fff' });
             }
 
             engine.state.floatingTexts.push(...floaters);
