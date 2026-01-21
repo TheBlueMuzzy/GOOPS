@@ -19,10 +19,10 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 10 of 13 (GameBoard.tsx Decomposition) - IN PROGRESS
-Plan: 10-03 COMPLETE (all tasks done, UAT passed)
-Status: **Ready for next plan** — UAT bugs fixed, version 0.7.4
-Last activity: 2026-01-21 — Fixed shake animation, swap behavior, dial click
+Phase: 10 of 13 (GameBoard.tsx Decomposition) - COMPLETE
+Plan: 3/3 complete
+Status: **Phase complete** — Ready for Phase 11
+Last activity: 2026-01-21 — Completed Plan 10-03 with UAT bug fixes
 
 Progress: ████████████████░░░░░░░░░ 3/6 phases (50%)
 
@@ -33,7 +33,7 @@ Progress: ████████████████░░░░░░░�
 **Phases:**
 - ✅ Phase 8: Quick Wins & Memory Fixes (2026-01-21)
 - ✅ Phase 9: Art.tsx Decomposition (2026-01-21)
-- 🚧 Phase 10: GameBoard.tsx Decomposition (in progress — 2/3 plans)
+- ✅ Phase 10: GameBoard.tsx Decomposition (2026-01-21)
 - Phase 11: GameEngine Refactor
 - Phase 12: State Management & Events
 - Phase 13: Testing & Documentation
@@ -76,7 +76,7 @@ Art.tsx reduced from 1,478 to 581 lines (61% reduction):
 
 **Critical Issues:**
 - ~~Art.tsx: 1,478 lines~~ ✅ Fixed in Phase 9 (581 lines)
-- ~~GameBoard.tsx: 1,052 lines~~ 🚧 Reduced to 654 lines (Plans 10-01, 10-02 done)
+- ~~GameBoard.tsx: 1,052 lines~~ ✅ Fixed in Phase 10 (604 lines, 41% reduction)
 - ~~rotationTimestamps memory leak~~ ✅ Fixed in Phase 8 (circular buffer)
 
 **High Priority:**
@@ -111,70 +111,20 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Plan 10-03 Task 3 (UAT) — **3 BUGS BLOCKING APPROVAL**
+Stopped at: Phase 10 complete, ready for Phase 11
 
-### Resume Instructions
+### Phase 10 Summary
 
-1. Read this STATE.md section for full bug context
-2. Fix Bug 2 first (useInputHandlers.ts) — it's the clearest fix
-3. Fix Bug 3 by REVERTING ControlsPanel.tsx changes, then fix in the hook instead
-4. Investigate Bug 1 (shake) — may need browser devtools to debug
-5. Run `npm run dev -- --host`, test all 3 fixes
-6. When UAT passes, complete Plan 10-03 (create SUMMARY, update ROADMAP, commit)
+GameBoard.tsx reduced from 1,031 to 604 lines (41% reduction):
+- Plan 10-01: Extracted useInputHandlers.ts (-246 lines)
+- Plan 10-02: Extracted goopRenderer.ts (-131 lines)
+- Plan 10-03: Extracted GameBoard.css (-50 lines)
+- Plan 10-03-FIX: Fixed 3 UAT input handling bugs
 
-### UAT Bugs to Fix (Plan 10-03)
+### Next Steps
 
-**Root Cause:** Release after hold/drag should NOT trigger tap/click. Currently it does.
-
-**Bug 1: Shake animation not working on invalid pop**
-- File: `components/GameBoard.css`
-- Attempted fix: Added `transform-box: fill-box` — DID NOT WORK
-- The CSS class IS being applied (shakingGroupId logic is correct in useInputHandlers.ts)
-- May need to investigate SVG animation behavior more deeply
-- Check: Is the shake class actually being applied? Is CSS transform working on SVG `<g>` elements?
-
-**Bug 2: Early swap release triggers rotate**
-- File: `hooks/useInputHandlers.ts` — handlePointerUp function (line ~256)
-- Problem: When user starts hold-to-swap but releases early (before 1s completes), it falls through to tap logic and triggers rotate
-- Current logic checks `actionConsumed` (only true if swap completed) and `isDragLocked` (only true if moved)
-- Fix needed: Also check if hold was "engaged" (time > HOLD_DELAY of 250ms). If so, release should do nothing.
-- Key insight: `if (dt >= HOLD_DELAY) return;` before the tap logic block
-
-**Bug 3: Controls dial click broken after my fix**
-- File: `components/MiniGames/ControlsPanel.tsx` — my fix broke clicking entirely
-- Related file: `hooks/useControlsMinigame.ts` — handleDialPress function
-- Problem: Same root cause as Bug 2 — release after drag fires click
-- My attempted fix (tracking isDialDragging state changes in render) was wrong approach
-- Better fix: Add `justFinishedDraggingRef` in the HOOK (useControlsMinigame), set it true in handleDialEnd, check it in handleDialPress, clear after 100ms
-- REVERT my changes in ControlsPanel.tsx first (lines 52-63)
-
-### Files Modified This Session (uncommitted bug fixes)
-
-These changes have bugs and should be reviewed/reverted:
-- `core/commands/actions.ts` — SwapPieceCommand (swap position fix - may be OK)
-- `components/MiniGames/ControlsPanel.tsx` — broken click fix (REVERT lines 52-63)
-- `components/GameBoard.css` — shake animation fix attempt (may need different approach)
-- `components/Art.tsx` — version bump to 0.7.0 (OK to keep)
-
-### Files Committed Successfully (Plan 10-03 Tasks 1-2)
-
-- `74009bb` - refactor(10-03): extract CSS animations to separate file
-- `93df3c9` - refactor(10-03): final cleanup and organization
-
-### What Was Accomplished
-
-1. Created `components/GameBoard.css` with all animations (glow, shake, malfunction, lights-dimmed)
-2. Removed inline `<style>` tag from GameBoard.tsx
-3. Used CSS media queries for desktop-only glow effects (replacing JS conditional)
-4. Cleaned up unused imports in GameBoard.tsx
-5. Added section comments for organization
-6. GameBoard.tsx: 1,031 → 604 lines (41% reduction across Phase 10)
-
-### Workflow Decisions Made This Session
-
-- **`/clear` usage**: Use between plans, when context < 15%, or after phase completion
-- **`<handoff>` improved**: Now has explicit 5-point checklist in CLAUDE.md
-- **No need for new terminal**: `/clear` is sufficient for fresh context
+1. Run `/gsd:plan-phase 11` to plan GameEngine Refactor
+2. Target: Split tick() into focused methods, extract managers
 
 ## Quick Commands
 
