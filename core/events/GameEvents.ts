@@ -24,7 +24,15 @@ export enum GameEventType {
     
     // Music Control
     MUSIC_START = 'MUSIC_START',
-    MUSIC_STOP = 'MUSIC_STOP'
+    MUSIC_STOP = 'MUSIC_STOP',
+
+    // Input events (replaces callback prop drilling)
+    INPUT_ROTATE = 'INPUT_ROTATE',
+    INPUT_DRAG = 'INPUT_DRAG',
+    INPUT_SWIPE_UP = 'INPUT_SWIPE_UP',
+    INPUT_SOFT_DROP = 'INPUT_SOFT_DROP',
+    INPUT_SWAP = 'INPUT_SWAP',
+    INPUT_BLOCK_TAP = 'INPUT_BLOCK_TAP'
 }
 
 export interface PopPayload {
@@ -38,4 +46,22 @@ export interface GoalCapturePayload {
 
 export interface MilestonePayload {
     milestones: number[];  // Array of milestone ranks reached (e.g., [10] or [20, 30])
+}
+
+// Input event payloads
+export interface RotatePayload {
+    clockwise: boolean;
+}
+
+export interface DragPayload {
+    direction: number;  // 0 = stop, 1 = left, -1 = right
+}
+
+export interface SoftDropPayload {
+    active: boolean;
+}
+
+export interface BlockTapPayload {
+    x: number;
+    y: number;
 }
