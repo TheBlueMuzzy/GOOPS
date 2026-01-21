@@ -19,12 +19,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 9 of 13 (Art.tsx Decomposition) - COMPLETE
-Plan: All 3 plans complete
-Status: Ready for Phase 10
-Last activity: 2026-01-21 — Phase 9 complete (Art.tsx 1,478 → 581 lines)
+Phase: 10 of 13 (GameBoard.tsx Decomposition) - IN PROGRESS
+Plan: 1/3 complete
+Status: Plan 10-01 complete, ready for 10-02
+Last activity: 2026-01-21 — Extracted useInputHandlers hook (GameBoard.tsx 1,031 → 785 lines)
 
-Progress: ████████░░░░░░░░░░░░░░░░░ 2/6 phases (33%)
+Progress: ████████████░░░░░░░░░░░░░ 2.3/6 phases (38%)
 
 ## v1.1 Architecture Refactor
 
@@ -33,7 +33,7 @@ Progress: ████████░░░░░░░░░░░░░░░�
 **Phases:**
 - ✅ Phase 8: Quick Wins & Memory Fixes (2026-01-21)
 - ✅ Phase 9: Art.tsx Decomposition (2026-01-21)
-- Phase 10: GameBoard.tsx Decomposition
+- 🚧 Phase 10: GameBoard.tsx Decomposition (in progress — 1/3 plans)
 - Phase 11: GameEngine Refactor
 - Phase 12: State Management & Events
 - Phase 13: Testing & Documentation
@@ -76,7 +76,7 @@ Art.tsx reduced from 1,478 to 581 lines (61% reduction):
 
 **Critical Issues:**
 - ~~Art.tsx: 1,478 lines~~ ✅ Fixed in Phase 9 (581 lines)
-- GameBoard.tsx: 1,052 lines (rendering + input + math mixed)
+- ~~GameBoard.tsx: 1,052 lines~~ 🚧 Reduced to 785 lines (Plan 10-01 done)
 - ~~rotationTimestamps memory leak~~ ✅ Fixed in Phase 8 (circular buffer)
 
 **High Priority:**
@@ -111,9 +111,9 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 9 complete
-Resume with: `/gsd:progress` or `/gsd:plan-phase` for Phase 10
-Next action: Plan Phase 10 (GameBoard.tsx Decomposition)
+Stopped at: Plan 10-01 complete (useInputHandlers extracted)
+Resume with: `/gsd:execute-plan .planning/phases/10-gameboard-decomposition/10-02-PLAN.md`
+Next action: Execute Plan 10-02 (extract goop rendering utilities)
 
 ## Quick Commands
 

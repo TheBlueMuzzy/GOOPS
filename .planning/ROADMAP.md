@@ -93,13 +93,13 @@ Plans:
 **Plans**: 3
 
 Tasks:
-- Extract useInputHandlers.ts hook
+- ✅ Extract useInputHandlers.ts hook
 - Extract goopRenderer.ts utilities (path generation, group building)
 - Extract CSS animations to separate file
 - Simplify main GameBoard component (target: under 600 lines)
 
 Plans:
-- [ ] 10-01: Extract useInputHandlers hook (~200 lines extracted)
+- [x] 10-01: Extract useInputHandlers hook (~246 lines extracted)
 - [ ] 10-02: Extract goop rendering utilities (~120 lines extracted)
 - [ ] 10-03: Extract CSS, final cleanup + human verify
 
@@ -165,8 +165,8 @@ Plans:
 | 6. Progression System | v1.0 | 2/2 | Complete | 2026-01-20 |
 | 7. System Upgrades | v1.0 | 4/4 | Complete | 2026-01-20 |
 | 8. Quick Wins & Memory Fixes | v1.1 | 1/1 | Complete | 2026-01-21 |
-| 9. Art.tsx Decomposition | v1.1 | 0/? | Not started | - |
-| 10. GameBoard.tsx Decomposition | v1.1 | 0/? | Not started | - |
+| 9. Art.tsx Decomposition | v1.1 | 3/3 | Complete | 2026-01-21 |
+| 10. GameBoard.tsx Decomposition | v1.1 | 1/3 | In progress | - |
 | 11. GameEngine Refactor | v1.1 | 0/? | Not started | - |
 | 12. State Management & Events | v1.1 | 0/? | Not started | - |
 | 13. Testing & Documentation | v1.1 | 0/? | Not started | - |
