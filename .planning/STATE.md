@@ -15,14 +15,14 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** Phase 7 in progress - 07-02 complete, ready for 07-03
+**Current focus:** Phase 7 - 07-04 UAT issues fixed, awaiting re-verification
 
 ## Current Position
 
 Phase: 7 of 7 (System Upgrades) - IN PROGRESS
-Plan: 4 of 4 (07-04 code complete, awaiting UAT)
+Plan: 4 of 4 (07-04 UAT issues fixed, awaiting re-verification)
 Status: Human verification checkpoint
-Last activity: 2026-01-20 — 07-04 tasks 1-4 complete, awaiting UAT
+Last activity: 2026-01-20 — Fixed 07-04 UAT issues (button visibility, panel styling, meter bug)
 
 Progress: █████████████████████████ 22/22 plans complete (100% code)
 
@@ -209,27 +209,36 @@ All 4 issues resolved in 07-03-FIX.md:
 3. ✓ Dev rank selector resets powerUps when changing rank
 4. ✓ Panel styling matches EndGameScreen (dark blue, cyan labels, orange header)
 
+**07-04 UAT Issues (2026-01-20): FIXED**
+5 issues found and resolved during 07-04 UAT:
+1. ✓ System Upgrades button hidden at rank 0 (no upgrades available)
+2. ✓ UpgradePanel uses same SVG monitor graphic as EndGameScreen
+3. ✓ Font sizes matched to EndGameScreen styling
+4. ✓ Laser meter no longer appears at rank 0 after first pop (uses startingRank)
+5. ✓ UpgradePanel dimensions match EndGameScreen (9:16 aspect ratio container)
+
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: 07-04 checkpoint - awaiting human verification
-Resume with: Complete UAT then finish 07-04 summary
-Next action: Test max-level effects then type "approved" (or describe issues)
+Stopped at: 07-04 UAT issues fixed, awaiting re-verification
+Resume with: Re-test 07-04, then type "approved" to complete Phase 7
+Next action: Verify all fixes work, then approve
 
 **Phase 7 Plans:**
 - 07-01: System Upgrade Definitions - COMPLETE
 - 07-02: Upgrade Effects Implementation - COMPLETE
 - 07-03: Upgrade UI Panel - COMPLETE (UAT issues fixed)
-- 07-04: Max-Level Minigame Effects - CODE COMPLETE, AWAITING UAT
+- 07-04: Max-Level Minigame Effects - UAT ISSUES FIXED, RE-VERIFY
 
-**07-04 UAT Checkpoint:**
-Test max-level (level 5) upgrade effects on minigames:
-1. Use dev rank selector to get 15+ points
-2. Max out LASER, LIGHTS, CONTROLS upgrades (5 points each)
-3. Trigger each complication and verify:
-   - LASER: No center targets (only left/right positions)
-   - LIGHTS: 3-button sequence (not 4)
-   - CONTROLS: 3 dial alignments (not 4)
+**07-04 UAT Re-verification Checklist:**
+1. At rank 0: System Upgrades button should NOT be visible
+2. At rank 0: Laser capacitor meter should NOT appear (even after popping goop)
+3. At rank 1+: Open System Upgrades panel - should use monitor graphic matching end-game screen
+4. Panel should be same size/dimensions as end-game screen
+5. Test max-level effects (if time permits):
+   - LASER maxed: No center targets
+   - LIGHTS maxed: 3-button sequence
+   - CONTROLS maxed: 3 dial alignments
 
 After UAT: Type "approved" to create summary and complete Phase 7
 
