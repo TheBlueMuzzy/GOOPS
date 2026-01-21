@@ -11,17 +11,11 @@ import { getBlobPath, getContourPath, buildRenderableGroups } from '../utils/goo
 import './GameBoard.css';
 
 // --- Props Interface ---
+// Input callbacks removed - now handled via EventBus (see Game.tsx subscriptions)
 interface GameBoardProps {
   state: GameState;
   rank: number;
   maxTime: number;
-  onBlockTap: (x: number, y: number) => void;
-
-  onRotate: (dir: number) => void;
-  onDragInput: (dir: number) => void; // 0 = stop, 1 = left, -1 = right
-  onSwipeUp: () => void;
-  onSoftDrop: (active: boolean) => void;
-  onSwap: () => void;
   lightsDimmed?: boolean; // LIGHTS complication effect: dim to 10% + grayscale
   laserCapacitor?: number;  // HUD meter: 0-100 (100 = full)
   controlsHeat?: number;    // HUD meter: 0-100 (0 = cool)
@@ -30,8 +24,7 @@ interface GameBoardProps {
 
 // --- Component ---
 export const GameBoard: React.FC<GameBoardProps> = ({
-    state, rank, maxTime, onBlockTap,
-    onRotate, onDragInput, onSwipeUp, onSoftDrop, onSwap, lightsDimmed,
+    state, rank, maxTime, lightsDimmed,
     laserCapacitor = 100, controlsHeat = 0, complicationCooldowns
 }) => {
   const { grid, boardOffset, activePiece, fallingBlocks, floatingTexts, timeLeft, goalMarks } = state;
@@ -71,8 +64,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [boardOffset]); // Only boardOffset changes - vbX/vbY/vbW/vbH are constants
 
   // --- INPUT HANDLING (via hook) ---
+  // Events are now emitted via EventBus, subscribed in Game.tsx
   const { handlers, holdState, highlightedGroupId, shakingGroupId } = useInputHandlers({
-      callbacks: { onBlockTap, onRotate, onDragInput, onSwipeUp, onSoftDrop, onSwap },
+      callbacks: {}, // Callbacks optional - events emitted regardless
       boardOffset,
       grid,
       pressureRatio

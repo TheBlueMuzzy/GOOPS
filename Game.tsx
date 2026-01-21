@@ -7,7 +7,7 @@ import { ConsoleView } from './components/ConsoleView';
 import { useGameEngine } from './hooks/useGameEngine';
 import { Play, Home } from 'lucide-react';
 import { gameEventBus } from './core/events/EventBus';
-import { GameEventType } from './core/events/GameEvents';
+import { GameEventType, RotatePayload, DragPayload, SoftDropPayload, BlockTapPayload } from './core/events/GameEvents';
 import { calculateRankDetails } from './utils/progression';
 import { MoveBoardCommand, RotatePieceCommand, SetSoftDropCommand, SwapPieceCommand, StartRunCommand, SetPhaseCommand, TogglePauseCommand, ResolveComplicationCommand, BlockTapCommand } from './core/commands/actions';
 
@@ -193,6 +193,49 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       };
   }, [engine, gameState.phase, gameState.gameOver, startMovementLoop, stopMovementLoop, directionMultiplier]);
 
+  // Subscribe to input events from EventBus (replaces callback prop drilling)
+  useEffect(() => {
+      const unsubRotate = gameEventBus.on<RotatePayload>(GameEventType.INPUT_ROTATE, (p) => {
+          engine.execute(new RotatePieceCommand(p?.clockwise ?? true));
+      });
+      const unsubDrag = gameEventBus.on<DragPayload>(GameEventType.INPUT_DRAG, (p) => {
+          dragDirectionRef.current = p?.direction ?? 0;
+          if (p?.direction !== 0) {
+              startMovementLoop();
+          } else {
+              const stillHolding =
+                  heldKeys.current.has('ArrowLeft') ||
+                  heldKeys.current.has('ArrowRight') ||
+                  heldKeys.current.has('KeyA') ||
+                  heldKeys.current.has('KeyD');
+              if (!stillHolding) {
+                  stopMovementLoop();
+              }
+          }
+      });
+      const unsubSwipeUp = gameEventBus.on(GameEventType.INPUT_SWIPE_UP, () => {
+          engine.execute(new SetPhaseCommand(GamePhase.CONSOLE));
+      });
+      const unsubSoftDrop = gameEventBus.on<SoftDropPayload>(GameEventType.INPUT_SOFT_DROP, (p) => {
+          engine.execute(new SetSoftDropCommand(p?.active ?? false));
+      });
+      const unsubSwap = gameEventBus.on(GameEventType.INPUT_SWAP, () => {
+          engine.execute(new SwapPieceCommand());
+      });
+      const unsubBlockTap = gameEventBus.on<BlockTapPayload>(GameEventType.INPUT_BLOCK_TAP, (p) => {
+          if (p) engine.execute(new BlockTapCommand(p.x, p.y));
+      });
+
+      return () => {
+          unsubRotate();
+          unsubDrag();
+          unsubSwipeUp();
+          unsubSoftDrop();
+          unsubSwap();
+          unsubBlockTap();
+      };
+  }, [engine, startMovementLoop, stopMovementLoop]);
+
   // Use starting rank for HUD meter visibility - complications unlock based on starting rank, not mid-run
   const startingRank = calculateRankDetails(initialTotalScore).rank;
 
@@ -215,26 +258,6 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             state={gameState}
             rank={startingRank}
             maxTime={60000}
-            onBlockTap={(x, y) => engine.execute(new BlockTapCommand(x, y))}
-            onRotate={(dir) => engine.execute(new RotatePieceCommand(dir === 1))}
-            onDragInput={(dir) => {
-                dragDirectionRef.current = dir;
-                if (dir !== 0) {
-                    startMovementLoop();
-                } else {
-                    const stillHolding =
-                        heldKeys.current.has('ArrowLeft') ||
-                        heldKeys.current.has('ArrowRight') ||
-                        heldKeys.current.has('KeyA') ||
-                        heldKeys.current.has('KeyD');
-                    if (!stillHolding) {
-                        stopMovementLoop();
-                    }
-                }
-            }}
-            onSwipeUp={() => engine.execute(new SetPhaseCommand(GamePhase.CONSOLE))}
-            onSoftDrop={(active) => engine.execute(new SetSoftDropCommand(active))}
-            onSwap={() => engine.execute(new SwapPieceCommand())}
             lightsDimmed={activeEffects.dimmed && gameState.phase === GamePhase.PERISCOPE}
             laserCapacitor={gameState.laserCapacitor}
             controlsHeat={gameState.controlsHeat}
