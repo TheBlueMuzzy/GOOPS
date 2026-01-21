@@ -1,15 +1,16 @@
-
+// --- Imports ---
 import React, { useMemo, useCallback } from 'react';
-import { GameState, FallingBlock, GridCell, PieceState, ComplicationType, GamePhase } from '../types';
-import { VISIBLE_WIDTH, VISIBLE_HEIGHT, COLORS, TOTAL_WIDTH, TOTAL_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
+import { GameState, PieceState, ComplicationType, GamePhase } from '../types';
+import { VISIBLE_WIDTH, VISIBLE_HEIGHT, COLORS, TOTAL_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { isMobile } from '../utils/device';
 import { HudMeter } from './HudMeter';
 import { VIEWBOX, BLOCK_SIZE, visXToScreenX } from '../utils/coordinateTransform';
 import { useInputHandlers } from '../hooks/useInputHandlers';
-import { getBlobPath, getContourPath, buildRenderableGroups, RenderableCell } from '../utils/goopRenderer';
+import { getBlobPath, getContourPath, buildRenderableGroups } from '../utils/goopRenderer';
 import './GameBoard.css';
 
+// --- Props Interface ---
 interface GameBoardProps {
   state: GameState;
   rank: number;
@@ -27,6 +28,7 @@ interface GameBoardProps {
   complicationCooldowns?: Record<ComplicationType, number>;  // Cooldown timestamps
 }
 
+// --- Component ---
 export const GameBoard: React.FC<GameBoardProps> = ({
     state, rank, maxTime, onBlockTap,
     onRotate, onDragInput, onSwipeUp, onSoftDrop, onSwap, lightsDimmed,
@@ -36,7 +38,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const palette = useMemo(() => getPaletteForRank(rank), [rank]);
 
-  // --- PRESSURE CALCULATION ---
+  // --- Derived Values ---
   const pressureRatio = useMemo(() => {
     if (timeLeft <= 0) return 1;
     return Math.max(0, 1 - (timeLeft / maxTime));
@@ -109,6 +111,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const activeColors = useMemo(() => new Set(goalMarks.map(m => m.color)), [goalMarks]);
   const flyingOrbs = goalMarks.filter(m => now - m.spawnTime < 500);
 
+  // --- Rendering ---
   return (
     <div 
         // OPTIMIZATION: 'contain: strict' improves paint performance by isolating the board
