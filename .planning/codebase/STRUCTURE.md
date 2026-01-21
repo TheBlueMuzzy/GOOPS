@@ -9,18 +9,42 @@ Goops2-main/
 ├── .planning/          # GSD planning documents (this folder)
 ├── components/         # React UI components
 │   └── MiniGames/     # Minigame-specific components
+│       ├── ArcadeButton.tsx   # Reusable arcade button component
+│       ├── ControlsPanel.tsx  # CONTROLS minigame panel
+│       ├── LaserPanel.tsx     # LASER minigame panel
+│       └── LightsPanel.tsx    # LIGHTS minigame panel
 ├── core/              # Game engine and commands
 │   ├── commands/      # Command pattern implementations
-│   └── events/        # Event bus system
+│   ├── events/        # Event bus system
+│   ├── ComplicationManager.ts  # Complication trigger logic
+│   └── GoalManager.ts          # Goal/crack state management
 ├── hooks/             # React custom hooks
-├── tests/             # Unit tests
+│   ├── useAudioSubscription.ts    # Audio event subscription
+│   ├── useControlsMinigame.ts     # CONTROLS state machine
+│   ├── useGameEngine.ts           # Main engine hook
+│   ├── useInputHandlers.ts        # Extracted input handling
+│   ├── useLaserMinigame.ts        # LASER state machine
+│   └── useLightsMinigame.ts       # LIGHTS state machine
+├── tests/             # Unit tests (110 tests across 5 files)
+├── types/             # Additional type definitions
+│   ├── input.ts       # Input event types
+│   └── minigames.ts   # Minigame type definitions
 ├── utils/             # Pure utility functions
+│   ├── audio.ts           # Audio manager
+│   ├── coordinates.ts     # Coordinate wrapping
+│   ├── coordinateTransform.ts  # SVG coordinate transforms
+│   ├── device.ts          # Device detection
+│   ├── gameLogic.ts       # Core game logic
+│   ├── goopRenderer.ts    # Goop rendering utilities
+│   ├── progression.ts     # XP/rank calculations
+│   └── storage.ts         # LocalStorage persistence
 ├── art/               # Static art assets
 ├── fonts/             # Custom fonts
 ├── App.tsx            # Root React component
 ├── Game.tsx           # Main game component
+├── complicationConfig.ts   # Complication configuration constants
 ├── index.tsx          # Application entry point
-├── types.ts           # TypeScript type definitions
+├── types.ts           # Core TypeScript type definitions
 ├── constants.ts       # Game constants and config
 └── index.html         # HTML entry point
 ```
@@ -35,25 +59,39 @@ Goops2-main/
 
 **core/**
 - Purpose: Game engine core logic
-- Contains: `GameEngine.ts` (main engine class)
+- Contains: `GameEngine.ts` (~576 lines), `ComplicationManager.ts`, `GoalManager.ts`
 - Subdirectories:
   - `commands/` - Command pattern implementations
   - `events/` - EventBus and event type definitions
 
 **hooks/**
 - Purpose: React custom hooks for state management
-- Contains: `useGameEngine.ts` (engine state hook), `useAudioSubscription.ts`
-- Key files: `useGameEngine.ts` - main hook connecting React to GameEngine
+- Contains: `useGameEngine.ts`, `useAudioSubscription.ts`, `useInputHandlers.ts`, minigame hooks
+- Key files:
+  - `useGameEngine.ts` - main hook connecting React to GameEngine
+  - `useInputHandlers.ts` - extracted input handling logic
+  - `useLaserMinigame.ts`, `useLightsMinigame.ts`, `useControlsMinigame.ts` - minigame state machines
 
 **tests/**
-- Purpose: Unit tests for core game logic
+- Purpose: Unit tests for core game logic (110 tests total)
 - Contains: `*.test.ts` files
-- Key files: `gameLogic.test.ts` (30 tests), `coordinates.test.ts` (6 tests)
+- Key files:
+  - `gameLogic.test.ts` (30 tests) - core game logic
+  - `coordinates.test.ts` (6 tests) - coordinate wrapping
+  - `coordinateTransform.test.ts` (27 tests) - SVG coordinate transforms
+  - `progression.test.ts` (29 tests) - XP/rank calculations
+  - `minigameLogic.test.ts` (18 tests) - minigame constants
 
 **utils/**
 - Purpose: Pure utility functions (testable, no side effects)
 - Contains: Game logic helpers, coordinate math, storage
-- Key files: `gameLogic.ts`, `coordinates.ts`, `storage.ts`, `audio.ts`, `device.ts`, `progression.ts`
+- Key files:
+  - `gameLogic.ts` - core game logic functions
+  - `coordinates.ts` - coordinate wrapping
+  - `coordinateTransform.ts` - SVG coordinate conversions (VIEWBOX-aware)
+  - `progression.ts` - XP curve and rank calculations
+  - `goopRenderer.ts` - goop rendering utilities
+  - `storage.ts`, `audio.ts`, `device.ts` - infrastructure utilities
 
 ## Key File Locations
 
@@ -70,16 +108,22 @@ Goops2-main/
 - `tailwind.config.js` - Tailwind CSS configuration
 
 **Core Logic:**
-- `core/GameEngine.ts` - Central game state and logic (~465 lines)
+- `core/GameEngine.ts` - Central game state and logic (~576 lines)
+- `core/ComplicationManager.ts` - Complication trigger logic
+- `core/GoalManager.ts` - Goal/crack state management
 - `core/commands/actions.ts` - All game commands
 - `utils/gameLogic.ts` - Pure game logic functions
+- `complicationConfig.ts` - Complication configuration constants
 
 **Types:**
 - `types.ts` - All TypeScript interfaces and enums
 
 **Testing:**
-- `tests/gameLogic.test.ts` - Game logic tests
-- `tests/coordinates.test.ts` - Coordinate system tests
+- `tests/gameLogic.test.ts` - Game logic tests (30 tests)
+- `tests/coordinates.test.ts` - Coordinate system tests (6 tests)
+- `tests/coordinateTransform.test.ts` - SVG coordinate tests (27 tests)
+- `tests/progression.test.ts` - XP/rank tests (29 tests)
+- `tests/minigameLogic.test.ts` - Minigame constants tests (18 tests)
 
 ## Naming Conventions
 
@@ -140,4 +184,4 @@ Goops2-main/
 ---
 
 *Structure analysis: 2026-01-18*
-*Update when directory structure changes*
+*Updated 2026-01-21 for v1.1 refactor*
