@@ -42,6 +42,9 @@ interface ConsoleLayoutProps {
 
     // Callback to resolve a complication when minigame is solved
     onResolveComplication?: (complicationId: string) => void;
+
+    // Upgrade levels for max-level minigame effects
+    upgradeLevels?: Record<string, number>;
 }
 
 const ArcadeButton = ({ 
@@ -128,8 +131,13 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     goalsTarget = 0,
     unspentPower = 0,
     complications = [],
-    onResolveComplication
+    onResolveComplication,
+    upgradeLevels = {}
 }) => {
+    // Extract max-level flags for minigame effects
+    const isLaserMaxed = (upgradeLevels['LASER'] || 0) >= 5;
+    const isLightsMaxed = (upgradeLevels['LIGHTS'] || 0) >= 5;
+    const isControlsMaxed = (upgradeLevels['CONTROLS'] || 0) >= 5;
     const [pressedBtn, setPressedBtn] = useState<string | null>(null);
     const [rankDropdownOpen, setRankDropdownOpen] = useState(false);
     const [abortConfirm, setAbortConfirm] = useState(false);
@@ -254,10 +262,12 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
 
         // LASER: Initialize if complication exists but minigame not active
         if (hasActiveComplication(ComplicationType.LASER) && !laserComplication.active && !laserComplication.solved) {
-            // Generate random targets (can be any of -1, 0, 1)
-            const allPositions: (-1 | 0 | 1)[] = [-1, 0, 1];
+            // Generate random targets
+            // Max-level effect: no center targets (only -1 or 1)
+            // Normal: any of -1, 0, 1
+            const allPositions: (-1 | 0 | 1)[] = isLaserMaxed ? [-1, 1] : [-1, 0, 1];
             const targets = [0, 1, 2, 3].map(() => {
-                return allPositions[Math.floor(Math.random() * 3)];
+                return allPositions[Math.floor(Math.random() * allPositions.length)];
             }) as (-1 | 0 | 1)[];
 
             // Set sliders to wrong positions (one of the two that ISN'T the target)
@@ -570,12 +580,14 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
         }
     };
 
-    // Generate a 4-button sequence with max 2 of any single button
+    // Generate button sequence with max 2 of any single button
+    // Max-level effect: 3-button sequence instead of 4
     const generateLightsSequence = (): (0 | 1 | 2)[] => {
         const sequence: (0 | 1 | 2)[] = [];
         const counts = [0, 0, 0]; // Track how many times each button is used
+        const sequenceLength = isLightsMaxed ? 3 : 4;
 
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < sequenceLength; i++) {
             // Get available buttons (those used less than 2 times)
             const available: (0 | 1 | 2)[] = [];
             if (counts[0] < 2) available.push(0);
@@ -695,7 +707,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
             // Correct!
             const newInputIndex = lightsComplication.inputIndex + 1;
 
-            if (newInputIndex >= 4) {
+            if (newInputIndex >= lightsComplication.sequence.length) {
                 // Sequence complete - move to slider2
                 setLightsComplication(prev => ({
                     ...prev,
@@ -835,7 +847,9 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
             // Success - advance to next corner
             const newCompleted = controlsComplication.completedCorners + 1;
 
-            if (newCompleted >= 4) {
+            // Max-level effect: 3 alignments instead of 4
+            const requiredAlignments = isControlsMaxed ? 3 : 4;
+            if (newCompleted >= requiredAlignments) {
                 // Solved!
                 setControlsComplication(prev => ({
                     ...prev,

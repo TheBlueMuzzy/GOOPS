@@ -270,6 +270,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalSc
                         // Complications
                         complications={state.complications}
                         onResolveComplication={(id) => engine.execute(new ResolveComplicationCommand(id))}
+
+                        // Upgrade levels for max-level minigame effects
+                        upgradeLevels={powerUps}
                     />
                 </div>
             </div>
