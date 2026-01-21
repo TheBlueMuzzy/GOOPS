@@ -94,13 +94,34 @@ const App: React.FC = () => {
       }
   };
 
+  const handlePurchaseUpgrade = useCallback((upgradeId: string) => {
+    setSaveData(prev => {
+      const currentLevel = prev.powerUps[upgradeId] || 0;
+      const maxLevel = 5;
+      const cost = 1;
+
+      if (prev.powerUpPoints < cost || currentLevel >= maxLevel) {
+        return prev; // Can't purchase
+      }
+
+      return {
+        ...prev,
+        powerUpPoints: prev.powerUpPoints - cost,
+        powerUps: {
+          ...prev.powerUps,
+          [upgradeId]: currentLevel + 1
+        }
+      };
+    });
+  }, []);
+
   return (
     <div className="w-full h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
       {view === 'GAME' && (
-        <Game 
+        <Game
           key={gameKey}
-          onExit={() => { /* No Exit in Console Mode concept anymore, just idle */ }} 
-          onRunComplete={handleRunComplete} 
+          onExit={() => { /* No Exit in Console Mode concept anymore, just idle */ }}
+          onRunComplete={handleRunComplete}
           initialTotalScore={saveData.totalScore}
           powerUps={saveData.powerUps}
           powerUpPoints={saveData.powerUpPoints}
@@ -109,6 +130,7 @@ const App: React.FC = () => {
           onOpenHelp={() => setView('HOW_TO_PLAY')}
           onOpenUpgrades={() => setView('UPGRADES')}
           onSetRank={handleSetRank}
+          onPurchaseUpgrade={handlePurchaseUpgrade}
         />
       )}
 

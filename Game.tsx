@@ -22,9 +22,10 @@ interface GameProps {
   onOpenHelp?: () => void;
   onOpenUpgrades?: () => void;
   onSetRank?: (rank: number) => void;
+  onPurchaseUpgrade?: (upgradeId: string) => void;
 }
 
-const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, powerUps = {}, powerUpPoints, settings, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank }) => {
+const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, powerUps = {}, powerUpPoints, settings, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade }) => {
   const { engine, gameState } = useGameEngine(initialTotalScore, powerUps, onRunComplete);
   const heldKeys = useRef<Set<string>>(new Set());
   const dragDirectionRef = useRef<number>(0);
@@ -247,15 +248,17 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             gameState.phase === GamePhase.CONSOLE ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
-          <ConsoleView 
-            engine={engine} 
-            state={gameState} 
-            totalScore={initialTotalScore} 
+          <ConsoleView
+            engine={engine}
+            state={gameState}
+            totalScore={initialTotalScore}
             powerUpPoints={powerUpPoints}
+            powerUps={powerUps}
             onOpenSettings={onOpenSettings}
             onOpenHelp={onOpenHelp}
             onOpenUpgrades={onOpenUpgrades}
             onSetRank={onSetRank}
+            onPurchaseUpgrade={onPurchaseUpgrade}
             onDismissGameOver={() => engine.resetSession()}
           />
       </div>

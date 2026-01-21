@@ -5,6 +5,7 @@ import { GameEngine } from '../core/GameEngine';
 import { calculateRankDetails } from '../utils/progression';
 import { SetPhaseCommand, StartRunCommand, ResolveComplicationCommand } from '../core/commands/actions';
 import { ConsoleLayoutSVG } from './Art';
+import { UpgradePanel } from './UpgradePanel';
 import { ArrowUp } from 'lucide-react';
 
 interface ConsoleViewProps {
@@ -12,20 +13,25 @@ interface ConsoleViewProps {
     state: GameState;
     totalScore: number;
     powerUpPoints: number;
+    powerUps?: Record<string, number>;
     onOpenSettings?: () => void;
     onOpenHelp?: () => void;
     onOpenUpgrades?: () => void;
     onSetRank?: (rank: number) => void;
+    onPurchaseUpgrade?: (upgradeId: string) => void;
     onDismissGameOver?: () => void;
 }
 
-export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalScore, powerUpPoints, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onDismissGameOver }) => {
+export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalScore, powerUpPoints, powerUps = {}, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade, onDismissGameOver }) => {
     // Calculate Rank based on:
     // Engine's start-of-run total (which hasn't been updated with the run score yet if Game Over)
     // + Current run score.
     // This prevents double counting because totalScore prop from parent might already include state.score after Game Over update.
     const rankInfo = calculateRankDetails(engine.initialTotalScore + state.score);
-    
+
+    // System upgrade panel state
+    const [showSystemUpgrades, setShowSystemUpgrades] = useState(false);
+
     const containerRef = useRef<HTMLDivElement>(null);
     
     // Periscope Drag Logic
@@ -238,7 +244,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalSc
                         // Button Handlers
                         onSettingsClick={onOpenSettings}
                         onHelpClick={onOpenHelp}
-                        onUpgradesClick={onOpenUpgrades}
+                        onUpgradesClick={() => setShowSystemUpgrades(true)}
                         onSetRank={onSetRank}
                         onAbortClick={handleAbort}
                         onBlueClick={() => console.log('Blue Click')}
@@ -267,6 +273,16 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalSc
                     />
                 </div>
             </div>
+
+            {/* System Upgrades Panel */}
+            {showSystemUpgrades && (
+                <UpgradePanel
+                    powerUpPoints={powerUpPoints}
+                    upgrades={powerUps}
+                    onPurchase={(id) => onPurchaseUpgrade?.(id)}
+                    onClose={() => setShowSystemUpgrades(false)}
+                />
+            )}
         </div>
     );
 };
