@@ -19,12 +19,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 12 of 13 (State Management & Events) — COMPLETE
-Plan: 2/2 complete
-Status: **Phase 12 complete** — Ready for Phase 13
-Last activity: 2026-01-21 — Completed Plan 12-02 (State Interface & Cleanup)
+Phase: 13 of 13 (Testing & Documentation) — IN PROGRESS
+Plan: 1/2 complete
+Status: **Plan 13-01 complete** — Ready for Plan 13-02
+Last activity: 2026-01-21 — Completed Plan 13-01 (Test Coverage Expansion)
 
-Progress: ██████████████████████████████████ 6/6 phases (100% of core refactor)
+Progress: ██████████████████████████████████░ 12/13 plans
 
 ## v1.1 Architecture Refactor
 
@@ -39,7 +39,7 @@ Progress: ███████████████████████�
 - Phase 13: Testing & Documentation
 
 **Constraints:**
-- All 81 tests must pass throughout (65 original + 16 new)
+- All 110 tests must pass throughout (81 at Phase 12 + 29 new in Phase 13)
 - No gameplay changes
 - Each phase independently deployable
 
@@ -105,47 +105,34 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed Phase 12 (State Management & Events)
+Stopped at: Completed Plan 13-01 (Test Coverage Expansion)
 
 ### Current Task State
 
 **Completed this session:**
-- Plan 12-02: State Management Interface & Cleanup
-  - Task 1: Created GameStateManager interface in types.ts
-  - Task 2: Documented state architecture in Game.tsx
-  - Task 3: Human verified all input handling works
-- Bug fix: R key swap now requires hold (matches touch behavior)
-- Version synced to 1.1.1 across console, main menu, package.json
-
-**Phase 12 fully complete.** All v1.1 success criteria met:
-- ✅ No files over 400 lines
-- ✅ All hard-coded values in constants.ts
-- ✅ GameEngine.tick() under 50 lines (22 lines)
-- ✅ Event-based communication replaces prop drilling
+- Plan 13-01: Test Coverage Expansion
+  - Task 1: Added 11 coordinate transform edge case tests
+  - Task 2: Created minigameLogic.test.ts with 18 tests
+- Test count increased: 81 → 110 (35% increase)
 
 ### Uncommitted Changes
 
-None — all changes committed and pushed.
+None — all changes committed.
 
 ### Bugs/Blockers
 
-None — all UAT issues resolved.
+None
 
 ### Decisions Made
 
-1. **Version display consistency**: All version numbers must be updated together (package.json, MainMenu.tsx footer, Art.tsx console footer) with every testable change
-2. **Input parity**: All input methods must behave identically (R key swap now matches touch swap timing)
-3. **GameStateManager is documentation**: Interface captures existing GameEngine API, not enforced implementation
+1. **Skip clientToSvg DOM tests**: Would require browser environment, focus on pure functions
+2. **Test type shapes via runtime**: Verify interface contracts through object creation
 
 ### Next Steps
 
-1. Run `/gsd:plan-phase 13` for Testing & Documentation phase
-2. Or `<merge>` to merge `refactor-v1.1` to master if ready to ship
-3. Phase 13 tasks from ROADMAP.md:
-   - Coordinate transform edge case tests
-   - Minigame state machine tests
-   - Command execution order tests
-   - Update architecture documentation
+1. Run `/gsd:execute-plan .planning/phases/13-testing-docs/13-02-PLAN.md` for Documentation Updates
+2. After Plan 13-02: Phase 13 complete, v1.1 milestone complete
+3. Then `<merge>` to merge `refactor-v1.1` to master
 
 ## Quick Commands
 
