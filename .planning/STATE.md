@@ -94,9 +94,11 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Phase 8 complete
+Stopped at: Phase 8 complete + React best practices refactor
 Resume with: `/gsd:plan-phase 9`
 Next action: Plan Phase 9 (Art.tsx Decomposition)
+
+**Note:** User installed Vercel skill for React best practices checking. Use it when planning/reviewing React code.
 
 ## Quick Commands
 
