@@ -244,7 +244,10 @@ export class BlockTapCommand implements Command {
             // Use starting rank so complications don't unlock mid-run
             const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
             if (startingRank >= 1) {
-                const drainAmount = group.length * 4; // 4 per unit popped
+                // Get LASER upgrade level (0-5) - reduces drain by 5% per level
+                const laserLevel = engine.powerUps['LASER'] || 0;
+                const drainMultiplier = 1 - (0.05 * laserLevel);
+                const drainAmount = group.length * 4 * drainMultiplier; // Base: 4 per unit popped
                 engine.state.laserCapacitor = Math.max(0, engine.state.laserCapacitor - drainAmount);
             }
 

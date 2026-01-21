@@ -498,7 +498,10 @@ export class GameEngine {
 
             // Start draining if idle for 200ms
             if (idleTime > 200) {
-                const drainRate = 50; // per second, so 2 seconds to drain from 100 to 0
+                // Get CONTROLS upgrade level (0-5) - increases dissipation by 10% per level
+                const controlsLevel = this.powerUps['CONTROLS'] || 0;
+                const baseDrainRate = 50; // per second, so 2 seconds to drain from 100 to 0
+                const drainRate = baseDrainRate * (1 + 0.10 * controlsLevel); // At max: 75/sec
                 this.state.controlsHeat = Math.max(0, this.state.controlsHeat - (drainRate * dt / 1000));
             }
         }
@@ -601,8 +604,11 @@ export class GameEngine {
                         // Random threshold between 3-5 rows
                         const gapThreshold = Math.floor(Math.random() * 3) + 3; // 3, 4, or 5
 
-                        // If gap >= threshold, 50% chance to trigger LIGHTS
-                        if (gap >= gapThreshold && Math.random() < 0.5) {
+                        // If gap >= threshold, trigger LIGHTS with upgrade-modified chance
+                        // Base: 50%, reduced by 6% per LIGHTS upgrade level (min 20% at level 5)
+                        const lightsLevel = this.powerUps['LIGHTS'] || 0;
+                        const triggerChance = 0.50 - (0.06 * lightsLevel);
+                        if (gap >= gapThreshold && Math.random() < triggerChance) {
                             this.spawnComplication(ComplicationType.LIGHTS);
                         }
                     }
