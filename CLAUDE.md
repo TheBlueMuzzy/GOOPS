@@ -90,7 +90,26 @@ User can type these shortcuts and Claude will execute:
 | `<commit>` | Update STATE.md + relevant docs, git add + commit + push |
 | `<merge>` | Merge current branch to master, push both |
 | `<status>` | Show git status + current project position from STATE.md |
-| `<handoff>` | Context handoff: update all docs, commit, push, instruct to start fresh session |
+| `<handoff>` | Full context handoff (see checklist below), ends with `/clear` instruction |
+
+### Handoff Checklist (`<handoff>`)
+
+When user types `<handoff>`, Claude MUST capture ALL of the following before telling user to `/clear`:
+
+1. **Current task state** — What was I working on? What's done vs pending?
+2. **Uncommitted changes** — List all modified files and what each change does
+3. **Bugs/blockers** — Any issues found, root cause analysis, attempted fixes
+4. **Decisions made** — Anything discussed verbally that affects future work
+5. **Next steps** — Exactly what to do when resuming
+
+**Write to STATE.md Session Continuity section**, then:
+- `git add` all planning docs
+- `git commit -m "docs: handoff - [brief description]"`
+- `git push`
+- Kill any background processes (dev server, etc.)
+- End with: **"Handoff complete. Run `/clear` then tell me what to work on."**
+
+The goal: Next session can read STATE.md and have 100% of the context needed to continue.
 
 ## Terminal Commands
 - `npm run dev -- --host` — Dev server (accessible from phone at local IP)
