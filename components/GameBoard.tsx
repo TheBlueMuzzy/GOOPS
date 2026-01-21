@@ -7,6 +7,7 @@ import { gameEventBus } from '../core/events/EventBus';
 import { GameEventType } from '../core/events/GameEvents';
 import { isMobile } from '../utils/device';
 import { HudMeter } from './HudMeter';
+import { VIEWBOX, BLOCK_SIZE, ANGLE_PER_COL, CYL_RADIUS, visXToScreenX, screenXToVisX } from '../utils/coordinateTransform';
 
 interface GameBoardProps {
   state: GameState;
@@ -25,7 +26,6 @@ interface GameBoardProps {
   complicationCooldowns?: Record<ComplicationType, number>;  // Cooldown timestamps
 }
 
-const BLOCK_SIZE = 30; 
 const RADIUS = 8; 
 const HOLD_DURATION = 1000; // 1.0s for hold-to-swap
 const HOLD_DELAY = 250;     // 0.25s delay before hold starts
@@ -69,52 +69,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
 
-  // --- CYLINDRICAL PROJECTION LOGIC (memoized - values are constant) ---
-  const { ANGLE_PER_COL, CYL_RADIUS, vbX, vbY, vbW, vbH } = useMemo(() => {
-    const anglePerCol = (2 * Math.PI) / TOTAL_WIDTH;
-    const cylRadius = BLOCK_SIZE / anglePerCol;
-    const maxAngle = (VISIBLE_WIDTH / 2) * anglePerCol;
-    const projectedHalfWidth = cylRadius * Math.sin(maxAngle);
-    return {
-      ANGLE_PER_COL: anglePerCol,
-      CYL_RADIUS: cylRadius,
-      vbX: -projectedHalfWidth,
-      vbY: 0,
-      vbW: projectedHalfWidth * 2,
-      vbH: VISIBLE_HEIGHT * BLOCK_SIZE,
-    };
-  }, []); // Empty deps - these are all derived from module-level constants
+  // ViewBox values from module-level constants (no useMemo needed - these never change)
+  const { x: vbX, y: vbY, w: vbW, h: vbH } = VIEWBOX;
 
   const waterHeightPx = waterHeightBlocks * BLOCK_SIZE;
   const waterTopY = vbH - waterHeightPx;
 
-  const getScreenX = useCallback((visX: number) => {
-      const centerCol = VISIBLE_WIDTH / 2;
-      const offsetFromCenter = visX - centerCol;
-      const angle = offsetFromCenter * ANGLE_PER_COL;
-      return CYL_RADIUS * Math.sin(angle);
-  }, [ANGLE_PER_COL, CYL_RADIUS]);
-
-  const getGridXFromScreen = (screenX: number) => {
-      const sinVal = Math.max(-1, Math.min(1, screenX / CYL_RADIUS));
-      const angle = Math.asin(sinVal);
-      const offsetFromCenter = angle / ANGLE_PER_COL;
-      return (VISIBLE_WIDTH / 2) + offsetFromCenter;
-  };
-
+  // Use imported coordinate transform functions (pure functions, no hooks needed)
   const getScreenPercentCoords = useCallback((gridX: number, gridY: number) => {
       let visX = gridX - boardOffset;
       if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
       if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
-      
-      const svgX = getScreenX(visX);
+
+      const svgX = visXToScreenX(visX);
       const svgY = (gridY - BUFFER_HEIGHT) * BLOCK_SIZE + (BLOCK_SIZE / 2);
-      
+
       const pctX = ((svgX - vbX) / vbW) * 100;
       const pctY = ((svgY - vbY) / vbH) * 100;
-      
+
       return { x: pctX, y: pctY };
-  }, [boardOffset, getScreenX, vbX, vbY, vbW, vbH]);
+  }, [boardOffset]); // Only boardOffset changes - vbX/vbY/vbW/vbH are constants
 
   // --- UNIFIED INPUT HANDLING ---
   const pointerRef = useRef<{
@@ -151,7 +125,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const svgX = vbX + (relX - offsetX) / scale;
       const svgY = vbY + relY / scale;
 
-      const rawVisX = getGridXFromScreen(svgX);
+      const rawVisX = screenXToVisX(svgX);
       const rawVisY = svgY / BLOCK_SIZE + BUFFER_HEIGHT;
 
       return { vx: rawVisX, vy: rawVisY, svgX, svgY, relX, contentW, relY };
@@ -474,8 +448,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               const cell = grid[y][gridX];
               if (!cell) continue;
 
-              const startX = getScreenX(visX);
-              const endX = getScreenX(visX + 1);
+              const startX = visXToScreenX(visX);
+              const endX = visXToScreenX(visX + 1);
               const width = endX - startX;
               if (width <= 0) continue;
               const yPos = (y - BUFFER_HEIGHT) * BLOCK_SIZE;
@@ -512,8 +486,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
 
                 if (visX >= 0 && visX < VISIBLE_WIDTH) {
-                    const startX = getScreenX(visX);
-                    const endX = getScreenX(visX + 1);
+                    const startX = visXToScreenX(visX);
+                    const endX = visXToScreenX(visX + 1);
                     const width = endX - startX;
                     const yPos = (block.y - BUFFER_HEIGHT) * BLOCK_SIZE;
 
@@ -602,8 +576,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {!isMobile && Array.from({length: VISIBLE_HEIGHT}).map((_, yIdx) => {
                 const yPos = yIdx * BLOCK_SIZE;
                 return Array.from({length: VISIBLE_WIDTH}).map((_, visX) => {
-                    const startX = getScreenX(visX);
-                    const width = getScreenX(visX+1) - startX;
+                    const startX = visXToScreenX(visX);
+                    const width = visXToScreenX(visX+1) - startX;
                     return (
                         <g key={`bg-${yIdx}-${visX}`}>
                             <line x1={startX} y1={yPos} x2={startX+width} y2={yPos} stroke={COLORS.GRID_EMPTY} strokeWidth="1" opacity={0.2} />
@@ -619,8 +593,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
 
                 if (visX >= 0 && visX < VISIBLE_WIDTH) {
-                    const startX = getScreenX(visX);
-                    const width = getScreenX(visX+1) - startX;
+                    const startX = visXToScreenX(visX);
+                    const width = visXToScreenX(visX+1) - startX;
                     const yPos = (mark.y - BUFFER_HEIGHT) * BLOCK_SIZE;
                     const centerX = startX + width / 2;
                     const centerY = yPos + BLOCK_SIZE / 2;
@@ -793,8 +767,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
 
                     if (visX >= -2 && visX < VISIBLE_WIDTH + 2) {
-                        const startX = getScreenX(visX);
-                        const width = getScreenX(visX+1) - startX;
+                        const startX = visXToScreenX(visX);
+                        const width = visXToScreenX(visX+1) - startX;
                         const yPos = (pieceGridY - BUFFER_HEIGHT) * BLOCK_SIZE;
 
                         const neighbors = {
@@ -833,8 +807,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
 
                     if (visX >= -2 && visX < VISIBLE_WIDTH + 2) {
-                        const startX = getScreenX(visX);
-                        const width = getScreenX(visX+1) - startX;
+                        const startX = visXToScreenX(visX);
+                        const width = visXToScreenX(visX+1) - startX;
                         const yPos = (pieceGridY - BUFFER_HEIGHT) * BLOCK_SIZE;
                         
                         const neighbors = {
@@ -872,8 +846,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
 
                 if (visX >= -2 && visX < VISIBLE_WIDTH + 2) {
-                    const startX = getScreenX(visX);
-                    const width = getScreenX(visX+1) - startX;
+                    const startX = visXToScreenX(visX);
+                    const width = visXToScreenX(visX+1) - startX;
                     const yPos = (ft.y - BUFFER_HEIGHT) * BLOCK_SIZE;
                     return <text key={ft.id} x={startX + width/2} y={yPos + BLOCK_SIZE/2} fill={ft.color} textAnchor="middle" className="floating-score" fontSize="24">{ft.text}</text>;
                 }

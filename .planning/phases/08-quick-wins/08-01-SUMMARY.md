@@ -19,9 +19,12 @@
 - Added helper functions: `calculateCooldownMs()`, `getUnlockRank()`, `isComplicationUnlocked()`
 - Updated GameEngine.ts and actions.ts to use config values
 
-### Task 3: Memoized viewBox Values
-- Wrapped ANGLE_PER_COL, CYL_RADIUS, vbX, vbY, vbW, vbH in `useMemo` with empty deps
-- These values are derived from module constants and never change
+### Task 3: Moved viewBox to Module-Level Constants
+- Initially used `useMemo` with empty deps (incorrect pattern for true constants)
+- **Refactored:** Now imports `VIEWBOX` from `coordinateTransform.ts`
+- Replaced local `getScreenX`/`getGridXFromScreen` with imported `visXToScreenX`/`screenXToVisX`
+- Simplified `getScreenPercentCoords` dependency array (only `boardOffset` changes)
+- Follows React best practice: constants at module level, not in hooks
 
 ### Task 4: Extracted Coordinate Transform Utilities
 - Created `utils/coordinateTransform.ts` with pure functions:
@@ -42,8 +45,8 @@
 | `complicationConfig.ts` | New - centralized complication config |
 | `core/GameEngine.ts` | Use complicationConfig values |
 | `core/commands/actions.ts` | Use complicationConfig values, circular buffer |
-| `components/GameBoard.tsx` | Memoized viewBox calculations |
-| `utils/coordinateTransform.ts` | New - testable coordinate transforms |
+| `components/GameBoard.tsx` | Import VIEWBOX and coordinate functions from utils |
+| `utils/coordinateTransform.ts` | Export BLOCK_SIZE, ANGLE_PER_COL, CYL_RADIUS |
 | `tests/coordinateTransform.test.ts` | New - 16 tests |
 
 ## Test Results
@@ -51,7 +54,16 @@
 - All 81 tests passing (65 original + 16 new)
 - No regressions
 
+## React Best Practices Applied
+
+- **Module-level constants**: VIEWBOX, BLOCK_SIZE, ANGLE_PER_COL, CYL_RADIUS computed once at import
+- **No useMemo for constants**: Removed useMemo with empty deps (unnecessary overhead)
+- **Pure utility functions**: visXToScreenX, screenXToVisX are stateless, no hooks needed
+- **Minimal hook dependencies**: getScreenPercentCoords only depends on boardOffset
+
 ## Commits
 
 1. `docs: create Phase 8 plan` (2ee2f88)
 2. `refactor: complete Phase 8 quick wins` (afb18f7)
+3. `docs: complete Phase 8 documentation` (f60caab)
+4. `refactor: use module-level constants for viewBox` (pending)

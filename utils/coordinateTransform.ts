@@ -12,12 +12,13 @@
 
 import { TOTAL_WIDTH, VISIBLE_WIDTH, VISIBLE_HEIGHT, BUFFER_HEIGHT } from '../constants';
 
-// Block size in SVG units
-const BLOCK_SIZE = 30;
+// Block size in SVG units (exported for components that need it)
+export const BLOCK_SIZE = 30;
 
 // Cylindrical projection constants (derived from module constants)
-const ANGLE_PER_COL = (2 * Math.PI) / TOTAL_WIDTH;
-const CYL_RADIUS = BLOCK_SIZE / ANGLE_PER_COL;
+// Exported for components that need direct access to projection math
+export const ANGLE_PER_COL = (2 * Math.PI) / TOTAL_WIDTH;
+export const CYL_RADIUS = BLOCK_SIZE / ANGLE_PER_COL;
 
 /**
  * ViewBox dimensions for the game SVG.
