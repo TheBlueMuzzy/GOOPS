@@ -170,6 +170,21 @@ export interface GameState {
   crackGoopPopped: number; // Count of glowing goop popped this session (for charging)
 }
 
+// --- State Management Interface ---
+// Defines how components interact with game state (documents GameEngine's public API)
+
+export interface GameStateManager {
+    // Read-only state access
+    readonly state: GameState;
+    readonly isSessionActive: boolean;
+
+    // State change notification
+    subscribe(listener: () => void): () => void;
+
+    // Command execution (Command type from core/commands/Command.ts)
+    execute(command: { type: string; execute(engine: unknown): void }): void;
+}
+
 // --- Upgrade System Types ---
 
 export type UpgradeType = 'passive' | 'active';
