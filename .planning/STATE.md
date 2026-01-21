@@ -8,7 +8,7 @@
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `refactor-v1.1` — v1.1 Architecture Refactor (Phase 12 in progress)
+- `refactor-v1.1` — v1.1 Architecture Refactor (Phase 12 complete, Phase 13 next)
 
 ## Project Reference
 
@@ -19,12 +19,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 12 of 13 (State Management & Events)
-Plan: 1/2 complete
-Status: **In progress** — Plan 12-01 complete
-Last activity: 2026-01-21 — Completed Plan 12-01 (Input Events & Prop Drilling)
+Phase: 12 of 13 (State Management & Events) — COMPLETE
+Plan: 2/2 complete
+Status: **Phase 12 complete** — Ready for Phase 13
+Last activity: 2026-01-21 — Completed Plan 12-02 (State Interface & Cleanup)
 
-Progress: █████████████████████████████ 5/6 phases (83%)
+Progress: ██████████████████████████████████ 6/6 phases (100% of core refactor)
 
 ## v1.1 Architecture Refactor
 
@@ -35,7 +35,7 @@ Progress: ███████████████████████�
 - ✅ Phase 9: Art.tsx Decomposition (2026-01-21)
 - ✅ Phase 10: GameBoard.tsx Decomposition (2026-01-21)
 - ✅ Phase 11: GameEngine Refactor (2026-01-21)
-- Phase 12: State Management & Events
+- ✅ Phase 12: State Management & Events (2026-01-21)
 - Phase 13: Testing & Documentation
 
 **Constraints:**
@@ -44,10 +44,10 @@ Progress: ███████████████████████�
 - Each phase independently deployable
 
 **Success Criteria:**
-- No files over 400 lines
-- All hard-coded values in constants.ts
-- GameEngine.tick() under 50 lines
-- Event-based communication replaces prop drilling
+- ✅ No files over 400 lines
+- ✅ All hard-coded values in constants.ts
+- ✅ GameEngine.tick() under 50 lines (22 lines achieved)
+- ✅ Event-based communication replaces prop drilling
 
 ## What's Done
 
@@ -55,22 +55,16 @@ Progress: ███████████████████████�
 
 All 7 phases complete. See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
 
-### Phase 9: Art.tsx Decomposition (2026-01-21)
+### Phase 12: State Management & Events (2026-01-21)
 
-Art.tsx reduced from 1,478 to 581 lines (61% reduction):
-- Extracted 3 minigame state machine hooks
-- Extracted 4 panel components for minigame rendering
-- Created central types/minigames.ts
+- Plan 12-01: Added 6 input event types, removed 6 callback props from GameBoard
+- Plan 12-02: Created GameStateManager interface, documented architecture, fixed R key swap
 
-**Files created:**
-- types/minigames.ts (137 lines) — central minigame types
-- hooks/useLaserMinigame.ts (226 lines) — LASER state machine
-- hooks/useLightsMinigame.ts (375 lines) — LIGHTS state machine
-- hooks/useControlsMinigame.ts (452 lines) — CONTROLS dial state machine
-- components/MiniGames/ArcadeButton.tsx (63 lines) — reusable button
-- components/MiniGames/LaserPanel.tsx (90 lines) — LASER SVG
-- components/MiniGames/LightsPanel.tsx (135 lines) — LIGHTS SVG
-- components/MiniGames/ControlsPanel.tsx (141 lines) — CONTROLS SVG
+**Key changes:**
+- Input events via EventBus (INPUT_ROTATE, INPUT_DRAG, INPUT_SWAP, etc.)
+- GameStateManager interface documents state access contract
+- R key swap now matches touch behavior (hold-to-swap with timer)
+- Version synced to 1.1.1 across all displays
 
 ## Audit Findings (from discuss-milestone)
 
@@ -82,7 +76,7 @@ Art.tsx reduced from 1,478 to 581 lines (61% reduction):
 **High Priority:**
 - ~~GameEngine.tick() is 167 lines~~ ✅ Fixed in Phase 11 (22 lines)
 - ~~Hard-coded values scattered~~ ✅ Fixed in Phase 8 (complicationConfig.ts)
-- State fragmented across 6 locations
+- ~~State fragmented across 6 locations~~ ✅ Documented in Phase 12 (GameStateManager interface)
 - ~~Prop drilling (10+ callbacks to GameBoard)~~ ✅ Fixed in Phase 12 (6 callbacks removed)
 
 See `.planning/SYSTEM-INVENTORY.md` for complete system list.
@@ -111,19 +105,12 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed Plan 12-01 (Input Events & Prop Drilling)
-
-### Phase 12 Progress
-
-Plan 12-01 complete — Input event system established:
-- Added 6 input event types to EventBus
-- Removed 6 callback props from GameBoard
-- Input flow: useInputHandlers → EventBus → Game.tsx → Commands
+Stopped at: Completed Phase 12 (State Management & Events)
 
 ### Next Steps
 
-1. Run `/gsd:execute-plan .planning/phases/12-state-management/12-02-PLAN.md` for state interface
-2. Or `/gsd:verify-work 12-01` to do UAT first
+1. Run `/gsd:plan-phase 13` for Testing & Documentation phase
+2. Or merge `refactor-v1.1` to master if ready to ship
 
 ## Quick Commands
 
