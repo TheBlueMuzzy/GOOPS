@@ -1,1 +1,8 @@
-{"permissions":{"defaultMode":"bypassPermissions"}}
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(npm run test:run:*)"
+    ]
+  }
+}

@@ -1288,33 +1288,36 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
             />
 
             {/* System Upgrades OR End Work Day */}
-            <g 
-                id="System_Upgrades" 
-                className="cursor-pointer hover:brightness-110 active:brightness-90 transition-all origin-center" 
-                onClick={isSessionActive ? handleAbortInteraction : onUpgradesClick}
-            >
-                {isSessionActive ? (
-                    // Red Abort Button
-                    <>
-                        <rect fill="#ef4444" x="123.18" y="1748.67" width="342.8" height="44.19" rx="12.37" ry="12.37"/>
-                        <rect fill="none" stroke="#ef4444" strokeMiterlimit="10" x="123.45" y="1748.67" width="420.29" height="44.19" rx="9.43" ry="9.43"/>
-                        <text fill="#ffffff" fontFamily="'Amazon Ember'" fontSize="20.93" fontWeight="bold" textAnchor="middle" x="294.58" y="1778.17">
-                            {abortConfirm ? "ARE YOU SURE?" : "END WORK DAY"}
-                        </text>
-                        <text fill="#ef4444" fontFamily="'Amazon Ember'" fontWeight="bold" fontSize="34.88" transform="translate(492.79 1783.33)">X</text>
-                    </>
-                ) : (
-                    // Standard Yellow Upgrade Button
-                    <>
-                        <rect fill="#ffd92b" x="123.18" y="1748.67" width="342.8" height="44.19" rx="12.37" ry="12.37"/>
-                        <rect fill="none" stroke="#ffd92b" strokeMiterlimit="10" x="123.45" y="1748.67" width="420.29" height="44.19" rx="9.43" ry="9.43"/>
-                        <text fill="#45486c" fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(143.75 1778.17)">
-                            <tspan letterSpacing="-.02em">S</tspan><tspan x="11.41">YSTEM UPG</tspan><tspan letterSpacing=".02em" x="124.56">R</tspan><tspan x="137.7">ADES </tspan><tspan letterSpacing="-.06em" x="194.7">AV</tspan><tspan x="219.21">AI</tspan><tspan letterSpacing=".02em" x="238.45">L</tspan><tspan x="249.94">ABLE</tspan>
-                        </text>
-                        <text fill="#ffd92b" fontFamily="'Amazon Ember'" fontWeight="bold" fontSize="34.88" textAnchor="middle" x="505" y="1783.33">{upgradeCount}</text>
-                    </>
-                )}
-            </g>
+            {/* Hide upgrade button at rank 0 when not in session (no upgrades available) */}
+            {(isSessionActive || rank > 0) && (
+                <g
+                    id="System_Upgrades"
+                    className="cursor-pointer hover:brightness-110 active:brightness-90 transition-all origin-center"
+                    onClick={isSessionActive ? handleAbortInteraction : onUpgradesClick}
+                >
+                    {isSessionActive ? (
+                        // Red Abort Button
+                        <>
+                            <rect fill="#ef4444" x="123.18" y="1748.67" width="342.8" height="44.19" rx="12.37" ry="12.37"/>
+                            <rect fill="none" stroke="#ef4444" strokeMiterlimit="10" x="123.45" y="1748.67" width="420.29" height="44.19" rx="9.43" ry="9.43"/>
+                            <text fill="#ffffff" fontFamily="'Amazon Ember'" fontSize="20.93" fontWeight="bold" textAnchor="middle" x="294.58" y="1778.17">
+                                {abortConfirm ? "ARE YOU SURE?" : "END WORK DAY"}
+                            </text>
+                            <text fill="#ef4444" fontFamily="'Amazon Ember'" fontWeight="bold" fontSize="34.88" transform="translate(492.79 1783.33)">X</text>
+                        </>
+                    ) : (
+                        // Standard Yellow Upgrade Button
+                        <>
+                            <rect fill="#ffd92b" x="123.18" y="1748.67" width="342.8" height="44.19" rx="12.37" ry="12.37"/>
+                            <rect fill="none" stroke="#ffd92b" strokeMiterlimit="10" x="123.45" y="1748.67" width="420.29" height="44.19" rx="9.43" ry="9.43"/>
+                            <text fill="#45486c" fontFamily="'Amazon Ember'" fontSize="20.93" transform="translate(143.75 1778.17)">
+                                <tspan letterSpacing="-.02em">S</tspan><tspan x="11.41">YSTEM UPG</tspan><tspan letterSpacing=".02em" x="124.56">R</tspan><tspan x="137.7">ADES </tspan><tspan letterSpacing="-.06em" x="194.7">AV</tspan><tspan x="219.21">AI</tspan><tspan letterSpacing=".02em" x="238.45">L</tspan><tspan x="249.94">ABLE</tspan>
+                            </text>
+                            <text fill="#ffd92b" fontFamily="'Amazon Ember'" fontWeight="bold" fontSize="34.88" textAnchor="middle" x="505" y="1783.33">{upgradeCount}</text>
+                        </>
+                    )}
+                </g>
+            )}
 
             {/* Title & Extra Buttons */}
             <text fill="#5bbc70" fontFamily="'From Where You Are'" fontSize="62.79" transform="translate(210.86 1947.47)">

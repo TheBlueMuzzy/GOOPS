@@ -193,7 +193,8 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       };
   }, [engine, gameState.phase, gameState.gameOver, startMovementLoop, stopMovementLoop, directionMultiplier]);
 
-  const currentRank = calculateRankDetails(initialTotalScore + gameState.score).rank;
+  // Use starting rank for HUD meter visibility - complications unlock based on starting rank, not mid-run
+  const startingRank = calculateRankDetails(initialTotalScore).rank;
 
   // Determine active effects based on complications
   const lightsComplication = gameState.complications.find(c => c.type === ComplicationType.LIGHTS);
@@ -212,7 +213,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       <div className="absolute inset-0 z-0">
          <GameBoard
             state={gameState}
-            rank={currentRank}
+            rank={startingRank}
             maxTime={60000}
             onBlockTap={(x, y) => engine.execute(new BlockTapCommand(x, y))}
             onRotate={(dir) => engine.execute(new RotatePieceCommand(dir === 1))}
