@@ -69,17 +69,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
 
-  // --- CYLINDRICAL PROJECTION LOGIC ---
-  const ANGLE_PER_COL = (2 * Math.PI) / TOTAL_WIDTH; 
-  const CYL_RADIUS = BLOCK_SIZE / ANGLE_PER_COL; 
-
-  const maxAngle = (VISIBLE_WIDTH / 2) * ANGLE_PER_COL;
-  const projectedHalfWidth = CYL_RADIUS * Math.sin(maxAngle);
-  
-  const vbX = -projectedHalfWidth;
-  const vbY = 0;
-  const vbW = projectedHalfWidth * 2;
-  const vbH = VISIBLE_HEIGHT * BLOCK_SIZE;
+  // --- CYLINDRICAL PROJECTION LOGIC (memoized - values are constant) ---
+  const { ANGLE_PER_COL, CYL_RADIUS, vbX, vbY, vbW, vbH } = useMemo(() => {
+    const anglePerCol = (2 * Math.PI) / TOTAL_WIDTH;
+    const cylRadius = BLOCK_SIZE / anglePerCol;
+    const maxAngle = (VISIBLE_WIDTH / 2) * anglePerCol;
+    const projectedHalfWidth = cylRadius * Math.sin(maxAngle);
+    return {
+      ANGLE_PER_COL: anglePerCol,
+      CYL_RADIUS: cylRadius,
+      vbX: -projectedHalfWidth,
+      vbY: 0,
+      vbW: projectedHalfWidth * 2,
+      vbH: VISIBLE_HEIGHT * BLOCK_SIZE,
+    };
+  }, []); // Empty deps - these are all derived from module-level constants
 
   const waterHeightPx = waterHeightBlocks * BLOCK_SIZE;
   const waterTopY = vbH - waterHeightPx;

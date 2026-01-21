@@ -21,6 +21,10 @@ export const PER_BLOCK_DURATION = 375;  // Extra time per block in group
 // Timer Constants
 export const INITIAL_TIME_MS = 60 * 1000;
 
+// Rotation tracking (for CONTROLS heat detection)
+export const ROTATION_BUFFER_SIZE = 30; // Max rotations tracked (circular buffer)
+export const ROTATION_WINDOW_MS = 3000; // 3 second window for heat calculation
+
 // Pressure / Time Recovery Constants
 export const PRESSURE_RECOVERY_BASE_MS = 0; // Removed base per pop
 export const PRESSURE_RECOVERY_PER_UNIT_MS = 100; // +0.1s per unit

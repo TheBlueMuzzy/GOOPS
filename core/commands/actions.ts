@@ -6,7 +6,8 @@ import { normalizeX, checkCollision, getRotatedCells, getGhostY, mergePiece, fin
 import { getGridX, getScreenX } from '../../utils/coordinates';
 import { gameEventBus } from '../events/EventBus';
 import { GameEventType } from '../events/GameEvents';
-import { VISIBLE_WIDTH, TOTAL_HEIGHT, VISIBLE_HEIGHT, PER_BLOCK_DURATION, PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS } from '../../constants';
+import { VISIBLE_WIDTH, TOTAL_HEIGHT, VISIBLE_HEIGHT, PER_BLOCK_DURATION, PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS, ROTATION_BUFFER_SIZE } from '../../constants';
+import { COMPLICATION_CONFIG, isComplicationUnlocked } from '../../complicationConfig';
 import { calculateRankDetails } from '../../utils/progression';
 import { audio } from '../../utils/audio';
 
@@ -40,18 +41,19 @@ export class MoveBoardCommand implements Command {
             engine.state.activePiece = newPiece;
         }
 
-        // Track rotation timestamps for CONTROLS heat detection
+        // Track rotation timestamps for CONTROLS heat detection (circular buffer)
         const now = Date.now();
         engine.state.rotationTimestamps.push(now);
-        // Prune timestamps older than 3 seconds
-        const cutoff = now - 3000;
-        engine.state.rotationTimestamps = engine.state.rotationTimestamps.filter(t => t > cutoff);
+        // Keep buffer size limited (avoids memory leak from unbounded array growth)
+        if (engine.state.rotationTimestamps.length > ROTATION_BUFFER_SIZE) {
+            engine.state.rotationTimestamps.shift();
+        }
 
-        // CONTROLS heat buildup: builds when rotating (rank 3+)
-        // Use starting rank so complications don't unlock mid-run
+        // CONTROLS heat buildup: builds when rotating
         const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
-        if (startingRank >= 3) {
-            engine.state.controlsHeat = Math.min(100, engine.state.controlsHeat + 5);
+        const ctrlConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
+        if (isComplicationUnlocked(ComplicationType.CONTROLS, startingRank)) {
+            engine.state.controlsHeat = Math.min(ctrlConfig.heatMax, engine.state.controlsHeat + ctrlConfig.heatPerRotation);
         }
 
         gameEventBus.emit(GameEventType.PIECE_MOVED);
@@ -240,14 +242,13 @@ export class BlockTapCommand implements Command {
             // Always increment so multiple complications can trigger simultaneously
             engine.state.totalUnitsPopped += group.length;
 
-            // LASER capacitor drain: drains when popping groups (rank 1+)
-            // Use starting rank so complications don't unlock mid-run
+            // LASER capacitor drain: drains when popping groups
             const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
-            if (startingRank >= 1) {
-                // Get LASER upgrade level (0-5) - reduces drain by 5% per level
+            const laserConfig = COMPLICATION_CONFIG[ComplicationType.LASER];
+            if (isComplicationUnlocked(ComplicationType.LASER, startingRank)) {
                 const laserLevel = engine.powerUps['LASER'] || 0;
-                const drainMultiplier = 1 - (0.05 * laserLevel);
-                const drainAmount = group.length * 4 * drainMultiplier; // Base: 4 per unit popped
+                const drainMultiplier = 1 - (laserConfig.drainUpgradeEffect * laserLevel);
+                const drainAmount = group.length * laserConfig.drainPerUnit * drainMultiplier;
                 engine.state.laserCapacitor = Math.max(0, engine.state.laserCapacitor - drainAmount);
             }
 

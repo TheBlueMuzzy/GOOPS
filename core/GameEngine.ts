@@ -4,6 +4,7 @@ import {
     TOTAL_WIDTH, TOTAL_HEIGHT, VISIBLE_WIDTH, VISIBLE_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, INITIAL_TIME_MS,
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS
 } from '../constants';
+import { COMPLICATION_CONFIG, COOLDOWN_CONFIG, calculateCooldownMs, isComplicationUnlocked } from '../complicationConfig';
 import { 
     spawnPiece, checkCollision, mergePiece, getRotatedCells, normalizeX, findContiguousGroup, 
     updateGroups, getGhostY, updateFallingBlocks, getFloatingBlocks,
@@ -255,29 +256,22 @@ export class GameEngine {
             // Reset the corresponding counter so next trigger starts fresh
             switch (complication.type) {
                 case ComplicationType.LASER:
-                    this.state.laserCapacitor = 100; // Refill capacitor to full
-                    this.state.primedGroups.clear(); // Clear primed groups when LASER fixed
+                    this.state.laserCapacitor = COMPLICATION_CONFIG[ComplicationType.LASER].capacitorMax;
+                    this.state.primedGroups.clear();
                     break;
                 case ComplicationType.CONTROLS:
-                    this.state.controlsHeat = 0; // Cool down heat meter
-                    this.state.rotationTimestamps = []; // Clear timestamps
+                    this.state.controlsHeat = 0;
+                    this.state.rotationTimestamps = [];
                     break;
                 case ComplicationType.LIGHTS:
-                    // LIGHTS trigger is 50% chance on piece lock when pressure gap met
                     // No counter to reset - chance automatically resumes after resolution
                     break;
             }
 
-            // Set cooldown: max(8, 20 - (rank - unlockRank)) seconds
+            // Set cooldown using centralized config
             const rank = calculateRankDetails(this.initialTotalScore + this.state.score).rank;
-            const unlockRanks: Record<ComplicationType, number> = {
-                [ComplicationType.LASER]: 1,
-                [ComplicationType.LIGHTS]: 2,
-                [ComplicationType.CONTROLS]: 3
-            };
-            const unlockRank = unlockRanks[complication.type];
-            const cooldownSeconds = Math.max(8, 20 - (rank - unlockRank));
-            this.state.complicationCooldowns[complication.type] = Date.now() + (cooldownSeconds * 1000);
+            const cooldownMs = calculateCooldownMs(complication.type, rank);
+            this.state.complicationCooldowns[complication.type] = Date.now() + cooldownMs;
         }
 
         this.state.complications = this.state.complications.filter(c => c.id !== complicationId);
@@ -318,29 +312,28 @@ export class GameEngine {
         const isOnCooldown = (type: ComplicationType) =>
             now < this.state.complicationCooldowns[type];
 
-        // Complications unlock progressively by starting rank (not mid-run rank):
-        // Rank 1+: LASER only
-        // Rank 2+: LASER, LIGHTS
-        // Rank 3+: LASER, LIGHTS, CONTROLS
+        // Complications unlock progressively by starting rank (not mid-run rank)
         const rank = calculateRankDetails(this.initialTotalScore).rank;
+        const laserConfig = COMPLICATION_CONFIG[ComplicationType.LASER];
+        const controlsConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
 
-        // LASER: Triggered when capacitor drains to 0 (rank 1+)
-        // Only spawn if LASER isn't already active and not on cooldown
+        // LASER: Triggered when capacitor drains to 0
         if (!hasComplication(ComplicationType.LASER) &&
             !isOnCooldown(ComplicationType.LASER) &&
-            rank >= 1 && this.state.laserCapacitor <= 0) {
+            isComplicationUnlocked(ComplicationType.LASER, rank) &&
+            this.state.laserCapacitor <= 0) {
             this.spawnComplication(ComplicationType.LASER);
         }
 
-        // CONTROLS: Triggered when heat meter reaches 100 (rank 3+)
-        // Only spawn if CONTROLS isn't already active and not on cooldown
+        // CONTROLS: Triggered when heat meter reaches max
         if (!hasComplication(ComplicationType.CONTROLS) &&
             !isOnCooldown(ComplicationType.CONTROLS) &&
-            rank >= 3 && this.state.controlsHeat >= 100) {
+            isComplicationUnlocked(ComplicationType.CONTROLS, rank) &&
+            this.state.controlsHeat >= controlsConfig.heatMax) {
             this.spawnComplication(ComplicationType.CONTROLS);
         }
 
-        // LIGHTS: Now triggered on piece lock (not here) - see tick() method
+        // LIGHTS: Triggered on piece lock (see tick() method)
     }
 
     public finalizeGame() {
@@ -486,22 +479,19 @@ export class GameEngine {
         
         this.checkComplications(dt);
 
-        // CONTROLS heat dissipation: drains when NOT actively rotating (rank 3+)
-        // Use starting rank so complications don't unlock mid-run
+        // CONTROLS heat dissipation: drains when NOT actively rotating
         const startingRank = calculateRankDetails(this.initialTotalScore).rank;
-        if (startingRank >= 3 && this.state.controlsHeat > 0) {
+        const ctrlConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
+        if (isComplicationUnlocked(ComplicationType.CONTROLS, startingRank) && this.state.controlsHeat > 0) {
             const now = Date.now();
             const lastRotation = this.state.rotationTimestamps.length > 0
                 ? this.state.rotationTimestamps[this.state.rotationTimestamps.length - 1]
                 : 0;
             const idleTime = now - lastRotation;
 
-            // Start draining if idle for 200ms
-            if (idleTime > 200) {
-                // Get CONTROLS upgrade level (0-5) - increases dissipation by 10% per level
+            if (idleTime > ctrlConfig.idleThresholdMs) {
                 const controlsLevel = this.powerUps['CONTROLS'] || 0;
-                const baseDrainRate = 50; // per second, so 2 seconds to drain from 100 to 0
-                const drainRate = baseDrainRate * (1 + 0.10 * controlsLevel); // At max: 75/sec
+                const drainRate = ctrlConfig.dissipationBase * (1 + ctrlConfig.dissipationUpgradeEffect * controlsLevel);
                 this.state.controlsHeat = Math.max(0, this.state.controlsHeat - (drainRate * dt / 1000));
             }
         }
@@ -570,15 +560,15 @@ export class GameEngine {
                         this.handleGoals(consumedGoals, destroyedGoals, finalPiece);
                     }
 
-                    // LIGHTS complication trigger: 50% chance when pressure 3-5 rows above highest goop (rank 2+)
-                    // Use starting rank (initialTotalScore) so complications don't unlock mid-run
-                    const startingRank = calculateRankDetails(this.initialTotalScore).rank;
+                    // LIGHTS complication trigger
+                    const lightsStartingRank = calculateRankDetails(this.initialTotalScore).rank;
                     const hasLightsActive = this.state.complications.some(c => c.type === ComplicationType.LIGHTS);
                     const lightsOnCooldown = Date.now() < this.state.complicationCooldowns[ComplicationType.LIGHTS];
+                    const lightsConfig = COMPLICATION_CONFIG[ComplicationType.LIGHTS];
 
-                    if (startingRank >= 2 && !hasLightsActive && !lightsOnCooldown) {
+                    if (isComplicationUnlocked(ComplicationType.LIGHTS, lightsStartingRank) && !hasLightsActive && !lightsOnCooldown) {
                         // Find highest goop row (lowest Y value with any block)
-                        let highestGoopY = TOTAL_HEIGHT; // Default to bottom if no goop
+                        let highestGoopY = TOTAL_HEIGHT;
                         for (let y = 0; y < TOTAL_HEIGHT; y++) {
                             for (let x = 0; x < TOTAL_WIDTH; x++) {
                                 if (newGrid[y][x]) {
@@ -589,25 +579,21 @@ export class GameEngine {
                             if (highestGoopY < TOTAL_HEIGHT) break;
                         }
 
-                        // Calculate pressure line Y position in grid coordinates
-                        // pressureRatio: 0 at start (full time), 1 at end (no time)
+                        // Calculate pressure line Y position
                         const pressureRatio = Math.max(0, 1 - (this.state.timeLeft / this.maxTime));
-                        // waterHeightBlocks: 1 at start, VISIBLE_HEIGHT at end
                         const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
-                        // Convert to grid Y (pressure line rises from bottom)
-                        // BUFFER_HEIGHT rows at top are offscreen, so grid Y = BUFFER_HEIGHT + (VISIBLE_HEIGHT - waterHeightBlocks)
                         const pressureLineY = BUFFER_HEIGHT + (VISIBLE_HEIGHT - waterHeightBlocks);
 
-                        // Gap = how many rows between pressure line and highest goop
+                        // Gap = rows between pressure line and highest goop
                         const gap = highestGoopY - pressureLineY;
 
-                        // Random threshold between 3-5 rows
-                        const gapThreshold = Math.floor(Math.random() * 3) + 3; // 3, 4, or 5
+                        // Random threshold from config range
+                        const gapRange = lightsConfig.pressureGapMax - lightsConfig.pressureGapMin + 1;
+                        const gapThreshold = Math.floor(Math.random() * gapRange) + lightsConfig.pressureGapMin;
 
-                        // If gap >= threshold, trigger LIGHTS with upgrade-modified chance
-                        // Base: 50%, reduced by 6% per LIGHTS upgrade level (min 20% at level 5)
+                        // Trigger chance with upgrade modifier
                         const lightsLevel = this.powerUps['LIGHTS'] || 0;
-                        const triggerChance = 0.50 - (0.06 * lightsLevel);
+                        const triggerChance = lightsConfig.triggerChanceBase - (lightsConfig.triggerUpgradeEffect * lightsLevel);
                         if (gap >= gapThreshold && Math.random() < triggerChance) {
                             this.spawnComplication(ComplicationType.LIGHTS);
                         }
