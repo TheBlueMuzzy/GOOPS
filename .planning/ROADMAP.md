@@ -51,22 +51,22 @@ See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
 - Test coverage for coordinate transforms and minigames
 - Event-based communication replaces prop drilling
 
-#### Phase 8: Quick Wins & Memory Fixes
+#### Phase 8: Quick Wins & Memory Fixes ✅
 
 **Goal**: Fix critical issues with minimal risk - memory leaks, hard-coded values, memoization
 **Depends on**: v1.0 complete
 **Research**: Unlikely (internal patterns)
-**Plans**: 1 plan
+**Plans**: 1/1 complete
 
 Tasks:
-- Extract hard-coded values to constants.ts
-- Fix rotationTimestamps memory leak (circular buffer)
-- Create complicationConfig.ts (single source of truth)
-- Fix vbX/vbY/vbW/vbH memoization
-- Create coordinateTransform.ts (testable functions)
+- ✅ Extract hard-coded values to constants.ts
+- ✅ Fix rotationTimestamps memory leak (circular buffer)
+- ✅ Create complicationConfig.ts (single source of truth)
+- ✅ Fix vbX/vbY/vbW/vbH memoization
+- ✅ Create coordinateTransform.ts (testable functions)
 
 Plans:
-- [ ] 08-01: Quick Wins & Memory Fixes (all tasks in single plan)
+- [x] 08-01: Quick Wins & Memory Fixes (all tasks in single plan)
 
 #### Phase 9: Art.tsx Decomposition
 
@@ -162,7 +162,7 @@ Plans:
 | 5. HUD & Balance | v1.0 | 4/4 | Complete | 2026-01-20 |
 | 6. Progression System | v1.0 | 2/2 | Complete | 2026-01-20 |
 | 7. System Upgrades | v1.0 | 4/4 | Complete | 2026-01-20 |
-| 8. Quick Wins & Memory Fixes | v1.1 | 0/? | Not started | - |
+| 8. Quick Wins & Memory Fixes | v1.1 | 1/1 | Complete | 2026-01-21 |
 | 9. Art.tsx Decomposition | v1.1 | 0/? | Not started | - |
 | 10. GameBoard.tsx Decomposition | v1.1 | 0/? | Not started | - |
 | 11. GameEngine Refactor | v1.1 | 0/? | Not started | - |

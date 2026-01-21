@@ -8,7 +8,7 @@
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- None yet — create `refactor-v1.1` before starting Phase 8
+- `refactor-v1.1` — v1.1 Architecture Refactor (Phase 8 complete)
 
 ## Project Reference
 
@@ -19,19 +19,19 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 8 of 13 (Quick Wins & Memory Fixes)
-Plan: 08-01 ready
-Status: Ready to execute
-Last activity: 2026-01-21 — Phase 8 plan created
+Phase: 9 of 13 (Art.tsx Decomposition)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-01-21 — Phase 8 complete
 
-Progress: ░░░░░░░░░░░░░░░░░░░░░░░░░ 0/6 phases (0%)
+Progress: ████░░░░░░░░░░░░░░░░░░░░░ 1/6 phases (17%)
 
 ## v1.1 Architecture Refactor
 
 **Goal:** Fix memory leaks, split large files, centralize state management, expand test coverage.
 
 **Phases:**
-- Phase 8: Quick Wins & Memory Fixes
+- ✅ Phase 8: Quick Wins & Memory Fixes (2026-01-21)
 - Phase 9: Art.tsx Decomposition
 - Phase 10: GameBoard.tsx Decomposition
 - Phase 11: GameEngine Refactor
@@ -39,7 +39,7 @@ Progress: ░░░░░░░░░░░░░░░░░░░░░░░�
 - Phase 13: Testing & Documentation
 
 **Constraints:**
-- All 65 tests must pass throughout
+- All 81 tests must pass throughout (65 original + 16 new)
 - No gameplay changes
 - Each phase independently deployable
 
@@ -60,11 +60,11 @@ All 7 phases complete. See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for ful
 **Critical Issues:**
 - Art.tsx: 1,478 lines (3 minigames in 1 file)
 - GameBoard.tsx: 1,052 lines (rendering + input + math mixed)
-- rotationTimestamps memory leak (~6000 allocations/session)
+- ~~rotationTimestamps memory leak~~ ✅ Fixed in Phase 8 (circular buffer)
 
 **High Priority:**
 - GameEngine.tick() is 167 lines
-- Hard-coded values scattered
+- ~~Hard-coded values scattered~~ ✅ Fixed in Phase 8 (complicationConfig.ts)
 - State fragmented across 6 locations
 - Prop drilling (10+ callbacks to GameBoard)
 
@@ -94,9 +94,9 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Milestone v1.1 initialization
-Resume with: `/gsd:execute-plan 8`
-Next action: Create feature branch `refactor-v1.1`, then execute plan 08-01
+Stopped at: Phase 8 complete
+Resume with: `/gsd:plan-phase 9`
+Next action: Plan Phase 9 (Art.tsx Decomposition)
 
 ## Quick Commands
 
