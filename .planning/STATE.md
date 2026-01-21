@@ -20,9 +20,9 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 ## Current Position
 
 Phase: 10 of 13 (GameBoard.tsx Decomposition) - IN PROGRESS
-Plan: 2/3 complete
-Status: Plan 10-02 complete, ready for 10-03 (final cleanup + human verify)
-Last activity: 2026-01-21 — Extracted goopRenderer utilities (GameBoard.tsx 785 → 654 lines)
+Plan: 10-03 in progress (Tasks 1-2 done, Task 3 UAT FAILED)
+Status: **UAT BLOCKED** — 3 bugs found, need fixes before approval
+Last activity: 2026-01-21 — CSS extraction done, UAT found input handling bugs
 
 Progress: ████████████░░░░░░░░░░░░░ 2.6/6 phases (43%)
 
@@ -111,9 +111,56 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Plan 10-02 complete (goopRenderer utilities extracted)
-Resume with: `/gsd:execute-plan .planning/phases/10-gameboard-decomposition/10-03-PLAN.md`
-Next action: Execute Plan 10-03 (CSS extraction + final cleanup + human verify)
+Stopped at: Plan 10-03 Task 3 (UAT) — **3 BUGS BLOCKING APPROVAL**
+Resume with: Fix the bugs below, then re-test
+
+### UAT Bugs to Fix (Plan 10-03)
+
+**Root Cause:** Release after hold/drag should NOT trigger tap/click. Currently it does.
+
+**Bug 1: Shake animation not working on invalid pop**
+- File: `components/GameBoard.css`
+- Attempted fix: Added `transform-box: fill-box` — DID NOT WORK
+- The CSS class IS being applied (shakingGroupId logic is correct in useInputHandlers.ts)
+- May need to investigate SVG animation behavior more deeply
+- Check: Is the shake class actually being applied? Is CSS transform working on SVG `<g>` elements?
+
+**Bug 2: Early swap release triggers rotate**
+- File: `hooks/useInputHandlers.ts` — handlePointerUp function (line ~256)
+- Problem: When user starts hold-to-swap but releases early (before 1s completes), it falls through to tap logic and triggers rotate
+- Current logic checks `actionConsumed` (only true if swap completed) and `isDragLocked` (only true if moved)
+- Fix needed: Also check if hold was "engaged" (time > HOLD_DELAY of 250ms). If so, release should do nothing.
+- Key insight: `if (dt >= HOLD_DELAY) return;` before the tap logic block
+
+**Bug 3: Controls dial click broken after my fix**
+- File: `components/MiniGames/ControlsPanel.tsx` — my fix broke clicking entirely
+- Related file: `hooks/useControlsMinigame.ts` — handleDialPress function
+- Problem: Same root cause as Bug 2 — release after drag fires click
+- My attempted fix (tracking isDialDragging state changes in render) was wrong approach
+- Better fix: Add `justFinishedDraggingRef` in the HOOK (useControlsMinigame), set it true in handleDialEnd, check it in handleDialPress, clear after 100ms
+- REVERT my changes in ControlsPanel.tsx first (lines 52-63)
+
+### Files Modified This Session (uncommitted bug fixes)
+
+These changes have bugs and should be reviewed/reverted:
+- `core/commands/actions.ts` — SwapPieceCommand (swap position fix - may be OK)
+- `components/MiniGames/ControlsPanel.tsx` — broken click fix (REVERT lines 52-63)
+- `components/GameBoard.css` — shake animation fix attempt (may need different approach)
+- `components/Art.tsx` — version bump to 0.7.0 (OK to keep)
+
+### Files Committed Successfully (Plan 10-03 Tasks 1-2)
+
+- `74009bb` - refactor(10-03): extract CSS animations to separate file
+- `93df3c9` - refactor(10-03): final cleanup and organization
+
+### What Was Accomplished
+
+1. Created `components/GameBoard.css` with all animations (glow, shake, malfunction, lights-dimmed)
+2. Removed inline `<style>` tag from GameBoard.tsx
+3. Used CSS media queries for desktop-only glow effects (replacing JS conditional)
+4. Cleaned up unused imports in GameBoard.tsx
+5. Added section comments for organization
+6. GameBoard.tsx: 1,031 → 604 lines (41% reduction across Phase 10)
 
 ## Quick Commands
 
