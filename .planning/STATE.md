@@ -107,10 +107,45 @@ None — all UAT issues resolved.
 Last session: 2026-01-21
 Stopped at: Completed Phase 12 (State Management & Events)
 
+### Current Task State
+
+**Completed this session:**
+- Plan 12-02: State Management Interface & Cleanup
+  - Task 1: Created GameStateManager interface in types.ts
+  - Task 2: Documented state architecture in Game.tsx
+  - Task 3: Human verified all input handling works
+- Bug fix: R key swap now requires hold (matches touch behavior)
+- Version synced to 1.1.1 across console, main menu, package.json
+
+**Phase 12 fully complete.** All v1.1 success criteria met:
+- ✅ No files over 400 lines
+- ✅ All hard-coded values in constants.ts
+- ✅ GameEngine.tick() under 50 lines (22 lines)
+- ✅ Event-based communication replaces prop drilling
+
+### Uncommitted Changes
+
+None — all changes committed and pushed.
+
+### Bugs/Blockers
+
+None — all UAT issues resolved.
+
+### Decisions Made
+
+1. **Version display consistency**: All version numbers must be updated together (package.json, MainMenu.tsx footer, Art.tsx console footer) with every testable change
+2. **Input parity**: All input methods must behave identically (R key swap now matches touch swap timing)
+3. **GameStateManager is documentation**: Interface captures existing GameEngine API, not enforced implementation
+
 ### Next Steps
 
 1. Run `/gsd:plan-phase 13` for Testing & Documentation phase
-2. Or merge `refactor-v1.1` to master if ready to ship
+2. Or `<merge>` to merge `refactor-v1.1` to master if ready to ship
+3. Phase 13 tasks from ROADMAP.md:
+   - Coordinate transform edge case tests
+   - Minigame state machine tests
+   - Command execution order tests
+   - Update architecture documentation
 
 ## Quick Commands
 
