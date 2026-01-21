@@ -49,6 +49,19 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
     onDialPress();
   };
 
+  // When drag ends (isDialDragging goes from true to false), mark as just dragged
+  // to prevent the subsequent click event from firing
+  const wasDraggingRef = useRef(false);
+  if (isDialDragging && !wasDraggingRef.current) {
+    wasDraggingRef.current = true;
+  }
+  if (!isDialDragging && wasDraggingRef.current) {
+    wasDraggingRef.current = false;
+    justDraggedRef.current = true;
+    // Reset after a short delay to allow normal clicks later
+    setTimeout(() => { justDraggedRef.current = false; }, 100);
+  }
+
   return (
     <g id="Reset_Controls">
       {/* Dial Base Panel - Corrected Shape */}

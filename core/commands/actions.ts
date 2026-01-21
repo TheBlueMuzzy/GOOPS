@@ -143,36 +143,45 @@ export class SwapPieceCommand implements Command {
 
     execute(engine: GameEngine): void {
         if (engine.state.gameOver || engine.state.isPaused || !engine.state.activePiece || !engine.state.canSwap) return;
-        
-        gameEventBus.emit(GameEventType.PIECE_ROTATED); 
 
-        const currentDef = engine.state.activePiece.definition;
+        gameEventBus.emit(GameEventType.PIECE_ROTATED);
+
+        const currentPiece = engine.state.activePiece;
+        const currentDef = currentPiece.definition;
         const nextDef = engine.state.storedPiece;
-        
+
         engine.state.storedPiece = currentDef;
-        engine.lockStartTime = null; 
-        
-        const spawnVisualX = Math.floor((VISIBLE_WIDTH - 1) / 2);
-        const spawnVisualY = 0;
-        const spawnX = getGridX(spawnVisualX, engine.state.boardOffset);
+        engine.lockStartTime = null;
 
         if (nextDef) {
-            const newPiece: ActivePiece = { 
-                definition: nextDef, 
-                cells: [...nextDef.cells], 
+            // Swap: new piece appears at SAME position as current piece (trade places)
+            const newPiece: ActivePiece = {
+                definition: nextDef,
+                cells: [...nextDef.cells],
                 rotation: 0,
                 spawnTimestamp: Date.now(),
-                startSpawnY: spawnVisualY,
-                screenX: spawnVisualX,
-                x: spawnX,
-                y: spawnVisualY,
+                startSpawnY: currentPiece.y,
+                screenX: currentPiece.screenX,
+                x: currentPiece.x,
+                y: currentPiece.y,
                 state: PieceState.FALLING
             };
-            
+
+            // Check for collision at current position
+            if (checkCollision(engine.state.grid, newPiece, engine.state.boardOffset)) {
+                // If collision, spawn at top instead (fallback)
+                const spawnVisualX = Math.floor((VISIBLE_WIDTH - 1) / 2);
+                const spawnX = getGridX(spawnVisualX, engine.state.boardOffset);
+                newPiece.screenX = spawnVisualX;
+                newPiece.x = spawnX;
+                newPiece.y = 0;
+                newPiece.startSpawnY = 0;
+            }
+
             engine.state.activePiece = newPiece;
             engine.state.canSwap = false;
         } else {
-            engine.spawnNewPiece(); 
+            engine.spawnNewPiece();
             engine.state.canSwap = false;
         }
         engine.emitChange();

@@ -46,6 +46,9 @@
 .shake-anim,
 .shake {
     animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    /* SVG elements need transform-box for CSS transforms to work correctly */
+    transform-box: fill-box;
+    transform-origin: center;
 }
 
 @keyframes malfunctionPulse {
