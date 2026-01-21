@@ -38,6 +38,23 @@
 - Contains: `core/events/EventBus.ts`, `core/events/GameEvents.ts`
 - Depends on: Nothing (standalone)
 - Used by: GameEngine emits, components subscribe
+- Events include: Audio triggers, score events, input events (INPUT_ROTATE, INPUT_DRAG, INPUT_SWAP)
+
+**Coordinate Transform Layer:**
+- Purpose: Pure functions for coordinate system conversions
+- Contains: `utils/coordinateTransform.ts`, `utils/coordinates.ts`
+- Depends on: VIEWBOX constants only
+- Used by: GameBoard, input handlers, rendering
+- Functions: visXToScreenX, screenXToVisX, clientToSvg, svgToVisual, visualToGrid, gridToPercentage
+- Why extracted: Testability, single source of truth for VIEWBOX dimensions
+
+**Configuration Layer:**
+- Purpose: Centralized game configuration constants
+- Contains: `complicationConfig.ts`
+- Depends on: Types only
+- Used by: GameEngine, ComplicationManager, minigame hooks
+- Exports: COMPLICATION_CONFIG, helper functions for unlock/cooldown calculations
+- Why extracted: Remove hard-coded values scattered across files
 
 **Utility Layer:**
 - Purpose: Pure functions for game logic calculations
@@ -75,9 +92,11 @@
 
 **GameEngine:**
 - Purpose: Central game state and logic container
-- Location: `core/GameEngine.ts`
+- Location: `core/GameEngine.ts` (~576 lines)
 - Pattern: Observer pattern (subscribe/notify)
 - Responsibilities: State management, game loop, command execution
+- Tick structure: `tick()` delegates to focused sub-methods (tickTimer, tickGoals, tickHeat, tickFallingBlocks, tickActivePiece)
+- Implements: GameStateManager interface for type-safe state access
 
 **Command:**
 - Purpose: Encapsulate game actions for clean separation
@@ -89,7 +108,22 @@
 - Purpose: Decoupled event publication/subscription
 - Location: `core/events/EventBus.ts`
 - Pattern: Pub/Sub
-- Used for: Audio triggers, score events, visual effects
+- Used for: Audio triggers, score events, visual effects, input events
+
+**ComplicationManager:**
+- Purpose: Handles complication trigger logic
+- Location: `core/ComplicationManager.ts`
+- Responsibilities: Check unlock conditions, calculate cooldowns, trigger complications
+
+**GoalManager:**
+- Purpose: Manages goal/crack state
+- Location: `core/GoalManager.ts`
+- Responsibilities: Goal spawning, crack progression, goal completion
+
+**GameStateManager (Interface):**
+- Purpose: Type-safe interface for game state access
+- Location: `types.ts`
+- Used by: Managers that need to read/write game state
 
 **GamePhase:**
 - Purpose: Finite state machine for game UI flow
@@ -141,4 +175,4 @@
 ---
 
 *Architecture analysis: 2026-01-18*
-*Update when major patterns change*
+*Updated 2026-01-21 for v1.1 refactor*
