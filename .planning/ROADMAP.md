@@ -20,7 +20,7 @@ None
 - [x] **Phase 4: Minigame-Complication Integration** - Connect minigame solutions to complications
 - [x] **Phase 5: HUD & Balance** - Add complication meters to periscope, rewrite trigger mechanics, tune values
 - [x] **Phase 6: Progression System** - XP floor, rank curve tuning, milestone unlocks
-- [ ] **Phase 7: System Upgrades** - Upgrade UI, effects, and costs
+- [x] **Phase 7: System Upgrades** - Upgrade UI, effects, and costs
 
 ## Phase Details
 
@@ -145,4 +145,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. Minigame-Complication Integration | 4/4 | Complete | 2026-01-19 |
 | 5. HUD & Balance | 4/4 | Complete | 2026-01-20 |
 | 6. Progression System | 2/2 | Complete | 2026-01-20 |
-| 7. System Upgrades | 2/4 | In Progress | - |
+| 7. System Upgrades | 4/4 | Complete | 2026-01-20 |
