@@ -8,7 +8,7 @@
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `refactor-v1.1` — v1.1 Architecture Refactor (Phase 11 in progress)
+- `refactor-v1.1` — v1.1 Architecture Refactor (Phase 12 in progress)
 
 ## Project Reference
 
@@ -19,12 +19,12 @@ See: .planning/PROJECT.md (updated 2026-01-21)
 
 ## Current Position
 
-Phase: 11 of 13 (GameEngine Refactor) - COMPLETE
-Plan: 2/2 complete
-Status: **Phase 11 complete** — Ready for Phase 12
-Last activity: 2026-01-21 — Completed Plan 11-02 (ComplicationManager & GoalManager)
+Phase: 12 of 13 (State Management & Events)
+Plan: 1/2 complete
+Status: **In progress** — Plan 12-01 complete
+Last activity: 2026-01-21 — Completed Plan 12-01 (Input Events & Prop Drilling)
 
-Progress: █████████████████████████ 4/6 phases (67%)
+Progress: █████████████████████████████ 5/6 phases (83%)
 
 ## v1.1 Architecture Refactor
 
@@ -83,7 +83,7 @@ Art.tsx reduced from 1,478 to 581 lines (61% reduction):
 - ~~GameEngine.tick() is 167 lines~~ ✅ Fixed in Phase 11 (22 lines)
 - ~~Hard-coded values scattered~~ ✅ Fixed in Phase 8 (complicationConfig.ts)
 - State fragmented across 6 locations
-- Prop drilling (10+ callbacks to GameBoard)
+- ~~Prop drilling (10+ callbacks to GameBoard)~~ ✅ Fixed in Phase 12 (6 callbacks removed)
 
 See `.planning/SYSTEM-INVENTORY.md` for complete system list.
 
@@ -111,19 +111,19 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Plan 11-01 complete, ready for Plan 11-02
+Stopped at: Completed Plan 12-01 (Input Events & Prop Drilling)
 
-### Phase 11 Summary (Complete)
+### Phase 12 Progress
 
-GameEngine refactored with improved separation of concerns:
-- Plan 11-01: Split tick() into 7 focused sub-methods (159 → 22 lines)
-- Plan 11-02: Extracted ComplicationManager (178 lines) and GoalManager (96 lines)
-- GameEngine.ts reduced from 811 → 576 lines (28% reduction)
+Plan 12-01 complete — Input event system established:
+- Added 6 input event types to EventBus
+- Removed 6 callback props from GameBoard
+- Input flow: useInputHandlers → EventBus → Game.tsx → Commands
 
 ### Next Steps
 
-1. Run `/gsd:plan-phase 12` to plan State Management & Events phase
-2. Or `/gsd:verify-work 11` to do UAT on Phase 11
+1. Run `/gsd:execute-plan .planning/phases/12-state-management/12-02-PLAN.md` for state interface
+2. Or `/gsd:verify-work 12-01` to do UAT first
 
 ## Quick Commands
 

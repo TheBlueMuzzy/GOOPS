@@ -124,16 +124,17 @@ Plans:
 **Goal**: Centralize state and expand event system to reduce prop drilling
 **Depends on**: Phase 11
 **Research**: Unlikely (internal patterns)
-**Plans**: TBD
+**Plans**: 2
 
 Tasks:
+- ✅ Expand GameEventBus with input events
+- ✅ Remove prop drilling from Game.tsx → GameBoard
 - Create GameStateManager interface
-- Centralize state updates
-- Expand GameEventBus with input events
-- Remove prop drilling from Game.tsx → GameBoard
+- Document state architecture
 
 Plans:
-- [ ] 12-01: TBD
+- [x] 12-01: Input Events & Prop Drilling Reduction
+- [ ] 12-02: State Management Interface & Cleanup
 
 #### Phase 13: Testing & Documentation
 
@@ -168,5 +169,5 @@ Plans:
 | 9. Art.tsx Decomposition | v1.1 | 3/3 | Complete | 2026-01-21 |
 | 10. GameBoard.tsx Decomposition | v1.1 | 3/3 | Complete | 2026-01-21 |
 | 11. GameEngine Refactor | v1.1 | 2/2 | Complete | 2026-01-21 |
-| 12. State Management & Events | v1.1 | 0/? | Not started | - |
+| 12. State Management & Events | v1.1 | 1/2 | In progress | - |
 | 13. Testing & Documentation | v1.1 | 0/? | Not started | - |
