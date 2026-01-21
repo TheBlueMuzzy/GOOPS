@@ -220,9 +220,9 @@ All 4 issues resolved in 07-03-FIX.md:
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: MILESTONE 1 COMPLETE
-Resume with: `/gsd:complete-milestone` or start new milestone
-Next action: Decide what to build next
+Stopped at: MILESTONE 1 COMPLETE + XP curve rebalanced
+Resume with: `/gsd:complete-milestone` or `/gsd:new-milestone`
+Next action: Decide what to build next (Band 1 features: starting junk, new colors)
 
 **Phase 7 Plans:** ALL COMPLETE
 - 07-01: System Upgrade Definitions - COMPLETE
@@ -234,7 +234,12 @@ Next action: Decide what to build next
 All 7 phases complete (22 plans total):
 - Dial rotation, minigame puzzles, complication system
 - HUD meters, progression/XP curve, system upgrades
-- 64 tests passing
+- 65 tests passing
+
+**Post-milestone fix (this session):**
+- XP curve rebalanced: Rank 1 now requires 6,000 XP (was instant)
+- Prevents skipping tutorial ranks with a single good run
+- Formula: `(rank+2) * (1750 + 250*rank)`
 
 **Key decisions this session:**
 - Two upgrade types: Passives (always-on) and Actives (equippable, charged by crack-goop)
