@@ -12,6 +12,7 @@ None
 
 - ✅ [v1.0 MVP](milestones/v1.0-ROADMAP.md) — Phases 1-7 (shipped 2026-01-21)
 - ✅ [v1.1 Architecture Refactor](milestones/v1.1-ROADMAP.md) — Phases 8-13 (shipped 2026-01-21)
+- 🚧 **v1.2 Progression System** — Phases 14-18 (in progress)
 
 ## Completed Milestones
 
@@ -56,6 +57,62 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 
 ---
 
+### 🚧 v1.2 Progression System (In Progress)
+
+**Milestone Goal:** Implement ranks 0-39 progression with 4 bands, 17 upgrades, and 3 new colors
+
+#### Phase 14: Data Architecture
+
+**Goal**: Redesign upgrade system data structures, implement progression table, configure level effects
+**Depends on**: Previous milestone complete
+**Research**: Unlikely (internal restructuring)
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD (run /gsd:plan-phase 14 to break down)
+
+#### Phase 15: Onboarding Band
+
+**Goal**: Implement ranks 0-9 upgrades — Circuit Stabilizer, Auto-Popper, Capacitor Efficiency, Cooldown Booster, Gear Lubrication, Focus Mode, Dense Goop, Pressure Control
+**Depends on**: Phase 14
+**Research**: Unlikely (extending existing upgrade patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: TBD
+
+#### Phase 16: Junk Band
+
+**Goal**: Implement Junk Goop complication, starting junk mechanic, Orange color, Junk Uniformer, Goop Swap, Goop Dump, Sealing Bonus
+**Depends on**: Phase 15
+**Research**: Unlikely (new complication follows established patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01: TBD
+
+#### Phase 17: Mixer Band
+
+**Goal**: Implement Goop Mix complication (multi-color pieces), Purple color, Active Expansion Slot, Goop Hold Viewer, Goop Colorizer, Goop Window
+**Depends on**: Phase 16
+**Research**: Unlikely (follows established patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01: TBD
+
+#### Phase 18: Cracked Band
+
+**Goal**: Implement Expanding Cracks complication, White color, Slow Cracks, Crack Matcher, Crack Down, 2nd Active Expansion Slot
+**Depends on**: Phase 17
+**Research**: Unlikely (follows established patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 18-01: TBD
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -73,3 +130,8 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 11. GameEngine Refactor | v1.1 | 2/2 | Complete | 2026-01-21 |
 | 12. State Management & Events | v1.1 | 2/2 | Complete | 2026-01-21 |
 | 13. Testing & Documentation | v1.1 | 2/2 | Complete | 2026-01-21 |
+| 14. Data Architecture | v1.2 | 0/? | Not started | - |
+| 15. Onboarding Band | v1.2 | 0/? | Not started | - |
+| 16. Junk Band | v1.2 | 0/? | Not started | - |
+| 17. Mixer Band | v1.2 | 0/? | Not started | - |
+| 18. Cracked Band | v1.2 | 0/? | Not started | - |
