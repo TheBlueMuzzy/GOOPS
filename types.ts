@@ -191,6 +191,9 @@ export interface GameState {
 
   // Expanding cracks tracking (rank 30+)
   crackGrowthTimers: Record<string, number>; // Goal ID -> last growth check timestamp
+
+  // CRACK_DOWN active ability tracking
+  crackDownRemaining: number; // Cracks left to spawn in bottom 4 rows (0 = normal spawning)
 }
 
 // --- State Management Interface ---

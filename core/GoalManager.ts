@@ -39,10 +39,18 @@ export class GoalManager {
         // Calculate current rank for goal color palette
         const currentRank = calculateRankDetails(initialTotalScore + state.score).rank;
 
+        // Check if CRACK_DOWN is active (crackDownRemaining > 0)
+        const crackDownActive = state.crackDownRemaining > 0;
+
         // Try to spawn a goal
-        const newGoal = spawnGoalMark(grid, state.goalMarks, currentRank, timeLeft, maxTime);
+        const newGoal = spawnGoalMark(grid, state.goalMarks, currentRank, timeLeft, maxTime, crackDownActive);
 
         if (newGoal) {
+            // Decrement CRACK_DOWN counter if active
+            if (crackDownActive) {
+                state.crackDownRemaining--;
+                console.log(`CRACK_DOWN: Crack spawned at y=${newGoal.y} (${state.crackDownRemaining} remaining)`);
+            }
             audio.playPop(1);
             return { goal: newGoal, newLastSpawnTime: now };
         }

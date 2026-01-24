@@ -492,35 +492,45 @@ export const calculateAdjacencyBonus = (grid: GridCell[][], group: Coordinate[])
 // --- Goal Mark Logic ---
 
 export const spawnGoalMark = (
-    grid: GridCell[][], 
-    existingMarks: GoalMark[], 
-    rank: number, 
-    timeLeft: number, 
-    maxTime: number
+    grid: GridCell[][],
+    existingMarks: GoalMark[],
+    rank: number,
+    timeLeft: number,
+    maxTime: number,
+    crackDownActive: boolean = false  // CRACK_DOWN: restrict to bottom 4 rows
 ): GoalMark | null => {
     const palette = getPaletteForRank(rank);
-    
+
     // Filter colors that already have a goal mark (Active colors are unavailable)
     const activeColors = new Set(existingMarks.map(m => m.color));
     const availableColors = palette.filter(c => !activeColors.has(c));
-    
+
     if (availableColors.length === 0) return null;
-    
+
     const color = availableColors[Math.floor(Math.random() * availableColors.length)];
-    
-    // Calculate Pressure Line Y index
-    const pressureRatio = Math.max(0, 1 - (timeLeft / maxTime));
-    const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
-    const pressureLineY = Math.floor(TOTAL_HEIGHT - waterHeightBlocks);
-    
-    // Valid Y range: [pressureLineY, TOTAL_HEIGHT - 1]
-    const spawnY = Math.max(BUFFER_HEIGHT, Math.min(TOTAL_HEIGHT - 1, pressureLineY));
-    
+
+    let spawnY: number;
+
+    if (crackDownActive) {
+        // CRACK_DOWN active: restrict to bottom 4 rows (TOTAL_HEIGHT - 4 to TOTAL_HEIGHT - 1)
+        const minY = TOTAL_HEIGHT - 4;  // Row 15 (0-indexed)
+        const maxY = TOTAL_HEIGHT - 1;  // Row 18
+        spawnY = minY + Math.floor(Math.random() * (maxY - minY + 1));
+    } else {
+        // Normal spawning: Calculate Pressure Line Y index
+        const pressureRatio = Math.max(0, 1 - (timeLeft / maxTime));
+        const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
+        const pressureLineY = Math.floor(TOTAL_HEIGHT - waterHeightBlocks);
+
+        // Valid Y range: [pressureLineY, TOTAL_HEIGHT - 1]
+        spawnY = Math.max(BUFFER_HEIGHT, Math.min(TOTAL_HEIGHT - 1, pressureLineY));
+    }
+
     // Try finding a valid empty spot (up to 20 attempts) at this specific Y
     for (let i = 0; i < 20; i++) {
         const x = Math.floor(Math.random() * TOTAL_WIDTH);
         const y = spawnY;
-        
+
         // Ensure empty grid cell
         if (!grid[y][x] && !existingMarks.some(m => m.x === x && m.y === y)) {
             return {
