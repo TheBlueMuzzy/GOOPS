@@ -89,7 +89,7 @@ describe('getRotatedCells', () => {
 });
 
 describe('getPaletteForRank', () => {
-  it('returns 4 colors for rank 1', () => {
+  it('returns 4 colors for rank 0-9', () => {
     const palette = getPaletteForRank(1);
     expect(palette).toHaveLength(4);
     expect(palette).toContain(COLORS.RED);
@@ -98,22 +98,39 @@ describe('getPaletteForRank', () => {
     expect(palette).toContain(COLORS.YELLOW);
   });
 
-  it('adds TEAL at rank 2', () => {
-    const palette = getPaletteForRank(2);
-    expect(palette).toHaveLength(5);
-    expect(palette).toContain(COLORS.TEAL);
+  it('still returns 4 colors at rank 9', () => {
+    const palette = getPaletteForRank(9);
+    expect(palette).toHaveLength(4);
   });
 
-  it('adds WHITE at rank 5', () => {
-    const palette = getPaletteForRank(5);
+  it('adds ORANGE at rank 10', () => {
+    const palette = getPaletteForRank(10);
+    expect(palette).toHaveLength(5);
+    expect(palette).toContain(COLORS.ORANGE);
+  });
+
+  it('adds PURPLE at rank 20', () => {
+    const palette = getPaletteForRank(20);
     expect(palette).toHaveLength(6);
+    expect(palette).toContain(COLORS.PURPLE);
+  });
+
+  it('adds WHITE at rank 30', () => {
+    const palette = getPaletteForRank(30);
+    expect(palette).toHaveLength(7);
     expect(palette).toContain(COLORS.WHITE);
   });
 
-  it('adds ORANGE at rank 8', () => {
-    const palette = getPaletteForRank(8);
+  it('has all 7 colors at rank 39', () => {
+    const palette = getPaletteForRank(39);
     expect(palette).toHaveLength(7);
+    expect(palette).toContain(COLORS.RED);
+    expect(palette).toContain(COLORS.BLUE);
+    expect(palette).toContain(COLORS.GREEN);
+    expect(palette).toContain(COLORS.YELLOW);
     expect(palette).toContain(COLORS.ORANGE);
+    expect(palette).toContain(COLORS.PURPLE);
+    expect(palette).toContain(COLORS.WHITE);
   });
 });
 
