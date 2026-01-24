@@ -129,6 +129,12 @@ export class HardDropCommand implements Command {
         const distance = Math.floor(y - engine.state.activePiece.y);
         engine.updateScoreAndStats(distance * 2, { speed: distance * 2 });
 
+        // Laser capacitor refill: +15% on piece lock (only when no active LASER complication)
+        const hasActiveLaser = engine.state.complications.some(c => c.type === ComplicationType.LASER);
+        if (!hasActiveLaser) {
+            engine.state.laserCapacitor = Math.min(100, engine.state.laserCapacitor + 10);
+        }
+
         gameEventBus.emit(GameEventType.PIECE_DROPPED);
         engine.state.grid = newGrid;
         

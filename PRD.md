@@ -213,7 +213,7 @@ While in Periscope Mode, equipment malfunctions occur based on player actions. P
 
 | Complication | Trigger | Rank Unlock | Upgradeable? |
 |--------------|---------|-------------|--------------|
-| Reset Laser | Capacitor drain meter empties (cumulative pops drain it) | Rank 1+ | Yes - slower drain rate |
+| Reset Laser | Capacitor meter empties (drains on pop, refills +10% on piece lock) | Rank 1+ | Yes - slower drain rate |
 | Reset Lights | 20% base chance on piece lock when pressure is 3-5 rows above highest goop | Rank 2+ | Yes - lower probability |
 | Reset Controls | Heat meter fills to 100% (builds while rotating, drains when stopped) | Rank 3+ | Yes - faster heat dissipation |
 

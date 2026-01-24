@@ -286,7 +286,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 
                 {/* Footer Text */}
                 <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="15.7" transform="translate(83.81 1855.15)">
-                    <tspan letterSpacing="-0.04em">V</tspan><tspan x="9.49">ersion 1.1.10</tspan>
+                    <tspan letterSpacing="-0.04em">V</tspan><tspan x="9.49">ersion 1.1.13</tspan>
                 </text>
                 <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="15.7" transform="translate(442.36 1855.15)">
                     <tspan>Muz</tspan><tspan letterSpacing="0em" x="29.67">z</tspan><tspan x="37.29">yMade @ 2026</tspan>
