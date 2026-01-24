@@ -23,7 +23,7 @@ export const COMPLICATION_CONFIG = {
     // Brightness-based system (player-controlled via soft drop)
     graceBaseSec: 5,           // Base grace period before dimming starts
     gracePerLevel: 0.75,       // +0.75s per CIRCUIT_STABILIZER level (max 8s at level 4)
-    dimDurationSec: 10,        // Time to dim from 100% to 10%
+    dimDurationSec: 5,         // Time to dim from 100% to 10%
     recoverRate: 400,          // % per second when soft dropping (0.25s from 0->100)
     overflarePeak: 110,        // Brief brightness peak after recovery
     overflareUpMs: 50,         // Time to reach overflare peak
