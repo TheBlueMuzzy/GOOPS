@@ -105,9 +105,9 @@ export class ComplicationManager {
                     state.rotationTimestamps = [];
                     break;
                 case ComplicationType.LIGHTS:
-                    // Reset brightness system - lights back to full, timer restarts
+                    // Reset brightness system - lights back to full, grace period starts fresh
                     state.lightsBrightness = 100;
-                    state.lightsGraceStart = null; // Will start fresh when next piece spawns
+                    state.lightsGraceStart = Date.now(); // Start grace period immediately
                     state.lightsFlickered = false;
                     break;
             }
