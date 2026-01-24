@@ -1,6 +1,6 @@
 // --- Imports ---
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { GameState, PieceState, ComplicationType, GamePhase, PieceDefinition } from '../types';
+import { GameState, PieceState, ComplicationType, GamePhase, PieceDefinition, DumpPiece } from '../types';
 import { VISIBLE_WIDTH, VISIBLE_HEIGHT, COLORS, TOTAL_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { isMobile } from '../utils/device';
@@ -40,7 +40,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     equippedActives = [], activeCharges = {}, onActivateAbility,
     powerUps, storedPiece, nextPiece
 }) => {
-  const { grid, boardOffset, activePiece, fallingBlocks, floatingTexts, timeLeft, goalMarks } = state;
+  const { grid, boardOffset, activePiece, fallingBlocks, floatingTexts, timeLeft, goalMarks, dumpPieces } = state;
 
   const palette = useMemo(() => getPaletteForRank(rank), [rank]);
 
@@ -398,14 +398,62 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 });
             })()}
 
+            {/* Dump Pieces (GOOP_DUMP falling pieces) */}
+            {dumpPieces && dumpPieces.map(piece => {
+                // Convert absolute grid X to visual position
+                let visX = piece.x - boardOffset;
+                if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
+                if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+
+                // Only render if in visible range
+                if (visX < -1 || visX > VISIBLE_WIDTH) return null;
+
+                // Calculate screen position
+                const startX = visXToScreenX(visX);
+                const width = visXToScreenX(visX + 1) - startX;
+                const yPos = (piece.y - BUFFER_HEIGHT) * BLOCK_SIZE;
+
+                // Don't render if above visible area
+                if (yPos < -BLOCK_SIZE) return null;
+
+                return (
+                    <g key={`dump-${piece.id}`}>
+                        {/* Ghostly fill */}
+                        <rect
+                            x={startX}
+                            y={yPos}
+                            width={width}
+                            height={BLOCK_SIZE}
+                            fill={piece.color}
+                            fillOpacity={0.3}
+                            rx={4}
+                            ry={4}
+                        />
+                        {/* Dashed outline */}
+                        <rect
+                            x={startX}
+                            y={yPos}
+                            width={width}
+                            height={BLOCK_SIZE}
+                            fill="none"
+                            stroke={piece.color}
+                            strokeWidth="2"
+                            strokeDasharray="4 2"
+                            rx={4}
+                            ry={4}
+                        />
+                    </g>
+                );
+            })}
+
             {/* Active Piece */}
             {activePiece && activePiece.state === PieceState.FALLING && (() => {
                 const color = activePiece.definition.color;
-                
+
                 const apCells = activePiece.cells.map(cell => {
                     const pieceGridX = normalizeX(activePiece.x + cell.x);
                     const pieceGridY = activePiece.y + cell.y;
-                    
+
                     let visX = pieceGridX - boardOffset;
                     if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
                     if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;

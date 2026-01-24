@@ -58,6 +58,14 @@ export interface FallingBlock {
   velocity: number;
 }
 
+export interface DumpPiece {
+  id: string;
+  color: string;
+  x: number;      // Absolute grid X (0-29) - moves with board rotation
+  y: number;      // Float for smooth falling (starts at -1 above visible area)
+  spawnDelay: number;  // ms until this piece spawns (for stagger effect)
+}
+
 export interface ScoreBreakdown {
     base: number;
     height: number;
@@ -124,6 +132,8 @@ export interface GameState {
   cellsCleared: number;
   combo: number;
   fallingBlocks: FallingBlock[];
+  dumpPieces: DumpPiece[];     // Active dump pieces falling from top
+  dumpQueue: DumpPiece[];      // Pieces waiting to spawn (staggered)
   timeLeft: number;
   
   // New Stats

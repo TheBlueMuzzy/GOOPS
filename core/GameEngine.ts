@@ -1,5 +1,5 @@
 
-import { GameState, GridCell, ActivePiece, PieceDefinition, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, GamePhase, PieceState, PieceType, Complication, ComplicationType } from '../types';
+import { GameState, GridCell, ActivePiece, PieceDefinition, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, GamePhase, PieceState, PieceType, Complication, ComplicationType, DumpPiece } from '../types';
 import {
     TOTAL_WIDTH, TOTAL_HEIGHT, VISIBLE_WIDTH, VISIBLE_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, INITIAL_TIME_MS,
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
@@ -25,6 +25,10 @@ const INITIAL_SPEED = 800; // ms per block
 const MIN_SPEED = 100;
 const SOFT_DROP_FACTOR = 6; // Reduced from 20 to make it feel less like a hard drop
 const LOCK_DELAY_MS = 500;
+
+// Dump piece constants (GOOP_DUMP ability)
+const DUMP_SPAWN_INTERVAL = 80;  // ms between each piece spawn (8 pieces over ~0.64s)
+const DUMP_FALL_SPEED = 0.03;    // Grid units per ms (fast fixed speed)
 
 export class GameEngine {
     public state: GameState;
@@ -77,6 +81,8 @@ export class GameEngine {
             cellsCleared: 0,
             combo: 0,
             fallingBlocks: [],
+            dumpPieces: [],
+            dumpQueue: [],
             timeLeft: INITIAL_TIME_MS,
             scoreBreakdown: { base: 0, height: 0, offscreen: 0, adjacency: 0, speed: 0 },
             gameStats: { startTime: 0, totalBonusTime: 0, maxGroupSize: 0 },
@@ -188,6 +194,8 @@ export class GameEngine {
             combo: 0,
             cellsCleared: 0,
             fallingBlocks: [],
+            dumpPieces: [],
+            dumpQueue: [],
             timeLeft: this.maxTime,
             floatingTexts: [],
             goalMarks: [],
@@ -322,42 +330,30 @@ export class GameEngine {
                 break;
             }
             case 'GOOP_DUMP': {
-                // Drop same-color blocks across the board
+                // Drop same-color blocks from the top (rain effect)
                 // Use the current falling piece's color if available, else random from palette
                 const palette = getPaletteForRank(calculateRankDetails(this.initialTotalScore).rank);
                 const targetColor = this.state.activePiece?.definition.color
                     || palette[Math.floor(Math.random() * palette.length)];
 
-                // Find empty cells in bottom 3 rows for junk drop
-                const candidates: { x: number; y: number }[] = [];
-                for (let y = TOTAL_HEIGHT - 3; y < TOTAL_HEIGHT; y++) {
-                    for (let x = 0; x < TOTAL_WIDTH; x++) {
-                        if (!this.state.grid[y][x]) {
-                            candidates.push({ x, y });
-                        }
-                    }
+                // Pick 8 random X positions across full cylinder width (0-29)
+                const xPositions: number[] = [];
+                for (let i = 0; i < 8; i++) {
+                    xPositions.push(Math.floor(Math.random() * TOTAL_WIDTH));
                 }
 
-                // Shuffle and pick 8 spots (or fewer if not enough empty)
-                const shuffled = candidates.sort(() => Math.random() - 0.5);
-                const spots = shuffled.slice(0, 8);
+                // Create dump pieces with staggered spawn delays
+                const dumpPieces: DumpPiece[] = xPositions.map((x, index) => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    color: targetColor,
+                    x: x,
+                    y: -1,  // Start above visible area
+                    spawnDelay: index * DUMP_SPAWN_INTERVAL  // 0, 80, 160, 240...
+                }));
 
-                // Spawn single-block goops
-                const newGrid = this.state.grid.map(row => [...row]);
-                spots.forEach(({ x, y }) => {
-                    newGrid[y][x] = {
-                        id: Math.random().toString(36).substr(2, 9),
-                        groupId: Math.random().toString(36).substr(2, 9), // Unique group = single unit
-                        timestamp: Date.now(),
-                        color: targetColor,
-                        groupMinY: y,
-                        groupMaxY: y,
-                        groupSize: 1
-                    };
-                });
-
-                this.state.grid = updateGroups(newGrid);
-                console.log(`GOOP_DUMP activated: spawned ${spots.length} ${targetColor} blocks`);
+                // Add to queue (pieces will move to active when delay expires)
+                this.state.dumpQueue.push(...dumpPieces);
+                console.log(`GOOP_DUMP activated: queued ${dumpPieces.length} ${targetColor} pieces`);
                 break;
             }
             // Future actives: GOOP_COLORIZER, CRACK_DOWN
@@ -791,6 +787,75 @@ export class GameEngine {
     }
 
     /**
+     * Update dump pieces (GOOP_DUMP ability): process queue, fall, and land.
+     */
+    private tickDumpPieces(dt: number): void {
+        // Process queue: decrement spawnDelay, move to active when delay <= 0
+        const stillQueued: DumpPiece[] = [];
+        for (const piece of this.state.dumpQueue) {
+            piece.spawnDelay -= dt;
+            if (piece.spawnDelay <= 0) {
+                // Move to active pieces
+                this.state.dumpPieces.push(piece);
+            } else {
+                stillQueued.push(piece);
+            }
+        }
+        this.state.dumpQueue = stillQueued;
+
+        // No active dump pieces? Nothing more to do
+        if (this.state.dumpPieces.length === 0) return;
+
+        // Move active pieces down and check for landing
+        const stillFalling: DumpPiece[] = [];
+        const newGrid = this.state.grid.map(row => [...row]);
+        let gridChanged = false;
+
+        for (const piece of this.state.dumpPieces) {
+            // Move down by fall speed
+            piece.y += DUMP_FALL_SPEED * dt;
+
+            // Check for collision with grid or floor
+            const gridY = Math.floor(piece.y);
+            const gridX = piece.x;
+
+            // Check if landed (hit floor or existing block below)
+            let landed = false;
+
+            if (gridY >= TOTAL_HEIGHT - 1) {
+                // Hit floor
+                landed = true;
+            } else if (gridY >= 0 && newGrid[gridY + 1]?.[gridX]) {
+                // Hit existing block below
+                landed = true;
+            }
+
+            if (landed && gridY >= 0 && gridY < TOTAL_HEIGHT) {
+                // Place in grid as a single-block goop
+                newGrid[gridY][gridX] = {
+                    id: piece.id,
+                    groupId: Math.random().toString(36).substr(2, 9),
+                    timestamp: Date.now(),
+                    color: piece.color,
+                    groupMinY: gridY,
+                    groupMaxY: gridY,
+                    groupSize: 1
+                };
+                gridChanged = true;
+            } else if (!landed) {
+                stillFalling.push(piece);
+            }
+            // If landed but out of bounds (gridY < 0), piece is lost (shouldn't happen normally)
+        }
+
+        this.state.dumpPieces = stillFalling;
+
+        if (gridChanged) {
+            this.state.grid = updateGroups(newGrid);
+        }
+    }
+
+    /**
      * Handle active piece gravity, locking, and LIGHTS complication trigger.
      */
     private tickActivePiece(dt: number): void {
@@ -908,6 +973,9 @@ export class GameEngine {
 
         // Falling blocks
         this.tickFallingBlocks(dt);
+
+        // Dump pieces (GOOP_DUMP ability rain effect)
+        this.tickDumpPieces(dt);
 
         // Active piece gravity
         this.tickActivePiece(dt);
