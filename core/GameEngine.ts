@@ -127,7 +127,10 @@ export class GameEngine {
             colorizerRemaining: 0,
 
             // Expanding cracks tracking (rank 30+)
-            crackGrowthTimers: {}
+            crackGrowthTimers: {},
+
+            // CRACK_DOWN active ability tracking
+            crackDownRemaining: 0
         };
 
         this.applyUpgrades();
@@ -243,7 +246,10 @@ export class GameEngine {
             colorizerRemaining: 0,
 
             // Expanding cracks tracking - reset on new run
-            crackGrowthTimers: {}
+            crackGrowthTimers: {},
+
+            // CRACK_DOWN active ability - reset on new run
+            crackDownRemaining: 0
         };
 
         this.lockStartTime = null;
@@ -399,7 +405,15 @@ export class GameEngine {
                 console.log(`GOOP_COLORIZER activated: next ${pieceCount} pieces will be ${targetColor}`);
                 break;
             }
-            // Future actives: CRACK_DOWN
+            case 'CRACK_DOWN': {
+                // Make next N cracks spawn in bottom 4 rows
+                // Level scaling: 3/5/7 cracks for level 1/2/3
+                const crackDownLevel = this.powerUps[upgradeId] || 1;
+                const crackCount = 1 + crackDownLevel * 2; // 3, 5, 7
+                this.state.crackDownRemaining = crackCount;
+                console.log(`CRACK_DOWN activated: next ${crackCount} cracks will spawn in bottom 4 rows`);
+                break;
+            }
             default:
                 console.log(`Active ability ${upgradeId} not yet implemented`);
         }
@@ -523,9 +537,23 @@ export class GameEngine {
         if (!pieceToSpawn && this.state.nextPiece) {
             pieceToSpawn = this.state.nextPiece;
             // Generate new next piece for the queue
+            // Apply CRACK_MATCHER bias: +25% per level to match lowest crack's color
+            let nextColor = palette[Math.floor(Math.random() * palette.length)];
+            const crackMatcherLevel = this.powerUps['CRACK_MATCHER'] || 0;
+            if (crackMatcherLevel > 0 && this.state.goalMarks.length > 0) {
+                // Find lowest crack (highest Y value = closest to bottom)
+                const lowestCrack = this.state.goalMarks.reduce((lowest, mark) =>
+                    mark.y > lowest.y ? mark : lowest
+                );
+                const biasChance = crackMatcherLevel * 0.25; // 25% per level
+                if (Math.random() < biasChance) {
+                    nextColor = lowestCrack.color;
+                    console.log(`CRACK_MATCHER: Biased next piece to ${nextColor} (lowest crack at y=${lowestCrack.y})`);
+                }
+            }
             const newNext = {
                 ...PIECES[Math.floor(Math.random() * PIECES.length)],
-                color: palette[Math.floor(Math.random() * palette.length)]
+                color: nextColor
             };
             this.state.nextPiece = newNext;
         }
