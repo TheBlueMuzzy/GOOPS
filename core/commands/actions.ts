@@ -34,11 +34,18 @@ export class MoveBoardCommand implements Command {
              // For horizontal movement, check collision at nearest integer Y.
              // This allows sliding into gaps that would fit when the piece lands,
              // rather than rejecting because the fractional Y straddles an extra row.
-             const snappedPiece = { ...newPiece, y: Math.round(newPiece.y) };
+             const snappedY = Math.round(newPiece.y);
+             const snappedPiece = { ...newPiece, y: snappedY };
 
              if (checkCollision(engine.state.grid, snappedPiece, newOffset)) {
                  gameEventBus.emit(GameEventType.ACTION_REJECTED);
                  return;
+             }
+
+             // If the piece only fits at the snapped Y (would collide at fractional Y),
+             // snap it to the grid so it doesn't visually overlap with blocks.
+             if (checkCollision(engine.state.grid, newPiece, newOffset)) {
+                 newPiece = snappedPiece;
              }
         }
 
