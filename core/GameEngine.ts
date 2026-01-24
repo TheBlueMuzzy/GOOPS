@@ -68,6 +68,7 @@ export class GameEngine {
             boardOffset: 0,
             activePiece: null,
             storedPiece: null,
+            nextPiece: null,
             score: 0,
             gameOver: false,
             isPaused: false,
@@ -164,6 +165,12 @@ export class GameEngine {
         const palette = getPaletteForRank(startRank);
         const newTarget = palette.length + startRank;
 
+        // Generate next piece for preview
+        const nextPieceDef = {
+            ...PIECES[Math.floor(Math.random() * PIECES.length)],
+            color: palette[Math.floor(Math.random() * palette.length)]
+        };
+
         this.state = {
             ...this.state,
             grid: createInitialGrid(startRank, this.powerUps),
@@ -176,6 +183,7 @@ export class GameEngine {
                 ...PIECES[Math.floor(Math.random() * PIECES.length)],
                 color: palette[Math.floor(Math.random() * palette.length)]
             },
+            nextPiece: nextPieceDef,
             canSwap: true,
             combo: 0,
             cellsCleared: 0,
@@ -469,8 +477,21 @@ export class GameEngine {
         const currentOffset = offsetOverride !== undefined ? offsetOverride : this.state.boardOffset;
         const currentTotalScore = this.initialTotalScore + this.state.score;
         const currentRank = calculateRankDetails(currentTotalScore).rank;
+        const palette = getPaletteForRank(currentRank);
 
-        const piece = spawnPiece(pieceDef, currentRank);
+        // If no specific piece provided and we have a queued next piece, use it
+        let pieceToSpawn = pieceDef;
+        if (!pieceToSpawn && this.state.nextPiece) {
+            pieceToSpawn = this.state.nextPiece;
+            // Generate new next piece for the queue
+            const newNext = {
+                ...PIECES[Math.floor(Math.random() * PIECES.length)],
+                color: palette[Math.floor(Math.random() * palette.length)]
+            };
+            this.state.nextPiece = newNext;
+        }
+
+        const piece = spawnPiece(pieceToSpawn, currentRank);
         
         // LOGIC: Spawn at top center of visible viewport
         // Map visible center to grid coordinate based on board offset

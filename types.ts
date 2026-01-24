@@ -115,6 +115,7 @@ export interface GameState {
   boardOffset: number; // 0-TOTAL_WIDTH
   activePiece: ActivePiece | null;
   storedPiece: PieceDefinition | null;
+  nextPiece: PieceDefinition | null;  // Preview of upcoming piece
   score: number;
   gameOver: boolean;
   isPaused: boolean;

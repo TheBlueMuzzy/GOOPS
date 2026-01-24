@@ -27,8 +27,10 @@ export const getPaletteForRank = (rank: number): string[] => {
 export const spawnPiece = (definition?: PieceDefinition, rank: number = 1): ActivePiece => {
   const def = definition || PIECES[Math.floor(Math.random() * PIECES.length)];
   const palette = getPaletteForRank(rank);
-  const color = palette[Math.floor(Math.random() * palette.length)];
-  
+  // Use definition's color if it's a valid game color, otherwise generate random
+  const isValidColor = definition?.color && palette.includes(definition.color);
+  const color = isValidColor ? definition.color : palette[Math.floor(Math.random() * palette.length)];
+
   return {
     definition: { ...def, color },
     x: 0, // Set by caller
