@@ -73,14 +73,16 @@ All three complications have player-driven triggers AND mitigations.
 ## Known Issues (Post v1.2)
 
 **Bugs to Investigate:**
-1. **Pressure not rising bug** - Sometimes pressure doesn't start rising for a long time.
-2. **Falling pieces don't interact with cracks** - After clears, gravity-falling pieces don't consume/destroy cracks.
+1. **Falling pieces don't interact with cracks** - After clears, gravity-falling pieces don't consume/destroy cracks.
 
 **RESEARCH REQUIRED - Tetris Movement Feel:**
-3. **Lock delay / last-moment sliding** - Research how Tetris achieves this feel.
-4. **Sideways movement into gaps** - Research Tetris collision logic for moving into gaps.
+2. **Lock delay / last-moment sliding** - Research how Tetris achieves this feel.
+3. **Sideways movement into gaps** - Research Tetris collision logic for moving into gaps.
 
-⚠️ **WARNING for tasks 3-4:** Previous attempts "broke pretty badly". Approach with caution.
+⚠️ **WARNING for tasks 2-3:** Previous attempts "broke pretty badly". Approach with caution.
+
+**Investigated (see INVESTIGATIONS.md):**
+- Pressure not rising bug — likely fixed in v1.1, cannot reproduce
 
 ## Session Continuity
 

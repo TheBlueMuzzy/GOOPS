@@ -47,7 +47,6 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 ### Active
 
 **Post v1.2 Bug Fixes:**
-- [ ] Pressure not rising bug (investigate trigger conditions)
 - [ ] Falling pieces don't interact with cracks after clears
 
 **Research:**
