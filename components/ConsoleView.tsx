@@ -289,6 +289,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, totalSc
                     onClose={() => setShowSystemUpgrades(false)}
                     equippedActives={equippedActives}
                     onToggleEquip={onToggleEquip}
+                    maxActiveSlots={1 + (powerUps['ACTIVE_EXPANSION_SLOT'] || 0) + (powerUps['ACTIVE_EXPANSION_SLOT_2'] || 0)}
                 />
             )}
         </div>

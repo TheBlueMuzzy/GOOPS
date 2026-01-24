@@ -9,6 +9,7 @@ interface UpgradePanelProps {
   onClose: () => void;
   equippedActives?: string[];
   onToggleEquip?: (upgradeId: string) => void;
+  maxActiveSlots?: number; // Max actives player can equip (default 1)
 }
 
 // Get accent colors based on upgrade ID
@@ -28,7 +29,8 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
   onPurchase,
   onClose,
   equippedActives = [],
-  onToggleEquip
+  onToggleEquip,
+  maxActiveSlots = 1
 }) => {
   // Filter passive upgrades by player rank, sorted by unlock rank
   const availableUpgrades = Object.values(UPGRADES)
@@ -214,7 +216,7 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
                   className="text-xl tracking-wide mt-6 mb-4 text-center"
                   style={{ color: '#f2a743', fontFamily: "'From Where You Are', sans-serif" }}
                 >
-                  ACTIVE ABILITIES
+                  ACTIVE ABILITIES ({equippedActives.length}/{maxActiveSlots})
                 </div>
                 <div className="space-y-4">
                   {availableActives.map(active => {
@@ -256,13 +258,18 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
                         {/* Equip Checkbox (only if unlocked) */}
                         {isUnlocked && onToggleEquip && (
                           <label
-                            className="flex items-center gap-3 cursor-pointer mb-2 p-2 rounded-lg"
-                            style={{ backgroundColor: isEquipped ? '#5bbc7020' : 'transparent' }}
+                            className="flex items-center gap-3 mb-2 p-2 rounded-lg"
+                            style={{
+                              backgroundColor: isEquipped ? '#5bbc7020' : 'transparent',
+                              cursor: (!isEquipped && equippedActives.length >= maxActiveSlots) ? 'not-allowed' : 'pointer',
+                              opacity: (!isEquipped && equippedActives.length >= maxActiveSlots) ? 0.5 : 1
+                            }}
                           >
                             <input
                               type="checkbox"
                               checked={isEquipped}
                               onChange={() => onToggleEquip(active.id)}
+                              disabled={!isEquipped && equippedActives.length >= maxActiveSlots}
                               className="w-5 h-5 accent-green-500"
                             />
                             <span
@@ -272,7 +279,7 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
                                 fontWeight: isEquipped ? 'bold' : 'normal'
                               }}
                             >
-                              {isEquipped ? 'EQUIPPED' : 'Equip'}
+                              {isEquipped ? 'EQUIPPED' : (equippedActives.length >= maxActiveSlots ? 'Slots Full' : 'Equip')}
                             </span>
                           </label>
                         )}
