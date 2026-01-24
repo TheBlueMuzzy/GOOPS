@@ -302,7 +302,46 @@ export class GameEngine {
                 console.log(`COOLDOWN_BOOSTER activated: +${extensionPercent * 100}% cooldown extension`);
                 break;
             }
-            // Future actives: GOOP_DUMP, GOOP_COLORIZER, CRACK_DOWN
+            case 'GOOP_DUMP': {
+                // Drop same-color blocks across the board
+                // Use the current falling piece's color if available, else random from palette
+                const palette = getPaletteForRank(calculateRankDetails(this.initialTotalScore).rank);
+                const targetColor = this.state.activePiece?.definition.color
+                    || palette[Math.floor(Math.random() * palette.length)];
+
+                // Find empty cells in bottom 3 rows for junk drop
+                const candidates: { x: number; y: number }[] = [];
+                for (let y = TOTAL_HEIGHT - 3; y < TOTAL_HEIGHT; y++) {
+                    for (let x = 0; x < TOTAL_WIDTH; x++) {
+                        if (!this.state.grid[y][x]) {
+                            candidates.push({ x, y });
+                        }
+                    }
+                }
+
+                // Shuffle and pick 8 spots (or fewer if not enough empty)
+                const shuffled = candidates.sort(() => Math.random() - 0.5);
+                const spots = shuffled.slice(0, 8);
+
+                // Spawn single-block goops
+                const newGrid = this.state.grid.map(row => [...row]);
+                spots.forEach(({ x, y }) => {
+                    newGrid[y][x] = {
+                        id: Math.random().toString(36).substr(2, 9),
+                        groupId: Math.random().toString(36).substr(2, 9), // Unique group = single unit
+                        timestamp: Date.now(),
+                        color: targetColor,
+                        groupMinY: y,
+                        groupMaxY: y,
+                        groupSize: 1
+                    };
+                });
+
+                this.state.grid = updateGroups(newGrid);
+                console.log(`GOOP_DUMP activated: spawned ${spots.length} ${targetColor} blocks`);
+                break;
+            }
+            // Future actives: GOOP_COLORIZER, CRACK_DOWN
             default:
                 console.log(`Active ability ${upgradeId} not yet implemented`);
         }
