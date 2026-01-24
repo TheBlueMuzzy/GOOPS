@@ -196,6 +196,29 @@ export class ComplicationManager {
             }
         }
     }
+
+    /**
+     * Reduce all active complication cooldowns by a percentage.
+     * Used by SEALING_BONUS passive effect when sealing crack-goop.
+     * @param state - Current game state
+     * @param reductionPercent - Percentage to reduce remaining cooldown (0.10 = 10%)
+     */
+    reduceAllCooldowns(
+        state: GameState,
+        reductionPercent: number
+    ): void {
+        const now = Date.now();
+
+        for (const type of Object.values(ComplicationType)) {
+            const cooldownEnd = state.complicationCooldowns[type];
+            if (cooldownEnd > now) {
+                // Cooldown is active, reduce remaining time
+                const remainingMs = cooldownEnd - now;
+                const reductionMs = remainingMs * reductionPercent;
+                state.complicationCooldowns[type] = Math.max(now, cooldownEnd - reductionMs);
+            }
+        }
+    }
 }
 
 export const complicationManager = new ComplicationManager();

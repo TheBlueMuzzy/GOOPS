@@ -10,6 +10,7 @@ import { VISIBLE_WIDTH, TOTAL_HEIGHT, VISIBLE_HEIGHT, PER_BLOCK_DURATION, PRESSU
 import { COMPLICATION_CONFIG, isComplicationUnlocked } from '../../complicationConfig';
 import { calculateRankDetails } from '../../utils/progression';
 import { audio } from '../../utils/audio';
+import { complicationManager } from '../ComplicationManager';
 
 export class MoveBoardCommand implements Command {
     type = 'MOVE_BOARD';
@@ -283,6 +284,19 @@ export class BlockTapCommand implements Command {
 
                  // Charge active abilities: 10% per sealed crack-goop
                  engine.chargeActiveAbilities(infusedCount * 10);
+
+                 // SEALING_BONUS: Reduce complication cooldowns when sealing crack-goop
+                 const sealingLevel = engine.powerUps['SEALING_BONUS'] || 0;
+                 if (sealingLevel > 0) {
+                     const baseReduction = 0.10; // 10% base
+                     const bonusReduction = sealingLevel * 0.05; // +5% per level
+                     const totalReduction = baseReduction + bonusReduction;
+
+                     // Apply reduction for each infused unit sealed
+                     for (let i = 0; i < infusedCount; i++) {
+                         complicationManager.reduceAllCooldowns(engine.state, totalReduction);
+                     }
+                 }
             }
 
             const totalTimeAdded = basePressureReduc + unitPressureReduc + tierPressureReduc + infusedBonus;
