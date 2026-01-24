@@ -42,7 +42,7 @@ export const spawnPiece = (definition?: PieceDefinition, rank: number = 1): Acti
   };
 };
 
-export const createInitialGrid = (rank: number): GridCell[][] => {
+export const createInitialGrid = (rank: number, powerUps?: Record<string, number>): GridCell[][] => {
   const grid = Array(TOTAL_HEIGHT).fill(null).map(() => Array(TOTAL_WIDTH).fill(null));
 
   // Starting Junk Logic (Section 11.2)
@@ -54,7 +54,7 @@ export const createInitialGrid = (rank: number): GridCell[][] => {
   if (junkCount > 0) {
       const palette = getPaletteForRank(rank);
       const availableCols = Array.from({ length: TOTAL_WIDTH }, (_, i) => i);
-      
+
       // Fisher-Yates shuffle to pick unique columns
       for (let i = availableCols.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -64,10 +64,25 @@ export const createInitialGrid = (rank: number): GridCell[][] => {
       const selectedCols = availableCols.slice(0, junkCount);
       const y = TOTAL_HEIGHT - 1;
 
+      // JUNK_UNIFORMER: bias toward same color (+10% per level)
+      const uniformerLevel = powerUps?.['JUNK_UNIFORMER'] || 0;
+      const biasChance = uniformerLevel * 0.10; // 0%, 10%, 20%, 30%, 40%
+      let anchorColor: string | null = null;
+
       selectedCols.forEach(x => {
-          const color = palette[Math.floor(Math.random() * palette.length)];
+          let color: string;
+          if (anchorColor === null) {
+              // First block: pick random color as anchor
+              color = palette[Math.floor(Math.random() * palette.length)];
+              anchorColor = color;
+          } else {
+              // Subsequent blocks: biasChance to match anchor, else random
+              const useAnchor = Math.random() < biasChance;
+              color = useAnchor ? anchorColor : palette[Math.floor(Math.random() * palette.length)];
+          }
+
           const groupId = Math.random().toString(36).substr(2, 9);
-          
+
           grid[y][x] = {
               id: Math.random().toString(36).substr(2, 9),
               groupId: groupId, // Unique group ID for each junk block = Single Unit Globs

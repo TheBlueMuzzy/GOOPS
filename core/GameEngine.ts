@@ -59,7 +59,7 @@ export class GameEngine {
         const goalsTarget = palette.length + startRank;
 
         this.state = {
-            grid: createInitialGrid(startRank),
+            grid: createInitialGrid(startRank, powerUps),
             boardOffset: 0,
             activePiece: null,
             storedPiece: null,
@@ -158,7 +158,7 @@ export class GameEngine {
 
         this.state = {
             ...this.state,
-            grid: createInitialGrid(startRank),
+            grid: createInitialGrid(startRank, this.powerUps),
             boardOffset: 0,
             score: 0,
             gameOver: false,
