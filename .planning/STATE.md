@@ -100,7 +100,7 @@ All three complications have player-driven triggers AND mitigations.
 ## Session Continuity
 
 Last session: 2026-01-24
-**Version:** 1.1.30
+**Version:** 1.1.31
 
 ### This Session Summary (2026-01-24)
 
@@ -110,17 +110,19 @@ Last session: 2026-01-24
 - Reduced reset limit to 10 (v1.1.30) after user testing
 - Lights grace timer now pauses during console/minigame views (v1.1.30)
 - Added debug logging for pressure bug (still investigating)
+- **Phase 2 kicks (v1.1.31):** Added upward kick tests (y:-2) to allow pieces to climb 2 rows via rotation
 
 **Decisions made:**
 - Move reset limit = 10 (middle ground between Tetris's 15 and user's instinct of 5)
 - Lights timer pauses in console to prevent feels-bad chain after minigames
+- Added 3 new kick offsets: {0,-2}, {1,-2}, {-1,-2} for tucking under overhangs
 
 **Known bug:**
 - Pressure not rising bug reproduced on desktop — debug logging added to catch it next time
 
 **Next session:**
+- Test upward kicks (try rotating pieces near gaps to tuck under overhangs)
 - Monitor debug logs for pressure bug
-- Consider Phase 2: upward kicks (+y offset) if move reset feels good
 
 ## Quick Commands
 
