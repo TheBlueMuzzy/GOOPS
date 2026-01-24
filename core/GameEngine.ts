@@ -41,7 +41,7 @@ export class GameEngine {
     // Internal state tracking - Public for Commands to access
     public maxTime: number = INITIAL_TIME_MS;
     public lockStartTime: number | null = null;
-    public lockResetCount: number = 0;  // Move reset counter (max 15 resets before force lock)
+    public lockResetCount: number = 0;  // Move reset counter (max 10 resets before force lock)
     public lastGoalSpawnTime: number = 0;
     public lastComplicationCheckTime: number = 0;
     public isSoftDropping: boolean = false;
@@ -50,6 +50,7 @@ export class GameEngine {
     private lightsOverflareTime: number = 0; // Time spent in current overflare phase
     private lightsFlickerTime: number = 0; // Time spent in flicker animation
     private lightsFlickerActive: boolean = false; // Currently in flicker animation
+    private lightsGracePausedAt: number | null = null; // When grace timer was paused (console/minigame)
     public initialTotalScore: number = 0;
     public powerUps: Record<string, number> = {};
     public isSessionActive: boolean = false;
@@ -709,8 +710,21 @@ export class GameEngine {
         // Only run if LIGHTS is unlocked
         if (!isComplicationUnlocked(ComplicationType.LIGHTS, startingRank)) return;
 
-        // Skip if not in PERISCOPE phase (don't dim during console/minigame)
-        if (this.state.phase !== GamePhase.PERISCOPE) return;
+        // Pause grace timer when not in PERISCOPE phase (console/minigame)
+        if (this.state.phase !== GamePhase.PERISCOPE) {
+            // Record when we paused so we can resume later
+            if (this.state.lightsGraceStart !== null && this.lightsGracePausedAt === null) {
+                this.lightsGracePausedAt = Date.now();
+            }
+            return;
+        }
+
+        // Resume grace timer if we were paused (returning from console/minigame)
+        if (this.lightsGracePausedAt !== null && this.state.lightsGraceStart !== null) {
+            const pausedDuration = Date.now() - this.lightsGracePausedAt;
+            this.state.lightsGraceStart += pausedDuration;
+            this.lightsGracePausedAt = null;
+        }
 
         // Skip if already in malfunction state
         const hasLightsActive = this.state.complications.some(c => c.type === ComplicationType.LIGHTS);
@@ -1013,8 +1027,8 @@ export class GameEngine {
             const lockedTime = Date.now() - this.lockStartTime;
             const effectiveLockDelay = this.isSoftDropping ? 50 : LOCK_DELAY_MS;
 
-            // Lock if: timer expired OR hit 15-reset limit (prevents infinite spin)
-            if (lockedTime > effectiveLockDelay || this.lockResetCount >= 15) {
+            // Lock if: timer expired OR hit 10-reset limit (prevents infinite spin)
+            if (lockedTime > effectiveLockDelay || this.lockResetCount >= 10) {
                 this.lockActivePiece();
             }
         } else {
