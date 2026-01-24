@@ -37,125 +37,279 @@ export const PRESSURE_TIER_BONUS_MS = 250; // +0.25s per tier
 // Upgrades unlock at specific ranks and are revealed to player at that time
 
 export const UPGRADES = {
-  // === RANK 1-4: COMPLICATION PASSIVES ===
+  // === ONBOARDING BAND (Ranks 0-9) ===
 
-  LASER: {
-    id: 'LASER',
-    name: 'CAPACITOR EFFICIENCY',
-    desc: 'Reduces laser capacitor drain rate when popping goop.',
-    type: 'passive' as const,
-    unlockRank: 1,
-    costPerLevel: 1,
-    maxLevel: 5,
-    effectPerLevel: 0.05, // -5% drain per level (0.95, 0.90, 0.85, 0.80, 0.75)
-    formatEffect: (lvl: number) => `-${lvl * 5}% Drain Rate`,
-    maxLevelBonus: 'No center targets in Reset Laser puzzle'
-  },
-
-  LIGHTS: {
-    id: 'LIGHTS',
-    name: 'CIRCUIT STABILIZER',
+  CIRCUIT_STABILIZER: {
+    id: 'CIRCUIT_STABILIZER',
+    name: 'Circuit Stabilizer',
     desc: 'Reduces probability of lights malfunction triggering.',
     type: 'passive' as const,
     unlockRank: 2,
     costPerLevel: 1,
-    maxLevel: 5,
-    effectPerLevel: 0.06, // -6% trigger chance per level (44%, 38%, 32%, 26%, 20%)
-    formatEffect: (lvl: number) => `-${lvl * 6}% Trigger Chance`,
+    maxLevel: 4,
+    effectPerLevel: 0.075, // -7.5% trigger chance per level
+    formatEffect: (lvl: number) => `-${(lvl * 7.5).toFixed(1)}% Trigger Chance`,
     maxLevelBonus: '3-button sequence instead of 4'
-  },
-
-  CONTROLS: {
-    id: 'CONTROLS',
-    name: 'HEAT SINK UPGRADE',
-    desc: 'Increases heat dissipation rate when idle.',
-    type: 'passive' as const,
-    unlockRank: 3,
-    costPerLevel: 1,
-    maxLevel: 5,
-    effectPerLevel: 0.10, // +10% dissipation per level (55, 60, 65, 70, 75 per sec)
-    formatEffect: (lvl: number) => `+${lvl * 10}% Heat Dissipation`,
-    maxLevelBonus: '3 alignments instead of 4'
   },
 
   AUTO_POPPER: {
     id: 'AUTO_POPPER',
-    name: 'AUTO-POPPER',
+    name: 'Auto-Popper',
     desc: 'At end of game, remaining goop has a chance to auto-pop before penalty.',
     type: 'passive' as const,
-    unlockRank: 4,
+    unlockRank: 3,
     costPerLevel: 1,
-    maxLevel: 5,
-    // Base: 80% first unit, -15% per unit. Each level reduces drop by 1% (14, 13, 12, 11, 10)
-    effectPerLevel: 0.01,
-    formatEffect: (lvl: number) => `-${15 - lvl}% decay per unit`,
+    maxLevel: 4,
+    // Base decay: -20% per unit. Each level reduces decay by 4% (20, 16, 12, 8, 4)
+    effectPerLevel: 0.04,
+    formatEffect: (lvl: number) => `-${20 - lvl * 4}% decay per unit`,
     maxLevelBonus: undefined
   },
 
-  // === RANK 5: FIRST ACTIVE ===
+  CAPACITOR_EFFICIENCY: {
+    id: 'CAPACITOR_EFFICIENCY',
+    name: 'Capacitor Efficiency',
+    desc: 'Reduces laser capacitor drain rate when popping goop.',
+    type: 'passive' as const,
+    unlockRank: 4,
+    costPerLevel: 1,
+    maxLevel: 4,
+    effectPerLevel: 0.0625, // -6.25% drain per level
+    formatEffect: (lvl: number) => `-${(lvl * 6.25).toFixed(2)}% Drain Rate`,
+    maxLevelBonus: 'No center targets in Reset Laser puzzle'
+  },
 
   COOLDOWN_BOOSTER: {
     id: 'COOLDOWN_BOOSTER',
-    name: 'COOLDOWN BOOSTER',
+    name: 'Cooldown Booster',
     desc: 'When activated, extends all active malfunction cooldowns.',
     type: 'active' as const,
     unlockRank: 5,
     costPerLevel: 1,
-    maxLevel: 5,
-    chargeCost: 8, // crack-goop pops to charge
-    // +10%, +15%, +20%, +25%, +30% cooldown extension
-    effectPerLevel: 0.05,
-    formatEffect: (lvl: number) => `+${5 + lvl * 5}% Cooldown`,
+    maxLevel: 1,
+    chargeCost: 8, // Legacy - will be replaced by cooldown system
+    effectPerLevel: 0.25, // +25% cooldown extension when activated
+    formatEffect: () => '+25% Cooldown Extension',
     maxLevelBonus: undefined
   },
 
-  // === RANK 10: BAND 1 (JUNK) PASSIVE ===
+  GEAR_LUBRICATION: {
+    id: 'GEAR_LUBRICATION',
+    name: 'Gear Lubrication',
+    desc: 'Increases heat dissipation rate when idle.',
+    type: 'passive' as const,
+    unlockRank: 6,
+    costPerLevel: 1,
+    maxLevel: 4,
+    effectPerLevel: 0.125, // +12.5% dissipation per level
+    formatEffect: (lvl: number) => `+${(lvl * 12.5).toFixed(1)}% Heat Dissipation`,
+    maxLevelBonus: '3 alignments instead of 4'
+  },
 
-  JUNK_UNIFORMITY: {
-    id: 'JUNK_UNIFORMITY',
-    name: 'JUNK UNIFORMITY',
+  FOCUS_MODE: {
+    id: 'FOCUS_MODE',
+    name: 'Focus Mode',
+    desc: 'Time slows while at the console viewing minigames.',
+    type: 'passive' as const,
+    unlockRank: 7,
+    costPerLevel: 1,
+    maxLevel: 4,
+    effectPerLevel: 0.10, // -10% time speed per level
+    formatEffect: (lvl: number) => `-${lvl * 10}% Time Speed`,
+    maxLevelBonus: undefined
+  },
+
+  DENSE_GOOP: {
+    id: 'DENSE_GOOP',
+    name: 'Dense Goop',
+    desc: 'Goop falls faster. Can add or remove points via respec.',
+    type: 'passive' as const,
+    unlockRank: 8,
+    costPerLevel: 1,
+    maxLevel: 4,
+    effectPerLevel: 0.125, // +12.5% fall speed per level
+    formatEffect: (lvl: number) => `+${(lvl * 12.5).toFixed(1)}% Fall Speed`,
+    maxLevelBonus: undefined
+  },
+
+  PRESSURE_CONTROL: {
+    id: 'PRESSURE_CONTROL',
+    name: 'Pressure Control',
+    desc: 'Extends time before pressure reaches 100%.',
+    type: 'passive' as const,
+    unlockRank: 9,
+    costPerLevel: 1,
+    maxLevel: 8,
+    effectPerLevel: 5, // +5 seconds per level
+    formatEffect: (lvl: number) => `+${lvl * 5}s Game Time`,
+    maxLevelBonus: undefined
+  },
+
+  // === JUNK BAND (Ranks 10-19) ===
+
+  JUNK_UNIFORMER: {
+    id: 'JUNK_UNIFORMER',
+    name: 'Junk Uniformer',
     desc: 'Starting junk is more likely to be the same color.',
     type: 'passive' as const,
     unlockRank: 10,
     costPerLevel: 1,
-    maxLevel: 5,
+    maxLevel: 4,
     effectPerLevel: 0.10, // +10% same-color chance per level
     formatEffect: (lvl: number) => `+${lvl * 10}% Same Color`,
     maxLevelBonus: undefined
   },
 
-  // === RANK 15: BAND 1 ACTIVE ===
+  GOOP_SWAP: {
+    id: 'GOOP_SWAP',
+    name: 'Goop Swap',
+    desc: 'Swap falling goop with stored goop faster.',
+    type: 'passive' as const,
+    unlockRank: 12,
+    costPerLevel: 1,
+    maxLevel: 4,
+    // Base: 1.5s, -0.25s per level, min 0.5s
+    effectPerLevel: 0.25, // seconds reduced per level
+    formatEffect: (lvl: number) => `${(1.5 - lvl * 0.25).toFixed(2)}s Swap Time`,
+    maxLevelBonus: undefined
+  },
 
-  GOOPER: {
-    id: 'GOOPER',
-    name: 'GOOPER',
+  GOOP_DUMP: {
+    id: 'GOOP_DUMP',
+    name: 'Goop Dump',
     desc: 'When activated, drops same-color junk across the entire board.',
     type: 'active' as const,
     unlockRank: 15,
     costPerLevel: 1,
-    maxLevel: 6,
-    chargeCost: 12, // crack-goop pops to charge
-    // Spacing: 3-5 -> 3-4 -> 2-4 -> 2-3 -> 1-3 -> 1-2
+    maxLevel: 1,
+    chargeCost: 12, // Legacy - will be replaced by cooldown system
     effectPerLevel: 1,
-    formatEffect: (lvl: number) => {
-      const spacings = ['3-5', '3-4', '2-4', '2-3', '1-3', '1-2'];
-      return `Every ${spacings[Math.min(lvl - 1, 5)]} spaces`;
-    },
+    formatEffect: () => 'Drops matching junk',
     maxLevelBonus: undefined
   },
 
-  // === RANK 20: ACTIVE SLOT EXPANSION ===
-
-  ACTIVE_SLOT_2: {
-    id: 'ACTIVE_SLOT_2',
-    name: 'ACTIVE SLOT +1',
-    desc: 'Allows equipping a second active ability simultaneously.',
+  SEALING_BONUS: {
+    id: 'SEALING_BONUS',
+    name: 'Sealing Bonus',
+    desc: 'Sealing cracks reduces active cooldowns more.',
     type: 'passive' as const,
+    unlockRank: 18,
+    costPerLevel: 1,
+    maxLevel: 4,
+    // Base: 10% cooldown reduction per sealed crack. +5% per level.
+    effectPerLevel: 0.05, // +5% bonus per level
+    formatEffect: (lvl: number) => `${10 + lvl * 5}% Cooldown per Seal`,
+    maxLevelBonus: undefined
+  },
+
+  // === MIXER BAND (Ranks 20-29) ===
+
+  ACTIVE_EXPANSION_SLOT: {
+    id: 'ACTIVE_EXPANSION_SLOT',
+    name: 'Active Expansion Slot',
+    desc: 'Allows equipping a second active ability simultaneously.',
+    type: 'feature' as const,
     unlockRank: 20,
     costPerLevel: 1,
     maxLevel: 1,
     effectPerLevel: 1,
     formatEffect: () => '2 Active Slots',
+    maxLevelBonus: undefined
+  },
+
+  GOOP_HOLD_VIEWER: {
+    id: 'GOOP_HOLD_VIEWER',
+    name: 'Goop Hold Viewer',
+    desc: 'Shows the goop currently in holding.',
+    type: 'feature' as const,
+    unlockRank: 22,
+    costPerLevel: 1,
+    maxLevel: 1,
+    effectPerLevel: 1,
+    formatEffect: () => 'View Held Goop',
+    maxLevelBonus: undefined
+  },
+
+  GOOP_COLORIZER: {
+    id: 'GOOP_COLORIZER',
+    name: 'Goop Colorizer',
+    desc: 'When activated, next 5 goop are same color as current falling goop.',
+    type: 'active' as const,
+    unlockRank: 25,
+    costPerLevel: 1,
+    maxLevel: 1,
+    chargeCost: 10, // Will be replaced by cooldown system
+    effectPerLevel: 1,
+    formatEffect: () => 'Next 5 goop match',
+    maxLevelBonus: undefined
+  },
+
+  GOOP_WINDOW: {
+    id: 'GOOP_WINDOW',
+    name: 'Goop Window',
+    desc: 'Shows you the next goop piece.',
+    type: 'feature' as const,
+    unlockRank: 28,
+    costPerLevel: 1,
+    maxLevel: 1,
+    effectPerLevel: 1,
+    formatEffect: () => 'Preview Next Goop',
+    maxLevelBonus: undefined
+  },
+
+  // === CRACKED BAND (Ranks 30-39) ===
+
+  SLOW_CRACKS: {
+    id: 'SLOW_CRACKS',
+    name: 'Slow Cracks',
+    desc: 'Cracks grow slower over time.',
+    type: 'passive' as const,
+    unlockRank: 30,
+    costPerLevel: 1,
+    maxLevel: 4,
+    // Offset to growth chance: -5%, -10%, -15%, -20%
+    effectPerLevel: 0.05, // -5% growth chance offset per level
+    formatEffect: (lvl: number) => `-${lvl * 5}% Growth Chance`,
+    maxLevelBonus: undefined
+  },
+
+  CRACK_MATCHER: {
+    id: 'CRACK_MATCHER',
+    name: 'Crack Matcher',
+    desc: 'Falling goop color biased toward the lowest crack.',
+    type: 'passive' as const,
+    unlockRank: 32,
+    costPerLevel: 1,
+    maxLevel: 4,
+    effectPerLevel: 0.25, // +25% color bias per level
+    formatEffect: (lvl: number) => `${lvl * 25}% Match Chance`,
+    maxLevelBonus: undefined
+  },
+
+  CRACK_DOWN: {
+    id: 'CRACK_DOWN',
+    name: 'Crack Down',
+    desc: 'When activated, new cracks form on the bottom row for a while.',
+    type: 'active' as const,
+    unlockRank: 35,
+    costPerLevel: 1,
+    maxLevel: 1,
+    chargeCost: 10, // Will be replaced by cooldown system
+    effectPerLevel: 1,
+    formatEffect: () => 'Cracks spawn low',
+    maxLevelBonus: undefined
+  },
+
+  ACTIVE_EXPANSION_SLOT_2: {
+    id: 'ACTIVE_EXPANSION_SLOT_2',
+    name: 'Active Expansion Slot',
+    desc: 'Allows equipping a third active ability simultaneously.',
+    type: 'feature' as const,
+    unlockRank: 38,
+    costPerLevel: 1,
+    maxLevel: 1,
+    effectPerLevel: 1,
+    formatEffect: () => '3 Active Slots',
     maxLevelBonus: undefined
   }
 };
@@ -166,6 +320,9 @@ export const getPassiveUpgrades = () =>
 
 export const getActiveUpgrades = () =>
   Object.values(UPGRADES).filter(u => u.type === 'active');
+
+export const getFeatureUpgrades = () =>
+  Object.values(UPGRADES).filter(u => u.type === 'feature');
 
 export const getUpgradesUnlockedAtRank = (rank: number) =>
   Object.values(UPGRADES).filter(u => u.unlockRank === rank);
