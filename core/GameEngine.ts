@@ -213,7 +213,6 @@ export class GameEngine {
             initialCharges[id] = 0; // Start at 0% charge
         });
         this.state.activeCharges = initialCharges;
-        console.log('startRun: equippedActives =', this.equippedActives, 'activeCharges =', this.state.activeCharges);
 
         this.spawnNewPiece();
         gameEventBus.emit(GameEventType.GAME_START);
@@ -693,11 +692,8 @@ export class GameEngine {
      * Slow charge: 1% per second = 100 seconds to fully charge.
      */
     private tickActiveCharges(dt: number): void {
-        // DEBUG: Log charging state
-        const chargeKeys = Object.keys(this.state.activeCharges);
-        if (chargeKeys.length === 0 && this.equippedActives.length > 0) {
-            console.warn('tickActiveCharges: No activeCharges but equippedActives exists:', this.equippedActives);
-            // Auto-fix: initialize charges for equipped actives
+        // Auto-fix: initialize charges for equipped actives if missing
+        if (Object.keys(this.state.activeCharges).length === 0 && this.equippedActives.length > 0) {
             this.equippedActives.forEach(id => {
                 this.state.activeCharges[id] = this.state.activeCharges[id] ?? 0;
             });
@@ -711,10 +707,6 @@ export class GameEngine {
             if (current < 100) {
                 const newCharge = Math.min(100, current + chargeAmount);
                 this.state.activeCharges[id] = newCharge;
-                // DEBUG: Log every ~5% increase
-                if (Math.floor(newCharge / 5) > Math.floor(current / 5)) {
-                    console.log(`Charging ${id}: ${newCharge.toFixed(1)}%`);
-                }
             }
         });
     }

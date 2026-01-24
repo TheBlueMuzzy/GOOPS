@@ -7,6 +7,18 @@
 - Values **targeted, minimal changes** — don't refactor beyond what's asked
 - **Creative, not a coder** — always provide terminal commands ready to copy/paste
 
+## Code Reuse Guideline
+**Always reuse existing patterns and utilities before creating new ones.** This saves time/tokens and keeps the codebase consistent.
+
+| Need | Existing Solution | Location |
+|------|-------------------|----------|
+| Shake animation | `className="shake-anim"` | `GameBoard.css` |
+| Fill from bottom-to-top | See goop group rendering | `GameBoard.tsx:239-280` |
+| Stop pointer events | `e.stopPropagation(); e.preventDefault();` on `onPointerDown` | Common pattern |
+| Event bus communication | `gameEventBus.emit()` | `core/events.ts` |
+
+When implementing new UI elements, check how similar elements work first.
+
 ## Project Overview
 Goops (Gooptris) is a puzzle-action game built with React/TypeScript/Vite. Player operates as a tank maintenance technician clearing colored goop from a cylindrical pressure tank.
 

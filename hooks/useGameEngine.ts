@@ -38,7 +38,6 @@ export const useGameEngine = (
         });
 
         engine.state.activeCharges = updatedCharges;
-        console.log('useGameEngine: Synced equippedActives =', equippedActives, 'activeCharges =', updatedCharges);
     }
 
     // Force re-render without creating new objects

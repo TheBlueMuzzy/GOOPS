@@ -107,9 +107,9 @@ export function useLightsMinigame({
 
   // Start showing the sequence with timed light flashes
   const startShowingSequence = useCallback((sequence: LightsButtonIndex[]) => {
-    const FLASH_DURATION = 400; // ms each light stays on
-    const GAP_DURATION = 200;   // ms between flashes
-    const BEAT_DURATION = 500;  // ms pause after sequence before input
+    const FLASH_DURATION = 200; // ms each light stays on (50% faster)
+    const GAP_DURATION = 100;   // ms between flashes (50% faster)
+    const BEAT_DURATION = 100;  // ms pause after sequence before input (very short)
 
     // Clear any existing sequence timeouts
     sequenceTimeoutsRef.current.forEach(t => clearTimeout(t));

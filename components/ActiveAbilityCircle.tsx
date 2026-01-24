@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 
 interface ActiveAbilityCircleProps {
   upgradeId: string;
@@ -43,87 +43,120 @@ export const ActiveAbilityCircle: React.FC<ActiveAbilityCircleProps> = ({
   size,
   onClick
 }) => {
+  const [isShaking, setIsShaking] = useState(false);
+
+  // Stop all pointer events to prevent click passing through to game board rotation
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (isReady) {
+      onClick?.();
+    } else {
+      // Shake feedback when not ready (same as goops)
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 300);
+    }
+  }, [isReady, onClick]);
+
   const color = getAbilityColor(upgradeId);
   const icon = getAbilityIcon(upgradeId);
   const radius = size / 2;
-  const strokeWidth = 3;
-  const innerRadius = radius - strokeWidth;
+  const strokeWidth = 2;
 
-  // Calculate fill arc (SVG circle circumference)
-  const circumference = 2 * Math.PI * innerRadius;
-  const fillLength = (charge / 100) * circumference;
+  // Fill from bottom to top like goops
+  // Circle is centered at (0,0), so top is -radius, bottom is +radius
+  const fillProgress = charge / 100;
+  const circleHeight = radius * 2;
+  const fillHeight = fillProgress * circleHeight;
+  const fillTop = radius - fillHeight; // Y position where fill starts (from top of circle)
 
   return (
-    <g
-      transform={`translate(${x}, ${y})`}
-      style={{ cursor: isReady ? 'pointer' : 'default' }}
-      onClick={isReady ? onClick : undefined}
-    >
-      {/* Background circle (grey) */}
-      <circle
-        cx={0}
-        cy={0}
-        r={innerRadius}
-        fill="#1e293b"
-        stroke="#475569"
-        strokeWidth={strokeWidth}
-      />
+    <g transform={`translate(${x}, ${y})`}>
+      {/* Outer group for positioning, inner group for shake animation */}
+      <g
+        className={isShaking ? "shake-anim" : ""}
+        style={{ cursor: 'pointer' }}
+        onPointerDown={handlePointerDown}
+      >
+        {/* Clip path for the circle */}
+        <defs>
+          <clipPath id={`clip-${upgradeId}`}>
+            <circle cx={0} cy={0} r={radius - strokeWidth} />
+          </clipPath>
+        </defs>
 
-      {/* Fill progress arc */}
-      <circle
-        cx={0}
-        cy={0}
-        r={innerRadius}
-        fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeDasharray={circumference}
-        strokeDashoffset={circumference - fillLength}
-        strokeLinecap="round"
-        opacity={isReady ? 1 : 0.6}
-        style={{
-          transform: 'rotate(-90deg)',
-          transformOrigin: 'center',
-          transition: 'stroke-dashoffset 0.1s linear'
-        }}
-      />
+        {/* Background circle (dim) */}
+        <circle
+          cx={0}
+          cy={0}
+          r={radius - strokeWidth}
+          fill={color}
+          fillOpacity={0.25}
+        />
 
-      {/* Glow effect when ready */}
-      {isReady && (
-        <>
+        {/* Fill portion (brighter, fills from bottom to top) */}
+        {!isReady && (
+          <rect
+            x={-(radius - strokeWidth)}
+            y={fillTop}
+            width={(radius - strokeWidth) * 2}
+            height={fillHeight}
+            fill={color}
+            fillOpacity={0.75}
+            clipPath={`url(#clip-${upgradeId})`}
+          />
+        )}
+
+        {/* Full bright when ready */}
+        {isReady && (
           <circle
             cx={0}
             cy={0}
-            r={innerRadius + 2}
+            r={radius - strokeWidth}
+            fill={color}
+            fillOpacity={0.85}
+          />
+        )}
+
+        {/* Border stroke */}
+        <circle
+          cx={0}
+          cy={0}
+          r={radius - strokeWidth}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+        />
+
+        {/* Glow effect when ready */}
+        {isReady && (
+          <circle
+            cx={0}
+            cy={0}
+            r={radius}
             fill="none"
             stroke={color}
             strokeWidth={2}
             opacity={0.5}
             className="animate-pulse"
           />
-          <circle
-            cx={0}
-            cy={0}
-            r={innerRadius}
-            fill={color}
-            fillOpacity={0.2}
-          />
-        </>
-      )}
+        )}
 
-      {/* Icon text */}
-      <text
-        x={0}
-        y={0}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fill={isReady ? 'white' : '#94a3b8'}
-        fontSize={size * 0.3}
-        fontWeight="bold"
-        fontFamily="monospace"
-      >
-        {icon}
-      </text>
+        {/* Icon text - always on top */}
+        <text
+          x={0}
+          y={0}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={isReady ? 'white' : '#e2e8f0'}
+          fontSize={size * 0.3}
+          fontWeight="bold"
+          fontFamily="monospace"
+        >
+          {icon}
+        </text>
+      </g>
     </g>
   );
 };

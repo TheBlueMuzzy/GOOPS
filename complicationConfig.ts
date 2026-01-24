@@ -20,7 +20,7 @@ export const COMPLICATION_CONFIG = {
   },
   [ComplicationType.LIGHTS]: {
     unlockRank: 2,
-    triggerChanceBase: 0.50,  // 50% base trigger chance
+    triggerChanceBase: 0.20,  // 20% base trigger chance
     triggerUpgradeEffect: UPGRADES.CIRCUIT_STABILIZER.effectPerLevel, // -7.5% per upgrade level
     pressureGapMin: 3,        // Minimum rows between pressure and goop
     pressureGapMax: 5,        // Maximum rows (random in range)

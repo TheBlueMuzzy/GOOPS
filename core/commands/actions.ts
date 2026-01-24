@@ -282,8 +282,8 @@ export class BlockTapCommand implements Command {
                  engine.state.goalsCleared += infusedCount;
                  gameEventBus.emit(GameEventType.GOAL_CAPTURED, { count: infusedCount });
 
-                 // Charge active abilities: 10% per sealed crack-goop
-                 engine.chargeActiveAbilities(infusedCount * 10);
+                 // Charge active abilities: 25% per sealed crack-goop
+                 engine.chargeActiveAbilities(infusedCount * 25);
 
                  // SEALING_BONUS: Reduce complication cooldowns when sealing crack-goop
                  const sealingLevel = engine.powerUps['SEALING_BONUS'] || 0;
