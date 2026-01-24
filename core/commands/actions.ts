@@ -83,7 +83,15 @@ export class RotatePieceCommand implements Command {
         
         const tempPiece = { ...p, cells: nextCells, rotation: nextRot };
 
-        const kicks = [{x:0, y:0}, {x:1, y:0}, {x:-1, y:0}, {x:0, y:-1}, {x:1, y:-1}, {x:-1, y:-1}, {x:2, y:0}, {x:-2, y:0}];
+        // Wall kicks: test offset positions when rotation is blocked
+        // y:-1 = up 1 row, y:-2 = up 2 rows (allows "tucking" under overhangs)
+        const kicks = [
+            {x:0, y:0},                          // no offset
+            {x:1, y:0}, {x:-1, y:0},             // left/right
+            {x:0, y:-1}, {x:1, y:-1}, {x:-1, y:-1}, // up 1 row (existing)
+            {x:0, y:-2}, {x:1, y:-2}, {x:-1, y:-2}, // up 2 rows (NEW - enables climbing)
+            {x:2, y:0}, {x:-2, y:0}              // far left/right
+        ];
         for (const kick of kicks) {
             const kickedGridX = normalizeX(tempPiece.x + kick.x);
             // We must update screenX if we kick the piece!
