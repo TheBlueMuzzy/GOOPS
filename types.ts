@@ -188,6 +188,9 @@ export interface GameState {
   // GOOP_COLORIZER tracking
   colorizerColor: string | null;    // Locked color for next N pieces
   colorizerRemaining: number;       // Pieces left with forced color
+
+  // Expanding cracks tracking (rank 30+)
+  crackGrowthTimers: Record<string, number>; // Goal ID -> last growth check timestamp
 }
 
 // --- State Management Interface ---

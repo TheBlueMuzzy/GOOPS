@@ -12,7 +12,7 @@ import {
     calculateHeightBonus, calculateOffScreenBonus, calculateMultiplier, calculateAdjacencyBonus, createInitialGrid,
     getPaletteForRank
 } from '../utils/gameLogic';
-import { getGridX } from '../utils/coordinates';
+import { getGridX, normalizeX } from '../utils/coordinates';
 import { calculateRankDetails } from '../utils/progression';
 import { gameEventBus } from './events/EventBus';
 import { GameEventType } from './events/GameEvents';
@@ -29,6 +29,10 @@ const LOCK_DELAY_MS = 500;
 // Dump piece constants (GOOP_DUMP ability)
 const DUMP_SPAWN_INTERVAL = 80;  // ms between each piece spawn (8 pieces over ~0.64s)
 const DUMP_FALL_SPEED = 0.03;    // Grid units per ms (fast fixed speed)
+
+// Expanding cracks constants (rank 30+)
+const CRACK_GROWTH_INTERVAL_MS = 5000;  // Check growth every 5 seconds per crack
+const MAX_ACTIVE_CRACKS = 8;            // Cap on total active cracks
 
 export class GameEngine {
     public state: GameState;
@@ -120,7 +124,10 @@ export class GameEngine {
 
             // GOOP_COLORIZER tracking
             colorizerColor: null,
-            colorizerRemaining: 0
+            colorizerRemaining: 0,
+
+            // Expanding cracks tracking (rank 30+)
+            crackGrowthTimers: {}
         };
 
         this.applyUpgrades();
@@ -233,7 +240,10 @@ export class GameEngine {
 
             // GOOP_COLORIZER tracking - reset on new run
             colorizerColor: null,
-            colorizerRemaining: 0
+            colorizerRemaining: 0,
+
+            // Expanding cracks tracking - reset on new run
+            crackGrowthTimers: {}
         };
 
         this.lockStartTime = null;
@@ -1018,6 +1028,105 @@ export class GameEngine {
         });
     }
 
+    /**
+     * Tick crack growth for rank 30+ (Expanding Cracks mechanic).
+     * Every 5s per crack, there's a chance to spawn an adjacent crack.
+     * Growth chance = pressureRatio - SLOW_CRACKS offset.
+     */
+    private tickCrackGrowth(): void {
+        // Only active at rank 30+
+        const startingRank = calculateRankDetails(this.initialTotalScore).rank;
+        if (startingRank < 30) return;
+
+        // Don't grow when in Console or Minigame phases
+        if (this.state.phase === GamePhase.CONSOLE ||
+            this.state.phase === GamePhase.COMPLICATION_MINIGAME) return;
+
+        // Cap at max active cracks
+        if (this.state.goalMarks.length >= MAX_ACTIVE_CRACKS) return;
+
+        const now = Date.now();
+        const palette = getPaletteForRank(startingRank);
+
+        // Initialize timers for any new cracks that don't have one
+        for (const goal of this.state.goalMarks) {
+            if (this.state.crackGrowthTimers[goal.id] === undefined) {
+                this.state.crackGrowthTimers[goal.id] = now;
+            }
+        }
+
+        // Clean up timers for goals that no longer exist
+        const activeGoalIds = new Set(this.state.goalMarks.map(g => g.id));
+        for (const id of Object.keys(this.state.crackGrowthTimers)) {
+            if (!activeGoalIds.has(id)) {
+                delete this.state.crackGrowthTimers[id];
+            }
+        }
+
+        // Check each crack for growth
+        for (const goal of this.state.goalMarks) {
+            const lastCheck = this.state.crackGrowthTimers[goal.id];
+            if (now - lastCheck < CRACK_GROWTH_INTERVAL_MS) continue;
+
+            // Update timer
+            this.state.crackGrowthTimers[goal.id] = now;
+
+            // Cap check again (in case we've hit max during this tick)
+            if (this.state.goalMarks.length >= MAX_ACTIVE_CRACKS) break;
+
+            // Calculate growth chance = pressure ratio
+            const pressureRatio = Math.max(0, 1 - (this.state.timeLeft / this.maxTime));
+
+            // Apply SLOW_CRACKS offset: -5% per level
+            const slowCracksLevel = this.powerUps['SLOW_CRACKS'] || 0;
+            const slowCracksOffset = slowCracksLevel * 0.05;
+            const effectiveGrowthChance = Math.max(0, pressureRatio - slowCracksOffset);
+
+            // Roll for growth
+            if (Math.random() > effectiveGrowthChance) continue;
+
+            // Try to spawn an adjacent crack
+            const adjacentSpots = [
+                { x: normalizeX(goal.x + 1), y: goal.y },
+                { x: normalizeX(goal.x - 1), y: goal.y },
+                { x: goal.x, y: goal.y + 1 },
+                { x: goal.x, y: goal.y - 1 }
+            ].filter(spot =>
+                spot.y >= BUFFER_HEIGHT &&
+                spot.y < TOTAL_HEIGHT &&
+                !this.state.grid[spot.y][spot.x] &&
+                !this.state.goalMarks.some(m => m.x === spot.x && m.y === spot.y)
+            );
+
+            if (adjacentSpots.length === 0) continue;
+
+            // Pick a random adjacent spot and spawn a new crack with a color from the palette
+            const spot = adjacentSpots[Math.floor(Math.random() * adjacentSpots.length)];
+
+            // Filter colors that already have a goal mark
+            const activeColors = new Set(this.state.goalMarks.map(m => m.color));
+            const availableColors = palette.filter(c => !activeColors.has(c));
+
+            // If no available colors, use a random one from palette
+            const color = availableColors.length > 0
+                ? availableColors[Math.floor(Math.random() * availableColors.length)]
+                : palette[Math.floor(Math.random() * palette.length)];
+
+            const newCrack = {
+                id: Math.random().toString(36).substr(2, 9),
+                x: spot.x,
+                y: spot.y,
+                color,
+                spawnTime: now
+            };
+
+            this.state.goalMarks.push(newCrack);
+            this.state.crackGrowthTimers[newCrack.id] = now;
+
+            console.log(`Crack grew: ${goal.id} -> ${newCrack.id} at (${spot.x}, ${spot.y}), color: ${color}, pressure: ${(pressureRatio * 100).toFixed(1)}%, effective chance: ${(effectiveGrowthChance * 100).toFixed(1)}%`);
+        }
+    }
+
     public tick(dt: number) {
         if (!this.isSessionActive || this.state.gameOver || this.state.isPaused) return;
 
@@ -1026,6 +1135,9 @@ export class GameEngine {
 
         // Goals
         this.tickGoals();
+
+        // Crack growth (rank 30+ expanding cracks mechanic)
+        this.tickCrackGrowth();
 
         // Complications check
         this.checkComplications(dt);
