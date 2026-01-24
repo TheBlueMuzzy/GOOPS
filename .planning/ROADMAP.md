@@ -77,10 +77,13 @@ Plans:
 **Goal**: Implement ranks 0-9 upgrades — Circuit Stabilizer, Auto-Popper, Capacitor Efficiency, Cooldown Booster, Gear Lubrication, Focus Mode, Dense Goop, Pressure Control
 **Depends on**: Phase 14
 **Research**: Unlikely (extending existing upgrade patterns)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 15-01: TBD
+- [ ] 15-01: Upgrade ID migration (LASER→CAPACITOR_EFFICIENCY, etc.) + UpgradePanel update
+- [ ] 15-02: Complication upgrade effects (Circuit Stabilizer, Capacitor Efficiency, Gear Lubrication)
+- [ ] 15-03: Game mechanics (Pressure Control, Focus Mode, Dense Goop)
+- [ ] 15-04: Auto-Popper + Cooldown Booster active
 
 #### Phase 16: Junk Band
 
