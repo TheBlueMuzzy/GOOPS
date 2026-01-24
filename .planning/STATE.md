@@ -20,11 +20,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 18 of 18 (Cracked Band)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-24 - Completed 18-01-PLAN.md (Expanding Cracks + SLOW_CRACKS)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-24 - Completed 18-02-PLAN.md (CRACK_MATCHER + CRACK_DOWN)
 
-Progress: ██████████████████░░ 43/44 plans (Phase 18 in progress)
+Progress: ████████████████████ 44/44 plans (v1.2 Milestone COMPLETE!)
 
 ## What's Done
 
@@ -86,7 +86,7 @@ All three complications have player-driven triggers AND mitigations.
 ## Session Continuity
 
 Last session: 2026-01-24
-**Version:** 1.1.25
+**Version:** 1.1.26
 
 ### This Session Summary (2026-01-24 Late Night)
 
