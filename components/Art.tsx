@@ -287,21 +287,21 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 <path fill="#59acae" d="M583.65,1441.46H63.86l-47.08,283.09c-.6,3.61,2,6.92,5.44,6.92h603.07c3.44,0,6.04-3.31,5.44-6.92l-47.08-283.09Z"/>
                 
                 {/* Footer Text */}
-                <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="15.7" transform="translate(83.81 1855.15)">
-                    <tspan letterSpacing="-0.04em">V</tspan><tspan x="9.49">ersion 1.1.27</tspan>
+                <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="15.7" transform="translate(55 1855.15)">
+                    <tspan letterSpacing="-0.04em">V</tspan><tspan x="9.49">ersion 1.1.28</tspan>
                 </text>
-                <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="15.7" transform="translate(442.36 1855.15)">
-                    <tspan>Muz</tspan><tspan letterSpacing="0em" x="29.67">z</tspan><tspan x="37.29">yMade @ 2026</tspan>
+                <text fill="#aad9d9" fontFamily="'Amazon Ember'" fontSize="15.7" textAnchor="end" transform="translate(592.5 1855.15)">
+                    MuzzyMade @ 2026
                 </text>
 
-                {/* Operator Rank Selector - Dev Tool (disabled during game over) */}
+                {/* Rank Selector - Dev Tool (disabled during game over) */}
                 <g
                     id="RankSelector"
                     className={isGameOver ? "pointer-events-none" : "cursor-pointer hover:brightness-125 active:brightness-90 transition-all origin-center"}
                     onClick={isGameOver ? undefined : handleRankClick}
                 >
-                    <text fill={rankDropdownOpen ? "#5bbc70" : "#aad9d9"} fontFamily="'Amazon Ember'" fontSize="20.93" fontWeight={rankDropdownOpen ? "bold" : "normal"} transform="translate(259.17 1855.99)">
-                        OPERATOR RANK
+                    <text fill={rankDropdownOpen ? "#5bbc70" : "#aad9d9"} fontFamily="'Amazon Ember'" fontSize="20.93" fontWeight={rankDropdownOpen ? "bold" : "normal"} textAnchor="middle" transform="translate(323.75 1855.99)">
+                        RANK SELECT
                     </text>
                 </g>
             </g>
