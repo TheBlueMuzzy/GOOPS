@@ -116,6 +116,7 @@ User can type these shortcuts and Claude will execute:
 | `<merge>` | Merge current branch to master, push both |
 | `<status>` | Show git status + current project position from STATE.md |
 | `<handoff>` | Full context handoff (see checklist below), ends with `/clear` instruction |
+| `<deploy>` | Build, copy fonts, fix paths, deploy to https://thebluemuzzy.github.io/GOOPS/ |
 
 ### Handoff Checklist (`<handoff>`)
 
