@@ -1202,7 +1202,19 @@ export class GameEngine {
         }
     }
 
+    // Debug: track tick calls to diagnose pressure bug
+    private tickDebugCounter: number = 0;
+    private lastTickDebugLog: number = 0;
+
     public tick(dt: number) {
+        // DEBUG: Log every 2 seconds to track pressure bug
+        this.tickDebugCounter++;
+        const now = Date.now();
+        if (now - this.lastTickDebugLog > 2000) {
+            console.log(`[TICK DEBUG] #${this.tickDebugCounter} | active=${this.isSessionActive} | phase=${this.state.phase} | timeLeft=${this.state.timeLeft.toFixed(0)} | maxTime=${this.maxTime} | paused=${this.state.isPaused} | gameOver=${this.state.gameOver}`);
+            this.lastTickDebugLog = now;
+        }
+
         if (!this.isSessionActive || this.state.gameOver || this.state.isPaused) return;
 
         // Timer - stop if game ended
