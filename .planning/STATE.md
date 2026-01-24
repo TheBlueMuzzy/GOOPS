@@ -104,36 +104,51 @@ None — all UAT issues resolved.
 
 ## Session Continuity
 
-Last session: 2026-01-23
-Stopped at: Completed 16-02-PLAN.md (GOOP_SWAP upgrade effect)
+Last session: 2026-01-24
+Stopped at: 16-03-PLAN.md in progress - debugging active ability charging UI
 Resume file: None
-Phase 16 Status: In progress — 2 plans complete
+Phase 16 Status: In progress — executing plan 3 of 3
 
 ### This Session Summary
 
 **What was done:**
-1. Executed 16-02-PLAN.md (GOOP_SWAP upgrade effect)
-   - Added powerUps parameter to useInputHandlers
-   - Implemented dynamic hold duration based on GOOP_SWAP level
-   - Base 1.5s, -0.25s per level (0.5s at max)
-   - Fixed keyboard R key to also respect GOOP_SWAP (deviation)
+1. Started executing 16-03-PLAN.md (GOOP_DUMP + SEALING_BONUS)
+2. Implemented GOOP_DUMP active ability effect (commit `23d0dd5`)
+3. Implemented SEALING_BONUS passive effect (commit `e274f6a`)
+4. Fixed active ability charging bugs:
+   - equippedActives sync was async (useEffect), now syncs during render
+   - activeCharges wasn't being initialized properly
+   - SVG progress circle wasn't rendering (fixed strokeDasharray approach)
 
 **Commits this session:**
-- `1d6598a` feat(16-02): add dynamic hold duration based on GOOP_SWAP level
-- `150295a` feat(16-02): thread powerUps through GameBoard to useInputHandlers
-- `3fb0337` fix(16-02): apply GOOP_SWAP to keyboard R key hold-to-swap
+- `23d0dd5` feat(16-03): implement GOOP_DUMP active ability effect
+- `e274f6a` feat(16-03): implement SEALING_BONUS passive effect
+- `9c81462` fix(16-03): active ability charging and UI progress display
 
-### Uncommitted Changes
+### Current Issue Being Debugged
 
-None
+Active ability UI progress circle - need to verify:
+1. Visual progress fills smoothly as it charges
+2. Clicking on button when not ready should not pass through to rotate piece
+3. Should shake when clicked if not ready
+
+**Version:** 1.1.6 - dev server on port 5176
+
+### Debug Console Logs Added (remove after fix)
+- GameEngine.ts:716 - logs every 5% charge increase
+- GameBoard.tsx:510 - logs charge value on render (every 10%)
 
 ### Bugs/Blockers
 
-None
+User reported: clicking on ability circle passes through and rotates falling piece
 
 ### Next Steps
 
-1. Execute remaining Phase 16 plans (16-03: GOOP_DUMP, SEALING_BONUS, etc.)
+1. Verify charging UI works visually (v1.1.6)
+2. Fix click passthrough on ability button
+3. Add shake feedback when clicking non-ready button
+4. Complete human verification checkpoint
+5. Create 16-03-SUMMARY.md and finish phase 16
 
 ## Quick Commands
 
