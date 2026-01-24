@@ -18,7 +18,7 @@ import { gameEventBus } from '../core/events/EventBus';
 import { GameEventType, RotatePayload, DragPayload, SoftDropPayload, BlockTapPayload } from '../core/events/GameEvents';
 
 // Input timing constants
-const HOLD_DURATION = 1000; // 1.0s for hold-to-swap
+const BASE_HOLD_DURATION = 1500; // 1.5s base for hold-to-swap (PRD spec)
 const HOLD_DELAY = 250;     // 0.25s delay before hold starts
 const DRAG_LOCK_THRESHOLD = 10;
 const HORIZONTAL_DRAG_THRESHOLD = 20;
@@ -28,6 +28,7 @@ interface UseInputHandlersParams {
     boardOffset: number;
     grid: (GridCell | null)[][];
     pressureRatio: number;
+    powerUps?: Record<string, number>; // For GOOP_SWAP upgrade effect
 }
 
 interface UseInputHandlersReturn {
@@ -43,10 +44,16 @@ export function useInputHandlers({
     callbacks,
     boardOffset,
     grid,
-    pressureRatio
+    pressureRatio,
+    powerUps
 }: UseInputHandlersParams): UseInputHandlersReturn {
     // Destructure optional callbacks
     const { onBlockTap, onRotate, onDragInput, onSwipeUp, onSoftDrop, onSwap } = callbacks;
+
+    // Calculate dynamic hold duration based on GOOP_SWAP upgrade level
+    // Base: 1.5s, Per level: -0.25s (1.5, 1.25, 1.0, 0.75, 0.5 at max)
+    const goopSwapLevel = powerUps?.['GOOP_SWAP'] || 0;
+    const holdDuration = BASE_HOLD_DURATION - (goopSwapLevel * 250); // Min 500ms at level 4
 
     // Visual state
     const [highlightedGroupId, setHighlightedGroupId] = useState<string | null>(null);
@@ -162,7 +169,7 @@ export function useInputHandlers({
             if (totalElapsed < HOLD_DELAY) return;
 
             const effectiveElapsed = totalElapsed - HOLD_DELAY;
-            const progress = Math.min(100, (effectiveElapsed / HOLD_DURATION) * 100);
+            const progress = Math.min(100, (effectiveElapsed / holdDuration) * 100);
             setHoldProgress(progress);
 
             if (progress >= 100) {
@@ -196,7 +203,7 @@ export function useInputHandlers({
                 setHighlightedGroupId(hit.cell.groupId);
             }
         }
-    }, [getViewportCoords, getHitData, pressureRatio, clearHold]);
+    }, [getViewportCoords, getHitData, pressureRatio, clearHold, holdDuration]);
 
     /**
      * Handle pointer move - detect drag direction and apply input.
