@@ -99,13 +99,15 @@ Plans:
 
 #### Phase 17: Mixer Band
 
-**Goal**: Implement Goop Mix complication (multi-color pieces), Purple color, Active Expansion Slot, Goop Hold Viewer, Goop Colorizer, Goop Window
+**Goal**: Implement Purple color, Active Expansion Slot, Goop Hold Viewer, Goop Colorizer, Goop Window
 **Depends on**: Phase 16
 **Research**: Unlikely (follows established patterns)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 17-01: TBD
+- [ ] 17-01: Purple color + ACTIVE_EXPANSION_SLOT (2nd active slot)
+- [ ] 17-02: GOOP_HOLD_VIEWER + GOOP_WINDOW (piece previews)
+- [ ] 17-03: GOOP_COLORIZER active ability
 
 #### Phase 18: Cracked Band
 
@@ -139,5 +141,5 @@ Plans:
 | 14. Data Architecture | v1.2 | 2/2 | Complete | 2026-01-24 |
 | 15. Onboarding Band | v1.2 | 4/4 | Complete | 2026-01-24 |
 | 16. Junk Band | v1.2 | 3/3 | Complete | 2026-01-24 |
-| 17. Mixer Band | v1.2 | 0/? | Not started | - |
+| 17. Mixer Band | v1.2 | 0/3 | Planned | - |
 | 18. Cracked Band | v1.2 | 0/? | Not started | - |
