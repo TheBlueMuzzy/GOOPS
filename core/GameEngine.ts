@@ -521,7 +521,32 @@ export class GameEngine {
         }
 
         const piece = spawnPiece(pieceToSpawn, currentRank);
-        
+
+        // Apply GOOP_COLORIZER effect if active
+        if (this.state.colorizerRemaining > 0 && this.state.colorizerColor) {
+            // Override the piece color
+            piece.definition = {
+                ...piece.definition,
+                color: this.state.colorizerColor
+            };
+            this.state.colorizerRemaining--;
+
+            // Also update nextPiece if it exists (so preview shows correct color)
+            if (this.state.nextPiece && this.state.colorizerRemaining > 0) {
+                this.state.nextPiece = {
+                    ...this.state.nextPiece,
+                    color: this.state.colorizerColor
+                };
+            }
+
+            console.log(`GOOP_COLORIZER: Spawned ${this.state.colorizerColor} piece (${this.state.colorizerRemaining} remaining)`);
+
+            // Clear colorizer when done
+            if (this.state.colorizerRemaining === 0) {
+                this.state.colorizerColor = null;
+            }
+        }
+
         // LOGIC: Spawn at top center of visible viewport
         // Map visible center to grid coordinate based on board offset
         const spawnVisualX = Math.floor((VISIBLE_WIDTH - 1) / 2);
