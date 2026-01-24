@@ -432,7 +432,7 @@ export class GameEngine {
             const idleTime = now - lastRotation;
 
             if (idleTime > ctrlConfig.idleThresholdMs) {
-                const controlsLevel = this.powerUps['CONTROLS'] || 0;
+                const controlsLevel = this.powerUps['GEAR_LUBRICATION'] || 0;
                 const drainRate = ctrlConfig.dissipationBase * (1 + ctrlConfig.dissipationUpgradeEffect * controlsLevel);
                 this.state.controlsHeat = Math.max(0, this.state.controlsHeat - (drainRate * dt / 1000));
             }

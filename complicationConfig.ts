@@ -1,9 +1,13 @@
 
 import { ComplicationType } from './types';
+import { UPGRADES } from './constants';
 
 /**
  * Centralized configuration for all complication-related values.
  * Single source of truth for triggers, thresholds, and effects.
+ *
+ * Note: Upgrade effects (drainUpgradeEffect, triggerUpgradeEffect, dissipationUpgradeEffect)
+ * are now sourced from UPGRADES in constants.ts for consistency.
  */
 
 // Per-complication configuration
@@ -12,12 +16,12 @@ export const COMPLICATION_CONFIG = {
     unlockRank: 4,
     capacitorMax: 100,       // Full capacitor value
     drainPerUnit: 4,         // Capacitor drain per unit popped
-    drainUpgradeEffect: 0.05, // -5% drain per upgrade level
+    drainUpgradeEffect: UPGRADES.CAPACITOR_EFFICIENCY.effectPerLevel, // -6.25% drain per upgrade level
   },
   [ComplicationType.LIGHTS]: {
     unlockRank: 2,
     triggerChanceBase: 0.50,  // 50% base trigger chance
-    triggerUpgradeEffect: 0.06, // -6% per upgrade level (min 20% at max)
+    triggerUpgradeEffect: UPGRADES.CIRCUIT_STABILIZER.effectPerLevel, // -7.5% per upgrade level
     pressureGapMin: 3,        // Minimum rows between pressure and goop
     pressureGapMax: 5,        // Maximum rows (random in range)
   },
@@ -26,7 +30,7 @@ export const COMPLICATION_CONFIG = {
     heatMax: 100,             // Heat threshold for trigger
     heatPerRotation: 5,       // Heat added per rotation
     dissipationBase: 50,      // Heat drain per second when idle
-    dissipationUpgradeEffect: 0.10, // +10% per upgrade level
+    dissipationUpgradeEffect: UPGRADES.GEAR_LUBRICATION.effectPerLevel, // +12.5% per upgrade level
     idleThresholdMs: 200,     // Idle time before dissipation starts
   },
 } as const;

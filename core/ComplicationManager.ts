@@ -168,7 +168,7 @@ export class ComplicationManager {
         const gapThreshold = Math.floor(Math.random() * gapRange) + lightsConfig.pressureGapMin;
 
         // Trigger chance with upgrade modifier
-        const lightsLevel = powerUps['LIGHTS'] || 0;
+        const lightsLevel = powerUps['CIRCUIT_STABILIZER'] || 0;
         const triggerChance = lightsConfig.triggerChanceBase - (lightsConfig.triggerUpgradeEffect * lightsLevel);
 
         return gap >= gapThreshold && Math.random() < triggerChance;

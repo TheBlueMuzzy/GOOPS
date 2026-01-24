@@ -252,7 +252,7 @@ export class BlockTapCommand implements Command {
             const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
             const laserConfig = COMPLICATION_CONFIG[ComplicationType.LASER];
             if (isComplicationUnlocked(ComplicationType.LASER, startingRank)) {
-                const laserLevel = engine.powerUps['LASER'] || 0;
+                const laserLevel = engine.powerUps['CAPACITOR_EFFICIENCY'] || 0;
                 const drainMultiplier = 1 - (laserConfig.drainUpgradeEffect * laserLevel);
                 const drainAmount = group.length * laserConfig.drainPerUnit * drainMultiplier;
                 engine.state.laserCapacitor = Math.max(0, engine.state.laserCapacitor - drainAmount);
