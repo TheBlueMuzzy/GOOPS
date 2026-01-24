@@ -659,6 +659,9 @@ export class GameEngine {
         // LIGHTS complication trigger
         this.checkLightsTrigger(newGrid);
 
+        // Laser capacitor refill: +15% on piece lock (player-driven mitigation)
+        this.state.laserCapacitor = Math.min(100, this.state.laserCapacitor + 15);
+
         gameEventBus.emit(GameEventType.PIECE_DROPPED);
         this.state.grid = newGrid;
 

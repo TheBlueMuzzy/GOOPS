@@ -145,7 +145,7 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onPlay, onUpgrades, onSettin
       {/* Footer Info */}
       <div className="absolute bottom-6 w-full flex flex-col items-center gap-4 z-50 pointer-events-auto">
           <div className="flex flex-col items-center gap-1 opacity-60">
-            <div className="text-slate-600 text-xs font-mono">v1.1.9 &bull; REACTOR STABLE</div>
+            <div className="text-slate-600 text-xs font-mono">v1.1.10 &bull; REACTOR STABLE</div>
             <div className="text-slate-500 text-[10px] font-mono tracking-widest">
                 MuzzyMade &copy; 2026
             </div>
