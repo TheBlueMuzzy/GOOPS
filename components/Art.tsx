@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { EndGameScreen } from './EndGameScreen';
 import { GameStats, Complication } from '../types';
+import { UPGRADES } from '../constants';
 
 // Minigame hooks
 import { useLaserMinigame } from '../hooks/useLaserMinigame';
@@ -95,9 +96,9 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     upgradeLevels = {}
 }) => {
     // Extract max-level flags for minigame effects
-    const isLaserMaxed = (upgradeLevels['LASER'] || 0) >= 5;
-    const isLightsMaxed = (upgradeLevels['LIGHTS'] || 0) >= 5;
-    const isControlsMaxed = (upgradeLevels['CONTROLS'] || 0) >= 5;
+    const isLaserMaxed = (upgradeLevels['CAPACITOR_EFFICIENCY'] || 0) >= UPGRADES.CAPACITOR_EFFICIENCY.maxLevel;
+    const isLightsMaxed = (upgradeLevels['CIRCUIT_STABILIZER'] || 0) >= UPGRADES.CIRCUIT_STABILIZER.maxLevel;
+    const isControlsMaxed = (upgradeLevels['GEAR_LUBRICATION'] || 0) >= UPGRADES.GEAR_LUBRICATION.maxLevel;
 
     // UI state
     const [pressedBtn, setPressedBtn] = useState<string | null>(null);
