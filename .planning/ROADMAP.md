@@ -70,7 +70,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 
 Plans:
 - [x] 14-01: Upgrade system overhaul (types, 20 upgrades with level effects) — completed 2026-01-23
-- [ ] 14-02: Complication & color config (unlock ranks, color schedule)
+- [x] 14-02: Complication & color config (unlock ranks, color schedule) — completed 2026-01-24
 
 #### Phase 15: Onboarding Band
 
@@ -131,7 +131,7 @@ Plans:
 | 11. GameEngine Refactor | v1.1 | 2/2 | Complete | 2026-01-21 |
 | 12. State Management & Events | v1.1 | 2/2 | Complete | 2026-01-21 |
 | 13. Testing & Documentation | v1.1 | 2/2 | Complete | 2026-01-21 |
-| 14. Data Architecture | v1.2 | 1/2 | In progress | - |
+| 14. Data Architecture | v1.2 | 2/2 | Complete | 2026-01-24 |
 | 15. Onboarding Band | v1.2 | 0/? | Not started | - |
 | 16. Junk Band | v1.2 | 0/? | Not started | - |
 | 17. Mixer Band | v1.2 | 0/? | Not started | - |
