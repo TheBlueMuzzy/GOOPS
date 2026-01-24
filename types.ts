@@ -187,7 +187,7 @@ export interface GameStateManager {
 
 // --- Upgrade System Types ---
 
-export type UpgradeType = 'passive' | 'active';
+export type UpgradeType = 'passive' | 'active' | 'feature';
 
 export interface UpgradeConfig {
   id: string;
