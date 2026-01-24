@@ -20,11 +20,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 17 of 18 (Mixer Band)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-24 - Completed 17-01-PLAN.md
+Last activity: 2026-01-24 - GOOP_DUMP rework + all actives have 3 levels
 
-Progress: █████░░░░░ 35%
+Progress: ██████░░░░ 45%
 
 ## What's Done
 
@@ -64,7 +64,7 @@ const ctm = refPoint.getScreenCTM();
 const svgPoint = screenPoint.matrixTransform(ctm.inverse());
 ```
 
-### Balance Summary (Current v1.1.16)
+### Balance Summary (Current v1.1.23)
 
 | Complication | Trigger | Player Mitigation |
 |--------------|---------|-------------------|
@@ -72,77 +72,61 @@ const svgPoint = screenPoint.matrixTransform(ctm.inverse());
 | Controls | Heat builds on rotate | Heat dissipates when idle |
 | Lights | Brightness dims when not soft dropping | Soft drop to recharge |
 
-All three complications now have player-driven triggers AND mitigations.
+All three complications have player-driven triggers AND mitigations.
+
+### Active Abilities (v1.1.23)
+
+| Active | Charge Time | Level 1 | Level 2 | Level 3 |
+|--------|-------------|---------|---------|---------|
+| Cooldown Booster | 20s | +25% cooldown | +35% | +50% |
+| Goop Dump | 15s | 1 wave (18 pcs) | 2 waves | 3 waves |
+| Goop Colorizer | 25s | 6 match | 7 match | 8 match |
+| Crack Down | 30s | 3 cracks low | 5 cracks | 7 cracks |
 
 ## Session Continuity
 
 Last session: 2026-01-24
-Stopped at: UI improvements, preparing task list for next session
-Phase 17 Status: 2/3 plans complete (17-01, 17-02 done)
-**Version:** 1.1.19
+**Version:** 1.1.23
 
-### This Session Summary (2026-01-24 Evening)
+### This Session Summary (2026-01-24 Late Night)
 
 **What was done:**
-1. Executed 17-02-PLAN (piece preview boxes) - commits up to 93b9ef0
-2. Fixed piece preview sizing/positioning (fixed 48x48 boxes, centered)
-3. Major UpgradePanel UI overhaul:
-   - +/- buttons instead of "UPGRADE" button
-   - Added Features section (GOOP_HOLD_VIEWER, GOOP_WINDOW, ACTIVE_EXPANSION_SLOT)
-   - Reordered: Actives → Features → Passives
-   - Fixed PRESSURE_CONTROL max level bug (was capped at 5, now uses correct maxLevel=8)
-4. Minigame pulsing improvements:
-   - Active: purple → red pulse (more noticeable)
-   - Text: white instead of red (contrast with red pulse)
-   - Solved: snap to green, fade to purple over 2s
-5. UpgradePanel: Current + Max on same line
 
-### NEXT SESSION TASKS (Priority Order)
+1. **GOOP_DUMP Rework** (v1.1.21)
+   - Pieces now rain from TOP instead of spawning in-place
+   - Ghost appearance (30% opacity, dashed outline) until landing
+   - Pieces move WITH board rotation (absolute grid X)
+   - Staggered spawn for rain effect (80ms between pieces)
+   - Added DumpPiece interface, dumpPieces/dumpQueue to GameState
+   - New tickDumpPieces() method in GameEngine
 
-**Quick UI Fixes:**
-1. UpgradePanel: Remove "ACTIVES (0/1 equipped)" text, replace with centered "Earn PWR by Increasing your Operator Rank" (Amazon Ember font, same size)
-2. Fix Max text for minigame upgrades to say "Easier Fixing Sequence" for all 3
+2. **All Actives Now Have 3 Levels** (v1.1.22)
+   | Ability | Level 1 | Level 2 | Level 3 |
+   |---------|---------|---------|---------|
+   | COOLDOWN_BOOSTER | +25% | +35% | +50% |
+   | GOOP_DUMP | 1 wave | 2 waves | 3 waves |
+   | GOOP_COLORIZER | 6 match | 7 match | 8 match |
+   | CRACK_DOWN | 3 cracks | 5 cracks | 7 cracks |
+
+3. **Per-Ability Charge Times** (v1.1.23)
+   - Cooldown Booster: 20s
+   - Goop Dump: 15s
+   - Goop Colorizer: 25s
+   - Crack Down: 30s
+
+4. **GOOP_DUMP now uses 60% coverage** (18 pieces per wave)
+
+### Remaining Tasks
 
 **Bugs to Investigate:**
-3. **Pressure not rising bug** - Sometimes pressure doesn't start rising for a long time. User couldn't reproduce consistently, may be related to timing/speed. Investigate anything connected to pressure rise timing/start conditions.
-
-4. **Falling pieces don't interact with cracks** - After clears, when pieces fall (gravity), they don't destroy cracks (different color) or consume them (same color). This is different from normal single-piece falling. Need to check sticky gravity / collision logic.
-
-**Feature: Goop Dump Rework:**
-5. GOOP_DUMP active should spawn units from TOP and fall down across board length (gives player reaction time). Units should:
-   - Move with the board (unlike main falling piece)
-   - Be "ghosts" until they lock (like main piece)
-   - Fall from top, not spawn in place
+1. **Pressure not rising bug** - Sometimes pressure doesn't start rising for a long time.
+2. **Falling pieces don't interact with cracks** - After clears, gravity-falling pieces don't consume/destroy cracks.
 
 **RESEARCH REQUIRED - Tetris Movement Feel:**
-6. **Lock delay / last-moment sliding** - In Tetris you can "slide" pieces at the last moment before locking. Research how Tetris achieves this feel. User wants this in game.
+3. **Lock delay / last-moment sliding** - Research how Tetris achieves this feel.
+4. **Sideways movement into gaps** - Research Tetris collision logic for moving into gaps.
 
-7. **Sideways movement into gaps** - In Tetris, if there's a vertical wall with one unit missing, you can move a falling piece sideways INTO that gap. Currently not possible in this game. Research how Tetris handles this collision logic.
-
-⚠️ **WARNING for tasks 6-7:** User previously attempted these features and it "broke pretty badly" with cascading bugs. They reverted. Approach with caution:
-- Do thorough research first
-- Understand the existing collision/movement system deeply
-- Make small, testable changes
-- Test extensively after each change
-
-### Key Files for Investigation
-
-**Pressure rise timing:**
-- `core/GameEngine.ts` - tick() function, pressure calculation
-- `complicationConfig.ts` - CONTROLS complication config
-
-**Gravity/crack interaction:**
-- `core/GameEngine.ts` - applyGravity(), handleClearAndScore()
-- `utils/gameLogic.ts` - findConnectedGroup(), checkCollision()
-
-**Goop Dump:**
-- `core/commands/actions.ts` - ActivateAbilityCommand
-- `core/GameEngine.ts` - activateAbility()
-
-**Tetris movement feel:**
-- `core/GameEngine.ts` - movePiece(), lockPiece()
-- `utils/gameLogic.ts` - checkCollision()
-- Current lock mechanism needs understanding before modification
+⚠️ **WARNING for tasks 3-4:** Previous attempts "broke pretty badly". Approach with caution.
 
 ## Quick Commands
 
