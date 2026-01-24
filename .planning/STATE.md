@@ -20,11 +20,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 16 of 18 (Junk Band)
-Plan: 1 of ? in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-23 — Completed 16-01-PLAN.md
+Last activity: 2026-01-23 — Completed 16-02-PLAN.md
 
-Progress: ████░░░░░░ 24%
+Progress: ████░░░░░░ 26%
 
 ## v1.1 Architecture Refactor
 
@@ -105,20 +105,23 @@ None — all UAT issues resolved.
 ## Session Continuity
 
 Last session: 2026-01-23
-Stopped at: Completed 16-01-PLAN.md (JUNK_UNIFORMER + Orange verification)
+Stopped at: Completed 16-02-PLAN.md (GOOP_SWAP upgrade effect)
 Resume file: None
-Phase 16 Status: In progress — 1 plan complete
+Phase 16 Status: In progress — 2 plans complete
 
 ### This Session Summary
 
 **What was done:**
-1. Executed 16-01-PLAN.md (JUNK_UNIFORMER + Orange color verification)
-   - Added powerUps parameter to createInitialGrid
-   - Implemented anchor-color bias system for JUNK_UNIFORMER
-   - Verified Orange color at rank 10+ (existing tests pass)
+1. Executed 16-02-PLAN.md (GOOP_SWAP upgrade effect)
+   - Added powerUps parameter to useInputHandlers
+   - Implemented dynamic hold duration based on GOOP_SWAP level
+   - Base 1.5s, -0.25s per level (0.5s at max)
+   - Fixed keyboard R key to also respect GOOP_SWAP (deviation)
 
 **Commits this session:**
-- `9f3d391` feat(16-01): add JUNK_UNIFORMER effect to createInitialGrid
+- `1d6598a` feat(16-02): add dynamic hold duration based on GOOP_SWAP level
+- `150295a` feat(16-02): thread powerUps through GameBoard to useInputHandlers
+- `3fb0337` fix(16-02): apply GOOP_SWAP to keyboard R key hold-to-swap
 
 ### Uncommitted Changes
 
@@ -130,7 +133,7 @@ None
 
 ### Next Steps
 
-1. Execute remaining Phase 16 plans (Junk Goop complication, GOOP_SWAP, GOOP_DUMP, SEALING_BONUS)
+1. Execute remaining Phase 16 plans (16-03: GOOP_DUMP, SEALING_BONUS, etc.)
 
 ## Quick Commands
 
