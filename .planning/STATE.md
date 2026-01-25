@@ -92,41 +92,41 @@ All three complications have player-driven triggers AND mitigations.
 
 ## Session Continuity
 
-Last session: 2026-01-24
-**Version:** 1.1.39
-Stopped at: Debugging crack expansion - not working
+Last session: 2026-01-25
+**Version:** 1.1.45
+Stopped at: Crack system working, needs distance penalty tuning
 
-### This Session Summary (2026-01-24)
+### This Session Summary (2026-01-25)
 
-**Phase 20: Expanding Cracks Overhaul (CODE COMPLETE, BUG FOUND)**
-- Completed 20-01-PLAN.md (full crack system rewrite)
-- CrackCell data structure with parentIds/childIds graph
-- Per-cell random 3-5s growth timers
-- 8-direction spread (orthogonal + diagonal)
-- Spread formula: 10% base + pressureRatio
-- Leaf cell 50% penalty for clustering
-- Same-color crack merging
-- Visual connection lines between cells
-- 150 tests passing (17 new)
+**Phase 20: Expanding Cracks Overhaul - FIXED & TUNED**
 
-### BUG: Cracks not expanding
+Fixed bugs:
+1. `tickGoals()` now uses `trySpawnCrack()` (was using old `trySpawnGoal()`)
+2. Spawned cracks added to BOTH `crackCells` AND `goalMarks` for sealing detection
+3. `handleGoals()` now removes from both arrays when sealed
+4. **PRESSURE BUG FIXED** - `maxTime` was hardcoded to 60000 in Game.tsx, now uses `engine.maxTime`
 
-**Symptom:** At rank 39, basic cracks spawn but NO expansion occurs. No lines connecting crack cells.
+Tuning applied:
+- Spread timer: 7-12 seconds (was 3-5s)
+- Circle nodes at all crack cell positions
+- Goop blocks spreading (any color)
+- Partial sealing (only covered cells removed)
+- Distance-from-root penalty: 15% reduction per hop
 
-**Expected:** Cracks should spread to adjacent cells every 3-5s with connection lines drawn between parent/child cells.
+### NEXT: Increase distance penalty to 25%
 
-**Files to investigate:**
-- `core/GameEngine.ts` - `tickCrackGrowth()` method
-- `core/GoalManager.ts` - `trySpawnCrack()` and crack helpers
-- `components/GameBoard.tsx` - connection line rendering
+User feedback: With full upgrades (extra time + crack sealing bonus time), cracks still grew too large by end of run.
 
-**Likely causes:**
-1. `tickCrackGrowth()` not being called or early-returning
-2. `crackCells` array not populated (still using old `goalMarks`)
-3. Spread logic failing silently
-4. Connection lines not rendering (wrong layer or missing data)
+**Change needed:** In `core/GameEngine.ts` around line 1197:
+```typescript
+// Current: 15% per hop
+const distanceMultiplier = Math.max(0.10, 1 - (distance * 0.15));
 
-**Debug approach:** Add console.log in `tickCrackGrowth()` to verify it runs and check crackCells state.
+// Change to: 25% per hop
+const distanceMultiplier = Math.max(0.10, 1 - (distance * 0.25));
+```
+
+This will limit cracks to ~3-4 cells instead of ~4-6.
 
 ## Quick Commands
 
