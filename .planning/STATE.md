@@ -93,34 +93,30 @@ All three complications have player-driven triggers AND mitigations.
 ## Session Continuity
 
 Last session: 2026-01-24
-**Version:** 1.1.33
+**Version:** 1.1.37
 
-### This Session Summary (2026-01-24)
+### This Session Summary (2026-01-24 evening)
 
 **What was done:**
-- Researched Tetris movement feel — documented in INVESTIGATIONS.md
-- Implemented move reset lock delay (v1.1.29): rotation/movement resets 500ms lock timer
-- Reduced reset limit to 10 (v1.1.30) after user testing
-- Lights grace timer now pauses during console/minigame views (v1.1.30)
-- Added debug logging for pressure bug (still investigating)
-- **Phase 2 kicks (v1.1.31):** Added upward kick tests (y:-2) to allow pieces to climb 2 rows via rotation
-- **Slide into gaps fix (v1.1.32):** Fixed collision check to use rounded Y for horizontal movement
-- **Grid snap fix (v1.1.33):** Snap piece to grid when sliding into tight gaps
+- **Tabbed Upgrade Panel UI (v1.1.34-37):** Added 4 filter tabs to System Upgrades panel
+  - Tabs: ACTIVES | FEATURES | CONSOLE | PASSIVES
+  - Progressive unlock: Console@2, Passives@3, Actives@5, Features@20
+  - Fixed 25% width per tab (no stretching)
+  - Swipe left/right to change tabs (follows periscope swipe pattern)
+  - Hidden scrollbar to prevent width shift
+  - Complication passives grouped under CONSOLE tab
 
-**Root cause of slide-into-gaps bug:** Fractional Y positions (e.g., 16.49) caused collision check to straddle two rows, blocking slides into single-row gaps. Fix: check collision at `Math.round(y)` for horizontal movement.
-
-**Decisions made:**
-- Move reset limit = 10 (middle ground between Tetris's 15 and user's instinct of 5)
-- Lights timer pauses in console to prevent feels-bad chain after minigames
-- Added 3 new kick offsets: {0,-2}, {1,-2}, {-1,-2} for tucking under overhangs
-- Horizontal movement uses rounded Y for collision, snaps if needed
+**Key changes:**
+- Added `category: 'complication'` to Circuit Stabilizer, Capacitor Efficiency, Gear Lubrication in constants.ts
+- UpgradePanel.tsx rewritten with tab state, filtering, and swipe gestures
+- Swipe uses global window event listeners (same pattern as periscope drag)
 
 **Known bug:**
 - Pressure not rising bug — debug logging added, waiting for next occurrence
 
 **Next session:**
 - Monitor debug logs for pressure bug
-- Continue testing movement feel improvements
+- Continue piecemeal cleanup/validation work
 
 ## Quick Commands
 
