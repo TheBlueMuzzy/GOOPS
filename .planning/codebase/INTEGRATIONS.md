@@ -1,3 +1,10 @@
+---
+title: External Integrations
+type: architecture
+tags: [apis, storage, external]
+updated: 2026-01-25
+---
+
 # External Integrations
 
 **Analysis Date:** 2026-01-18

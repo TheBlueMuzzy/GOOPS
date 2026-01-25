@@ -1,3 +1,10 @@
+---
+title: Roadmap
+type: roadmap
+tags: [milestones, phases, progress]
+updated: 2026-01-25
+---
+
 # Roadmap: Goops Complications & Progression
 
 ## Overview
@@ -10,9 +17,9 @@ None
 
 ## Milestones
 
-- ✅ [v1.0 MVP](milestones/v1.0-ROADMAP.md) — Phases 1-7 (shipped 2026-01-21)
-- ✅ [v1.1 Architecture Refactor](milestones/v1.1-ROADMAP.md) — Phases 8-13 (shipped 2026-01-21)
-- ✅ [v1.2 Progression System](milestones/v1.2-ROADMAP.md) — Phases 14-18 (shipped 2026-01-24)
+- [[v1.0-ROADMAP|v1.0 MVP]] — Phases 1-7 (shipped 2026-01-21)
+- [[v1.1-ROADMAP|v1.1 Architecture Refactor]] — Phases 8-13 (shipped 2026-01-21)
+- [[v1.2-ROADMAP|v1.2 Progression System]] — Phases 14-20 (shipped 2026-01-25)
 
 ## Completed Milestones
 
@@ -29,7 +36,7 @@ None
 
 **Total:** 7 phases, 22 plans, 65 tests
 
-See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
+See [[v1.0-ROADMAP]] for full details.
 
 </details>
 
@@ -51,29 +58,32 @@ See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
 - GameEngine.tick(): 159 → 22 lines (86% reduction)
 - Tests: 65 → 110 (69% increase)
 
-See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
+See [[v1.1-ROADMAP]] for full details.
 
 </details>
 
 <details>
-<summary>v1.2 Progression System (Phases 14-18) — SHIPPED 2026-01-24</summary>
+<summary>v1.2 Progression System (Phases 14-20) — SHIPPED 2026-01-25</summary>
 
 - [x] Phase 14: Data Architecture (2/2 plans) — completed 2026-01-24
 - [x] Phase 15: Onboarding Band (4/4 plans) — completed 2026-01-24
 - [x] Phase 16: Junk Band (3/3 plans) — completed 2026-01-24
 - [x] Phase 17: Mixer Band (3/3 plans) — completed 2026-01-24
 - [x] Phase 18: Cracked Band (2/2 plans) — completed 2026-01-24
+- [x] Phase 19: Multi-Color Pieces (3/3 plans) — completed 2026-01-24
+- [x] Phase 20: Expanding Cracks Overhaul (1/1 plans) — completed 2026-01-25
 
-**Total:** 5 phases, 14 plans, 112 tests
+**Total:** 7 phases, 18 plans, 150 tests
 
 **Key accomplishments:**
 - 20 upgrades across 4 bands (Onboarding, Junk, Mixer, Cracked)
 - Active ability system with per-ability charge times
 - 3 new colors: Orange@10, Purple@20, White@30
 - Lights malfunction rework (player-controlled brightness)
-- Expanding cracks mechanic
+- Multi-color pieces (different colors per cell)
+- Expanding cracks overhaul (connected structures, organic growth)
 
-See [v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) for full details.
+See [[v1.2-ROADMAP]] for full details.
 
 </details>
 
@@ -101,4 +111,11 @@ See [v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) for full details.
 | 16. Junk Band | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 17. Mixer Band | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 18. Cracked Band | v1.2 | 2/2 | Complete | 2026-01-24 |
-| 19. Multi-Color Pieces | v1.3 | 3/3 | Complete | 2026-01-24 |
+| 19. Multi-Color Pieces | v1.2 | 3/3 | Complete | 2026-01-24 |
+| 20. Expanding Cracks Overhaul | v1.2 | 1/1 | Complete | 2026-01-25 |
+
+## Related
+
+- [[HOME]] - Navigation hub
+- [[STATE]] - Current position
+- [[PROJECT]] - Project definition

@@ -1,3 +1,10 @@
+---
+title: Testing Patterns
+type: architecture
+tags: [tests, vitest, coverage]
+updated: 2026-01-25
+---
+
 # Testing Patterns
 
 **Analysis Date:** 2026-01-18
@@ -14,7 +21,7 @@
 
 **Run Commands:**
 ```bash
-npm run test:run          # Run all tests once (110 tests)
+npm run test:run          # Run all tests once (150 tests)
 npm test                  # Watch mode
 npm test -- path/to/file  # Single file
 ```
@@ -38,8 +45,10 @@ npm test -- path/to/file  # Single file
 tests/
   coordinates.test.ts          # 6 tests - coordinate wrapping
   coordinateTransform.test.ts  # 27 tests - SVG coordinate transforms
-  gameLogic.test.ts            # 30 tests - core game logic
+  crackSystem.test.ts          # 17 tests - crack spreading logic
+  gameLogic.test.ts            # 32 tests - core game logic
   minigameLogic.test.ts        # 18 tests - minigame constants
+  pieceUtils.test.ts           # 21 tests - piece utilities
   progression.test.ts          # 29 tests - rank/XP calculations
 ```
 
@@ -163,6 +172,19 @@ const placeCell = (grid, x, y, color, groupId) => {
 - Score multipliers
 - Configuration consistency
 
+**What's Tested (from `pieceUtils.test.ts`):**
+- Piece cell transformations
+- Multi-color piece handling
+- Piece rotation utilities
+- Color assignment logic
+
+**What's Tested (from `crackSystem.test.ts`):**
+- Crack cell data structure
+- Crack spreading logic
+- Connected component counting
+- Merge behavior
+- SLOW_CRACKS effect
+
 **Integration Tests:**
 - Not currently used
 - GameEngine tested indirectly through utility function tests
@@ -217,3 +239,4 @@ it('should find group across wrapped boundary', () => {
 
 *Testing analysis: 2026-01-18*
 *Updated 2026-01-21 for v1.1 refactor*
+*Updated 2026-01-25: 150 tests across 7 files (added crackSystem.test.ts, pieceUtils.test.ts)*

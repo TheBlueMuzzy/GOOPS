@@ -1,3 +1,10 @@
+---
+title: Project State
+type: session
+tags: [active, continuity, status]
+updated: 2026-01-25
+---
+
 # Project State
 
 ## Branch Workflow (SOP)
@@ -12,7 +19,7 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-01-24)
+See: [[PROJECT]] (updated 2026-01-24)
 
 **Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
 **Current focus:** v1.2 shipped — bug fixes and testing before next milestone
@@ -39,15 +46,15 @@ Key features:
 - Expanding cracks mechanic
 - 3 new colors: Orange@10, Purple@20, White@30
 
-See [v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) for full details.
+See [[v1.2-ROADMAP]] for full details.
 
 ### v1.1 Architecture Refactor (Shipped 2026-01-21)
 
-All 6 phases (8-13) complete. See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
+All 6 phases (8-13) complete. See [[v1.1-ROADMAP]] for full details.
 
 ### v1.0 MVP (Shipped 2026-01-21)
 
-All 7 phases complete. See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
+All 7 phases complete. See [[v1.0-ROADMAP]] for full details.
 
 ## Accumulated Context
 
@@ -75,8 +82,9 @@ All three complications have player-driven triggers AND mitigations.
 **Fixed:**
 - Gravity pieces now interact with cracks (v1.1.27)
 - Non-matching color pieces no longer destroy cracks (they persist under goop)
+- UAT-001: Crack expansion now uses `trySpawnCrack()` → `crackCells` (verified 2026-01-25)
 
-**Researched (see INVESTIGATIONS.md):**
+**Researched (see [[INVESTIGATIONS]]):**
 - Tetris movement feel — IMPLEMENTED (v1.1.29-33)
 - Pressure not rising bug — debug logging added, waiting for next occurrence
 
@@ -93,8 +101,8 @@ All three complications have player-driven triggers AND mitigations.
 ## Session Continuity
 
 Last session: 2026-01-25
-**Version:** 1.1.51
-**Branch:** master (GoopPieceRework branch ready for next milestone)
+**Version:** 1.1.13
+**Branch:** master
 
 ### This Session Summary (2026-01-25)
 
@@ -122,7 +130,7 @@ Last session: 2026-01-25
    - Much more achievable progression
 
 **Future ideas captured:**
-- `SlowMode` concept in PROJECT.md (pressure from goop volume, crack-based leveling)
+- `SlowMode` concept in [[PROJECT]] (pressure from goop volume, crack-based leveling)
 - `GoopPieceRework` branch created for next milestone (different goop shapes)
 
 **Next session:** Start GoopPieceRework milestone — different piece shapes to facilitate faster stacking
@@ -132,3 +140,9 @@ Last session: 2026-01-25
 ## Quick Commands
 
 User shortcuts in CLAUDE.md: `<commands>`, `<npm>`, `<test>`, `<commit>`, `<merge>`, `<status>`, `<handoff>`
+
+## Related
+
+- [[HOME]] - Navigation hub
+- [[PROJECT]] - Full project definition
+- [[ROADMAP]] - All milestones

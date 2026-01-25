@@ -1,3 +1,10 @@
+---
+title: Bug Investigations
+type: reference
+tags: [bugs, research, debugging]
+updated: 2026-01-25
+---
+
 # Bug Investigations
 
 Reference file for investigated bugs that were either fixed, couldn't reproduce, or are low priority.

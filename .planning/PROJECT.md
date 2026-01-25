@@ -1,3 +1,10 @@
+---
+title: Project Definition
+type: reference
+tags: [requirements, context, decisions]
+updated: 2026-01-25
+---
+
 # Goops
 
 ## What This Is
@@ -47,11 +54,12 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 ### Active
 
 **Research:**
-- [ ] Tetris movement feel (lock delay, sideways into gaps)
+
 
 **Recently Fixed (v1.1.27):**
 - [x] Gravity pieces now interact with cracks
 - [x] Non-matching pieces no longer destroy cracks (persist under goop)
+- [x] Tetris movement feel (lock delay, sideways into gaps)
 
 ### Out of Scope (v1.2)
 
@@ -61,7 +69,7 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 
 ## Context
 
-**Current state:** v1.2 shipped. 18 phases, 49 plans complete. Version 1.1.26.
+**Current state:** v1.2 shipped + Phases 19-20 complete. 20 phases, 53 plans complete. Version 1.1.13.
 
 **Shipped in v1.2:**
 - 20 upgrades across 4 bands (Onboarding, Junk, Mixer, Cracked)
@@ -102,7 +110,7 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 
 ## Rank Band System
 
-Progression is organized into bands of 10 ranks. See PRD.md for full details.
+Progression is organized into bands of 10 ranks. See PRD.md (root) for full details.
 
 | Band | Ranks | Mechanic | New Color | Upgrades | Status |
 |------|-------|----------|-----------|----------|--------|
@@ -179,4 +187,13 @@ Progression is organized into bands of 10 ranks. See PRD.md for full details.
 **Status:** Captured for future exploration. Create branch `SlowMode` when ready to prototype.
 
 ---
-*Last updated: 2026-01-25 after v1.1.50*
+
+## Related
+
+- [[HOME]] - Navigation hub
+- [[STATE]] - Current position and session info
+- [[ROADMAP]] - All milestones and phases
+- [[DESIGN_VISION]] - Design philosophy
+
+---
+*Last updated: 2026-01-25 (validated against master)*

@@ -1,3 +1,10 @@
+---
+title: Coding Conventions
+type: architecture
+tags: [naming, style, patterns]
+updated: 2026-01-25
+---
+
 # Coding Conventions
 
 **Analysis Date:** 2026-01-18

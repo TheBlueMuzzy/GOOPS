@@ -37,17 +37,22 @@ Goops (Gooptris) is a puzzle-action game built with React/TypeScript/Vite. Playe
 5. Pre-commit hook also runs tests automatically
 
 ### Version Numbers
-Version displayed in console footer (`components/Art.tsx`). Format: **X.Y.Z**
+Version displayed in main menu footer (`components/MainMenu.tsx`). Format: **X.Y.Z.B**
 
 | Segment | When to increment | Example |
 |---------|-------------------|---------|
-| **Z** (patch) | Each fix/change for user to test | 0.7.0 → 0.7.1 |
-| **Y** (minor) | Major milestone completion | 0.7.5 → 0.8.0 |
-| **X** (major) | Release to friends | 0.9.0 → 1.0.0 |
+| **B** (build) | AUTOMATIC on every dev/build | 1.1.13.4 → 1.1.13.5 |
+| **Z** (patch) | Meaningful code changes | 1.1.13 → 1.1.14 |
+| **Y** (minor) | Major milestone completion | 1.1.14 → 1.2.0 |
+| **X** (major) | Release to friends | 1.2.0 → 2.0.0 |
 
-**Note:** Patch versions can go past 9 (e.g., 1.1.9 → 1.1.10 → 1.1.11). Don't roll to minor unless it's a real milestone.
+**Build Number (B):** Auto-increments via Vite plugin every time dev server starts or build runs. Stored in `.build-number` (gitignored). User sees it in the app footer to verify they're testing the right code.
 
-**When presenting fixes for testing**, always state the version number so user can verify they're running the updated code.
+**CRITICAL: When changes are ready for testing**, Claude MUST:
+1. Read `.build-number` to get the current build number
+2. Tell the user: **"Ready to test. Look for build #X in the footer."**
+
+This replaces manual version bumping. The build number proves the user is seeing fresh code.
 
 ### Git Workflow
 - **Feature branches**: All new work happens on feature branches, not master
@@ -156,27 +161,29 @@ Do NOT remove the `isMobile` checks without understanding why they exist.
 ## Current Status (as of Jan 2026)
 
 ### Complete
-- **v1.0 MVP** (Phases 1-7): Core gameplay, complications, minigames, HUD meters, 65 tests
-- **v1.1 Architecture** (Phases 8-13): File decomposition, memory fixes, event-based input, 110 tests
-- **v1.2 Phase 14-15**: Data architecture + Onboarding Band complete
+- **v1.0 MVP** (Phases 1-7): Core gameplay, complications, minigames, HUD meters
+- **v1.1 Architecture** (Phases 8-13): File decomposition, memory fixes, event-based input
+- **v1.2 Progression** (Phases 14-20): Full 40-rank progression, 4 bands, 20 upgrades, multi-color pieces, expanding cracks
 
-### In Progress
-- **Phase 16: Junk Band** — Next up (Junk Goop complication, Orange color, 4 upgrades)
+### Stats
+- **Version:** 1.1.13 (build number auto-increments)
+- **Tests:** 150 across 7 test files
+- **Upgrades:** 20 total across 4 bands
 
 ### Key Systems
-- **Complications**: LASER@rank1, LIGHTS@rank2, CONTROLS@rank3
+- **Complications**: LASER@rank4, LIGHTS@rank2, CONTROLS@rank6
 - **HUD Meters**: Laser capacitor (drains on pop), Controls heat (builds on rotate)
-- **Upgrades**: 17 total (8 Onboarding + 4 Junk + 4 Mixer + 4 Cracked)
+- **Upgrades**: 20 total (8 Onboarding + 4 Junk + 4 Mixer + 4 Cracked)
 - **Active Abilities**: Equip + charge (1%/sec + 10%/crack) + tap to activate
-- **XP Curve**: `3500 + (rank * 250)` per rank — Rank 1 = 3,500 XP, flatter progression
+- **XP Curve**: `3500 + (rank * 250)` per rank — flatter progression
 - **XP Floor**: `max(100 * rank, score)` prevents zero-gain runs
 
 ### Key Documents
 - `.planning/STATE.md` — Current position and session continuity
-- `.planning/ROADMAP.md` — Phase overview and progress (18 phases total)
+- `.planning/ROADMAP.md` — Phase overview and progress (20 phases total)
 - `.planning/PROJECT.md` — Requirements and key decisions
 - `PRD.md` — Full product requirements
-- `constants.ts` — UPGRADES configuration (17 upgrades)
+- `constants.ts` — UPGRADES configuration (20 upgrades)
 
 ## Testing Philosophy
 - Tests cover core game logic (collision, gravity, scoring, coordinates)
@@ -201,5 +208,5 @@ Do NOT remove the `isMobile` checks without understanding why they exist.
 **Why pre-commit hook?** User's main frustration is AI tools breaking things — catch regressions before they're committed
 
 ### File Organization
-**Why NOT split GameEngine into 6 systems?** Over-engineering for current scope. The 465-line class is manageable. Only split if actively struggling with complexity.
-**Why NOT split GameBoard.tsx?** Same reason. Smaller files help constrain AI tools (Google AI Studio) from touching too much, but the refactor cost isn't worth it yet.
+**GameEngine is now ~1177 lines** (grew with crack system in Phase 20). Consider extracting CrackManager if it grows further.
+**GameBoard.tsx is ~758 lines** — manageable but watch for growth.

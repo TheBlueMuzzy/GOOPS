@@ -1,10 +1,17 @@
+---
+title: Shipped Milestones
+type: reference
+tags: [milestones, history, shipped]
+updated: 2026-01-25
+---
+
 # Project Milestones: Goops
 
 ## v1.2 Progression System (Shipped: 2026-01-24)
 
-**Delivered:** Full ranks 0-39 progression with 4 bands, 20 upgrades, active ability system, and 3 new colors.
+**Delivered:** Full ranks 0-39 progression with 4 bands, 20 upgrades, active ability system, 3 new colors, multi-color pieces, and expanding cracks overhaul.
 
-**Phases completed:** 14-18 (14 plans total)
+**Phases completed:** 14-20 (18 plans total)
 
 **Key accomplishments:**
 
@@ -16,17 +23,19 @@
 - 4 Cracked Band features (ranks 30-39): Expanding cracks, SLOW_CRACKS, CRACK_MATCHER, CRACK_DOWN
 - Lights malfunction rework: player-controlled brightness (soft drop to charge)
 - Color progression: Orange@10, Purple@20, White@30
+- Multi-color pieces (Phase 19): pieces can have different colors per cell
+- Expanding cracks overhaul (Phase 20): connected structures with organic growth
 
 **Stats:**
 
-- 60 files modified (+5,325 / -664 lines)
-- 11,258 lines of TypeScript
-- 5 phases, 14 plans
-- 2 days (Jan 23-24, 2026)
+- 60+ files modified
+- 150 tests across 7 test files
+- 7 phases (14-20), 18 plans
+- 3 days (Jan 23-25, 2026)
 
 **Git range:** `feat(14-01)` → `docs(18-02)`
 
-**What's next:** Bug fixes (pressure, crack interactions), Tetris movement research
+**What's next:** GoopPieceRework milestone (different piece shapes)
 
 ---
 

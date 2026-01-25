@@ -1,3 +1,10 @@
+---
+title: Technology Stack
+type: architecture
+tags: [dependencies, frameworks, tools]
+updated: 2026-01-25
+---
+
 # Technology Stack
 
 **Analysis Date:** 2026-01-18

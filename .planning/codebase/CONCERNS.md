@@ -1,3 +1,10 @@
+---
+title: Codebase Concerns
+type: architecture
+tags: [tech-debt, bugs, fragile]
+updated: 2026-01-25
+---
+
 # Codebase Concerns
 
 **Analysis Date:** 2026-01-18
@@ -19,17 +26,17 @@
 - Fix approach: Replace with actual game state updates when minigame logic is built
 
 **Large GameEngine class:**
-- Issue: `core/GameEngine.ts` is ~465 lines
+- Issue: `core/GameEngine.ts` is ~1177 lines (grew with crack system)
 - Files: `core/GameEngine.ts`
-- Why: Manageable for current scope, intentionally not split
-- Impact: Could become harder to navigate as features grow
-- Fix approach: Only split if actively struggling with complexity (per CLAUDE.md guidance)
+- Why: Crack system (Phase 20) added significant logic
+- Impact: File is larger but logic is organized into focused tick methods
+- Fix approach: Consider extracting CrackManager if further growth needed
 
 ## Known Bugs
 
 **None currently documented.**
 
-The test suite (36 tests) covers core game logic. Visual/gameplay bugs are tracked through manual testing.
+The test suite (150 tests across 7 files) covers core game logic. Visual/gameplay bugs are tracked through manual testing.
 
 ## Security Considerations
 
@@ -95,17 +102,18 @@ The test suite (36 tests) covers core game logic. Visual/gameplay bugs are track
 
 ## Missing Critical Features
 
-**Minigame logic:**
-- Problem: Minigame UI exists but has no game logic
-- Current workaround: Players see controls but they don't affect gameplay
-- Blocks: Full gameplay loop with complications
-- Implementation complexity: Medium - need to connect UI state to game engine
+**None critical remaining.**
 
-**Multi-color pieces:**
-- Problem: Piece design only supports single-color blocks
-- Current workaround: None (feature not started)
-- Blocks: Advanced gameplay variety
-- Implementation complexity: High - needs piece type redesign
+All core gameplay features implemented:
+- ✓ Minigame logic (v1.0, Phases 1-4)
+- ✓ Multi-color pieces (v1.2, Phase 19)
+- ✓ Expanding cracks (v1.2, Phases 18, 20)
+- ✓ Active abilities (v1.2, Phase 15)
+
+**Future enhancements:**
+- Sound design
+- Cloud save sync
+- Leaderboards
 
 ## Dependencies at Risk
 
@@ -121,4 +129,4 @@ Dependencies are minimal and well-maintained:
 ---
 
 *Concerns audit: 2026-01-18*
-*Update as issues are fixed or new ones discovered*
+*Updated 2026-01-25: All critical features implemented, 150 tests*

@@ -51,7 +51,9 @@ if (crack) {
 - `core/GameEngine.ts` - `tickGoals()` method
 
 **Acceptance criteria:**
-- [ ] Cracks spawn into `crackCells` array
-- [ ] `tickCrackGrowth()` processes cells and attempts spread
-- [ ] Connection lines render between parent/child cells
-- [ ] Cracks visibly expand during gameplay at rank 30+
+- [x] Cracks spawn into `crackCells` array
+- [x] `tickCrackGrowth()` processes cells and attempts spread
+- [x] Connection lines render between parent/child cells
+- [x] Cracks visibly expand during gameplay at rank 30+
+
+**Status:** RESOLVED — Code already had the fix applied (verified 2026-01-25)

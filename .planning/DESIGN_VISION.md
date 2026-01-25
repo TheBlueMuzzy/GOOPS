@@ -1,3 +1,10 @@
+---
+title: Design Vision
+type: reference
+tags: [design, balance, philosophy]
+updated: 2026-01-25
+---
+
 # Goops Design Vision
 
 This document captures the high-level design philosophy and balance considerations for Goops. Use this as context when making balance decisions or planning new features.
@@ -177,12 +184,18 @@ cooldown = max(8, 20 - (rank - unlockRank))
 
 ---
 
-## Implementation Priority
+## Implementation Status
 
-**Phase 5 (Current):** HUD meters + complication balance tweaking
-**Phase 6:** Progression system (XP floor, rank curve, new mechanic unlocks)
-**Phase 7:** System upgrades (upgrade UI, effects, costs)
+All design systems implemented as of v1.2:
+- **Phases 1-7:** Core gameplay, complications, HUD meters, progression, upgrades
+- **Phases 8-13:** Architecture refactor, manager extraction, event system
+- **Phases 14-20:** Full 40-rank progression, 4 bands, 20 upgrades, active abilities
+
+**XP Curve (Updated v1.1.51):**
+- Formula: `3500 + (rank * 250)` per rank
+- Rank 1: 3,500 XP | Rank 10: 38,125 XP total | Rank 40: 336,000 XP total
+- Much flatter than original exponential curve
 
 ---
 
-*Last Updated: January 2026*
+*Last Updated: 2026-01-25 (validated against master)*

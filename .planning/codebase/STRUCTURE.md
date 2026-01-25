@@ -1,3 +1,10 @@
+---
+title: Codebase Structure
+type: architecture
+tags: [directories, organization, files]
+updated: 2026-01-25
+---
+
 # Codebase Structure
 
 **Analysis Date:** 2026-01-18
@@ -25,7 +32,7 @@ Goops2-main/
 │   ├── useInputHandlers.ts        # Extracted input handling
 │   ├── useLaserMinigame.ts        # LASER state machine
 │   └── useLightsMinigame.ts       # LIGHTS state machine
-├── tests/             # Unit tests (110 tests across 5 files)
+├── tests/             # Unit tests (150 tests across 7 files)
 ├── types/             # Additional type definitions
 │   ├── input.ts       # Input event types
 │   └── minigames.ts   # Minigame type definitions
@@ -73,14 +80,16 @@ Goops2-main/
   - `useLaserMinigame.ts`, `useLightsMinigame.ts`, `useControlsMinigame.ts` - minigame state machines
 
 **tests/**
-- Purpose: Unit tests for core game logic (110 tests total)
+- Purpose: Unit tests for core game logic (150 tests total)
 - Contains: `*.test.ts` files
 - Key files:
-  - `gameLogic.test.ts` (30 tests) - core game logic
+  - `gameLogic.test.ts` (32 tests) - core game logic
   - `coordinates.test.ts` (6 tests) - coordinate wrapping
   - `coordinateTransform.test.ts` (27 tests) - SVG coordinate transforms
   - `progression.test.ts` (29 tests) - XP/rank calculations
   - `minigameLogic.test.ts` (18 tests) - minigame constants
+  - `pieceUtils.test.ts` (21 tests) - piece utilities
+  - `crackSystem.test.ts` (17 tests) - crack spreading logic
 
 **utils/**
 - Purpose: Pure utility functions (testable, no side effects)
@@ -108,7 +117,7 @@ Goops2-main/
 - `tailwind.config.js` - Tailwind CSS configuration
 
 **Core Logic:**
-- `core/GameEngine.ts` - Central game state and logic (~576 lines)
+- `core/GameEngine.ts` - Central game state and logic (~1177 lines, grew for crack system)
 - `core/ComplicationManager.ts` - Complication trigger logic
 - `core/GoalManager.ts` - Goal/crack state management
 - `core/commands/actions.ts` - All game commands
@@ -119,11 +128,13 @@ Goops2-main/
 - `types.ts` - All TypeScript interfaces and enums
 
 **Testing:**
-- `tests/gameLogic.test.ts` - Game logic tests (30 tests)
+- `tests/gameLogic.test.ts` - Game logic tests (32 tests)
 - `tests/coordinates.test.ts` - Coordinate system tests (6 tests)
 - `tests/coordinateTransform.test.ts` - SVG coordinate tests (27 tests)
 - `tests/progression.test.ts` - XP/rank tests (29 tests)
 - `tests/minigameLogic.test.ts` - Minigame constants tests (18 tests)
+- `tests/pieceUtils.test.ts` - Piece utilities tests (21 tests)
+- `tests/crackSystem.test.ts` - Crack system tests (17 tests)
 
 ## Naming Conventions
 
@@ -185,3 +196,4 @@ Goops2-main/
 
 *Structure analysis: 2026-01-18*
 *Updated 2026-01-21 for v1.1 refactor*
+*Updated 2026-01-25: 150 tests, 7 test files, GameEngine grew for crack system*

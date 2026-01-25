@@ -1,3 +1,10 @@
+---
+title: System Inventory
+type: reference
+tags: [systems, features, mechanics]
+updated: 2026-01-25
+---
+
 # System Inventory
 
 A comprehensive list of every system, mechanic, and element in Goops. Use this for brainstorming improvements, identifying polish opportunities, or planning future work.
@@ -77,7 +84,7 @@ A comprehensive list of every system, mechanic, and element in Goops. Use this f
 ### XP System
 - Score → XP (1:1)
 - XP floor: max(100 * rank, score)
-- Rank curve: (rank+2) * (1750 + 250*rank)
+- Rank curve: 3500 + (rank * 250) per rank (flatter progression)
 
 ---
 
@@ -226,10 +233,14 @@ A comprehensive list of every system, mechanic, and element in Goops. Use this f
 - SaveData structure
 
 ### Testing
-- 65 tests total
+- 150 tests total across 7 test files
 - Progression tests (29)
 - Coordinate tests (6)
-- Game logic tests (30)
+- Coordinate transform tests (27)
+- Game logic tests (32)
+- Minigame logic tests (18)
+- Piece utils tests (21)
+- Crack system tests (17)
 - Pre-commit hooks
 
 ### Events
@@ -242,20 +253,22 @@ A comprehensive list of every system, mechanic, and element in Goops. Use this f
 ## Not Yet Implemented
 
 ### Planned (PRD)
-- Storage/swap piece
-- Multi-color pieces (Band 2)
-- Starting junk (Band 1)
-- Growing cracks (Band 3)
+- Storage/swap piece (hold feature implemented)
 - Win condition burst (all colors spawn cracks)
-- Additional complications
 - Console light blinking patterns (idle/active/complication)
 - Sound design
+
+### Implemented Since v1.2
+- ✓ Multi-color pieces (Phase 19)
+- ✓ Growing/Expanding cracks (Phase 18, 20)
+- ✓ Starting junk mechanic (Junk Band)
+- ✓ Architecture refactor (v1.1)
 
 ### Future Vision
 - Soft-body shader rendering
 - Power-up system expansion
 - C# / Unity port
-- Architecture refactor to target structure
+- SlowMode concept (pressure from goop volume)
 
 ### Open Questions
 - Bonus crack scoring formula
@@ -264,4 +277,4 @@ A comprehensive list of every system, mechanic, and element in Goops. Use this f
 
 ---
 
-*Last updated: 2026-01-21*
+*Last updated: 2026-01-25 (validated against master)*

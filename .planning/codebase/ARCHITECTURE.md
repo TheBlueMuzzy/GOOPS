@@ -1,3 +1,10 @@
+---
+title: Architecture
+type: architecture
+tags: [patterns, layers, structure]
+updated: 2026-01-25
+---
+
 # Architecture
 
 **Analysis Date:** 2026-01-18
@@ -92,10 +99,10 @@
 
 **GameEngine:**
 - Purpose: Central game state and logic container
-- Location: `core/GameEngine.ts` (~576 lines)
+- Location: `core/GameEngine.ts` (~1177 lines)
 - Pattern: Observer pattern (subscribe/notify)
-- Responsibilities: State management, game loop, command execution
-- Tick structure: `tick()` delegates to focused sub-methods (tickTimer, tickGoals, tickHeat, tickFallingBlocks, tickActivePiece)
+- Responsibilities: State management, game loop, command execution, crack system
+- Tick structure: `tick()` delegates to focused sub-methods (tickTimer, tickGoals, tickHeat, tickFallingBlocks, tickActivePiece, tickCrackGrowth)
 - Implements: GameStateManager interface for type-safe state access
 
 **Command:**
@@ -176,3 +183,4 @@
 
 *Architecture analysis: 2026-01-18*
 *Updated 2026-01-21 for v1.1 refactor*
+*Updated 2026-01-25: GameEngine grew to 1177 lines with crack system (Phase 20)*

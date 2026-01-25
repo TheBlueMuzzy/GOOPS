@@ -23,3 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 nul
+
+# Build number (auto-incremented by Vite)
+.build-number
+
+# Obsidian workspace (user-specific)
+.planning/.obsidian/
+
+# Planning backup (temporary)
+.planning-old/
