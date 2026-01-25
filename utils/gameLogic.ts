@@ -18,9 +18,9 @@ export const getRotatedCells = (cells: Coordinate[], clockwise: boolean): Coordi
 
 export const getPaletteForRank = (rank: number): string[] => {
   const palette = [COLORS.RED, COLORS.BLUE, COLORS.GREEN, COLORS.YELLOW];
-  if (rank >= 10) palette.push(COLORS.ORANGE);
-  if (rank >= 20) palette.push(COLORS.PURPLE);
-  if (rank >= 30) palette.push(COLORS.WHITE);
+  if (rank >= 10) palette.push(COLORS.PURPLE);   // Was rank 20
+  if (rank >= 30) palette.push(COLORS.WHITE);    // Unchanged
+  if (rank >= 50) palette.push(COLORS.BLACK);    // New max rank color
   return palette;
 };
 
@@ -182,31 +182,35 @@ export const findContiguousGroup = (grid: GridCell[][], startX: number, startY: 
 export const updateGroups = (grid: GridCell[][]): GridCell[][] => {
     const newGrid = grid.map(row => [...row]);
     const visited = new Set<string>();
-    
-    // Helper to find color-contiguous group
-    const findColorGroup = (gx: number, gy: number, color: string): Coordinate[] => {
+
+    // Helper to find contiguous group (by color, or all wild cells together)
+    const findColorGroup = (gx: number, gy: number, color: string, isWild: boolean): Coordinate[] => {
         const g: Coordinate[] = [];
         const q: Coordinate[] = [{x: gx, y: gy}];
         const v = new Set<string>();
-        
+
         while(q.length > 0) {
             const curr = q.shift()!;
             const key = `${curr.x},${curr.y}`;
             if(v.has(key)) continue;
             v.add(key);
             g.push(curr);
-            
+
             const nbs = [
                 { x: normalizeX(curr.x + 1), y: curr.y },
                 { x: normalizeX(curr.x - 1), y: curr.y },
                 { x: curr.x, y: curr.y + 1 },
                 { x: curr.x, y: curr.y - 1 }
             ];
-            
+
             for(const n of nbs) {
                 if(n.y >= 0 && n.y < TOTAL_HEIGHT) {
                     const c = newGrid[n.y][n.x];
-                    if(c && c.color === color && !v.has(`${n.x},${n.y}`)) {
+                    if (!c || v.has(`${n.x},${n.y}`)) continue;
+                    // Wild cells group together regardless of color
+                    // Non-wild cells group by matching color
+                    const sameGroup = isWild ? c.isWild : (c.color === color && !c.isWild);
+                    if (sameGroup) {
                         q.push(n);
                     }
                 }
@@ -219,7 +223,7 @@ export const updateGroups = (grid: GridCell[][]): GridCell[][] => {
         for (let x = 0; x < TOTAL_WIDTH; x++) {
             const cell = newGrid[y][x];
             if (cell && !visited.has(`${x},${y}`)) {
-                const group = findColorGroup(x, y, cell.color);
+                const group = findColorGroup(x, y, cell.color, !!cell.isWild);
                 
                 let minY = TOTAL_HEIGHT;
                 let maxY = -1;
@@ -296,17 +300,19 @@ export const mergePiece = (
 
   const groupSize = piece.cells.length;
 
+  const pieceIsWild = piece.definition.isWild;
+
   piece.cells.forEach((cell, idx) => {
     const x = normalizeX(piece.x + cell.x);
     const y = Math.floor(piece.y + cell.y);
     const cellColor = piece.definition.cellColors?.[idx] ?? piece.definition.color;
 
     if (y >= 0 && y < TOTAL_HEIGHT) {
-      // Check for Goal Interaction (per-cell color matching)
+      // Check for Goal Interaction (per-cell color matching, or wild matches any)
       const hitGoal = goalMarks.find(g => g.x === x && g.y === y);
 
       let isMatch = false;
-      if (hitGoal && hitGoal.color === cellColor) {
+      if (hitGoal && (hitGoal.color === cellColor || pieceIsWild)) {
           consumedGoals.push(hitGoal.id);
           isMatch = true;
       }
@@ -320,12 +326,94 @@ export const mergePiece = (
         groupMinY: minY,
         groupMaxY: maxY,
         groupSize,
-        isGlowing: isMatch
+        isGlowing: isMatch,
+        isWild: pieceIsWild
       };
     }
   });
   
   return { grid: updateGroups(newGrid), consumedGoals, destroyedGoals };
+};
+
+/**
+ * Process wild piece conversions after a piece locks:
+ * - If piece is wild: mark ENTIRE adjacent goop groups as wild
+ * - If piece is NOT wild: convert ENTIRE adjacent wild groups to piece's color
+ * Affects whole connected groups, not just immediate neighbors.
+ */
+export const processWildConversions = (
+    grid: GridCell[][],
+    piece: ActivePiece
+): GridCell[][] => {
+    const newGrid = grid.map(row => [...row]);
+    const pieceIsWild = piece.definition.isWild;
+    const pieceColor = piece.definition.color;
+
+    // Get all piece cell positions
+    const pieceCells: { x: number; y: number }[] = [];
+    piece.cells.forEach(cell => {
+        const x = normalizeX(piece.x + cell.x);
+        const y = Math.floor(piece.y + cell.y);
+        if (y >= 0 && y < TOTAL_HEIGHT) {
+            pieceCells.push({ x, y });
+        }
+    });
+
+    // Collect groupIds of adjacent groups to convert
+    const groupIdsToConvert = new Set<string>();
+
+    // For each piece cell, check neighbors
+    pieceCells.forEach(({ x, y }) => {
+        const neighbors = [
+            { x: normalizeX(x + 1), y: y },
+            { x: normalizeX(x - 1), y: y },
+            { x: x, y: y + 1 },
+            { x: x, y: y - 1 }
+        ];
+
+        neighbors.forEach(n => {
+            if (n.y >= 0 && n.y < TOTAL_HEIGHT) {
+                const neighborCell = newGrid[n.y][n.x];
+                if (!neighborCell) return;
+
+                // Skip cells that are part of the piece itself
+                const isPartOfPiece = pieceCells.some(pc => pc.x === n.x && pc.y === n.y);
+                if (isPartOfPiece) return;
+
+                if (pieceIsWild) {
+                    // Wild piece landed: collect groupIds to mark as wild
+                    if (!neighborCell.isWild) {
+                        groupIdsToConvert.add(neighborCell.groupId);
+                    }
+                } else {
+                    // Non-wild piece landed: collect wild groupIds to convert
+                    if (neighborCell.isWild) {
+                        groupIdsToConvert.add(neighborCell.groupId);
+                    }
+                }
+            }
+        });
+    });
+
+    // Apply conversion to entire groups
+    if (groupIdsToConvert.size > 0) {
+        for (let y = 0; y < TOTAL_HEIGHT; y++) {
+            for (let x = 0; x < TOTAL_WIDTH; x++) {
+                const cell = newGrid[y][x];
+                if (cell && groupIdsToConvert.has(cell.groupId)) {
+                    if (pieceIsWild) {
+                        // Mark entire group as wild
+                        newGrid[y][x] = { ...cell, isWild: true };
+                    } else {
+                        // Convert entire wild group to piece's color
+                        newGrid[y][x] = { ...cell, color: pieceColor, isWild: false };
+                    }
+                }
+            }
+        }
+    }
+
+    return updateGroups(newGrid);
 };
 
 export const getFloatingBlocks = (grid: GridCell[][], columnsToCheck?: number[]): { grid: GridCell[][], falling: FallingBlock[] } => {

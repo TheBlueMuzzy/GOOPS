@@ -87,14 +87,49 @@ Use these at transition points — not constantly, but when you need direction.
 Delegate to subagent → get summary back → main context stays clean.
 
 ### After ANY Code Change (Claude's Job)
-1. **Run `<runtests>` automatically** — don't wait for user to ask
-2. If tests fail → fix immediately, run tests again
-3. If tests pass:
-   - HMR updates code live, but build number only increments on server restart
-   - For verification: restart dev server, read new `.build-number`, tell user: **"Look for build #X"**
-   - Only restart server when user needs to verify a fix (not after every change)
 
-**This is non-negotiable.** The user cannot verify they're testing your changes without the correct build number.
+**MANDATORY CHECKLIST — Do ALL of these, in order:**
+
+1. [ ] Run `npm run test:run` — fix failures before proceeding
+2. [ ] Restart dev server: `npm run dev -- --host` (background)
+3. [ ] Wait 3-4 seconds, then read `.build-number` file
+4. [ ] Produce the **Handoff Block** below (copy this format exactly)
+
+**HANDOFF BLOCK (Required Output):**
+```
+## Ready for Testing
+
+**Build #[NUMBER]** — Look for "Version 1.1.13.[NUMBER]" in footer
+
+**Server:** http://localhost:[PORT]/GOOPS/
+
+**What Changed:**
+- [Bullet list of changes]
+
+**Manual Test Steps:**
+1. [Step with expected result]
+2. [Step with expected result]
+3. [etc.]
+```
+
+**Example:**
+```
+## Ready for Testing
+
+**Build #13** — Look for "Version 1.1.13.13" in footer
+
+**Server:** http://localhost:5173/GOOPS/
+
+**What Changed:**
+- Added wild pieces at rank 40+
+- Changed max rank from 100 to 50
+
+**Manual Test Steps:**
+1. Set rank to 40, start game — should see rainbow pieces (15% chance)
+2. Open rank selector — should only show 0-50
+```
+
+**This is non-negotiable.** Do not end your response without the Handoff Block.
 
 ### Git Discipline
 - **Feature branches** for all new work (never code on master)

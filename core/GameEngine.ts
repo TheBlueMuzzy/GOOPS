@@ -10,8 +10,9 @@ import {
     spawnPiece, checkCollision, mergePiece, getRotatedCells, findContiguousGroup,
     updateGroups, getGhostY, updateFallingBlocks, getFloatingBlocks,
     calculateHeightBonus, calculateOffScreenBonus, calculateMultiplier, calculateAdjacencyBonus, createInitialGrid,
-    getPaletteForRank
+    getPaletteForRank, processWildConversions
 } from '../utils/gameLogic';
+import { COLORS } from '../constants';
 import { getGridX, normalizeX } from '../utils/coordinates';
 import { calculateRankDetails } from '../utils/progression';
 import { splitPiece } from '../utils/pieceUtils';
@@ -60,6 +61,30 @@ export class GameEngine {
     // Generate random complication threshold in range [12, 24]
     private randomThreshold(): number {
         return Math.floor(Math.random() * 13) + 12; // 12 to 24 inclusive
+    }
+
+    // Check if piece has any adjacent wild cells in the grid (for wild conversion)
+    private hasAdjacentWild(grid: GridCell[][], piece: ActivePiece): boolean {
+        for (const cell of piece.cells) {
+            const x = normalizeX(piece.x + cell.x);
+            const y = Math.floor(piece.y + cell.y);
+            if (y < 0 || y >= TOTAL_HEIGHT) continue;
+
+            const neighbors = [
+                { x: normalizeX(x + 1), y },
+                { x: normalizeX(x - 1), y },
+                { x, y: y + 1 },
+                { x, y: y - 1 }
+            ];
+
+            for (const n of neighbors) {
+                if (n.y >= 0 && n.y < TOTAL_HEIGHT) {
+                    const neighborCell = grid[n.y][n.x];
+                    if (neighborCell?.isWild) return true;
+                }
+            }
+        }
+        return false;
     }
 
     constructor(initialTotalScore: number, powerUps: Record<string, number> = {}, equippedActives: string[] = []) {
@@ -589,6 +614,17 @@ export class GameEngine {
                     color: nextColor
                 };
             }
+
+            // Wild piece chance: 15% at rank 40+ (overrides split/color if triggered)
+            if (currentRank >= 40 && Math.random() < 0.15) {
+                newNext = {
+                    ...PIECES[Math.floor(Math.random() * PIECES.length)],
+                    color: COLORS.WILD,
+                    isWild: true
+                };
+                console.log('Wild piece queued for next spawn');
+            }
+
             this.state.nextPiece = newNext;
         }
 
@@ -1090,7 +1126,12 @@ export class GameEngine {
         const y = getGhostY(this.state.grid, this.state.activePiece, this.state.boardOffset);
         const finalPiece = { ...this.state.activePiece, y };
 
-        const { grid: newGrid, consumedGoals, destroyedGoals } = mergePiece(this.state.grid, finalPiece, this.state.goalMarks);
+        let { grid: newGrid, consumedGoals, destroyedGoals } = mergePiece(this.state.grid, finalPiece, this.state.goalMarks);
+
+        // Process wild piece conversions (wild spreads to neighbors, or non-wild converts wild neighbors)
+        if (finalPiece.definition.isWild || this.hasAdjacentWild(newGrid, finalPiece)) {
+            newGrid = processWildConversions(newGrid, finalPiece);
+        }
 
         if (consumedGoals.length > 0 || destroyedGoals.length > 0) {
             this.handleGoals(consumedGoals, destroyedGoals, finalPiece);

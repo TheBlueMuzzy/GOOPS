@@ -104,6 +104,46 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       [grid, boardOffset, fallingBlocks]
   );
 
+  // Wild color cycling - wave effect moving left to right
+  // Each X position shows a different phase of the color cycle
+  const getWildColorAtX = useCallback((screenX: number) => {
+      if (palette.length === 0) return '#a855f7'; // Fallback
+
+      const cycleSpeed = 400; // ms per color
+      const waveSpeed = 0.02; // How much X position offsets the phase (lower = wider wave)
+
+      // Time-based phase plus X-based offset for wave effect
+      const basePhase = (now % (palette.length * cycleSpeed)) / cycleSpeed;
+      const xOffset = Math.abs(screenX) * waveSpeed; // Use abs to avoid negative modulo issues
+      // Ensure positive modulo result
+      let t = (basePhase + xOffset) % palette.length;
+      if (t < 0) t += palette.length;
+
+      const index = Math.floor(t);
+      const nextIndex = (index + 1) % palette.length;
+      const blend = t - index; // 0 to 1 blend factor
+
+      // Lerp between current and next color
+      const c1 = palette[index];
+      const c2 = palette[nextIndex];
+
+      if (!c1 || !c2) return '#a855f7'; // Fallback if palette access fails
+
+      // Parse hex colors and lerp
+      const r1 = parseInt(c1.slice(1, 3), 16);
+      const g1 = parseInt(c1.slice(3, 5), 16);
+      const b1 = parseInt(c1.slice(5, 7), 16);
+      const r2 = parseInt(c2.slice(1, 3), 16);
+      const g2 = parseInt(c2.slice(3, 5), 16);
+      const b2 = parseInt(c2.slice(5, 7), 16);
+
+      const r = Math.round(r1 + (r2 - r1) * blend);
+      const g = Math.round(g1 + (g2 - g1) * blend);
+      const b = Math.round(b1 + (b2 - b1) * blend);
+
+      return `rgb(${r}, ${g}, ${b})`;
+  }, [now, palette]);
+
   // OPTIMIZATION: Skip masks entirely on mobile - they're very expensive
   const maskDefinitions = useMemo(() => {
       if (isMobile) return null;
@@ -310,6 +350,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const isShaking = gid === shakingGroupId || state.primedGroups.has(gid); // Shake primed groups too
                 const isGlowing = cells.some(c => c.cell.isGlowing);
                 const isPrimed = state.primedGroups.has(gid); // LASER effect: primed for 2nd tap
+                const hasWildCells = cells.some(c => c.cell.isWild);
+                // For background rect, use a single color (first cell's wild color or group color)
+                const fillColor = hasWildCells ? getWildColorAtX(minX) : color;
 
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 cells.forEach(c => {
@@ -340,7 +383,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                     y={c.screenY}
                                     width={c.width + 1}
                                     height={BLOCK_SIZE}
-                                    fill={color}
+                                    fill={c.cell.isWild ? getWildColorAtX(c.screenX) : color}
                                     fillOpacity={0.25}
                                 />
                             ))}
@@ -359,7 +402,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                         y={fillTop}
                                         width={c.width + 1}
                                         height={fillHeight}
-                                        fill={color}
+                                        fill={c.cell.isWild ? getWildColorAtX(c.screenX) : color}
                                         fillOpacity={0.75}
                                     />
                                 );
@@ -372,7 +415,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                     y={c.screenY}
                                     width={c.width + 1}
                                     height={BLOCK_SIZE}
-                                    fill={color}
+                                    fill={c.cell.isWild ? getWildColorAtX(c.screenX) : color}
                                     fillOpacity={0.85}
                                 />
                             ))}
@@ -382,9 +425,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                     key={`cnt-${c.cell.id}`}
                                     d={getContourPath(c.screenX, c.screenY, c.width, BLOCK_SIZE, c.neighbors)}
                                     fill="none"
-                                    stroke={isPrimed ? "#ff6b6b" : (isGlowing ? "white" : color)}
+                                    stroke={isPrimed ? "#ff6b6b" : (isGlowing ? "white" : (c.cell.isWild ? getWildColorAtX(c.screenX) : color))}
                                     strokeWidth={isPrimed ? 3 : (isGlowing ? 3 : 2)}
                                     strokeDasharray={isPrimed ? "4 2" : undefined}
+                                    className={c.cell.isWild && !isPrimed && !isGlowing ? "wild-stroke" : undefined}
                                 />
                             ))}
                             {isHighlighted && <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} fill="white" fillOpacity={0.3} />}
@@ -395,11 +439,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 // Desktop: full rendering with masks
                 return (
                     <g key={`group-${gid}`} className={isShaking ? "shake-anim" : ""}>
-                        <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} fill={color} fillOpacity={0.2} mask={`url(#mask-${gid})`} />
+                        <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} fill={fillColor} fillOpacity={0.2} mask={`url(#mask-${gid})`} />
                         <g opacity={0.9} mask={`url(#mask-${gid})`}>
                             {cells.map((c, i) => {
+                                const cellFill = c.cell.isWild ? getWildColorAtX(c.screenX) : color;
                                 if (!c.cell || c.isFalling) {
-                                    return <rect key={`liq-${c.cell.id}`} x={c.screenX - 0.5} y={c.screenY} width={c.width + 1} height={BLOCK_SIZE} fill={color} />;
+                                    return <rect key={`liq-${c.cell.id}`} x={c.screenX - 0.5} y={c.screenY} width={c.width + 1} height={BLOCK_SIZE} fill={cellFill} />;
                                 }
                                 const totalDuration = c.cell.groupSize * PER_BLOCK_DURATION;
                                 const groupHeight = (c.cell.groupMaxY - c.cell.groupMinY + 1);
@@ -408,7 +453,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                 const startDelay = rowIndex * timePerRow;
                                 const timeIntoRow = (now - c.cell.timestamp) - startDelay;
                                 let fillHeight = timeIntoRow >= timePerRow ? BLOCK_SIZE : (timeIntoRow > 0 ? (timeIntoRow / timePerRow) * BLOCK_SIZE : 0);
-                                return <rect key={`liq-${c.cell.id}`} x={c.screenX - 0.5} y={c.screenY + (BLOCK_SIZE - fillHeight)} width={c.width + 1} height={fillHeight} fill={color} />;
+                                return <rect key={`liq-${c.cell.id}`} x={c.screenX - 0.5} y={c.screenY + (BLOCK_SIZE - fillHeight)} width={c.width + 1} height={fillHeight} fill={cellFill} />;
                             })}
                         </g>
                         {isHighlighted && <rect x={minX} y={minY} width={maxX - minX} height={maxY - minY} fill="white" fillOpacity={0.3} mask={`url(#mask-${gid})`} />}
@@ -417,11 +462,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                 key={`cnt-${c.cell.id}`}
                                 d={getContourPath(c.screenX, c.screenY, c.width, BLOCK_SIZE, c.neighbors)}
                                 fill="none"
-                                stroke={isPrimed ? "#ff6b6b" : (isGlowing ? "white" : color)}
+                                stroke={isPrimed ? "#ff6b6b" : (isGlowing ? "white" : (c.cell.isWild ? getWildColorAtX(c.screenX) : color))}
                                 strokeWidth={isPrimed ? "3" : (isGlowing ? "3" : "2")}
                                 strokeDasharray={isPrimed ? "4 2" : undefined}
-                                className={!isMobile && !isPrimed ? (isGlowing ? "super-glowing-stroke" : "glow-stroke") : undefined}
-                                style={!isMobile && !isPrimed ? { color: isGlowing ? 'white' : color } : undefined}
+                                className={!isMobile && !isPrimed ? (c.cell.isWild ? "wild-stroke" : (isGlowing ? "super-glowing-stroke" : "glow-stroke")) : undefined}
+                                style={!isMobile && !isPrimed && !c.cell.isWild ? { color: isGlowing ? 'white' : color } : undefined}
                              />
                         ))}
                     </g>
@@ -431,6 +476,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {/* Ghost Piece */}
             {activePiece && activePiece.state === PieceState.FALLING && (() => {
                 const ghostY = getGhostY(grid, activePiece, boardOffset);
+                const isWild = activePiece.definition.isWild;
 
                 return activePiece.cells.map((cell, idx) => {
                     const color = activePiece.definition.cellColors?.[idx] ?? activePiece.definition.color;
@@ -462,7 +508,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                     y={yPos}
                                     width={width}
                                     height={BLOCK_SIZE}
-                                    fill={color}
+                                    fill={isWild ? getWildColorAtX(startX) : color}
                                     fillOpacity={0.2}
                                     rx={4}
                                     ry={4}
@@ -471,10 +517,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                 <path
                                     d={getContourPath(startX, yPos, width, BLOCK_SIZE, neighbors)}
                                     fill="none"
-                                    stroke={color}
+                                    stroke={isWild ? getWildColorAtX(startX) : color}
                                     strokeWidth="1"
                                     strokeDasharray="4 2"
                                     opacity="0.75"
+                                    className={isWild ? "wild-stroke" : undefined}
                                 />
                             </g>
                         );
@@ -533,6 +580,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Active Piece */}
             {activePiece && activePiece.state === PieceState.FALLING && (() => {
+                const isWild = activePiece.definition.isWild;
                 const apCells = activePiece.cells.map((cell, idx) => {
                     const color = activePiece.definition.cellColors?.[idx] ?? activePiece.definition.color;
                     const pieceGridX = normalizeX(activePiece.x + cell.x);
@@ -546,7 +594,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                         const startX = visXToScreenX(visX);
                         const width = visXToScreenX(visX+1) - startX;
                         const yPos = (pieceGridY - BUFFER_HEIGHT) * BLOCK_SIZE;
-                        
+
                         const neighbors = {
                             t: activePiece.cells.some(o => o.x === cell.x && o.y === cell.y - 1),
                             r: activePiece.cells.some(o => o.x === cell.x + 1 && o.y === cell.y),
@@ -560,16 +608,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 }).filter(Boolean) as { screenX: number, screenY: number, width: number, neighbors: any, color: string }[];
 
                 if (apCells.length === 0) return null;
-                
+
                 return (
                     <g>
                          <g opacity={0.8}>
                              {apCells.map((c, i) => (
-                                <rect key={i} x={c.screenX} y={c.screenY} width={c.width} height={BLOCK_SIZE} fill={c.color} rx={4} ry={4} />
+                                <rect key={i} x={c.screenX} y={c.screenY} width={c.width} height={BLOCK_SIZE} fill={isWild ? getWildColorAtX(c.screenX) : c.color} rx={4} ry={4} />
                              ))}
                          </g>
                          {apCells.map((c, i) => (
-                             <path key={`outline-${i}`} d={getContourPath(c.screenX, c.screenY, c.width, BLOCK_SIZE, c.neighbors)} fill="none" stroke="white" strokeWidth="2" />
+                             <path key={`outline-${i}`} d={getContourPath(c.screenX, c.screenY, c.width, BLOCK_SIZE, c.neighbors)} fill="none" stroke="white" strokeWidth="2" className={isWild ? "wild-stroke" : undefined} />
                          ))}
                     </g>
                 );
@@ -815,8 +863,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 display: 'flex',
                 gap: '8px'
             }}>
-                <PiecePreview piece={storedPiece ?? null} label="HOLD" visible={showHoldViewer} />
-                <PiecePreview piece={nextPiece ?? null} label="NEXT" visible={showNextWindow} />
+                <PiecePreview piece={storedPiece ?? null} label="HOLD" visible={showHoldViewer} rank={rank} />
+                <PiecePreview piece={nextPiece ?? null} label="NEXT" visible={showNextWindow} rank={rank} />
             </div>
         )}
     </div>

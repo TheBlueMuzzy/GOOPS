@@ -19,6 +19,7 @@ export interface PieceDefinition {
   cells: Coordinate[]; // Relative coordinates
   color: string;
   cellColors?: string[]; // Per-cell colors, parallel to cells array
+  isWild?: boolean;      // Wild piece - seals any crack, converts adjacent goop
 }
 
 export enum PieceState {
@@ -48,6 +49,7 @@ export interface BlockData {
   groupMaxY: number; // Bottom-most Y (largest value) of the group
   groupSize: number; // Number of blocks in this group
   isGlowing?: boolean; // Visual effect for blocks that consumed a goal
+  isWild?: boolean;    // Wild goop - converts adjacent goop and matches any crack
 }
 
 export type GridCell = BlockData | null;

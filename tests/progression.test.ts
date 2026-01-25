@@ -28,8 +28,8 @@ describe('getScoreForRank', () => {
   });
 
   it('returns correct XP for max rank', () => {
-    // Rank 100: 100 * (3375 + 12500) = 1,587,500
-    expect(getScoreForRank(100)).toBe(1587500);
+    // Rank 50: 50 * (3375 + 6250) = 481,250
+    expect(getScoreForRank(50)).toBe(481250);
   });
 });
 
@@ -48,7 +48,7 @@ describe('getXpToNextRank', () => {
   });
 
   it('returns 0 for max rank', () => {
-    expect(getXpToNextRank(100)).toBe(0);
+    expect(getXpToNextRank(50)).toBe(0);
   });
 });
 
@@ -94,26 +94,26 @@ describe('calculateRankDetails', () => {
   });
 
   it('handles max rank', () => {
-    const details = calculateRankDetails(1587500);
-    expect(details.rank).toBe(100);
+    const details = calculateRankDetails(481250);
+    expect(details.rank).toBe(50);
     expect(details.isMaxRank).toBe(true);
   });
 
   it('caps at max rank even with excessive score', () => {
     const details = calculateRankDetails(10000000);
-    expect(details.rank).toBe(100);
+    expect(details.rank).toBe(50);
     expect(details.isMaxRank).toBe(true);
   });
 });
 
 describe('getMilestoneRanks', () => {
-  it('returns all milestone ranks from 10 to 100', () => {
+  it('returns all milestone ranks from 10 to 50', () => {
     const milestones = getMilestoneRanks();
-    expect(milestones).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90, 100]);
+    expect(milestones).toEqual([10, 20, 30, 40, 50]);
   });
 
-  it('returns exactly 10 milestones', () => {
-    expect(getMilestoneRanks().length).toBe(10);
+  it('returns exactly 5 milestones', () => {
+    expect(getMilestoneRanks().length).toBe(5);
   });
 });
 
@@ -128,7 +128,7 @@ describe('getNextMilestone', () => {
   it('returns next milestone for ranks at a milestone', () => {
     expect(getNextMilestone(10)).toBe(20);
     expect(getNextMilestone(20)).toBe(30);
-    expect(getNextMilestone(90)).toBe(100);
+    expect(getNextMilestone(40)).toBe(50);
   });
 
   it('returns next milestone for ranks between milestones', () => {
@@ -138,12 +138,12 @@ describe('getNextMilestone', () => {
   });
 
   it('returns null for max rank', () => {
-    expect(getNextMilestone(100)).toBe(null);
+    expect(getNextMilestone(50)).toBe(null);
   });
 
   it('returns null for ranks past max', () => {
-    expect(getNextMilestone(101)).toBe(null);
-    expect(getNextMilestone(150)).toBe(null);
+    expect(getNextMilestone(51)).toBe(null);
+    expect(getNextMilestone(100)).toBe(null);
   });
 });
 
@@ -175,7 +175,7 @@ describe('getMilestonesInRange', () => {
     expect(getMilestonesInRange(10, 11)).toEqual([]);
   });
 
-  it('handles jumping from 0 to high rank', () => {
+  it('handles jumping from 0 to max rank', () => {
     expect(getMilestonesInRange(0, 50)).toEqual([10, 20, 30, 40, 50]);
   });
 });

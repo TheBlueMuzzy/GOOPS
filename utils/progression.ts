@@ -9,7 +9,7 @@ import { RankDetails } from '../types';
 //
 // Total XP to rank 40: ~336,000 (was ~7 million with old curve)
 
-const MAX_RANK = 100;
+const MAX_RANK = 50;
 
 // Returns the cumulative score required to REACH a specific rank
 export const getScoreForRank = (rank: number): number => {

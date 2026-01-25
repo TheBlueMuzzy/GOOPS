@@ -350,10 +350,12 @@ export const COLORS = {
   BLUE: '#3b82f6',
   GREEN: '#22c55e',
   YELLOW: '#eab308',
-  ORANGE: '#f97316',  // Rank 10+
-  PURPLE: '#a855f7',  // Rank 20+ (Tailwind purple-500)
+  PURPLE: '#a855f7',  // Rank 10+ (moved from 20)
   WHITE: '#f8fafc',   // Rank 30+
-  // TEAL removed from active palette (kept for backwards compatibility)
+  BLACK: '#1a1a2e',   // Rank 50+ (max rank color)
+  WILD: 'wild',       // Wild piece marker (not an actual color)
+  // Backwards compatibility - kept but not in active palette
+  ORANGE: '#f97316',
   TEAL: '#14b8a6',
 
   GRID_BG: '#020617', // Very dark slate (almost black)

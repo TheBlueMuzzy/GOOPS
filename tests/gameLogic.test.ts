@@ -103,34 +103,40 @@ describe('getPaletteForRank', () => {
     expect(palette).toHaveLength(4);
   });
 
-  it('adds ORANGE at rank 10', () => {
+  it('adds PURPLE at rank 10', () => {
     const palette = getPaletteForRank(10);
     expect(palette).toHaveLength(5);
-    expect(palette).toContain(COLORS.ORANGE);
+    expect(palette).toContain(COLORS.PURPLE);
   });
 
-  it('adds PURPLE at rank 20', () => {
+  it('still has 5 colors at rank 20 (no new color, multi-color pieces unlock)', () => {
     const palette = getPaletteForRank(20);
-    expect(palette).toHaveLength(6);
+    expect(palette).toHaveLength(5);
     expect(palette).toContain(COLORS.PURPLE);
   });
 
   it('adds WHITE at rank 30', () => {
     const palette = getPaletteForRank(30);
-    expect(palette).toHaveLength(7);
+    expect(palette).toHaveLength(6);
     expect(palette).toContain(COLORS.WHITE);
   });
 
-  it('has all 7 colors at rank 39', () => {
-    const palette = getPaletteForRank(39);
+  it('adds BLACK at rank 50 (max rank)', () => {
+    const palette = getPaletteForRank(50);
+    expect(palette).toHaveLength(7);
+    expect(palette).toContain(COLORS.BLACK);
+  });
+
+  it('has all 7 colors at rank 50', () => {
+    const palette = getPaletteForRank(50);
     expect(palette).toHaveLength(7);
     expect(palette).toContain(COLORS.RED);
     expect(palette).toContain(COLORS.BLUE);
     expect(palette).toContain(COLORS.GREEN);
     expect(palette).toContain(COLORS.YELLOW);
-    expect(palette).toContain(COLORS.ORANGE);
     expect(palette).toContain(COLORS.PURPLE);
     expect(palette).toContain(COLORS.WHITE);
+    expect(palette).toContain(COLORS.BLACK);
   });
 });
 

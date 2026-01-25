@@ -554,7 +554,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                                 padding: '4px',
                             }}
                         >
-                            {Array.from({ length: 101 }, (_, i) => (
+                            {Array.from({ length: 51 }, (_, i) => (
                                 <div
                                     key={i}
                                     onClick={() => handleRankSelect(i)}

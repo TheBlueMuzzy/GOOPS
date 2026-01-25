@@ -19,13 +19,13 @@ updated: 2026-01-25
 
 ## Next Steps
 
-**Ready to start:** v1.3 milestone (GoopPieceRework - different piece shapes)
-**No bugs or blockers.**
+**In progress:** Color schedule rework + Wild pieces implementation
+**Status:** P0 bug fixed, needs manual verification
 
 Options:
-1. `/gsd:new-milestone` — Define phases for v1.3
-2. Test current build at https://thebluemuzzy.github.io/GOOPS/
-3. Something else — just tell Claude what you want
+1. Test wild pieces at rank 40+ — verify wave visual + merge behavior
+2. Continue to next feature after verification
+3. `/gsd:new-milestone` — Define phases for v1.3
 
 ---
 
@@ -56,7 +56,7 @@ Key features:
 - Active ability system with per-ability charge times
 - Lights malfunction rework (player-controlled brightness)
 - Expanding cracks mechanic
-- 3 new colors: Orange@10, Purple@20, White@30
+- Colors: Purple@10, White@30, Black@50, Wild@40+ (Orange removed)
 
 See [[v1.2-ROADMAP]] for full details.
 
@@ -95,7 +95,6 @@ All three complications have player-driven triggers AND mitigations.
 - None currently tracked
 
 **Tech Debt:**
-- `GameEngine.ts` at 1197 lines (reduced from 1374 via CrackManager extraction)
 - Console.log placeholders in `ConsoleView.tsx:253-255` — minor cleanup when convenient
 
 ## Session Continuity
@@ -106,23 +105,33 @@ Last session: 2026-01-25
 
 ### This Session Summary (2026-01-25)
 
-**CrackManager extraction & process improvements**
+**Color Schedule Rework + Wild Pieces**
 
-1. **Extracted CrackManager from GameEngine** (tech debt cleanup)
-   - New file: `core/CrackManager.ts` (~190 lines)
-   - GameEngine reduced from 1374 → 1197 lines
-   - Key lesson: pass ALL dynamic values to methods fresh each call — storing references in constructor causes stale data bugs after `startRun()` creates new state object
+1. **Color schedule restructured:**
+   - Purple now unlocks at rank 10 (was 20)
+   - Orange removed from palette (kept for save compatibility)
+   - Black unlocks at rank 50 (new max rank color)
+   - Rank 20: Multi-color pieces only (no new color)
 
-2. **Reduced crack growth interval** from 7-12s to 5-10s
+2. **Max rank reduced** from 100 to 50
 
-3. **Command updates** (CLAUDE.md)
-   - `<test>` now shows manual testing steps for current changes
-   - `<runtests>` runs automated tests (renamed from old `<test>`)
-   - `<flow>` shows full SOP diagram with branching paths
+3. **Wild pieces implemented** (rank 40+, 15% spawn chance):
+   - Rainbow wave visual: color cycles through palette left-to-right
+   - Seals ANY crack color on landing
+   - Spreads wild to ENTIRE adjacent goop group
+   - When non-wild lands next to wild: converts ENTIRE wild group
 
-4. **Clarified build number process** (CLAUDE.md)
-   - Build number only increments on server restart, not HMR or refresh
-   - Claude must restart server and report new build # for user verification
+4. **P0 bug fixed:** Board disappeared when wild piece spawned
+   - Root cause: negative modulo in `getWildColorAtX` caused undefined palette access
+   - Fix: use `Math.abs(screenX)` and fallback colors
+
+5. **CLAUDE.md updated** with mandatory Handoff Block format
+   - After code changes: tests → restart server → build # → handoff block
+   - User was wasting tokens correcting missed steps
+
+**Previous Session (same day)**
+
+- CrackManager extraction, command updates, build number process clarification
 
 **Previous Session (same day)**
 

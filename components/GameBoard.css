@@ -103,3 +103,14 @@
 .minigame-solved-fade-laser {
     animation: minigameSolvedFadeLaser 2s ease-out forwards;
 }
+
+/* === Wild Goop Animations === */
+/* Wild goop lerps between base colors - animation defined inline via CSS variables */
+/* The actual keyframes are generated dynamically based on active palette */
+.wild-stroke {
+    stroke-width: 3px;
+}
+
+.wild-fill {
+    /* Fill uses same animation as stroke */
+}
