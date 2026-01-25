@@ -95,28 +95,26 @@ All three complications have player-driven triggers AND mitigations.
 Last session: 2026-01-24
 **Version:** 1.1.37
 
-### This Session Summary (2026-01-24 evening)
+### This Session Summary (2026-01-24)
 
-**What was done:**
-- **Tabbed Upgrade Panel UI (v1.1.34-37):** Added 4 filter tabs to System Upgrades panel
-  - Tabs: ACTIVES | FEATURES | CONSOLE | PASSIVES
-  - Progressive unlock: Console@2, Passives@3, Actives@5, Features@20
-  - Fixed 25% width per tab (no stretching)
-  - Swipe left/right to change tabs (follows periscope swipe pattern)
-  - Hidden scrollbar to prevent width shift
-  - Complication passives grouped under CONSOLE tab
+**Testing completed:**
+- **Mixer Band (Phase 17)** — All features verified working:
+  - Purple color spawns at rank 20+
+  - Active Expansion Slot allows equipping 2 actives
+  - Goop Hold Viewer shows stored piece (top-left)
+  - Goop Window shows next piece (top-right)
+  - Goop Colorizer locks next 6/7/8 pieces to current color
 
-**Key changes:**
-- Added `category: 'complication'` to Circuit Stabilizer, Capacitor Efficiency, Gear Lubrication in constants.ts
-- UpgradePanel.tsx rewritten with tab state, filtering, and swipe gestures
-- Swipe uses global window event listeners (same pattern as periscope drag)
+**Previous session (evening):**
+- Tabbed Upgrade Panel UI (v1.1.34-37)
+- Swipe gestures for tab navigation
 
 **Known bug:**
 - Pressure not rising bug — debug logging added, waiting for next occurrence
 
 **Next session:**
 - Monitor debug logs for pressure bug
-- Continue piecemeal cleanup/validation work
+- Test remaining bands (Junk, Cracked) if not yet verified
 
 ## Quick Commands
 
