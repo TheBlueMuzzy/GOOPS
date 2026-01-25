@@ -710,6 +710,14 @@ export class GameEngine {
 
         if (crack) {
             this.state.crackCells.push(crack);
+            // Also add to goalMarks for backward compatibility (sealing detection uses goalMarks)
+            this.state.goalMarks.push({
+                id: crack.id,
+                x: crack.x,
+                y: crack.y,
+                color: crack.color,
+                spawnTime: crack.spawnTime
+            });
             console.log('[CRACK DEBUG] Spawned crack:', crack.id, 'at', crack.x, crack.y, '- crackCells count:', this.state.crackCells.length);
         }
     }
