@@ -92,10 +92,10 @@ All three complications have player-driven triggers AND mitigations.
 ## Known Issues
 
 **Bugs:**
-- Pressure not rising bug — debug logging added, waiting for next occurrence
+- None currently tracked
 
 **Tech Debt:**
-- `GameEngine.ts` at 1374 lines — consider extracting CrackManager if it grows more
+- `GameEngine.ts` at 1197 lines (reduced from 1374 via CrackManager extraction)
 - Console.log placeholders in `ConsoleView.tsx:253-255` — minor cleanup when convenient
 
 ## Session Continuity
@@ -106,26 +106,32 @@ Last session: 2026-01-25
 
 ### This Session Summary (2026-01-25)
 
-**Claude behavior improvements & auto-test hook**
+**CrackManager extraction & process improvements**
 
-1. **Added Core Rules checklists** (CLAUDE.md)
-   - "Before Responding to Any Question" — forces Claude to consider intent, not just literal words
-   - "Context Hygiene (Mandatory)" — requires subagents for exploration/research
-   - Concrete triggers, not abstract principles
+1. **Extracted CrackManager from GameEngine** (tech debt cleanup)
+   - New file: `core/CrackManager.ts` (~190 lines)
+   - GameEngine reduced from 1374 → 1197 lines
+   - Key lesson: pass ALL dynamic values to methods fresh each call — storing references in constructor causes stale data bugs after `startRun()` creates new state object
 
-2. **Added PostToolUse auto-test hook** (`.claude/settings.json`)
-   - Tests run automatically after every Edit/Write
-   - No longer dependent on Claude remembering — deterministic
+2. **Reduced crack growth interval** from 7-12s to 5-10s
 
-3. **Added context compaction preservation rules** (CLAUDE.md)
-   - Explicit list of what to keep when auto-compaction happens
+3. **Command updates** (CLAUDE.md)
+   - `<test>` now shows manual testing steps for current changes
+   - `<runtests>` runs automated tests (renamed from old `<test>`)
+   - `<flow>` shows full SOP diagram with branching paths
 
-4. **Researched power user Claude Code techniques**
-   - Confirmed: current setup is already well-optimized
-   - Decided against: moving SOP out (user correctly noted it's more token-efficient in CLAUDE.md)
-   - Decided against: game constants skill (over-engineering for 15 lines)
+4. **Clarified build number process** (CLAUDE.md)
+   - Build number only increments on server restart, not HMR or refresh
+   - Claude must restart server and report new build # for user verification
 
 **Previous Session (same day)**
+
+- Added Core Rules checklists (CLAUDE.md)
+- Added PostToolUse auto-test hook
+- Added context compaction preservation rules
+- Researched power user Claude Code techniques
+
+**Earlier Session (same day)**
 
 - SessionStart hook implemented
 - Added `<research>` and `<askme>` commands
@@ -164,7 +170,7 @@ Last session: 2026-01-25
 
 ## Quick Commands
 
-User shortcuts in CLAUDE.md: `<commands>`, `<npm>`, `<test>`, `<save>`, `<deploy>`, `<research>`, `<askme>`, `<flow>`
+User shortcuts in CLAUDE.md: `<commands>`, `<npm>`, `<test>`, `<runtests>`, `<save>`, `<deploy>`, `<research>`, `<askme>`, `<flow>`
 
 ## Related
 

@@ -36,7 +36,8 @@ Goops is a puzzle-action game built with React/TypeScript/Vite. Player clears co
 | `<commands>` | Show this command list (including GSD commands) |
 | `<flow>` | Show the daily workflow diagram |
 | `<npm>` | Start dev server (`npm run dev -- --host`) or confirm already running |
-| `<test>` | Run tests manually (`npm run test:run`) |
+| `<test>` | Show manual testing steps for current changes |
+| `<runtests>` | Run automated tests (`npm run test:run`) |
 | `<save>` | Full save: update all docs + commit + push (see details below) |
 | `<deploy>` | Merge to master + build + deploy to GitHub Pages |
 | `<research>` [topic] | Deep research on topic (or current context if no topic given) |
@@ -86,12 +87,14 @@ Use these at transition points — not constantly, but when you need direction.
 Delegate to subagent → get summary back → main context stays clean.
 
 ### After ANY Code Change (Claude's Job)
-1. **Run tests automatically** — don't wait for user to ask
+1. **Run `<runtests>` automatically** — don't wait for user to ask
 2. If tests fail → fix immediately, run tests again
-3. If tests pass → tell user it's ready for manual testing
-4. Read `.build-number` and say: **"Ready to test. Look for build #X in the footer."**
+3. If tests pass:
+   - HMR updates code live, but build number only increments on server restart
+   - For verification: restart dev server, read new `.build-number`, tell user: **"Look for build #X"**
+   - Only restart server when user needs to verify a fix (not after every change)
 
-**This is non-negotiable.** Always verify your work before saying it's done.
+**This is non-negotiable.** The user cannot verify they're testing your changes without the correct build number.
 
 ### Git Discipline
 - **Feature branches** for all new work (never code on master)
@@ -125,6 +128,15 @@ User cannot see token count until it's shown. Claude cannot see it at all.
 ```
 
 ### `<test>`
+```
+1. Look at what was changed this session (files modified, features added/fixed)
+2. Provide specific manual testing steps the user should perform
+3. Include what to look for (expected behavior) and what would indicate a bug
+4. Keep it focused — only steps relevant to current changes
+```
+Example: "1. Start a game at rank 30+. 2. Wait for cracks to spawn. 3. Verify they grow over time when not covered by goop."
+
+### `<runtests>`
 ```
 1. Run `npm run test:run`
 2. Report: "✓ 150 tests passed" or show failures
@@ -181,33 +193,7 @@ Use when you need deep investigation before making decisions.
 Use when you want to ensure Claude doesn't assume intent or approach.
 
 ### `<flow>`
-Show the daily workflow diagram (see SOP.md for full version):
-
-```
-START SESSION
-      ↓
-   /clear  →  Hook auto-injects STATE.md
-      ↓              ↓
-Claude greets: "Welcome back. Next up: [action]"
-      ↓
-[Plan if needed: /gsd:plan-phase]
-      ↓
-[Code: /gsd:execute-plan or just ask Claude]
-      ↓
-   <test>  ←  Claude runs this automatically
-      ↓
-   <npm>   →  Manual testing in browser
-      ↓
-[Issues? Tell Claude. Good? Continue...]
-      ↓
-   <save>  →  Lock in progress
-      ↓
-[Keep working? Or share with friends?]
-      ↓
-  <deploy> →  Push to live site
-      ↓
-   /clear  →  Fresh context, auto-startup
-```
+Show the **full** daily workflow diagram from SOP.md — the big ASCII graphic with branching paths (in "The Daily Flow" section). Not a simplified version.
 
 ### `<commands>`
 Show the command tables above.
@@ -266,5 +252,5 @@ Format: **X.Y.Z.B** (Major.Minor.Patch.Build)
 - **X** bumped for release to friends
 
 ### File Sizes to Watch
-- `GameEngine.ts` ~1374 lines (consider extracting CrackManager if grows)
+- `GameEngine.ts` ~1197 lines (CrackManager extracted)
 - `GameBoard.tsx` ~758 lines (manageable)
