@@ -101,4 +101,4 @@ See [v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) for full details.
 | 16. Junk Band | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 17. Mixer Band | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 18. Cracked Band | v1.2 | 2/2 | Complete | 2026-01-24 |
-| 19. Multi-Color Pieces | v1.3 | 2/3 | In progress | - |
+| 19. Multi-Color Pieces | v1.3 | 3/3 | Complete | 2026-01-24 |
