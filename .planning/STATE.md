@@ -19,12 +19,12 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 18 of 18 (all complete)
-Plan: All plans complete
-Status: v1.2 SHIPPED
-Last activity: 2026-01-24 — v1.2 milestone archived
+Phase: 19 of 19 (Multi-Color Pieces)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-24 — Completed 19-01-PLAN.md
 
-Progress: ████████████████████ 49/49 plans (v1.0 + v1.1 + v1.2 complete)
+Progress: ██████████████████░░ 50/52 plans (v1.0 + v1.1 + v1.2 + Phase 19 in progress)
 
 ## What's Done
 
@@ -97,24 +97,15 @@ Last session: 2026-01-24
 
 ### This Session Summary (2026-01-24)
 
-**Testing completed:**
-- **Mixer Band (Phase 17)** — All features verified working:
-  - Purple color spawns at rank 20+
-  - Active Expansion Slot allows equipping 2 actives
-  - Goop Hold Viewer shows stored piece (top-left)
-  - Goop Window shows next piece (top-right)
-  - Goop Colorizer locks next 6/7/8 pieces to current color
+**Phase 19 started: Multi-Color Pieces**
+- Completed 19-01-PLAN.md (types + split algorithm)
+- Added `cellColors?: string[]` to PieceDefinition
+- Created pieceUtils.ts with isConnected, findBestSplit, splitPiece
+- 21 new tests, 133 total passing
 
-**Previous session (evening):**
-- Tabbed Upgrade Panel UI (v1.1.34-37)
-- Swipe gestures for tab navigation
-
-**Known bug:**
-- Pressure not rising bug — debug logging added, waiting for next occurrence
-
-**Next session:**
-- Monitor debug logs for pressure bug
-- Test remaining bands (Junk, Cracked) if not yet verified
+**Next steps:**
+- 19-02: Integrate split into spawn logic (rank 20+, 25% chance)
+- 19-03: Update rendering paths for per-cell colors
 
 ## Quick Commands
 
