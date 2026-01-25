@@ -20,11 +20,11 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 ## Current Position
 
 Phase: 19 of 19 (Multi-Color Pieces)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-24 — Completed 19-01-PLAN.md
+Last activity: 2026-01-24 — Completed 19-02-PLAN.md
 
-Progress: ██████████████████░░ 50/52 plans (v1.0 + v1.1 + v1.2 + Phase 19 in progress)
+Progress: ██████████████████░░ 51/52 plans (v1.0 + v1.1 + v1.2 + Phase 19 in progress)
 
 ## What's Done
 
@@ -97,14 +97,14 @@ Last session: 2026-01-24
 
 ### This Session Summary (2026-01-24)
 
-**Phase 19 started: Multi-Color Pieces**
+**Phase 19: Multi-Color Pieces (2 of 3 plans complete)**
 - Completed 19-01-PLAN.md (types + split algorithm)
-- Added `cellColors?: string[]` to PieceDefinition
-- Created pieceUtils.ts with isConnected, findBestSplit, splitPiece
-- 21 new tests, 133 total passing
+- Completed 19-02-PLAN.md (spawn integration)
+- 25% of pieces at rank 20+ now spawn with two colors
+- GOOP_COLORIZER clears cellColors to force uniform color
+- 133 tests passing
 
 **Next steps:**
-- 19-02: Integrate split into spawn logic (rank 20+, 25% chance)
 - 19-03: Update rendering paths for per-cell colors
 
 ## Quick Commands
