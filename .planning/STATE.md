@@ -94,6 +94,7 @@ All three complications have player-driven triggers AND mitigations.
 
 Last session: 2026-01-24
 **Version:** 1.1.38
+Stopped at: Phase 19 complete, deployed to GitHub Pages
 
 ### This Session Summary (2026-01-24)
 
@@ -105,8 +106,17 @@ Last session: 2026-01-24
 - All rendering paths support per-cell colors
 - GOOP_COLORIZER clears cellColors to force uniform color
 - 133 tests passing
+- Deployed v1.1.38 to https://thebluemuzzy.github.io/GOOPS/
 
-**Version:** 1.1.38
+**What's done:**
+- Multi-color pieces feature complete end-to-end
+- cellColors array on PieceDefinition
+- splitPieceColors() algorithm in pieceUtils.ts
+- 25% spawn rate at rank 20+
+- All rendering paths (preview, falling, locked) support per-cell colors
+- GOOP_COLORIZER clears cellColors to force uniform
+
+**No uncommitted changes, no blockers.**
 
 ## Quick Commands
 
