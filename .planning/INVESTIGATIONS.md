@@ -214,9 +214,9 @@ Track rotation state and use different kick tables per transition.
 
 ## Pressure Not Rising Bug
 
-**Status:** Investigated 2026-01-24 — Cannot reproduce, likely fixed in v1.1 architecture refactor
+**Status:** FIXED v1.1.42 (2026-01-25)
 
-**Symptom:** Sometimes pressure doesn't start rising for a long time after starting a run.
+**Symptom:** Pressure doesn't start rising for the first ~30-40 seconds after starting a run at high rank.
 
 ### How Pressure Works
 
@@ -224,37 +224,28 @@ Track rotation state and use different kick tables per transition.
 - `tickTimer()` decrements `timeLeft` every frame in `GameEngine.tick()`
 - Guard condition: `if (!this.isSessionActive || this.state.gameOver || this.state.isPaused) return`
 
-### Most Likely Cause: Mobile Frame Throttling
+### ROOT CAUSE FOUND
 
-In `useGameEngine.ts:76-93`, frames are skipped on mobile:
+**Game.tsx hardcoded `maxTime={60000}` to GameBoard and Controls**, but `engine.maxTime` can be up to 100000ms with PRESSURE_CONTROL upgrade (+5s per level, max 8 levels = +40s).
 
-```typescript
-if (isMobile && dt < TARGET_FRAME_TIME) {
-    requestRef.current = requestAnimationFrame(loop);
-    return;  // NO TICK CALLED - pressure doesn't advance
-}
+**The math:**
+```
+With PRESSURE_CONTROL at level 8:
+- engine.maxTime = 100000 (60s + 40s bonus)
+- timeLeft starts at 100000
+
+GameBoard calculated:
+- pressureRatio = Math.max(0, 1 - (timeLeft / maxTime))
+- pressureRatio = Math.max(0, 1 - (100000 / 60000))  // Wrong maxTime!
+- pressureRatio = Math.max(0, -0.67) = 0
 ```
 
-First ticks may be skipped waiting for 25ms threshold, causing visible delay at game start.
+**Result:** First 40 seconds showed 0% pressure because `timeLeft > 60000`.
 
-### Other Possible Causes
+**Fix:** Changed `maxTime={60000}` to `maxTime={engine.maxTime}` in both GameBoard and Controls props.
 
-| Cause | Likelihood | Notes |
-|-------|-----------|-------|
-| Mobile frame throttling delay | HIGH | First ticks skipped waiting for 25ms |
-| `isSessionActive` race condition | MEDIUM | Set in `startRun()`, tick loop may already be checking |
-| Multiple `timeLeft` initializations | LOW | Set in constructor, `applyUpgrades()`, and `startRun()` |
+### Previous Investigation (Incorrect)
 
-### Suspicious Patterns
-
-1. `isSessionActive` is public property on GameEngine, not part of `GameState`
-2. Multiple `timeLeft` init points: Constructor → `applyUpgrades()` → `startRun()`
-3. `lastGoalSpawnTime = Date.now()` at start delays first goal spawn
-
-### If Bug Resurfaces
-
-1. Add timestamp logging to `startRun()` and first `tick()` call
-2. Test specifically on mobile devices
-3. Check if `isSessionActive` is true before first tick runs
+Previous theories (mobile throttling, race conditions) were incorrect. The bug only appeared with PRESSURE_CONTROL upgrade because that's when engine.maxTime exceeded the hardcoded 60000.
 
 ---
