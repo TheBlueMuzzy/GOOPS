@@ -1,6 +1,24 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { UPGRADES } from '../constants';
 import { ChevronLeft } from 'lucide-react';
+
+// Tab definitions with unlock conditions
+type TabId = 'actives' | 'features' | 'complications' | 'passives';
+
+interface TabDef {
+  id: TabId;
+  label: string;
+  unlockRank: number;
+  color: string;
+}
+
+// Ordered by final display order (left to right when all unlocked)
+const TAB_DEFS: TabDef[] = [
+  { id: 'actives', label: 'ACTIVES', unlockRank: 5, color: '#fbbf24' },      // Gold
+  { id: 'features', label: 'FEATURES', unlockRank: 20, color: '#a78bfa' },   // Purple
+  { id: 'complications', label: 'COMPS', unlockRank: 2, color: '#f97316' },  // Orange
+  { id: 'passives', label: 'PASSIVES', unlockRank: 3, color: '#5bbc70' },    // Green
+];
 
 interface UpgradePanelProps {
   powerUpPoints: number;
@@ -39,20 +57,59 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
   onToggleEquip,
   maxActiveSlots = 1
 }) => {
-  // Filter upgrades by type and player rank, sorted by unlock rank
-  const availableActives = Object.values(UPGRADES)
-    .filter(u => u.type === 'active' && u.unlockRank <= rank)
-    .sort((a, b) => a.unlockRank - b.unlockRank);
+  // Get unlocked tabs in display order
+  const unlockedTabs = TAB_DEFS.filter(tab => tab.unlockRank <= rank);
 
-  const availableFeatures = Object.values(UPGRADES)
-    .filter(u => u.type === 'feature' && u.unlockRank <= rank)
-    .sort((a, b) => a.unlockRank - b.unlockRank);
+  // Default to first unlocked tab
+  const [activeTab, setActiveTab] = useState<TabId>(unlockedTabs[0]?.id || 'complications');
 
-  const availablePassives = Object.values(UPGRADES)
-    .filter(u => u.type === 'passive' && u.unlockRank <= rank)
-    .sort((a, b) => a.unlockRank - b.unlockRank);
+  // Swipe handling
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
 
-  const hasAnyUpgrades = availableActives.length > 0 || availableFeatures.length > 0 || availablePassives.length > 0;
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only register horizontal swipes (more horizontal than vertical, min 50px)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      const currentIndex = unlockedTabs.findIndex(t => t.id === activeTab);
+      if (deltaX < 0 && currentIndex < unlockedTabs.length - 1) {
+        // Swipe left = next tab
+        setActiveTab(unlockedTabs[currentIndex + 1].id);
+      } else if (deltaX > 0 && currentIndex > 0) {
+        // Swipe right = previous tab
+        setActiveTab(unlockedTabs[currentIndex - 1].id);
+      }
+    }
+  };
+
+  // Filter upgrades based on active tab
+  const getFilteredUpgrades = () => {
+    const allUpgrades = Object.values(UPGRADES).filter(u => u.unlockRank <= rank);
+
+    switch (activeTab) {
+      case 'actives':
+        return allUpgrades.filter(u => u.type === 'active').sort((a, b) => a.unlockRank - b.unlockRank);
+      case 'features':
+        return allUpgrades.filter(u => u.type === 'feature').sort((a, b) => a.unlockRank - b.unlockRank);
+      case 'complications':
+        return allUpgrades.filter(u => (u as any).category === 'complication').sort((a, b) => a.unlockRank - b.unlockRank);
+      case 'passives':
+        // Passives that are NOT complications
+        return allUpgrades.filter(u => u.type === 'passive' && (u as any).category !== 'complication').sort((a, b) => a.unlockRank - b.unlockRank);
+      default:
+        return [];
+    }
+  };
+
+  const filteredUpgrades = getFilteredUpgrades();
+  const hasAnyUpgrades = unlockedTabs.length > 0;
 
   // Render a single upgrade card
   const renderUpgradeCard = (upgrade: typeof UPGRADES[keyof typeof UPGRADES]) => {
@@ -182,6 +239,37 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
     );
   };
 
+  // Render tab bar
+  const renderTabBar = () => {
+    if (unlockedTabs.length === 0) return null;
+
+    return (
+      <div className="flex w-full mb-3" style={{ height: '36px' }}>
+        {unlockedTabs.map((tab, index) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className="flex-1 font-bold text-center transition-all"
+              style={{
+                backgroundColor: isActive ? tab.color + '30' : 'transparent',
+                color: isActive ? tab.color : '#59acae',
+                borderBottom: isActive ? `3px solid ${tab.color}` : '3px solid transparent',
+                fontSize: unlockedTabs.length >= 4 ? '11px' : '13px',
+                padding: '8px 4px',
+                fontFamily: "'From Where You Are', sans-serif",
+                letterSpacing: '0.05em'
+              }}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       {/* Container matches ConsoleView 9:16 aspect ratio */}
@@ -223,6 +311,8 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
             xmlns="http://www.w3.org/1999/xhtml"
             className="w-full h-full overflow-y-auto pr-2"
             style={{ fontFamily: "'Amazon Ember', sans-serif" }}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
             {!hasAnyUpgrades ? (
               // Empty state
@@ -238,7 +328,10 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="space-y-4 pb-20">
+              <div className="pb-20">
+                {/* Tab Bar */}
+                {renderTabBar()}
+
                 {/* PWR earning message */}
                 <div
                   className="text-lg mt-2 mb-3 text-center"
@@ -247,42 +340,16 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
                   Earn PWR by Increasing your Operator Rank
                 </div>
 
-                {/* ACTIVES SECTION - First */}
-                {availableActives.length > 0 && (
-                  <div className="space-y-3">
-                    {availableActives.map(renderUpgradeCard)}
-                  </div>
-                )}
-
-                {/* FEATURES SECTION - Second */}
-                {availableFeatures.length > 0 && (
-                  <>
-                    <div
-                      className="text-lg tracking-wide mt-4 mb-3"
-                      style={{ color: '#a78bfa', fontFamily: "'From Where You Are', sans-serif" }}
-                    >
-                      FEATURES
+                {/* Filtered upgrades */}
+                <div className="space-y-3">
+                  {filteredUpgrades.length > 0 ? (
+                    filteredUpgrades.map(renderUpgradeCard)
+                  ) : (
+                    <div className="text-center py-8" style={{ color: '#59acae' }}>
+                      No upgrades available in this category yet.
                     </div>
-                    <div className="space-y-3">
-                      {availableFeatures.map(renderUpgradeCard)}
-                    </div>
-                  </>
-                )}
-
-                {/* PASSIVES SECTION - Third */}
-                {availablePassives.length > 0 && (
-                  <>
-                    <div
-                      className="text-lg tracking-wide mt-4 mb-3"
-                      style={{ color: '#5bbc70', fontFamily: "'From Where You Are', sans-serif" }}
-                    >
-                      PASSIVES
-                    </div>
-                    <div className="space-y-3">
-                      {availablePassives.map(renderUpgradeCard)}
-                    </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             )}
           </div>
