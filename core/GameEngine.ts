@@ -1193,9 +1193,9 @@ export class GameEngine {
                 effectiveChance *= 0.5;
             }
 
-            // Distance penalty: 15% reduction per hop from root
+            // Distance penalty: 25% reduction per hop from root
             const distance = this.getDistanceFromRoot(cell);
-            const distanceMultiplier = Math.max(0.10, 1 - (distance * 0.15));
+            const distanceMultiplier = Math.max(0.10, 1 - (distance * 0.25));
             effectiveChance *= distanceMultiplier;
 
             // Roll for spread

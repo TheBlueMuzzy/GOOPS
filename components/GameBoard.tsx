@@ -455,15 +455,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                         };
 
                         return (
-                            <path
-                                key={`ghost-${idx}`}
-                                d={getContourPath(startX, yPos, width, BLOCK_SIZE, neighbors)}
-                                fill="none"
-                                stroke={color}
-                                strokeWidth="1"
-                                strokeDasharray="4 2"
-                                opacity="0.3"
-                            />
+                            <g key={`ghost-${idx}`}>
+                                {/* Transparent fill to help identify color */}
+                                <path
+                                    d={getContourPath(startX, yPos, width, BLOCK_SIZE, neighbors)}
+                                    fill={color}
+                                    fillOpacity={0.15}
+                                    stroke="none"
+                                />
+                                {/* Dashed outline */}
+                                <path
+                                    d={getContourPath(startX, yPos, width, BLOCK_SIZE, neighbors)}
+                                    fill="none"
+                                    stroke={color}
+                                    strokeWidth="1"
+                                    strokeDasharray="4 2"
+                                    opacity="0.4"
+                                />
+                            </g>
                         );
                     }
                     return null;
