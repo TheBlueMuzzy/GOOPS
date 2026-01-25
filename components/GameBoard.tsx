@@ -1,6 +1,6 @@
 // --- Imports ---
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { GameState, PieceState, ComplicationType, GamePhase, PieceDefinition, DumpPiece } from '../types';
+import { GameState, PieceState, ComplicationType, GamePhase, PieceDefinition, DumpPiece, CrackCell } from '../types';
 import { VISIBLE_WIDTH, VISIBLE_HEIGHT, COLORS, TOTAL_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { isMobile } from '../utils/device';
@@ -40,7 +40,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     equippedActives = [], activeCharges = {}, onActivateAbility,
     powerUps, storedPiece, nextPiece
 }) => {
-  const { grid, boardOffset, activePiece, fallingBlocks, floatingTexts, timeLeft, goalMarks, dumpPieces } = state;
+  const { grid, boardOffset, activePiece, fallingBlocks, floatingTexts, timeLeft, goalMarks, crackCells, dumpPieces } = state;
 
   const palette = useMemo(() => getPaletteForRank(rank), [rank]);
 
@@ -190,6 +190,51 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     );
                 });
             })}
+            {/* Crack Connection Lines - render lines between parent/child crack cells */}
+            {crackCells && crackCells.filter(c => now - c.spawnTime >= 500).map(cell => {
+                // Draw lines to all children (avoids duplicate lines)
+                return cell.childIds.map(childId => {
+                    const child = crackCells.find(c => c.id === childId);
+                    if (!child || now - child.spawnTime < 500) return null;
+
+                    // Convert cell positions to screen coordinates
+                    let visX1 = cell.x - boardOffset;
+                    if (visX1 > TOTAL_WIDTH / 2) visX1 -= TOTAL_WIDTH;
+                    if (visX1 < -TOTAL_WIDTH / 2) visX1 += TOTAL_WIDTH;
+
+                    let visX2 = child.x - boardOffset;
+                    if (visX2 > TOTAL_WIDTH / 2) visX2 -= TOTAL_WIDTH;
+                    if (visX2 < -TOTAL_WIDTH / 2) visX2 += TOTAL_WIDTH;
+
+                    // Both cells must be at least partially visible
+                    if (visX1 < -1 || visX1 > VISIBLE_WIDTH ||
+                        visX2 < -1 || visX2 > VISIBLE_WIDTH) return null;
+
+                    const startX1 = visXToScreenX(visX1);
+                    const width1 = visXToScreenX(visX1 + 1) - startX1;
+                    const centerX1 = startX1 + width1 / 2;
+                    const centerY1 = (cell.y - BUFFER_HEIGHT) * BLOCK_SIZE + BLOCK_SIZE / 2;
+
+                    const startX2 = visXToScreenX(visX2);
+                    const width2 = visXToScreenX(visX2 + 1) - startX2;
+                    const centerX2 = startX2 + width2 / 2;
+                    const centerY2 = (child.y - BUFFER_HEIGHT) * BLOCK_SIZE + BLOCK_SIZE / 2;
+
+                    return (
+                        <line
+                            key={`crack-line-${cell.id}-${childId}`}
+                            x1={centerX1}
+                            y1={centerY1}
+                            x2={centerX2}
+                            y2={centerY2}
+                            stroke={cell.color}
+                            strokeWidth="2"
+                            strokeOpacity={0.7}
+                        />
+                    );
+                });
+            })}
+
             {/* Goal Marks - always render */}
             {goalMarks.filter(m => now - m.spawnTime >= 500).map(mark => {
                 let visX = mark.x - boardOffset;
