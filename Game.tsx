@@ -318,7 +318,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
          <GameBoard
             state={gameState}
             rank={startingRank}
-            maxTime={60000}
+            maxTime={engine.maxTime}
             lightsBrightness={gameState.phase === GamePhase.PERISCOPE ? gameState.lightsBrightness : 100}
             laserCapacitor={gameState.laserCapacitor}
             controlsHeat={gameState.controlsHeat}
@@ -371,7 +371,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
                 engine.execute(new SetPhaseCommand(GamePhase.CONSOLE));
             }}
             initialTotalScore={engine.initialTotalScore}
-            maxTime={60000} 
+            maxTime={engine.maxTime}
           />
       </div>
 
