@@ -18,6 +18,7 @@ export interface PieceDefinition {
   type: PieceType;
   cells: Coordinate[]; // Relative coordinates
   color: string;
+  cellColors?: string[]; // Per-cell colors, parallel to cells array
 }
 
 export enum PieceState {
