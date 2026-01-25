@@ -1193,6 +1193,11 @@ export class GameEngine {
                 effectiveChance *= 0.5;
             }
 
+            // Distance penalty: 15% reduction per hop from root
+            const distance = this.getDistanceFromRoot(cell);
+            const distanceMultiplier = Math.max(0.10, 1 - (distance * 0.15));
+            effectiveChance *= distanceMultiplier;
+
             // Roll for spread
             if (Math.random() > effectiveChance) continue;
 
@@ -1287,6 +1292,36 @@ export class GameEngine {
                 console.log(`Crack grew: ${cell.id} -> ${newCrack.id} at (${target.x}, ${target.y}), pressure: ${(pressureRatio * 100).toFixed(1)}%, chance: ${(effectiveChance * 100).toFixed(1)}%`);
             }
         }
+    }
+
+    /**
+     * Calculate distance from root for a crack cell.
+     * Follows parentIds until reaching a cell with no parents (root).
+     * Returns 0 for root cells.
+     */
+    private getDistanceFromRoot(cell: CrackCell): number {
+        if (cell.parentIds.length === 0) return 0;
+
+        let distance = 0;
+        let currentId = cell.id;
+        const visited = new Set<string>();
+
+        while (true) {
+            if (visited.has(currentId)) break; // Prevent infinite loops from merges
+            visited.add(currentId);
+
+            const current = this.state.crackCells.find(c => c.id === currentId);
+            if (!current || current.parentIds.length === 0) break;
+
+            distance++;
+            // Follow first parent (for merged cells, just pick one path)
+            currentId = current.parentIds[0];
+
+            // Safety limit
+            if (distance > 20) break;
+        }
+
+        return distance;
     }
 
     // Debug: track tick calls to diagnose pressure bug
