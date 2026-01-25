@@ -99,6 +99,18 @@ export interface GoalMark {
   spawnTime: number;
 }
 
+export interface CrackCell {
+  id: string;
+  x: number;
+  y: number;
+  color: string;
+  parentIds: string[];      // Empty = root, can have multiple (merge)
+  childIds: string[];       // Empty = leaf
+  lastGrowthCheck: number;  // Per-cell timer
+  growthInterval: number;   // Random 3000-5000ms, regenerates each check
+  spawnTime: number;        // For compatibility/animation
+}
+
 export enum GamePhase {
   CONSOLE = 'CONSOLE',
   PERISCOPE = 'PERISCOPE',
@@ -144,8 +156,11 @@ export interface GameState {
   // Visuals
   floatingTexts: FloatingText[];
   
-  // Goal System
+  // Goal System (legacy - for migration compatibility)
   goalMarks: GoalMark[];
+
+  // Crack System (new connected crack structure)
+  crackCells: CrackCell[];
   goalsCleared: number;
   goalsTarget: number;
   
@@ -189,9 +204,6 @@ export interface GameState {
   // GOOP_COLORIZER tracking
   colorizerColor: string | null;    // Locked color for next N pieces
   colorizerRemaining: number;       // Pieces left with forced color
-
-  // Expanding cracks tracking (rank 30+)
-  crackGrowthTimers: Record<string, number>; // Goal ID -> last growth check timestamp
 
   // CRACK_DOWN active ability tracking
   crackDownRemaining: number; // Cracks left to spawn in bottom 4 rows (0 = normal spawning)

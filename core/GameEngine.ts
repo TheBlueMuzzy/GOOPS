@@ -1,5 +1,5 @@
 
-import { GameState, GridCell, ActivePiece, PieceDefinition, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, GamePhase, PieceState, PieceType, Complication, ComplicationType, DumpPiece } from '../types';
+import { GameState, GridCell, ActivePiece, PieceDefinition, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, CrackCell, GamePhase, PieceState, PieceType, Complication, ComplicationType, DumpPiece } from '../types';
 import {
     TOTAL_WIDTH, TOTAL_HEIGHT, VISIBLE_WIDTH, VISIBLE_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, INITIAL_TIME_MS,
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
@@ -95,6 +95,7 @@ export class GameEngine {
             gameStats: { startTime: 0, totalBonusTime: 0, maxGroupSize: 0 },
             floatingTexts: [],
             goalMarks: [],
+            crackCells: [],
             goalsCleared: 0,
             goalsTarget: goalsTarget,
             phase: GamePhase.CONSOLE, // Start in Console
@@ -128,9 +129,6 @@ export class GameEngine {
             // GOOP_COLORIZER tracking
             colorizerColor: null,
             colorizerRemaining: 0,
-
-            // Expanding cracks tracking (rank 30+)
-            crackGrowthTimers: {},
 
             // CRACK_DOWN active ability tracking
             crackDownRemaining: 0
@@ -232,6 +230,7 @@ export class GameEngine {
             timeLeft: this.maxTime,
             floatingTexts: [],
             goalMarks: [],
+            crackCells: [],
             goalsCleared: 0,
             goalsTarget: newTarget,
             gameStats: { startTime: Date.now(), totalBonusTime: 0, maxGroupSize: 0 },
@@ -263,9 +262,6 @@ export class GameEngine {
             // GOOP_COLORIZER tracking - reset on new run
             colorizerColor: null,
             colorizerRemaining: 0,
-
-            // Expanding cracks tracking - reset on new run
-            crackGrowthTimers: {},
 
             // CRACK_DOWN active ability - reset on new run
             crackDownRemaining: 0
