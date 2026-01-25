@@ -19,12 +19,12 @@ See: .planning/PROJECT.md (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 19 of 19 (Multi-Color Pieces)
-Plan: 3 of 3 in current phase
+Phase: 20 (Expanding Cracks Overhaul)
+Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-01-24 — Completed 19-03-PLAN.md
+Last activity: 2026-01-24 — Completed 20-01-PLAN.md
 
-Progress: ████████████████████ 52/52 plans (v1.0 + v1.1 + v1.2 + Phase 19 complete)
+Progress: █████████████████████ 53/53 plans
 
 ## What's Done
 
@@ -93,28 +93,28 @@ All three complications have player-driven triggers AND mitigations.
 ## Session Continuity
 
 Last session: 2026-01-24
-**Version:** 1.1.38
-Stopped at: Phase 19 complete, deployed to GitHub Pages
+**Version:** 1.1.39
+Stopped at: Phase 20 complete, ready for testing
 
 ### This Session Summary (2026-01-24)
 
-**Phase 19: Multi-Color Pieces (COMPLETE - 3 of 3 plans)**
-- Completed 19-01-PLAN.md (types + split algorithm)
-- Completed 19-02-PLAN.md (spawn integration)
-- Completed 19-03-PLAN.md (rendering paths)
-- 25% of pieces at rank 20+ spawn with two colors
-- All rendering paths support per-cell colors
-- GOOP_COLORIZER clears cellColors to force uniform color
-- 133 tests passing
-- Deployed v1.1.38 to https://thebluemuzzy.github.io/GOOPS/
+**Phase 20: Expanding Cracks Overhaul (COMPLETE)**
+- Completed 20-01-PLAN.md (full crack system rewrite)
+- CrackCell data structure with parentIds/childIds graph
+- Per-cell random 3-5s growth timers
+- 8-direction spread (orthogonal + diagonal)
+- Spread formula: 10% base + pressureRatio
+- Leaf cell 50% penalty for clustering
+- Same-color crack merging
+- Visual connection lines between cells
+- 150 tests passing (17 new)
 
 **What's done:**
-- Multi-color pieces feature complete end-to-end
-- cellColors array on PieceDefinition
-- splitPieceColors() algorithm in pieceUtils.ts
-- 25% spawn rate at rank 20+
-- All rendering paths (preview, falling, locked) support per-cell colors
-- GOOP_COLORIZER clears cellColors to force uniform
+- Connected crack graph structure
+- Organic growth with per-cell timers
+- Merge behavior reduces crack count
+- Max 8 connected groups enforced
+- Backward compatible (goalMarks synced)
 
 **No uncommitted changes, no blockers.**
 
