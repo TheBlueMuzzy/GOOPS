@@ -16,7 +16,7 @@ interface TabDef {
 const TAB_DEFS: TabDef[] = [
   { id: 'actives', label: 'ACTIVES', unlockRank: 5, color: '#fbbf24' },      // Gold
   { id: 'features', label: 'FEATURES', unlockRank: 20, color: '#a78bfa' },   // Purple
-  { id: 'complications', label: 'COMPS', unlockRank: 2, color: '#f97316' },  // Orange
+  { id: 'complications', label: 'CONSOLE', unlockRank: 2, color: '#f97316' },  // Orange
   { id: 'passives', label: 'PASSIVES', unlockRank: 3, color: '#5bbc70' },    // Green
 ];
 
@@ -245,18 +245,19 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
 
     return (
       <div className="flex w-full mb-3" style={{ height: '36px' }}>
-        {unlockedTabs.map((tab, index) => {
+        {unlockedTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex-1 font-bold text-center transition-all"
+              className="font-bold text-center transition-all"
               style={{
+                width: '25%',
                 backgroundColor: isActive ? tab.color + '30' : 'transparent',
                 color: isActive ? tab.color : '#59acae',
                 borderBottom: isActive ? `3px solid ${tab.color}` : '3px solid transparent',
-                fontSize: unlockedTabs.length >= 4 ? '11px' : '13px',
+                fontSize: '11px',
                 padding: '8px 4px',
                 fontFamily: "'From Where You Are', sans-serif",
                 letterSpacing: '0.05em'
@@ -306,11 +307,18 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
 
         {/* Upgrades Content Area */}
         <foreignObject x="40" y="125" width="503" height="720">
+          {/* Hide scrollbar for webkit browsers */}
+          {/* @ts-ignore */}
+          <style>{`.upgrade-scroll::-webkit-scrollbar { display: none; }`}</style>
           <div
             // @ts-ignore - xmlns is valid for foreignObject content
             xmlns="http://www.w3.org/1999/xhtml"
-            className="w-full h-full overflow-y-auto pr-2"
-            style={{ fontFamily: "'Amazon Ember', sans-serif" }}
+            className="upgrade-scroll w-full h-full overflow-y-auto"
+            style={{
+              fontFamily: "'Amazon Ember', sans-serif",
+              scrollbarWidth: 'none',  /* Firefox */
+              msOverflowStyle: 'none'  /* IE/Edge */
+            }}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
@@ -329,16 +337,16 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
               </div>
             ) : (
               <div className="pb-20">
-                {/* Tab Bar */}
-                {renderTabBar()}
-
-                {/* PWR earning message */}
+                {/* PWR earning message - subtitle */}
                 <div
-                  className="text-lg mt-2 mb-3 text-center"
+                  className="text-lg mb-3 text-center"
                   style={{ color: '#fbbf24', fontFamily: "'Amazon Ember', sans-serif" }}
                 >
                   Earn PWR by Increasing your Operator Rank
                 </div>
+
+                {/* Tab Bar */}
+                {renderTabBar()}
 
                 {/* Filtered upgrades */}
                 <div className="space-y-3">
