@@ -94,11 +94,11 @@ All three complications have player-driven triggers AND mitigations.
 
 Last session: 2026-01-24
 **Version:** 1.1.39
-Stopped at: Phase 20 complete, ready for testing
+Stopped at: Debugging crack expansion - not working
 
 ### This Session Summary (2026-01-24)
 
-**Phase 20: Expanding Cracks Overhaul (COMPLETE)**
+**Phase 20: Expanding Cracks Overhaul (CODE COMPLETE, BUG FOUND)**
 - Completed 20-01-PLAN.md (full crack system rewrite)
 - CrackCell data structure with parentIds/childIds graph
 - Per-cell random 3-5s growth timers
@@ -109,14 +109,24 @@ Stopped at: Phase 20 complete, ready for testing
 - Visual connection lines between cells
 - 150 tests passing (17 new)
 
-**What's done:**
-- Connected crack graph structure
-- Organic growth with per-cell timers
-- Merge behavior reduces crack count
-- Max 8 connected groups enforced
-- Backward compatible (goalMarks synced)
+### BUG: Cracks not expanding
 
-**No uncommitted changes, no blockers.**
+**Symptom:** At rank 39, basic cracks spawn but NO expansion occurs. No lines connecting crack cells.
+
+**Expected:** Cracks should spread to adjacent cells every 3-5s with connection lines drawn between parent/child cells.
+
+**Files to investigate:**
+- `core/GameEngine.ts` - `tickCrackGrowth()` method
+- `core/GoalManager.ts` - `trySpawnCrack()` and crack helpers
+- `components/GameBoard.tsx` - connection line rendering
+
+**Likely causes:**
+1. `tickCrackGrowth()` not being called or early-returning
+2. `crackCells` array not populated (still using old `goalMarks`)
+3. Spread logic failing silently
+4. Connection lines not rendering (wrong layer or missing data)
+
+**Debug approach:** Add console.log in `tickCrackGrowth()` to verify it runs and check crackCells state.
 
 ## Quick Commands
 
