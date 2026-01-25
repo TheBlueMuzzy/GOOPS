@@ -85,11 +85,11 @@ export const UpgradePanel: React.FC<UpgradePanelProps> = ({
     // Only register horizontal swipes (more horizontal than vertical, min threshold)
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > SWIPE_THRESHOLD) {
       const currentIndex = unlockedTabs.findIndex(t => t.id === activeTab);
-      if (deltaX < 0 && currentIndex < unlockedTabs.length - 1) {
-        // Swipe left = next tab
+      if (deltaX > 0 && currentIndex < unlockedTabs.length - 1) {
+        // Swipe right = next tab (to the right)
         setActiveTab(unlockedTabs[currentIndex + 1].id);
-      } else if (deltaX > 0 && currentIndex > 0) {
-        // Swipe right = previous tab
+      } else if (deltaX < 0 && currentIndex > 0) {
+        // Swipe left = previous tab (to the left)
         setActiveTab(unlockedTabs[currentIndex - 1].id);
       }
     }
