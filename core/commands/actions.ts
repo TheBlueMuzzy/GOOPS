@@ -87,7 +87,7 @@ export class RotatePieceCommand implements Command {
 
     execute(engine: GameEngine): void {
         if (engine.state.gameOver || engine.state.isPaused || !engine.state.activePiece) return;
-        if (engine.state.activePiece.definition.type === PieceType.O) return;
+        // O pieces need to rotate now that split-colors exist
 
         const p = engine.state.activePiece;
         const nextRot = (p.rotation + (this.clockwise ? 1 : -1) + 4) % 4;
