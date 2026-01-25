@@ -140,6 +140,28 @@ export class GoalManager {
         // Only remove consumed goals - non-matching cracks persist under goop
         state.goalMarks = state.goalMarks.filter(g => !consumed.includes(g.id));
 
+        // Also remove from crackCells (for new crack system rendering)
+        const consumedSet = new Set(consumed);
+        consumed.forEach(id => {
+            const cell = state.crackCells.find(c => c.id === id);
+            if (cell) {
+                // Update parent/child references before removing
+                cell.parentIds.forEach(parentId => {
+                    const parent = state.crackCells.find(c => c.id === parentId);
+                    if (parent) {
+                        parent.childIds = parent.childIds.filter(cid => cid !== id);
+                    }
+                });
+                cell.childIds.forEach(childId => {
+                    const child = state.crackCells.find(c => c.id === childId);
+                    if (child) {
+                        child.parentIds = child.parentIds.filter(pid => pid !== id);
+                    }
+                });
+            }
+        });
+        state.crackCells = state.crackCells.filter(c => !consumedSet.has(c.id));
+
         consumed.forEach(id => {
             const cx = normalizeX(piece.x);
             const cy = Math.floor(piece.y);
