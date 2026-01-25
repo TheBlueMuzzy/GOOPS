@@ -145,4 +145,38 @@ Progression is organized into bands of 10 ranks. See PRD.md for full details.
 | CRACK_DOWN restricts Y to bottom 4 rows | Most strategic placement for catching cracks | ✓ v1.2 |
 
 ---
-*Last updated: 2026-01-24 after v1.2 milestone*
+
+## Future Version Ideas
+
+### v2.0 Concept: "Pressure Rework"
+
+**Core idea:** Eliminate XP/points, make progression purely crack-based.
+
+**Changes:**
+1. **Level = Cracks Sealed** — No XP curve, just seal X cracks to advance
+   - Current formula: `goalsTarget = palette.length + rank` (4 → 46 over 40 ranks)
+   - Could cap at rank 50 with ~50 cracks to seal at max
+
+2. **Pressure from Goop, Not Time** — Pressure rises based on how full the tank is
+   - More thematic (goop = pressure)
+   - Changes the entire pacing model
+   - Player controls pressure by clearing goop, not racing clock
+
+3. **Popping = Incidental** — Points become secondary/cosmetic
+   - Sealing cracks is the only thing that matters for progression
+   - Goop-popping might give small bonuses or nothing
+
+**Why this is appealing:**
+- Much more thematic (you're a tank technician managing pressure)
+- Flatter progression curve (no exponential XP grind)
+- Clearer objective each run (seal N cracks)
+
+**Why this is risky:**
+- Major rework of upgrade system (many upgrades reference time/pressure)
+- Changes fundamental game feel
+- Needs extensive playtesting
+
+**Status:** Captured for future exploration. Create branch `v2-pressure-rework` when ready to prototype.
+
+---
+*Last updated: 2026-01-25 after v1.1.50*
