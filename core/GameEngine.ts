@@ -555,9 +555,13 @@ export class GameEngine {
             // Apply CRACK_MATCHER bias: +25% per level to match lowest crack's color
             let nextColor = palette[Math.floor(Math.random() * palette.length)];
             const crackMatcherLevel = this.powerUps['CRACK_MATCHER'] || 0;
-            if (crackMatcherLevel > 0 && this.state.goalMarks.length > 0) {
+            // Use crackCells for lowest crack detection (with goalMarks fallback)
+            const cracksToCheck = this.state.crackCells.length > 0
+                ? this.state.crackCells
+                : this.state.goalMarks;
+            if (crackMatcherLevel > 0 && cracksToCheck.length > 0) {
                 // Find lowest crack (highest Y value = closest to bottom)
-                const lowestCrack = this.state.goalMarks.reduce((lowest, mark) =>
+                const lowestCrack = cracksToCheck.reduce((lowest, mark) =>
                     mark.y > lowest.y ? mark : lowest
                 );
                 const biasChance = crackMatcherLevel * 0.25; // 25% per level
