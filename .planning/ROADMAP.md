@@ -20,6 +20,7 @@ None
 - [[v1.0-ROADMAP|v1.0 MVP]] — Phases 1-7 (shipped 2026-01-21)
 - [[v1.1-ROADMAP|v1.1 Architecture Refactor]] — Phases 8-13 (shipped 2026-01-21)
 - [[v1.2-ROADMAP|v1.2 Progression System]] — Phases 14-20 (shipped 2026-01-25)
+- 🚧 **v1.3 Shape Changes** — Phase 21 (in progress)
 
 ## Completed Milestones
 
@@ -89,6 +90,23 @@ See [[v1.2-ROADMAP]] for full details.
 
 ---
 
+### 🚧 v1.3 Shape Changes (In Progress)
+
+**Milestone Goal:** Different goop piece shapes for faster stacking + gravity piece calculation improvements
+
+#### Phase 21: Piece Shapes
+
+**Goal**: Implement new goop shapes beyond standard tetrominos, review and improve gravity piece calculation
+**Depends on**: v1.2 complete
+**Research**: Likely (shape design decisions, gravity mechanics)
+**Research topics**: What shapes work best for faster stacking? How are gravity pieces calculated? What changes needed for new shapes to work with gravity?
+**Plans**: TBD
+
+Plans:
+- [ ] 21-01: TBD (run /gsd:plan-phase 21 to break down)
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -113,6 +131,7 @@ See [[v1.2-ROADMAP]] for full details.
 | 18. Cracked Band | v1.2 | 2/2 | Complete | 2026-01-24 |
 | 19. Multi-Color Pieces | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 20. Expanding Cracks Overhaul | v1.2 | 1/1 | Complete | 2026-01-25 |
+| 21. Piece Shapes | v1.3 | 0/? | Not started | - |
 
 ## Related
 

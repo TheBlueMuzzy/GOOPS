@@ -19,18 +19,19 @@ updated: 2026-01-25
 
 ## Next Steps
 
-**Complete:** Color schedule rework + Wild pieces implementation
-**Status:** Tested and verified working
+**Current:** v1.3 Shape Changes milestone created
+**Status:** Ready to plan Phase 21
 
 Options:
-1. `/gsd:new-milestone` — Define phases for v1.3 (GoopPieceRework)
-2. Bug hunting / polish pass
-3. Start GoopPieceRework branch — different piece shapes for faster stacking
+1. `/gsd:research-phase 21` — Investigate shape options and gravity mechanics
+2. `/gsd:plan-phase 21` — Create execution plan for piece shapes
+3. Bug hunting / polish pass
 
 ## Future Plans
 
 - **Title unlock system** — unlock titles as progression rewards
 - **Piece shape changes** — different goop shapes for faster stacking
+- **Tutorial system** — guided onboarding for new players
 - **Naming standardization** — audit and standardize game element terminology in code:
   - piece vs goop (used interchangeably)
   - unit vs cell (used interchangeably)
@@ -48,12 +49,12 @@ See: [[PROJECT]] (updated 2026-01-24)
 
 ## Current Position
 
-Phase: 20 (Expanding Cracks Overhaul)
-Plan: 1 of 1 in current phase
-Status: Phase complete
-Last activity: 2026-01-24 — Completed 20-01-PLAN.md
+Phase: 21 (Piece Shapes)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-01-26 — Milestone v1.3 created
 
-Progress: █████████████████████ 53/53 plans
+Progress: ░░░░░░░░░░░░░░░░░░░░░ 0/? plans (v1.3)
 
 ## What's Done
 
@@ -109,9 +110,10 @@ All three complications have player-driven triggers AND mitigations.
 
 ## Session Continuity
 
-Last session: 2026-01-25
+Last session: 2026-01-26
 **Version:** 1.1.13
 **Branch:** master
+**Milestone:** v1.3 Shape Changes (Phase 21)
 
 ### This Session Summary (2026-01-25)
 
