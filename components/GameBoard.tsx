@@ -206,6 +206,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             preserveAspectRatio="xMidYMin meet"
             className="touch-none"
             style={{
+                pointerEvents: 'none', // Let touches pass through to parent div (iOS fix)
                 willChange: 'transform', // OPTIMIZATION: Promote to compositor layer
                 filter: lightsBrightness < 100
                     ? `brightness(${lightsBrightness / 100}) grayscale(${Math.max(0, (50 - lightsBrightness) / 50)})`
