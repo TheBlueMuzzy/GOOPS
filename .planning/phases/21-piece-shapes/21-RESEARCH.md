@@ -280,6 +280,150 @@ Current issues discovered during research:
 **Recommendation:** This is the sweet spot
 </shape_options>
 
+<blokus_pieces>
+## Blokus Piece Definitions (All 21 Polyominoes)
+
+Complete coordinate definitions from [Blokus](https://en.wikipedia.org/wiki/Blokus), converted to Goops format.
+Source: [python_blokus/Pieces.py](https://github.com/rmalusa72/python_blokus/blob/master/Pieces.py)
+
+### Monomino (1-cell) — 1 piece
+```typescript
+// One: single block
+{ type: 'O1', cells: [{x:0, y:0}] }
+```
+
+### Domino (2-cell) — 1 piece
+```typescript
+// I2: vertical line
+{ type: 'I2', cells: [{x:0, y:0}, {x:0, y:1}] }
+```
+
+### Trominoes (3-cell) — 2 pieces
+```typescript
+// I3: vertical line (same as Columns)
+{ type: 'I3', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}] }
+
+// V3: L-shape (corner)
+{ type: 'V3', cells: [{x:0, y:0}, {x:-1, y:0}, {x:-1, y:-1}] }
+```
+
+### Tetrominoes (4-cell) — 5 pieces
+These match standard Tetris. Note: Blokus only has 5 unique tetrominoes (J/L and S/Z are mirrors).
+
+```typescript
+// I4: vertical line
+{ type: 'I', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:0, y:3}] }
+
+// O: square
+{ type: 'O', cells: [{x:0, y:0}, {x:1, y:0}, {x:0, y:1}, {x:1, y:1}] }
+
+// T4: T-shape
+{ type: 'T', cells: [{x:0, y:0}, {x:1, y:0}, {x:1, y:1}, {x:2, y:0}] }
+
+// L4: L-shape
+{ type: 'L', cells: [{x:0, y:0}, {x:1, y:0}, {x:0, y:-1}, {x:0, y:-2}] }
+
+// N4: S/Z-shape (zigzag)
+{ type: 'S', cells: [{x:0, y:0}, {x:0, y:1}, {x:-1, y:1}, {x:-1, y:2}] }
+```
+
+### Pentominoes (5-cell) — 12 pieces
+The full set from Blokus. Named by letter resemblance.
+
+```typescript
+// F: F-shape (asymmetric)
+{ type: 'F', cells: [{x:0, y:0}, {x:-1, y:0}, {x:-1, y:1}, {x:-2, y:1}, {x:-1, y:2}] }
+
+// I5: long line (5 blocks)
+{ type: 'I5', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:0, y:3}, {x:0, y:4}] }
+
+// L5: long L
+{ type: 'L5', cells: [{x:0, y:0}, {x:0, y:-1}, {x:0, y:-2}, {x:0, y:-3}, {x:1, y:0}] }
+
+// N: zigzag (like S but longer)
+{ type: 'N', cells: [{x:0, y:0}, {x:0, y:-1}, {x:0, y:-2}, {x:1, y:-2}, {x:1, y:-3}] }
+
+// P: P-shape (thumb up)
+{ type: 'P', cells: [{x:0, y:0}, {x:1, y:0}, {x:0, y:1}, {x:1, y:1}, {x:0, y:2}] }
+
+// T5: big T
+{ type: 'T5', cells: [{x:0, y:0}, {x:1, y:0}, {x:2, y:0}, {x:1, y:1}, {x:1, y:2}] }
+
+// U: U-shape (open top)
+{ type: 'U', cells: [{x:0, y:0}, {x:0, y:1}, {x:1, y:1}, {x:2, y:1}, {x:2, y:0}] }
+
+// V: corner (big L)
+{ type: 'V', cells: [{x:0, y:0}, {x:0, y:-1}, {x:1, y:0}, {x:0, y:-2}, {x:2, y:0}] }
+
+// W: stairs
+{ type: 'W', cells: [{x:0, y:0}, {x:-1, y:0}, {x:-1, y:-1}, {x:-2, y:-1}, {x:-2, y:-2}] }
+
+// X: plus sign (cross)
+{ type: 'X', cells: [{x:1, y:0}, {x:0, y:1}, {x:1, y:1}, {x:2, y:1}, {x:1, y:2}] }
+
+// Y: Y-shape (vertical with bump)
+{ type: 'Y', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:0, y:3}, {x:-1, y:1}] }
+
+// Z: Z-shape (big zigzag)
+{ type: 'Z', cells: [{x:0, y:0}, {x:1, y:0}, {x:1, y:1}, {x:1, y:2}, {x:2, y:2}] }
+```
+
+### Visual Reference
+
+```
+MONOMINO (1):     DOMINO (2):      TROMINOES (3):
+   ■                 ■               ■        ■
+                     ■               ■       ■■
+                                     ■
+                    I2              I3       V3
+
+TETROMINOES (4):
+  ■      ■■      ■■■      ■        ■
+  ■      ■■       ■      ■■        ■
+  ■                       ■       ■■
+  ■
+  I       O       T       L        S
+
+PENTOMINOES (5):
+  ■■     ■       ■        ■■      ■■      ■■■
+ ■■      ■       ■        ■■       ■       ■
+  ■      ■       ■         ■       ■       ■
+         ■       ■■
+         ■
+  F      I5      L5       N        P       T5
+
+  ■ ■    ■         ■       ■       ■        ■
+  ■■■    ■        ■■      ■■■      ■       ■■
+         ■■       ■■       ■       ■       ■■
+                                   ■
+  U      V        W        X       Y        Z
+```
+
+### Recommendations by Piece Type
+
+| Type | Count | Complexity | Stacking Speed | Recommendation |
+|------|-------|------------|----------------|----------------|
+| Monomino | 1 | Trivial | Instant | Skip (too easy) |
+| Domino | 1 | Very low | Very fast | Skip (too easy) |
+| **Trominoes** | 2 | Low | Fast | **Add these** (I3, V3) |
+| Tetrominoes | 5-7 | Medium | Normal | Already have |
+| Pentominoes | 12 | High | Slow | Skip (too hard, slow) |
+
+### Implementation Priority
+
+**Phase 1: Trominoes**
+- I3 (line) — easy to stack vertically
+- V3 (L-shape) — fills corners
+
+**Phase 2 (Optional): Select Pentominoes**
+If more variety wanted later, consider only symmetric ones:
+- X (plus) — fits gaps nicely
+- I5 (long line) — vertical fill
+- T5 (big T) — familiar shape
+
+Skip asymmetric pentominoes (F, N, P, W, Y, Z) — too complex, slow to place.
+</blokus_pieces>
+
 <sources>
 ## Sources
 
@@ -291,6 +435,8 @@ Current issues discovered during research:
 - [Tetris Wiki - Piece](https://tetris.wiki/Piece) — Polyomino naming/history
 - [Wikipedia - Tetromino](https://en.wikipedia.org/wiki/Tetromino) — Standard tetromino definitions
 - [MIT - Total Tetris](https://erikdemaine.org/papers/TotalTetris_JIP/) — Academic analysis of polyomino variants
+- [Blokus - Wikipedia](https://en.wikipedia.org/wiki/Blokus) — All 21 polyomino piece types
+- [python_blokus/Pieces.py](https://github.com/rmalusa72/python_blokus/blob/master/Pieces.py) — Coordinate definitions
 
 ### Tertiary (Context only)
 - [Pentis](https://teevy.itch.io/pentis) — Example of pentomino game
@@ -305,6 +451,7 @@ Current issues discovered during research:
 - Ecosystem: No external libraries needed
 - Patterns: Piece definitions, gravity mechanics
 - Pitfalls: Split balance, preview sizing, rotation centers
+- Blokus pieces: All 21 polyominoes (1-5 cells) with coordinates
 
 **Confidence breakdown:**
 - Shape options: HIGH — well-documented polyomino theory
