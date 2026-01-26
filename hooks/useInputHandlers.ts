@@ -257,14 +257,10 @@ export function useInputHandlers({
                     onDragInput?.(0); // Deadzone
                 }
             } else if (axis === 'V') {
-                // Vertical Drag
-                if (dy > HORIZONTAL_DRAG_THRESHOLD) {
-                    gameEventBus.emit(GameEventType.INPUT_SOFT_DROP, { active: true } as SoftDropPayload);
-                    onSoftDrop?.(true);
-                } else {
-                    gameEventBus.emit(GameEventType.INPUT_SOFT_DROP, { active: false } as SoftDropPayload);
-                    onSoftDrop?.(false);
-                }
+                // Vertical Drag - soft drop when dragging down (dy > 0)
+                const shouldSoftDrop = dy > 0;
+                gameEventBus.emit(GameEventType.INPUT_SOFT_DROP, { active: shouldSoftDrop } as SoftDropPayload);
+                onSoftDrop?.(shouldSoftDrop);
             }
         }
     }, [clearHold]);
