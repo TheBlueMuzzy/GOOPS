@@ -424,6 +424,256 @@ If more variety wanted later, consider only symmetric ones:
 Skip asymmetric pentominoes (F, N, P, W, Y, Z) — too complex, slow to place.
 </blokus_pieces>
 
+<build_plans>
+## Build Plans by Piece Category
+
+### Trominoes (Recommended First)
+
+#### I3 (3-Block Line)
+```
+Shape:  ■
+        ■
+        ■
+```
+
+**Files to modify:**
+1. `types.ts` — Add `I3 = 'I3'` to PieceType enum
+2. `constants.ts` — Add piece definition:
+   ```typescript
+   const PIECE_I3: PieceDefinition = makePiece(PieceType.I3, [
+     [0, -1], [0, 0], [0, 1]  // Vertical line centered at origin
+   ]);
+   ```
+3. `GameEngine.ts` — Add to piece pool when unlocked
+4. `PiecePreview.tsx` — Verify centering works (should auto-work)
+
+**Rotation:** 2 unique orientations (vertical ↔ horizontal)
+**Multi-color split:** Can't split evenly (3 cells) — use single color
+**Unlock:** Rank 25+ or TROMINO_UNLOCK upgrade
+
+**Test cases:**
+- Spawns correctly at top
+- Rotates between 2 orientations
+- Ghost piece shows correctly
+- Locks and merges to grid
+- Preview displays centered
+
+---
+
+#### V3 (3-Block L / Corner)
+```
+Shape:  ■
+       ■■
+```
+
+**Files to modify:**
+1. `types.ts` — Add `V3 = 'V3'` to PieceType enum
+2. `constants.ts` — Add piece definition:
+   ```typescript
+   const PIECE_V3: PieceDefinition = makePiece(PieceType.V3, [
+     [0, 0], [0, 1], [1, 1]  // L-shape, corner at origin
+   ]);
+   ```
+3. `GameEngine.ts` — Add to piece pool
+4. `PiecePreview.tsx` — Verify centering
+
+**Rotation:** 4 unique orientations
+**Multi-color split:** Can't split evenly — use single color
+**Unlock:** Same as I3
+
+**Test cases:**
+- All 4 rotations work
+- Fits into corners correctly
+- Wall kicks work (if implemented)
+
+---
+
+### Domino (Optional — May Be Too Easy)
+
+#### I2 (2-Block Line)
+```
+Shape:  ■
+        ■
+```
+
+**Files to modify:**
+1. `types.ts` — Add `I2 = 'I2'` to PieceType enum
+2. `constants.ts`:
+   ```typescript
+   const PIECE_I2: PieceDefinition = makePiece(PieceType.I2, [
+     [0, 0], [0, 1]  // Vertical 2-line
+   ]);
+   ```
+
+**Rotation:** 2 orientations
+**Multi-color split:** Perfect 50/50 split possible!
+**Unlock:** Special ability reward? Or skip entirely.
+
+**Warning:** Very fast stacking — may trivialize gameplay. Consider as power-up only.
+
+---
+
+### Monomino (Skip for Normal Play)
+
+#### O1 (Single Block)
+```
+Shape:  ■
+```
+
+**Files to modify:**
+1. `types.ts` — Add `O1 = 'O1'` to PieceType enum
+2. `constants.ts`:
+   ```typescript
+   const PIECE_O1: PieceDefinition = makePiece(PieceType.O1, [
+     [0, 0]  // Single cell
+   ]);
+   ```
+
+**Rotation:** 1 orientation (no rotation needed)
+**Multi-color split:** N/A (single cell)
+**Unlock:** Only as special ability (GOOP_DUMP uses this concept already)
+
+**Warning:** Too easy for normal play. Only use for abilities.
+
+---
+
+### Pentominoes (Optional — Advanced)
+
+Only include if more variety wanted. These are HARDER, not faster.
+
+#### X (Plus/Cross) — Symmetric
+```
+Shape:   ■
+        ■■■
+         ■
+```
+
+**Definition:**
+```typescript
+const PIECE_X: PieceDefinition = makePiece(PieceType.X, [
+  [0, 0], [-1, 0], [1, 0], [0, -1], [0, 1]  // Plus shape
+]);
+```
+
+**Rotation:** 1 orientation (fully symmetric)
+**Multi-color split:** Can't split evenly (5 cells)
+**Use case:** Fills gaps, satisfying when placed
+
+---
+
+#### I5 (5-Block Line)
+```
+Shape:  ■
+        ■
+        ■
+        ■
+        ■
+```
+
+**Definition:**
+```typescript
+const PIECE_I5: PieceDefinition = makePiece(PieceType.I5, [
+  [0, -2], [0, -1], [0, 0], [0, 1], [0, 2]  // Long vertical
+]);
+```
+
+**Rotation:** 2 orientations
+**Multi-color split:** Can't split evenly
+**Warning:** Hard to place, needs 5-cell gap
+
+---
+
+#### T5 (Big T)
+```
+Shape:  ■■■
+         ■
+         ■
+```
+
+**Definition:**
+```typescript
+const PIECE_T5: PieceDefinition = makePiece(PieceType.T5, [
+  [-1, 0], [0, 0], [1, 0], [0, 1], [0, 2]  // T with long stem
+]);
+```
+
+**Rotation:** 4 orientations
+**Multi-color split:** Can't split evenly
+
+---
+
+#### U (Cup Shape) — Semi-Symmetric
+```
+Shape:  ■ ■
+        ■■■
+```
+
+**Definition:**
+```typescript
+const PIECE_U: PieceDefinition = makePiece(PieceType.U, [
+  [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0]  // Cup open at top
+]);
+```
+
+**Rotation:** 4 orientations
+**Multi-color split:** Can't split evenly
+**Use case:** Good for wrapping around obstacles
+
+---
+
+### Implementation Checklist (Per Piece)
+
+For each new piece, complete these steps:
+
+```markdown
+## [PIECE_NAME] Implementation
+
+### 1. Type Definition
+- [ ] Add to `PieceType` enum in `types.ts`
+
+### 2. Piece Definition
+- [ ] Add coordinates to `constants.ts`
+- [ ] Add to appropriate piece array (TROMINOES, PENTOMINOES, etc.)
+
+### 3. Spawn Logic
+- [ ] Add unlock condition in `GameEngine.ts`
+- [ ] Set spawn probability/weighting
+
+### 4. Rendering
+- [ ] Verify `GameBoard.tsx` renders correctly
+- [ ] Verify `PiecePreview.tsx` centers correctly
+- [ ] Test ghost piece display
+
+### 5. Mechanics
+- [ ] Test all rotation states
+- [ ] Test wall kicks (if applicable)
+- [ ] Test collision detection
+- [ ] Test multi-color split (or confirm skip)
+
+### 6. Tests
+- [ ] Add spawn test
+- [ ] Add rotation test
+- [ ] Add collision test
+- [ ] Add preview centering test
+```
+
+---
+
+### Spawn Distribution Recommendations
+
+| Rank | Tetrominos | Trominoes | Pentominoes |
+|------|------------|-----------|-------------|
+| 0-24 | 100% | 0% | 0% |
+| 25-34 | 80% | 20% | 0% |
+| 35-44 | 70% | 30% | 0% |
+| 45-50 | 60% | 35% | 5% (X, I5 only) |
+
+Or make trominoes an upgrade:
+- `TROMINO_UNLOCK` at rank 25 — enables tromino spawning
+- `TROMINO_BOOST` at rank 35 — increases tromino spawn rate
+
+</build_plans>
+
 <sources>
 ## Sources
 
