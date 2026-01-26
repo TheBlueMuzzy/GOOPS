@@ -67,7 +67,7 @@ export function useInputHandlers({
 
     // Touch-specific refs (for iOS window listener pattern)
     const touchTargetRef = useRef<HTMLElement | null>(null);
-    const [isTouching, setIsTouching] = useState(false);
+    const touchListenersRef = useRef<{ move: (e: TouchEvent) => void; end: (e: TouchEvent) => void } | null>(null);
 
     // ViewBox constants
     const { x: vbX, y: vbY, w: vbW, h: vbH } = VIEWBOX;
@@ -341,30 +341,35 @@ export function useInputHandlers({
     }, [clearHold, getViewportCoords, getHitData]);
 
     // === iOS Touch Event Handling ===
-    // iOS browsers have unreliable Pointer Events. We use the ConsoleView-proven pattern:
-    // - touchstart: element-level handler, stores target ref
-    // - touchmove/touchend: window-level listeners (iOS ignores element-level move/end)
+    // iOS browsers have unreliable Pointer Events. Window listeners must be added
+    // SYNCHRONOUSLY in touchstart (not via useEffect) to catch fast swipes.
 
     /**
-     * Handle touch start - stores real DOM element and initializes touch state.
-     * Uses real touch coordinates, not synthetic pointer events.
+     * Remove window touch listeners.
+     */
+    const removeTouchListeners = useCallback(() => {
+        if (touchListenersRef.current) {
+            window.removeEventListener('touchmove', touchListenersRef.current.move);
+            window.removeEventListener('touchend', touchListenersRef.current.end);
+            window.removeEventListener('touchcancel', touchListenersRef.current.end);
+            touchListenersRef.current = null;
+        }
+    }, []);
+
+    /**
+     * Handle touch start - adds window listeners SYNCHRONOUSLY.
      */
     const handleTouchStart = useCallback((e: React.TouchEvent) => {
-        if (e.touches.length !== 1) return; // Single touch only
-        if (pointerRef.current) return; // Already tracking a pointer/touch
-        e.preventDefault(); // Prevent iOS scroll/zoom
+        if (e.touches.length !== 1) return;
+        if (pointerRef.current) return;
+        e.preventDefault();
 
         const touch = e.touches[0];
         const target = e.currentTarget as HTMLElement;
-
-        // Store real DOM element for coordinate transforms
         touchTargetRef.current = target;
-        setIsTouching(true);
 
-        // Get viewport coords using real element
         const { relX, relY, vx, vy } = getViewportCoords(touch.clientX, touch.clientY, target);
 
-        // Initialize pointer state (shared with pointer events)
         pointerRef.current = {
             startX: touch.clientX,
             startY: touch.clientY,
@@ -383,7 +388,6 @@ export function useInputHandlers({
         holdIntervalRef.current = window.setInterval(() => {
             const now = Date.now();
             const totalElapsed = now - startHoldTime;
-
             if (totalElapsed < HOLD_DELAY) return;
 
             const effectiveElapsed = totalElapsed - HOLD_DELAY;
@@ -418,22 +422,20 @@ export function useInputHandlers({
                 setHighlightedGroupId(hit.cell.groupId);
             }
         }
-    }, [getViewportCoords, getHitData, pressureRatio, clearHold, holdDuration, onSwap]);
 
-    // Window-level touch listeners (iOS-proven pattern from ConsoleView)
-    useEffect(() => {
-        if (!isTouching) return;
+        // === ADD WINDOW LISTENERS SYNCHRONOUSLY ===
+        // This is critical - useEffect is too slow for fast swipes on iOS
 
-        const handleWindowTouchMove = (e: TouchEvent) => {
-            if (!pointerRef.current || e.touches.length !== 1) return;
-            e.preventDefault();
+        const handleMove = (ev: TouchEvent) => {
+            if (!pointerRef.current || ev.touches.length !== 1) return;
+            ev.preventDefault();
 
-            const touch = e.touches[0];
-            if (touch.identifier !== pointerRef.current.activePointerId) return;
+            const t = ev.touches[0];
+            if (t.identifier !== pointerRef.current.activePointerId) return;
 
             const { startX, startY, isDragLocked } = pointerRef.current;
-            const dx = touch.clientX - startX;
-            const dy = touch.clientY - startY;
+            const dx = t.clientX - startX;
+            const dy = t.clientY - startY;
             const absDx = Math.abs(dx);
             const absDy = Math.abs(dy);
 
@@ -457,7 +459,6 @@ export function useInputHandlers({
 
             if (pointerRef.current.isDragLocked) {
                 const axis = pointerRef.current.lockedAxis;
-
                 if (axis === 'H') {
                     if (dx < -HORIZONTAL_DRAG_THRESHOLD) {
                         gameEventBus.emit(GameEventType.INPUT_DRAG, { direction: 1 } as DragPayload);
@@ -481,16 +482,15 @@ export function useInputHandlers({
             }
         };
 
-        const handleWindowTouchEnd = (e: TouchEvent) => {
-            if (!pointerRef.current) return;
-
-            const touch = e.changedTouches[0];
-            if (!touch || touch.identifier !== pointerRef.current.activePointerId) return;
+        const handleEnd = (ev: TouchEvent) => {
+            const t = ev.changedTouches[0];
+            if (!pointerRef.current || !t) return;
+            if (t.identifier !== pointerRef.current.activePointerId) return;
 
             const { startTime, isDragLocked, actionConsumed, startX, startY } = pointerRef.current;
             const dt = Date.now() - startTime;
-            const dx = touch.clientX - startX;
-            const dy = touch.clientY - startY;
+            const dx = t.clientX - startX;
+            const dy = t.clientY - startY;
 
             // Cleanup
             clearHold();
@@ -499,74 +499,68 @@ export function useInputHandlers({
             gameEventBus.emit(GameEventType.INPUT_DRAG, { direction: 0 } as DragPayload);
             onDragInput?.(0);
             setHighlightedGroupId(null);
+
+            const savedTarget = touchTargetRef.current;
             pointerRef.current = null;
             touchTargetRef.current = null;
-            setIsTouching(false);
+            removeTouchListeners();
 
             if (actionConsumed) return;
             if (dt >= HOLD_DELAY) return;
 
             // Gesture Resolution
-            if (!isDragLocked) {
-                // TAP - need target for coordinate transform
-                const target = touchTargetRef.current;
-                if (target) {
-                    const { vx, vy, relX, contentW } = getViewportCoords(touch.clientX, touch.clientY, target);
-                    const hit = getHitData(vx, vy);
+            if (!isDragLocked && savedTarget) {
+                const { vx, vy, relX, contentW } = getViewportCoords(t.clientX, t.clientY, savedTarget);
+                const hit = getHitData(vx, vy);
 
-                    if (hit.type === 'BLOCK' && hit.cell) {
-                        gameEventBus.emit(GameEventType.INPUT_BLOCK_TAP, { x: hit.x, y: hit.y } as BlockTapPayload);
-                        onBlockTap?.(hit.x, hit.y);
+                if (hit.type === 'BLOCK' && hit.cell) {
+                    gameEventBus.emit(GameEventType.INPUT_BLOCK_TAP, { x: hit.x, y: hit.y } as BlockTapPayload);
+                    onBlockTap?.(hit.x, hit.y);
+                } else {
+                    if (relX < contentW / 2) {
+                        gameEventBus.emit(GameEventType.INPUT_ROTATE, { clockwise: false } as RotatePayload);
+                        onRotate?.(-1);
                     } else {
-                        if (relX < contentW / 2) {
-                            gameEventBus.emit(GameEventType.INPUT_ROTATE, { clockwise: false } as RotatePayload);
-                            onRotate?.(-1);
-                        } else {
-                            gameEventBus.emit(GameEventType.INPUT_ROTATE, { clockwise: true } as RotatePayload);
-                            onRotate?.(1);
-                        }
+                        gameEventBus.emit(GameEventType.INPUT_ROTATE, { clockwise: true } as RotatePayload);
+                        onRotate?.(1);
                     }
                 }
-            } else {
-                // SWIPE
-                if (dt < 300) {
-                    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 50) {
-                        if (dy < 0) {
-                            gameEventBus.emit(GameEventType.INPUT_SWIPE_UP);
-                            onSwipeUp?.();
-                        } else {
-                            gameEventBus.emit(GameEventType.INPUT_SOFT_DROP, { active: true } as SoftDropPayload);
-                            onSoftDrop?.(true);
-                            setTimeout(() => {
-                                gameEventBus.emit(GameEventType.INPUT_SOFT_DROP, { active: false } as SoftDropPayload);
-                                onSoftDrop?.(false);
-                            }, 150);
-                        }
+            } else if (isDragLocked && dt < 300) {
+                if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 50) {
+                    if (dy < 0) {
+                        gameEventBus.emit(GameEventType.INPUT_SWIPE_UP);
+                        onSwipeUp?.();
+                    } else {
+                        gameEventBus.emit(GameEventType.INPUT_SOFT_DROP, { active: true } as SoftDropPayload);
+                        onSoftDrop?.(true);
+                        setTimeout(() => {
+                            gameEventBus.emit(GameEventType.INPUT_SOFT_DROP, { active: false } as SoftDropPayload);
+                            onSoftDrop?.(false);
+                        }, 150);
                     }
                 }
             }
         };
 
-        // Add window listeners with passive: false for preventDefault
-        window.addEventListener('touchmove', handleWindowTouchMove, { passive: false });
-        window.addEventListener('touchend', handleWindowTouchEnd);
-        window.addEventListener('touchcancel', handleWindowTouchEnd);
+        // Store refs and add listeners
+        touchListenersRef.current = { move: handleMove, end: handleEnd };
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleEnd);
+        window.addEventListener('touchcancel', handleEnd);
 
-        return () => {
-            window.removeEventListener('touchmove', handleWindowTouchMove);
-            window.removeEventListener('touchend', handleWindowTouchEnd);
-            window.removeEventListener('touchcancel', handleWindowTouchEnd);
-        };
-    }, [isTouching, clearHold, getViewportCoords, getHitData, onBlockTap, onRotate, onDragInput, onSoftDrop, onSwipeUp]);
+    }, [getViewportCoords, getHitData, pressureRatio, clearHold, holdDuration, onSwap, onSoftDrop, onDragInput, onBlockTap, onRotate, onSwipeUp, removeTouchListeners]);
 
-    // Element-level touch handlers (only touchstart needed, move/end handled by window)
+    // Cleanup listeners on unmount
+    useEffect(() => {
+        return () => removeTouchListeners();
+    }, [removeTouchListeners]);
+
+    // Element-level handlers just prevent default
     const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        // Handled by window listener, but prevent default here too
         e.preventDefault();
     }, []);
 
     const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-        // Handled by window listener
         e.preventDefault();
     }, []);
 
