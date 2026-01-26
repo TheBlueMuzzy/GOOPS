@@ -16,7 +16,6 @@ import { VISIBLE_WIDTH, VISIBLE_HEIGHT, TOTAL_HEIGHT, TOTAL_WIDTH, BUFFER_HEIGHT
 import { normalizeX } from '../utils/gameLogic';
 import { gameEventBus } from '../core/events/EventBus';
 import { GameEventType, RotatePayload, DragPayload, SoftDropPayload, BlockTapPayload } from '../core/events/GameEvents';
-import { isIOSWebKit } from '../utils/device';
 
 // Input timing constants
 const BASE_HOLD_DURATION = 1500; // 1.5s base for hold-to-swap (PRD spec)
@@ -411,13 +410,12 @@ export function useInputHandlers({
             onPointerDown: handlePointerDown,
             onPointerMove: handlePointerMove,
             onPointerUp: handlePointerUp,
-            // Touch handlers only included on iOS WebKit
-            ...(isIOSWebKit ? {
-                onTouchStart: handleTouchStart,
-                onTouchMove: handleTouchMove,
-                onTouchEnd: handleTouchEnd,
-                onTouchCancel: handleTouchEnd
-            } : {})
+            // Touch handlers always included as fallback for browsers with
+            // incomplete Pointer Events support (iOS Chrome/Safari/DuckDuckGo, etc.)
+            onTouchStart: handleTouchStart,
+            onTouchMove: handleTouchMove,
+            onTouchEnd: handleTouchEnd,
+            onTouchCancel: handleTouchEnd
         },
         holdState: {
             progress: holdProgress,
