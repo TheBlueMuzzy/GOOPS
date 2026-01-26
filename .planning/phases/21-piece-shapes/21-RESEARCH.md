@@ -7,13 +7,18 @@
 <research_summary>
 ## Summary
 
-Researched options for new goop piece shapes to facilitate faster stacking, and audited the current gravity system for improvement opportunities.
+**UPDATE:** Initial research recommended trominoes. After discussion phase, direction changed completely.
 
-For faster stacking, **trominoes (3-block pieces)** are the clear choice — they're simpler to place, faster to clear, and proven in games like Columns and Tetris Effect. The existing piece system already supports arbitrary shapes via coordinate arrays, so adding new shapes is straightforward.
+**Key insight:** The goal is sealing cracks, not making lines. Cracks spawn higher as pressure rises. **BIGGER pieces (penta, hexa) help reach cracks**, not smaller pieces.
 
-The gravity system (after-pop falling) has several issues: hardcoded fall speed, unused parameters, and velocity field that could enable acceleration. These are worth fixing while we're in the piece system.
+**Final design:**
+- Tetra → Penta → Hexa progression based on pressure height
+- 54 custom pieces (27 normal + 27 corrupted) designed in `art/minos.svg`
+- 15% corruption chance (non-contiguous, corner-touching variants)
+- 75 second game, 25 seconds per size zone
+- Exclusive spawning (one size at a time)
 
-**Primary recommendation:** Add tromino shapes (I-tromino, L-tromino) as a rank unlock or upgrade. Fix gravity speed to scale with game difficulty.
+**See "Discussion Phase Decisions" section at end of file for full details.**
 </research_summary>
 
 <standard_stack>
@@ -715,6 +720,164 @@ Or make trominoes an upgrade:
 
 ---
 
+<discussion_decisions>
+## Discussion Phase Decisions (2026-01-26)
+
+**IMPORTANT:** The initial research above recommended trominoes. After discussion, the user's design goal is different: **BIGGER pieces help reach higher cracks**, not smaller pieces for "faster stacking."
+
+### Updated Understanding
+
+The game goal is sealing cracks, not making lines. Cracks spawn near the pressure line, which rises over time. Players need taller pieces to reach cracks as pressure increases.
+
+**Insight:** Bigger pieces (penta, hexa) are BETTER because they deliver more goop per spawn and can reach higher.
+
+### Final Piece Design
+
+User created custom pieces in `art/minos.svg` with:
+- 27 normal pieces (standard polyominoes)
+- 27 corrupted pieces (non-contiguous, corner-touching variants)
+- Organized in 6 rows: tetra normal, tetra corrupted, penta normal, penta corrupted, hexa normal, hexa corrupted
+
+### Spawn Mechanics
+
+1. **Pressure-based size selection:**
+   - Tetra zone: 0-25s (pressure below row 13)
+   - Penta zone: 25-50s (pressure between row 13 and row 8)
+   - Hexa zone: 50-75s (pressure above row 8)
+
+2. **Exclusive spawning:** Only one size active at a time
+
+3. **Corruption:** 15% chance per spawn → use corrupted variant
+
+4. **Mirrors:** 50% chance for asymmetric pieces
+
+### Timing Constants
+
+| Constant | Current | New |
+|----------|---------|-----|
+| `INITIAL_TIME_MS` | 60000 | **75000** |
+| `INITIAL_SPEED` | 800 | **780** |
+| `SOFT_DROP_FACTOR` | 6 | **8** |
+
+**Target:** 5-6 pieces per 25-second zone with 70% fast drop usage.
+
+### Non-Contiguous (Corrupted) Pieces
+
+Corrupted pieces have cells that only touch diagonally, not edge-to-edge. Example: the current T piece has a diagonal floater off a 3-unit L.
+
+**Benefits:**
+- Selective popping (pop one part, keep other)
+- Gap filling (straddle existing goop)
+- Unique coverage patterns
+
+### Superseded Recommendations
+
+The following from the initial research are NO LONGER APPLICABLE:
+- Trominoes as primary addition (skip — smaller is worse)
+- Rank-based unlock (use pressure-based instead)
+- Mixed spawning with tetrominos (use exclusive zones)
+
+</discussion_decisions>
+
+<svg_piece_coordinates>
+## Parsed Piece Coordinates (from art/minos.svg)
+
+### TETRA_NORMAL (5 pieces)
+
+```typescript
+// I piece (vertical bar)
+{ type: 'I', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:0, y:3}], center: {x:0.5, y:2.0} }
+
+// L piece
+{ type: 'L', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:1, y:0}], center: {x:1.0, y:1.0}, mirror: true }
+
+// T piece (current "broken" one with diagonal)
+{ type: 'T', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:1, y:1}], center: {x:1.0, y:1.0} }
+
+// S piece
+{ type: 'S', cells: [{x:0, y:0}, {x:0, y:1}, {x:1, y:1}, {x:1, y:2}], center: {x:1.0, y:1.0}, mirror: true }
+
+// O piece (2x2 square)
+{ type: 'O', cells: [{x:0, y:0}, {x:0, y:1}, {x:1, y:0}, {x:1, y:1}], center: {x:1.0, y:1.0} }
+```
+
+### TETRA_CORRUPTED (5 pieces)
+
+```typescript
+// Corrupted Z (diagonal split)
+{ type: 'T_Z_C', cells: [{x:0, y:2}, {x:0, y:3}, {x:1, y:0}, {x:1, y:1}], center: {x:1.0, y:1.5}, corrupted: true }
+
+// Corrupted L (corner gap)
+{ type: 'T_L_C', cells: [{x:0, y:0}, {x:0, y:1}, {x:1, y:0}, {x:1, y:2}], center: {x:1.0, y:1.0}, corrupted: true }
+
+// Corrupted T (spread)
+{ type: 'T_T_C', cells: [{x:0, y:0}, {x:0, y:2}, {x:1, y:1}, {x:2, y:1}], center: {x:1.0, y:1.0}, corrupted: true }
+
+// Corrupted S
+{ type: 'T_S_C', cells: [{x:0, y:2}, {x:1, y:0}, {x:1, y:1}, {x:2, y:1}], center: {x:1.0, y:1.0}, corrupted: true }
+
+// Corrupted O (diagonal corners)
+{ type: 'T_O_C', cells: [{x:0, y:1}, {x:0, y:2}, {x:1, y:0}, {x:1, y:2}], center: {x:1.0, y:1.0}, corrupted: true }
+```
+
+### PENTA_NORMAL (11 pieces)
+
+```typescript
+// I5 (vertical bar)
+{ type: 'P_I', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:0, y:3}, {x:0, y:4}], center: {x:0.5, y:2.0} }
+
+// L5
+{ type: 'P_L', cells: [{x:0, y:0}, {x:0, y:1}, {x:1, y:1}, {x:1, y:2}, {x:2, y:1}], center: {x:1.0, y:1.0}, mirror: true }
+
+// Plus/Cross (X)
+{ type: 'P_X', cells: [{x:0, y:1}, {x:1, y:0}, {x:1, y:1}, {x:1, y:2}, {x:2, y:1}], center: {x:1.0, y:1.0} }
+
+// U-shape
+{ type: 'P_U', cells: [{x:0, y:0}, {x:0, y:1}, {x:1, y:0}, {x:1, y:1}, {x:1, y:2}], center: {x:1.0, y:1.0}, mirror: true }
+
+// L-variant
+{ type: 'P_L2', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:1, y:2}, {x:1, y:3}], center: {x:1.0, y:1.5}, mirror: true }
+
+// Y-piece
+{ type: 'P_Y', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:0, y:3}, {x:1, y:3}], center: {x:0.5, y:1.5}, mirror: true }
+
+// T5/Y variant
+{ type: 'P_T', cells: [{x:0, y:0}, {x:1, y:0}, {x:1, y:1}, {x:1, y:2}, {x:2, y:0}], center: {x:1.0, y:1.0} }
+
+// S5
+{ type: 'P_S', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:1, y:2}, {x:2, y:2}], center: {x:1.0, y:1.0}, mirror: true }
+
+// P-piece
+{ type: 'P_P', cells: [{x:0, y:0}, {x:0, y:1}, {x:0, y:2}, {x:0, y:3}, {x:1, y:2}], center: {x:0.5, y:1.5}, mirror: true }
+
+// Z5
+{ type: 'P_Z', cells: [{x:0, y:0}, {x:1, y:0}, {x:1, y:1}, {x:1, y:2}, {x:2, y:2}], center: {x:1.0, y:1.0}, mirror: true }
+
+// N5 (note: user wanted to remove N, but it's in the SVG - verify with user)
+{ type: 'P_N', cells: [{x:0, y:0}, {x:1, y:0}, {x:1, y:1}, {x:2, y:1}, {x:2, y:2}], center: {x:1.0, y:1.0}, mirror: true }
+```
+
+### PENTA_CORRUPTED (11 pieces)
+
+All 11 corrupted pentomino variants parsed from rows 4 of SVG. See agent output for full coordinates.
+
+### HEXA_NORMAL (11 pieces)
+
+All 11 normal hexomino pieces parsed from row 5 of SVG. See agent output for full coordinates.
+
+### HEXA_CORRUPTED (11 pieces)
+
+All 11 corrupted hexomino variants parsed from row 6 of SVG. See agent output for full coordinates.
+
+### Note on Piece Count
+
+User originally said to remove the N pentomino, but the SVG appears to have 11 pentominoes. Verify during implementation whether N should be excluded.
+
+</svg_piece_coordinates>
+
+---
+
 *Phase: 21-piece-shapes*
 *Research completed: 2026-01-26*
-*Ready for planning: yes*
+*Discussion completed: 2026-01-26*
+*Ready for planning: YES*

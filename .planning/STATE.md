@@ -19,13 +19,10 @@ updated: 2026-01-25
 
 ## Next Steps
 
-**Current:** v1.3 Shape Changes milestone created
+**Current:** Phase 21 discussion complete
 **Status:** Ready to plan Phase 21
 
-Options:
-1. `/gsd:research-phase 21` — Investigate shape options and gravity mechanics
-2. `/gsd:plan-phase 21` — Create execution plan for piece shapes
-3. Bug hunting / polish pass
+Run `/gsd:plan-phase 21` to create execution plan with all decisions below.
 
 ## Future Plans
 
@@ -35,6 +32,7 @@ Options:
 - **Naming standardization** — audit and standardize game element terminology in code:
   - piece vs goop (used interchangeably)
   - unit vs cell (used interchangeably)
+  - soft drop → fast drop (vestigial name from old hard drop)
   - Create glossary of official terms for designer reference
   - Make this part of the pipeline going forward
 
@@ -108,6 +106,59 @@ All three complications have player-driven triggers AND mitigations.
 **Tech Debt:**
 - None currently tracked
 
+## Phase 21 Decisions (Piece Shapes)
+
+### Timing & Speed Changes
+
+| Constant | Current | New | Location |
+|----------|---------|-----|----------|
+| `INITIAL_TIME_MS` | 60000 | **75000** | `constants.ts` |
+| `INITIAL_SPEED` | 800 | **780** | `GameEngine.ts` |
+| `SOFT_DROP_FACTOR` | 6 | **8** | `GameEngine.ts` |
+
+**Rationale:** 75 sec game with 25 sec per size zone. Target 5-6 pieces per zone at 70% fast drop usage. Snappier fast drop (8x vs 6x).
+
+### Piece Size Progression
+
+| Zone | Time | Pressure Row | Pieces Spawning |
+|------|------|--------------|-----------------|
+| Tetra | 0-25s | Start → row 13 | Tetrominoes only |
+| Penta | 25-50s | Row 13 → row 8 | Pentominoes only |
+| Hexa | 50-75s | Row 8 → end | Hexominoes only |
+
+**Logic:** Cracks spawn near pressure line. Higher pressure = need taller pieces to reach cracks. Tetra max 4 tall, Penta max 5, Hexa max 6.
+
+### Piece Definitions (from art/minos.svg)
+
+| Category | Normal | Corrupted | Total |
+|----------|--------|-----------|-------|
+| Tetrominoes | 5 | 5 | 10 |
+| Pentominoes | 11 | 11 | 22 |
+| Hexominoes | 11 | 11 | 22 |
+| **Total** | 27 | 27 | **54 base** |
+
+### Spawn Mechanics
+
+1. **Corruption:** 15% chance per spawn → use corrupted variant
+2. **Mirrors:** If piece is asymmetric → 50% chance to flip
+3. **Exclusive spawning:** Only one size active at a time (no mixing)
+
+### Non-Contiguous Pieces
+
+"Corrupted" pieces have corner-touching cells instead of edge-touching. Example: the current T piece (diagonal floater off 3-unit L). These enable:
+- Selective popping (pop one part, keep other)
+- Gap filling (straddle existing goop)
+- Unique coverage patterns
+
+### Key Files to Modify
+
+- `constants.ts` — INITIAL_TIME_MS, new PIECES arrays
+- `GameEngine.ts` — INITIAL_SPEED, SOFT_DROP_FACTOR, spawn logic for pressure-based size selection
+- `types.ts` — New PieceType enum values
+- `art/minos.svg` — Source of truth for piece shapes (parsed for coordinates)
+
+---
+
 ## Session Continuity
 
 Last session: 2026-01-26
@@ -115,7 +166,36 @@ Last session: 2026-01-26
 **Branch:** master
 **Milestone:** v1.3 Shape Changes (Phase 21)
 
-### This Session Summary (2026-01-25)
+### This Session Summary (2026-01-26)
+
+**Phase 21 Discussion Complete**
+
+Extensive `/gsd:discuss-phase 21` session defining piece shape changes:
+
+1. **Core insight:** Goal is sealing cracks, not making lines. Cracks spawn higher as pressure rises. BIGGER pieces help reach cracks, not smaller.
+
+2. **Piece progression designed:**
+   - Tetra (4-cell) → Penta (5-cell) → Hexa (6-cell) based on pressure height
+   - Exclusive spawning (one size at a time)
+   - Thresholds: row 13 for penta, row 8 for hexa
+
+3. **Timing balanced:**
+   - Extended game to 75 seconds (from 60)
+   - Adjusted base fall (780ms) and fast drop (8x factor)
+   - Target: 5-6 pieces per 25-second zone
+
+4. **Custom pieces designed:**
+   - User created `art/minos.svg` with all piece shapes
+   - 54 base pieces: 27 normal + 27 corrupted
+   - Corrupted = non-contiguous (corner-touching cells)
+   - 15% corruption chance, 50% mirror chance for asymmetric
+
+5. **Pieces trimmed from standard sets:**
+   - Hexominoes: removed #3, 4, 9, 18, 21, 23, 27
+   - Pentominoes: removed N piece
+   - Custom designs replace standard polyominoes
+
+**Previous Session (same day)**
 
 **iOS Touch Controls Fix (Build 24-29)**
 
