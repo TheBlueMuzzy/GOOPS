@@ -351,9 +351,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 const isGlowing = cells.some(c => c.cell.isGlowing);
                 const isPrimed = state.primedGroups.has(gid); // LASER effect: primed for 2nd tap
                 const hasWildCells = cells.some(c => c.cell.isWild);
-                // For background rect, use a single color (first cell's wild color or group color)
-                const fillColor = hasWildCells ? getWildColorAtX(minX) : color;
 
+                // Calculate bounds FIRST (before using minX for fillColor)
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 cells.forEach(c => {
                     minX = Math.min(minX, c.screenX);
@@ -361,6 +360,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     maxX = Math.max(maxX, c.screenX + c.width);
                     maxY = Math.max(maxY, c.screenY + BLOCK_SIZE);
                 });
+
+                // For background rect, use a single color (first cell's wild color or group color)
+                const fillColor = hasWildCells ? getWildColorAtX(minX) : color;
 
                 // Mobile: simplified rendering without masks, but with connected look
                 if (isMobile) {

@@ -19,13 +19,13 @@ updated: 2026-01-25
 
 ## Next Steps
 
-**In progress:** Color schedule rework + Wild pieces implementation
-**Status:** P0 bug fixed, needs manual verification
+**Complete:** Color schedule rework + Wild pieces implementation
+**Status:** Tested and verified working
 
 Options:
-1. Test wild pieces at rank 40+ — verify wave visual + merge behavior
-2. Continue to next feature after verification
-3. `/gsd:new-milestone` — Define phases for v1.3
+1. `/gsd:new-milestone` — Define phases for v1.3 (GoopPieceRework)
+2. Bug hunting / polish pass
+3. Start GoopPieceRework branch — different piece shapes for faster stacking
 
 ---
 
@@ -125,7 +125,12 @@ Last session: 2026-01-25
    - Root cause: negative modulo in `getWildColorAtX` caused undefined palette access
    - Fix: use `Math.abs(screenX)` and fallback colors
 
-5. **CLAUDE.md updated** with mandatory Handoff Block format
+5. **P0 bug fixed:** Board disappeared when wild piece locked
+   - Root cause: `minX` used before `let` declaration in `GameBoard.tsx:355`
+   - JavaScript temporal dead zone caused ReferenceError when `hasWildCells` was true
+   - Fix: moved bounds calculation before `fillColor` assignment
+
+6. **CLAUDE.md updated** with mandatory Handoff Block format
    - After code changes: tests → restart server → build # → handoff block
    - User was wasting tokens correcting missed steps
 
