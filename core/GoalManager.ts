@@ -1,5 +1,5 @@
 
-import { GameState, GoalMark, CrackCell, ActivePiece, FloatingText, TankCell } from '../types';
+import { GameState, GoalMark, Crack, ActivePiece, FloatingText, TankCell } from '../types';
 import { spawnGoalMark, normalizeX } from '../utils/gameLogic';
 import { gameEventBus } from './events/EventBus';
 import { GameEventType } from './events/GameEvents';
@@ -16,7 +16,7 @@ export class GoalManager {
     /**
      * Try to spawn a new goal mark if conditions are met.
      * Returns the new goal (if any) and updated lastSpawnTime.
-     * This is the legacy function - use trySpawnCrack for new CrackCell system.
+     * This is the legacy function - use trySpawnCrack for new Crack system.
      */
     trySpawnGoal(
         state: GameState,
@@ -60,7 +60,7 @@ export class GoalManager {
     }
 
     /**
-     * Try to spawn a new CrackCell if conditions are met.
+     * Try to spawn a new Crack if conditions are met.
      * Creates a root crack cell (no parents) with random growth interval.
      */
     trySpawnCrack(
@@ -70,7 +70,7 @@ export class GoalManager {
         timeLeft: number,
         maxTime: number,
         lastSpawnTime: number
-    ): { crack: CrackCell | null; newLastSpawnTime: number } {
+    ): { crack: Crack | null; newLastSpawnTime: number } {
         // Don't spawn if we've already cleared enough goals
         if (state.goalsCleared >= state.goalsTarget) {
             return { crack: null, newLastSpawnTime: lastSpawnTime };
@@ -88,7 +88,7 @@ export class GoalManager {
         // Check if CRACK_DOWN is active (crackDownRemaining > 0)
         const crackDownActive = state.crackDownRemaining > 0;
 
-        // Use existing spawnGoalMark to get position/color, then convert to CrackCell
+        // Use existing spawnGoalMark to get position/color, then convert to Crack
         // Pass crackCells converted to GoalMark format for position checking
         const existingMarks = state.crackCells.map(c => ({
             id: c.id,
@@ -101,8 +101,8 @@ export class GoalManager {
         const newGoal = spawnGoalMark(grid, existingMarks, currentRank, timeLeft, maxTime, crackDownActive);
 
         if (newGoal) {
-            // Convert GoalMark to CrackCell
-            const newCrack: CrackCell = {
+            // Convert GoalMark to Crack
+            const newCrack: Crack = {
                 id: newGoal.id,
                 x: newGoal.x,
                 y: newGoal.y,
@@ -188,7 +188,7 @@ export class GoalManager {
     }
 
     /**
-     * Handle consumed cracks using the new CrackCell system.
+     * Handle consumed cracks using the new Crack system.
      * Only removes the specific cells that were covered by matching goop.
      * Remaining crack cells stay and can continue spreading from uncovered cells.
      */
@@ -258,7 +258,7 @@ export class GoalManager {
      * Count the number of connected crack groups (connected components).
      * Max 8 crack groups enforced.
      */
-    countCracks(crackCells: CrackCell[]): number {
+    countCracks(crackCells: Crack[]): number {
         if (crackCells.length === 0) return 0;
 
         const visited = new Set<string>();
@@ -296,9 +296,9 @@ export class GoalManager {
      * Get all cells in the same connected crack as the given cell.
      * Uses BFS to traverse parent/child relationships.
      */
-    getConnectedComponent(cellId: string, crackCells: CrackCell[]): CrackCell[] {
+    getConnectedComponent(cellId: string, crackCells: Crack[]): Crack[] {
         const visited = new Set<string>();
-        const component: CrackCell[] = [];
+        const component: Crack[] = [];
         const queue = [cellId];
 
         while (queue.length > 0) {
@@ -327,7 +327,7 @@ export class GoalManager {
      * Check if a cell is a leaf (has no children).
      * Leaf cells have reduced spread chance.
      */
-    isLeafCell(cellId: string, crackCells: CrackCell[]): boolean {
+    isLeafCell(cellId: string, crackCells: Crack[]): boolean {
         const cell = crackCells.find(c => c.id === cellId);
         return cell ? cell.childIds.length === 0 : true;
     }

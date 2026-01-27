@@ -1,5 +1,5 @@
 
-import { GameState, TankCell, ActivePiece, GoopTemplate, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, CrackCell, ScreenType, GoopState, GoopShape, Complication, TankSystem, DumpPiece } from '../types';
+import { GameState, TankCell, ActivePiece, GoopTemplate, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, Crack, ScreenType, GoopState, GoopShape, Complication, TankSystem, DumpPiece } from '../types';
 import {
     TANK_WIDTH, TANK_HEIGHT, TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, SESSION_DURATION,
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
@@ -806,7 +806,7 @@ export class GameEngine {
 
     /**
      * Spawn crack cells at regular intervals.
-     * Uses new CrackCell system for expanding cracks mechanic.
+     * Uses new Crack system for expanding cracks mechanic.
      */
     private tickGoals(): void {
         const { crack, newLastSpawnTime } = goalManager.trySpawnCrack(

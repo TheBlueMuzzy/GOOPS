@@ -168,7 +168,7 @@ export interface GoalMark {
   spawnTime: number;
 }
 
-export interface CrackCell {
+export interface Crack {
   id: string;
   x: number;
   y: number;
@@ -229,7 +229,7 @@ export interface GameState {
   goalMarks: GoalMark[];
 
   // Crack System (new connected crack structure)
-  crackCells: CrackCell[];
+  crackCells: Crack[];
   goalsCleared: number;
   goalsTarget: number;
   

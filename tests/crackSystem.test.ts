@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { GoalManager } from '../core/GoalManager';
-import { CrackCell } from '../types';
+import { Crack } from '../types';
 import { COLORS } from '../constants';
 
 const goalManager = new GoalManager();
@@ -13,7 +13,7 @@ const createCrack = (
   color: string = COLORS.RED,
   parentIds: string[] = [],
   childIds: string[] = []
-): CrackCell => ({
+): Crack => ({
   id,
   x,
   y,

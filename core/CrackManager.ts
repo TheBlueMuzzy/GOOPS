@@ -1,4 +1,4 @@
-import { GameState, CrackCell, ScreenType } from '../types';
+import { GameState, Crack, ScreenType } from '../types';
 import { TANK_HEIGHT, BUFFER_HEIGHT } from '../constants';
 import { normalizeX } from '../utils/coordinates';
 import { calculateRankDetails } from '../utils/progression';
@@ -90,7 +90,7 @@ export class CrackManager {
             ];
 
             // Filter to valid targets
-            const validTargets: { x: number; y: number; existingCrack?: CrackCell }[] = [];
+            const validTargets: { x: number; y: number; existingCrack?: Crack }[] = [];
 
             for (const spot of adjacentSpots) {
                 // Must be in valid grid range
@@ -138,7 +138,7 @@ export class CrackManager {
                 if (currentCrackCount >= MAX_ACTIVE_CRACKS) continue;
 
                 // Create new crack cell connected to parent
-                const newCrack: CrackCell = {
+                const newCrack: Crack = {
                     id: Math.random().toString(36).substr(2, 9),
                     x: target.x,
                     y: target.y,
@@ -175,7 +175,7 @@ export class CrackManager {
      * Follows parentIds until reaching a cell with no parents (root).
      * Returns 0 for root cells.
      */
-    private getDistanceFromRoot(cell: CrackCell, crackCells: CrackCell[]): number {
+    private getDistanceFromRoot(cell: Crack, crackCells: Crack[]): number {
         if (cell.parentIds.length === 0) return 0;
 
         let distance = 0;
