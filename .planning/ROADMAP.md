@@ -104,7 +104,7 @@ See [[v1.2-ROADMAP]] for full details.
 
 Plans:
 - [x] 21-01: Timing + Types (3 tasks) - completed 2026-01-26
-- [ ] 21-02: Piece Definitions (3 tasks)
+- [x] 21-02: Piece Definitions (3 tasks) - completed 2026-01-26
 - [ ] 21-03: Spawn Logic (4 tasks)
 
 ---
@@ -133,7 +133,7 @@ Plans:
 | 18. Cracked Band | v1.2 | 2/2 | Complete | 2026-01-24 |
 | 19. Multi-Color Pieces | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 20. Expanding Cracks Overhaul | v1.2 | 1/1 | Complete | 2026-01-25 |
-| 21. Piece Shapes | v1.3 | 1/3 | In progress | - |
+| 21. Piece Shapes | v1.3 | 2/3 | In progress | - |
 
 ## Related
 

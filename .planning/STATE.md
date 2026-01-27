@@ -19,10 +19,10 @@ updated: 2026-01-25
 
 ## Next Steps
 
-**Current:** Phase 21 Plan 01 complete
-**Status:** Ready for Plan 02
+**Current:** Phase 21 Plan 02 complete
+**Status:** Ready for Plan 03
 
-Run `/gsd:execute-plan .planning/phases/21-piece-shapes/21-02-PLAN.md` to continue.
+Run `/gsd:execute-plan .planning/phases/21-piece-shapes/21-03-PLAN.md` to continue.
 
 ## Future Plans
 
@@ -48,11 +48,11 @@ See: [[PROJECT]] (updated 2026-01-24)
 ## Current Position
 
 Phase: 21 (Piece Shapes)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-26 — Completed 21-01-PLAN.md
+Last activity: 2026-01-26 — Completed 21-02-PLAN.md
 
-Progress: ███░░░░░░░ 1/3 plans (v1.3)
+Progress: ██████░░░░ 2/3 plans (v1.3)
 
 ## What's Done
 
