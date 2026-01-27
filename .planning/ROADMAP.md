@@ -21,6 +21,7 @@ None
 - [[v1.1-ROADMAP|v1.1 Architecture Refactor]] — Phases 8-13 (shipped 2026-01-21)
 - [[v1.2-ROADMAP|v1.2 Progression System]] — Phases 14-20 (shipped 2026-01-25)
 - [[v1.3-ROADMAP|v1.3 Shape Changes]] — Phase 21 (shipped 2026-01-26)
+- 🚧 **v1.4 Naming Standardization** — Phases 22-24 (in progress)
 
 ## Completed Milestones
 
@@ -106,6 +107,42 @@ See [[v1.3-ROADMAP]] for full details.
 
 ---
 
+### 🚧 v1.4 Naming Standardization (In Progress)
+
+**Milestone Goal:** Clean up terminology inconsistencies and establish official naming conventions throughout the codebase.
+
+#### Phase 22: Audit & Glossary
+
+**Goal**: Catalog all naming inconsistencies across codebase, create official glossary document
+**Depends on**: v1.3 complete
+**Research**: Unlikely (internal analysis)
+**Plans**: TBD
+
+Plans:
+- [ ] 22-01: TBD (run /gsd:plan-phase 22 to break down)
+
+#### Phase 23: Code Rename
+
+**Goal**: Apply glossary throughout codebase — rename variables, functions, comments
+**Depends on**: Phase 22
+**Research**: Unlikely (refactoring, established patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 23-01: TBD
+
+#### Phase 24: UI & Documentation
+
+**Goal**: Update user-facing text and documentation to use official terms
+**Depends on**: Phase 23
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 24-01: TBD
+
+---
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -131,6 +168,9 @@ See [[v1.3-ROADMAP]] for full details.
 | 19. Multi-Color Pieces | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 20. Expanding Cracks Overhaul | v1.2 | 1/1 | Complete | 2026-01-25 |
 | 21. Piece Shapes | v1.3 | 3/3 | Shipped | 2026-01-26 |
+| 22. Audit & Glossary | v1.4 | 0/? | Not started | - |
+| 23. Code Rename | v1.4 | 0/? | Not started | - |
+| 24. UI & Documentation | v1.4 | 0/? | Not started | - |
 
 ## Related
 

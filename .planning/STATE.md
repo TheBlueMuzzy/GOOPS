@@ -19,10 +19,10 @@ updated: 2026-01-26
 
 ## Next Steps
 
-**Current:** v1.3 Shape Changes milestone complete
-**Status:** Ready for next milestone planning
+**Current:** v1.4 Naming Standardization — Phase 22 (Audit & Glossary)
+**Status:** Ready to plan first phase
 
-Run `/gsd:discuss-milestone` to plan v1.4 or `/gsd:new-milestone` if scope is clear.
+Run `/gsd:plan-phase 22` to create detailed execution plan.
 
 ## Future Plans
 
@@ -47,12 +47,12 @@ See: [[PROJECT]] (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 21 complete (v1.3 shipped)
-Plan: N/A — between milestones
-Status: Ready for next milestone
-Last activity: 2026-01-26 — v1.3 milestone archived
+Phase: 22 of 24 (Audit & Glossary)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-01-26 — Milestone v1.4 created
 
-Progress: ██████████ 4 milestones shipped (v1.0, v1.1, v1.2, v1.3)
+Progress: ░░░░░░░░░░ 0% (v1.4 Naming Standardization)
 
 ## What's Done
 
@@ -176,7 +176,7 @@ All three complications have player-driven triggers AND mitigations.
 Last session: 2026-01-26
 **Version:** 1.1.13
 **Branch:** master
-**Milestone:** v1.3 Shape Changes (SHIPPED 2026-01-26)
+**Milestone:** v1.4 Naming Standardization (in progress)
 
 ### This Session Summary (2026-01-26)
 
