@@ -19,20 +19,16 @@ updated: 2026-01-27
 
 ## Next Steps
 
-**Current:** v1.4 Naming Standardization — Phase 23 (Code Rename)
-**Status:** 6/7 plans complete
+**Current:** v1.4 Naming Standardization — Phase 24 (UI & Documentation)
+**Status:** Phase 23 COMPLETE (7/7 plans), Phase 24 not started
 
 **Completed this session:**
-- 23-02: Core Goop lifecycle (PieceType→GoopShape, activePiece→activeGoop, etc.)
-- 23-03: Tank dimensions & coordinates (TANK_WIDTH/HEIGHT, tankRotation, TankCell)
-- 23-04: TankSystem and actions (ComplicationType→TankSystem, goopGroupId, PopGoopCommand)
-- 23-05: Progression variables & persistence (score→sessionXP, rank→operatorRank, scraps, SAVE RESET)
-- 23-06: Screen/Phase types & Cracks (GamePhase→ScreenType, CrackCell→Crack)
+- 23-07: Remaining Goop terms (storedGoop, nextGoop, LooseGoop, GoopBlock, isSealingGoop, tankPressure)
 
 **Next:**
-- 23-07: Remaining Goop terms (storedPiece, FallingBlock, pressure)
+- Phase 24 planning (UI & Documentation) - update user-facing text to use official terms
 
-**Resume command:** `/gsd:execute-plan .planning/phases/23-code-rename/23-07-PLAN.md`
+**Resume command:** `/gsd:plan-phase 24`
 
 **Key reference:** `.planning/GLOSSARY.md` has the complete migration table.
 
@@ -59,12 +55,12 @@ See: [[PROJECT]] (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 23 of 24 (Code Rename)
-Plan: 6 of 7 in current phase
-Status: In progress
-Last activity: 2026-01-27 — Completed 23-06-PLAN.md (Screen/Phase Types & Cracks)
+Phase: 23 of 24 (Code Rename) — COMPLETE
+Plan: 7 of 7 in current phase — ALL DONE
+Status: Ready for Phase 24
+Last activity: 2026-01-27 — Completed 23-07-PLAN.md (Remaining Goop Terms)
 
-Progress: ███████░░░ 75% (v1.4 Naming Standardization)
+Progress: █████████░ 90% (v1.4 Naming Standardization)
 
 ## What's Done
 
@@ -188,9 +184,19 @@ All three complications have player-driven triggers AND mitigations.
 Last session: 2026-01-27
 **Version:** 1.1.13
 **Branch:** phase-23-01-code-rename
-**Milestone:** v1.4 Naming Standardization (4/7 Phase 23 plans complete)
+**Milestone:** v1.4 Naming Standardization (Phase 23 COMPLETE, Phase 24 pending)
 
 ### This Session Summary (2026-01-27)
+
+**23-07 Remaining Goop Terms Complete — PHASE 23 COMPLETE**
+
+Renamed final piece terminology to Goop equivalents:
+- storedPiece → storedGoop, nextPiece → nextGoop (storage/preview)
+- BlockData → GoopBlock, FallingBlock → LooseGoop (types)
+- isGlowing → isSealingGoop, fallingBlocks → looseGoop (state)
+- pressureRatio → tankPressure (calculation variable)
+
+7 files modified, 151 tests pass, TypeScript compiles clean.
 
 **23-06 Screen/Phase Types & Cracks Complete**
 
