@@ -97,7 +97,7 @@ export enum GoopState {
 
 export interface ActivePiece {
   definition: GoopTemplate;
-  x: number; // Logical grid X (0-TOTAL_WIDTH)
+  x: number; // Logical grid X (0-TANK_WIDTH)
   y: number; // Logical grid Y
   screenX: number; // Viewport-relative X coordinate (floating point allowed)
   rotation: number; // 0-3 (0, 90, 180, 270)
@@ -202,7 +202,7 @@ export interface Complication {
 
 export interface GameState {
   grid: GridCell[][]; // [y][x]
-  boardOffset: number; // 0-TOTAL_WIDTH
+  boardOffset: number; // 0-TANK_WIDTH
   activeGoop: ActivePiece | null;
   storedPiece: GoopTemplate | null;
   nextPiece: GoopTemplate | null;  // Preview of upcoming piece

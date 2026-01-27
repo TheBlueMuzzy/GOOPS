@@ -10,14 +10,14 @@
  * - Visual coordinates (visible portion of the cylinder)
  */
 
-import { TOTAL_WIDTH, VISIBLE_WIDTH, VISIBLE_HEIGHT, BUFFER_HEIGHT } from '../constants';
+import { TANK_WIDTH, TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT } from '../constants';
 
 // Block size in SVG units (exported for components that need it)
 export const BLOCK_SIZE = 30;
 
 // Cylindrical projection constants (derived from module constants)
 // Exported for components that need direct access to projection math
-export const ANGLE_PER_COL = (2 * Math.PI) / TOTAL_WIDTH;
+export const ANGLE_PER_COL = (2 * Math.PI) / TANK_WIDTH;
 export const CYL_RADIUS = BLOCK_SIZE / ANGLE_PER_COL;
 
 /**
@@ -25,13 +25,13 @@ export const CYL_RADIUS = BLOCK_SIZE / ANGLE_PER_COL;
  * These are constant and derived from the cylindrical projection.
  */
 export const VIEWBOX = (() => {
-  const maxAngle = (VISIBLE_WIDTH / 2) * ANGLE_PER_COL;
+  const maxAngle = (TANK_VIEWPORT_WIDTH / 2) * ANGLE_PER_COL;
   const projectedHalfWidth = CYL_RADIUS * Math.sin(maxAngle);
   return {
     x: -projectedHalfWidth,
     y: 0,
     w: projectedHalfWidth * 2,
-    h: VISIBLE_HEIGHT * BLOCK_SIZE,
+    h: TANK_VIEWPORT_HEIGHT * BLOCK_SIZE,
   };
 })();
 
@@ -43,7 +43,7 @@ export const VIEWBOX = (() => {
  * @returns SVG X coordinate
  */
 export function visXToScreenX(visX: number): number {
-  const centerCol = VISIBLE_WIDTH / 2;
+  const centerCol = TANK_VIEWPORT_WIDTH / 2;
   const offsetFromCenter = visX - centerCol;
   const angle = offsetFromCenter * ANGLE_PER_COL;
   return CYL_RADIUS * Math.sin(angle);
@@ -60,7 +60,7 @@ export function screenXToVisX(screenX: number): number {
   const sinVal = Math.max(-1, Math.min(1, screenX / CYL_RADIUS));
   const angle = Math.asin(sinVal);
   const offsetFromCenter = angle / ANGLE_PER_COL;
-  return (VISIBLE_WIDTH / 2) + offsetFromCenter;
+  return (TANK_VIEWPORT_WIDTH / 2) + offsetFromCenter;
 }
 
 /**
@@ -131,7 +131,7 @@ export function visualToGrid(
   const floorVisX = Math.floor(visX);
   const rawCol = floorVisX + boardOffset;
   // Normalize to cylinder width (handles negative values)
-  const col = ((rawCol % TOTAL_WIDTH) + TOTAL_WIDTH) % TOTAL_WIDTH;
+  const col = ((rawCol % TANK_WIDTH) + TANK_WIDTH) % TANK_WIDTH;
   const row = Math.floor(visY);
   return { col, row };
 }
@@ -152,8 +152,8 @@ export function gridToPercentage(
 ): { x: number; y: number } {
   let visX = gridX - boardOffset;
   // Wrap to visible range
-  if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-  if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+  if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+  if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
   const svgX = visXToScreenX(visX);
   const svgY = (gridY - BUFFER_HEIGHT) * BLOCK_SIZE + (BLOCK_SIZE / 2);
@@ -171,5 +171,5 @@ export function gridToPercentage(
  * @returns True if the position is within the visible columns
  */
 export function isInVisibleRange(visX: number): boolean {
-  return visX >= 0 && visX < VISIBLE_WIDTH;
+  return visX >= 0 && visX < TANK_VIEWPORT_WIDTH;
 }

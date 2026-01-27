@@ -12,7 +12,7 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { GridCell } from '../types';
 import { InputHandlers, InputCallbacks, HoldState, HitData, PointerState } from '../types/input';
 import { VIEWBOX, BLOCK_SIZE, screenXToVisX } from '../utils/coordinateTransform';
-import { VISIBLE_WIDTH, VISIBLE_HEIGHT, TOTAL_HEIGHT, TOTAL_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
+import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, TANK_HEIGHT, TANK_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX } from '../utils/gameLogic';
 import { gameEventBus } from '../core/events/EventBus';
 import { GameEventType, RotatePayload, DragPayload, FastDropPayload, BlockTapPayload } from '../core/events/GameEvents';
@@ -106,11 +106,11 @@ export function useInputHandlers({
      * Determine what was hit at the given visual coordinates.
      */
     const getHitData = useCallback((vx: number, vy: number): HitData => {
-        if (vx >= 0 && vx < VISIBLE_WIDTH) {
+        if (vx >= 0 && vx < TANK_VIEWPORT_WIDTH) {
             const visX = Math.floor(vx);
             const gridX = normalizeX(visX + boardOffset);
             const gridY = Math.floor(vy);
-            if (gridY >= 0 && gridY < TOTAL_HEIGHT) {
+            if (gridY >= 0 && gridY < TANK_HEIGHT) {
                 const cell = grid[gridY][gridX];
                 if (cell) {
                     return { type: 'BLOCK', x: gridX, y: gridY, cell };
@@ -193,7 +193,7 @@ export function useInputHandlers({
         if (hit.type === 'BLOCK' && hit.cell) {
             const totalDuration = hit.cell.groupSize * PER_BLOCK_DURATION;
             const elapsed = Date.now() - hit.cell.timestamp;
-            const thresholdY = (TOTAL_HEIGHT - 1) - (pressureRatio * (VISIBLE_HEIGHT - 1));
+            const thresholdY = (TANK_HEIGHT - 1) - (pressureRatio * (TANK_VIEWPORT_HEIGHT - 1));
 
             if (hit.cell.groupMinY < thresholdY) {
                 setShakingGroupId(hit.cell.groupId);
@@ -404,7 +404,7 @@ export function useInputHandlers({
         if (hit.type === 'BLOCK' && hit.cell) {
             const totalDuration = hit.cell.groupSize * PER_BLOCK_DURATION;
             const elapsed = Date.now() - hit.cell.timestamp;
-            const thresholdY = (TOTAL_HEIGHT - 1) - (pressureRatio * (VISIBLE_HEIGHT - 1));
+            const thresholdY = (TANK_HEIGHT - 1) - (pressureRatio * (TANK_VIEWPORT_HEIGHT - 1));
 
             if (hit.cell.groupMinY < thresholdY) {
                 setShakingGroupId(hit.cell.groupId);

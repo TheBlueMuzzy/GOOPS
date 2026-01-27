@@ -1,6 +1,6 @@
 
 import { ActivePiece, Coordinate, GridCell, GoopTemplate, GoopShape, BlockData, FallingBlock, GoalMark, GoopState } from '../types';
-import { TOTAL_WIDTH, TOTAL_HEIGHT, PIECES, GAME_COLORS, VISIBLE_WIDTH, BUFFER_HEIGHT, COLORS, VISIBLE_HEIGHT } from '../constants';
+import { TANK_WIDTH, TANK_HEIGHT, PIECES, GAME_COLORS, TANK_VIEWPORT_WIDTH, BUFFER_HEIGHT, COLORS, TANK_VIEWPORT_HEIGHT } from '../constants';
 
 // Re-export normalizeX from coordinates to maintain API compatibility
 export { normalizeX } from './coordinates';
@@ -45,7 +45,7 @@ export const spawnPiece = (definition?: GoopTemplate, rank: number = 1): ActiveP
 };
 
 export const createInitialGrid = (rank: number, powerUps?: Record<string, number>): GridCell[][] => {
-  const grid = Array(TOTAL_HEIGHT).fill(null).map(() => Array(TOTAL_WIDTH).fill(null));
+  const grid = Array(TANK_HEIGHT).fill(null).map(() => Array(TANK_WIDTH).fill(null));
 
   // Starting Junk Logic (Section 11.2)
   let junkCount = 0;
@@ -55,7 +55,7 @@ export const createInitialGrid = (rank: number, powerUps?: Record<string, number
 
   if (junkCount > 0) {
       const palette = getPaletteForRank(rank);
-      const availableCols = Array.from({ length: TOTAL_WIDTH }, (_, i) => i);
+      const availableCols = Array.from({ length: TANK_WIDTH }, (_, i) => i);
 
       // Fisher-Yates shuffle to pick unique columns
       for (let i = availableCols.length - 1; i > 0; i--) {
@@ -64,7 +64,7 @@ export const createInitialGrid = (rank: number, powerUps?: Record<string, number
       }
 
       const selectedCols = availableCols.slice(0, junkCount);
-      const y = TOTAL_HEIGHT - 1;
+      const y = TANK_HEIGHT - 1;
 
       // JUNK_UNIFORMER: bias toward same color (+10% per level)
       const uniformerLevel = powerUps?.['JUNK_UNIFORMER'] || 0;
@@ -107,8 +107,8 @@ export const checkCollision = (grid: GridCell[][], piece: ActivePiece, boardOffs
 
     // Floor Check:
     // A block at y spans [y, y+1).
-    // It hits the floor if the bottom edge (y + 1) is > TOTAL_HEIGHT.
-    if (y + 1 > TOTAL_HEIGHT) return true;
+    // It hits the floor if the bottom edge (y + 1) is > TANK_HEIGHT.
+    if (y + 1 > TANK_HEIGHT) return true;
 
     // Grid Cell Check:
     // We must check all integer grid rows that this block overlaps.
@@ -119,7 +119,7 @@ export const checkCollision = (grid: GridCell[][], piece: ActivePiece, boardOffs
     const rEnd = Math.floor(y + 1 - 0.0001);
 
     for (let r = rStart; r <= rEnd; r++) {
-        if (r >= 0 && r < TOTAL_HEIGHT) {
+        if (r >= 0 && r < TANK_HEIGHT) {
            if (grid[r][x] !== null) return true;
         }
     }
@@ -132,7 +132,7 @@ export const getGhostY = (grid: GridCell[][], piece: ActivePiece, boardOffset: n
   let y = startY;
 
   // Search downwards for the first invalid position
-  while (y < TOTAL_HEIGHT && !checkCollision(grid, { ...piece, y: y + 1 }, boardOffset)) {
+  while (y < TANK_HEIGHT && !checkCollision(grid, { ...piece, y: y + 1 }, boardOffset)) {
     y += 1;
   }
   
@@ -165,7 +165,7 @@ export const findContiguousGroup = (grid: GridCell[][], startX: number, startY: 
     ];
 
     for (const n of neighbors) {
-      if (n.y >= 0 && n.y < TOTAL_HEIGHT) {
+      if (n.y >= 0 && n.y < TANK_HEIGHT) {
         const neighborCell = grid[n.y][n.x];
         if (neighborCell && neighborCell.groupId === targetGroupId) {
            if (!visited.has(`${n.x},${n.y}`)) {
@@ -204,7 +204,7 @@ export const updateGroups = (grid: GridCell[][]): GridCell[][] => {
             ];
 
             for(const n of nbs) {
-                if(n.y >= 0 && n.y < TOTAL_HEIGHT) {
+                if(n.y >= 0 && n.y < TANK_HEIGHT) {
                     const c = newGrid[n.y][n.x];
                     if (!c || v.has(`${n.x},${n.y}`)) continue;
                     // Wild cells group together regardless of color
@@ -219,13 +219,13 @@ export const updateGroups = (grid: GridCell[][]): GridCell[][] => {
         return g;
     };
 
-    for (let y = 0; y < TOTAL_HEIGHT; y++) {
-        for (let x = 0; x < TOTAL_WIDTH; x++) {
+    for (let y = 0; y < TANK_HEIGHT; y++) {
+        for (let x = 0; x < TANK_WIDTH; x++) {
             const cell = newGrid[y][x];
             if (cell && !visited.has(`${x},${y}`)) {
                 const group = findColorGroup(x, y, cell.color, !!cell.isWild);
                 
-                let minY = TOTAL_HEIGHT;
+                let minY = TANK_HEIGHT;
                 let maxY = -1;
                 
                 group.forEach(pt => {
@@ -286,7 +286,7 @@ export const mergePiece = (
   const groupId = Math.random().toString(36).substr(2, 9);
   const now = Date.now();
   
-  let minY = TOTAL_HEIGHT;
+  let minY = TANK_HEIGHT;
   let maxY = -1;
   const consumedGoals: string[] = [];
   const destroyedGoals: string[] = [];
@@ -307,7 +307,7 @@ export const mergePiece = (
     const y = Math.floor(piece.y + cell.y);
     const cellColor = piece.definition.cellColors?.[idx] ?? piece.definition.color;
 
-    if (y >= 0 && y < TOTAL_HEIGHT) {
+    if (y >= 0 && y < TANK_HEIGHT) {
       // Check for Goal Interaction (per-cell color matching, or wild matches any)
       const hitGoal = goalMarks.find(g => g.x === x && g.y === y);
 
@@ -354,7 +354,7 @@ export const processWildConversions = (
     piece.cells.forEach(cell => {
         const x = normalizeX(piece.x + cell.x);
         const y = Math.floor(piece.y + cell.y);
-        if (y >= 0 && y < TOTAL_HEIGHT) {
+        if (y >= 0 && y < TANK_HEIGHT) {
             pieceCells.push({ x, y });
         }
     });
@@ -372,7 +372,7 @@ export const processWildConversions = (
         ];
 
         neighbors.forEach(n => {
-            if (n.y >= 0 && n.y < TOTAL_HEIGHT) {
+            if (n.y >= 0 && n.y < TANK_HEIGHT) {
                 const neighborCell = newGrid[n.y][n.x];
                 if (!neighborCell) return;
 
@@ -397,8 +397,8 @@ export const processWildConversions = (
 
     // Apply conversion to entire groups
     if (groupIdsToConvert.size > 0) {
-        for (let y = 0; y < TOTAL_HEIGHT; y++) {
-            for (let x = 0; x < TOTAL_WIDTH; x++) {
+        for (let y = 0; y < TANK_HEIGHT; y++) {
+            for (let x = 0; x < TANK_WIDTH; x++) {
                 const cell = newGrid[y][x];
                 if (cell && groupIdsToConvert.has(cell.groupId)) {
                     if (pieceIsWild) {
@@ -428,8 +428,8 @@ export const getFloatingBlocks = (grid: GridCell[][], columnsToCheck?: number[])
     const groups = new Map<string, Coordinate[]>();
     const groupIds = new Set<string>();
     
-    for (let y = 0; y < TOTAL_HEIGHT; y++) {
-        for (let x = 0; x < TOTAL_WIDTH; x++) {
+    for (let y = 0; y < TANK_HEIGHT; y++) {
+        for (let x = 0; x < TANK_WIDTH; x++) {
             const cell = newGrid[y][x];
             if (cell) {
                 if (!groups.has(cell.groupId)) {
@@ -456,14 +456,14 @@ export const getFloatingBlocks = (grid: GridCell[][], columnsToCheck?: number[])
             
             for (const b of blocks) {
                 // Ground support
-                if (b.y === TOTAL_HEIGHT - 1) {
+                if (b.y === TANK_HEIGHT - 1) {
                     isSupported = true;
                     break;
                 }
                 
                 // Stack support (from a different, supported group)
                 const belowY = b.y + 1;
-                if (belowY < TOTAL_HEIGHT) {
+                if (belowY < TANK_HEIGHT) {
                     const belowCell = newGrid[belowY][b.x];
                     if (belowCell && belowCell.groupId !== gid && supportedGroupIds.has(belowCell.groupId)) {
                         isSupported = true;
@@ -514,8 +514,8 @@ export const updateFallingBlocks = (
     for (const block of sortedBlocks) {
         const nextY = block.y + FALL_SPEED;
         
-        if (nextY >= TOTAL_HEIGHT - 1) {
-            landed.push({ ...block, y: TOTAL_HEIGHT - 1 });
+        if (nextY >= TANK_HEIGHT - 1) {
+            landed.push({ ...block, y: TANK_HEIGHT - 1 });
             continue;
         }
         
@@ -533,15 +533,15 @@ export const updateFallingBlocks = (
 };
 
 export const calculateHeightBonus = (y: number): number => {
-    return Math.max(0, (TOTAL_HEIGHT - y) * 10);
+    return Math.max(0, (TANK_HEIGHT - y) * 10);
 };
 
 export const calculateOffScreenBonus = (x: number, boardOffset: number): number => {
-    const center = normalizeX(boardOffset + VISIBLE_WIDTH / 2);
+    const center = normalizeX(boardOffset + TANK_VIEWPORT_WIDTH / 2);
     let dist = Math.abs(x - center);
-    if (dist > TOTAL_WIDTH / 2) dist = TOTAL_WIDTH - dist;
+    if (dist > TANK_WIDTH / 2) dist = TANK_WIDTH - dist;
     
-    if (dist > VISIBLE_WIDTH / 2) {
+    if (dist > TANK_VIEWPORT_WIDTH / 2) {
         return 50;
     }
     return 0;
@@ -564,7 +564,7 @@ export const calculateAdjacencyBonus = (grid: GridCell[][], group: Coordinate[])
         ];
         
         nbs.forEach(n => {
-            if (n.y >= 0 && n.y < TOTAL_HEIGHT) {
+            if (n.y >= 0 && n.y < TANK_HEIGHT) {
                 if (grid[n.y][n.x] && !groupKeys.has(`${n.x},${n.y}`)) {
                     neighborsCount++;
                 }
@@ -598,23 +598,23 @@ export const spawnGoalMark = (
     let spawnY: number;
 
     if (crackDownActive) {
-        // CRACK_DOWN active: restrict to bottom 4 rows (TOTAL_HEIGHT - 4 to TOTAL_HEIGHT - 1)
-        const minY = TOTAL_HEIGHT - 4;  // Row 15 (0-indexed)
-        const maxY = TOTAL_HEIGHT - 1;  // Row 18
+        // CRACK_DOWN active: restrict to bottom 4 rows (TANK_HEIGHT - 4 to TANK_HEIGHT - 1)
+        const minY = TANK_HEIGHT - 4;  // Row 15 (0-indexed)
+        const maxY = TANK_HEIGHT - 1;  // Row 18
         spawnY = minY + Math.floor(Math.random() * (maxY - minY + 1));
     } else {
         // Normal spawning: Calculate Pressure Line Y index
         const pressureRatio = Math.max(0, 1 - (timeLeft / maxTime));
-        const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
-        const pressureLineY = Math.floor(TOTAL_HEIGHT - waterHeightBlocks);
+        const waterHeightBlocks = 1 + (pressureRatio * (TANK_VIEWPORT_HEIGHT - 1));
+        const pressureLineY = Math.floor(TANK_HEIGHT - waterHeightBlocks);
 
-        // Valid Y range: [pressureLineY, TOTAL_HEIGHT - 1]
-        spawnY = Math.max(BUFFER_HEIGHT, Math.min(TOTAL_HEIGHT - 1, pressureLineY));
+        // Valid Y range: [pressureLineY, TANK_HEIGHT - 1]
+        spawnY = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY));
     }
 
     // Try finding a valid empty spot (up to 20 attempts) at this specific Y
     for (let i = 0; i < 20; i++) {
-        const x = Math.floor(Math.random() * TOTAL_WIDTH);
+        const x = Math.floor(Math.random() * TANK_WIDTH);
         const y = spawnY;
 
         // Ensure empty grid cell
@@ -645,8 +645,8 @@ export const spawnGoalBurst = (
 
     // Calculate Pressure Line Y
     const pressureRatio = Math.max(0, 1 - (timeLeft / maxTime));
-    const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
-    const pressureLineY = Math.floor(TOTAL_HEIGHT - waterHeightBlocks);
+    const waterHeightBlocks = 1 + (pressureRatio * (TANK_VIEWPORT_HEIGHT - 1));
+    const pressureLineY = Math.floor(TANK_HEIGHT - waterHeightBlocks);
     
     // Spawn area: Above pressure line (y < pressureLineY), but within buffer/visible
     let minSpawnY = BUFFER_HEIGHT;
@@ -656,10 +656,10 @@ export const spawnGoalBurst = (
         // Try to find a spot for this color
         // 20 attempts per color
         for (let i = 0; i < 20; i++) {
-            const x = Math.floor(Math.random() * TOTAL_WIDTH);
+            const x = Math.floor(Math.random() * TANK_WIDTH);
             const y = Math.floor(minSpawnY + Math.random() * (maxSpawnY - minSpawnY + 1));
             
-            if (y < BUFFER_HEIGHT || y >= TOTAL_HEIGHT) continue;
+            if (y < BUFFER_HEIGHT || y >= TANK_HEIGHT) continue;
 
             const hasBlock = grid[y][x] !== null;
             const hasMark = currentMarks.some(m => m.x === x && m.y === y);

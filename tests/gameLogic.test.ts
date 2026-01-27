@@ -10,12 +10,12 @@ import {
   calculateMultiplier,
   calculateAdjacencyBonus,
 } from '../utils/gameLogic';
-import { TOTAL_WIDTH, TOTAL_HEIGHT, COLORS } from '../constants';
+import { TANK_WIDTH, TANK_HEIGHT, COLORS } from '../constants';
 import { GridCell, ActivePiece, GoopShape, GoopState } from '../types';
 
 // Helper to create an empty grid
 const createEmptyGrid = (): GridCell[][] => {
-  return Array(TOTAL_HEIGHT).fill(null).map(() => Array(TOTAL_WIDTH).fill(null));
+  return Array(TANK_HEIGHT).fill(null).map(() => Array(TANK_WIDTH).fill(null));
 };
 
 // Helper to create a mock piece
@@ -150,7 +150,7 @@ describe('checkCollision', () => {
 
   it('returns true when piece hits floor', () => {
     const grid = createEmptyGrid();
-    const piece = createMockPiece(15, TOTAL_HEIGHT - 0.5, [{ x: 0, y: 0 }]);
+    const piece = createMockPiece(15, TANK_HEIGHT - 0.5, [{ x: 0, y: 0 }]);
 
     expect(checkCollision(grid, piece, 0)).toBe(true);
   });
@@ -240,7 +240,7 @@ describe('getFloatingBlocks (Sticky Gravity)', () => {
   it('returns empty for supported blocks', () => {
     const grid = createEmptyGrid();
     // Block on the floor
-    placeCell(grid, 5, TOTAL_HEIGHT - 1, COLORS.RED, 'group1');
+    placeCell(grid, 5, TANK_HEIGHT - 1, COLORS.RED, 'group1');
 
     const { falling } = getFloatingBlocks(grid);
 
@@ -262,9 +262,9 @@ describe('getFloatingBlocks (Sticky Gravity)', () => {
   it('keeps block supported by another group', () => {
     const grid = createEmptyGrid();
     // Support block on floor
-    placeCell(grid, 5, TOTAL_HEIGHT - 1, COLORS.RED, 'group1');
+    placeCell(grid, 5, TANK_HEIGHT - 1, COLORS.RED, 'group1');
     // Block sitting on top (different group)
-    placeCell(grid, 5, TOTAL_HEIGHT - 2, COLORS.BLUE, 'group2');
+    placeCell(grid, 5, TANK_HEIGHT - 2, COLORS.BLUE, 'group2');
 
     const { falling } = getFloatingBlocks(grid);
 
@@ -297,13 +297,13 @@ describe('Scoring Functions', () => {
   describe('calculateHeightBonus', () => {
     it('gives higher bonus for lower Y (higher on screen)', () => {
       const highBonus = calculateHeightBonus(0);
-      const lowBonus = calculateHeightBonus(TOTAL_HEIGHT - 1);
+      const lowBonus = calculateHeightBonus(TANK_HEIGHT - 1);
 
       expect(highBonus).toBeGreaterThan(lowBonus);
     });
 
     it('returns 0 or positive', () => {
-      expect(calculateHeightBonus(TOTAL_HEIGHT - 1)).toBeGreaterThanOrEqual(0);
+      expect(calculateHeightBonus(TANK_HEIGHT - 1)).toBeGreaterThanOrEqual(0);
     });
   });
 

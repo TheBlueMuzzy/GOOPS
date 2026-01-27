@@ -4,7 +4,7 @@
  */
 
 import { GridCell, FallingBlock } from '../types';
-import { VISIBLE_WIDTH, VISIBLE_HEIGHT, TOTAL_WIDTH, TOTAL_HEIGHT, BUFFER_HEIGHT } from '../constants';
+import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, TANK_WIDTH, TANK_HEIGHT, BUFFER_HEIGHT } from '../constants';
 import { BLOCK_SIZE, visXToScreenX } from './coordinateTransform';
 import { normalizeX } from './gameLogic';
 
@@ -114,8 +114,8 @@ export function buildRenderableGroups(
     const map = new Map<string, RenderableCell[]>();
 
     // 1. Static Grid
-    for (let y = BUFFER_HEIGHT; y < BUFFER_HEIGHT + VISIBLE_HEIGHT; y++) {
-        for (let visX = 0; visX < VISIBLE_WIDTH; visX++) {
+    for (let y = BUFFER_HEIGHT; y < BUFFER_HEIGHT + TANK_VIEWPORT_HEIGHT; y++) {
+        for (let visX = 0; visX < TANK_VIEWPORT_WIDTH; visX++) {
             const gridX = normalizeX(visX + boardOffset);
             const cell = grid[y][gridX];
             if (!cell) continue;
@@ -128,7 +128,7 @@ export function buildRenderableGroups(
 
             const neighbors: Neighbors = {
                 t: y > 0 && grid[y - 1][gridX]?.groupId === cell.groupId,
-                b: y < TOTAL_HEIGHT - 1 && grid[y + 1][gridX]?.groupId === cell.groupId,
+                b: y < TANK_HEIGHT - 1 && grid[y + 1][gridX]?.groupId === cell.groupId,
                 l: grid[y][normalizeX(gridX - 1)]?.groupId === cell.groupId,
                 r: grid[y][normalizeX(gridX + 1)]?.groupId === cell.groupId,
             };
@@ -154,10 +154,10 @@ export function buildRenderableGroups(
         blocks.forEach(block => {
             if (block.y < BUFFER_HEIGHT - 1) return;
             let visX = block.x - boardOffset;
-            if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-            if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+            if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+            if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-            if (visX >= 0 && visX < VISIBLE_WIDTH) {
+            if (visX >= 0 && visX < TANK_VIEWPORT_WIDTH) {
                 const startX = visXToScreenX(visX);
                 const endX = visXToScreenX(visX + 1);
                 const width = endX - startX;

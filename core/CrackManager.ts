@@ -1,5 +1,5 @@
 import { GameState, CrackCell, GamePhase } from '../types';
-import { TOTAL_HEIGHT, BUFFER_HEIGHT } from '../constants';
+import { TANK_HEIGHT, BUFFER_HEIGHT } from '../constants';
 import { normalizeX } from '../utils/coordinates';
 import { calculateRankDetails } from '../utils/progression';
 import { goalManager } from './GoalManager';
@@ -94,7 +94,7 @@ export class CrackManager {
 
             for (const spot of adjacentSpots) {
                 // Must be in valid grid range
-                if (spot.y < BUFFER_HEIGHT || spot.y >= TOTAL_HEIGHT) continue;
+                if (spot.y < BUFFER_HEIGHT || spot.y >= TANK_HEIGHT) continue;
 
                 // Check for existing same-color crack (merge target)
                 const existingCrack = state.crackCells.find(

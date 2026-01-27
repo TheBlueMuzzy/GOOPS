@@ -1,11 +1,11 @@
 
 import { GoopTemplate, GoopShape } from './types';
 
-export const VISIBLE_WIDTH = 12; // 12 units wide
-export const TOTAL_WIDTH = 30;   // Cylindrical width (3 screens wide approx)
-export const VISIBLE_HEIGHT = 16; 
-export const TOTAL_HEIGHT = 19;  // 3 rows of buffer at the top
-export const BUFFER_HEIGHT = TOTAL_HEIGHT - VISIBLE_HEIGHT;
+export const TANK_VIEWPORT_WIDTH = 12; // 12 units wide
+export const TANK_WIDTH = 30;   // Cylindrical width (3 screens wide approx)
+export const TANK_VIEWPORT_HEIGHT = 16;
+export const TANK_HEIGHT = 19;  // 3 rows of buffer at the top
+export const BUFFER_HEIGHT = TANK_HEIGHT - TANK_VIEWPORT_HEIGHT;
 
 export const COMBO_BONUS = 50;
 

@@ -1,7 +1,7 @@
 
 import { GameState, GridCell, ActivePiece, GoopTemplate, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, CrackCell, GamePhase, GoopState, GoopShape, Complication, ComplicationType, DumpPiece } from '../types';
 import {
-    TOTAL_WIDTH, TOTAL_HEIGHT, VISIBLE_WIDTH, VISIBLE_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, INITIAL_TIME_MS,
+    TANK_WIDTH, TANK_HEIGHT, TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, INITIAL_TIME_MS,
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
     PIECES,
     TETRA_NORMAL, TETRA_CORRUPTED,
@@ -72,7 +72,7 @@ export class GameEngine {
         for (const cell of piece.cells) {
             const x = normalizeX(piece.x + cell.x);
             const y = Math.floor(piece.y + cell.y);
-            if (y < 0 || y >= TOTAL_HEIGHT) continue;
+            if (y < 0 || y >= TANK_HEIGHT) continue;
 
             const neighbors = [
                 { x: normalizeX(x + 1), y },
@@ -82,7 +82,7 @@ export class GameEngine {
             ];
 
             for (const n of neighbors) {
-                if (n.y >= 0 && n.y < TOTAL_HEIGHT) {
+                if (n.y >= 0 && n.y < TANK_HEIGHT) {
                     const neighborCell = grid[n.y][n.x];
                     if (neighborCell?.isWild) return true;
                 }
@@ -429,7 +429,7 @@ export class GameEngine {
                         allPieces.push({
                             id: Math.random().toString(36).substr(2, 9),
                             color: targetColor,
-                            x: Math.floor(Math.random() * TOTAL_WIDTH),
+                            x: Math.floor(Math.random() * TANK_WIDTH),
                             y: -1,  // Start above visible area
                             spawnDelay: (wave * waveDelay) + (i * DUMP_SPAWN_INTERVAL)
                         });
@@ -517,8 +517,8 @@ export class GameEngine {
 
         // 2. Calculate Penalty for leftover blocks
         let remainingBlocks = 0;
-        for (let y = 0; y < TOTAL_HEIGHT; y++) {
-            for (let x = 0; x < TOTAL_WIDTH; x++) {
+        for (let y = 0; y < TANK_HEIGHT; y++) {
+            for (let x = 0; x < TANK_WIDTH; x++) {
                 if (this.state.grid[y][x]) {
                     remainingBlocks++;
                 }
@@ -736,7 +736,7 @@ export class GameEngine {
 
         // LOGIC: Spawn at top center of visible viewport
         // Map visible center to grid coordinate based on board offset
-        const spawnVisualX = Math.floor((VISIBLE_WIDTH - 1) / 2);
+        const spawnVisualX = Math.floor((TANK_VIEWPORT_WIDTH - 1) / 2);
         const spawnVisualY = 0;
 
         piece.screenX = spawnVisualX; // Screen Space Source of Truth
@@ -1041,7 +1041,7 @@ export class GameEngine {
             const consumedGoals: string[] = [];
 
             landed.forEach(b => {
-                if (b.y >= 0 && b.y < TOTAL_HEIGHT) {
+                if (b.y >= 0 && b.y < TANK_HEIGHT) {
                     const landY = Math.floor(b.y);
 
                     // Check for goal at this position
@@ -1121,7 +1121,7 @@ export class GameEngine {
             // Check if landed (hit floor or existing block below)
             let landed = false;
 
-            if (gridY >= TOTAL_HEIGHT - 1) {
+            if (gridY >= TANK_HEIGHT - 1) {
                 // Hit floor
                 landed = true;
             } else if (gridY >= 0 && newGrid[gridY + 1]?.[gridX]) {
@@ -1129,7 +1129,7 @@ export class GameEngine {
                 landed = true;
             }
 
-            if (landed && gridY >= 0 && gridY < TOTAL_HEIGHT) {
+            if (landed && gridY >= 0 && gridY < TANK_HEIGHT) {
                 // Place in grid as a single-block goop
                 newGrid[gridY][gridX] = {
                     id: piece.id,

@@ -9,7 +9,7 @@ import {
   gridToPercentage,
   isInVisibleRange,
 } from '../utils/coordinateTransform';
-import { VISIBLE_WIDTH, TOTAL_WIDTH, BUFFER_HEIGHT } from '../constants';
+import { TANK_VIEWPORT_WIDTH, TANK_WIDTH, BUFFER_HEIGHT } from '../constants';
 
 describe('coordinateTransform', () => {
   describe('VIEWBOX', () => {
@@ -35,7 +35,7 @@ describe('coordinateTransform', () => {
 
   describe('visXToScreenX and screenXToVisX', () => {
     it('center column maps to screen x=0', () => {
-      const centerCol = VISIBLE_WIDTH / 2;
+      const centerCol = TANK_VIEWPORT_WIDTH / 2;
       const screenX = visXToScreenX(centerCol);
       expect(Math.abs(screenX)).toBeLessThan(0.001);
     });
@@ -55,7 +55,7 @@ describe('coordinateTransform', () => {
     });
 
     it('right edge maps to positive screen x', () => {
-      const screenX = visXToScreenX(VISIBLE_WIDTH - 1);
+      const screenX = visXToScreenX(TANK_VIEWPORT_WIDTH - 1);
       expect(screenX).toBeGreaterThan(0);
     });
   });
@@ -66,7 +66,7 @@ describe('coordinateTransform', () => {
       const svgY = 30 * 8; // Middle row (8 blocks from top)
       const { visX, visY } = svgToVisual(svgX, svgY);
 
-      expect(Math.abs(visX - VISIBLE_WIDTH / 2)).toBeLessThan(0.001);
+      expect(Math.abs(visX - TANK_VIEWPORT_WIDTH / 2)).toBeLessThan(0.001);
       expect(Math.abs(visY - (8 + BUFFER_HEIGHT))).toBeLessThan(0.001);
     });
   });
@@ -86,7 +86,7 @@ describe('coordinateTransform', () => {
 
     it('wraps around cylinder width', () => {
       const { col } = visualToGrid(5, 10, 28);
-      // 5 + 28 = 33, wrapped to TOTAL_WIDTH (30) = 3
+      // 5 + 28 = 33, wrapped to TANK_WIDTH (30) = 3
       expect(col).toBe(3);
     });
 
@@ -107,7 +107,7 @@ describe('coordinateTransform', () => {
     });
 
     it('center column maps to approximately 50%', () => {
-      const centerCol = Math.floor(VISIBLE_WIDTH / 2);
+      const centerCol = Math.floor(TANK_VIEWPORT_WIDTH / 2);
       const { x } = gridToPercentage(centerCol, 10, 0);
       expect(Math.abs(x - 50)).toBeLessThan(5);
     });
@@ -117,12 +117,12 @@ describe('coordinateTransform', () => {
     it('returns true for valid columns', () => {
       expect(isInVisibleRange(0)).toBe(true);
       expect(isInVisibleRange(5)).toBe(true);
-      expect(isInVisibleRange(VISIBLE_WIDTH - 1)).toBe(true);
+      expect(isInVisibleRange(TANK_VIEWPORT_WIDTH - 1)).toBe(true);
     });
 
     it('returns false for out-of-range columns', () => {
       expect(isInVisibleRange(-1)).toBe(false);
-      expect(isInVisibleRange(VISIBLE_WIDTH)).toBe(false);
+      expect(isInVisibleRange(TANK_VIEWPORT_WIDTH)).toBe(false);
       expect(isInVisibleRange(100)).toBe(false);
     });
   });
@@ -132,9 +132,9 @@ describe('coordinateTransform', () => {
   // ============================================================================
 
   describe('visualToGrid edge cases', () => {
-    it('handles offset exactly at TOTAL_WIDTH boundary', () => {
-      const { col } = visualToGrid(5, 10, TOTAL_WIDTH);
-      // 5 + 30 = 35, wrapped to TOTAL_WIDTH (30) = 5
+    it('handles offset exactly at TANK_WIDTH boundary', () => {
+      const { col } = visualToGrid(5, 10, TANK_WIDTH);
+      // 5 + 30 = 35, wrapped to TANK_WIDTH (30) = 5
       expect(col).toBe(5);
     });
 
@@ -173,9 +173,9 @@ describe('coordinateTransform', () => {
 
     it('handles SVG x at right VIEWBOX boundary', () => {
       const { visX } = svgToVisual(VIEWBOX.x + VIEWBOX.w, 0);
-      // At right edge, visX should be approximately VISIBLE_WIDTH
-      expect(visX).toBeGreaterThan(VISIBLE_WIDTH - 1);
-      expect(visX).toBeLessThanOrEqual(VISIBLE_WIDTH + 0.5);
+      // At right edge, visX should be approximately TANK_VIEWPORT_WIDTH
+      expect(visX).toBeGreaterThan(TANK_VIEWPORT_WIDTH - 1);
+      expect(visX).toBeLessThanOrEqual(TANK_VIEWPORT_WIDTH + 0.5);
     });
 
     it('handles SVG y at top bound (y=0)', () => {
@@ -203,7 +203,7 @@ describe('coordinateTransform', () => {
 
     it('maintains precision at extreme screen X values', () => {
       // Test values near the edges
-      const edgeValues = [0.001, 0.01, VISIBLE_WIDTH - 0.01, VISIBLE_WIDTH - 0.001];
+      const edgeValues = [0.001, 0.01, TANK_VIEWPORT_WIDTH - 0.01, TANK_VIEWPORT_WIDTH - 0.001];
       for (const visX of edgeValues) {
         const screenX = visXToScreenX(visX);
         const recovered = screenXToVisX(screenX);

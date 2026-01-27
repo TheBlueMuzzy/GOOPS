@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeX, getGridX, getScreenX } from '../utils/coordinates';
-import { TOTAL_WIDTH } from '../constants';
+import { TANK_WIDTH } from '../constants';
 
 describe('normalizeX', () => {
   it('returns same value for x within bounds', () => {

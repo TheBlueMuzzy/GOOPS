@@ -6,7 +6,7 @@ import { normalizeX, checkCollision, getRotatedCells, getGhostY, mergePiece, fin
 import { getGridX, getScreenX } from '../../utils/coordinates';
 import { gameEventBus } from '../events/EventBus';
 import { GameEventType } from '../events/GameEvents';
-import { VISIBLE_WIDTH, TOTAL_HEIGHT, VISIBLE_HEIGHT, PER_BLOCK_DURATION, PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS, ROTATION_BUFFER_SIZE } from '../../constants';
+import { TANK_VIEWPORT_WIDTH, TANK_HEIGHT, TANK_VIEWPORT_HEIGHT, PER_BLOCK_DURATION, PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS, ROTATION_BUFFER_SIZE } from '../../constants';
 import { COMPLICATION_CONFIG, isComplicationUnlocked } from '../../complicationConfig';
 import { calculateRankDetails } from '../../utils/progression';
 import { audio } from '../../utils/audio';
@@ -255,7 +255,7 @@ export class BlockTapCommand implements Command {
          if (!cell) return;
          
          const pressureRatio = Math.max(0, 1 - (engine.state.timeLeft / engine.maxTime));
-         const thresholdY = (TOTAL_HEIGHT - 1) - (pressureRatio * (VISIBLE_HEIGHT - 1));
+         const thresholdY = (TANK_HEIGHT - 1) - (pressureRatio * (TANK_VIEWPORT_HEIGHT - 1));
          
          if (cell.groupMinY < thresholdY) {
              gameEventBus.emit(GameEventType.ACTION_REJECTED);

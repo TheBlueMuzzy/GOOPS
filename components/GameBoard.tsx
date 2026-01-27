@@ -1,7 +1,7 @@
 // --- Imports ---
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { GameState, GoopState, ComplicationType, GamePhase, GoopTemplate, DumpPiece, CrackCell } from '../types';
-import { VISIBLE_WIDTH, VISIBLE_HEIGHT, COLORS, TOTAL_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
+import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, COLORS, TANK_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { isMobile } from '../utils/device';
 import { HudMeter } from './HudMeter';
@@ -53,7 +53,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const pressureHue = Math.max(0, 120 * (1 - pressureRatio));
   const pressureColor = `hsla(${pressureHue}, 100%, 50%, 0.15)`;
 
-  const waterHeightBlocks = 1 + (pressureRatio * (VISIBLE_HEIGHT - 1));
+  const waterHeightBlocks = 1 + (pressureRatio * (TANK_VIEWPORT_HEIGHT - 1));
 
   // ViewBox values from module-level constants (no useMemo needed - these never change)
   const { x: vbX, y: vbY, w: vbW, h: vbH } = VIEWBOX;
@@ -64,8 +64,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Use imported coordinate transform functions (pure functions, no hooks needed)
   const getScreenPercentCoords = useCallback((gridX: number, gridY: number) => {
       let visX = gridX - boardOffset;
-      if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-      if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+      if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+      if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
       const svgX = visXToScreenX(visX);
       const svgY = (gridY - BUFFER_HEIGHT) * BLOCK_SIZE + (BLOCK_SIZE / 2);
@@ -223,9 +223,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             <line x1={vbX} y1={waterTopY} x2={vbX + vbW} y2={waterTopY} stroke={pressureColor.replace('0.15', '0.6')} strokeWidth="2" strokeDasharray="4 4" />
 
             {/* Grid & Goals - Skip grid lines on mobile for performance */}
-            {!isMobile && Array.from({length: VISIBLE_HEIGHT}).map((_, yIdx) => {
+            {!isMobile && Array.from({length: TANK_VIEWPORT_HEIGHT}).map((_, yIdx) => {
                 const yPos = yIdx * BLOCK_SIZE;
-                return Array.from({length: VISIBLE_WIDTH}).map((_, visX) => {
+                return Array.from({length: TANK_VIEWPORT_WIDTH}).map((_, visX) => {
                     const startX = visXToScreenX(visX);
                     const width = visXToScreenX(visX+1) - startX;
                     return (
@@ -245,16 +245,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
                     // Convert cell positions to screen coordinates
                     let visX1 = cell.x - boardOffset;
-                    if (visX1 > TOTAL_WIDTH / 2) visX1 -= TOTAL_WIDTH;
-                    if (visX1 < -TOTAL_WIDTH / 2) visX1 += TOTAL_WIDTH;
+                    if (visX1 > TANK_WIDTH / 2) visX1 -= TANK_WIDTH;
+                    if (visX1 < -TANK_WIDTH / 2) visX1 += TANK_WIDTH;
 
                     let visX2 = child.x - boardOffset;
-                    if (visX2 > TOTAL_WIDTH / 2) visX2 -= TOTAL_WIDTH;
-                    if (visX2 < -TOTAL_WIDTH / 2) visX2 += TOTAL_WIDTH;
+                    if (visX2 > TANK_WIDTH / 2) visX2 -= TANK_WIDTH;
+                    if (visX2 < -TANK_WIDTH / 2) visX2 += TANK_WIDTH;
 
                     // Both cells must be at least partially visible
-                    if (visX1 < -1 || visX1 > VISIBLE_WIDTH ||
-                        visX2 < -1 || visX2 > VISIBLE_WIDTH) return null;
+                    if (visX1 < -1 || visX1 > TANK_VIEWPORT_WIDTH ||
+                        visX2 < -1 || visX2 > TANK_VIEWPORT_WIDTH) return null;
 
                     const startX1 = visXToScreenX(visX1);
                     const width1 = visXToScreenX(visX1 + 1) - startX1;
@@ -283,10 +283,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {/* Crack Cell Circles - render circle at each crack cell position */}
             {crackCells && crackCells.filter(c => now - c.spawnTime >= 500).map(cell => {
                 let visX = cell.x - boardOffset;
-                if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-                if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+                if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+                if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-                if (visX >= 0 && visX < VISIBLE_WIDTH) {
+                if (visX >= 0 && visX < TANK_VIEWPORT_WIDTH) {
                     const startX = visXToScreenX(visX);
                     const width = visXToScreenX(visX + 1) - startX;
                     const yPos = (cell.y - BUFFER_HEIGHT) * BLOCK_SIZE;
@@ -311,10 +311,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {/* Goal Marks - always render */}
             {goalMarks.filter(m => now - m.spawnTime >= 500).map(mark => {
                 let visX = mark.x - boardOffset;
-                if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-                if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+                if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+                if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-                if (visX >= 0 && visX < VISIBLE_WIDTH) {
+                if (visX >= 0 && visX < TANK_VIEWPORT_WIDTH) {
                     const startX = visXToScreenX(visX);
                     const width = visXToScreenX(visX+1) - startX;
                     const yPos = (mark.y - BUFFER_HEIGHT) * BLOCK_SIZE;
@@ -329,12 +329,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Offscreen Indicators */}
             {goalMarks.map(mark => {
-                const centerCol = normalizeX(boardOffset + VISIBLE_WIDTH / 2);
+                const centerCol = normalizeX(boardOffset + TANK_VIEWPORT_WIDTH / 2);
                 let diff = mark.x - centerCol;
-                if (diff > TOTAL_WIDTH / 2) diff -= TOTAL_WIDTH;
-                if (diff < -TOTAL_WIDTH / 2) diff += TOTAL_WIDTH;
+                if (diff > TANK_WIDTH / 2) diff -= TANK_WIDTH;
+                if (diff < -TANK_WIDTH / 2) diff += TANK_WIDTH;
                 
-                if (Math.abs(diff) > VISIBLE_WIDTH / 2) {
+                if (Math.abs(diff) > TANK_VIEWPORT_WIDTH / 2) {
                     const isRight = diff > 0;
                     const yPos = (mark.y - BUFFER_HEIGHT) * BLOCK_SIZE + (BLOCK_SIZE / 2);
                     const xPos = isRight ? (vbX + vbW - 5) : (vbX + 5);
@@ -493,10 +493,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     if (pieceGridY < BUFFER_HEIGHT) return null;
 
                     let visX = pieceGridX - boardOffset;
-                    if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-                    if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+                    if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+                    if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-                    if (visX >= -2 && visX < VISIBLE_WIDTH + 2) {
+                    if (visX >= -2 && visX < TANK_VIEWPORT_WIDTH + 2) {
                         const startX = visXToScreenX(visX);
                         const width = visXToScreenX(visX+1) - startX;
                         const yPos = (pieceGridY - BUFFER_HEIGHT) * BLOCK_SIZE;
@@ -542,11 +542,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {dumpPieces && dumpPieces.map(piece => {
                 // Convert absolute grid X to visual position
                 let visX = piece.x - boardOffset;
-                if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-                if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+                if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+                if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
                 // Only render if in visible range
-                if (visX < -1 || visX > VISIBLE_WIDTH) return null;
+                if (visX < -1 || visX > TANK_VIEWPORT_WIDTH) return null;
 
                 // Calculate screen position
                 const startX = visXToScreenX(visX);
@@ -595,10 +595,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     const pieceGridY = activeGoop.y + cell.y;
 
                     let visX = pieceGridX - boardOffset;
-                    if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-                    if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+                    if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+                    if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-                    if (visX >= -2 && visX < VISIBLE_WIDTH + 2) {
+                    if (visX >= -2 && visX < TANK_VIEWPORT_WIDTH + 2) {
                         const startX = visXToScreenX(visX);
                         const width = visXToScreenX(visX+1) - startX;
                         const yPos = (pieceGridY - BUFFER_HEIGHT) * BLOCK_SIZE;
@@ -634,10 +634,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {/* Floating Text */}
             {floatingTexts.map(ft => {
                 let visX = ft.x - boardOffset;
-                if (visX > TOTAL_WIDTH / 2) visX -= TOTAL_WIDTH;
-                if (visX < -TOTAL_WIDTH / 2) visX += TOTAL_WIDTH;
+                if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+                if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-                if (visX >= -2 && visX < VISIBLE_WIDTH + 2) {
+                if (visX >= -2 && visX < TANK_VIEWPORT_WIDTH + 2) {
                     const startX = visXToScreenX(visX);
                     const width = visXToScreenX(visX+1) - startX;
                     const yPos = (ft.y - BUFFER_HEIGHT) * BLOCK_SIZE;
