@@ -20,18 +20,19 @@ updated: 2026-01-27
 ## Next Steps
 
 **Current:** v1.4 Naming Standardization — Phase 23 (Code Rename)
-**Status:** 5/7 plans complete
+**Status:** 6/7 plans complete
 
 **Completed this session:**
 - 23-02: Core Goop lifecycle (PieceType→GoopShape, activePiece→activeGoop, etc.)
 - 23-03: Tank dimensions & coordinates (TANK_WIDTH/HEIGHT, tankRotation, TankCell)
 - 23-04: TankSystem and actions (ComplicationType→TankSystem, goopGroupId, PopGoopCommand)
 - 23-05: Progression variables & persistence (score→sessionXP, rank→operatorRank, scraps, SAVE RESET)
+- 23-06: Screen/Phase types & Cracks (GamePhase→ScreenType, CrackCell→Crack)
 
 **Next:**
-- 23-06: Screen/Phase types & Cracks (GamePhase, CrackCell)
+- 23-07: Remaining Goop terms (storedPiece, FallingBlock, pressure)
 
-**Resume command:** `/gsd:execute-plan .planning/phases/23-code-rename/23-06-PLAN.md`
+**Resume command:** `/gsd:execute-plan .planning/phases/23-code-rename/23-07-PLAN.md`
 
 **Key reference:** `.planning/GLOSSARY.md` has the complete migration table.
 
@@ -59,11 +60,11 @@ See: [[PROJECT]] (updated 2026-01-26)
 ## Current Position
 
 Phase: 23 of 24 (Code Rename)
-Plan: 5 of 7 in current phase
+Plan: 6 of 7 in current phase
 Status: In progress
-Last activity: 2026-01-27 — Completed 23-05-PLAN.md (Progression & Persistence)
+Last activity: 2026-01-27 — Completed 23-06-PLAN.md (Screen/Phase Types & Cracks)
 
-Progress: ██████░░░░ 71% (v1.4 Naming Standardization)
+Progress: ███████░░░ 75% (v1.4 Naming Standardization)
 
 ## What's Done
 
@@ -190,6 +191,17 @@ Last session: 2026-01-27
 **Milestone:** v1.4 Naming Standardization (4/7 Phase 23 plans complete)
 
 ### This Session Summary (2026-01-27)
+
+**23-06 Screen/Phase Types & Cracks Complete**
+
+Renamed screen state and crack terminology to glossary terms:
+- GamePhase → ScreenType (CONSOLE→ConsoleScreen, PERISCOPE→TankScreen, GAME_OVER→EndGameScreen)
+- CrackCell → Crack
+- parentIds → originCrackId (kept as array for merge support)
+- childIds → branchCrackIds
+- growthInterval → crackBranchInterval
+
+10 files modified, 151 tests pass, TypeScript compiles clean.
 
 **23-05 Progression Variables & Persistence Complete**
 
