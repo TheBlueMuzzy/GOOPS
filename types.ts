@@ -5,6 +5,7 @@ export interface Coordinate {
 }
 
 export enum PieceType {
+  // Original tetrominoes (keep for backwards compatibility)
   I = 'I',
   J = 'J',
   L = 'L',
@@ -12,6 +13,72 @@ export enum PieceType {
   S = 'S',
   T = 'T',
   Z = 'Z',
+
+  // Tetra Normal (5 pieces) - these replace the originals during gameplay
+  T_I = 'T_I',     // Vertical bar (4 cells)
+  T_L = 'T_L',     // L-shape
+  T_T = 'T_T',     // T-shape (with diagonal floater)
+  T_S = 'T_S',     // S-shape
+  T_O = 'T_O',     // 2x2 square
+
+  // Tetra Corrupted (5 pieces)
+  T_I_C = 'T_I_C', // Corrupted I (actually Z-like split)
+  T_L_C = 'T_L_C', // Corrupted L
+  T_T_C = 'T_T_C', // Corrupted T
+  T_S_C = 'T_S_C', // Corrupted S
+  T_O_C = 'T_O_C', // Corrupted O
+
+  // Penta Normal (11 pieces)
+  P_I = 'P_I',     // 5-cell vertical bar
+  P_L = 'P_L',     // L with extra cell
+  P_X = 'P_X',     // Plus/cross shape
+  P_U = 'P_U',     // U-shape
+  P_L2 = 'P_L2',   // Alternate L
+  P_Y = 'P_Y',     // Y-shape
+  P_T = 'P_T',     // T5 shape
+  P_S = 'P_S',     // S5 shape
+  P_P = 'P_P',     // P-shape
+  P_Z = 'P_Z',     // Z5 shape
+  P_W = 'P_W',     // W-shape (stairs)
+
+  // Penta Corrupted (11 pieces)
+  P_I_C = 'P_I_C',
+  P_L_C = 'P_L_C',
+  P_X_C = 'P_X_C',
+  P_U_C = 'P_U_C',
+  P_L2_C = 'P_L2_C',
+  P_Y_C = 'P_Y_C',
+  P_T_C = 'P_T_C',
+  P_S_C = 'P_S_C',
+  P_P_C = 'P_P_C',
+  P_Z_C = 'P_Z_C',
+  P_W_C = 'P_W_C',
+
+  // Hexa Normal (11 pieces)
+  H_I = 'H_I',     // 6-cell shapes
+  H_L = 'H_L',
+  H_X = 'H_X',
+  H_U = 'H_U',
+  H_L2 = 'H_L2',
+  H_Y = 'H_Y',
+  H_T = 'H_T',
+  H_S = 'H_S',
+  H_P = 'H_P',
+  H_Z = 'H_Z',
+  H_W = 'H_W',
+
+  // Hexa Corrupted (11 pieces)
+  H_I_C = 'H_I_C',
+  H_L_C = 'H_L_C',
+  H_X_C = 'H_X_C',
+  H_U_C = 'H_U_C',
+  H_L2_C = 'H_L2_C',
+  H_Y_C = 'H_Y_C',
+  H_T_C = 'H_T_C',
+  H_S_C = 'H_S_C',
+  H_P_C = 'H_P_C',
+  H_Z_C = 'H_Z_C',
+  H_W_C = 'H_W_C',
 }
 
 export interface PieceDefinition {
