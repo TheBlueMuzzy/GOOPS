@@ -14,10 +14,10 @@ interface ControlsProps {
 export const Controls: React.FC<ControlsProps> = ({ 
   state, maxTime 
 }) => {
-  const { score, gameOver, combo, timeLeft } = state;
+  const { sessionXP, gameOver, popStreak, sessionTime } = state;
   
   // Timer Formatting (Pressure)
-  const tankPressure = Math.max(0, Math.min(1, 1 - (timeLeft / maxTime)));
+  const tankPressure = Math.max(0, Math.min(1, 1 - (sessionTime / maxTime)));
   const isHighPressure = tankPressure > 0.8;
   const isCriticalPressure = tankPressure > 0.9;
   
@@ -42,9 +42,9 @@ export const Controls: React.FC<ControlsProps> = ({
 
           {/* CENTER: Combo Only */}
           <div className="absolute left-1/2 -translate-x-1/2 top-16 flex flex-col items-center">
-              {combo > 1 && (
+              {popStreak > 1 && (
                   <div className="text-2xl text-yellow-400 animate-bounce font-black tracking-wider whitespace-nowrap drop-shadow-[0_4px_4px_rgba(0,0,0,0.9)] stroke-black">
-                      x{combo} SURGE
+                      x{popStreak} SURGE
                   </div>
               )}
           </div>
@@ -52,7 +52,7 @@ export const Controls: React.FC<ControlsProps> = ({
           {/* RIGHT: Score */}
           <div className="flex flex-col items-end drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)]">
               <span className="text-[10px] text-green-500/90 uppercase font-bold tracking-widest mb-0.5">Score</span>
-              <span className="text-4xl font-mono text-green-400 font-black leading-none tracking-tighter shadow-green-500/10">{score.toLocaleString()}</span>
+              <span className="text-4xl font-mono text-green-400 font-black leading-none tracking-tighter shadow-green-500/10">{sessionXP.toLocaleString()}</span>
           </div>
       </div>
       

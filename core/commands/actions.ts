@@ -412,7 +412,7 @@ export class PopGoopCommand implements Command {
             });
             
             const colsToCheck = Array.from(uniqueCols);
-            const { grid: cleanGrid, falling: newFalling } = getFloatingBlocks(tempGrid, colsToCheck);
+            const { grid: cleanGrid, looseGoop: newFalling } = getFloatingBlocks(tempGrid, colsToCheck);
 
             // Burst Logic
             if (infusedCount > 0) {
@@ -431,7 +431,7 @@ export class PopGoopCommand implements Command {
             }
 
             engine.state.grid = cleanGrid;
-            engine.state.fallingBlocks.push(...newFalling);
+            engine.state.looseGoop.push(...newFalling);
             engine.emitChange();
          }
     }

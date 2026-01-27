@@ -465,11 +465,10 @@ export class GameEngine {
                 const crackDownLevel = this.powerUps[upgradeId] || 1;
                 const crackCount = 1 + crackDownLevel * 2; // 3, 5, 7
                 this.state.crackDownRemaining = crackCount;
-                console.log(`CRACK_DOWN activated: next ${crackCount} cracks will spawn in bottom 4 rows`);
                 break;
             }
             default:
-                console.log(`Active ability ${upgradeId} not yet implemented`);
+                break;
         }
     }
 
@@ -660,7 +659,6 @@ export class GameEngine {
                 const biasChance = crackMatcherLevel * 0.25; // 25% per level
                 if (Math.random() < biasChance) {
                     nextColor = lowestCrack.color;
-                    console.log(`CRACK_MATCHER: Biased next piece to ${nextColor} (lowest crack at y=${lowestCrack.y})`);
                 }
             }
             // Zone-based piece selection with corruption and mirroring
@@ -765,11 +763,11 @@ export class GameEngine {
         this.state.sessionXP += pointsToAdd;
 
         if (breakdown) {
-            this.state.sessionXPBreakdown.base += (breakdown.base || 0);
-            this.state.sessionXPBreakdown.height += (breakdown.height || 0);
-            this.state.sessionXPBreakdown.offscreen += (breakdown.offscreen || 0);
-            this.state.sessionXPBreakdown.adjacency += (breakdown.adjacency || 0);
-            this.state.sessionXPBreakdown.speed += (breakdown.speed || 0);
+            this.state.scoreBreakdown.base += (breakdown.base || 0);
+            this.state.scoreBreakdown.height += (breakdown.height || 0);
+            this.state.scoreBreakdown.offscreen += (breakdown.offscreen || 0);
+            this.state.scoreBreakdown.adjacency += (breakdown.adjacency || 0);
+            this.state.scoreBreakdown.speed += (breakdown.speed || 0);
         }
     }
 
@@ -830,7 +828,6 @@ export class GameEngine {
                 color: crack.color,
                 spawnTime: crack.spawnTime
             });
-            console.log('[CRACK DEBUG] Spawned crack:', crack.id, 'at', crack.x, crack.y, '- crackCells count:', this.state.crackCells.length);
         }
     }
 
@@ -1265,19 +1262,7 @@ export class GameEngine {
         });
     }
 
-    // Debug: track tick calls to diagnose pressure bug
-    private tickDebugCounter: number = 0;
-    private lastTickDebugLog: number = 0;
-
     public tick(dt: number) {
-        // DEBUG: Log every 2 seconds to track pressure bug
-        this.tickDebugCounter++;
-        const now = Date.now();
-        if (now - this.lastTickDebugLog > 2000) {
-            console.log(`[TICK DEBUG] #${this.tickDebugCounter} | active=${this.isSessionActive} | phase=${this.state.phase} | timeLeft=${this.state.sessionTime.toFixed(0)} | maxTime=${this.maxTime} | paused=${this.state.isPaused} | gameOver=${this.state.gameOver}`);
-            this.lastTickDebugLog = now;
-        }
-
         if (!this.isSessionActive || this.state.gameOver || this.state.isPaused) return;
 
         // Timer - stop if game ended

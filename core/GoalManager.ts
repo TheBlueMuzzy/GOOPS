@@ -50,7 +50,6 @@ export class GoalManager {
             // Decrement CRACK_DOWN counter if active
             if (crackDownActive) {
                 state.crackDownRemaining--;
-                console.log(`CRACK_DOWN: Crack spawned at y=${newGoal.y} (${state.crackDownRemaining} remaining)`);
             }
             audio.playPop(1);
             return { goal: newGoal, newLastSpawnTime: now };
@@ -117,7 +116,6 @@ export class GoalManager {
             // Decrement CRACK_DOWN counter if active
             if (crackDownActive) {
                 state.crackDownRemaining--;
-                console.log(`CRACK_DOWN: Crack spawned at y=${newCrack.y} (${state.crackDownRemaining} remaining)`);
             }
             audio.playPop(1);
             return { crack: newCrack, newLastSpawnTime: now };

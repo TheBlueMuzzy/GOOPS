@@ -25,21 +25,17 @@ export class CrackManager {
     ): void {
         // Only active at rank 30+
         const startingRank = calculateRankDetails(initialTotalScore).rank;
-        console.log('[CRACK DEBUG] tickGrowth called | score:', initialTotalScore, '| rank:', startingRank, '| phase:', state.phase, '| cells:', state.crackCells.length);
 
         if (startingRank < 30) {
-            console.log('[CRACK DEBUG] Skipping - rank < 30');
             return;
         }
 
         // Don't grow when in Console or Minigame phases
         if (state.phase === ScreenType.ConsoleScreen ||
             state.phase === ScreenType.COMPLICATION_MINIGAME) {
-            console.log('[CRACK DEBUG] Skipping - phase is', state.phase);
             return;
         }
 
-        console.log('[CRACK DEBUG] Processing', state.crackCells.length, 'cells, maxTime:', maxTime);
         const now = Date.now();
 
         // Process each crack cell for growth
@@ -131,7 +127,6 @@ export class CrackManager {
                 // MERGE: Connect to existing same-color crack
                 target.existingCrack.originCrackId.push(cell.id);
                 cell.branchCrackIds.push(target.existingCrack.id);
-                console.log(`Crack merged: ${cell.id} -> ${target.existingCrack.id} at (${target.x}, ${target.y})`);
             } else {
                 // NEW CRACK: Check if we can add more crack groups
                 const currentCrackCount = goalManager.countCracks(state.crackCells);
@@ -164,8 +159,6 @@ export class CrackManager {
                     color: newCrack.color,
                     spawnTime: newCrack.spawnTime
                 });
-
-                console.log(`Crack grew: ${cell.id} -> ${newCrack.id} at (${target.x}, ${target.y}), pressure: ${(tankPressure * 100).toFixed(1)}%, chance: ${(effectiveChance * 100).toFixed(1)}%`);
             }
         }
     }

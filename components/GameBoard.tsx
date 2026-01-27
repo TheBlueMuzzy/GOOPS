@@ -40,15 +40,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     equippedActives = [], activeCharges = {}, onActivateAbility,
     powerUps, storedGoop, nextGoop
 }) => {
-  const { grid, tankRotation, activeGoop, looseGoop, floatingTexts, timeLeft, goalMarks, crackCells, dumpPieces } = state;
+  const { grid, tankRotation, activeGoop, looseGoop, floatingTexts, sessionTime, goalMarks, crackCells, dumpPieces } = state;
 
   const palette = useMemo(() => getPaletteForRank(rank), [rank]);
 
   // --- Derived Values ---
   const tankPressure = useMemo(() => {
-    if (timeLeft <= 0) return 1;
-    return Math.max(0, 1 - (timeLeft / maxTime));
-  }, [timeLeft, maxTime]);
+    if (sessionTime <= 0) return 1;
+    return Math.max(0, 1 - (sessionTime / maxTime));
+  }, [sessionTime, maxTime]);
 
   const pressureHue = Math.max(0, 120 * (1 - tankPressure));
   const pressureColor = `hsla(${pressureHue}, 100%, 50%, 0.15)`;
