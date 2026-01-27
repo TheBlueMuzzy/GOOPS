@@ -21,6 +21,18 @@ export const PER_BLOCK_DURATION = 375;  // Extra time per block in group
 // Timer Constants
 export const INITIAL_TIME_MS = 75 * 1000;
 
+// Piece size zone thresholds (based on pressure row)
+// Pressure rises from bottom (row 0) toward top as time elapses
+export const TETRA_ZONE_END_ROW = 13;   // Tetra zone: pressure below row 13
+export const PENTA_ZONE_END_ROW = 8;    // Penta zone: pressure between row 13 and row 8
+// Hexa zone: pressure above row 8 (row 8 to top)
+
+// Corruption chance for spawning corrupted variants
+export const CORRUPTION_CHANCE = 0.15;  // 15% chance
+
+// Mirror chance for asymmetric pieces
+export const MIRROR_CHANCE = 0.5;       // 50% chance
+
 // Rotation tracking (for CONTROLS heat detection)
 export const ROTATION_BUFFER_SIZE = 30; // Max rotations tracked (circular buffer)
 export const ROTATION_WINDOW_MS = 3000; // 3 second window for heat calculation
