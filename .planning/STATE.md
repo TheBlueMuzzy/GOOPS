@@ -20,12 +20,19 @@ updated: 2026-01-27
 ## Next Steps
 
 **Current:** v1.4 Naming Standardization — SHIPPED 2026-01-27
-**Status:** Milestone archived and tagged
+**Status:** Milestone shipped + hotfix deployed
 
 **Completed:**
 - v1.4 milestone archived to `.planning/milestones/v1.4-ROADMAP.md`
 - All planning docs updated (MILESTONES.md, ROADMAP.md, PROJECT.md)
 - Git tag v1.4 created
+- **Hotfix:** Fixed rename regressions (Build #42)
+  - Controls.tsx: score→sessionXP, combo→popStreak, timeLeft→sessionTime
+  - GameBoard.tsx: timeLeft→sessionTime for pressure line
+  - actions.ts: falling→looseGoop destructuring
+  - GameEngine.ts: sessionXPBreakdown→scoreBreakdown
+  - Removed bogus importmap from index.html
+  - Removed debug console.logs
 
 **Next:**
 - Plan next milestone (`/gsd:discuss-milestone` or `/gsd:new-milestone`)
