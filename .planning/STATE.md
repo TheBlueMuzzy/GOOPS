@@ -32,12 +32,12 @@ updated: 2026-01-27
 
 **Next:**
 - XP bar redesign (pending discussion with user)
-- Pressure vented % logic tweaks (pending discussion)
 
 **Resume command:** Continue XP bar discussion
 
 ## Future Plans
 
+- **Pressure venting visual** — when goop is popped, animated graphic flies from pop location to pressure meter at top, reinforcing "venting pressure" concept without needing numbers
 - **Title unlock system** — unlock titles as progression rewards
 - **Piece shape changes** — different goop shapes for faster stacking
 - **Tutorial system** — guided onboarding for new players
@@ -215,8 +215,9 @@ Implemented Shift/Career terminology and grade system:
 - **Dynamic text:** Floating pressure %, periscope alternation, REPAIR titles
 - **Bug fix:** Loose goop now removes cracks from both goalMarks AND crackCells
 - **UI polish:** UPGRADES button (centered, resized), SCRAPS: XX format, text alignment
+- **Vented text:** Changed floating % to just "Vented" (percentage was meaningless at 1-2%)
 
-26 files modified, 151 tests pass.
+27 files modified, 151 tests pass.
 
 **Previous: 24-01 UI Text Updates Complete — v1.4 MILESTONE COMPLETE**
 

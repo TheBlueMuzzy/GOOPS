@@ -388,10 +388,9 @@ export class PopGoopCommand implements Command {
             engine.state.popStreak = currentComboCount;
 
             const textId = Math.random().toString(36).substr(2, 9);
-            const pressurePercent = Math.round((totalTimeAdded / engine.maxTime) * 100);
             const floaters = [
                 { id: textId, text: `+${roundedScore}`, x: this.x, y: this.y, life: 1, color: '#fbbf24' },
-                { id: textId + '_time', text: `-${pressurePercent}%`, x: this.x, y: this.y - 1, life: 1, color: '#4ade80' }
+                { id: textId + '_time', text: 'Vented', x: this.x, y: this.y - 1, life: 1, color: '#4ade80' }
             ];
             
             if (infusedCount > 0) {
