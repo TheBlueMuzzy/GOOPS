@@ -28,7 +28,7 @@ export interface InputCallbacks {
     onRotate?: (dir: number) => void;
     onDragInput?: (dir: number) => void;
     onSwipeUp?: () => void;
-    onSoftDrop?: (active: boolean) => void;
+    onFastDrop?: (active: boolean) => void;
     onSwap?: () => void;
 }
 

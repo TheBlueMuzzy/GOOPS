@@ -141,7 +141,7 @@ export class GameEngine {
             laserCapacitor: 100,  // Starts full
             controlsHeat: 0,      // Starts cool
             lightsBrightness: 100,     // Starts at full brightness
-            lightsGraceStart: null,    // null = soft dropping, starts as if soft dropping
+            lightsGraceStart: null,    // null = fast dropping, starts as if fast dropping
             lightsFlickered: false,    // No flicker yet this cycle
             complicationCooldowns: {
                 [ComplicationType.LIGHTS]: 0,
@@ -290,7 +290,7 @@ export class GameEngine {
             laserCapacitor: 100,  // Starts full
             controlsHeat: 0,      // Starts cool
             lightsBrightness: 100,     // Starts at full brightness
-            lightsGraceStart: null,    // null = soft dropping, starts as if soft dropping
+            lightsGraceStart: null,    // null = fast dropping, starts as if fast dropping
             lightsFlickered: false,    // No flicker yet this cycle
             complicationCooldowns: {
                 [ComplicationType.LIGHTS]: 0,
@@ -857,8 +857,8 @@ export class GameEngine {
     }
 
     /**
-     * Handle LIGHTS brightness system: dims when not soft dropping, recovers when soft dropping.
-     * Player must "work faster" (soft drop) to keep the lights on.
+     * Handle LIGHTS brightness system: dims when not fast dropping, recovers when fast dropping.
+     * Player must "work faster" (fast drop) to keep the lights on.
      */
     private tickLightsBrightness(dt: number): void {
         const startingRank = calculateRankDetails(this.initialTotalScore).rank;
@@ -893,7 +893,7 @@ export class GameEngine {
 
         const now = Date.now();
 
-        // Edge detection: started soft dropping
+        // Edge detection: started fast dropping
         if (this.isFastDropping && !this.wasFastDropping) {
             // Start recovery - clear grace timer, begin lerping to 100
             this.state.lightsGraceStart = null;
@@ -902,7 +902,7 @@ export class GameEngine {
             this.lightsFlickerActive = false;
         }
 
-        // Edge detection: stopped soft dropping
+        // Edge detection: stopped fast dropping
         if (!this.isFastDropping && this.wasFastDropping) {
             // Start grace period
             this.state.lightsGraceStart = now;
@@ -953,7 +953,7 @@ export class GameEngine {
             }
             // else: at 100, no overflare, just hold
         } else {
-            // NOT SOFT DROPPING: Grace period, then dim
+            // NOT FAST DROPPING: Grace period, then dim
             if (this.state.lightsGraceStart === null) {
                 // First tick after game start or other edge case - start grace
                 this.state.lightsGraceStart = now;
@@ -1166,7 +1166,7 @@ export class GameEngine {
         const adjustedSpeed = INITIAL_SPEED / speedMultiplier;
 
         const gravitySpeed = this.isFastDropping
-            ? adjustedSpeed / SOFT_DROP_FACTOR
+            ? adjustedSpeed / FAST_DROP_FACTOR
             : adjustedSpeed;
 
         const moveAmount = dt / gravitySpeed;
@@ -1295,7 +1295,7 @@ export class GameEngine {
         // Heat dissipation
         this.tickHeat(dt);
 
-        // Lights brightness (player-controlled via soft drop)
+        // Lights brightness (player-controlled via fast drop)
         this.tickLightsBrightness(dt);
 
         // Falling blocks

@@ -3,7 +3,7 @@
  * Handles pointer/touch events including:
  * - Hold-to-swap (250ms delay, 1000ms fill)
  * - Horizontal drag for cylinder rotation
- * - Vertical drag for soft drop
+ * - Vertical drag for fast drop
  * - Tap on blocks to pop, tap on empty to rotate
  * - Swipe up for console
  */
@@ -48,7 +48,7 @@ export function useInputHandlers({
     powerUps
 }: UseInputHandlersParams): UseInputHandlersReturn {
     // Destructure optional callbacks
-    const { onBlockTap, onRotate, onDragInput, onSwipeUp, onSoftDrop, onSwap } = callbacks;
+    const { onBlockTap, onRotate, onDragInput, onSwipeUp, onFastDrop, onSwap } = callbacks;
 
     // Calculate dynamic hold duration based on GOOP_SWAP upgrade level
     // Base: 1.5s, Per level: -0.25s (1.5, 1.25, 1.0, 0.75, 0.5 at max)
@@ -235,7 +235,7 @@ export function useInputHandlers({
                     // Vertical Drag Start
                     if (dy > 0) {
                         gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: true } as FastDropPayload);
-                        onSoftDrop?.(true); // Drag Down = Continuous Drop
+                        onFastDrop?.(true); // Drag Down = Continuous Drop
                     }
                 }
             }
@@ -257,10 +257,10 @@ export function useInputHandlers({
                     onDragInput?.(0); // Deadzone
                 }
             } else if (axis === 'V') {
-                // Vertical Drag - soft drop when dragging down (dy > 0)
-                const shouldSoftDrop = dy > 0;
-                gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: shouldSoftDrop } as FastDropPayload);
-                onSoftDrop?.(shouldSoftDrop);
+                // Vertical Drag - fast drop when dragging down (dy > 0)
+                const shouldFastDrop = dy > 0;
+                gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: shouldFastDrop } as FastDropPayload);
+                onFastDrop?.(shouldFastDrop);
             }
         }
     }, [clearHold]);
@@ -279,7 +279,7 @@ export function useInputHandlers({
         // Cleanup
         clearHold();
         gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: false } as FastDropPayload);
-        onSoftDrop?.(false);
+        onFastDrop?.(false);
         gameEventBus.emit(GameEventType.INPUT_DRAG, { direction: 0 } as DragPayload);
         onDragInput?.(0);
         setHighlightedGroupId(null);
@@ -325,10 +325,10 @@ export function useInputHandlers({
                     } else {
                         // Swipe Down -> Fast Drop Pulse
                         gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: true } as FastDropPayload);
-                        onSoftDrop?.(true);
+                        onFastDrop?.(true);
                         setTimeout(() => {
                             gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: false } as FastDropPayload);
-                            onSoftDrop?.(false);
+                            onFastDrop?.(false);
                         }, 150);
                     }
                 }
@@ -447,7 +447,7 @@ export function useInputHandlers({
                         pointerRef.current.lockedAxis = 'V';
                         if (dy > 0) {
                             gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: true } as FastDropPayload);
-                            onSoftDrop?.(true);
+                            onFastDrop?.(true);
                         }
                     }
                 }
@@ -469,10 +469,10 @@ export function useInputHandlers({
                 } else if (axis === 'V') {
                     if (dy > HORIZONTAL_DRAG_THRESHOLD) {
                         gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: true } as FastDropPayload);
-                        onSoftDrop?.(true);
+                        onFastDrop?.(true);
                     } else {
                         gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: false } as FastDropPayload);
-                        onSoftDrop?.(false);
+                        onFastDrop?.(false);
                     }
                 }
             }
@@ -491,7 +491,7 @@ export function useInputHandlers({
             // Cleanup
             clearHold();
             gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: false } as FastDropPayload);
-            onSoftDrop?.(false);
+            onFastDrop?.(false);
             gameEventBus.emit(GameEventType.INPUT_DRAG, { direction: 0 } as DragPayload);
             onDragInput?.(0);
             setHighlightedGroupId(null);
@@ -528,10 +528,10 @@ export function useInputHandlers({
                         onSwipeUp?.();
                     } else {
                         gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: true } as FastDropPayload);
-                        onSoftDrop?.(true);
+                        onFastDrop?.(true);
                         setTimeout(() => {
                             gameEventBus.emit(GameEventType.INPUT_FAST_DROP, { active: false } as FastDropPayload);
-                            onSoftDrop?.(false);
+                            onFastDrop?.(false);
                         }, 150);
                     }
                 }
@@ -544,7 +544,7 @@ export function useInputHandlers({
         window.addEventListener('touchend', handleEnd);
         window.addEventListener('touchcancel', handleEnd);
 
-    }, [getViewportCoords, getHitData, pressureRatio, clearHold, holdDuration, onSwap, onSoftDrop, onDragInput, onBlockTap, onRotate, onSwipeUp, removeTouchListeners]);
+    }, [getViewportCoords, getHitData, pressureRatio, clearHold, holdDuration, onSwap, onFastDrop, onDragInput, onBlockTap, onRotate, onSwipeUp, removeTouchListeners]);
 
     // Cleanup listeners on unmount
     useEffect(() => {

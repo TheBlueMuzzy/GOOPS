@@ -126,7 +126,7 @@ export class ComplicationManager {
     }
 
     // NOTE: checkLightsTrigger() removed - LIGHTS is now triggered by brightness system
-    // in GameEngine.tickLightsBrightness() based on soft drop behavior
+    // in GameEngine.tickLightsBrightness() based on fast drop behavior
 
     /**
      * Extend all active complication cooldowns by a percentage.

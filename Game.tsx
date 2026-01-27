@@ -280,7 +280,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       const unsubSwipeUp = gameEventBus.on(GameEventType.INPUT_SWIPE_UP, () => {
           engine.execute(new SetPhaseCommand(GamePhase.CONSOLE));
       });
-      const unsubSoftDrop = gameEventBus.on<FastDropPayload>(GameEventType.INPUT_FAST_DROP, (p) => {
+      const unsubFastDrop = gameEventBus.on<FastDropPayload>(GameEventType.INPUT_FAST_DROP, (p) => {
           engine.execute(new SetFastDropCommand(p?.active ?? false));
       });
       const unsubSwap = gameEventBus.on(GameEventType.INPUT_SWAP, () => {
@@ -294,7 +294,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           unsubRotate();
           unsubDrag();
           unsubSwipeUp();
-          unsubSoftDrop();
+          unsubFastDrop();
           unsubSwap();
           unsubBlockTap();
       };
@@ -303,7 +303,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   // Use starting rank for HUD meter visibility - complications unlock based on starting rank, not mid-run
   const startingRank = calculateRankDetails(initialTotalScore).rank;
 
-  // Lights brightness is now continuous (player-controlled via soft drop)
+  // Lights brightness is now continuous (player-controlled via fast drop)
   // Only apply dimming effect in PERISCOPE phase
 
   return (
@@ -330,7 +330,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             storedPiece={engine.state.storedPiece}
             nextPiece={engine.state.nextPiece}
          />
-         {/* Lights brightness is now controlled by state.lightsBrightness (player-controlled via soft drop) */}
+         {/* Lights brightness is now controlled by state.lightsBrightness (player-controlled via fast drop) */}
       </div>
 
       {/* LAYER 2: CONSOLE VIEW (Visible in Console Phase) */}
