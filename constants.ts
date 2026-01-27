@@ -462,3 +462,44 @@ const PIECE_P_W_C = makePiece(PieceType.P_W_C, [[0, 0], [0, 2], [1, 1], [2, 0], 
 export const PENTA_NORMAL = [PIECE_P_I, PIECE_P_L, PIECE_P_X, PIECE_P_U, PIECE_P_L2, PIECE_P_Y, PIECE_P_T, PIECE_P_S, PIECE_P_P, PIECE_P_Z, PIECE_P_W];
 export const PENTA_CORRUPTED = [PIECE_P_I_C, PIECE_P_L_C, PIECE_P_X_C, PIECE_P_U_C, PIECE_P_L2_C, PIECE_P_Y_C, PIECE_P_T_C, PIECE_P_S_C, PIECE_P_P_C, PIECE_P_Z_C, PIECE_P_W_C];
 export const PENTA_PIECES = [...PENTA_NORMAL, ...PENTA_CORRUPTED];
+
+// -----------------------------------------------------------------------------
+// HEXA PIECES (6 cells each) - 11 Normal + 11 Corrupted = 22 total
+// -----------------------------------------------------------------------------
+
+// Hexa Normal (from SVG cls-1 dark blue)
+// Parsed from SVG Hexa group, normalized to center
+const PIECE_H_I = makePiece(PieceType.H_I, [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [0, 3]]); // Vertical bar (6 cells)
+const PIECE_H_L = makePiece(PieceType.H_L, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [2, 1]]);   // Long L with bump
+const PIECE_H_X = makePiece(PieceType.H_X, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 3]]);   // Extended cross
+const PIECE_H_U = makePiece(PieceType.H_U, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 0]]);   // Big U-shape
+const PIECE_H_L2 = makePiece(PieceType.H_L2, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [1, 3]]); // Chunky long L
+const PIECE_H_Y = makePiece(PieceType.H_Y, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 2]]);   // Y-shape extended
+const PIECE_H_T = makePiece(PieceType.H_T, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 2]]);   // T6 shape
+const PIECE_H_S = makePiece(PieceType.H_S, [[0, 0], [0, 1], [1, 0], [1, 1], [2, 1], [2, 2]]);   // S6 shape
+const PIECE_H_P = makePiece(PieceType.H_P, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 2], [1, 3]]);   // P6 shape
+const PIECE_H_Z = makePiece(PieceType.H_Z, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [1, 3]]);   // Z6 shape
+const PIECE_H_W = makePiece(PieceType.H_W, [[0, 0], [0, 3], [1, 1], [1, 2], [1, 3], [2, 3]]);   // W6 shape (stairs)
+
+// Hexa Corrupted (from SVG cls-6 light blue) - non-contiguous patterns
+const PIECE_H_I_C = makePiece(PieceType.H_I_C, [[0, 0], [0, 3], [0, 5], [1, 1], [1, 2], [1, 4]]); // Split zigzag
+const PIECE_H_L_C = makePiece(PieceType.H_L_C, [[0, 0], [0, 2], [1, 1], [1, 2], [1, 3], [2, 0]]); // Scattered L
+const PIECE_H_X_C = makePiece(PieceType.H_X_C, [[0, 0], [0, 2], [0, 3], [1, 1], [1, 3], [2, 0]]); // Spread cross
+const PIECE_H_U_C = makePiece(PieceType.H_U_C, [[0, 0], [0, 3], [1, 1], [1, 2], [1, 4], [2, 0]]); // Scattered U
+const PIECE_H_L2_C = makePiece(PieceType.H_L2_C, [[0, 0], [0, 1], [1, 1], [1, 2], [1, 3], [2, 0]]); // Scattered chunky L
+const PIECE_H_Y_C = makePiece(PieceType.H_Y_C, [[0, 0], [0, 2], [1, 0], [1, 2], [1, 3], [2, 1]]); // Spread Y
+const PIECE_H_T_C = makePiece(PieceType.H_T_C, [[0, 0], [0, 1], [0, 3], [1, 1], [1, 2], [1, 4]]); // Scattered T
+const PIECE_H_S_C = makePiece(PieceType.H_S_C, [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2]]); // Corrupted S
+const PIECE_H_P_C = makePiece(PieceType.H_P_C, [[0, 0], [0, 2], [0, 4], [1, 1], [1, 2], [1, 3]]); // Corrupted P
+const PIECE_H_Z_C = makePiece(PieceType.H_Z_C, [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2], [2, 3]]); // Corrupted Z
+const PIECE_H_W_C = makePiece(PieceType.H_W_C, [[0, 0], [0, 3], [1, 1], [1, 2], [2, 0], [2, 3]]); // Corrupted W
+
+export const HEXA_NORMAL = [PIECE_H_I, PIECE_H_L, PIECE_H_X, PIECE_H_U, PIECE_H_L2, PIECE_H_Y, PIECE_H_T, PIECE_H_S, PIECE_H_P, PIECE_H_Z, PIECE_H_W];
+export const HEXA_CORRUPTED = [PIECE_H_I_C, PIECE_H_L_C, PIECE_H_X_C, PIECE_H_U_C, PIECE_H_L2_C, PIECE_H_Y_C, PIECE_H_T_C, PIECE_H_S_C, PIECE_H_P_C, PIECE_H_Z_C, PIECE_H_W_C];
+export const HEXA_PIECES = [...HEXA_NORMAL, ...HEXA_CORRUPTED];
+
+// =============================================================================
+// COMBINED EXPORTS
+// =============================================================================
+
+export const ALL_NEW_PIECES = [...TETRA_PIECES, ...PENTA_PIECES, ...HEXA_PIECES];
