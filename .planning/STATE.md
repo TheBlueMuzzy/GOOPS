@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-01-26
+updated: 2026-01-27
 ---
 
 # Project State
@@ -28,6 +28,8 @@ updated: 2026-01-26
 
 **Next:**
 - 23-04: Complication system (ComplicationType, laserCapacitor, groupId)
+
+**Resume command:** `/gsd:execute-plan .planning/phases/23-code-rename/23-04-PLAN.md`
 
 **Key reference:** `.planning/GLOSSARY.md` has the complete migration table.
 
