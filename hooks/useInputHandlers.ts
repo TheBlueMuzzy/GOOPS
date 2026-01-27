@@ -25,7 +25,7 @@ const HORIZONTAL_DRAG_THRESHOLD = 20;
 
 interface UseInputHandlersParams {
     callbacks: InputCallbacks;
-    boardOffset: number;
+    tankRotation: number;
     grid: (GridCell | null)[][];
     pressureRatio: number;
     powerUps?: Record<string, number>; // For GOOP_SWAP upgrade effect
@@ -42,7 +42,7 @@ interface UseInputHandlersReturn {
 
 export function useInputHandlers({
     callbacks,
-    boardOffset,
+    tankRotation,
     grid,
     pressureRatio,
     powerUps
@@ -108,7 +108,7 @@ export function useInputHandlers({
     const getHitData = useCallback((vx: number, vy: number): HitData => {
         if (vx >= 0 && vx < TANK_VIEWPORT_WIDTH) {
             const visX = Math.floor(vx);
-            const gridX = normalizeX(visX + boardOffset);
+            const gridX = normalizeX(visX + tankRotation);
             const gridY = Math.floor(vy);
             if (gridY >= 0 && gridY < TANK_HEIGHT) {
                 const cell = grid[gridY][gridX];
@@ -118,7 +118,7 @@ export function useInputHandlers({
             }
         }
         return { type: 'EMPTY' };
-    }, [boardOffset, grid]);
+    }, [tankRotation, grid]);
 
     /**
      * Clear hold-to-swap state and timer.

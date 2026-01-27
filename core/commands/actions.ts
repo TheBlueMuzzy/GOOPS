@@ -19,7 +19,7 @@ export class MoveBoardCommand implements Command {
     execute(engine: GameEngine): void {
         if (engine.state.gameOver || engine.state.isPaused) return;
 
-        const newOffset = normalizeX(engine.state.boardOffset + this.dir);
+        const newOffset = normalizeX(engine.state.tankRotation + this.dir);
         
         let newPiece = engine.state.activeGoop;
 
@@ -49,7 +49,7 @@ export class MoveBoardCommand implements Command {
              }
         }
 
-        engine.state.boardOffset = newOffset;
+        engine.state.tankRotation = newOffset;
         if (newPiece) {
             engine.state.activeGoop = newPiece;
         }
@@ -127,11 +127,11 @@ export class RotatePieceCommand implements Command {
             const kickedGridX = normalizeX(tempPiece.x + kick.x);
             // We must update screenX if we kick the piece!
             // Calculate what screenX would be for this new gridX
-            const kickedScreenX = getScreenX(kickedGridX, engine.state.boardOffset);
+            const kickedScreenX = getScreenX(kickedGridX, engine.state.tankRotation);
             
             const kickedPiece = { ...tempPiece, x: kickedGridX, y: tempPiece.y + kick.y, screenX: kickedScreenX };
             
-            if (!checkCollision(engine.state.grid, kickedPiece, engine.state.boardOffset)) {
+            if (!checkCollision(engine.state.grid, kickedPiece, engine.state.tankRotation)) {
                 gameEventBus.emit(GameEventType.PIECE_ROTATED);
                 engine.state.activeGoop = kickedPiece;
 
@@ -164,7 +164,7 @@ export class HardDropCommand implements Command {
     execute(engine: GameEngine): void {
         if (engine.state.gameOver || engine.state.isPaused || !engine.state.activeGoop) return;
 
-        const y = getGhostY(engine.state.grid, engine.state.activeGoop, engine.state.boardOffset);
+        const y = getGhostY(engine.state.grid, engine.state.activeGoop, engine.state.tankRotation);
         const droppedPiece = { ...engine.state.activeGoop, y };
         
         const { grid: newGrid, consumedGoals, destroyedGoals } = mergePiece(engine.state.grid, droppedPiece, engine.state.goalMarks);
@@ -222,7 +222,7 @@ export class SwapPieceCommand implements Command {
                 state: GoopState.FALLING
             };
 
-            if (checkCollision(engine.state.grid, testPiece, engine.state.boardOffset)) {
+            if (checkCollision(engine.state.grid, testPiece, engine.state.tankRotation)) {
                 // Stored piece won't fit at current position - reject swap
                 gameEventBus.emit(GameEventType.ACTION_REJECTED);
                 return;
@@ -374,7 +374,7 @@ export class BlockTapCommand implements Command {
             group.forEach((pt) => {
                  let bScore = 10;
                  let hScore = calculateHeightBonus(pt.y);
-                 let oScore = calculateOffScreenBonus(pt.x, engine.state.boardOffset);
+                 let oScore = calculateOffScreenBonus(pt.x, engine.state.tankRotation);
                  const multiplier = calculateMultiplier(currentComboCount);
                  const finalBlockScore = (bScore + hScore + oScore) * multiplier;
                  totalScoreForTap += finalBlockScore;

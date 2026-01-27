@@ -108,7 +108,7 @@ export function getContourPath(
  */
 export function buildRenderableGroups(
     grid: (GridCell | null)[][],
-    boardOffset: number,
+    tankRotation: number,
     fallingBlocks: FallingBlock[]
 ): Map<string, RenderableCell[]> {
     const map = new Map<string, RenderableCell[]>();
@@ -116,7 +116,7 @@ export function buildRenderableGroups(
     // 1. Static Grid
     for (let y = BUFFER_HEIGHT; y < BUFFER_HEIGHT + TANK_VIEWPORT_HEIGHT; y++) {
         for (let visX = 0; visX < TANK_VIEWPORT_WIDTH; visX++) {
-            const gridX = normalizeX(visX + boardOffset);
+            const gridX = normalizeX(visX + tankRotation);
             const cell = grid[y][gridX];
             if (!cell) continue;
 
@@ -153,7 +153,7 @@ export function buildRenderableGroups(
 
         blocks.forEach(block => {
             if (block.y < BUFFER_HEIGHT - 1) return;
-            let visX = block.x - boardOffset;
+            let visX = block.x - tankRotation;
             if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
             if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 

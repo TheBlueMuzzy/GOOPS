@@ -120,16 +120,16 @@ export function svgToVisual(svgX: number, svgY: number): { visX: number; visY: n
  *
  * @param visX - Visual column position
  * @param visY - Visual row position
- * @param boardOffset - Current board rotation offset
+ * @param tankRotation - Current board rotation offset
  * @returns Grid column and row (integers)
  */
 export function visualToGrid(
   visX: number,
   visY: number,
-  boardOffset: number
+  tankRotation: number
 ): { col: number; row: number } {
   const floorVisX = Math.floor(visX);
-  const rawCol = floorVisX + boardOffset;
+  const rawCol = floorVisX + tankRotation;
   // Normalize to cylinder width (handles negative values)
   const col = ((rawCol % TANK_WIDTH) + TANK_WIDTH) % TANK_WIDTH;
   const row = Math.floor(visY);
@@ -142,15 +142,15 @@ export function visualToGrid(
  *
  * @param gridX - Grid column
  * @param gridY - Grid row
- * @param boardOffset - Current board rotation offset
+ * @param tankRotation - Current board rotation offset
  * @returns X and Y as percentages of the viewport (0-100)
  */
 export function gridToPercentage(
   gridX: number,
   gridY: number,
-  boardOffset: number
+  tankRotation: number
 ): { x: number; y: number } {
-  let visX = gridX - boardOffset;
+  let visX = gridX - tankRotation;
   // Wrap to visible range
   if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
   if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;

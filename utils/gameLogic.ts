@@ -100,7 +100,7 @@ export const createInitialGrid = (rank: number, powerUps?: Record<string, number
   return grid;
 };
 
-export const checkCollision = (grid: GridCell[][], piece: ActivePiece, boardOffset: number): boolean => {
+export const checkCollision = (grid: GridCell[][], piece: ActivePiece, tankRotation: number): boolean => {
   for (const cell of piece.cells) {
     const x = normalizeX(piece.x + cell.x);
     const y = piece.y + cell.y;
@@ -127,12 +127,12 @@ export const checkCollision = (grid: GridCell[][], piece: ActivePiece, boardOffs
   return false;
 };
 
-export const getGhostY = (grid: GridCell[][], piece: ActivePiece, boardOffset: number): number => {
+export const getGhostY = (grid: GridCell[][], piece: ActivePiece, tankRotation: number): number => {
   const startY = Math.floor(piece.y);
   let y = startY;
 
   // Search downwards for the first invalid position
-  while (y < TANK_HEIGHT && !checkCollision(grid, { ...piece, y: y + 1 }, boardOffset)) {
+  while (y < TANK_HEIGHT && !checkCollision(grid, { ...piece, y: y + 1 }, tankRotation)) {
     y += 1;
   }
   
@@ -536,8 +536,8 @@ export const calculateHeightBonus = (y: number): number => {
     return Math.max(0, (TANK_HEIGHT - y) * 10);
 };
 
-export const calculateOffScreenBonus = (x: number, boardOffset: number): number => {
-    const center = normalizeX(boardOffset + TANK_VIEWPORT_WIDTH / 2);
+export const calculateOffScreenBonus = (x: number, tankRotation: number): number => {
+    const center = normalizeX(tankRotation + TANK_VIEWPORT_WIDTH / 2);
     let dist = Math.abs(x - center);
     if (dist > TANK_WIDTH / 2) dist = TANK_WIDTH - dist;
     

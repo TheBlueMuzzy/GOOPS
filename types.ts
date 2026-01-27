@@ -202,7 +202,7 @@ export interface Complication {
 
 export interface GameState {
   grid: GridCell[][]; // [y][x]
-  boardOffset: number; // 0-TANK_WIDTH
+  tankRotation: number; // 0-TANK_WIDTH
   activeGoop: ActivePiece | null;
   storedPiece: GoopTemplate | null;
   nextPiece: GoopTemplate | null;  // Preview of upcoming piece

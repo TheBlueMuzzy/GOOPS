@@ -40,7 +40,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     equippedActives = [], activeCharges = {}, onActivateAbility,
     powerUps, storedPiece, nextPiece
 }) => {
-  const { grid, boardOffset, activeGoop, fallingBlocks, floatingTexts, timeLeft, goalMarks, crackCells, dumpPieces } = state;
+  const { grid, tankRotation, activeGoop, fallingBlocks, floatingTexts, timeLeft, goalMarks, crackCells, dumpPieces } = state;
 
   const palette = useMemo(() => getPaletteForRank(rank), [rank]);
 
@@ -63,7 +63,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Use imported coordinate transform functions (pure functions, no hooks needed)
   const getScreenPercentCoords = useCallback((gridX: number, gridY: number) => {
-      let visX = gridX - boardOffset;
+      let visX = gridX - tankRotation;
       if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
       if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
@@ -74,13 +74,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const pctY = ((svgY - vbY) / vbH) * 100;
 
       return { x: pctX, y: pctY };
-  }, [boardOffset]); // Only boardOffset changes - vbX/vbY/vbW/vbH are constants
+  }, [tankRotation]); // Only tankRotation changes - vbX/vbY/vbW/vbH are constants
 
   // --- INPUT HANDLING (via hook) ---
   // Events are now emitted via EventBus, subscribed in Game.tsx
   const { handlers, holdState, highlightedGroupId, shakingGroupId } = useInputHandlers({
       callbacks: {}, // Callbacks optional - events emitted regardless
-      boardOffset,
+      tankRotation,
       grid,
       pressureRatio,
       powerUps  // For GOOP_SWAP: reduces hold-to-swap duration
@@ -100,8 +100,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // --- Render Groups Preparation (via utility function) ---
   const groups = useMemo(
-      () => buildRenderableGroups(grid, boardOffset, fallingBlocks),
-      [grid, boardOffset, fallingBlocks]
+      () => buildRenderableGroups(grid, tankRotation, fallingBlocks),
+      [grid, tankRotation, fallingBlocks]
   );
 
   // Wild color cycling - wave effect moving left to right
@@ -244,11 +244,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     if (!child || now - child.spawnTime < 500) return null;
 
                     // Convert cell positions to screen coordinates
-                    let visX1 = cell.x - boardOffset;
+                    let visX1 = cell.x - tankRotation;
                     if (visX1 > TANK_WIDTH / 2) visX1 -= TANK_WIDTH;
                     if (visX1 < -TANK_WIDTH / 2) visX1 += TANK_WIDTH;
 
-                    let visX2 = child.x - boardOffset;
+                    let visX2 = child.x - tankRotation;
                     if (visX2 > TANK_WIDTH / 2) visX2 -= TANK_WIDTH;
                     if (visX2 < -TANK_WIDTH / 2) visX2 += TANK_WIDTH;
 
@@ -282,7 +282,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             })}
             {/* Crack Cell Circles - render circle at each crack cell position */}
             {crackCells && crackCells.filter(c => now - c.spawnTime >= 500).map(cell => {
-                let visX = cell.x - boardOffset;
+                let visX = cell.x - tankRotation;
                 if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
                 if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
@@ -310,7 +310,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Goal Marks - always render */}
             {goalMarks.filter(m => now - m.spawnTime >= 500).map(mark => {
-                let visX = mark.x - boardOffset;
+                let visX = mark.x - tankRotation;
                 if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
                 if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
@@ -329,7 +329,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Offscreen Indicators */}
             {goalMarks.map(mark => {
-                const centerCol = normalizeX(boardOffset + TANK_VIEWPORT_WIDTH / 2);
+                const centerCol = normalizeX(tankRotation + TANK_VIEWPORT_WIDTH / 2);
                 let diff = mark.x - centerCol;
                 if (diff > TANK_WIDTH / 2) diff -= TANK_WIDTH;
                 if (diff < -TANK_WIDTH / 2) diff += TANK_WIDTH;
@@ -483,7 +483,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Ghost Piece */}
             {activeGoop && activeGoop.state === GoopState.FALLING && (() => {
-                const ghostY = getGhostY(grid, activeGoop, boardOffset);
+                const ghostY = getGhostY(grid, activeGoop, tankRotation);
                 const isWild = activeGoop.definition.isWild;
 
                 return activeGoop.cells.map((cell, idx) => {
@@ -492,7 +492,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     const pieceGridY = ghostY + cell.y;
                     if (pieceGridY < BUFFER_HEIGHT) return null;
 
-                    let visX = pieceGridX - boardOffset;
+                    let visX = pieceGridX - tankRotation;
                     if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
                     if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
@@ -541,7 +541,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {/* Dump Pieces (GOOP_DUMP falling pieces) */}
             {dumpPieces && dumpPieces.map(piece => {
                 // Convert absolute grid X to visual position
-                let visX = piece.x - boardOffset;
+                let visX = piece.x - tankRotation;
                 if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
                 if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
@@ -594,7 +594,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     const pieceGridX = normalizeX(activeGoop.x + cell.x);
                     const pieceGridY = activeGoop.y + cell.y;
 
-                    let visX = pieceGridX - boardOffset;
+                    let visX = pieceGridX - tankRotation;
                     if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
                     if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
@@ -633,7 +633,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Floating Text */}
             {floatingTexts.map(ft => {
-                let visX = ft.x - boardOffset;
+                let visX = ft.x - tankRotation;
                 if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
                 if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 

@@ -103,7 +103,7 @@ export class GameEngine {
 
         this.state = {
             grid: createInitialGrid(startRank, powerUps),
-            boardOffset: 0,
+            tankRotation: 0,
             activeGoop: null,
             storedPiece: null,
             nextPiece: null,
@@ -250,7 +250,7 @@ export class GameEngine {
         this.state = {
             ...this.state,
             grid: createInitialGrid(startRank, this.powerUps),
-            boardOffset: 0,
+            tankRotation: 0,
             score: 0,
             gameOver: false,
             isPaused: false,
@@ -635,7 +635,7 @@ export class GameEngine {
 
     public spawnNewPiece(pieceDef?: GoopTemplate, gridOverride?: GridCell[][], offsetOverride?: number) {
         const currentGrid = gridOverride || this.state.grid;
-        const currentOffset = offsetOverride !== undefined ? offsetOverride : this.state.boardOffset;
+        const currentOffset = offsetOverride !== undefined ? offsetOverride : this.state.tankRotation;
         const currentTotalScore = this.initialTotalScore + this.state.score;
         const currentRank = calculateRankDetails(currentTotalScore).rank;
         const palette = getPaletteForRank(currentRank);
@@ -1173,10 +1173,10 @@ export class GameEngine {
         const nextY = this.state.activeGoop.y + moveAmount;
 
         // Maintain Grid X based on Screen X and Board Offset
-        const currentGridX = getGridX(this.state.activeGoop.screenX, this.state.boardOffset);
+        const currentGridX = getGridX(this.state.activeGoop.screenX, this.state.tankRotation);
         const nextPiece = { ...this.state.activeGoop, y: nextY, x: currentGridX };
 
-        if (checkCollision(this.state.grid, nextPiece, this.state.boardOffset)) {
+        if (checkCollision(this.state.grid, nextPiece, this.state.tankRotation)) {
             if (this.lockStartTime === null) {
                 this.lockStartTime = Date.now();
             }
@@ -1200,7 +1200,7 @@ export class GameEngine {
     private lockActivePiece(): void {
         if (!this.state.activeGoop) return;
 
-        const y = getGhostY(this.state.grid, this.state.activeGoop, this.state.boardOffset);
+        const y = getGhostY(this.state.grid, this.state.activeGoop, this.state.tankRotation);
         const finalPiece = { ...this.state.activeGoop, y };
 
         let { grid: newGrid, consumedGoals, destroyedGoals } = mergePiece(this.state.grid, finalPiece, this.state.goalMarks);
