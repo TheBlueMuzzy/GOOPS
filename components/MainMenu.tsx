@@ -91,18 +91,22 @@ export const MainMenu: React.FC<MainMenuProps> = ({ onPlay, onUpgrades, onSettin
               </div>
           </div>
           
+          {/* Promotion Threshold Label */}
+          <div className="text-[10px] font-mono text-slate-500 text-right mb-1">
+              PROMOTION THRESHOLD
+          </div>
           {/* XP Bar */}
-          <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-700 relative">
-              <div 
+          <div className="w-full h-5 bg-slate-950 rounded-full overflow-hidden border border-slate-700 relative">
+              <div
                   className="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-1000 ease-out"
                   style={{ width: `${progressPercent}%` }}
               />
               {/* Gloss */}
               <div className="absolute inset-0 bg-white/5" />
-          </div>
-          <div className="flex justify-between mt-1 text-[10px] font-mono text-slate-500">
-              <span>{Math.floor(rankInfo.progress).toLocaleString()} XP</span>
-              <span>{rankInfo.isMaxRank ? 'MAX' : `${Math.floor(rankInfo.toNextRank).toLocaleString()} NEXT`}</span>
+              {/* Values inside bar */}
+              <div className="absolute inset-0 flex items-center justify-end pr-2 text-[11px] font-mono text-white font-semibold">
+                  {Math.floor(rankInfo.progress).toLocaleString()} / {rankInfo.isMaxRank ? 'MAX' : Math.floor(rankInfo.toNextRank).toLocaleString()}
+              </div>
           </div>
       </div>
 

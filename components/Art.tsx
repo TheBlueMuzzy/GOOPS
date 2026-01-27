@@ -325,10 +325,13 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                     <path fill="#5bbc70" d="M540.77,147.84H74.51c-5.73,0-10.38-4.66-10.38-10.38s4.66-10.38,10.38-10.38h466.26c5.73,0,10.38,4.66,10.38,10.38s-4.66,10.38-10.38,10.38ZM74.51,128.07c-5.17,0-9.38,4.21-9.38,9.38s4.21,9.38,9.38,9.38h466.26c5.17,0,9.38-4.21,9.38-9.38s-4.21-9.38-9.38-9.38H74.51Z"/>
                     {/* Meter Fill - Dynamic Width */}
                     <path fill="#5bbc70" d={`M74.51,127.57h${xpBarWidth}c.66,0,1.2.54,1.2,1.2v17.36c0,.66-.54,1.2-1.2,1.2H74.51c-5.45,0-9.88-4.43-9.88-9.88h0c0-5.45,4.43-9.88,9.88-9.88Z`}/>
-                    {/* XP Text */}
-                    <text fill="#59acae" fontFamily="'Amazon Ember'" fontSize="17.44" transform="translate(384.64 111.95)">
-                        <tspan letterSpacing="0em" x="0" y="0">{Math.floor(currentXP).toLocaleString()} / {Math.floor(nextRankXP).toLocaleString()}  </tspan>
-                        <tspan fontFamily="'Amazon Ember'" fontWeight="800" x="137.32" y="0">XP</tspan>
+                    {/* XP Values - Inside Bar */}
+                    <text fill="#ffffff" fontFamily="'Amazon Ember'" fontWeight="600" fontSize="14" textAnchor="end" transform="translate(545 142)">
+                        {Math.floor(currentXP).toLocaleString()} / {Math.floor(nextRankXP).toLocaleString()}
+                    </text>
+                    {/* Promotion Threshold Label - Above Bar */}
+                    <text fill="#59acae" fontFamily="'Amazon Ember'" fontSize="12" textAnchor="end" transform="translate(545 118)">
+                        PROMOTION THRESHOLD
                     </text>
                     {/* Rank Number */}
                     <text fill="#6acbda" fontFamily="'Amazon Ember'" fontWeight="800" fontSize="34.88" transform="translate(239.35 115.28)">{rank}</text>

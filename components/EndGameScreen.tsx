@@ -87,12 +87,13 @@ export const EndGameScreen: React.FC<EndGameScreenProps> = ({
       {/* Rank Bar Fill */}
       <path fill="#5bbc70" d={`M57.75,223.09h${fillWidth}v19.77H57.75c-4.79,0-8.68-3.89-8.68-8.68v-2.4c0-4.79,3.89-8.68,8.68-8.68Z`}/>
       
-      {/* XP Text */}
-      <text fill="#59acae" fontFamily="'Amazon Ember'" fontSize="17.44" transform="translate(520 207.48)" textAnchor="end">
-          <tspan letterSpacing="0em">{Math.floor(xpCurrent).toLocaleString()}</tspan>
-          <tspan fontFamily="'Amazon Ember'" fill="#aad9d9" letterSpacing="0.02em"> / </tspan>
-          <tspan letterSpacing="0em">{Math.floor(xpNext).toLocaleString()}</tspan>
-          <tspan fontFamily="'Amazon Ember'" fontWeight="800" fill="#d36b28" letterSpacing="0.02em">  XP</tspan>
+      {/* XP Values - Inside Bar */}
+      <text fill="#ffffff" fontFamily="'Amazon Ember'" fontWeight="600" fontSize="14" textAnchor="end" transform="translate(530 237)">
+          {Math.floor(xpCurrent).toLocaleString()} / {Math.floor(xpNext).toLocaleString()}
+      </text>
+      {/* Promotion Threshold Label - Above Bar */}
+      <text fill="#59acae" fontFamily="'Amazon Ember'" fontSize="12" textAnchor="end" transform="translate(530 213)">
+          PROMOTION THRESHOLD
       </text>
       
       {/* Rank Label */}
