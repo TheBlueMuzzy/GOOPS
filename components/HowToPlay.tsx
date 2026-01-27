@@ -53,7 +53,7 @@ export const HowToPlay: React.FC<HowToPlayProps> = ({ onBack }) => {
                               <ControlKey keyName="A / D" action="Rotate Tank View" />
                               <ControlKey keyName="Q / E" action="Rotate Falling Goop" />
                               <ControlKey keyName="S" action="Fall Faster" />
-                              <ControlKey keyName="R" action="Swap Hold Piece" />
+                              <ControlKey keyName="R" action="Swap Held Goop" />
                               <ControlKey keyName="W / Space" action="Return to Console" />
                               <ControlKey keyName="CLICK" action="Pop Solid Goop" />
                           </div>
@@ -102,8 +102,8 @@ export const HowToPlay: React.FC<HowToPlayProps> = ({ onBack }) => {
                                   <h4 className="font-bold text-slate-200 text-base">Scoring</h4>
                                   <p className="text-slate-400 text-sm mt-1">
                                       Goop combines with like colors. 
-                                      <br/>• <span className="text-green-400">Bigger Groups</span> = More Points.
-                                      <br/>• <span className="text-green-400">Higher Elevation</span> = More Points.
+                                      <br/>• <span className="text-green-400">Bigger Groups</span> = More XP.
+                                      <br/>• <span className="text-green-400">Higher Elevation</span> = More XP.
                                   </p>
                               </div>
                           </div>
@@ -127,7 +127,7 @@ export const HowToPlay: React.FC<HowToPlayProps> = ({ onBack }) => {
                               <div>
                                   <h4 className="font-bold text-slate-200 text-base">Progression</h4>
                                   <p className="text-slate-400 text-sm mt-1">
-                                      Level up your Operator Rank to earn <span className="text-yellow-400">Power Points</span>. Spend these in the Upgrades menu to enhance your efficiency!
+                                      Level up your Operator Rank to earn <span className="text-yellow-400">Scraps</span>. Spend these in the Upgrades menu to enhance your efficiency!
                                   </p>
                               </div>
                           </div>
