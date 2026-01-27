@@ -1,5 +1,5 @@
 
-import { PieceDefinition, PieceType } from './types';
+import { PieceDefinition, GoopShape } from './types';
 
 export const VISIBLE_WIDTH = 12; // 12 units wide
 export const TOTAL_WIDTH = 30;   // Cylindrical width (3 screens wide approx)
@@ -374,7 +374,7 @@ export const COLORS = {
   GRID_EMPTY: '#1e293b', // Dark slate for grid lines
 };
 
-const makePiece = (type: PieceType, coords: number[][]): PieceDefinition => ({
+const makePiece = (type: GoopShape, coords: number[][]): PieceDefinition => ({
   type,
   color: COLORS.RED, // Default placeholder, will be randomized on spawn
   cells: coords.map(([x, y]) => ({ x, y })),
@@ -383,19 +383,19 @@ const makePiece = (type: PieceType, coords: number[][]): PieceDefinition => ({
 // SRS-ish definitions (original tetrominoes - kept for backwards compatibility)
 export const PIECES: PieceDefinition[] = [
   // I
-  makePiece(PieceType.I, [[-1, 0], [0, 0], [1, 0], [2, 0]]),
+  makePiece(GoopShape.I, [[-1, 0], [0, 0], [1, 0], [2, 0]]),
   // J
-  makePiece(PieceType.J, [[-1, -1], [-1, 0], [0, 0], [1, 0]]),
+  makePiece(GoopShape.J, [[-1, -1], [-1, 0], [0, 0], [1, 0]]),
   // L
-  makePiece(PieceType.L, [[1, -1], [-1, 0], [0, 0], [1, 0]]),
+  makePiece(GoopShape.L, [[1, -1], [-1, 0], [0, 0], [1, 0]]),
   // O
-  makePiece(PieceType.O, [[0, 0], [1, 0], [0, 1], [1, 1]]),
+  makePiece(GoopShape.O, [[0, 0], [1, 0], [0, 1], [1, 1]]),
   // S
-  makePiece(PieceType.S, [[0, 0], [1, 0], [0, 1], [-1, 1]]),
+  makePiece(GoopShape.S, [[0, 0], [1, 0], [0, 1], [-1, 1]]),
   // T
-  makePiece(PieceType.T, [[0, -1], [-1, 0], [0, 0], [1, 1]]), // T shape corrected slightly to standard T
+  makePiece(GoopShape.T, [[0, -1], [-1, 0], [0, 0], [1, 1]]), // T shape corrected slightly to standard T
   // Z
-  makePiece(PieceType.Z, [[-1, 0], [0, 0], [0, 1], [1, 1]]),
+  makePiece(GoopShape.Z, [[-1, 0], [0, 0], [0, 1], [1, 1]]),
 ];
 
 // =============================================================================
@@ -411,18 +411,18 @@ export const PIECES: PieceDefinition[] = [
 // -----------------------------------------------------------------------------
 
 // Tetra Normal (from SVG cls-5 dark green)
-const PIECE_T_I = makePiece(PieceType.T_I, [[0, -1], [0, 0], [0, 1], [0, 2]]);         // Vertical bar
-const PIECE_T_L = makePiece(PieceType.T_L, [[0, 0], [0, 1], [0, 2], [1, 0]]);          // L-shape
-const PIECE_T_T = makePiece(PieceType.T_T, [[0, 0], [0, 1], [0, 2], [1, 1]]);          // T-shape
-const PIECE_T_S = makePiece(PieceType.T_S, [[0, 0], [0, 1], [1, 1], [1, 2]]);          // S-shape
-const PIECE_T_O = makePiece(PieceType.T_O, [[0, 0], [0, 1], [1, 0], [1, 1]]);          // 2x2 square
+const PIECE_T_I = makePiece(GoopShape.T_I, [[0, -1], [0, 0], [0, 1], [0, 2]]);         // Vertical bar
+const PIECE_T_L = makePiece(GoopShape.T_L, [[0, 0], [0, 1], [0, 2], [1, 0]]);          // L-shape
+const PIECE_T_T = makePiece(GoopShape.T_T, [[0, 0], [0, 1], [0, 2], [1, 1]]);          // T-shape
+const PIECE_T_S = makePiece(GoopShape.T_S, [[0, 0], [0, 1], [1, 1], [1, 2]]);          // S-shape
+const PIECE_T_O = makePiece(GoopShape.T_O, [[0, 0], [0, 1], [1, 0], [1, 1]]);          // 2x2 square
 
 // Tetra Corrupted (from SVG cls-3 light green) - non-contiguous patterns
-const PIECE_T_I_C = makePiece(PieceType.T_I_C, [[0, 2], [0, 3], [1, 0], [1, 1]]);      // Split Z (2+2 diagonal)
-const PIECE_T_L_C = makePiece(PieceType.T_L_C, [[0, 0], [0, 1], [1, 0], [1, 2]]);      // L with gap
-const PIECE_T_T_C = makePiece(PieceType.T_T_C, [[0, 0], [0, 2], [1, 1], [2, 1]]);      // Spread T
-const PIECE_T_S_C = makePiece(PieceType.T_S_C, [[0, 2], [1, 0], [1, 1], [2, 1]]);      // Corrupted S
-const PIECE_T_O_C = makePiece(PieceType.T_O_C, [[0, 0], [0, 2], [1, 1], [1, 2]]);      // Diagonal corners
+const PIECE_T_I_C = makePiece(GoopShape.T_I_C, [[0, 2], [0, 3], [1, 0], [1, 1]]);      // Split Z (2+2 diagonal)
+const PIECE_T_L_C = makePiece(GoopShape.T_L_C, [[0, 0], [0, 1], [1, 0], [1, 2]]);      // L with gap
+const PIECE_T_T_C = makePiece(GoopShape.T_T_C, [[0, 0], [0, 2], [1, 1], [2, 1]]);      // Spread T
+const PIECE_T_S_C = makePiece(GoopShape.T_S_C, [[0, 2], [1, 0], [1, 1], [2, 1]]);      // Corrupted S
+const PIECE_T_O_C = makePiece(GoopShape.T_O_C, [[0, 0], [0, 2], [1, 1], [1, 2]]);      // Diagonal corners
 
 export const TETRA_NORMAL = [PIECE_T_I, PIECE_T_L, PIECE_T_T, PIECE_T_S, PIECE_T_O];
 export const TETRA_CORRUPTED = [PIECE_T_I_C, PIECE_T_L_C, PIECE_T_T_C, PIECE_T_S_C, PIECE_T_O_C];
@@ -434,30 +434,30 @@ export const TETRA_PIECES = [...TETRA_NORMAL, ...TETRA_CORRUPTED];
 
 // Penta Normal (from SVG cls-2 dark red)
 // Parsed from SVG Penta group, normalized to center
-const PIECE_P_I = makePiece(PieceType.P_I, [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2]]);         // Vertical bar (5 cells)
-const PIECE_P_L = makePiece(PieceType.P_L, [[0, 0], [0, 1], [1, 1], [1, 2], [2, 1]]);           // Cross-like L
-const PIECE_P_X = makePiece(PieceType.P_X, [[0, 1], [1, 0], [1, 1], [1, 2], [2, 1]]);           // Plus/cross shape
-const PIECE_P_U = makePiece(PieceType.P_U, [[0, 0], [1, 0], [1, 1], [1, 2], [2, 0]]);           // U-shape open bottom
-const PIECE_P_L2 = makePiece(PieceType.P_L2, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]]);         // Chunky L
-const PIECE_P_Y = makePiece(PieceType.P_Y, [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2]]);           // Diagonal stairs
-const PIECE_P_T = makePiece(PieceType.P_T, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]]);           // Long T
-const PIECE_P_S = makePiece(PieceType.P_S, [[0, 0], [0, 1], [0, 3], [1, 1], [1, 3]]);           // Split S
-const PIECE_P_P = makePiece(PieceType.P_P, [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2]]);           // P-shape variant
-const PIECE_P_Z = makePiece(PieceType.P_Z, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]]);           // Z5 shape
-const PIECE_P_W = makePiece(PieceType.P_W, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]]);           // W-shape (stairs)
+const PIECE_P_I = makePiece(GoopShape.P_I, [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2]]);         // Vertical bar (5 cells)
+const PIECE_P_L = makePiece(GoopShape.P_L, [[0, 0], [0, 1], [1, 1], [1, 2], [2, 1]]);           // Cross-like L
+const PIECE_P_X = makePiece(GoopShape.P_X, [[0, 1], [1, 0], [1, 1], [1, 2], [2, 1]]);           // Plus/cross shape
+const PIECE_P_U = makePiece(GoopShape.P_U, [[0, 0], [1, 0], [1, 1], [1, 2], [2, 0]]);           // U-shape open bottom
+const PIECE_P_L2 = makePiece(GoopShape.P_L2, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]]);         // Chunky L
+const PIECE_P_Y = makePiece(GoopShape.P_Y, [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2]]);           // Diagonal stairs
+const PIECE_P_T = makePiece(GoopShape.P_T, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]]);           // Long T
+const PIECE_P_S = makePiece(GoopShape.P_S, [[0, 0], [0, 1], [0, 3], [1, 1], [1, 3]]);           // Split S
+const PIECE_P_P = makePiece(GoopShape.P_P, [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2]]);           // P-shape variant
+const PIECE_P_Z = makePiece(GoopShape.P_Z, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]]);           // Z5 shape
+const PIECE_P_W = makePiece(GoopShape.P_W, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]]);           // W-shape (stairs)
 
 // Penta Corrupted (from SVG cls-4 light red) - non-contiguous patterns
-const PIECE_P_I_C = makePiece(PieceType.P_I_C, [[0, 0], [0, 2], [0, 4], [1, 1], [1, 3]]);       // Zigzag split
-const PIECE_P_L_C = makePiece(PieceType.P_L_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]]);       // Scattered L
-const PIECE_P_X_C = makePiece(PieceType.P_X_C, [[0, 0], [1, 1], [1, 2], [2, 0], [2, 2]]);       // Spread cross
-const PIECE_P_U_C = makePiece(PieceType.P_U_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]]);       // Scattered U
-const PIECE_P_L2_C = makePiece(PieceType.P_L2_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]]);     // Scattered chunky L
-const PIECE_P_Y_C = makePiece(PieceType.P_Y_C, [[0, 0], [0, 1], [1, 1], [2, 0], [2, 2]]);       // Spread Y
-const PIECE_P_T_C = makePiece(PieceType.P_T_C, [[0, 0], [0, 1], [0, 3], [1, 2], [1, 3]]);       // Scattered T
-const PIECE_P_S_C = makePiece(PieceType.P_S_C, [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1]]);       // Corrupted S
-const PIECE_P_P_C = makePiece(PieceType.P_P_C, [[0, 0], [0, 2], [1, 0], [1, 1], [1, 3]]);       // Corrupted P
-const PIECE_P_Z_C = makePiece(PieceType.P_Z_C, [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0]]);       // Corrupted Z
-const PIECE_P_W_C = makePiece(PieceType.P_W_C, [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]]);       // Corrupted W
+const PIECE_P_I_C = makePiece(GoopShape.P_I_C, [[0, 0], [0, 2], [0, 4], [1, 1], [1, 3]]);       // Zigzag split
+const PIECE_P_L_C = makePiece(GoopShape.P_L_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]]);       // Scattered L
+const PIECE_P_X_C = makePiece(GoopShape.P_X_C, [[0, 0], [1, 1], [1, 2], [2, 0], [2, 2]]);       // Spread cross
+const PIECE_P_U_C = makePiece(GoopShape.P_U_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]]);       // Scattered U
+const PIECE_P_L2_C = makePiece(GoopShape.P_L2_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]]);     // Scattered chunky L
+const PIECE_P_Y_C = makePiece(GoopShape.P_Y_C, [[0, 0], [0, 1], [1, 1], [2, 0], [2, 2]]);       // Spread Y
+const PIECE_P_T_C = makePiece(GoopShape.P_T_C, [[0, 0], [0, 1], [0, 3], [1, 2], [1, 3]]);       // Scattered T
+const PIECE_P_S_C = makePiece(GoopShape.P_S_C, [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1]]);       // Corrupted S
+const PIECE_P_P_C = makePiece(GoopShape.P_P_C, [[0, 0], [0, 2], [1, 0], [1, 1], [1, 3]]);       // Corrupted P
+const PIECE_P_Z_C = makePiece(GoopShape.P_Z_C, [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0]]);       // Corrupted Z
+const PIECE_P_W_C = makePiece(GoopShape.P_W_C, [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]]);       // Corrupted W
 
 export const PENTA_NORMAL = [PIECE_P_I, PIECE_P_L, PIECE_P_X, PIECE_P_U, PIECE_P_L2, PIECE_P_Y, PIECE_P_T, PIECE_P_S, PIECE_P_P, PIECE_P_Z, PIECE_P_W];
 export const PENTA_CORRUPTED = [PIECE_P_I_C, PIECE_P_L_C, PIECE_P_X_C, PIECE_P_U_C, PIECE_P_L2_C, PIECE_P_Y_C, PIECE_P_T_C, PIECE_P_S_C, PIECE_P_P_C, PIECE_P_Z_C, PIECE_P_W_C];
@@ -469,30 +469,30 @@ export const PENTA_PIECES = [...PENTA_NORMAL, ...PENTA_CORRUPTED];
 
 // Hexa Normal (from SVG cls-1 dark blue)
 // Parsed from SVG Hexa group, normalized to center
-const PIECE_H_I = makePiece(PieceType.H_I, [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [0, 3]]); // Vertical bar (6 cells)
-const PIECE_H_L = makePiece(PieceType.H_L, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [2, 1]]);   // Long L with bump
-const PIECE_H_X = makePiece(PieceType.H_X, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 3]]);   // Extended cross
-const PIECE_H_U = makePiece(PieceType.H_U, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 0]]);   // Big U-shape
-const PIECE_H_L2 = makePiece(PieceType.H_L2, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [1, 3]]); // Chunky long L
-const PIECE_H_Y = makePiece(PieceType.H_Y, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 2]]);   // Y-shape extended
-const PIECE_H_T = makePiece(PieceType.H_T, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 2]]);   // T6 shape
-const PIECE_H_S = makePiece(PieceType.H_S, [[0, 0], [0, 1], [1, 0], [1, 1], [2, 1], [2, 2]]);   // S6 shape
-const PIECE_H_P = makePiece(PieceType.H_P, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 2], [1, 3]]);   // P6 shape
-const PIECE_H_Z = makePiece(PieceType.H_Z, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [1, 3]]);   // Z6 shape
-const PIECE_H_W = makePiece(PieceType.H_W, [[0, 0], [0, 3], [1, 1], [1, 2], [1, 3], [2, 3]]);   // W6 shape (stairs)
+const PIECE_H_I = makePiece(GoopShape.H_I, [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [0, 3]]); // Vertical bar (6 cells)
+const PIECE_H_L = makePiece(GoopShape.H_L, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [2, 1]]);   // Long L with bump
+const PIECE_H_X = makePiece(GoopShape.H_X, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 3]]);   // Extended cross
+const PIECE_H_U = makePiece(GoopShape.H_U, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 0]]);   // Big U-shape
+const PIECE_H_L2 = makePiece(GoopShape.H_L2, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [1, 3]]); // Chunky long L
+const PIECE_H_Y = makePiece(GoopShape.H_Y, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 2]]);   // Y-shape extended
+const PIECE_H_T = makePiece(GoopShape.H_T, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 2]]);   // T6 shape
+const PIECE_H_S = makePiece(GoopShape.H_S, [[0, 0], [0, 1], [1, 0], [1, 1], [2, 1], [2, 2]]);   // S6 shape
+const PIECE_H_P = makePiece(GoopShape.H_P, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 2], [1, 3]]);   // P6 shape
+const PIECE_H_Z = makePiece(GoopShape.H_Z, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [1, 3]]);   // Z6 shape
+const PIECE_H_W = makePiece(GoopShape.H_W, [[0, 0], [0, 3], [1, 1], [1, 2], [1, 3], [2, 3]]);   // W6 shape (stairs)
 
 // Hexa Corrupted (from SVG cls-6 light blue) - non-contiguous patterns
-const PIECE_H_I_C = makePiece(PieceType.H_I_C, [[0, 0], [0, 3], [0, 5], [1, 1], [1, 2], [1, 4]]); // Split zigzag
-const PIECE_H_L_C = makePiece(PieceType.H_L_C, [[0, 0], [0, 2], [1, 1], [1, 2], [1, 3], [2, 0]]); // Scattered L
-const PIECE_H_X_C = makePiece(PieceType.H_X_C, [[0, 0], [0, 2], [0, 3], [1, 1], [1, 3], [2, 0]]); // Spread cross
-const PIECE_H_U_C = makePiece(PieceType.H_U_C, [[0, 0], [0, 3], [1, 1], [1, 2], [1, 4], [2, 0]]); // Scattered U
-const PIECE_H_L2_C = makePiece(PieceType.H_L2_C, [[0, 0], [0, 1], [1, 1], [1, 2], [1, 3], [2, 0]]); // Scattered chunky L
-const PIECE_H_Y_C = makePiece(PieceType.H_Y_C, [[0, 0], [0, 2], [1, 0], [1, 2], [1, 3], [2, 1]]); // Spread Y
-const PIECE_H_T_C = makePiece(PieceType.H_T_C, [[0, 0], [0, 1], [0, 3], [1, 1], [1, 2], [1, 4]]); // Scattered T
-const PIECE_H_S_C = makePiece(PieceType.H_S_C, [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2]]); // Corrupted S
-const PIECE_H_P_C = makePiece(PieceType.H_P_C, [[0, 0], [0, 2], [0, 4], [1, 1], [1, 2], [1, 3]]); // Corrupted P
-const PIECE_H_Z_C = makePiece(PieceType.H_Z_C, [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2], [2, 3]]); // Corrupted Z
-const PIECE_H_W_C = makePiece(PieceType.H_W_C, [[0, 0], [0, 3], [1, 1], [1, 2], [2, 0], [2, 3]]); // Corrupted W
+const PIECE_H_I_C = makePiece(GoopShape.H_I_C, [[0, 0], [0, 3], [0, 5], [1, 1], [1, 2], [1, 4]]); // Split zigzag
+const PIECE_H_L_C = makePiece(GoopShape.H_L_C, [[0, 0], [0, 2], [1, 1], [1, 2], [1, 3], [2, 0]]); // Scattered L
+const PIECE_H_X_C = makePiece(GoopShape.H_X_C, [[0, 0], [0, 2], [0, 3], [1, 1], [1, 3], [2, 0]]); // Spread cross
+const PIECE_H_U_C = makePiece(GoopShape.H_U_C, [[0, 0], [0, 3], [1, 1], [1, 2], [1, 4], [2, 0]]); // Scattered U
+const PIECE_H_L2_C = makePiece(GoopShape.H_L2_C, [[0, 0], [0, 1], [1, 1], [1, 2], [1, 3], [2, 0]]); // Scattered chunky L
+const PIECE_H_Y_C = makePiece(GoopShape.H_Y_C, [[0, 0], [0, 2], [1, 0], [1, 2], [1, 3], [2, 1]]); // Spread Y
+const PIECE_H_T_C = makePiece(GoopShape.H_T_C, [[0, 0], [0, 1], [0, 3], [1, 1], [1, 2], [1, 4]]); // Scattered T
+const PIECE_H_S_C = makePiece(GoopShape.H_S_C, [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2]]); // Corrupted S
+const PIECE_H_P_C = makePiece(GoopShape.H_P_C, [[0, 0], [0, 2], [0, 4], [1, 1], [1, 2], [1, 3]]); // Corrupted P
+const PIECE_H_Z_C = makePiece(GoopShape.H_Z_C, [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2], [2, 3]]); // Corrupted Z
+const PIECE_H_W_C = makePiece(GoopShape.H_W_C, [[0, 0], [0, 3], [1, 1], [1, 2], [2, 0], [2, 3]]); // Corrupted W
 
 export const HEXA_NORMAL = [PIECE_H_I, PIECE_H_L, PIECE_H_X, PIECE_H_U, PIECE_H_L2, PIECE_H_Y, PIECE_H_T, PIECE_H_S, PIECE_H_P, PIECE_H_Z, PIECE_H_W];
 export const HEXA_CORRUPTED = [PIECE_H_I_C, PIECE_H_L_C, PIECE_H_X_C, PIECE_H_U_C, PIECE_H_L2_C, PIECE_H_Y_C, PIECE_H_T_C, PIECE_H_S_C, PIECE_H_P_C, PIECE_H_Z_C, PIECE_H_W_C];

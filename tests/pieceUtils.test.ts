@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { coordKey, isConnected, findBestSplit, splitPiece } from '../utils/pieceUtils';
-import { PieceType } from '../types';
+import { GoopShape } from '../types';
 
 describe('coordKey', () => {
   it('creates consistent string keys', () => {
@@ -200,7 +200,7 @@ describe('findBestSplit', () => {
 describe('splitPiece', () => {
   it('returns piece with cellColors array', () => {
     const definition = {
-      type: PieceType.I,
+      type: GoopShape.I,
       cells: [
         { x: 0, y: 0 },
         { x: 1, y: 0 },
@@ -212,7 +212,7 @@ describe('splitPiece', () => {
 
     const split = splitPiece(definition, 'blue', 'green');
 
-    expect(split.type).toBe(PieceType.I);
+    expect(split.type).toBe(GoopShape.I);
     expect(split.color).toBe('blue'); // Fallback color
     expect(split.cellColors).toBeDefined();
     expect(split.cellColors!.length).toBe(4);
@@ -226,7 +226,7 @@ describe('splitPiece', () => {
 
   it('preserves piece type and cells', () => {
     const definition = {
-      type: PieceType.T,
+      type: GoopShape.T,
       cells: [
         { x: 0, y: 0 },
         { x: 1, y: 0 },
@@ -238,14 +238,14 @@ describe('splitPiece', () => {
 
     const split = splitPiece(definition, 'red', 'blue');
 
-    expect(split.type).toBe(PieceType.T);
+    expect(split.type).toBe(GoopShape.T);
     expect(split.cells).toEqual(definition.cells);
     expect(split.cellColors!.length).toBe(4);
   });
 
   it('handles T-piece with 3+1 split', () => {
     const definition = {
-      type: PieceType.T,
+      type: GoopShape.T,
       cells: [
         { x: 0, y: 0 },
         { x: 1, y: 0 },
@@ -266,7 +266,7 @@ describe('splitPiece', () => {
 
   it('does not modify the original definition', () => {
     const definition = {
-      type: PieceType.I,
+      type: GoopShape.I,
       cells: [
         { x: 0, y: 0 },
         { x: 1, y: 0 },

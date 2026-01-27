@@ -1,5 +1,5 @@
 
-import { ActivePiece, Coordinate, GridCell, PieceDefinition, PieceType, BlockData, FallingBlock, GoalMark, PieceState } from '../types';
+import { ActivePiece, Coordinate, GridCell, PieceDefinition, GoopShape, BlockData, FallingBlock, GoalMark, PieceState } from '../types';
 import { TOTAL_WIDTH, TOTAL_HEIGHT, PIECES, GAME_COLORS, VISIBLE_WIDTH, BUFFER_HEIGHT, COLORS, VISIBLE_HEIGHT } from '../constants';
 
 // Re-export normalizeX from coordinates to maintain API compatibility

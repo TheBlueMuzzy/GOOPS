@@ -1,7 +1,7 @@
 
 import { Command } from './Command';
 import { GameEngine } from '../GameEngine';
-import { GamePhase, PieceState, PieceType, ActivePiece, GameState, ComplicationType } from '../../types';
+import { GamePhase, PieceState, GoopShape, ActivePiece, GameState, ComplicationType } from '../../types';
 import { normalizeX, checkCollision, getRotatedCells, getGhostY, mergePiece, findContiguousGroup, getFloatingBlocks, spawnGoalBurst, calculateAdjacencyBonus, calculateHeightBonus, calculateOffScreenBonus, calculateMultiplier, updateGroups } from '../../utils/gameLogic';
 import { getGridX, getScreenX } from '../../utils/coordinates';
 import { gameEventBus } from '../events/EventBus';
@@ -92,7 +92,7 @@ export class RotatePieceCommand implements Command {
         const nextRot = (p.rotation + (this.clockwise ? 1 : -1) + 4) % 4;
 
         // O pieces: shape stays same, just rotate the cellColors array
-        if (p.definition.type === PieceType.O) {
+        if (p.definition.type === GoopShape.O) {
             const colors = p.definition.cellColors;
             if (colors && colors.length === 4) {
                 // Rotate colors: cells are [0,0], [1,0], [0,1], [1,1] (indices 0,1,2,3)

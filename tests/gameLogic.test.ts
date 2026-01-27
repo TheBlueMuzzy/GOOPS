@@ -11,7 +11,7 @@ import {
   calculateAdjacencyBonus,
 } from '../utils/gameLogic';
 import { TOTAL_WIDTH, TOTAL_HEIGHT, COLORS } from '../constants';
-import { GridCell, ActivePiece, PieceType, PieceState } from '../types';
+import { GridCell, ActivePiece, GoopShape, PieceState } from '../types';
 
 // Helper to create an empty grid
 const createEmptyGrid = (): GridCell[][] => {
@@ -20,7 +20,7 @@ const createEmptyGrid = (): GridCell[][] => {
 
 // Helper to create a mock piece
 const createMockPiece = (x: number, y: number, cells: { x: number; y: number }[]): ActivePiece => ({
-  definition: { type: PieceType.T, color: COLORS.RED, cells },
+  definition: { type: GoopShape.T, color: COLORS.RED, cells },
   x,
   y,
   screenX: x,

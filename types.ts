@@ -4,7 +4,7 @@ export interface Coordinate {
   y: number;
 }
 
-export enum PieceType {
+export enum GoopShape {
   // Original tetrominoes (keep for backwards compatibility)
   I = 'I',
   J = 'J',
@@ -82,7 +82,7 @@ export enum PieceType {
 }
 
 export interface PieceDefinition {
-  type: PieceType;
+  type: GoopShape;
   cells: Coordinate[]; // Relative coordinates
   color: string;
   cellColors?: string[]; // Per-cell colors, parallel to cells array
