@@ -20,9 +20,9 @@ updated: 2026-01-26
 ## Next Steps
 
 **Current:** v1.4 Naming Standardization — Phase 23 (Code Rename)
-**Status:** Phase 22 complete, ready for Phase 23
+**Status:** Plan 23-01 complete (softDrop -> fastDrop), ready for 23-02
 
-Run `/gsd:plan-phase 23` to create execution plan using AUDIT.md as input.
+Run `/gsd:execute-plan .planning/phases/23-code-rename/23-02-PLAN.md` to continue.
 
 ## Future Plans
 
@@ -47,12 +47,12 @@ See: [[PROJECT]] (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 22 of 24 (Audit & Glossary) — COMPLETE
-Plan: 1 of 1
-Status: Phase complete, ready for Phase 23
-Last activity: 2026-01-27 — Completed 22-01-PLAN.md
+Phase: 23 of 24 (Code Rename)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-01-26 — Completed 23-01-PLAN.md
 
-Progress: ███░░░░░░░ 33% (v1.4 Naming Standardization)
+Progress: █████░░░░░ 50% (v1.4 Naming Standardization)
 
 ## What's Done
 

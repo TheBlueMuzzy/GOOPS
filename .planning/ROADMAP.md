@@ -129,7 +129,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 23-01: TBD
+- [x] 23-01: softDrop -> fastDrop — completed 2026-01-26
+- [ ] 23-02: totalUnits -> totalBlocks
 
 #### Phase 24: UI & Documentation
 
@@ -169,7 +170,7 @@ Plans:
 | 20. Expanding Cracks Overhaul | v1.2 | 1/1 | Complete | 2026-01-25 |
 | 21. Piece Shapes | v1.3 | 3/3 | Shipped | 2026-01-26 |
 | 22. Audit & Glossary | v1.4 | 1/1 | Complete | 2026-01-27 |
-| 23. Code Rename | v1.4 | 0/? | Not started | - |
+| 23. Code Rename | v1.4 | 1/2 | In progress | - |
 | 24. UI & Documentation | v1.4 | 0/? | Not started | - |
 
 ## Related
