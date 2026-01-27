@@ -20,9 +20,19 @@ updated: 2026-01-26
 ## Next Steps
 
 **Current:** v1.4 Naming Standardization — Phase 23 (Code Rename)
-**Status:** Plan 23-01 complete (softDrop -> fastDrop), ready for 23-02
+**Status:** GLOSSARY v2.0 complete. Phase 23 plans need regeneration.
 
-Run `/gsd:execute-plan .planning/phases/23-code-rename/23-02-PLAN.md` to continue.
+**Completed this session:**
+- Comprehensive terminology review with user (60+ terms)
+- GLOSSARY.md v2.0 created with all official terms
+- 23-01 executed (softDrop → fastDrop) - still valid
+
+**Next session:**
+1. Delete old 23-02-PLAN.md (outdated)
+2. Run `/gsd:plan-phase 23` to create new plans from GLOSSARY.md
+3. Execute the new plans
+
+**Key reference:** `.planning/GLOSSARY.md` has the complete migration table.
 
 ## Future Plans
 
@@ -48,11 +58,11 @@ See: [[PROJECT]] (updated 2026-01-26)
 ## Current Position
 
 Phase: 23 of 24 (Code Rename)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-26 — Completed 23-01-PLAN.md
+Plan: Replanning needed (glossary expanded scope)
+Status: GLOSSARY v2.0 complete, awaiting new plans
+Last activity: 2026-01-26 — Comprehensive terminology review
 
-Progress: █████░░░░░ 50% (v1.4 Naming Standardization)
+Progress: ██░░░░░░░░ 20% (v1.4 Naming Standardization - scope expanded)
 
 ## What's Done
 
@@ -173,12 +183,32 @@ All three complications have player-driven triggers AND mitigations.
 
 ## Session Continuity
 
-Last session: 2026-01-27
+Last session: 2026-01-26
 **Version:** 1.1.13
-**Branch:** master
-**Milestone:** v1.4 Naming Standardization (Phase 22 complete)
+**Branch:** phase-23-01-code-rename
+**Milestone:** v1.4 Naming Standardization (Glossary v2.0 complete)
 
 ### This Session Summary (2026-01-26)
+
+**Comprehensive Terminology Review & GLOSSARY v2.0**
+
+User-driven review of ALL game terminology. Key decisions:
+- Player = "Operator" (operates the tank)
+- Piece = "Goop" with states: ActiveGoop, LockedGoop, GoopBlock, GoopGroup
+- Grid = "Tank" with: tankGrid, TankCell, tankRotation
+- Complications = "TankSystem" with TankSystemMalfunction
+- Currency = "Scraps" (was powerUpPoints)
+- Screen architecture: ConsoleScreen, TankScreen, EndGameScreen + TutorialModal overlay
+
+60+ terms documented in GLOSSARY.md v2.0 with migration table.
+
+**23-01 Executed:** softDrop → fastDrop (3 commits, still valid)
+
+**Next:** Regenerate Phase 23 plans based on expanded glossary scope.
+
+---
+
+**Previous Session Summary**
 
 **Phase 21 Discussion Complete**
 
