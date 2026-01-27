@@ -132,7 +132,7 @@ Plans:
 - [x] 23-01: softDrop -> fastDrop — completed 2026-01-26
 - [x] 23-02: Core Goop lifecycle (PieceType, activePiece) — completed 2026-01-27
 - [x] 23-03: Tank dimensions & coordinates (TANK_WIDTH, tankRotation, TankCell) — completed 2026-01-27
-- [ ] 23-04: Complication system (ComplicationType, laserCapacitor, groupId)
+- [x] 23-04: TankSystem & actions (ComplicationType, goopGroupId, PopGoopCommand) — completed 2026-01-27
 - [ ] 23-05: Progression system (score, rank, powerUpPoints, timing)
 - [ ] 23-06: Screen/Phase types & Cracks (GamePhase, CrackCell)
 - [ ] 23-07: Remaining Goop terms (storedPiece, FallingBlock, pressure)

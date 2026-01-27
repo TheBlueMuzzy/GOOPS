@@ -20,16 +20,17 @@ updated: 2026-01-27
 ## Next Steps
 
 **Current:** v1.4 Naming Standardization — Phase 23 (Code Rename)
-**Status:** 3/7 plans complete
+**Status:** 4/7 plans complete
 
 **Completed this session:**
 - 23-02: Core Goop lifecycle (PieceType→GoopShape, activePiece→activeGoop, etc.)
 - 23-03: Tank dimensions & coordinates (TANK_WIDTH/HEIGHT, tankRotation, TankCell)
+- 23-04: TankSystem and actions (ComplicationType→TankSystem, goopGroupId, PopGoopCommand)
 
 **Next:**
-- 23-04: Complication system (ComplicationType, laserCapacitor, groupId)
+- 23-05: Crack System (CrackCell, GoalMark terminology)
 
-**Resume command:** `/gsd:execute-plan .planning/phases/23-code-rename/23-04-PLAN.md`
+**Resume command:** `/gsd:execute-plan .planning/phases/23-code-rename/23-05-PLAN.md`
 
 **Key reference:** `.planning/GLOSSARY.md` has the complete migration table.
 
@@ -57,11 +58,11 @@ See: [[PROJECT]] (updated 2026-01-26)
 ## Current Position
 
 Phase: 23 of 24 (Code Rename)
-Plan: 3 of 7 in current phase
+Plan: 4 of 7 in current phase
 Status: In progress
-Last activity: 2026-01-27 — Completed 23-03-PLAN.md (Tank Dimensions & Coordinates)
+Last activity: 2026-01-27 — Completed 23-04-PLAN.md (TankSystem and Actions)
 
-Progress: ████░░░░░░ 43% (v1.4 Naming Standardization)
+Progress: █████░░░░░ 57% (v1.4 Naming Standardization)
 
 ## What's Done
 
@@ -185,9 +186,22 @@ All three complications have player-driven triggers AND mitigations.
 Last session: 2026-01-27
 **Version:** 1.1.13
 **Branch:** phase-23-01-code-rename
-**Milestone:** v1.4 Naming Standardization (3/7 Phase 23 plans complete)
+**Milestone:** v1.4 Naming Standardization (4/7 Phase 23 plans complete)
 
 ### This Session Summary (2026-01-27)
+
+**23-04 TankSystem and Actions Complete**
+
+Renamed complication system and action commands to glossary terminology:
+- ComplicationType → TankSystem (79 refs across 10 files)
+- laserCapacitor → laserCharge (12 refs)
+- primedGroups → prePoppedGoopGroups (10 refs)
+- groupId → goopGroupId (62 refs across 7 files)
+- MoveBoardCommand → SpinTankCommand
+- RotatePieceCommand → RotateGoopCommand
+- BlockTapCommand → PopGoopCommand
+
+All 151 tests pass, TypeScript compiles clean.
 
 **23-03 Tank Dimensions & Coordinates Complete**
 
