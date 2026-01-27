@@ -1,4 +1,4 @@
-import { GameState, CrackCell, GamePhase } from '../types';
+import { GameState, CrackCell, ScreenType } from '../types';
 import { TANK_HEIGHT, BUFFER_HEIGHT } from '../constants';
 import { normalizeX } from '../utils/coordinates';
 import { calculateRankDetails } from '../utils/progression';
@@ -33,8 +33,8 @@ export class CrackManager {
         }
 
         // Don't grow when in Console or Minigame phases
-        if (state.phase === GamePhase.CONSOLE ||
-            state.phase === GamePhase.COMPLICATION_MINIGAME) {
+        if (state.phase === ScreenType.ConsoleScreen ||
+            state.phase === ScreenType.COMPLICATION_MINIGAME) {
             console.log('[CRACK DEBUG] Skipping - phase is', state.phase);
             return;
         }

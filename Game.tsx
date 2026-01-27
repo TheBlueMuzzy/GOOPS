@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { GamePhase, TankSystem, SaveData } from './types';
+import { ScreenType, TankSystem, SaveData } from './types';
 import { GameBoard } from './components/GameBoard';
 import { Controls } from './components/Controls';
 import { ConsoleView } from './components/ConsoleView';
@@ -77,7 +77,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
 
   // Sync Score on Game Over
   useEffect(() => {
-      if (gameState.gameOver && gameState.phase === GamePhase.CONSOLE) {
+      if (gameState.gameOver && gameState.phase === ScreenType.ConsoleScreen) {
           onRunComplete(gameState.sessionXP);
       }
   }, [gameState.gameOver]);
@@ -166,7 +166,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
               heldKeys.current.has('KeyD') ||
               dragDirectionRef.current !== 0;
 
-          if (hasActiveInput && gameState.phase === GamePhase.PERISCOPE && !engine.state.isPaused && engine.isSessionActive) {
+          if (hasActiveInput && gameState.phase === ScreenType.TankScreen && !engine.state.isPaused && engine.isSessionActive) {
               animationFrameRef.current = requestAnimationFrame(loop);
           } else {
               stopMovementLoop();
@@ -183,7 +183,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           heldKeys.current.add(e.code);
 
           if (e.key === 'Backspace') {
-               if (gameState.phase === GamePhase.PERISCOPE) engine.execute(new SetPhaseCommand(GamePhase.CONSOLE));
+               if (gameState.phase === ScreenType.TankScreen) engine.execute(new SetPhaseCommand(ScreenType.ConsoleScreen));
           }
           
           if (gameState.gameOver) {
@@ -192,7 +192,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           }
 
           // Controls only active in Periscope Mode
-          if (gameState.phase === GamePhase.PERISCOPE && !engine.state.isPaused && engine.isSessionActive) {
+          if (gameState.phase === ScreenType.TankScreen && !engine.state.isPaused && engine.isSessionActive) {
               switch(e.code) {
                   case 'ArrowLeft': case 'KeyA': 
                       engine.execute(new SpinTankCommand(1 * directionMultiplier)); 
@@ -207,8 +207,8 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
                   case 'KeyQ': engine.execute(new RotateGoopCommand(false)); break;
                   case 'KeyE': engine.execute(new RotateGoopCommand(true)); break;
                   case 'KeyS': engine.execute(new SetFastDropCommand(true)); break;
-                  case 'Space': engine.execute(new SetPhaseCommand(GamePhase.CONSOLE)); break;
-                  case 'KeyW': engine.execute(new SetPhaseCommand(GamePhase.CONSOLE)); break;
+                  case 'Space': engine.execute(new SetPhaseCommand(ScreenType.ConsoleScreen)); break;
+                  case 'KeyW': engine.execute(new SetPhaseCommand(ScreenType.ConsoleScreen)); break;
                   case 'KeyR': startSwapHold(); break;
               }
           }
@@ -216,7 +216,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
 
       const handleKeyUp = (e: KeyboardEvent) => {
           heldKeys.current.delete(e.code);
-          if (gameState.phase === GamePhase.PERISCOPE) {
+          if (gameState.phase === ScreenType.TankScreen) {
               switch(e.code) {
                   case 'KeyS':
                       engine.execute(new SetFastDropCommand(false));
@@ -239,7 +239,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       };
 
       const handleWheel = (e: WheelEvent) => {
-          if (gameState.phase === GamePhase.PERISCOPE && !engine.state.isPaused && !gameState.gameOver && engine.isSessionActive) {
+          if (gameState.phase === ScreenType.TankScreen && !engine.state.isPaused && !gameState.gameOver && engine.isSessionActive) {
               if (e.deltaY > 0) engine.execute(new RotateGoopCommand(true));
               else engine.execute(new RotateGoopCommand(false));
           }
@@ -278,7 +278,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           }
       });
       const unsubSwipeUp = gameEventBus.on(GameEventType.INPUT_SWIPE_UP, () => {
-          engine.execute(new SetPhaseCommand(GamePhase.CONSOLE));
+          engine.execute(new SetPhaseCommand(ScreenType.ConsoleScreen));
       });
       const unsubFastDrop = gameEventBus.on<FastDropPayload>(GameEventType.INPUT_FAST_DROP, (p) => {
           engine.execute(new SetFastDropCommand(p?.active ?? false));
@@ -319,7 +319,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             state={gameState}
             rank={startingRank}
             maxTime={engine.maxTime}
-            lightsBrightness={gameState.phase === GamePhase.PERISCOPE ? gameState.lightsBrightness : 100}
+            lightsBrightness={gameState.phase === ScreenType.TankScreen ? gameState.lightsBrightness : 100}
             laserCharge={gameState.laserCharge}
             controlsHeat={gameState.controlsHeat}
             complicationCooldowns={gameState.complicationCooldowns}
@@ -336,7 +336,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       {/* LAYER 2: CONSOLE VIEW (Visible in Console Phase) */}
       <div 
         className={`absolute inset-0 z-50 transition-opacity duration-500 ${
-            gameState.phase === GamePhase.CONSOLE ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            gameState.phase === ScreenType.ConsoleScreen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
           <ConsoleView
@@ -360,7 +360,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       {/* LAYER 3: PERISCOPE HUD (Visible in Periscope Phase) */}
       <div 
         className={`absolute inset-0 z-20 pointer-events-none transition-opacity duration-500 ${
-            gameState.phase === GamePhase.PERISCOPE ? 'opacity-100' : 'opacity-0'
+            gameState.phase === ScreenType.TankScreen ? 'opacity-100' : 'opacity-0'
         }`}
       >
           <Controls 
@@ -368,7 +368,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             onRestart={() => engine.execute(new StartRunCommand())}
             onExit={() => { 
                 gameEventBus.emit(GameEventType.GAME_EXITED); 
-                engine.execute(new SetPhaseCommand(GamePhase.CONSOLE));
+                engine.execute(new SetPhaseCommand(ScreenType.ConsoleScreen));
             }}
             initialTotalScore={engine.initialTotalScore}
             maxTime={engine.maxTime}

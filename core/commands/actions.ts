@@ -1,7 +1,7 @@
 
 import { Command } from './Command';
 import { GameEngine } from '../GameEngine';
-import { GamePhase, GoopState, GoopShape, ActivePiece, GameState, TankSystem } from '../../types';
+import { ScreenType, GoopState, GoopShape, ActivePiece, GameState, TankSystem } from '../../types';
 import { normalizeX, checkCollision, getRotatedCells, getGhostY, mergePiece, findContiguousGroup, getFloatingBlocks, spawnGoalBurst, calculateAdjacencyBonus, calculateHeightBonus, calculateOffScreenBonus, calculateMultiplier, updateGroups } from '../../utils/gameLogic';
 import { getGridX, getScreenX } from '../../utils/coordinates';
 import { gameEventBus } from '../events/EventBus';
@@ -448,12 +448,12 @@ export class StartRunCommand implements Command {
 
 export class SetPhaseCommand implements Command {
     type = 'SET_PHASE';
-    constructor(public phase: GamePhase) {}
+    constructor(public phase: ScreenType) {}
 
     execute(engine: GameEngine): void {
-        if (this.phase === GamePhase.PERISCOPE) {
+        if (this.phase === ScreenType.TankScreen) {
             engine.enterPeriscope();
-        } else if (this.phase === GamePhase.CONSOLE) {
+        } else if (this.phase === ScreenType.ConsoleScreen) {
             engine.enterConsole();
         } else {
             engine.state.phase = this.phase;

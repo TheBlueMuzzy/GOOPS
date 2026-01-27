@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GameState, GamePhase } from '../types';
+import { GameState, ScreenType } from '../types';
 import { GameEngine } from '../core/GameEngine';
 import { calculateRankDetails } from '../utils/progression';
 import { SetPhaseCommand, StartRunCommand, ResolveComplicationCommand } from '../core/commands/actions';
@@ -67,7 +67,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, operato
     // Handle Periscope Rise Animation when returning to console
     useEffect(() => {
         // If we just entered CONSOLE phase and are NOT game over, snap periscope to bottom
-        if (state.phase === GamePhase.CONSOLE && !state.gameOver) {
+        if (state.phase === ScreenType.ConsoleScreen && !state.gameOver) {
             setDragY(MAX_DRAG);
             setIsSnapping(true);
             
@@ -100,7 +100,7 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, operato
         setIsDragging(false);
         
         if (dragY > DRAG_THRESHOLD) {
-            engine.execute(new SetPhaseCommand(GamePhase.PERISCOPE));
+            engine.execute(new SetPhaseCommand(ScreenType.TankScreen));
             setTimeout(() => setDragY(0), 1000);
         } else {
             setDragY(0);

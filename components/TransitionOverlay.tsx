@@ -1,13 +1,13 @@
 
 import React from 'react';
-import { GamePhase } from '../types';
+import { ScreenType } from '../types';
 
 interface TransitionOverlayProps {
-    phase: GamePhase;
+    phase: ScreenType;
 }
 
 export const TransitionOverlay: React.FC<TransitionOverlayProps> = ({ phase }) => {
-    const isPeriscopeActive = phase === GamePhase.PERISCOPE || phase === GamePhase.COMPLICATION_MINIGAME || phase === GamePhase.GAME_OVER;
+    const isPeriscopeActive = phase === ScreenType.TankScreen || phase === ScreenType.COMPLICATION_MINIGAME || phase === ScreenType.EndGameScreen;
 
     return (
         <div className="absolute inset-0 pointer-events-none z-[80] overflow-hidden">

@@ -180,11 +180,11 @@ export interface CrackCell {
   spawnTime: number;        // For compatibility/animation
 }
 
-export enum GamePhase {
-  CONSOLE = 'CONSOLE',
-  PERISCOPE = 'PERISCOPE',
+export enum ScreenType {
+  ConsoleScreen = 'CONSOLE',
+  TankScreen = 'PERISCOPE',
   COMPLICATION_MINIGAME = 'COMPLICATION_MINIGAME',
-  GAME_OVER = 'GAME_OVER'
+  EndGameScreen = 'GAME_OVER'
 }
 
 export enum TankSystem {
@@ -234,7 +234,7 @@ export interface GameState {
   goalsTarget: number;
   
   // Architecture
-  phase: GamePhase;
+  phase: ScreenType;
   complications: Complication[];
   activeComplicationId: string | null;
 

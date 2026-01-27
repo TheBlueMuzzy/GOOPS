@@ -1,5 +1,5 @@
 
-import { GameState, TankCell, ActivePiece, GoopTemplate, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, CrackCell, GamePhase, GoopState, GoopShape, Complication, TankSystem, DumpPiece } from '../types';
+import { GameState, TankCell, ActivePiece, GoopTemplate, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, CrackCell, ScreenType, GoopState, GoopShape, Complication, TankSystem, DumpPiece } from '../types';
 import {
     TANK_WIDTH, TANK_HEIGHT, TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, SESSION_DURATION,
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
@@ -125,7 +125,7 @@ export class GameEngine {
             crackCells: [],
             goalsCleared: 0,
             goalsTarget: goalsTarget,
-            phase: GamePhase.CONSOLE, // Start in Console
+            phase: ScreenType.ConsoleScreen, // Start in Console
             complications: [],
             activeComplicationId: null,
             totalUnitsAdded: 0,
@@ -274,7 +274,7 @@ export class GameEngine {
             goalsTarget: newTarget,
             gameStats: { startTime: Date.now(), totalBonusTime: 0, maxGroupSize: 0 },
             scoreBreakdown: { base: 0, height: 0, offscreen: 0, adjacency: 0, speed: 0 },
-            phase: GamePhase.PERISCOPE,
+            phase: ScreenType.TankScreen,
             complications: [],
             activeComplicationId: null,
             totalUnitsAdded: 0,
@@ -329,7 +329,7 @@ export class GameEngine {
         // Go to idle state without starting a run
         this.state.gameOver = false;
         this.isSessionActive = false;
-        this.state.phase = GamePhase.CONSOLE;
+        this.state.phase = ScreenType.ConsoleScreen;
         this.state.sessionXP = 0; // Reset run score
         
         // Apply any pending total score update from the previous run
@@ -355,7 +355,7 @@ export class GameEngine {
     }
 
     public enterConsole() {
-        this.state.phase = GamePhase.CONSOLE;
+        this.state.phase = ScreenType.ConsoleScreen;
         this.emitChange();
     }
 
@@ -363,7 +363,7 @@ export class GameEngine {
         if (this.state.gameOver) {
             this.startRun();
         } else {
-            this.state.phase = GamePhase.PERISCOPE;
+            this.state.phase = ScreenType.TankScreen;
             if (!this.isSessionActive) {
                  this.startRun();
             }
@@ -384,7 +384,7 @@ export class GameEngine {
         );
 
         // Go back to Console after repair to confirm status
-        this.state.phase = GamePhase.CONSOLE;
+        this.state.phase = ScreenType.ConsoleScreen;
         this.emitChange();
     }
 
@@ -505,7 +505,7 @@ export class GameEngine {
         this.isSessionActive = false;
 
         // Switch to console to show the End Day screen
-        this.state.phase = GamePhase.CONSOLE;
+        this.state.phase = ScreenType.ConsoleScreen;
 
         // 1. Calculate and Apply Win Bonus (Operator Rank * 5000)
         // This ensures the bonus is part of the final score sent to save system
@@ -791,7 +791,7 @@ export class GameEngine {
     private tickTimer(dt: number): boolean {
         // FOCUS_MODE: slow time during minigames (-10% per level)
         const focusLevel = this.powerUps['FOCUS_MODE'] || 0;
-        const isInMinigame = this.state.phase === GamePhase.COMPLICATION_MINIGAME;
+        const isInMinigame = this.state.phase === ScreenType.COMPLICATION_MINIGAME;
         const timeMultiplier = (isInMinigame && focusLevel > 0)
             ? (1 - focusLevel * 0.10)  // At level 4: 0.60 (40% slower)
             : 1;
@@ -868,7 +868,7 @@ export class GameEngine {
         if (!isComplicationUnlocked(TankSystem.LIGHTS, startingRank)) return;
 
         // Pause grace timer when not in PERISCOPE phase (console/minigame)
-        if (this.state.phase !== GamePhase.PERISCOPE) {
+        if (this.state.phase !== ScreenType.TankScreen) {
             // Record when we paused so we can resume later
             if (this.state.lightsGraceStart !== null && this.lightsGracePausedAt === null) {
                 this.lightsGracePausedAt = Date.now();

@@ -1,6 +1,6 @@
 // --- Imports ---
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { GameState, GoopState, TankSystem, GamePhase, GoopTemplate, DumpPiece, CrackCell } from '../types';
+import { GameState, GoopState, TankSystem, ScreenType, GoopTemplate, DumpPiece, CrackCell } from '../types';
 import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, COLORS, TANK_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { isMobile } from '../utils/device';
@@ -647,7 +647,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             })}
 
             {/* HUD Meters - only visible in PERISCOPE phase at appropriate rank */}
-            {state.phase === GamePhase.PERISCOPE && (
+            {state.phase === ScreenType.TankScreen && (
                 <>
                     {/* Left meter: Laser Capacitor (drains as player pops) - rank 1+ */}
                     {rank >= 1 && (
@@ -861,7 +861,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         })}
         
         {/* Piece Previews - side by side at top center (like old color pool) */}
-        {state.phase === GamePhase.PERISCOPE && (showHoldViewer || showNextWindow) && (
+        {state.phase === ScreenType.TankScreen && (showHoldViewer || showNextWindow) && (
             <div style={{
                 position: 'absolute',
                 top: '8px',
