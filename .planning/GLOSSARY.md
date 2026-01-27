@@ -1,315 +1,364 @@
 ---
-title: Game Terminology Glossary
+title: Goops Official Glossary
 type: reference
 tags: [naming, terminology, standards]
-updated: 2026-01-27
+updated: 2026-01-26
+version: 2.0
 ---
 
 # Goops Official Glossary
 
-This document establishes the authoritative terminology for Goops. Use these terms consistently in code, documentation, and discussions.
+This document establishes the authoritative terminology for Goops. Use these terms consistently in code, UI, tutorials, and discussions.
 
 ---
 
-## Core Game Objects
+## Casing Conventions
 
-### Piece
-
-**Definition:** The active falling polyomino shape controlled by the player.
-
-**Details:**
-- Comes in three size categories: Tetra (4 cells), Penta (5 cells), Hexa (6 cells)
-- Has a defined shape, position, rotation, and color(s)
-- Becomes "goop" once it locks onto the grid
-
-**In Code:** `ActivePiece`, `PieceDefinition`, `PieceType`, `nextPiece`, `activePiece`
-
-**Correct Usage:**
-- "The piece is falling toward row 10"
-- "Spawn a new Penta piece"
-- "The piece locked at position (5, 12)"
-
-**Incorrect Usage:**
-- "The goop is falling" (goop is settled, not falling)
-- "Spawn a new block" (block is what fills a cell)
+| Context | Convention | Example |
+|---------|------------|---------|
+| Types / Interfaces / Classes | PascalCase | `ActiveGoop`, `TankCell`, `GoopBlock` |
+| Constants / Enum Values | SCREAMING_SNAKE_CASE | `TANK_WIDTH`, `SPIN_TANK`, `SPAWNED` |
+| Variables / Properties / Functions | camelCase | `activeGoop`, `tankRotation`, `sessionXP` |
+| Actions / Events | SCREAMING_SNAKE_CASE | `ROTATE_GOOP`, `POP_GOOP`, `SEAL_CRACK` |
 
 ---
 
-### Goop
+## The Operator
 
-**Definition:** The settled substance on the grid. What pieces become after locking.
+**Definition:** The player. The person operating the tank.
 
-**Details:**
-- Consists of one or more connected blocks of the same color
-- Forms groups that can be popped
-- Used primarily in player-facing text, UI labels, and comments
-- The visual "stuff" filling the tank
-
-**In Code:** Referred to as `blocks` in data structures (see Block). Use "goop" in comments, UI text, and user-facing strings.
-
-**Correct Usage:**
-- "Goop fills the bottom half of the tank"
-- "Pop the green goop to clear the crack"
-- "Dense Goop upgrade makes goop fall faster"
-
-**Incorrect Usage:**
-- "The goop is rotating" (pieces rotate, goop is stationary)
+| Term | Type | Description |
+|------|------|-------------|
+| Operator | Concept | The player character/role |
+| `operatorRank` | Variable | Progression level (0-50) |
+| `operatorXP` | Variable | Lifetime experience points (sum of all sessions) |
+| `scraps` | Variable | Currency for purchasing upgrades |
 
 ---
 
-### Cell
+## Goop Lifecycle
 
-**Definition:** A single 1x1 grid square. A position on the tank.
+```
+SpawnGoop (action)
+    ↓
+ActiveGoop (falling, player-controlled)
+    ↓ LockGoop (action)
+LockedGoop (brief state, waiting for delay)
+    ↓ MergeGoop (action)
+GoopBlock (individual units in tankGrid)
+    ↓ (automatic grouping)
+GoopGroup (connected same-color GoopBlocks)
+    ↓ PopGoop (action)
+(removed from tank)
+```
 
-**Details:**
-- The grid is made of cells arranged in rows and columns
-- Each cell can be empty or contain a block
-- Cells have coordinates (x, y)
+### Goop States & Types
 
-**In Code:** `GridCell`, `CrackCell`, `cells` (in piece definitions)
+| Term | Casing | Description |
+|------|--------|-------------|
+| `ActiveGoop` | Type | The falling shape being controlled by the Operator |
+| `activeGoop` | Variable | Instance of the current falling goop |
+| `GoopTemplate` | Type | Blueprint defining a shape's cells and default color |
+| `GoopShape` | Type/Enum | Enum of shape names (T, L, I, O, S, Z, Penta variants, Hexa variants) |
+| `GoopState` | Enum | State of active goop: `SPAWNED`, `FALLING`, `LOCKED` |
+| `GoopGhost` | Type | The transparent preview showing where ActiveGoop will land |
+| `goopGhost` | Variable | Instance of the ghost preview |
+| `GoopBlock` | Type | One unit of settled goop (content of a filled TankCell) |
+| `GoopGroup` | Type | Connected same-color GoopBlocks |
+| `goopGroupId` | Property | Unique identifier for a group |
+| `StoredGoop` | Type | Goop held for swap |
+| `storedGoop` | Variable | The currently stored goop |
+| `NextGoop` | Type | Preview of upcoming goop |
+| `nextGoop` | Variable | The next goop that will spawn |
+| `LooseGoop` | Type | GoopBlocks falling due to gravity after a pop |
+| `SealingGoop` | Type | Goop that is currently sealing a crack (was `isGlowing`) |
 
-**Correct Usage:**
-- "The grid has 30x19 cells"
-- "This cell at (5, 10) is empty"
-- "The piece occupies 5 cells"
+### Goop Sizes
 
-**Incorrect Usage:**
-- "This unit is at position..." (use "cell" instead)
-
----
-
-### Block
-
-**Definition:** The content of a cell. A cell can contain a block or be empty.
-
-**Details:**
-- A block has properties: color, groupId, timestamp, etc.
-- Blocks belong to groups of the same color
-- When a piece locks, its cells become blocks on the grid
-
-**In Code:** `BlockData`, `FallingBlock`, `block` (content of GridCell)
-
-**Correct Usage:**
-- "The block at (3, 5) is red"
-- "This group contains 6 blocks"
-- "Falling blocks settle into their final positions"
-
-**Incorrect Usage:**
-- "The block is falling" (use "piece" for the active falling shape)
-
----
-
-### Group
-
-**Definition:** Contiguous connected blocks of the same color.
-
-**Details:**
-- Groups form automatically when same-color blocks touch
-- Groups pop (disappear) when tapped twice
-- Group size affects scoring bonuses
-
-**In Code:** `groupId`, `groupSize`, `groupMinY`, `groupMaxY`
-
-**Correct Usage:**
-- "This green group has 8 blocks"
-- "Tapping the group primes it; tapping again pops it"
-- "Groups adjacent to sealed cracks glow"
+| Term | Description |
+|------|-------------|
+| `GoopSize` | Category for piece complexity: Tetra (4), Penta (5), Hexa (6) |
+| `GoopSizeThreshold` | Pressure thresholds that determine which GoopSize spawns |
+| Tetra | 4-cell goop shapes |
+| Penta | 5-cell goop shapes |
+| Hexa | 6-cell goop shapes |
 
 ---
 
-## Grid & Positioning
+## The Tank
 
-### Grid
+**Definition:** The cylindrical pressure vessel where gameplay happens.
 
-**Definition:** The 2D array of cells that makes up the tank interior.
+### Tank Structure
 
-**Details:**
-- Dimensions: TOTAL_WIDTH (30) x TOTAL_HEIGHT (19)
-- Visible area: VISIBLE_WIDTH (12) x VISIBLE_HEIGHT (16)
-- Cylindrical wrapping: x coordinates wrap around
+| Term | Casing | Description |
+|------|--------|-------------|
+| Tank | Concept | The play area (player-facing term) |
+| `tankGrid` | Variable | 2D data array holding all TankCells |
+| `TankCell` | Type | One position in the tankGrid (can be empty or contain GoopBlock) |
+| `tankCell` | Variable | Reference to a specific cell |
+| `TankViewport` | Type | The visible 12-column portion of the tank |
+| `tankViewport` | Variable | Current viewport state |
+| `tankRotation` | Variable | Current rotation position of the cylinder (was `boardOffset`) |
+| `tankColumn` | Variable | A vertical line in the tank |
+| `tankRow` | Variable | A horizontal line in the tank |
+| `tankPressure` | Variable | How close to losing (0-100%, derived from time) |
 
-**In Code:** `grid: GridCell[][]` (indexed as `grid[y][x]`)
+### Tank Dimensions (Constants)
 
----
-
-### Viewport
-
-**Definition:** The visible portion of the cylindrical grid.
-
-**Details:**
-- Shows 12 columns of the 30-column grid
-- Board rotates left/right to shift the viewport
-- `boardOffset` tracks the current view position
-
----
-
-### Pressure Line
-
-**Definition:** The rising danger threshold from the bottom of the tank.
-
-**Details:**
-- Rises as time elapses
-- Determines which piece sizes spawn (Tetra -> Penta -> Hexa)
-- Game ends when pressure reaches 100%
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `TANK_WIDTH` | 30 | Full cylinder width in cells |
+| `TANK_HEIGHT` | 19 | Full tank height in cells |
+| `TANK_VIEWPORT_WIDTH` | 12 | Visible width in cells |
+| `TANK_VIEWPORT_HEIGHT` | 16 | Visible height in cells |
+| `BUFFER_HEIGHT` | 3 | Rows above visible area (spawn buffer) |
 
 ---
 
 ## Player Actions
 
-### Fast Drop
+### Movement & Control
 
-**Definition:** Player-triggered acceleration when holding down.
+| Action | Constant | Description |
+|--------|----------|-------------|
+| SpinTank | `SPIN_TANK` | Rotating the cylinder left/right |
+| RotateGoop | `ROTATE_GOOP` | Turning ActiveGoop 90° clockwise/counter |
+| FastDropGoop | `FAST_DROP_GOOP` | Holding down to accelerate falling |
+| SwapGoop | `SWAP_GOOP` | Swapping ActiveGoop with StoredGoop |
 
-**Details:**
-- Makes the piece fall faster (8x normal speed)
-- Recharges the lights brightness meter
-- Replaces legacy term "soft drop"
+### Goop Interactions
 
-**In Code:** `SOFT_DROP_FACTOR` (legacy name, to be renamed in Phase 23), `isSoftDropping`
+| Action | Constant | Description |
+|--------|----------|-------------|
+| SpawnGoop | `SPAWN_GOOP` | Creating a new ActiveGoop at top |
+| LockGoop | `LOCK_GOOP` | When ActiveGoop stops moving (hits bottom) |
+| MergeGoop | `MERGE_GOOP` | Converting LockedGoop to GoopBlocks in tankGrid |
+| PopGoop | `POP_GOOP` | Removing a GoopGroup from the tank (tap action) |
+| PrePopGoop | `PRE_POP_GOOP` | First tap on a group (LASER system) - was `prime` |
 
-**Correct Usage:**
-- "Fast drop to reach the bottom quickly"
-- "Use fast drop to recharge lights"
+### Crack Interactions
 
-**Incorrect Usage:**
-- "Soft drop the piece" (legacy term, avoid)
-- "Hard drop" (not implemented in this game)
+| Action | Constant | Description |
+|--------|----------|-------------|
+| SealCrack | `SEAL_CRACK` | Covering a crack with matching-color goop |
+| BranchCrack | `BRANCH_CRACK` | Crack expanding to adjacent cell |
 
----
+### Removed Actions
 
-### Rotate
-
-**Definition:** Turning the piece 90 degrees clockwise or counter-clockwise.
-
-**Details:**
-- Builds heat (controls complication)
-- 4 rotation states: 0, 90, 180, 270 degrees
-
----
-
-### Lock
-
-**Definition:** When a falling piece stops and its cells become blocks on the grid.
-
-**Details:**
-- Happens when piece can't fall further
-- Triggers group recalculation
-- Piece transitions from FALLING to LOCKED state
+| Old Term | Status |
+|----------|--------|
+| `HARD_DROP` | Removed - not used in this game |
 
 ---
 
-### Pop
+## Tank Systems (Complications)
 
-**Definition:** Removing a group of same-color blocks from the grid.
+**Definition:** The three systems in the tank that can malfunction.
 
-**Details:**
-- Requires two taps: first primes, second pops
-- Awards score and time bonuses
-- Drains laser capacitor
+| Term | Casing | Description |
+|------|--------|-------------|
+| `TankSystem` | Type | A system that can malfunction (LASER, LIGHTS, CONTROLS) |
+| `TankSystemMalfunction` | Type | When a TankSystem triggers its failure state |
+| `Complication` | Type | General term for difficulty mechanics (broader category) |
+
+### LASER System
+
+| Term | Casing | Description |
+|------|--------|-------------|
+| `laserCharge` | Variable | 0-100 meter (drains on pop) - was `laserCapacitor` |
+| `prePoppedGoopGroups` | Variable | Groups that have been PrePopGoop'd - was `primedGroups` |
+| `LaserWarningVisual` | Type | Visual warning before malfunction |
+| `LaserWarningText` | Type | Text warning before malfunction |
+
+### LIGHTS System
+
+| Term | Casing | Description |
+|------|--------|-------------|
+| `lightsBrightness` | Variable | 5-110 meter (the screen brightness IS the indicator) |
+| `lightsDelay` | Variable | Time before dimming starts - was grace period |
+| `LightsWarningVisual` | Type | Flicker effect before malfunction |
+| `LightsWarningText` | Type | Text warning before malfunction |
+
+### CONTROLS System
+
+| Term | Casing | Description |
+|------|--------|-------------|
+| `controlsHeat` | Variable | 0-100 meter (builds on rotate) |
+| `controlsHeatDecay` | Variable | Heat reduction over time - was `dissipation` |
+| `ControlsWarningVisual` | Type | Visual warning before malfunction |
+| `ControlsWarningText` | Type | Text warning before malfunction |
 
 ---
 
-### Seal
-
-**Definition:** Covering a crack with matching-color goop to remove it.
-
-**Details:**
-- Core gameplay objective
-- Requires goop color to match crack color (or wild goop)
-- Awards bonus time and reduces cooldowns
-
----
-
-## Game Systems
-
-### Crack
+## Crack System
 
 **Definition:** Damage on the tank wall that must be sealed.
 
-**Details:**
-- Spawns near the pressure line
-- Grows over time if not covered by goop
-- Has a color that must be matched to seal
-- Tree structure: cracks can branch
+| Term | Casing | Description |
+|------|--------|-------------|
+| `CrackSystem` | Type | The manager handling all cracks |
+| `Crack` | Type | Individual crack entity at a position |
+| `originCrackId` | Property | ID of crack this one branched from (null if root) - was `parentIds` |
+| `branchCrackIds` | Property | IDs of cracks that branched from this - was `childIds` |
+| `crackBranchInterval` | Property | Time between crack expansions - was `growthInterval` |
+| `SealedCrack` | State | A crack that has been covered by matching goop |
 
-**In Code:** `CrackCell`, `crackCells`, `crack-` prefixed functions
+### Crack + Goop Interaction
 
----
-
-### Complication
-
-**Definition:** A difficulty mechanic that adds challenge.
-
-**Types:**
-- **LASER:** Capacitor drains when popping goop; empty triggers malfunction
-- **LIGHTS:** Brightness dims when not fast dropping; dark triggers malfunction
-- **CONTROLS:** Heat builds on rotation; overheated triggers malfunction
-
-**In Code:** `ComplicationType`, `Complication`, `complications`
+| Term | Description |
+|------|-------------|
+| SealCrack | Action: goop lands on crack of matching color |
+| SealedCrack | State: the crack after being sealed |
+| SealingGoop | State: the goop that is sealing a crack |
 
 ---
 
-### Upgrade
+## Timing & Speed
 
-**Definition:** A player progression reward that modifies gameplay.
+### Speed Constants
 
-**Types:**
-- **Passive:** Always active once purchased (e.g., Circuit Stabilizer)
-- **Active:** Must be equipped and charged to use (e.g., Goop Dump)
-- **Feature:** Unlocks new UI or mechanics (e.g., Goop Window)
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `ACTIVE_GOOP_SPEED` | 780ms | Base time per block for ActiveGoop falling |
+| `FAST_DROP_MULTIPLIER` | 8 | Multiplier when FastDropGoop active |
+| `FAST_DROP_GOOP_SPEED` | ~97ms | Calculated: ACTIVE_GOOP_SPEED / FAST_DROP_MULTIPLIER |
+| `LOOSE_GOOP_SPEED` | 0.03 | units/ms velocity for LooseGoop (physics-based) |
+| `LOCKED_GOOP_DELAY` | 500ms | Time in LockedGoop state before MergeGoop |
 
-**In Code:** `UPGRADES`, `UpgradeConfig`, `UpgradeType`
+### Session Timing
 
----
+| Term | Casing | Description |
+|------|--------|-------------|
+| `sessionTime` | Variable | Internal time tracking (seconds) - was `timeLeft` |
+| `SESSION_DURATION` | Constant | Max session time (75000ms) - was `INITIAL_TIME_MS` |
+| `sessionXP` | Variable | XP earned in current session - was `score` |
+| `popStreak` | Variable | Bonus multiplier for consecutive pops - was `combo` |
 
-### Rank
-
-**Definition:** Player's progression level (0-50).
-
-**Details:**
-- Earned by accumulating score across runs
-- Unlocks new upgrades, colors, and complications
-- XP curve: `3500 + (rank * 250)` per rank
-
----
-
-### Wild
-
-**Definition:** A special piece/goop that matches any crack color.
-
-**Details:**
-- Spawns at rank 40+ (15% chance)
-- Rainbow wave visual effect
-- Spreads wild property to adjacent same-color goop
-
-**In Code:** `isWild` property on pieces and blocks
+**Note:** Player sees `tankPressure` (percentage), not raw time. Future refactor: convert time-based bonuses to "pressure vented X%".
 
 ---
 
-## Terminology Mapping
+## Screens & Modals
 
-| Official Term | Replaces | Context |
-|---------------|----------|---------|
-| Cell | Unit | Grid positions |
-| Block | (n/a) | Content of cells |
-| Fast Drop | Soft Drop | Player action |
-| Piece | (n/a) | Active falling shape |
-| Goop | (n/a) | Settled substance (user-facing) |
-| Group | (n/a) | Connected same-color blocks |
+### Architecture
+
+```
+App
+├── Screens (one active at a time)
+│   ├── ConsoleScreen (menu, upgrades, malfunction minigame)
+│   ├── TankScreen (main gameplay)
+│   ├── EndGameScreen (results)
+│   ├── SettingsScreen
+│   └── HowToPlayScreen
+│
+└── Modals (overlay on any screen)
+    └── TutorialModal (contextual, progressive disclosure)
+```
+
+| Term | Casing | Description |
+|------|--------|-------------|
+| `ScreenType` | Enum | Which screen is active |
+| `ConsoleScreen` | Value | Menu/upgrades (includes malfunction minigame when triggered) |
+| `TankScreen` | Value | Main gameplay |
+| `EndGameScreen` | Value | Results after session ends - was `GAME_OVER` |
+| `SettingsScreen` | Value | Settings menu |
+| `HowToPlayScreen` | Value | How to play information |
+| `TutorialModal` | Type | Overlay for contextual tutorial tips |
+
+### Removed
+
+| Old Term | Status |
+|----------|--------|
+| `PERISCOPE` | Removed - merged into TankScreen concept |
+| `COMPLICATION_MINIGAME` | Removed - part of ConsoleScreen with flag |
 
 ---
 
-## Code Variable Naming Guide
+## Progression & Upgrades
 
-| Concept | Variable Names | Examples |
-|---------|---------------|----------|
-| Falling shape | `piece`, `activePiece`, `nextPiece` | `const piece = state.activePiece` |
-| Grid content | `block`, `blocks`, `grid` | `grid[y][x]` returns `BlockData` |
-| Position | `cell`, `x`, `y`, `coordinate` | `cells: Coordinate[]` |
-| Connected blocks | `group`, `groupId`, `groupSize` | `block.groupId` |
-| Player action | `fastDrop` (not softDrop) | `isFastDropping` |
+| Term | Casing | Description |
+|------|--------|-------------|
+| `operatorRank` | Variable | Progression level 0-50 |
+| `operatorXP` | Variable | Lifetime XP (sum of all sessionXP) |
+| `sessionXP` | Variable | XP earned in current session |
+| `scraps` | Variable | Currency for upgrades - was `powerUpPoints` |
+| `Upgrade` | Type | Purchasable improvement |
+| `UpgradeType` | Enum | passive, active, feature |
 
 ---
 
-*Last updated: 2026-01-27*
-*Phase: 22-audit-glossary*
+## Terminology Migration Table
+
+Quick reference for renaming:
+
+| Old Term | New Term | Category |
+|----------|----------|----------|
+| `activePiece` | `activeGoop` | Goop |
+| `PieceDefinition` | `GoopTemplate` | Goop |
+| `PieceType` | `GoopShape` | Goop |
+| `PieceState` | `GoopState` | Goop |
+| `ghost` | `goopGhost` | Goop |
+| `grid` | `tankGrid` | Tank |
+| `GridCell` | `TankCell` | Tank |
+| `BlockData` | `GoopBlock` | Goop |
+| `groupId` | `goopGroupId` | Goop |
+| `storedPiece` | `storedGoop` | Goop |
+| `nextPiece` | `nextGoop` | Goop |
+| `FallingBlock` | `LooseGoop` | Goop |
+| `isGlowing` | `isSealingGoop` | Goop |
+| `MOVE_BOARD` | `SPIN_TANK` | Actions |
+| `ROTATE_PIECE` | `ROTATE_GOOP` | Actions |
+| `SET_FAST_DROP` | `FAST_DROP_GOOP` | Actions |
+| `SWAP_PIECE` | `SWAP_GOOP` | Actions |
+| `BLOCK_TAP` | `POP_GOOP` | Actions |
+| `prime` | `PRE_POP_GOOP` | Actions |
+| `seal` | `SEAL_CRACK` | Actions |
+| `boardOffset` | `tankRotation` | Tank |
+| `viewport` | `tankViewport` | Tank |
+| `TOTAL_WIDTH` | `TANK_WIDTH` | Constants |
+| `VISIBLE_WIDTH` | `TANK_VIEWPORT_WIDTH` | Constants |
+| `TOTAL_HEIGHT` | `TANK_HEIGHT` | Constants |
+| `VISIBLE_HEIGHT` | `TANK_VIEWPORT_HEIGHT` | Constants |
+| `pressure` | `tankPressure` | Tank |
+| `zone` | `GoopSize` | Goop |
+| `ComplicationType` | `TankSystem` | Systems |
+| `malfunction` | `TankSystemMalfunction` | Systems |
+| `laserCapacitor` | `laserCharge` | Systems |
+| `primedGroups` | `prePoppedGoopGroups` | Systems |
+| `lightsGraceStart` | `lightsDelay` | Systems |
+| `flicker` | `LightsWarningVisual` | Systems |
+| `dissipation` | `controlsHeatDecay` | Systems |
+| `rank` | `operatorRank` | Progression |
+| `totalScore` | `operatorXP` | Progression |
+| `powerUpPoints` | `scraps` | Progression |
+| `score` | `sessionXP` | Progression |
+| `combo` | `popStreak` | Progression |
+| `CrackCell` | `Crack` | Cracks |
+| `parentIds` | `originCrackId` | Cracks |
+| `childIds` | `branchCrackIds` | Cracks |
+| `growthInterval` | `crackBranchInterval` | Cracks |
+| `spread` | `BranchCrack` | Cracks |
+| `timeLeft` | `sessionTime` | Timing |
+| `INITIAL_TIME_MS` | `SESSION_DURATION` | Timing |
+| `INITIAL_SPEED` | `ACTIVE_GOOP_SPEED` | Timing |
+| `SOFT_DROP_FACTOR` | `FAST_DROP_MULTIPLIER` | Timing |
+| `lockDelay` | `LOCKED_GOOP_DELAY` | Timing |
+| `GamePhase` | `ScreenType` | Screens |
+| `CONSOLE` | `ConsoleScreen` | Screens |
+| `GAME_OVER` | `EndGameScreen` | Screens |
+
+---
+
+## Future Work
+
+### Noted Refactors
+
+1. **Pressure-based bonuses**: Convert time-based bonuses ("+2 seconds") to pressure-based ("pressure vented 5%") for thematic consistency.
+
+2. **goal/GoalMark investigation**: Verify if legacy goal system code is still functional or vestigial. Remove if dead code, rename if active.
+
+---
+
+*Last updated: 2026-01-26*
+*Version: 2.0 (comprehensive terminology overhaul)*
