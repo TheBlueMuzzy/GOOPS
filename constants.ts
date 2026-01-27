@@ -427,3 +427,38 @@ const PIECE_T_O_C = makePiece(PieceType.T_O_C, [[0, 0], [0, 2], [1, 1], [1, 2]])
 export const TETRA_NORMAL = [PIECE_T_I, PIECE_T_L, PIECE_T_T, PIECE_T_S, PIECE_T_O];
 export const TETRA_CORRUPTED = [PIECE_T_I_C, PIECE_T_L_C, PIECE_T_T_C, PIECE_T_S_C, PIECE_T_O_C];
 export const TETRA_PIECES = [...TETRA_NORMAL, ...TETRA_CORRUPTED];
+
+// -----------------------------------------------------------------------------
+// PENTA PIECES (5 cells each) - 11 Normal + 11 Corrupted = 22 total
+// -----------------------------------------------------------------------------
+
+// Penta Normal (from SVG cls-2 dark red)
+// Parsed from SVG Penta group, normalized to center
+const PIECE_P_I = makePiece(PieceType.P_I, [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2]]);         // Vertical bar (5 cells)
+const PIECE_P_L = makePiece(PieceType.P_L, [[0, 0], [0, 1], [1, 1], [1, 2], [2, 1]]);           // Cross-like L
+const PIECE_P_X = makePiece(PieceType.P_X, [[0, 1], [1, 0], [1, 1], [1, 2], [2, 1]]);           // Plus/cross shape
+const PIECE_P_U = makePiece(PieceType.P_U, [[0, 0], [1, 0], [1, 1], [1, 2], [2, 0]]);           // U-shape open bottom
+const PIECE_P_L2 = makePiece(PieceType.P_L2, [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]]);         // Chunky L
+const PIECE_P_Y = makePiece(PieceType.P_Y, [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2]]);           // Diagonal stairs
+const PIECE_P_T = makePiece(PieceType.P_T, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]]);           // Long T
+const PIECE_P_S = makePiece(PieceType.P_S, [[0, 0], [0, 1], [0, 3], [1, 1], [1, 3]]);           // Split S
+const PIECE_P_P = makePiece(PieceType.P_P, [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2]]);           // P-shape variant
+const PIECE_P_Z = makePiece(PieceType.P_Z, [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]]);           // Z5 shape
+const PIECE_P_W = makePiece(PieceType.P_W, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]]);           // W-shape (stairs)
+
+// Penta Corrupted (from SVG cls-4 light red) - non-contiguous patterns
+const PIECE_P_I_C = makePiece(PieceType.P_I_C, [[0, 0], [0, 2], [0, 4], [1, 1], [1, 3]]);       // Zigzag split
+const PIECE_P_L_C = makePiece(PieceType.P_L_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]]);       // Scattered L
+const PIECE_P_X_C = makePiece(PieceType.P_X_C, [[0, 0], [1, 1], [1, 2], [2, 0], [2, 2]]);       // Spread cross
+const PIECE_P_U_C = makePiece(PieceType.P_U_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]]);       // Scattered U
+const PIECE_P_L2_C = makePiece(PieceType.P_L2_C, [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]]);     // Scattered chunky L
+const PIECE_P_Y_C = makePiece(PieceType.P_Y_C, [[0, 0], [0, 1], [1, 1], [2, 0], [2, 2]]);       // Spread Y
+const PIECE_P_T_C = makePiece(PieceType.P_T_C, [[0, 0], [0, 1], [0, 3], [1, 2], [1, 3]]);       // Scattered T
+const PIECE_P_S_C = makePiece(PieceType.P_S_C, [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1]]);       // Corrupted S
+const PIECE_P_P_C = makePiece(PieceType.P_P_C, [[0, 0], [0, 2], [1, 0], [1, 1], [1, 3]]);       // Corrupted P
+const PIECE_P_Z_C = makePiece(PieceType.P_Z_C, [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0]]);       // Corrupted Z
+const PIECE_P_W_C = makePiece(PieceType.P_W_C, [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]]);       // Corrupted W
+
+export const PENTA_NORMAL = [PIECE_P_I, PIECE_P_L, PIECE_P_X, PIECE_P_U, PIECE_P_L2, PIECE_P_Y, PIECE_P_T, PIECE_P_S, PIECE_P_P, PIECE_P_Z, PIECE_P_W];
+export const PENTA_CORRUPTED = [PIECE_P_I_C, PIECE_P_L_C, PIECE_P_X_C, PIECE_P_U_C, PIECE_P_L2_C, PIECE_P_Y_C, PIECE_P_T_C, PIECE_P_S_C, PIECE_P_P_C, PIECE_P_Z_C, PIECE_P_W_C];
+export const PENTA_PIECES = [...PENTA_NORMAL, ...PENTA_CORRUPTED];
