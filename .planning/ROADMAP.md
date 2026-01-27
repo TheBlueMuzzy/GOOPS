@@ -103,7 +103,9 @@ See [[v1.2-ROADMAP]] for full details.
 **Plans**: TBD
 
 Plans:
-- [ ] 21-01: TBD (run /gsd:plan-phase 21 to break down)
+- [ ] 21-01: Timing + Types (3 tasks)
+- [ ] 21-02: Piece Definitions (3 tasks)
+- [ ] 21-03: Spawn Logic (4 tasks)
 
 ---
 
@@ -131,7 +133,7 @@ Plans:
 | 18. Cracked Band | v1.2 | 2/2 | Complete | 2026-01-24 |
 | 19. Multi-Color Pieces | v1.2 | 3/3 | Complete | 2026-01-24 |
 | 20. Expanding Cracks Overhaul | v1.2 | 1/1 | Complete | 2026-01-25 |
-| 21. Piece Shapes | v1.3 | 0/? | Not started | - |
+| 21. Piece Shapes | v1.3 | 0/3 | Planning done | - |
 
 ## Related
 

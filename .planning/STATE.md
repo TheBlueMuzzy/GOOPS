@@ -19,10 +19,10 @@ updated: 2026-01-25
 
 ## Next Steps
 
-**Current:** Phase 21 discussion complete
-**Status:** Ready to plan Phase 21
+**Current:** Phase 21 planned
+**Status:** Ready to execute Plan 01
 
-Run `/gsd:plan-phase 21` to create execution plan with all decisions below.
+Run `/gsd:execute-plan .planning/phases/21-piece-shapes/21-01-PLAN.md` to start.
 
 ## Future Plans
 
