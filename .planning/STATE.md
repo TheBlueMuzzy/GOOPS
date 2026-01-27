@@ -20,13 +20,14 @@ updated: 2026-01-26
 ## Next Steps
 
 **Current:** v1.4 Naming Standardization — Phase 23 (Code Rename)
-**Status:** 2/7 plans complete
+**Status:** 3/7 plans complete
 
 **Completed this session:**
 - 23-02: Core Goop lifecycle (PieceType→GoopShape, activePiece→activeGoop, etc.)
+- 23-03: Tank dimensions & coordinates (TANK_WIDTH/HEIGHT, tankRotation, TankCell)
 
 **Next:**
-- 23-03: Tank dimensions & coordinates (TOTAL_WIDTH, boardOffset, GridCell)
+- 23-04: Complication system (ComplicationType, laserCapacitor, groupId)
 
 **Key reference:** `.planning/GLOSSARY.md` has the complete migration table.
 
@@ -54,11 +55,11 @@ See: [[PROJECT]] (updated 2026-01-26)
 ## Current Position
 
 Phase: 23 of 24 (Code Rename)
-Plan: 2 of 7 in current phase
+Plan: 3 of 7 in current phase
 Status: In progress
-Last activity: 2026-01-27 — Completed 23-02-PLAN.md (Core Goop Lifecycle)
+Last activity: 2026-01-27 — Completed 23-03-PLAN.md (Tank Dimensions & Coordinates)
 
-Progress: ███░░░░░░░ 30% (v1.4 Naming Standardization)
+Progress: ████░░░░░░ 43% (v1.4 Naming Standardization)
 
 ## What's Done
 
@@ -182,9 +183,19 @@ All three complications have player-driven triggers AND mitigations.
 Last session: 2026-01-27
 **Version:** 1.1.13
 **Branch:** phase-23-01-code-rename
-**Milestone:** v1.4 Naming Standardization (2/7 Phase 23 plans complete)
+**Milestone:** v1.4 Naming Standardization (3/7 Phase 23 plans complete)
 
 ### This Session Summary (2026-01-27)
+
+**23-03 Tank Dimensions & Coordinates Complete**
+
+Renamed dimension constants and coordinate system to Tank terminology:
+- TOTAL_WIDTH/HEIGHT → TANK_WIDTH/HEIGHT
+- VISIBLE_WIDTH/HEIGHT → TANK_VIEWPORT_WIDTH/HEIGHT
+- boardOffset → tankRotation
+- GridCell → TankCell
+
+All 151 tests pass, TypeScript compiles clean.
 
 **23-02 Core Goop Lifecycle Complete**
 
