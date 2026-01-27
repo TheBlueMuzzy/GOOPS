@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useCallback } from 'react';
-import { GamePhase, ComplicationType, SaveData } from './types';
+import { GamePhase, TankSystem, SaveData } from './types';
 import { GameBoard } from './components/GameBoard';
 import { Controls } from './components/Controls';
 import { ConsoleView } from './components/ConsoleView';
@@ -62,7 +62,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   const SWAP_HOLD_DURATION = 1500 - (goopSwapLevel * 250); // Dynamic based on upgrade
 
   // CONTROLS complication: requires 2 inputs per move, halves hold speed
-  const controlsComplication = gameState.complications.find(c => c.type === ComplicationType.CONTROLS);
+  const controlsComplication = gameState.complications.find(c => c.type === TankSystem.CONTROLS);
   const controlsInputCountRef = useRef(0); // Track pending inputs for double-tap requirement
 
   // Reset input count when CONTROLS complication is resolved

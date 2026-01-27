@@ -1,5 +1,5 @@
 
-import { ComplicationType } from './types';
+import { TankSystem } from './types';
 import { UPGRADES } from './constants';
 
 /**
@@ -12,13 +12,13 @@ import { UPGRADES } from './constants';
 
 // Per-complication configuration
 export const COMPLICATION_CONFIG = {
-  [ComplicationType.LASER]: {
+  [TankSystem.LASER]: {
     unlockRank: 4,
     capacitorMax: 100,       // Full capacitor value
     drainPerUnit: 4,         // Capacitor drain per unit popped
     drainUpgradeEffect: UPGRADES.CAPACITOR_EFFICIENCY.effectPerLevel, // -6.25% drain per upgrade level
   },
-  [ComplicationType.LIGHTS]: {
+  [TankSystem.LIGHTS]: {
     unlockRank: 2,
     // Brightness-based system (player-controlled via fast drop)
     graceBaseSec: 5,           // Base grace period before dimming starts
@@ -35,7 +35,7 @@ export const COMPLICATION_CONFIG = {
     flickerDipMs: 80,          // Time at dip brightness
     flickerRecoverMs: 120,     // Time to return to 100 from flicker
   },
-  [ComplicationType.CONTROLS]: {
+  [TankSystem.CONTROLS]: {
     unlockRank: 6,
     heatMax: 100,             // Heat threshold for trigger
     heatPerRotation: 5,       // Heat added per rotation
@@ -58,7 +58,7 @@ export const COOLDOWN_CONFIG = {
  * @param currentRank The player's current rank
  * @returns Cooldown duration in milliseconds
  */
-export function calculateCooldownMs(type: ComplicationType, currentRank: number): number {
+export function calculateCooldownMs(type: TankSystem, currentRank: number): number {
   const unlockRank = COMPLICATION_CONFIG[type].unlockRank;
   const cooldownSeconds = Math.max(
     COOLDOWN_CONFIG.minSeconds,
@@ -70,13 +70,13 @@ export function calculateCooldownMs(type: ComplicationType, currentRank: number)
 /**
  * Get the unlock rank for a complication type.
  */
-export function getUnlockRank(type: ComplicationType): number {
+export function getUnlockRank(type: TankSystem): number {
   return COMPLICATION_CONFIG[type].unlockRank;
 }
 
 /**
  * Check if a complication type is unlocked at the given rank.
  */
-export function isComplicationUnlocked(type: ComplicationType, rank: number): boolean {
+export function isComplicationUnlocked(type: TankSystem, rank: number): boolean {
   return rank >= COMPLICATION_CONFIG[type].unlockRank;
 }

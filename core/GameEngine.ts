@@ -1,5 +1,5 @@
 
-import { GameState, TankCell, ActivePiece, GoopTemplate, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, CrackCell, GamePhase, GoopState, GoopShape, Complication, ComplicationType, DumpPiece } from '../types';
+import { GameState, TankCell, ActivePiece, GoopTemplate, FallingBlock, ScoreBreakdown, GameStats, FloatingText, GoalMark, CrackCell, GamePhase, GoopState, GoopShape, Complication, TankSystem, DumpPiece } from '../types';
 import {
     TANK_WIDTH, TANK_HEIGHT, TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION, INITIAL_TIME_MS,
     PRESSURE_RECOVERY_BASE_MS, PRESSURE_RECOVERY_PER_UNIT_MS, PRESSURE_TIER_THRESHOLD, PRESSURE_TIER_STEP, PRESSURE_TIER_BONUS_MS,
@@ -144,9 +144,9 @@ export class GameEngine {
             lightsGraceStart: null,    // null = fast dropping, starts as if fast dropping
             lightsFlickered: false,    // No flicker yet this cycle
             complicationCooldowns: {
-                [ComplicationType.LIGHTS]: 0,
-                [ComplicationType.CONTROLS]: 0,
-                [ComplicationType.LASER]: 0
+                [TankSystem.LIGHTS]: 0,
+                [TankSystem.CONTROLS]: 0,
+                [TankSystem.LASER]: 0
             },
 
             // Active ability tracking
@@ -293,9 +293,9 @@ export class GameEngine {
             lightsGraceStart: null,    // null = fast dropping, starts as if fast dropping
             lightsFlickered: false,    // No flicker yet this cycle
             complicationCooldowns: {
-                [ComplicationType.LIGHTS]: 0,
-                [ComplicationType.CONTROLS]: 0,
-                [ComplicationType.LASER]: 0
+                [TankSystem.LIGHTS]: 0,
+                [TankSystem.CONTROLS]: 0,
+                [TankSystem.LASER]: 0
             },
 
             // GOOP_COLORIZER tracking - reset on new run
@@ -839,9 +839,9 @@ export class GameEngine {
      */
     private tickHeat(dt: number): void {
         const startingRank = calculateRankDetails(this.initialTotalScore).rank;
-        const ctrlConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
+        const ctrlConfig = COMPLICATION_CONFIG[TankSystem.CONTROLS];
 
-        if (isComplicationUnlocked(ComplicationType.CONTROLS, startingRank) && this.state.controlsHeat > 0) {
+        if (isComplicationUnlocked(TankSystem.CONTROLS, startingRank) && this.state.controlsHeat > 0) {
             const now = Date.now();
             const lastRotation = this.state.rotationTimestamps.length > 0
                 ? this.state.rotationTimestamps[this.state.rotationTimestamps.length - 1]
@@ -862,10 +862,10 @@ export class GameEngine {
      */
     private tickLightsBrightness(dt: number): void {
         const startingRank = calculateRankDetails(this.initialTotalScore).rank;
-        const lightsConfig = COMPLICATION_CONFIG[ComplicationType.LIGHTS];
+        const lightsConfig = COMPLICATION_CONFIG[TankSystem.LIGHTS];
 
         // Only run if LIGHTS is unlocked
-        if (!isComplicationUnlocked(ComplicationType.LIGHTS, startingRank)) return;
+        if (!isComplicationUnlocked(TankSystem.LIGHTS, startingRank)) return;
 
         // Pause grace timer when not in PERISCOPE phase (console/minigame)
         if (this.state.phase !== GamePhase.PERISCOPE) {
@@ -884,7 +884,7 @@ export class GameEngine {
         }
 
         // Skip if already in malfunction state
-        const hasLightsActive = this.state.complications.some(c => c.type === ComplicationType.LIGHTS);
+        const hasLightsActive = this.state.complications.some(c => c.type === TankSystem.LIGHTS);
         if (hasLightsActive) {
             // Keep at failed brightness during malfunction
             this.state.lightsBrightness = lightsConfig.failedBrightness;
@@ -1019,7 +1019,7 @@ export class GameEngine {
                 if (this.state.lightsBrightness <= lightsConfig.dimThreshold) {
                     // Snap to failed brightness and trigger malfunction
                     this.state.lightsBrightness = lightsConfig.failedBrightness;
-                    complicationManager.spawnComplication(this.state, ComplicationType.LIGHTS);
+                    complicationManager.spawnComplication(this.state, TankSystem.LIGHTS);
                 }
             }
         }
@@ -1218,7 +1218,7 @@ export class GameEngine {
         // No random trigger on piece lock anymore
 
         // Laser capacitor refill: +15% on piece lock (only when no active LASER complication)
-        const hasActiveLaser = this.state.complications.some(c => c.type === ComplicationType.LASER);
+        const hasActiveLaser = this.state.complications.some(c => c.type === TankSystem.LASER);
         if (!hasActiveLaser) {
             this.state.laserCapacitor = Math.min(100, this.state.laserCapacitor + 10);
         }

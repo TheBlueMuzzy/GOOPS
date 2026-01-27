@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Complication, ComplicationType } from '../types';
+import { Complication, TankSystem } from '../types';
 import {
   SliderPosition,
   LightsPhase,
@@ -81,7 +81,7 @@ export function useLightsMinigame({
 
   // Helper to check if LIGHTS complication is active
   const hasActiveLights = useCallback(() => {
-    return complications.some(c => c.type === ComplicationType.LIGHTS);
+    return complications.some(c => c.type === TankSystem.LIGHTS);
   }, [complications]);
 
   // Generate button sequence with max 2 of any single button
@@ -149,7 +149,7 @@ export function useLightsMinigame({
   // Detect when LIGHTS is removed and mark as "recently fixed"
   useEffect(() => {
     const prevHadLights = prevComplicationsRef.current.some(
-      c => c.type === ComplicationType.LIGHTS
+      c => c.type === TankSystem.LIGHTS
     );
     const currentHasLights = hasActiveLights();
 
@@ -280,7 +280,7 @@ export function useLightsMinigame({
         // Reset slider to center
         setLightSlider(0);
         // Resolve the complication in GameState
-        const lightsComp = complications.find(c => c.type === ComplicationType.LIGHTS);
+        const lightsComp = complications.find(c => c.type === TankSystem.LIGHTS);
         if (lightsComp && onResolveComplication) {
           onResolveComplication(lightsComp.id);
         }

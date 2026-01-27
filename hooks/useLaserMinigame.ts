@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Complication, ComplicationType } from '../types';
+import { Complication, TankSystem } from '../types';
 import {
   SliderPosition,
   LaserComplicationState,
@@ -67,13 +67,13 @@ export function useLaserMinigame({
 
   // Helper to check if LASER complication is active
   const hasActiveLaser = useCallback(() => {
-    return complications.some(c => c.type === ComplicationType.LASER);
+    return complications.some(c => c.type === TankSystem.LASER);
   }, [complications]);
 
   // Detect when LASER is removed and mark as "recently fixed"
   useEffect(() => {
     const prevHadLaser = prevComplicationsRef.current.some(
-      c => c.type === ComplicationType.LASER
+      c => c.type === TankSystem.LASER
     );
     const currentHasLaser = hasActiveLaser();
 
@@ -139,7 +139,7 @@ export function useLaserMinigame({
       next[index] = val;
 
       // Check if this slider matches its target
-      const laserComp = complications.find(c => c.type === ComplicationType.LASER);
+      const laserComp = complications.find(c => c.type === TankSystem.LASER);
 
       if (laserComp) {
         // We need to check against current laserComplication state
@@ -153,7 +153,7 @@ export function useLaserMinigame({
 
     // Handle solve check and shake in a separate closure
     // This is safe because we're reading complications prop, not state
-    const laserComp = complications.find(c => c.type === ComplicationType.LASER);
+    const laserComp = complications.find(c => c.type === TankSystem.LASER);
     if (laserComp && !laserComplication.solved) {
       const target = laserComplication.targets[index];
       if (val !== target) {

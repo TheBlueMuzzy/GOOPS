@@ -187,7 +187,7 @@ export enum GamePhase {
   GAME_OVER = 'GAME_OVER'
 }
 
-export enum ComplicationType {
+export enum TankSystem {
     LIGHTS = 'LIGHTS',
     CONTROLS = 'CONTROLS',
     LASER = 'LASER'
@@ -195,7 +195,7 @@ export enum ComplicationType {
 
 export interface Complication {
     id: string;
-    type: ComplicationType;
+    type: TankSystem;
     startTime: number;
     severity: number; // 1-3
 }
@@ -264,7 +264,7 @@ export interface GameState {
   lightsFlickered: boolean;        // Has the 5-second warning flicker happened this cycle
 
   // Cooldown timestamps: when each type can next trigger (0 = no cooldown)
-  complicationCooldowns: Record<ComplicationType, number>;
+  complicationCooldowns: Record<TankSystem, number>;
 
   // Active ability charge tracking (charged by popping crack-goop)
   activeCharges: Record<string, number>; // Active ID -> current charge (0 to chargeCost)

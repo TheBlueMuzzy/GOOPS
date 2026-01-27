@@ -1,7 +1,7 @@
 
 import { Command } from './Command';
 import { GameEngine } from '../GameEngine';
-import { GamePhase, GoopState, GoopShape, ActivePiece, GameState, ComplicationType } from '../../types';
+import { GamePhase, GoopState, GoopShape, ActivePiece, GameState, TankSystem } from '../../types';
 import { normalizeX, checkCollision, getRotatedCells, getGhostY, mergePiece, findContiguousGroup, getFloatingBlocks, spawnGoalBurst, calculateAdjacencyBonus, calculateHeightBonus, calculateOffScreenBonus, calculateMultiplier, updateGroups } from '../../utils/gameLogic';
 import { getGridX, getScreenX } from '../../utils/coordinates';
 import { gameEventBus } from '../events/EventBus';
@@ -70,9 +70,9 @@ export class MoveBoardCommand implements Command {
 
         // CONTROLS heat buildup: builds when rotating (but not during cooldown)
         const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
-        const ctrlConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
-        const controlsOnCooldown = Date.now() < engine.state.complicationCooldowns[ComplicationType.CONTROLS];
-        if (isComplicationUnlocked(ComplicationType.CONTROLS, startingRank) && !controlsOnCooldown) {
+        const ctrlConfig = COMPLICATION_CONFIG[TankSystem.CONTROLS];
+        const controlsOnCooldown = Date.now() < engine.state.complicationCooldowns[TankSystem.CONTROLS];
+        if (isComplicationUnlocked(TankSystem.CONTROLS, startingRank) && !controlsOnCooldown) {
             engine.state.controlsHeat = Math.min(ctrlConfig.heatMax, engine.state.controlsHeat + ctrlConfig.heatPerRotation);
         }
 
@@ -182,7 +182,7 @@ export class HardDropCommand implements Command {
         engine.updateScoreAndStats(distance * 2, { speed: distance * 2 });
 
         // Laser capacitor refill: +15% on piece lock (only when no active LASER complication)
-        const hasActiveLaser = engine.state.complications.some(c => c.type === ComplicationType.LASER);
+        const hasActiveLaser = engine.state.complications.some(c => c.type === TankSystem.LASER);
         if (!hasActiveLaser) {
             engine.state.laserCapacitor = Math.min(100, engine.state.laserCapacitor + 10);
         }
@@ -275,7 +275,7 @@ export class BlockTapCommand implements Command {
 
          if (group.length > 0) {
             // LASER complication: first tap resets fill animation, then can pop when full
-            const laserComplication = engine.state.complications.find(c => c.type === ComplicationType.LASER);
+            const laserComplication = engine.state.complications.find(c => c.type === TankSystem.LASER);
             if (laserComplication) {
                 const groupId = cell.groupId;
                 if (!engine.state.primedGroups.has(groupId)) {
@@ -309,8 +309,8 @@ export class BlockTapCommand implements Command {
 
             // LASER capacitor drain: drains when popping groups
             const startingRank = calculateRankDetails(engine.initialTotalScore).rank;
-            const laserConfig = COMPLICATION_CONFIG[ComplicationType.LASER];
-            if (isComplicationUnlocked(ComplicationType.LASER, startingRank)) {
+            const laserConfig = COMPLICATION_CONFIG[TankSystem.LASER];
+            if (isComplicationUnlocked(TankSystem.LASER, startingRank)) {
                 const laserLevel = engine.powerUps['CAPACITOR_EFFICIENCY'] || 0;
                 const drainMultiplier = 1 - (laserConfig.drainUpgradeEffect * laserLevel);
                 const drainAmount = group.length * laserConfig.drainPerUnit * drainMultiplier;

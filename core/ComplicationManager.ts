@@ -1,5 +1,5 @@
 
-import { GameState, ComplicationType, Complication } from '../types';
+import { GameState, TankSystem, Complication } from '../types';
 import { COMPLICATION_CONFIG, calculateCooldownMs, isComplicationUnlocked } from '../complicationConfig';
 import { calculateRankDetails } from '../utils/progression';
 import { gameEventBus } from './events/EventBus';
@@ -21,39 +21,39 @@ export class ComplicationManager {
         state: GameState,
         initialTotalScore: number,
         lastCheckTime: number
-    ): { spawned: ComplicationType | null; newLastCheckTime: number } {
+    ): { spawned: TankSystem | null; newLastCheckTime: number } {
         const now = Date.now();
         if (now - lastCheckTime < COMPLICATION_CHECK_INTERVAL) {
             return { spawned: null, newLastCheckTime: lastCheckTime };
         }
 
         // Helper to check if a specific complication type is already active
-        const hasComplication = (type: ComplicationType) =>
+        const hasComplication = (type: TankSystem) =>
             state.complications.some(c => c.type === type);
 
         // Helper to check if a complication type is on cooldown
-        const isOnCooldown = (type: ComplicationType) =>
+        const isOnCooldown = (type: TankSystem) =>
             now < state.complicationCooldowns[type];
 
         // Complications unlock progressively by starting rank (not mid-run rank)
         const rank = calculateRankDetails(initialTotalScore).rank;
-        const controlsConfig = COMPLICATION_CONFIG[ComplicationType.CONTROLS];
+        const controlsConfig = COMPLICATION_CONFIG[TankSystem.CONTROLS];
 
-        let spawned: ComplicationType | null = null;
+        let spawned: TankSystem | null = null;
 
         // LASER: Triggered when capacitor drains to 0
-        if (!hasComplication(ComplicationType.LASER) &&
-            !isOnCooldown(ComplicationType.LASER) &&
-            isComplicationUnlocked(ComplicationType.LASER, rank) &&
+        if (!hasComplication(TankSystem.LASER) &&
+            !isOnCooldown(TankSystem.LASER) &&
+            isComplicationUnlocked(TankSystem.LASER, rank) &&
             state.laserCapacitor <= 0) {
-            spawned = ComplicationType.LASER;
+            spawned = TankSystem.LASER;
         }
         // CONTROLS: Triggered when heat meter reaches max
-        else if (!hasComplication(ComplicationType.CONTROLS) &&
-            !isOnCooldown(ComplicationType.CONTROLS) &&
-            isComplicationUnlocked(ComplicationType.CONTROLS, rank) &&
+        else if (!hasComplication(TankSystem.CONTROLS) &&
+            !isOnCooldown(TankSystem.CONTROLS) &&
+            isComplicationUnlocked(TankSystem.CONTROLS, rank) &&
             state.controlsHeat >= controlsConfig.heatMax) {
-            spawned = ComplicationType.CONTROLS;
+            spawned = TankSystem.CONTROLS;
         }
 
         // LIGHTS: Triggered by brightness system in GameEngine.tickLightsBrightness()
@@ -65,7 +65,7 @@ export class ComplicationManager {
      * Spawn a new complication of the given type.
      * Returns the new complication object.
      */
-    spawnComplication(state: GameState, type: ComplicationType): Complication {
+    spawnComplication(state: GameState, type: TankSystem): Complication {
         const id = Math.random().toString(36).substr(2, 9);
         const complication: Complication = {
             id,
@@ -96,15 +96,15 @@ export class ComplicationManager {
         if (complication) {
             // Reset the corresponding counter so next trigger starts fresh
             switch (complication.type) {
-                case ComplicationType.LASER:
-                    state.laserCapacitor = COMPLICATION_CONFIG[ComplicationType.LASER].capacitorMax;
+                case TankSystem.LASER:
+                    state.laserCapacitor = COMPLICATION_CONFIG[TankSystem.LASER].capacitorMax;
                     state.primedGroups.clear();
                     break;
-                case ComplicationType.CONTROLS:
+                case TankSystem.CONTROLS:
                     state.controlsHeat = 0;
                     state.rotationTimestamps = [];
                     break;
-                case ComplicationType.LIGHTS:
+                case TankSystem.LIGHTS:
                     // Reset brightness system - lights back to full, grace period starts fresh
                     state.lightsBrightness = 100;
                     state.lightsGraceStart = Date.now(); // Start grace period immediately
@@ -140,7 +140,7 @@ export class ComplicationManager {
     ): void {
         const now = Date.now();
 
-        for (const type of Object.values(ComplicationType)) {
+        for (const type of Object.values(TankSystem)) {
             const cooldownEnd = state.complicationCooldowns[type];
             if (cooldownEnd > now) {
                 // Cooldown is active, extend it
@@ -163,7 +163,7 @@ export class ComplicationManager {
     ): void {
         const now = Date.now();
 
-        for (const type of Object.values(ComplicationType)) {
+        for (const type of Object.values(TankSystem)) {
             const cooldownEnd = state.complicationCooldowns[type];
             if (cooldownEnd > now) {
                 // Cooldown is active, reduce remaining time

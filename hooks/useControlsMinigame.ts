@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Complication, ComplicationType } from '../types';
+import { Complication, TankSystem } from '../types';
 import {
   CornerIndex,
   ControlsComplicationState,
@@ -97,7 +97,7 @@ export function useControlsMinigame({
 
   // Helper to check if CONTROLS complication is active
   const hasActiveControls = useCallback(() => {
-    return complications.some(c => c.type === ComplicationType.CONTROLS);
+    return complications.some(c => c.type === TankSystem.CONTROLS);
   }, [complications]);
 
   /**
@@ -130,7 +130,7 @@ export function useControlsMinigame({
   // Detect when CONTROLS is removed and mark as "recently fixed"
   useEffect(() => {
     const prevHadControls = prevComplicationsRef.current.some(
-      c => c.type === ComplicationType.CONTROLS
+      c => c.type === TankSystem.CONTROLS
     );
     const currentHasControls = hasActiveControls();
 
@@ -387,7 +387,7 @@ export function useControlsMinigame({
           completedCorners: 4
         }));
         // Resolve the complication in GameState
-        const controlsComp = complications.find(c => c.type === ComplicationType.CONTROLS);
+        const controlsComp = complications.find(c => c.type === TankSystem.CONTROLS);
         if (controlsComp && onResolveComplication) {
           onResolveComplication(controlsComp.id);
         }

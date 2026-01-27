@@ -1,6 +1,6 @@
 // --- Imports ---
 import React, { useMemo, useCallback, useState, useEffect } from 'react';
-import { GameState, GoopState, ComplicationType, GamePhase, GoopTemplate, DumpPiece, CrackCell } from '../types';
+import { GameState, GoopState, TankSystem, GamePhase, GoopTemplate, DumpPiece, CrackCell } from '../types';
 import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, COLORS, TANK_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { isMobile } from '../utils/device';
@@ -24,7 +24,7 @@ interface GameBoardProps {
   lightsBrightness?: number; // 5-110: brightness level (100 = normal, lower = dimmer, 110 = overflare)
   laserCapacitor?: number;  // HUD meter: 0-100 (100 = full)
   controlsHeat?: number;    // HUD meter: 0-100 (0 = cool)
-  complicationCooldowns?: Record<ComplicationType, number>;  // Cooldown timestamps
+  complicationCooldowns?: Record<TankSystem, number>;  // Cooldown timestamps
   equippedActives?: string[];  // Active ability IDs equipped
   activeCharges?: Record<string, number>;  // Active ID -> charge (0-100)
   onActivateAbility?: (upgradeId: string) => void;  // Called when ability activated
@@ -653,7 +653,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     {rank >= 1 && (
                         <g>
                             {/* Cooldown timer above meter */}
-                            {complicationCooldowns && complicationCooldowns[ComplicationType.LASER] > Date.now() && (
+                            {complicationCooldowns && complicationCooldowns[TankSystem.LASER] > Date.now() && (
                                 <text
                                     x={vbX + 8 + 6}
                                     y={vbH * 0.04 - 4}
@@ -662,7 +662,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                     textAnchor="middle"
                                     fontFamily="monospace"
                                 >
-                                    {Math.ceil((complicationCooldowns[ComplicationType.LASER] - Date.now()) / 1000)}s
+                                    {Math.ceil((complicationCooldowns[TankSystem.LASER] - Date.now()) / 1000)}s
                                 </text>
                             )}
                             <HudMeter
@@ -679,7 +679,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     {rank >= 3 && (
                         <g>
                             {/* Cooldown timer above meter */}
-                            {complicationCooldowns && complicationCooldowns[ComplicationType.CONTROLS] > Date.now() && (
+                            {complicationCooldowns && complicationCooldowns[TankSystem.CONTROLS] > Date.now() && (
                                 <text
                                     x={vbX + vbW - 20 + 6}
                                     y={vbH * 0.04 - 4}
@@ -688,7 +688,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                                     textAnchor="middle"
                                     fontFamily="monospace"
                                 >
-                                    {Math.ceil((complicationCooldowns[ComplicationType.CONTROLS] - Date.now()) / 1000)}s
+                                    {Math.ceil((complicationCooldowns[TankSystem.CONTROLS] - Date.now()) / 1000)}s
                                 </text>
                             )}
                             <HudMeter
@@ -795,11 +795,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 {[...state.complications]
                     .sort((a, b) => a.startTime - b.startTime) // Oldest first (on top)
                     .map(complication => {
-                    // Map ComplicationType to display name
-                    const typeNames: Record<ComplicationType, string> = {
-                        [ComplicationType.LIGHTS]: 'Lights',
-                        [ComplicationType.CONTROLS]: 'Controls',
-                        [ComplicationType.LASER]: 'Laser'
+                    // Map TankSystem to display name
+                    const typeNames: Record<TankSystem, string> = {
+                        [TankSystem.LIGHTS]: 'Lights',
+                        [TankSystem.CONTROLS]: 'Controls',
+                        [TankSystem.LASER]: 'Laser'
                     };
                     const typeName = typeNames[complication.type] || complication.type;
 
