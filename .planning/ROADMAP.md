@@ -130,7 +130,7 @@ Plans:
 
 Plans:
 - [x] 23-01: softDrop -> fastDrop — completed 2026-01-26
-- [ ] 23-02: Core Goop lifecycle (PieceType, activePiece)
+- [x] 23-02: Core Goop lifecycle (PieceType, activePiece) — completed 2026-01-27
 - [ ] 23-03: Tank dimensions & coordinates (TOTAL_WIDTH, boardOffset, GridCell)
 - [ ] 23-04: Complication system (ComplicationType, laserCapacitor, groupId)
 - [ ] 23-05: Progression system (score, rank, powerUpPoints, timing)
@@ -175,7 +175,7 @@ Plans:
 | 20. Expanding Cracks Overhaul | v1.2 | 1/1 | Complete | 2026-01-25 |
 | 21. Piece Shapes | v1.3 | 3/3 | Shipped | 2026-01-26 |
 | 22. Audit & Glossary | v1.4 | 1/1 | Complete | 2026-01-27 |
-| 23. Code Rename | v1.4 | 1/7 | In progress | - |
+| 23. Code Rename | v1.4 | 2/7 | In progress | - |
 | 24. UI & Documentation | v1.4 | 0/? | Not started | - |
 
 ## Related

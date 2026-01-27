@@ -20,17 +20,13 @@ updated: 2026-01-26
 ## Next Steps
 
 **Current:** v1.4 Naming Standardization — Phase 23 (Code Rename)
-**Status:** GLOSSARY v2.0 complete. Phase 23 plans need regeneration.
+**Status:** 2/7 plans complete
 
 **Completed this session:**
-- Comprehensive terminology review with user (60+ terms)
-- GLOSSARY.md v2.0 created with all official terms
-- 23-01 executed (softDrop → fastDrop) - still valid
+- 23-02: Core Goop lifecycle (PieceType→GoopShape, activePiece→activeGoop, etc.)
 
-**Next session:**
-1. Delete old 23-02-PLAN.md (outdated)
-2. Run `/gsd:plan-phase 23` to create new plans from GLOSSARY.md
-3. Execute the new plans
+**Next:**
+- 23-03: Tank dimensions & coordinates (TOTAL_WIDTH, boardOffset, GridCell)
 
 **Key reference:** `.planning/GLOSSARY.md` has the complete migration table.
 
@@ -58,11 +54,11 @@ See: [[PROJECT]] (updated 2026-01-26)
 ## Current Position
 
 Phase: 23 of 24 (Code Rename)
-Plan: Replanning needed (glossary expanded scope)
-Status: GLOSSARY v2.0 complete, awaiting new plans
-Last activity: 2026-01-26 — Comprehensive terminology review
+Plan: 2 of 7 in current phase
+Status: In progress
+Last activity: 2026-01-27 — Completed 23-02-PLAN.md (Core Goop Lifecycle)
 
-Progress: ██░░░░░░░░ 20% (v1.4 Naming Standardization - scope expanded)
+Progress: ███░░░░░░░ 30% (v1.4 Naming Standardization)
 
 ## What's Done
 
@@ -183,12 +179,24 @@ All three complications have player-driven triggers AND mitigations.
 
 ## Session Continuity
 
-Last session: 2026-01-26
+Last session: 2026-01-27
 **Version:** 1.1.13
 **Branch:** phase-23-01-code-rename
-**Milestone:** v1.4 Naming Standardization (Glossary v2.0 complete)
+**Milestone:** v1.4 Naming Standardization (2/7 Phase 23 plans complete)
 
-### This Session Summary (2026-01-26)
+### This Session Summary (2026-01-27)
+
+**23-02 Core Goop Lifecycle Complete**
+
+Renamed core piece terminology to Goop equivalents:
+- PieceType → GoopShape (78 refs across 7 files)
+- PieceDefinition → GoopTemplate (23 refs across 9 files)
+- PieceState → GoopState (13 refs)
+- activePiece → activeGoop (51 refs across 4 files)
+
+All 151 tests pass, TypeScript compiles clean.
+
+**Previous Session (2026-01-26)**
 
 **Comprehensive Terminology Review & GLOSSARY v2.0**
 
@@ -203,8 +211,6 @@ User-driven review of ALL game terminology. Key decisions:
 60+ terms documented in GLOSSARY.md v2.0 with migration table.
 
 **23-01 Executed:** softDrop → fastDrop (3 commits, still valid)
-
-**Next:** Regenerate Phase 23 plans based on expanded glossary scope.
 
 ---
 
