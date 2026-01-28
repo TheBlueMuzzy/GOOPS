@@ -309,7 +309,7 @@ Claude must:
 | `.planning/ROADMAP.md` | Milestones, phases | Phase/milestone status changes |
 | `.planning/SOP.md` | This file — workflow reference | Process changes |
 | `CLAUDE.md` | Project-specific context | Patterns/systems change |
-| `PRD.md` | Full game requirements | Game design changes |
+| `.planning/PRD.md` | Full game requirements | Game design changes |
 
 ---
 
@@ -318,7 +318,7 @@ Claude must:
 1. Copy `.planning/` structure to new project
 2. Run `/gsd:new-project` to initialize
 3. Update `CLAUDE.md` with project-specific context
-4. Update `PRD.md` with your requirements
+4. Update `.planning/PRD.md` with your requirements
 5. Start with `/gsd:progress`
 
 ---

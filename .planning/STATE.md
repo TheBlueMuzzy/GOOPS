@@ -38,16 +38,11 @@ updated: 2026-01-28
 
 ## Future Plans
 
-- **Pressure venting visual** — when goop is popped, animated graphic flies from pop location to pressure meter at top, reinforcing "venting pressure" concept without needing numbers
-- **Title unlock system** — unlock titles as progression rewards
-- **Piece shape changes** — different goop shapes for faster stacking
-- **Tutorial system** — guided onboarding for new players
-- **Naming standardization** — audit and standardize game element terminology in code:
-  - piece vs goop (used interchangeably)
-  - unit vs cell (used interchangeably)
-  - soft drop → fast drop (vestigial name from old hard drop)
-  - Create glossary of official terms for designer reference
-  - Make this part of the pipeline going forward
+See **`.planning/PRD.md` → Future Ideas** for the full list of planned features.
+
+Current priorities:
+- Pressure venting visual (visual polish)
+- Tutorial system (onboarding)
 
 ---
 

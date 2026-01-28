@@ -151,7 +151,7 @@ Goops2-main/
 - `use*.ts` - React hooks (`useGameEngine.ts`)
 - `*.test.ts` - Test files
 - `CLAUDE.md` - AI context file
-- `PRD.md` - Product requirements
+- `.planning/PRD.md` - Product requirements
 
 ## Where to Add New Code
 

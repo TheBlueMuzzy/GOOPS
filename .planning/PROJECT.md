@@ -122,7 +122,7 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 
 ## Rank Band System
 
-Progression is organized into bands of 10 ranks. See PRD.md (root) for full details.
+Progression is organized into bands of 10 ranks. See `.planning/PRD.md` for full details.
 
 | Band | Ranks | Mechanic | New Color | Upgrades | Status |
 |------|-------|----------|-----------|----------|--------|

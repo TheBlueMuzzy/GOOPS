@@ -243,7 +243,7 @@ Show the command tables above.
 | `.planning/PROJECT.md` | Requirements, key decisions |
 | `.planning/ROADMAP.md` | Milestones, phases, progress |
 | `.planning/SOP.md` | Workflow reference, concepts, flow diagrams |
-| `PRD.md` | Full game requirements |
+| `.planning/PRD.md` | Full game requirements |
 | `constants.ts` | Upgrade configurations |
 
 ---
