@@ -19,21 +19,20 @@ updated: 2026-01-27
 
 ## Next Steps
 
-**Current:** v1.5 Visual Terminology & Grade System — SHIPPED 2026-01-27
-**Status:** Milestone complete, deploying now
+**Current:** Bug fixes deployed 2026-01-27
+**Status:** Hotfixes complete
 
-**Completed:**
-- Phase 25: Variable renames (sessionXP→shiftScore, operatorXP→careerScore, SESSION_DURATION→SHIFT_DURATION)
-- Phase 26: UI text updates (SHIFT OVER, GRADE, Scraps, TOOLS/SYSTEMS/UTILITY tabs)
-- Phase 27: Grade system (A/B/C/FAILURE based on 5 categories)
-- Phase 28: Dynamic text (floating %, periscope alternation, REPAIR titles)
-- Critical bug fix: Loose goop now properly removes cracks from crackCells
-- UI polish: Button sizing, text alignment, font sizes
+**Completed (this session):**
+- Fixed P_S pentomino shape (was disconnected 3+2, now contiguous boot/L per Minos.svg)
+- Fixed getFloatingBlocks algorithm:
+  - Now limits search to affected columns/rows above popped cells
+  - Support rule: within same group any direction, between groups only directly below (y+1)
+  - Prevents unrelated goop from falling when popping elsewhere
 
 **Next:**
 - XP bar redesign (pending discussion with user)
 
-**Resume command:** Continue XP bar discussion
+**Resume command:** Continue XP bar discussion or test LooseGoop fixes
 
 ## Future Plans
 

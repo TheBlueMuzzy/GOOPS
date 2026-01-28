@@ -405,14 +405,13 @@ export class PopGoopCommand implements Command {
 
             // Modify Grid
             let tempGrid = engine.state.grid.map(row => [...row]);
-            const uniqueCols = new Set<number>();
+            const poppedCells: { x: number; y: number }[] = [];
             group.forEach(pt => {
                 tempGrid[pt.y][pt.x] = null;
-                uniqueCols.add(pt.x);
+                poppedCells.push({ x: pt.x, y: pt.y });
             });
-            
-            const colsToCheck = Array.from(uniqueCols);
-            const { grid: cleanGrid, looseGoop: newFalling } = getFloatingBlocks(tempGrid, colsToCheck);
+
+            const { grid: cleanGrid, looseGoop: newFalling } = getFloatingBlocks(tempGrid, poppedCells);
 
             // Burst Logic
             if (infusedCount > 0) {

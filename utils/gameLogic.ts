@@ -416,71 +416,104 @@ export const processWildConversions = (
     return updateGroups(newGrid);
 };
 
-export const getFloatingBlocks = (grid: TankCell[][], columnsToCheck?: number[]): { grid: TankCell[][], looseGoop: LooseGoop[] } => {
-    // Implements "Sticky Gravity":
-    // An entire connected Group falls only if NO block in that group is supported.
-    // A block is supported if it is on the floor (y=MAX) or on top of a supported group.
+export const getFloatingBlocks = (grid: TankCell[][], poppedCells?: Coordinate[]): { grid: TankCell[][], looseGoop: LooseGoop[] } => {
+    // Sticky Gravity algorithm:
+    // - Within same group: support propagates in any orthogonal direction
+    // - Between different groups: support only transfers from directly below (y+1)
+    // - When poppedCells provided: only checks candidates in affected area
+    //
+    // A group is supported if ANY of its cells:
+    //   1. Is on the floor (y = TANK_HEIGHT - 1), OR
+    //   2. Has a different supported group directly below it
 
     const newGrid = grid.map(row => [...row]);
     const looseGoop: LooseGoop[] = [];
-    
+
     // 1. Map all Groups
     const groups = new Map<string, Coordinate[]>();
-    const goopGroupIds = new Set<string>();
-    
+
     for (let y = 0; y < TANK_HEIGHT; y++) {
         for (let x = 0; x < TANK_WIDTH; x++) {
             const cell = newGrid[y][x];
             if (cell) {
                 if (!groups.has(cell.goopGroupId)) {
                     groups.set(cell.goopGroupId, []);
-                    goopGroupIds.add(cell.goopGroupId);
                 }
                 groups.get(cell.goopGroupId)!.push({ x, y });
             }
         }
     }
 
-    // 2. Iteratively determine support
-    const supportedGroupIds = new Set<string>();
-    let changed = true;
+    // 2. Determine candidate groups (those that might fall)
+    let candidateGroupIds: Set<string>;
 
-    while (changed) {
-        changed = false;
-        
-        for (const gid of goopGroupIds) {
-            if (supportedGroupIds.has(gid)) continue;
-            
-            const blocks = groups.get(gid)!;
-            let isSupported = false;
-            
-            for (const b of blocks) {
-                // Ground support
-                if (b.y === TANK_HEIGHT - 1) {
-                    isSupported = true;
+    if (poppedCells && poppedCells.length > 0) {
+        // Calculate search area: for each affected column, find the minimum Y (highest position)
+        // of popped cells, then search rows above that (y < minY)
+        const colMinY = new Map<number, number>();
+        for (const cell of poppedCells) {
+            const currentMin = colMinY.get(cell.x);
+            if (currentMin === undefined || cell.y < currentMin) {
+                colMinY.set(cell.x, cell.y);
+            }
+        }
+
+        // Find candidate groups: any group with at least one cell in the search area
+        candidateGroupIds = new Set<string>();
+        for (const [gid, cells] of groups) {
+            for (const cell of cells) {
+                const minY = colMinY.get(cell.x);
+                if (minY !== undefined && cell.y < minY) {
+                    // This cell is in the search area (same column, above popped cell)
+                    candidateGroupIds.add(gid);
                     break;
                 }
-                
-                // Stack support (from a different, supported group)
-                const belowY = b.y + 1;
-                if (belowY < TANK_HEIGHT) {
-                    const belowCell = newGrid[belowY][b.x];
-                    if (belowCell && belowCell.goopGroupId !== gid && supportedGroupIds.has(belowCell.goopGroupId)) {
-                        isSupported = true;
-                        break;
-                    }
-                }
             }
-            
-            if (isSupported) {
+        }
+    } else {
+        // No poppedCells provided: check all groups (used by tests and edge cases)
+        candidateGroupIds = new Set(groups.keys());
+    }
+
+    // 3. Determine support for all groups (needed because candidates may depend on non-candidates)
+    const supportedGroupIds = new Set<string>();
+
+    // First pass: mark all groups touching the floor as supported
+    for (const [gid, cells] of groups) {
+        for (const cell of cells) {
+            if (cell.y === TANK_HEIGHT - 1) {
                 supportedGroupIds.add(gid);
-                changed = true;
+                break;
             }
         }
     }
 
-    // 3. Mark unsupported groups as loose (falling)
-    for (const gid of goopGroupIds) {
+    // Iteratively propagate support upward
+    let changed = true;
+    while (changed) {
+        changed = false;
+
+        for (const [gid, cells] of groups) {
+            if (supportedGroupIds.has(gid)) continue;
+
+            // Check if any cell has a different supported group directly below
+            for (const cell of cells) {
+                const belowY = cell.y + 1;
+                if (belowY < TANK_HEIGHT) {
+                    const belowCell = newGrid[belowY][cell.x];
+                    if (belowCell && belowCell.goopGroupId !== gid && supportedGroupIds.has(belowCell.goopGroupId)) {
+                        supportedGroupIds.add(gid);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Mark unsupported CANDIDATES as loose (falling)
+    // Non-candidates are assumed stable (not affected by this pop)
+    for (const gid of candidateGroupIds) {
         if (!supportedGroupIds.has(gid)) {
             const blocks = groups.get(gid)!;
             for (const b of blocks) {
