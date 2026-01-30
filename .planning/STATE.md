@@ -15,29 +15,36 @@ updated: 2026-01-28
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- None — v1.2 complete, ready for bug fix work
+- `soft-body-experiment` — Soft Body Goop (SBG) visual overhaul research
 
 ## Next Steps
 
-**Current:** Win bonus rework complete 2026-01-28
-**Status:** Deployed
+**Current:** Soft Body Goop research & prototyping
+**Status:** Vision documented, ready for deep research
+**Branch:** `soft-body-experiment`
 
-**Completed (this session):**
-- Removed old win bonus (`rank × 5000`) which caused multi-rank skipping
-- Implemented capped progression system:
-  - Win = guaranteed +1 rank (at 100 XP if score didn't rank you)
-  - If score already ranked you + win = +1 more rank at 100 XP
-  - Maximum +2 ranks per shift (prevents skipping unlocks)
-  - Score overflow preserved when not capped
-- Added `calculateCappedProgression()` function with 10 new tests
-- Fixed End Screen to show correct capped rank
-- Fixed Console to use saved career score when idle
+**Vision document:** `.planning/SOFTBODY-VISION.md` — COMPREHENSIVE context, read this first!
 
-**Next:**
-- Pressure venting visual (visual polish)
-- Tutorial system (onboarding)
+**The Goal:** Transform flat grid visuals into physics-responsive soft body goop that jiggles, reaches toward same-colored neighbors, and smoothly merges membranes.
 
-**Resume command:** Plan next feature or fix any reported bugs
+**Key Architecture Decision:**
+- Data layer (invisible) = current game logic, unchanged
+- Render layer (visible) = SBG that follows data layer like soft body follows mouse cursor
+- Vertices attract same-colored neighbors via springs
+- Merging is emergent from physics (vertices slide together)
+
+**Two Approaches to Test:**
+1. **Vertex-to-vertex springs** — explicit attraction between nearby same-color vertices
+2. **Field-based attraction** — continuous attraction field, vertices feel combined pull
+
+**Resume command:**
+```
+Continue soft-body goop research. Read .planning/SOFTBODY-VISION.md for full context.
+Branch: soft-body-experiment
+```
+
+**Previous work (2026-01-28):**
+- Win bonus rework complete, deployed to master
 
 ## Future Plans
 
