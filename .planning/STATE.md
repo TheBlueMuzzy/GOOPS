@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-01-28
+updated: 2026-01-30
 ---
 
 # Project State
@@ -15,32 +15,45 @@ updated: 2026-01-28
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `soft-body-experiment` — Soft Body Goop (SBG) visual overhaul research
+- `soft-body-experiment` — Soft Body Goop (SBG) visual overhaul (RESEARCH COMPLETE)
 
 ## Next Steps
 
-**Current:** Soft Body Goop research & prototyping
-**Status:** Vision documented, ready for deep research
+**Current:** Soft Body Goop prototype implementation
+**Status:** RESEARCH COMPLETE — Ready for Phase 1 prototyping
 **Branch:** `soft-body-experiment`
 
-**Vision document:** `.planning/SOFTBODY-VISION.md` — COMPREHENSIVE context, read this first!
+**Vision + Research document:** `.planning/SOFTBODY-VISION.md` — READ THIS FIRST!
 
-**The Goal:** Transform flat grid visuals into physics-responsive soft body goop that jiggles, reaches toward same-colored neighbors, and smoothly merges membranes.
+### Research Findings Summary (2026-01-30)
 
-**Key Architecture Decision:**
-- Data layer (invisible) = current game logic, unchanged
-- Render layer (visible) = SBG that follows data layer like soft body follows mouse cursor
-- Vertices attract same-colored neighbors via springs
-- Merging is emergent from physics (vertices slide together)
+**Physics:**
+- Verlet integration + mass-spring system
+- Damping ratio ζ=0.6 for gummy feel
+- 12 vertices per cell, ring + cross springs + pressure
 
-**Two Approaches to Test:**
-1. **Vertex-to-vertex springs** — explicit attraction between nearby same-color vertices
-2. **Field-based attraction** — continuous attraction field, vertices feel combined pull
+**Rendering:**
+- Catmull-Rom → Bezier conversion for smooth curves
+- SVG gooey filter for membrane merge effect
+- Formula: `cp1 = P1 + (P2-P0)/6`, `cp2 = P2 - (P3-P1)/6`
+
+**Attraction (SPRINGS WIN over fields):**
+- Explicit vertex-to-vertex springs for "reaching" effect
+- Spatial hashing for performance (432 vertices)
+- Rest length ~10px for "merged" appearance
+
+### Implementation Roadmap
+
+1. **Phase 1:** Single cell — 12 Verlet vertices, springs, pressure, Catmull-Rom rendering
+2. **Phase 2:** Cell follows data layer — spring to "home" position, test rotation/collision
+3. **Phase 3:** Inter-cell attraction — spatial hashing, same-color springs
+4. **Phase 4:** Visual polish — goo filter, undulation, ghost piece mode
 
 **Resume command:**
 ```
-Continue soft-body goop research. Read .planning/SOFTBODY-VISION.md for full context.
+Start soft-body prototype. Read .planning/SOFTBODY-VISION.md for full research.
 Branch: soft-body-experiment
+Phase: 1 — Single cell with 12 Verlet vertices
 ```
 
 **Previous work (2026-01-28):**
@@ -204,12 +217,42 @@ All three complications have player-driven triggers AND mitigations.
 
 ## Session Continuity
 
-Last session: 2026-01-28
+Last session: 2026-01-30
 **Version:** 1.1.13
-**Branch:** master
-**Milestone:** v1.5 Visual Terminology & Grade System — SHIPPED
+**Branch:** soft-body-experiment
+**Current work:** SBG Research → Implementation
 
-### This Session Summary (2026-01-28)
+### This Session Summary (2026-01-30)
+
+**Soft Body Goop Research — COMPLETE**
+
+Comprehensive deep-dive research on soft body physics for the visual overhaul:
+
+**1. Physics Deep-Dive:**
+- Verlet integration preferred (stable, implicit velocity)
+- Damping ratio ζ=0.5-0.7 for "gummy" feel
+- 12 vertices per cell with ring + cross springs + pressure
+- Concrete parameter values documented
+
+**2. Rendering Deep-Dive:**
+- Catmull-Rom splines pass through physics vertices (unlike Bezier)
+- Simple conversion formula: `cp1 = P1 + (P2-P0)/6`
+- SVG gooey filter for membrane merge between same-color cells
+- Centripetal (α=0.5) prevents cusps, but uniform is fine for even spacing
+
+**3. Field vs Spring Comparison:**
+- **SPRINGS WIN** — gummy, stretchy feel (World of Goo uses this)
+- Fields = floaty, magnetic feel (good for water, not goop)
+- Springs create "reaching" effect; fields create "magnet snap"
+- Spatial hashing required for 432 vertices
+
+**All research documented in `.planning/SOFTBODY-VISION.md`**
+
+Ready for Phase 1 prototype: single cell with physics + rendering.
+
+---
+
+### Previous Session Summary (2026-01-28)
 
 **Win Bonus Rework — COMPLETE**
 

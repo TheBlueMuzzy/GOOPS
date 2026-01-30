@@ -374,13 +374,299 @@ Game will eventually be APK/iOS app.
 
 ---
 
+---
+
+# RESEARCH FINDINGS (2026-01-30)
+
+## 1. Physics Deep-Dive: Blob Physics & Spring Parameters
+
+### Core Architecture: Mass-Spring + Verlet Integration
+
+**Best approach for Goops:**
+- **12 Verlet particles** per goop cell (matches vision)
+- **Verlet integration** preferred over Euler (stable, implicit velocity, easy constraints)
+- **Pressure-based** volume preservation using gas law (smaller area = higher outward force)
+
+**Verlet Integration Formula:**
+```
+newPosition = currentPosition + (currentPosition - previousPosition) + acceleration * dt²
+previousPosition = currentPosition
+currentPosition = newPosition
+```
+
+**Why Verlet:** When a constraint is violated, just move the particle back. Velocity auto-adjusts because it's derived from position difference.
+
+### The Gummy Feel: Damping Ratio (ζ)
+
+The damping ratio controls everything:
+
+| Zeta (ζ) | Feel |
+|----------|------|
+| 0.3-0.5 | Bouncy jelly, lots of wobble |
+| **0.5-0.7** | **Gummy/jelly with some jiggle** ← TARGET |
+| 0.7-0.9 | Firm gummy, minimal overshoot |
+| 1.0 | No oscillation (critically damped) |
+
+**Concrete starting values:**
+```typescript
+const DAMPING_RATIO = 0.6;        // ζ - controls wobble
+const SPRING_STIFFNESS = 100-150; // k - resistance to deformation
+const MASS = 1.0;                 // m - uniform for all vertices
+const VERLET_DAMPING = 0.99;      // velocity retention per frame
+const CONSTRAINT_ITERATIONS = 4;  // shape retention passes
+```
+
+**Critical damping formula:**
+```
+b_critical = 2 * sqrt(m * k)
+b = ζ * b_critical
+```
+
+### Key Physics Formulas
+
+```typescript
+// Spring force (Hooke's Law + damping)
+F = -k * (length - restLength) - b * velocity
+
+// Pressure force (gas law for volume preservation)
+pressure = targetPressure * (restArea / currentArea)
+F_pressure = pressure * edgeLength * outwardNormal
+```
+
+### Spring Topology for Stability
+
+For each blob cell:
+1. **Ring springs:** Connect adjacent vertices (structural)
+2. **Cross springs:** Connect opposite vertices (prevents collapse)
+3. **Pressure:** Maintains volume when squished
+
+### Research Sources
+- [Gaffer on Games - Spring Physics](https://gafferongames.com/post/spring_physics/)
+- [lisyarus blog - 2D Soft Body](https://lisyarus.github.io/blog/posts/soft-body-physics.html)
+- [Blob Family Demo](https://slsdo.github.io/blob-family/)
+- [JellyCar Deep Dive](https://www.gamedeveloper.com/programming/deep-dive-the-soft-body-physics-of-jelly-car-explained)
+
+---
+
+## 2. Rendering Deep-Dive: Smooth Curves & Membrane
+
+### Winner: Catmull-Rom → Bezier Conversion
+
+**Why Catmull-Rom for blobs:**
+- Curve **passes through** every physics vertex (unlike Bezier which is pulled toward)
+- Handles closed loops naturally
+- Physics vertices = control points directly (no derivation needed)
+
+**Why convert to Bezier:**
+- Canvas/SVG only natively support `bezierCurveTo()`
+- GPU accelerated rendering
+- One-time cheap conversion
+
+### The Conversion Formula (Core Implementation)
+
+```typescript
+// For segment P1→P2, given 4 consecutive points P0,P1,P2,P3
+function catmullRomToBezier(p0, p1, p2, p3) {
+  return {
+    start: p1,
+    cp1: {
+      x: p1.x + (p2.x - p0.x) / 6,
+      y: p1.y + (p2.y - p0.y) / 6
+    },
+    cp2: {
+      x: p2.x - (p3.x - p1.x) / 6,
+      y: p2.y - (p3.y - p1.y) / 6
+    },
+    end: p2
+  };
+}
+```
+
+### Complete Blob Outline Renderer
+
+```typescript
+function renderBlobOutline(ctx: CanvasRenderingContext2D, vertices: Point[]): void {
+  const n = vertices.length;
+  if (n < 3) return;
+
+  ctx.beginPath();
+  ctx.moveTo(vertices[0].x, vertices[0].y);
+
+  for (let i = 0; i < n; i++) {
+    // Wrap indices for closed loop
+    const p0 = vertices[(i - 1 + n) % n];
+    const p1 = vertices[i];
+    const p2 = vertices[(i + 1) % n];
+    const p3 = vertices[(i + 2) % n];
+
+    // Catmull-Rom to Bezier control points
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+  }
+
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+```
+
+### Alpha Parameter (Centripetal vs Uniform)
+
+| Alpha | Name | Use Case |
+|-------|------|----------|
+| 0 | Uniform | Fast, good for evenly-spaced points |
+| **0.5** | **Centripetal** | No cusps, best for organic shapes |
+| 1 | Chordal | Very tight to points |
+
+**For 12 evenly-spaced blob vertices:** Uniform (α=0) is fine and faster.
+**If deformation causes artifacts:** Switch to centripetal (α=0.5).
+
+### Metaball-Style Membrane: SVG Gooey Filter
+
+**Recommended for visual merging between same-color goops:**
+
+```html
+<svg style="position: absolute; width: 0; height: 0;">
+  <defs>
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 19 -9" result="goo"/>
+      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+    </filter>
+  </defs>
+</svg>
+```
+
+**Apply per-color group:**
+```jsx
+<div style={{ filter: 'url(#goo)' }}>
+  {samColorCells.map(cell => <BlobCell />)}
+</div>
+```
+
+**Tuning:**
+- `stdDeviation`: Blur radius (5-12 for merge distance)
+- Matrix `19 -9`: Alpha threshold (higher first number = sharper, lower second = more merge)
+
+### Research Sources
+- [Catmull-Rom Wikipedia](https://en.wikipedia.org/wiki/Catmull%E2%80%93Rom_spline)
+- [Catmull-Rom to Bezier paper](https://arxiv.org/pdf/2011.08232)
+- [Varun.ca Metaballs](https://varun.ca/metaballs/)
+- [CSS-Tricks Gooey Effect](https://css-tricks.com/gooey-effect/)
+
+---
+
+## 3. Field vs Spring Comparison: SPRINGS WIN
+
+### The Verdict
+
+| Aspect | Springs | Fields |
+|--------|---------|--------|
+| **Feel** | Gummy, stretchy | Floaty, magnetic |
+| **Force behavior** | Increases when stretched | Decreases when closer |
+| **Rest state** | Natural equilibrium | Particles want to merge completely |
+| **"Reaching" effect** | Excellent — visible stretch | Poor — magnet snap |
+| **Used by** | World of Goo, Gish | SPH fluids, n-body gravity |
+
+**Key insight:** Springs = solid-like soft bodies (gummy). Fields = liquid-like (water).
+
+**World of Goo literally uses springs** — confirmed in forum posts.
+
+### Recommended Inter-Cell Attraction Implementation
+
+```typescript
+interface AttractionSpring {
+  fromVertex: number;    // Vertex index on cell A
+  toVertex: number;      // Vertex index on same-color cell B
+  restLength: number;    // Small (5-10% cell radius) for "touching" look
+  stiffness: number;     // 0.2-0.5
+  damping: number;       // ~0.9 of critical
+}
+
+// Tuning values for "gummy reaching"
+const ATTRACTION_RADIUS = 50;    // Detection range (pixels)
+const REST_LENGTH = 10;          // Target gap when "merged"
+const SPRING_STIFFNESS = 0.3;
+const DAMPING_RATIO = 0.9;       // Slightly under-critical
+const BREAK_DISTANCE = 80;       // Spring releases beyond this
+```
+
+### Spatial Hashing Required
+
+For 432 vertices (36 cells × 12), need spatial hashing to avoid O(n²):
+
+```typescript
+const CELL_SIZE = ATTRACTION_RADIUS * 1.2;  // ~60 units
+const BUCKET_COUNT = 256;                    // Power of 2
+
+function hashPosition(x: number, y: number): number {
+  const cx = Math.floor(x / CELL_SIZE);
+  const cy = Math.floor(y / CELL_SIZE);
+  return ((cx * 1640531513) ^ (cy * 2654435789)) & 0xFF;
+}
+```
+
+### Optional Hybrid: Springs + Weak Field
+
+```typescript
+// Strong springs for connected pairs
+// + Weak field for "awareness" of nearby unconnected goop
+if (!springConnected && distance < awarenessRadius) {
+  fieldForce = awarenessStrength / (distance + softening);
+  // Very weak — just visual hint of future attraction
+}
+```
+
+### Research Sources
+- [World of Goo Forums](http://goofans.com/forum/world-of-goo/strategy/2165)
+- [Spatial Hashing](https://www.gorillasun.de/blog/particle-system-optimization-grid-lookup-spatial-hashing/)
+- [XPBD Paper](https://matthias-research.github.io/pages/publications/XPBD.pdf)
+
+---
+
+## 4. Summary: Implementation Roadmap
+
+### Phase 1: Single Cell Physics
+1. Create 12 Verlet vertices in a circle
+2. Add ring springs + cross springs
+3. Add pressure-based volume preservation
+4. Tune ζ=0.6 for gummy feel
+5. Render with Catmull-Rom → Bezier
+
+### Phase 2: Cell Follows Data Layer
+1. Each vertex has "home position" (data layer grid + angle offset)
+2. Spring pulls vertex toward home
+3. Test rotation: home rotates instantly, vertex springs to follow
+4. Test collision: data stops, vertex overshoots then settles
+
+### Phase 3: Inter-Cell Attraction
+1. Implement spatial hashing
+2. For same-color neighbors within range: create attraction spring
+3. Tune rest length small (~10px) for "touching" look
+4. Break springs beyond break distance
+
+### Phase 4: Visual Polish
+1. Apply SVG goo filter per color group
+2. Test membrane merge appearance
+3. Add subtle undulation (two opposing waves)
+4. Handle ghost piece (outline only mode)
+
+---
+
 ## Next Steps (After /clear)
 
-1. **Deep research** on vertex-to-vertex attraction, soft body merging, spring tuning
-2. **Prototype Test A:** Explicit vertex-to-vertex springs
-3. **Prototype Test B:** Field-based continuous attraction
-4. **Compare results** — which feels more "gummy"?
-5. **Iterate rapidly** on the winner
+1. **Build Phase 1 prototype** — single cell with physics + rendering
+2. Tune until it feels gummy (ζ≈0.6, stiffness≈100)
+3. Add Phase 2 — cell follows data position
+4. Iterate from there
 
 ---
 
@@ -388,10 +674,11 @@ Game will eventually be APK/iOS app.
 
 After `/clear`, run:
 ```
-Continue soft-body goop research. Read .planning/SOFTBODY-VISION.md for full context.
+Start soft-body prototype implementation. Read .planning/SOFTBODY-VISION.md for full research context.
 Branch: soft-body-experiment
+Phase: 1 — Single cell with 12 Verlet vertices, springs, pressure, Catmull-Rom rendering
 ```
 
 ---
 
-*This document captures the full vision discussion from 2026-01-30. All nuance preserved.*
+*Vision + Research documented 2026-01-30. Ready for implementation.*
