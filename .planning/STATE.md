@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-01-30
+updated: 2026-01-31
 ---
 
 # Project State
@@ -15,292 +15,160 @@ updated: 2026-01-30
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `soft-body-experiment` — Soft Body Goop (SBG) visual overhaul (RESEARCH COMPLETE)
+- `soft-body-experiment` — Soft Body Goop (SBG) visual overhaul (Proto-5c IN PROGRESS)
 
 ## Next Steps
 
-**Current:** Soft Body Goop prototype implementation
-**Status:** PROTOTYPES 1-4 COMPLETE — Ready for Proto-5 (goo filter / membrane merge)
+**Current:** Proto-5c Cell Wall Rendering
+**Status:** IN PROGRESS — Inner regions not responding to physics correctly
 **Branch:** `soft-body-experiment`
+**Server:** `localhost:5201/GOOPS/?proto=5c`
 
-**Vision + Research document:** `.planning/SOFTBODY-VISION.md`
-**Prototypes:** Access via `localhost:PORT/GOOPS/?proto=N` (N = 1-4)
+### CRITICAL RESUME CONTEXT — Proto-5c Cell Wall Experiment
 
-### Prototype Results Summary (2026-01-31)
+**The Goal:**
+Render goop with a "cell wall" effect:
+- **Outer edge** = gooey silhouette that stretches and merges (like Proto-5b)
+- **Inner edge** = stable boundary that barely moves
+- **Cell wall** = the visible filled ring BETWEEN outer and inner
+- **Interior** = empty space for future "time to pop" fill
 
-#### Proto-1: Single Blob Physics ✅
-**Question:** Does Verlet + springs + pressure + Catmull-Rom look/feel right?
-**Answer:** YES — "gummy jello" feel achieved
+**The Approach:**
+1. Layer 1: Render outer gooey shape with goo filter (filled, like 5b)
+2. Layer 2: Render inner shape on top with background color (cuts out the middle)
+3. Result: visible cell wall ring
 
-**Tuned Parameters:**
-- Damping: 0.975 (oscillations die naturally)
-- Gravity: 30 (gentle, will be simulated by piece drop speed in game)
-- Stiffness: 20 (soft but holds shape)
-- Pressure: 2.5 (minimal visible effect at this scale)
-- Constraint Iterations: 3+ (stable without expensive)
+**Current Problem (UNSOLVED):**
+For the Corrupt shape, the inner cutouts don't respond to physics like T and U do. They just rotate/translate but don't wobble or rebound when dragged.
 
-**Key Learnings:**
-- Position-based constraints (not force-based) required for stability
-- First-frame dt must be skipped to prevent physics explosion
-- T-tetromino shape with 10 perimeter vertices works well
+**What's Been Tried:**
 
-#### Proto-2: Blob Follows Cursor ✅
-**Question:** Does two-layer architecture (data drives render) work?
-**Answer:** YES — smooth follow, fantastic rotation morph
+1. **Simple inset toward center** — Failed for complex shapes (T-shape notches didn't work)
 
-**Tuned Parameters:**
-- Home Stiffness: 0.03 (laggy/stretchy follow, beautiful rotation)
-- Damping: 0.92 (settles quickly after movement)
-- Stiffness: 10 (very soft, allows natural deformation)
-- Iterations: 3
+2. **Proper path offset with vertex normals** — Works for T and U, but Corrupt shape has self-intersecting perimeter that breaks it
 
-**Key Learnings:**
-- homeOffset per vertex defines rest shape relative to target position
-- Rotate button morphs shape beautifully as vertices spring to new homes
-- Low homeStiffness = more "gummy" feel during movement
+3. **Split Corrupt into 3 separate blobs** — Works but then they're not connected (no single outer gooey shell)
 
-#### Proto-3: Rotation Stress Test ✅
-**Question:** Do rapid 90° rotations break physics or accumulate lag?
-**Answer:** NO — deviation stays bounded even at 100ms auto-rotate
+4. **Hybrid approach (CURRENT):**
+   - Outer: Single complex Corrupt perimeter (for gooey merging)
+   - Inner: 3 separate simple `InnerRegion` shapes with their own physics vertices
+   - Added `innerRegions?: InnerRegion[]` to Blob interface
+   - Added physics simulation (integrate + applyHomeForce) for innerRegion vertices
+   - **STILL NOT WORKING** — inner regions don't wobble like T/U do
 
-**Tuned Parameters:**
-- Home Stiffness: 0.18 (snappy recovery for rapid rotations)
-- Damping: 0.94 (quick settle without overshoot)
+**The Difference:**
+- T and U: `getInsetPath(blob.vertices.map(v => v.pos))` — uses OUTER vertices which ARE physics-simulated
+- Corrupt: `region.vertices.map(v => v.pos)` — uses separate innerRegion vertices
 
-**Key Learnings:**
-- Higher homeStiffness needed for rapid rotations (vs slow cursor follow)
-- Deviation meter useful for tuning — peak stays bounded
-- No infinite lag accumulation observed
+The T/U inner cutouts follow the OUTER vertices' deformation. The Corrupt inner regions have their OWN vertices that aren't getting the same physics wobble.
 
-#### Proto-4: Two Blobs Attraction ✅ COMPLETE
-**Question:** Do vertex-to-vertex springs create the "reaching" effect?
-**Answer:** YES — with per-vertex radii and variable stiffness
+**Possible Fixes to Try:**
+1. Make innerRegion vertices follow/interpolate from nearest outer vertices
+2. Apply same physics forces to innerRegion vertices that outer vertices get
+3. Different architecture — maybe inner should track outer, not simulate independently
 
-**Final Implementation:**
-- T-tetromino (anchored, 4 blocks) + U-pentomino (draggable, 5 blocks)
-- **Per-vertex attraction radii** (multipliers: outer=1.5x, inner=0.3x of slider)
-- Connection triggers when circles TOUCH (sum of both radii)
-- **Variable stiffness**: 10% at max distance → 100% when close (reaching → snapping)
-- Block proximity filter scales with slider (4x for adequate range)
+**Key Files:**
+- `prototypes/SoftBodyProto5c.tsx` — Main prototype file (~1200 lines)
 
-**Tuned Parameters:**
-- Attraction Radius: slider × multiplier (outer vertices reach farther)
-- Break Distance: 60 (effective stickiness)
-- Rest Length: 0 (required for future merge calculations)
-- Stiffness: ramps from 10% → 100% based on spring length
+**Key Code Sections:**
 
-**Key Learnings:**
-1. Per-VERTEX radius (not per-block) gives finest control
-2. Outer vertices (edges) need larger radius; inner vertices (notches) need tiny radius
-3. Connection = `dist < radiusA + radiusB` (circles touching, not overlapping)
-4. Variable stiffness creates "searching/reaching" at range, firm pull when close
-5. Block filter must scale with slider to avoid hard-coded bottleneck
-6. Existing springs preserved independently of block proximity (only vertex distance matters)
+```typescript
+// InnerRegion interface (line ~47)
+interface InnerRegion {
+  offsetX: number;
+  offsetY: number;
+  points: Vec2[];           // Local home coordinates
+  vertices: InnerVertex[];  // Physics-simulated vertices
+}
 
-**Critical Constraints for Proto-5+:**
-- Attraction radius must NOT match or exceed grid vertex spacing (30px)
-- If it does, vertices connect to wrong neighbors across the shape
-- With multipliers: outer=1.5×30=45px reaches appropriately; inner=0.3×30=9px stays local
+// Blob interface includes optional innerRegions
+interface Blob {
+  vertices: Vertex[];           // Outer (gooey)
+  innerVertices: InnerVertex[]; // Inner (for simple shapes)
+  innerRegions?: InnerRegion[]; // For complex shapes like Corrupt
+  // ... other fields
+}
 
-### Prototype Access URLs
+// Physics simulation for innerRegions (in integrate and applyHomeForce functions)
+if (blob.innerRegions) {
+  for (const region of blob.innerRegions) {
+    // Vertices get damping, gravity, and strong home force
+    // But they're NOT deforming like outer vertices do
+  }
+}
 
-| Proto | URL | Purpose |
-|-------|-----|---------|
-| 1 | `?proto=1` | Single blob physics tuning |
-| 2 | `?proto=2` | Cursor follow + rotation |
-| 3 | `?proto=3` | Rotation stress test |
-| 4 | `?proto=4` | Two-blob attraction (T + U shapes) |
-
-### Remaining Prototypes (from SOFTBODY-VISION.md)
-
-5. **Proto-5:** Goo Filter Variations — membrane merge visual appearance
-6. **Proto-6:** Multi-Cell Piece — 4-cell piece as cohesive unit
-7. **Proto-7:** Landing and Locked Goop — collision jiggle + attraction to settled pieces
-8. **Proto-8:** Performance Stress Test — 36 cells × 12 vertices at 40+ FPS mobile
-
-### Consolidated Parameter Recommendations (Proto 1-4)
-
-For Proto-5 and beyond, start with these base settings:
-
-| Parameter | Value | Source | Notes |
-|-----------|-------|--------|-------|
-| Damping | 0.94 | Proto-3 | Quick settle without overshoot |
-| Stiffness | 10-20 | Proto-1/2 | Soft but holds shape |
-| Pressure | 2.5 | Proto-1 | Minimal effect at this scale |
-| Iterations | 3 | Proto-1 | Stable without expensive |
-| Home Stiffness | 0.05-0.18 | Proto-2/3 | Lower=gummy, higher=snappy |
-| Attraction Radius | 20-25 | Proto-4 | Must be < 30 (vertex spacing) |
-| Outer Multiplier | 1.5 | Proto-4 | Edges reach farther |
-| Inner Multiplier | 0.3 | Proto-4 | Notches stay local |
-| Rest Length | 0 | Proto-4 | Required for merge detection |
-| Break Distance | 60 | Proto-4 | Effective stickiness |
-| Stiffness Ramp | 10%→100% | Proto-4 | Reaching → snapping |
-
-### Resume Command
-```
-Continue soft-body prototypes. Branch: soft-body-experiment
-Proto-4 COMPLETE with per-vertex radii + variable stiffness.
-Next: Proto-5 (goo filter / membrane merge visuals).
-Access prototypes at localhost:PORT/GOOPS/?proto=N
-See "Consolidated Parameter Recommendations" above for base settings.
+// Rendering (LAYER 2, around line 1150)
+if (blob.innerRegions) {
+  // Uses region.vertices.map(v => v.pos) — the physics-simulated positions
+  // Then applies getInsetPath for wall thickness
+}
 ```
 
-**Previous work (2026-01-28):**
-- Win bonus rework complete, deployed to master
+**The T/U approach that WORKS:**
+Their inner cutout is computed from `blob.vertices` (the OUTER gooey vertices). As the outer vertices deform from physics, the inner cutout follows because it's computed FROM those outer positions.
 
-## Future Plans
+**The Corrupt approach that DOESN'T WORK:**
+The inner regions have their OWN separate vertices. These vertices get physics simulation (integrate + home force), but they don't "feel" the same deformations that the outer vertices experience from the springs and pressure.
 
-See **`.planning/PRD.md` → Future Ideas** for the full list of planned features.
+**Possible Solution Direction:**
+Instead of giving innerRegions their own physics vertices, compute their positions as an OFFSET from nearby outer vertices. This way when the outer wobbles, the inner wobbles too (because it's derived from outer).
 
-Current priorities:
-- Pressure venting visual (visual polish)
-- Tutorial system (onboarding)
+### Proto-5c Parameters
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Filter | Medium preset | Blur 8, Alpha 20/-12 |
+| Wall Thickness | 8px | Inset amount for inner cutout |
+| Inner Home Stiffness | 0.5 | Very stiff (for stable inner) |
+| Goopiness | 25px | Break distance for tendrils |
+| Tendril End Radius | 10px | Bead size at string ends |
+| Tendril Skinniness | 0.7 | Middle thins when stretched |
+
+### Proto Access URLs
+
+| Proto | URL | Status |
+|-------|-----|--------|
+| 5b | `?proto=5b` | COMPLETE — Gold standard goo filter |
+| 5c | `?proto=5c` | IN PROGRESS — Cell wall experiment |
 
 ---
 
-## Project Reference
+## Previous Proto Results (Complete)
 
-See: [[PROJECT]] (updated 2026-01-27)
+### Proto-5b: Gold Standard ✅
 
-**Core value:** The game feels satisfying to play on mobile - responsive controls, smooth animations, no input lag.
-**Current focus:** v1.4 shipped — ready for next milestone planning
+Single perimeter shapes with gooey SVG filter:
+- T, U, and Corrupted T shapes
+- Attraction springs with mozzarella pull
+- Beads-on-string tendrils
+- Corrupted shapes work with pressure disabled
 
-## Current Position
+**Gold Standard Settings:**
+| Parameter | Value |
+|-----------|-------|
+| Blur | 8 |
+| Alpha Mult | 20 |
+| Alpha Offset | -12 |
+| Goopiness | 25px |
+| Attraction Radius | 20px |
+| Attraction Strength | 0.005 |
 
-Phase: 28 of 28 (Dynamic Text Updates) — SHIPPED
-Plan: All plans complete
-Status: v1.5 MILESTONE SHIPPED
-Last activity: 2026-01-27 — Deployed v1.5
+### Proto 1-4: Complete ✅
 
-Progress: ██████████ 100% (v1.5 Visual Terminology & Grade System) — SHIPPED
+See full details in sections below.
 
-## What's Done
+---
 
-### v1.4 Naming Standardization (Shipped 2026-01-27)
+## Remaining Prototypes
 
-Codebase terminology cleanup with official glossary.
+### Proto-6: Fill/Pour
+How does goop visually "fill" into a piece shape?
 
-Key features:
-- Official GLOSSARY.md with 9 core term categories
-- 50+ variable/type/function renames across 62 files
-- Core: GoopShape, GoopTemplate, TankCell, tankRotation
-- Progression: sessionXP, operatorRank, scraps
-- All UI text aligned with official terminology
+### Proto-7: Pop
+What happens visually when goop is cleared?
 
-See [[v1.4-ROADMAP]] for full details.
-
-### v1.3 Shape Changes (Shipped 2026-01-26)
-
-Extended game with progressive piece sizes and 54 new polyomino shapes.
-
-Key features:
-- 75-second game with 3 zones (Tetra → Penta → Hexa)
-- 54 pieces: 10 Tetra + 22 Penta + 22 Hexa
-- 15% corruption, 50% mirror for variety
-- Zone-based spawning by elapsed time
-
-See [[v1.3-ROADMAP]] for full details.
-
-### v1.2 Progression System (Shipped 2026-01-24)
-
-Full ranks 0-39 progression with 4 bands, 20 upgrades, and 3 new colors.
-
-Key features:
-- 20 upgrades across passive/active/feature types
-- Active ability system with per-ability charge times
-- Lights malfunction rework (player-controlled brightness)
-- Expanding cracks mechanic
-- Colors: Purple@10, White@30, Black@50, Wild@40+ (Orange removed)
-
-See [[v1.2-ROADMAP]] for full details.
-
-### v1.1 Architecture Refactor (Shipped 2026-01-21)
-
-All 6 phases (8-13) complete. See [[v1.1-ROADMAP]] for full details.
-
-### v1.0 MVP (Shipped 2026-01-21)
-
-All 7 phases complete. See [[v1.0-ROADMAP]] for full details.
-
-## Accumulated Context
-
-### Balance Summary (Current v1.2.0)
-
-| Complication | Trigger | Player Mitigation |
-|--------------|---------|-------------------|
-| Laser | Capacitor drains on pop | +10% refill on piece lock |
-| Controls | Heat builds on rotate | Heat dissipates when idle |
-| Lights | Brightness dims when not soft dropping | Soft drop to recharge |
-
-All three complications have player-driven triggers AND mitigations.
-
-### Active Abilities (v1.2.0)
-
-| Active | Charge Time | Level 1 | Level 2 | Level 3 |
-|--------|-------------|---------|---------|---------|
-| Cooldown Booster | 20s | +25% cooldown | +35% | +50% |
-| Goop Dump | 15s | 1 wave (18 pcs) | 2 waves | 3 waves |
-| Goop Colorizer | 25s | 6 match | 7 match | 8 match |
-| Crack Down | 30s | 3 cracks low | 5 cracks | 7 cracks |
-
-## Known Issues
-
-**Bugs:**
-- None currently tracked
-
-**Tech Debt:**
-- None currently tracked
-
-## Phase 21 Decisions (Piece Shapes)
-
-### Timing & Speed Changes
-
-| Constant | Current | New | Location |
-|----------|---------|-----|----------|
-| `INITIAL_TIME_MS` | 60000 | **75000** | `constants.ts` |
-| `INITIAL_SPEED` | 800 | **780** | `GameEngine.ts` |
-| `SOFT_DROP_FACTOR` | 6 | **8** | `GameEngine.ts` |
-
-**Rationale:** 75 sec game with 25 sec per size zone. Target 5-6 pieces per zone at 70% fast drop usage. Snappier fast drop (8x vs 6x).
-
-### Piece Size Progression
-
-| Zone | Time | Pressure Row | Pieces Spawning |
-|------|------|--------------|-----------------|
-| Tetra | 0-25s | Start → row 13 | Tetrominoes only |
-| Penta | 25-50s | Row 13 → row 8 | Pentominoes only |
-| Hexa | 50-75s | Row 8 → end | Hexominoes only |
-
-**Logic:** Cracks spawn near pressure line. Higher pressure = need taller pieces to reach cracks. Tetra max 4 tall, Penta max 5, Hexa max 6.
-
-### Piece Definitions (from art/minos.svg)
-
-| Category | Normal | Corrupted | Total |
-|----------|--------|-----------|-------|
-| Tetrominoes | 5 | 5 | 10 |
-| Pentominoes | 11 | 11 | 22 |
-| Hexominoes | 11 | 11 | 22 |
-| **Total** | 27 | 27 | **54 base** |
-
-### Spawn Mechanics
-
-1. **Corruption:** 15% chance per spawn → use corrupted variant
-2. **Mirrors:** If piece is asymmetric → 50% chance to flip
-3. **Exclusive spawning:** Only one size active at a time (no mixing)
-
-### Non-Contiguous Pieces
-
-"Corrupted" pieces have corner-touching cells instead of edge-touching. Example: the current T piece (diagonal floater off 3-unit L). These enable:
-- Selective popping (pop one part, keep other)
-- Gap filling (straddle existing goop)
-- Unique coverage patterns
-
-### Key Files to Modify
-
-- `constants.ts` — INITIAL_TIME_MS, new PIECES arrays
-- `GameEngine.ts` — INITIAL_SPEED, SOFT_DROP_FACTOR, spawn logic for pressure-based size selection
-- `types.ts` — New PieceType enum values
-- `art/minos.svg` — Source of truth for piece shapes (parsed for coordinates)
+### Proto-8: Loose Goop
+How does freed goop behave when disconnected?
 
 ---
 
@@ -309,410 +177,45 @@ All three complications have player-driven triggers AND mitigations.
 Last session: 2026-01-31
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Current work:** Soft Body Goop Prototypes 1-4
+**Build:** 107
 
-### This Session Summary (2026-01-31)
+### Resume Command
+```
+Continue Proto-5c cell wall experiment. Branch: soft-body-experiment
+Server: localhost:5201/GOOPS/?proto=5c
 
-**Proto-5b COMPLETE — Gold Standard Achieved**
+PROBLEM: Corrupt shape inner cutouts don't wobble/rebound like T and U.
+- T/U inner cutouts derive from OUTER vertices (which have physics)
+- Corrupt inner regions have SEPARATE vertices that don't feel same deformation
 
-Proto-5b is the winner with all features working:
+SOLUTION DIRECTION: Inner should be computed FROM outer, not simulated independently.
 
-**Core Features:**
-- Single perimeter shapes (T, U, Corrupted T)
-- Gooey SVG filter for membrane merge
-- Attraction springs between blobs with mozzarella pull
-- Beads-on-string tendrils (solid vector look when stretched)
-- Corrupted shapes work with pressure disabled
-
-**Gold Standard Settings:**
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| Blur | 8 | stdDeviation |
-| Alpha Mult | 20 | |
-| Alpha Offset | -12 | Sharper edges |
-| Goopiness | 25px | Break distance |
-| Attraction Radius | 20px | Connection distance |
-| Attraction Strength | 0.005 | Gentle pull |
-
-**Key Learnings:**
-- Beads-on-string approach for tendrils (not thick lines) - stays solid under filter
-- Corrupted shapes need `usePressure: false` (self-intersecting perimeter breaks area calc)
-- Per-vertex attraction multipliers: outer=1.5x, inner=0.3x
-- Variable stiffness ramp: 10% at max distance → 100% when close
-
-**Remaining Prototypes Before Game Integration:**
-
-### Proto-6: Fill/Pour
-**Question:** How does goop visually "fill" into a piece shape?
-
-Possible approaches:
-- **Pour from top:** Goop flows down and fills the shape like liquid
-- **Expand from center:** Starts as small blob, expands to fill perimeter
-- **Instant with wobble:** Full shape appears, then wobbles/settles
-- **Drip accumulation:** Small blobs drip in and merge together
-
-**When this happens in game:** When a new piece spawns? When piece locks?
-
-### Proto-7: Pop
-**Question:** What happens visually when goop is cleared?
-
-Possible approaches:
-- **Burst outward:** Vertices explode from center, then fade
-- **Splatter:** Fragments fly off, stick to nearby surfaces briefly
-- **Dissolve:** Shape shrinks/fades with wobble
-- **Vacuum suck:** Gets pulled toward a point (the crack being sealed?)
-
-**When this happens in game:** When a goop group is popped/cleared
-
-### Proto-8: Loose Goop
-**Question:** How does freed goop behave when disconnected?
-
-This is the **LooseGoop** system — when corner-connected blocks separate, or when goop is freed:
-- **Falls with physics:** Gravity + soft body deformation as it drops
-- **Splashes on landing:** Squishes when hitting other goop/bottom
-- **Merges with same color:** Attraction springs pull it into existing groups
-- **Flows around obstacles:** Deforms to fit available space
-
-**When this happens in game:** After pops, when corrupted pieces split
-
-**Proto-9+: Integration** — Into actual game
-
-**Architecture Insight (from user):**
-- Game piece "home" = current invisible data piece position
-- Soft body rendering replaces current block rendering
-- Landing impact may need extra "squish" force (concern: soft body might not show force)
-- No "line clears" — instead there's LooseGoop system (freed goop flows)
-
-**Previous: Proto-4 Refined — Per-Vertex Attraction + Variable Stiffness**
-
-Major improvements to Proto-4 attraction system:
-
-1. **Fixed spring preservation bug** — existing springs now checked independently of block proximity
-2. **Per-vertex attraction radii** — outer vertices (1.5x) reach farther, inner vertices (0.3x) stay local
-3. **Circle-touch connection** — `dist < radiusA + radiusB` triggers when circles touch, not overlap
-4. **Variable stiffness ramp** — 10% at max distance (gentle reaching) → 100% when close (firm pull)
-5. **Scaled block filter** — 4x slider value prevents hard-coded bottleneck at large radii
-
-**Final Proto-4 Parameters:**
-- Break Distance: 60 (stickiness feel)
-- Rest Length: 0 (required for merge calculations)
-- Outer Multiplier: 1.5x slider
-- Inner Multiplier: 0.3x slider
-- Stiffness Ramp: 10% → 100% based on spring length
-
-**Critical Insights for Proto-5+:**
-- Attraction radius must be < vertex grid spacing (30px) or wrong connections form
-- High home stiffness + high attraction stiffness = goop stays true to placement
-- Lower values = more organic movement but may drift from data grid
-- Rest length MUST be 0 or very close for merge detection to work
-- Break distance 60-65 gives good "sticky" feeling
-
-**All prototypes accessible via:** `localhost:PORT/GOOPS/?proto=N`
-
-### Previous Session Summary (2026-01-30)
-
-**Soft Body Goop Research — COMPLETE**
-
-Comprehensive deep-dive research on soft body physics for the visual overhaul:
-
-**1. Physics Deep-Dive:**
-- Verlet integration preferred (stable, implicit velocity)
-- Damping ratio ζ=0.5-0.7 for "gummy" feel
-- 12 vertices per cell with ring + cross springs + pressure
-- Concrete parameter values documented
-
-**2. Rendering Deep-Dive:**
-- Catmull-Rom splines pass through physics vertices (unlike Bezier)
-- Simple conversion formula: `cp1 = P1 + (P2-P0)/6`
-- SVG gooey filter for membrane merge between same-color cells
-- Centripetal (α=0.5) prevents cusps, but uniform is fine for even spacing
-
-**3. Field vs Spring Comparison:**
-- **SPRINGS WIN** — gummy, stretchy feel (World of Goo uses this)
-- Fields = floaty, magnetic feel (good for water, not goop)
-- Springs create "reaching" effect; fields create "magnet snap"
-- Spatial hashing required for 432 vertices
-
-**All research documented in `.planning/SOFTBODY-VISION.md`**
+File: prototypes/SoftBodyProto5c.tsx
+Key sections: InnerRegion interface, integrate(), applyHomeForce(), LAYER 2 rendering
+```
 
 ---
 
-### Previous Session Summary (2026-01-28)
+## Proto 1-4 Results (Reference)
 
-**Win Bonus Rework — COMPLETE**
+### Proto-1: Single Blob Physics ✅
+- Verlet + springs + pressure + Catmull-Rom
+- Damping 0.975, Gravity 30, Stiffness 20, Pressure 2.5
 
-Redesigned win bonus to prevent multi-rank skipping and improve pacing:
-- **Problem:** Old `rank × 5000` win bonus caused players to skip 5-10 ranks, missing unlocks
-- **New system:** Win = guaranteed +1 rank, max +2 ranks per shift total
-- **Implementation:**
-  - Added `calculateCappedProgression()` in progression.ts
-  - Updated App.tsx to use capped progression for saving
-  - Updated ConsoleView.tsx to show correct capped rank on End Screen
-  - Fixed idle console to use saved career score (not calculation)
-- **Testing:** 10 new test cases covering all scenarios
+### Proto-2: Blob Follows Cursor ✅
+- Two-layer architecture (data drives render)
+- Home Stiffness 0.03 for laggy/stretchy follow
 
-6 files modified, 161 tests pass.
+### Proto-3: Rotation Stress Test ✅
+- Rapid 90° rotations stable
+- Home Stiffness 0.18 for snappy recovery
 
-### Previous Session Summary (2026-01-28)
-
-**PRD.md Comprehensive Update — COMPLETE**
-
-Deep codebase analysis to update PRD.md v6.0 with accurate implementation details:
-- **8 parallel agents:** Analyzed constants, goop system, cracks, complications, progression, scoring, controls, actives
-- **Formula corrections:** Crack growth 7-12s random (not fixed 5s), win burst requires <90% pressure
-- **Tech notes added:** Buffer rows, zone boundaries with upgrades, iOS touch handling, lock delay reduction
-- **Scoring clarification:** Adjacency bonus NOT multiplied by combo (important detail)
-- **New tables:** Cumulative XP, fill duration examples, Goop Dump constants
-- **Upgrade interactions:** Documented all upgrade effects on base constants
-
-1 file modified (PRD.md), 151 tests pass.
-
-### Previous Session Summary (2026-01-28)
-
-**Corrupted Piece Mechanics — COMPLETE**
-
-Implemented proper behavior for corrupted (corner-connected) pieces:
-- **isCorrupted flag:** Added to GoopTemplate to track corrupted pieces at spawn
-- **No Mixed:** Corrupted pieces can't become multi-color split pieces
-- **No Wild:** Corrupted pieces can't become wild pieces; wild always uses normal pool
-- **LooseGoop on lock:** Added getFloatingBlocks() check after every piece locks
-- **Corner-connected cells split:** updateGroups() already splits them, now they fall properly
-
-2 files modified (types.ts, GameEngine.ts), 151 tests pass.
-
-### Previous Session Summary (2026-01-27)
-
-**v1.5 Visual Terminology & Grade System — COMPLETE**
-
-Implemented Shift/Career terminology and grade system:
-- **Variable renames:** sessionXP→shiftScore, sessionTime→shiftTime, operatorXP→careerScore
-- **Storage migration:** v2→v3 with backward compatibility
-- **UI text overhaul:** SHIFT OVER, GRADE: A/B/C, SHIFT SCORE, Scraps, STORED
-- **Grade system:** 5 categories (Crack, Tank, System, Pressure, Score) averaged for letter grade
-- **Dynamic text:** Floating pressure %, periscope alternation, REPAIR titles
-- **Bug fix:** Loose goop now removes cracks from both goalMarks AND crackCells
-- **UI polish:** UPGRADES button (centered, resized), SCRAPS: XX format, text alignment
-- **Vented text:** Changed floating % to just "Vented" (percentage was meaningless at 1-2%)
-
-27 files modified, 151 tests pass.
-
-**Previous: 24-01 UI Text Updates Complete — v1.4 MILESTONE COMPLETE**
-
-Updated all user-facing text to official terminology:
-- HowToPlay.tsx: Hold Piece → Held Goop, Points → XP, Power Points → Scraps
-- Upgrades.tsx: POWER UPS → UPGRADES, Level → Rank
-- constants.ts: points → scraps, grammar fixes
-
-3 files modified, 151 tests pass, TypeScript compiles clean.
-
-**23-07 Remaining Goop Terms Complete — PHASE 23 COMPLETE**
-
-Renamed final piece terminology to Goop equivalents:
-- storedPiece → storedGoop, nextPiece → nextGoop (storage/preview)
-- BlockData → GoopBlock, FallingBlock → LooseGoop (types)
-- isGlowing → isSealingGoop, fallingBlocks → looseGoop (state)
-- pressureRatio → tankPressure (calculation variable)
-
-7 files modified, 151 tests pass, TypeScript compiles clean.
-
-**23-06 Screen/Phase Types & Cracks Complete**
-
-Renamed screen state and crack terminology to glossary terms:
-- GamePhase → ScreenType (CONSOLE→ConsoleScreen, PERISCOPE→TankScreen, GAME_OVER→EndGameScreen)
-- CrackCell → Crack
-- parentIds → originCrackId (kept as array for merge support)
-- childIds → branchCrackIds
-- growthInterval → crackBranchInterval
-
-10 files modified, 151 tests pass, TypeScript compiles clean.
-
-**23-05 Progression Variables & Persistence Complete**
-
-Renamed all scoring/progression variables to glossary terms:
-- score → sessionXP, combo → popStreak, timeLeft → sessionTime
-- totalScore → operatorXP, rank → operatorRank
-- powerUpPoints → scraps
-- INITIAL_TIME_MS → SESSION_DURATION, INITIAL_SPEED → ACTIVE_GOOP_SPEED
-- Storage key v1 → v2 (INTENTIONAL SAVE RESET - old saves ignored)
-
-18 files modified, 151 tests pass, TypeScript compiles clean.
-
-**23-04 TankSystem and Actions Complete**
-
-Renamed complication system and action commands to glossary terminology:
-- ComplicationType → TankSystem (79 refs across 10 files)
-- laserCapacitor → laserCharge (12 refs)
-- primedGroups → prePoppedGoopGroups (10 refs)
-- groupId → goopGroupId (62 refs across 7 files)
-- MoveBoardCommand → SpinTankCommand
-- RotatePieceCommand → RotateGoopCommand
-- BlockTapCommand → PopGoopCommand
-
-All 151 tests pass, TypeScript compiles clean.
-
-**23-03 Tank Dimensions & Coordinates Complete**
-
-Renamed dimension constants and coordinate system to Tank terminology:
-- TOTAL_WIDTH/HEIGHT → TANK_WIDTH/HEIGHT
-- VISIBLE_WIDTH/HEIGHT → TANK_VIEWPORT_WIDTH/HEIGHT
-- boardOffset → tankRotation
-- GridCell → TankCell
-
-All 151 tests pass, TypeScript compiles clean.
-
-**23-02 Core Goop Lifecycle Complete**
-
-Renamed core piece terminology to Goop equivalents:
-- PieceType → GoopShape (78 refs across 7 files)
-- PieceDefinition → GoopTemplate (23 refs across 9 files)
-- PieceState → GoopState (13 refs)
-- activePiece → activeGoop (51 refs across 4 files)
-
-All 151 tests pass, TypeScript compiles clean.
-
-**Previous Session (2026-01-26)**
-
-**Comprehensive Terminology Review & GLOSSARY v2.0**
-
-User-driven review of ALL game terminology. Key decisions:
-- Player = "Operator" (operates the tank)
-- Piece = "Goop" with states: ActiveGoop, LockedGoop, GoopBlock, GoopGroup
-- Grid = "Tank" with: tankGrid, TankCell, tankRotation
-- Complications = "TankSystem" with TankSystemMalfunction
-- Currency = "Scraps" (was powerUpPoints)
-- Screen architecture: ConsoleScreen, TankScreen, EndGameScreen + TutorialModal overlay
-
-60+ terms documented in GLOSSARY.md v2.0 with migration table.
-
-**23-01 Executed:** softDrop → fastDrop (3 commits, still valid)
+### Proto-4: Two Blobs Attraction ✅
+- Per-vertex attraction radii (outer=1.5x, inner=0.3x)
+- Variable stiffness ramp (10% → 100%)
+- Break distance 60 for stickiness
 
 ---
-
-**Previous Session Summary**
-
-**Phase 21 Discussion Complete**
-
-Extensive `/gsd:discuss-phase 21` session defining piece shape changes:
-
-1. **Core insight:** Goal is sealing cracks, not making lines. Cracks spawn higher as pressure rises. BIGGER pieces help reach cracks, not smaller.
-
-2. **Piece progression designed:**
-   - Tetra (4-cell) → Penta (5-cell) → Hexa (6-cell) based on pressure height
-   - Exclusive spawning (one size at a time)
-   - Thresholds: row 13 for penta, row 8 for hexa
-
-3. **Timing balanced:**
-   - Extended game to 75 seconds (from 60)
-   - Adjusted base fall (780ms) and fast drop (8x factor)
-   - Target: 5-6 pieces per 25-second zone
-
-4. **Custom pieces designed:**
-   - User created `art/minos.svg` with all piece shapes
-   - 54 base pieces: 27 normal + 27 corrupted
-   - Corrupted = non-contiguous (corner-touching cells)
-   - 15% corruption chance, 50% mirror chance for asymmetric
-
-5. **Pieces trimmed from standard sets:**
-   - Hexominoes: removed #3, 4, 9, 18, 21, 23, 27
-   - Pentominoes: removed N piece
-   - Custom designs replace standard polyominoes
-
-**Previous Session (same day)**
-
-**iOS Touch Controls Fix (Build 24-29)**
-
-Fixed swipe/drag controls not working on iPhone Chrome/Safari/DuckDuckGo:
-
-1. **Root cause:** iOS WebKit has incomplete Pointer Events support
-2. **Initial attempts that failed:**
-   - Synthetic PointerEvents from TouchEvents (iOS ignores synthetic currentTarget)
-   - useEffect-based window listeners (too slow for fast swipes)
-   - User agent detection (missed DuckDuckGo and other browsers)
-3. **Final fix (multiple parts):**
-   - Added Touch Events handlers alongside Pointer Events
-   - Window listeners added SYNCHRONOUSLY in touchstart (not via async useEffect)
-   - Fixed vertical drag threshold (was 20px, now 0px for soft drop)
-   - Added `pointer-events: none` to SVG so touches pass through to parent div
-4. **Verified working** on iPhone Chrome and DuckDuckGo by external tester
-
-**Previous Session (same day)**
-
-**Color Schedule Rework + Wild Pieces**
-
-1. **Color schedule restructured:**
-   - Purple now unlocks at rank 10 (was 20)
-   - Orange removed from palette (kept for save compatibility)
-   - Black unlocks at rank 50 (new max rank color)
-   - Rank 20: Multi-color pieces only (no new color)
-
-2. **Max rank reduced** from 100 to 50
-
-3. **Wild pieces implemented** (rank 40+, 15% spawn chance):
-   - Rainbow wave visual: color cycles through palette left-to-right
-   - Seals ANY crack color on landing
-   - Spreads wild to ENTIRE adjacent goop group
-   - When non-wild lands next to wild: converts ENTIRE wild group
-
-4. **P0 bug fixed:** Board disappeared when wild piece spawned
-   - Root cause: negative modulo in `getWildColorAtX` caused undefined palette access
-   - Fix: use `Math.abs(screenX)` and fallback colors
-
-5. **P0 bug fixed:** Board disappeared when wild piece locked
-   - Root cause: `minX` used before `let` declaration in `GameBoard.tsx:355`
-   - JavaScript temporal dead zone caused ReferenceError when `hasWildCells` was true
-   - Fix: moved bounds calculation before `fillColor` assignment
-
-6. **CLAUDE.md updated** with mandatory Handoff Block format
-   - After code changes: tests → restart server → build # → handoff block
-   - User was wasting tokens correcting missed steps
-
-**Previous Session (same day)**
-
-- CrackManager extraction, command updates, build number process clarification
-
-**Previous Session (same day)**
-
-- Added Core Rules checklists (CLAUDE.md)
-- Added PostToolUse auto-test hook
-- Added context compaction preservation rules
-- Researched power user Claude Code techniques
-
-**Earlier Session (same day)**
-
-- SessionStart hook implemented
-- Added `<research>` and `<askme>` commands
-- Consolidated Known Issues tracking
-
-**Previous Session (SOP & Workflow Overhaul)**
-
-1. **Distance penalty increased to 25%** (v1.1.46)
-   - `core/GameEngine.ts:1198` — changed from 0.15 to 0.25
-   - Cracks now limited to ~3 cells instead of ~4-6
-
-2. **Ghost piece visibility improved** (v1.1.46-48)
-   - Added transparent color fill (20% opacity) behind dashed outline
-   - Fixed: `getContourPath` creates disconnected lines (unfillable), switched to `<rect>`
-   - Outline opacity increased to 75%
-   - Helps distinguish orange vs red, and split-color pieces
-
-3. **O piece rotation fixed for split-colors** (v1.1.49-50)
-   - Previously skipped rotation entirely (optimization for single-color)
-   - v1.1.49: Enabled rotation but piece jumped (rotated around 0,0)
-   - v1.1.50: Fixed — rotates `cellColors` array instead of cell positions
-   - Shape stays in place, colors rotate visually around center
-
-4. **XP curve flattened** (v1.1.51)
-   - Old: `(rank+2) * (1750 + 250*rank)` — ~7M to rank 40
-   - New: `3500 + (rank * 250)` per rank — ~336K to rank 40
-   - Much more achievable progression
-
-**Future ideas captured:**
-- `SlowMode` concept in [[PROJECT]] (pressure from goop volume, crack-based leveling)
-- `GoopPieceRework` branch created for next milestone (different goop shapes)
-
-**Next session:** Start GoopPieceRework milestone — different piece shapes to facilitate faster stacking
-
-**All deployed to:** https://thebluemuzzy.github.io/GOOPS/
 
 ## Quick Commands
 
