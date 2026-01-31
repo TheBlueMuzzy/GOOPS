@@ -14,16 +14,15 @@ import { useAudioSubscription } from './hooks/useAudioSubscription';
 import { UPGRADES } from './constants';
 import { SoftBodyProto1 } from './prototypes/SoftBodyProto1';
 import { SoftBodyProto2 } from './prototypes/SoftBodyProto2';
+import { SoftBodyProto3 } from './prototypes/SoftBodyProto3';
 
 type ViewState = 'GAME' | 'UPGRADES' | 'SETTINGS' | 'HOW_TO_PLAY';
 
-// Check URL for prototype mode: ?proto=1 or ?proto=2
+// Check URL for prototype mode: ?proto=1, ?proto=2, ?proto=3
 const getProtoMode = (): number | null => {
   const params = new URLSearchParams(window.location.search);
   const proto = params.get('proto');
-  if (proto === '1') return 1;
-  if (proto === '2') return 2;
-  return null;
+  return proto ? parseInt(proto) : null;
 };
 
 const App: React.FC = () => {
@@ -195,6 +194,7 @@ const App: React.FC = () => {
   const protoMode = getProtoMode();
   if (protoMode === 1) return <SoftBodyProto1 />;
   if (protoMode === 2) return <SoftBodyProto2 />;
+  if (protoMode === 3) return <SoftBodyProto3 />;
 
   return (
     <div className="w-full h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
