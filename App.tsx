@@ -15,6 +15,7 @@ import { UPGRADES } from './constants';
 import { SoftBodyProto1 } from './prototypes/SoftBodyProto1';
 import { SoftBodyProto2 } from './prototypes/SoftBodyProto2';
 import { SoftBodyProto3 } from './prototypes/SoftBodyProto3';
+import { SoftBodyProto4 } from './prototypes/SoftBodyProto4';
 
 type ViewState = 'GAME' | 'UPGRADES' | 'SETTINGS' | 'HOW_TO_PLAY';
 
@@ -195,6 +196,7 @@ const App: React.FC = () => {
   if (protoMode === 1) return <SoftBodyProto1 />;
   if (protoMode === 2) return <SoftBodyProto2 />;
   if (protoMode === 3) return <SoftBodyProto3 />;
+  if (protoMode === 4) return <SoftBodyProto4 />;
 
   return (
     <div className="w-full h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">

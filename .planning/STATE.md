@@ -20,40 +20,98 @@ updated: 2026-01-30
 ## Next Steps
 
 **Current:** Soft Body Goop prototype implementation
-**Status:** RESEARCH COMPLETE — Ready for Phase 1 prototyping
+**Status:** PROTOTYPES 1-4 COMPLETE — Parameter tuning done, per-block attraction working
 **Branch:** `soft-body-experiment`
 
-**Vision + Research document:** `.planning/SOFTBODY-VISION.md` — READ THIS FIRST!
+**Vision + Research document:** `.planning/SOFTBODY-VISION.md`
+**Prototypes:** Access via `localhost:PORT/GOOPS/?proto=N` (N = 1-4)
 
-### Research Findings Summary (2026-01-30)
+### Prototype Results Summary (2026-01-31)
 
-**Physics:**
-- Verlet integration + mass-spring system
-- Damping ratio ζ=0.6 for gummy feel
-- 12 vertices per cell, ring + cross springs + pressure
+#### Proto-1: Single Blob Physics ✅
+**Question:** Does Verlet + springs + pressure + Catmull-Rom look/feel right?
+**Answer:** YES — "gummy jello" feel achieved
 
-**Rendering:**
-- Catmull-Rom → Bezier conversion for smooth curves
-- SVG gooey filter for membrane merge effect
-- Formula: `cp1 = P1 + (P2-P0)/6`, `cp2 = P2 - (P3-P1)/6`
+**Tuned Parameters:**
+- Damping: 0.975 (oscillations die naturally)
+- Gravity: 30 (gentle, will be simulated by piece drop speed in game)
+- Stiffness: 20 (soft but holds shape)
+- Pressure: 2.5 (minimal visible effect at this scale)
+- Constraint Iterations: 3+ (stable without expensive)
 
-**Attraction (SPRINGS WIN over fields):**
-- Explicit vertex-to-vertex springs for "reaching" effect
-- Spatial hashing for performance (432 vertices)
-- Rest length ~10px for "merged" appearance
+**Key Learnings:**
+- Position-based constraints (not force-based) required for stability
+- First-frame dt must be skipped to prevent physics explosion
+- T-tetromino shape with 10 perimeter vertices works well
 
-### Implementation Roadmap
+#### Proto-2: Blob Follows Cursor ✅
+**Question:** Does two-layer architecture (data drives render) work?
+**Answer:** YES — smooth follow, fantastic rotation morph
 
-1. **Phase 1:** Single cell — 12 Verlet vertices, springs, pressure, Catmull-Rom rendering
-2. **Phase 2:** Cell follows data layer — spring to "home" position, test rotation/collision
-3. **Phase 3:** Inter-cell attraction — spatial hashing, same-color springs
-4. **Phase 4:** Visual polish — goo filter, undulation, ghost piece mode
+**Tuned Parameters:**
+- Home Stiffness: 0.03 (laggy/stretchy follow, beautiful rotation)
+- Damping: 0.92 (settles quickly after movement)
+- Stiffness: 10 (very soft, allows natural deformation)
+- Iterations: 3
 
-**Resume command:**
+**Key Learnings:**
+- homeOffset per vertex defines rest shape relative to target position
+- Rotate button morphs shape beautifully as vertices spring to new homes
+- Low homeStiffness = more "gummy" feel during movement
+
+#### Proto-3: Rotation Stress Test ✅
+**Question:** Do rapid 90° rotations break physics or accumulate lag?
+**Answer:** NO — deviation stays bounded even at 100ms auto-rotate
+
+**Tuned Parameters:**
+- Home Stiffness: 0.18 (snappy recovery for rapid rotations)
+- Damping: 0.94 (quick settle without overshoot)
+
+**Key Learnings:**
+- Higher homeStiffness needed for rapid rotations (vs slow cursor follow)
+- Deviation meter useful for tuning — peak stays bounded
+- No infinite lag accumulation observed
+
+#### Proto-4: Two Blobs Attraction ✅ (In Progress)
+**Question:** Do vertex-to-vertex springs create the "reaching" effect?
+**Answer:** YES — but needs PER-BLOCK attraction radius (not whole-piece)
+
+**Current Implementation:**
+- T-tetromino (anchored, 4 blocks) + U-pentomino (draggable, 5 blocks)
+- Per-block attraction zones (each cell has its own radius)
+- Block centers rotate with blob rotation
+- Vertex-to-vertex springs form only between nearby blocks
+- Default attraction radius = UNIT_SIZE (30px = one block length)
+
+**Key Learnings:**
+- Global vertex-to-vertex attraction doesn't work for complex shapes
+- Per-block radius keeps attraction LOCAL (stem attracts to alcove, not whole piece)
+- This is critical for hexominoes where global radius would be too large
+- Each block needs: center position, list of vertex indices
+- Block centers must rotate when blob rotates
+
+### Prototype Access URLs
+
+| Proto | URL | Purpose |
+|-------|-----|---------|
+| 1 | `?proto=1` | Single blob physics tuning |
+| 2 | `?proto=2` | Cursor follow + rotation |
+| 3 | `?proto=3` | Rotation stress test |
+| 4 | `?proto=4` | Two-blob attraction (T + U shapes) |
+
+### Remaining Prototypes (from SOFTBODY-VISION.md)
+
+5. **Proto-5:** Goo Filter Variations — membrane merge visual appearance
+6. **Proto-6:** Multi-Cell Piece — 4-cell piece as cohesive unit
+7. **Proto-7:** Landing and Locked Goop — collision jiggle + attraction to settled pieces
+8. **Proto-8:** Performance Stress Test — 36 cells × 12 vertices at 40+ FPS mobile
+
+### Resume Command
 ```
-Start soft-body prototype. Read .planning/SOFTBODY-VISION.md for full research.
-Branch: soft-body-experiment
-Phase: 1 — Single cell with 12 Verlet vertices
+Continue soft-body prototypes. Branch: soft-body-experiment
+Proto-4 complete with per-block attraction.
+Next: Proto-5 (goo filter) or continue refining Proto-4.
+Access prototypes at localhost:PORT/GOOPS/?proto=N
 ```
 
 **Previous work (2026-01-28):**
@@ -217,12 +275,55 @@ All three complications have player-driven triggers AND mitigations.
 
 ## Session Continuity
 
-Last session: 2026-01-30
+Last session: 2026-01-31
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Current work:** SBG Research → Implementation
+**Current work:** Soft Body Goop Prototypes 1-4
 
-### This Session Summary (2026-01-30)
+### This Session Summary (2026-01-31)
+
+**Soft Body Goop Prototypes 1-4 — COMPLETE**
+
+Built and tuned 4 interactive prototypes validating soft body physics approach:
+
+**Proto-1: Single Blob Physics**
+- Verlet integration with position-based spring constraints
+- T-tetromino shape with 10 perimeter vertices
+- Ring springs (perimeter) + cross springs (structural) + pressure
+- Catmull-Rom → Bezier smooth curve rendering
+- Interactive sliders for all parameters
+- **Finding:** "Gummy jello" feel at damping=0.975, stiffness=20, iterations=3+
+
+**Proto-2: Blob Follows Cursor**
+- Blob target position follows cursor or click
+- homeStiffness controls lag/responsiveness
+- Rotate button tests shape morphing
+- **Finding:** Fantastic rotation morph at homeStiffness=0.03, damping=0.92
+
+**Proto-3: Rotation Stress Test**
+- Fixed position blob with rotate button + auto-rotate toggle
+- Deviation meter tracks how far blob is from target
+- Peak deviation tracking for lag accumulation detection
+- **Finding:** No lag accumulation at 100ms auto-rotate with homeStiffness=0.18
+
+**Proto-4: Two Blobs Attraction**
+- T-tetromino (anchored) + U-pentomino (draggable)
+- Per-block attraction radius (not whole-piece) — CRITICAL INSIGHT
+- Each cell has its own attraction zone with vertex assignments
+- Block centers rotate with blob rotation
+- Rotate buttons for each shape
+- **Finding:** Per-block attraction keeps "reaching" effect local, essential for hexominoes
+
+**Technical Insights:**
+1. Position-based constraints >> force-based (stability)
+2. Skip first frame physics to prevent explosion
+3. homeOffset per vertex defines rest shape
+4. Per-block attraction radius essential for complex shapes
+5. Block centers must rotate with shape rotation
+
+**All prototypes accessible via:** `localhost:PORT/GOOPS/?proto=N`
+
+### Previous Session Summary (2026-01-30)
 
 **Soft Body Goop Research — COMPLETE**
 
@@ -247,8 +348,6 @@ Comprehensive deep-dive research on soft body physics for the visual overhaul:
 - Spatial hashing required for 432 vertices
 
 **All research documented in `.planning/SOFTBODY-VISION.md`**
-
-Ready for Phase 1 prototype: single cell with physics + rendering.
 
 ---
 
