@@ -44,6 +44,7 @@ interface Blob {
   targetY: number;
   rotation: number;
   color: string;
+  usePressure: boolean;  // Disable for self-intersecting shapes like Corrupt
 }
 
 interface PhysicsParams {
@@ -95,7 +96,7 @@ const FILTER_PRESETS = {
 // BLOB CREATION (Single perimeter around entire shape)
 // ============================================================================
 
-type ShapeType = 'T' | 'U';
+type ShapeType = 'T' | 'U' | 'Corrupt';
 
 function createBlob(centerX: number, centerY: number, shape: ShapeType, color: string): Blob {
   const vertices: Vertex[] = [];
@@ -136,7 +137,7 @@ function createBlob(centerX: number, centerY: number, shape: ShapeType, color: s
       [1, 8], [2, 5], [5, 8], [6, 9],
       [7, 4], [0, 7], [3, 6],
     ];
-  } else {
+  } else if (shape === 'U') {
     // U-pentomino:  █ █   (3 wide, 2 tall)
     //               ███
     //
@@ -165,6 +166,66 @@ function createBlob(centerX: number, centerY: number, shape: ShapeType, color: s
       [0, 6], [5, 10], [1, 11], [4, 6],
       [2, 9], [3, 8], [0, 9], [5, 8],
       [2, 10], [3, 7], [11, 8], [6, 9],
+    ];
+  } else {
+    // Corrupted T (T_T_C): Actual game piece layout
+    //   █   █   (row 0: blocks at col 0 and 2, gap at col 1)
+    //     █     (row 1: corner-connected to both top blocks)
+    //     █     (row 2: edge-connected to row 1)
+    //
+    // Continuous perimeter with thin bridges at corner connections:
+    //
+    //   0-----------1   2-----------3
+    //   |           |   |           |
+    //   |           5---4           |
+    //   |            \ /            |
+    //   7-------------6-------------8   <- bridges meet at middle top
+    //                 |   |
+    //                 |   |
+    //                11---10
+    //                 |   |
+    //                13---12
+    //
+    const bridge = 0.08 * u; // Thin bridge width
+    perimeterPoints = [
+      // Start at TL block, top-left, go clockwise
+      { x: -1.5 * u, y: -1.5 * u },       // 0: TL top-left
+      { x: -0.5 * u, y: -1.5 * u },       // 1: TL top-right
+      { x: -0.5 * u, y: -0.5 * u },       // 2: TL bottom-right
+      { x: -bridge, y: -0.5 * u },        // 3: bridge to middle (left side)
+      { x: -bridge, y: -0.5 * u + bridge }, // 4: bridge corner
+      // Middle block left edge going down
+      { x: -0.5 * u, y: -0.5 * u + bridge }, // 5: middle top-left
+      { x: -0.5 * u, y: 1.5 * u },        // 6: bottom-left
+      { x: 0.5 * u, y: 1.5 * u },         // 7: bottom-right
+      { x: 0.5 * u, y: -0.5 * u + bridge }, // 8: middle top-right
+      // Bridge to TR block
+      { x: bridge, y: -0.5 * u + bridge }, // 9: bridge corner
+      { x: bridge, y: -0.5 * u },         // 10: bridge to TR (right side)
+      { x: 0.5 * u, y: -0.5 * u },        // 11: TR bottom-left
+      { x: 0.5 * u, y: -1.5 * u },        // 12: TR top-left
+      { x: 1.5 * u, y: -1.5 * u },        // 13: TR top-right
+      { x: 1.5 * u, y: -0.5 * u },        // 14: TR bottom-right
+      // Bridge back through top gap
+      { x: 0.5 * u + bridge, y: -0.5 * u }, // 15: start gap traverse
+      { x: 0.5 * u + bridge, y: -0.5 * u - bridge }, // 16: gap top
+      { x: -0.5 * u - bridge, y: -0.5 * u - bridge }, // 17: gap top left
+      { x: -0.5 * u - bridge, y: -0.5 * u }, // 18: gap end
+      { x: -1.5 * u, y: -0.5 * u },       // 19: TL bottom-left, close loop
+    ];
+    // All outer corners have high attraction
+    attractionMultipliers = [
+      OUTER, MID, OUTER, INNER, INNER,  // 0-4: TL block + bridge
+      OUTER, OUTER, OUTER, OUTER,       // 5-8: middle/bottom
+      INNER, INNER, OUTER, MID, OUTER,  // 9-13: bridge + TR
+      OUTER, INNER, INNER, INNER, INNER, MID  // 14-19: TR + gap traverse
+    ];
+    crossPairs = [
+      [0, 2], [1, 19],   // TL block
+      [5, 7], [6, 8],    // Middle block
+      [11, 13], [12, 14], // TR block
+      [0, 6], [13, 7],   // Long diagonals
+      [3, 10], [4, 9],   // Bridge cross
     ];
   }
 
@@ -223,6 +284,7 @@ function createBlob(centerX: number, centerY: number, shape: ShapeType, color: s
     targetY: centerY,
     rotation: 0,
     color,
+    usePressure: shape !== 'Corrupt',  // Disable pressure for self-intersecting shapes
   };
 }
 
@@ -492,8 +554,9 @@ export function SoftBodyProto5b() {
   // Initialize blobs
   useEffect(() => {
     const blobs: Blob[] = [
-      createBlob(180, 250, 'T', '#e74c3c'),
-      createBlob(380, 250, 'U', '#e74c3c'),
+      createBlob(120, 250, 'T', '#e74c3c'),
+      createBlob(300, 250, 'U', '#e74c3c'),
+      createBlob(480, 250, 'Corrupt', '#e74c3c'),
     ];
     blobsRef.current = blobs;
   }, []);
@@ -519,7 +582,9 @@ export function SoftBodyProto5b() {
         for (let i = 0; i < physics.iterations; i++) {
           solveConstraints(blob, physics);
         }
-        applyPressure(blob, physics);
+        if (blob.usePressure) {
+          applyPressure(blob, physics);
+        }
       }
 
       // Update and apply attraction springs between blobs
@@ -703,6 +768,12 @@ export function SoftBodyProto5b() {
           >
             Rotate U
           </button>
+          <button
+            onClick={() => rotateBlob(2)}
+            style={{ padding: '8px 12px', background: '#9b59b6', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}
+          >
+            Rotate Corrupt
+          </button>
         </div>
       </div>
 
@@ -780,8 +851,9 @@ export function SoftBodyProto5b() {
         </defs>
 
         {/* Labels */}
-        <text x={180} y={30} fill="#fff" fontSize={14} textAnchor="middle" opacity={0.7}>T (single perimeter)</text>
-        <text x={380} y={30} fill="#fff" fontSize={14} textAnchor="middle" opacity={0.7}>U (single perimeter)</text>
+        <text x={120} y={30} fill="#fff" fontSize={14} textAnchor="middle" opacity={0.7}>T</text>
+        <text x={300} y={30} fill="#fff" fontSize={14} textAnchor="middle" opacity={0.7}>U</text>
+        <text x={480} y={30} fill="#fff" fontSize={14} textAnchor="middle" opacity={0.7}>Corrupt</text>
 
         {/* All blobs in one filtered group */}
         <g filter={filterParams.enabled ? 'url(#goo-filter-5b)' : undefined}>
