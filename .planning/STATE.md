@@ -313,7 +313,31 @@ Last session: 2026-01-31
 
 ### This Session Summary (2026-01-31)
 
-**Proto-4 Refined — Per-Vertex Attraction + Variable Stiffness**
+**Proto-5 + 5b Complete — Gooey Filter with Single Perimeter Shapes**
+
+**Proto-5:** Composed blocks with gooey filter
+- Each block is separate soft body blob
+- Problem: blocks fly apart on rotation (not cohesive)
+- Filter settings found: Blur=8, AlphaMult=20, AlphaOffset=-7 (Medium preset)
+
+**Proto-5b:** Single perimeter shapes (WINNER)
+- Each shape is ONE continuous soft body (like Proto-4)
+- Gooey filter applied for membrane merge visual
+- Rotation is cohesive - shape deforms as unit
+- **Key insight:** We can make ANY polyomino shape with single perimeter!
+- Works for standard AND corrupted (non-contiguous) pieces
+
+**Filter Settings (Medium - Best):**
+- Blur (stdDeviation): 8
+- Alpha Multiplier: 20
+- Alpha Offset: -7
+
+**Next for 5b:** Add attraction springs + "Goopiness" slider
+- Break distance slider for mozzarella pull effect
+- Variable stiffness for reaching behavior
+- Need to test corrupted (corner-connected) shapes
+
+**Previous: Proto-4 Refined — Per-Vertex Attraction + Variable Stiffness**
 
 Major improvements to Proto-4 attraction system:
 

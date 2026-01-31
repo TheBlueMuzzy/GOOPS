@@ -16,14 +16,15 @@ import { SoftBodyProto1 } from './prototypes/SoftBodyProto1';
 import { SoftBodyProto2 } from './prototypes/SoftBodyProto2';
 import { SoftBodyProto3 } from './prototypes/SoftBodyProto3';
 import { SoftBodyProto4 } from './prototypes/SoftBodyProto4';
+import { SoftBodyProto5 } from './prototypes/SoftBodyProto5';
+import { SoftBodyProto5b } from './prototypes/SoftBodyProto5b';
 
 type ViewState = 'GAME' | 'UPGRADES' | 'SETTINGS' | 'HOW_TO_PLAY';
 
-// Check URL for prototype mode: ?proto=1, ?proto=2, ?proto=3
-const getProtoMode = (): number | null => {
+// Check URL for prototype mode: ?proto=1, ?proto=2, ?proto=3, ?proto=5b
+const getProtoMode = (): string | null => {
   const params = new URLSearchParams(window.location.search);
-  const proto = params.get('proto');
-  return proto ? parseInt(proto) : null;
+  return params.get('proto');
 };
 
 const App: React.FC = () => {
@@ -193,10 +194,12 @@ const App: React.FC = () => {
 
   // Render prototype if ?proto=N in URL
   const protoMode = getProtoMode();
-  if (protoMode === 1) return <SoftBodyProto1 />;
-  if (protoMode === 2) return <SoftBodyProto2 />;
-  if (protoMode === 3) return <SoftBodyProto3 />;
-  if (protoMode === 4) return <SoftBodyProto4 />;
+  if (protoMode === '1') return <SoftBodyProto1 />;
+  if (protoMode === '2') return <SoftBodyProto2 />;
+  if (protoMode === '3') return <SoftBodyProto3 />;
+  if (protoMode === '4') return <SoftBodyProto4 />;
+  if (protoMode === '5') return <SoftBodyProto5 />;
+  if (protoMode === '5b') return <SoftBodyProto5b />;
 
   return (
     <div className="w-full h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
