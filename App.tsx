@@ -21,6 +21,7 @@ import { SoftBodyProto5b } from './prototypes/SoftBodyProto5b';
 import { SoftBodyProto5c } from './prototypes/SoftBodyProto5c';
 import { SoftBodyProto6 } from './prototypes/SoftBodyProto6';
 import { SoftBodyProto7 } from './prototypes/SoftBodyProto7';
+import { SoftBodyProto8 } from './prototypes/SoftBodyProto8';
 
 type ViewState = 'GAME' | 'UPGRADES' | 'SETTINGS' | 'HOW_TO_PLAY';
 
@@ -206,6 +207,7 @@ const App: React.FC = () => {
   if (protoMode === '5c') return <SoftBodyProto5c />;
   if (protoMode === '6') return <SoftBodyProto6 />;
   if (protoMode === '7') return <SoftBodyProto7 />;
+  if (protoMode === '8') return <SoftBodyProto8 />;
 
   return (
     <div className="w-full h-screen bg-slate-950 text-slate-200 font-sans overflow-hidden">
