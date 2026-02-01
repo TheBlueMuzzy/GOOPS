@@ -19,12 +19,11 @@ updated: 2026-01-31
 
 ## Next Steps
 
-**Current:** Proto-6 Fill/Pour
-**Status:** IN PROGRESS — Core fill working, architecture needs rethink for seamless edges
+**Current:** Proto-7 Pop
+**Status:** NOT STARTED
 **Branch:** `soft-body-experiment`
-**Server:** `localhost:5203/GOOPS/?proto=6`
 
-### Proto-6 Fill/Pour — IN PROGRESS
+### Proto-6 Fill/Pour — COMPLETE ✅
 
 **The Goal:**
 - Fill rises from bottom inside the cell wall "container"
@@ -33,66 +32,37 @@ updated: 2026-01-31
 - Shake animation when clicking before 100%
 - Boop scale pulse when fill reaches 100%
 
+**The Solution: "Trim" Approach**
+
+Instead of adding a fill layer, we **clip the inner cutout** to reveal the goop underneath:
+
+```
+LAYER 1: Outer goop (solid, filtered)
+LAYER 2: Inner cutout (bgColor, CLIPPED to unfilled portion only)
+```
+
+**How it works:**
+- The inner cutout is clipped with a rect that only shows the "unfilled" area (above fill line)
+- As fill increases, the clip rect shrinks from bottom up
+- This reveals the goop underneath as the "fill"
+- At 100% fill, cutout disappears entirely → solid goop shows
+
+**Why this is better than previous attempts:**
+- The "fill" IS the outer goop, so it has the same gooey edges
+- No seam because we're not trying to match two different paths
+- Simpler architecture (2 layers instead of 3)
+- Like After Effects "trim" effect — revealing rather than adding
+
 **What Works:**
 - Fill amount (0-1) per blob, auto-fills over time
-- Fill rendered as rising rect clipped to inner shape
+- Fill effect via clipped cutout (reveals goop from bottom up)
 - Shake animation on early click (CSS keyframes)
 - Boop scale animation at 100% (scale from center)
 - Reset button to empty all containers
-
-**The Problem (UNSOLVED):**
-There's a visible seam/gap between the fill and the outer goop edge.
-
-**Root Cause Analysis:**
-1. Outer goop goes through goo filter → creates curved/blobby edges
-2. Inner cutout is a clean path (NOT filtered) → sharp edges
-3. Fill clips to the clean inner path → matches cutout, not the goo-filtered edge
-4. The goo filter curves the outer edge INWARD in places
-5. The clean inner cutout doesn't follow those curves
-6. Result: visible gap between goo-filtered outer edge and clean inner edge
-
-**What We Tried (and why it failed):**
-1. **Extend fill outward (negative inset)** → Fill escaped outside the goop boundary
-2. **Clip fill to outer blob path** → Raw path doesn't match goo-filtered visual
-3. **Put fill inside goo filter group** → Fill merged with outer, then cutout cut through both, fill invisible
-4. **Put fill UNDER outer goop** → Outer goop covered fill completely, cutout revealed nothing
-
-**Proposed Architecture Solutions:**
-
-**Option A: Goop as RING (recommended)**
-```
-LAYER 1: Fill (underneath or on top)
-LAYER 2: Goop RING (outer - inner path, filtered) → BOTH edges are gooey
-```
-- Render outer goop as a ring (outer path + inner path reversed, fill-rule="evenodd")
-- Apply goo filter to the ring
-- Both inner AND outer edges get the same gooey treatment
-- Fill renders on top, visible through the ring's center
-- When 100% full, fill meets the goo-filtered inner edge seamlessly
-
-**Option B: Filter both layers together**
-```
-LAYER 1 (filtered group): Outer goop + Fill together
-LAYER 2: Inner cutout (bgColor, NOT filtered)
-```
-- Put fill inside the filter group WITH outer goop
-- They merge through the filter (same color = same blob)
-- Inner cutout still cuts the hole
-- Issue: Need fill to not fully merge with outer
-
-**Key Insight:**
-The fundamental mismatch is: goo filter applied to outer shape only, not to inner cutout. Whatever solution we choose must either:
-- Apply filter to BOTH edges (ring approach)
-- Or make fill part of the filtered content
+- No visible seam at any fill level
 
 **Key Files:**
-- `prototypes/SoftBodyProto6.tsx` — Main prototype file (current working state)
-- `prototypes/SoftBodyProto5c.tsx` — Base prototype (cell wall without fill)
-
-**Current Render Order (working but has seam):**
-1. LAYER 1: Outer goop (solid, filtered)
-2. LAYER 2: Inner cutout (bgColor, clean path)
-3. LAYER 3: Fill (clipped to same path as cutout)
+- `prototypes/SoftBodyProto6.tsx` — Complete fill/pour mechanics
 
 ### Proto-5c Cell Wall Experiment — SOLVED
 
@@ -154,7 +124,7 @@ if (region.outerVertexIndices) {
 |-------|-----|--------|
 | 5b | `?proto=5b` | COMPLETE — Gold standard goo filter |
 | 5c | `?proto=5c` | COMPLETE — Cell wall rendering |
-| 6 | `?proto=6` | IN PROGRESS — Fill/Pour mechanics |
+| 6 | `?proto=6` | COMPLETE — Fill/Pour mechanics (trim approach) |
 
 ---
 
@@ -186,9 +156,6 @@ See full details in sections below.
 
 ## Remaining Prototypes
 
-### Proto-6: Fill/Pour
-How does goop visually "fill" into a piece shape?
-
 ### Proto-7: Pop
 What happens visually when goop is cleared?
 
@@ -202,26 +169,22 @@ How does freed goop behave when disconnected?
 Last session: 2026-01-31
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Build:** 109
+**Build:** 110
 
 ### Resume Command
 ```
-Proto-6 Fill/Pour IN PROGRESS. Branch: soft-body-experiment
-Server: localhost:5203/GOOPS/?proto=6
+Proto-6 Fill/Pour COMPLETE. Branch: soft-body-experiment
+Server: localhost:5173/GOOPS/?proto=6
 
-CURRENT STATE: Basic fill mechanics work (rising fill, shake, boop).
-PROBLEM: Visible seam between fill and outer goop edge.
-CAUSE: Goo filter applied to outer shape only. Inner cutout/fill are clean paths
-       that don't match the goo-filtered curved edges.
+COMPLETED: Fill mechanics with "trim" approach:
+- 2-layer architecture: Outer goop (filtered) + Inner cutout (clipped)
+- No separate fill layer — the goop IS the fill
+- Cutout clipped to unfilled area, shrinks from bottom up as fill increases
+- At 100%, cutout gone → solid goop visible
+- No seam because "fill" has same gooey edges as outer
 
-NEXT: Implement "goop as ring" architecture:
-1. Render outer goop as RING (outer - inner path, fill-rule="evenodd")
-2. Apply goo filter to ring (BOTH edges become gooey)
-3. Fill renders on top, visible through center
-4. No seam because fill meets goo-filtered inner edge
-
-See STATE.md "Proto-6 Fill/Pour" section for full analysis of what failed and why.
-File: prototypes/SoftBodyProto6.tsx
+NEXT: Proto-7 Pop — What happens when goop is cleared?
+File: prototypes/SoftBodyProto6.tsx (complete)
 ```
 
 ---

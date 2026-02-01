@@ -689,6 +689,21 @@ function getInnerPath(innerVertices: InnerVertex[]): string {
   return getPath(innerVertices.map(v => v.pos));
 }
 
+// Create a ring by combining outer path with reversed inner path
+// Uses evenodd fill rule - both edges become visible and gooey when filtered
+function createRingPath(outerPoints: Vec2[], innerPoints: Vec2[]): string {
+  // Outer path (complete with Z)
+  const outerPath = getPath(outerPoints);
+  if (!outerPath || innerPoints.length < 3) return outerPath;
+
+  // Inner path (reversed so evenodd creates a hole) - also complete with Z
+  const reversed = [...innerPoints].reverse();
+  const innerPath = getPath(reversed);
+
+  // Both paths need their Z closures for evenodd to work
+  return outerPath + ' ' + innerPath;
+}
+
 // Compute inset path by moving each vertex inward along its normal
 // Handles thin sections by limiting inset to half the local width
 function getInsetPath(points: Vec2[], insetAmount: number): Vec2[] {
@@ -968,7 +983,8 @@ export function SoftBodyProto6() {
 
     // Fill rises from bottom
     const fillTop = bounds.maxY - height * blob.fillAmount;
-    const padding = 5;
+    // Large padding to cover catmull-rom curves beyond vertex bounds
+    const padding = 30;
 
     return (
       <g key={clipId}>
@@ -980,9 +996,9 @@ export function SoftBodyProto6() {
         {blob.fillAmount > 0 && (
           <rect
             x={bounds.minX - padding}
-            y={fillTop}
+            y={fillTop - padding}
             width={bounds.maxX - bounds.minX + padding * 2}
-            height={bounds.maxY - fillTop + padding}
+            height={bounds.maxY - fillTop + padding * 2}
             fill={blob.color}
             clipPath={`url(#${clipId})`}
           />
@@ -1283,7 +1299,7 @@ export function SoftBodyProto6() {
         <text x={300} y={30} fill="#fff" fontSize={14} textAnchor="middle" opacity={0.7}>U</text>
         <text x={480} y={30} fill="#fff" fontSize={14} textAnchor="middle" opacity={0.7}>Corrupt</text>
 
-        {/* LAYER 1: Outer gooey shapes with filter (filled) */}
+        {/* LAYER 1: Outer goop (solid, filtered) */}
         <g filter={filterParams.enabled ? 'url(#goo-filter-6)' : undefined}>
           {/* Tendrils for mozzarella effect */}
           {attractionSpringsRef.current.map((spring, i) => {
@@ -1294,41 +1310,21 @@ export function SoftBodyProto6() {
             const dx = vB.pos.x - vA.pos.x;
             const dy = vB.pos.y - vA.pos.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-
-            // How stretched is this string? (0 = touching, 1 = at break point)
             const stretchRatio = Math.min(1, dist / physics.goopiness);
-
-            // End beads: always fixed size
             const endRadius = physics.tendrilEndRadius;
-
-            // Middle beads: smaller, and get even smaller as string stretches
-            // At rest (stretchRatio=0): middle = endRadius * (1 - skinniness * 0.3)
-            // At max stretch (stretchRatio=1): middle = endRadius * (1 - skinniness)
             const minMiddleScale = 1 - physics.tendrilSkinniness;
             const maxMiddleScale = 1 - physics.tendrilSkinniness * 0.3;
             const middleScale = maxMiddleScale - (maxMiddleScale - minMiddleScale) * stretchRatio;
             const middleRadius = endRadius * middleScale;
-
-            // Spacing based on end radius for consistent overlap
             const beadSpacing = endRadius * 1.4;
             const numBeads = Math.max(2, Math.ceil(dist / beadSpacing));
 
             const beads = [];
             for (let j = 0; j <= numBeads; j++) {
               const t = j / numBeads;
-
-              // t=0 or t=1 are ends (large), t=0.5 is middle (small)
-              // Use sine curve: sin(0)=0, sin(PI/2)=1, sin(PI)=0
-              const middleness = Math.sin(t * Math.PI); // 0 at ends, 1 at middle
-
-              // Interpolate between end radius and middle radius
+              const middleness = Math.sin(t * Math.PI);
               const r = endRadius - (endRadius - middleRadius) * middleness;
-
-              beads.push({
-                cx: vA.pos.x + dx * t,
-                cy: vA.pos.y + dy * t,
-                r: Math.max(2, r), // minimum 2px
-              });
+              beads.push({ cx: vA.pos.x + dx * t, cy: vA.pos.y + dy * t, r: Math.max(2, r) });
             }
 
             return (
@@ -1340,9 +1336,8 @@ export function SoftBodyProto6() {
             );
           })}
 
-          {/* Outer blob shapes (filled) with shake and boop transforms */}
+          {/* Solid outer shapes (filled) - original working approach */}
           {blobsRef.current.map((blob, i) => {
-            // Scale transform from center for boop effect
             const scaleTransform = blob.boopScale !== 1
               ? `translate(${blob.targetX}, ${blob.targetY}) scale(${blob.boopScale}) translate(${-blob.targetX}, ${-blob.targetY})`
               : undefined;
@@ -1364,12 +1359,11 @@ export function SoftBodyProto6() {
               </g>
             );
           })}
-
         </g>
 
-        {/* LAYER 2: Inner cutout - use innerRegions if available, else inset outer */}
+        {/* LAYER 2: Inner cutout - clipped to only show "unfilled" portion */}
+        {/* As fill increases, cutout shrinks from bottom up, revealing goop underneath */}
         {blobsRef.current.map((blob, i) => {
-          // Scale transform from center for boop effect
           const scaleTransform = blob.boopScale !== 1
             ? `translate(${blob.targetX}, ${blob.targetY}) scale(${blob.boopScale}) translate(${-blob.targetX}, ${-blob.targetY})`
             : undefined;
@@ -1378,76 +1372,59 @@ export function SoftBodyProto6() {
             animation: 'shake 0.3s cubic-bezier(.36,.07,.19,.97) both'
           } : undefined;
 
+          // Helper to render a clipped cutout for a region
+          const renderClippedCutout = (insetPoints: Vec2[], clipId: string) => {
+            const bounds = getBounds(insetPoints);
+            const height = bounds.maxY - bounds.minY;
+            const fillTop = bounds.maxY - height * blob.fillAmount;
+            const padding = 50; // Extra padding for curves
+
+            // When 100% full, don't render cutout at all (show full goop)
+            if (blob.fillAmount >= 1) return null;
+
+            return (
+              <g key={clipId}>
+                <defs>
+                  <clipPath id={clipId}>
+                    {/* Clip rect covers only the UNFILLED portion (above fillTop) */}
+                    <rect
+                      x={bounds.minX - padding}
+                      y={bounds.minY - padding}
+                      width={bounds.maxX - bounds.minX + padding * 2}
+                      height={fillTop - bounds.minY + padding}
+                    />
+                  </clipPath>
+                </defs>
+                <path
+                  d={getPath(insetPoints)}
+                  fill={bgColor}
+                  clipPath={`url(#${clipId})`}
+                />
+              </g>
+            );
+          };
+
           if (blob.innerRegions) {
-            // Render separate inner regions (for complex shapes like Corrupt)
             return (
               <g key={`inner-group-${i}`} transform={scaleTransform} style={shakeStyle}>
                 {blob.innerRegions.map((region, ri) => {
                   let worldPoints: Vec2[];
                   if (region.outerVertexIndices) {
-                    // Use outer vertex positions directly - this makes inner wobble with outer!
                     worldPoints = region.outerVertexIndices.map(idx => blob.vertices[idx].pos);
                   } else {
-                    // Fallback: use physics-simulated inner vertices
                     worldPoints = region.vertices.map(v => v.pos);
                   }
-                  // Apply inset to the region
                   const insetPoints = getInsetPath(worldPoints, physics.wallThickness);
-                  return (
-                    <path
-                      key={`inner-${i}-${ri}`}
-                      d={getPath(insetPoints)}
-                      fill={bgColor}
-                    />
-                  );
+                  return renderClippedCutout(insetPoints, `unfilled-clip-${i}-${ri}`);
                 })}
               </g>
             );
           } else {
-            // Use the OUTER vertices and compute proper inset
             const outerPoints = blob.vertices.map(v => v.pos);
             const insetPoints = getInsetPath(outerPoints, physics.wallThickness);
             return (
               <g key={`inner-group-${i}`} transform={scaleTransform} style={shakeStyle}>
-                <path
-                  key={`inner-${i}`}
-                  d={getPath(insetPoints)}
-                  fill={bgColor}
-                />
-              </g>
-            );
-          }
-        })}
-
-        {/* LAYER 3: Fill inside the cell wall hole */}
-        {blobsRef.current.map((blob, i) => {
-          const scaleTransform = blob.boopScale !== 1
-            ? `translate(${blob.targetX}, ${blob.targetY}) scale(${blob.boopScale}) translate(${-blob.targetX}, ${-blob.targetY})`
-            : undefined;
-
-          const shakeStyle = blob.isShaking ? {
-            animation: 'shake 0.3s cubic-bezier(.36,.07,.19,.97) both'
-          } : undefined;
-
-          if (blob.innerRegions) {
-            return (
-              <g key={`fill-group-${i}`} transform={scaleTransform} style={shakeStyle}>
-                {blob.innerRegions.map((region, ri) => {
-                  let worldPoints: Vec2[];
-                  if (region.outerVertexIndices) {
-                    worldPoints = region.outerVertexIndices.map(idx => blob.vertices[idx].pos);
-                  } else {
-                    worldPoints = region.vertices.map(v => v.pos);
-                  }
-                  return renderFill(blob, worldPoints, `fill-clip-${i}-${ri}`);
-                })}
-              </g>
-            );
-          } else {
-            const outerPoints = blob.vertices.map(v => v.pos);
-            return (
-              <g key={`fill-group-${i}`} transform={scaleTransform} style={shakeStyle}>
-                {renderFill(blob, outerPoints, `fill-clip-${i}`)}
+                {renderClippedCutout(insetPoints, `unfilled-clip-${i}`)}
               </g>
             );
           }
