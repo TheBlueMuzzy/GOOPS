@@ -90,11 +90,13 @@ Plans:
 
 **Goal**: Replace goopGroupId rect rendering with perimeter-traced soft-body blobs
 **Depends on**: Phase 25
-**Research**: Unlikely (Proto-7 has perimeter tracing algorithm)
-**Plans**: TBD
+**Research**: No (perimeter tracing already ported in Phase 25, goo filter from Proto-7)
+**Plans**: 3
 
 Plans:
-- [ ] 26-01: TBD
+- [ ] 26-01: Goo filter & physics integration
+- [ ] 26-02: Soft-body blob rendering
+- [ ] 26-03: Fill animation & rendering cutover
 
 #### Phase 27: Active Piece Physics
 
