@@ -65,7 +65,6 @@ interface Blob {
   usePressure: boolean;
   fillAmount: number;      // 0-1, how full (1 = full/solid for falling pieces)
   isShaking: boolean;
-  boopScale: number;
   wasFullLastFrame: boolean;
   gridCells: Vec2[];       // Which grid cells this blob occupies
   isLocked: boolean;       // false = falling, true = locked in place
@@ -154,8 +153,8 @@ const DEFAULT_FILL: FillParams = {
   fillRate: 0.15,
 };
 
-const BOOP_SCALE = 1.15;
-const BOOP_RETURN_DURATION = 200;
+// Ready-to-pop impulse (one-time outward push when blob fills)
+const PULSE_AMPLITUDE = 4;      // pixels - impulse strength for outward push
 
 // Fall speed in pixels per second
 const FALL_SPEED = 200;  // Adjust for desired fall rate
@@ -453,7 +452,6 @@ function createBlobFromCells(cells: Vec2[], color: string, isLocked: boolean): B
     usePressure: true,
     fillAmount: isLocked ? 0 : 1,  // Locked = empty (start filling), Falling = full
     isShaking: false,
-    boopScale: 1,
     wasFullLastFrame: !isLocked,
     gridCells: [...cells],
     isLocked,
@@ -939,6 +937,51 @@ function applyAttractionSprings(
   }
 }
 
+// Apply outward impulse to all vertices (for ready-to-pop effect)
+// In Verlet, velocity = pos - oldPos, so moving oldPos inward creates outward velocity
+function applyOutwardImpulse(blob: Blob, impulseStrength: number): void {
+  const vertices = blob.vertices;
+  const n = vertices.length;
+  if (n < 3) return;
+
+  for (let i = 0; i < n; i++) {
+    const prev = vertices[(i - 1 + n) % n].pos;
+    const curr = vertices[i].pos;
+    const next = vertices[(i + 1) % n].pos;
+
+    // Edge vectors
+    const e1x = curr.x - prev.x;
+    const e1y = curr.y - prev.y;
+    const e2x = next.x - curr.x;
+    const e2y = next.y - curr.y;
+
+    // Normalize edges
+    const len1 = Math.sqrt(e1x * e1x + e1y * e1y) || 1;
+    const len2 = Math.sqrt(e2x * e2x + e2y * e2y) || 1;
+    const n1x = e1x / len1;
+    const n1y = e1y / len1;
+    const n2x = e2x / len2;
+    const n2y = e2y / len2;
+
+    // Perpendicular outward normals (rotate 90° clockwise for outward)
+    const out1x = n1y;
+    const out1y = -n1x;
+    const out2x = n2y;
+    const out2y = -n2x;
+
+    // Average the two outward normals
+    let avgNx = out1x + out2x;
+    let avgNy = out1y + out2y;
+    const avgLen = Math.sqrt(avgNx * avgNx + avgNy * avgNy) || 1;
+    avgNx /= avgLen;
+    avgNy /= avgLen;
+
+    // Move oldPos inward to create outward velocity
+    vertices[i].oldPos.x -= avgNx * impulseStrength;
+    vertices[i].oldPos.y -= avgNy * impulseStrength;
+  }
+}
+
 // ============================================================================
 // RENDERING (same as Proto-6)
 // ============================================================================
@@ -1253,17 +1296,13 @@ export function SoftBodyProto8() {
           blob.fillAmount = Math.min(1, blob.fillAmount + fillParams.fillRate * dt);
         }
 
-        // Boop at 100%
+        // One-time outward impulse when blob becomes full (ready to pop)
         const isFull = blob.fillAmount >= 1;
         if (isFull && !blob.wasFullLastFrame) {
-          blob.boopScale = BOOP_SCALE;
+          // Apply outward impulse to each vertex along its normal
+          applyOutwardImpulse(blob, PULSE_AMPLITUDE);
         }
         blob.wasFullLastFrame = isFull;
-
-        if (blob.boopScale > 1) {
-          const returnSpeed = (BOOP_SCALE - 1) / (BOOP_RETURN_DURATION / 1000);
-          blob.boopScale = Math.max(1, blob.boopScale - returnSpeed * dt);
-        }
       }
 
       // Handle smooth falling for falling pieces
@@ -2303,17 +2342,12 @@ export function SoftBodyProto8() {
 
           {/* Outer shapes - click to pop locked full blobs */}
           {blobsRef.current.map((blob, i) => {
-            const scaleTransform = blob.boopScale !== 1
-              ? `translate(${blob.targetX}, ${blob.targetY}) scale(${blob.boopScale}) translate(${-blob.targetX}, ${-blob.targetY})`
-              : undefined;
-
             // Can pop if locked and full
             const canPop = blob.isLocked && blob.fillAmount >= 1;
 
             return (
               <g
                 key={blob.id}
-                transform={scaleTransform}
                 style={{ cursor: canPop ? 'pointer' : 'default' }}
                 onClick={() => canPop && popBlob(blob)}
               >
@@ -2335,10 +2369,6 @@ export function SoftBodyProto8() {
           // Skip if already full
           if (blob.fillAmount >= 1) return null;
 
-          const scaleTransform = blob.boopScale !== 1
-            ? `translate(${blob.targetX}, ${blob.targetY}) scale(${blob.boopScale}) translate(${-blob.targetX}, ${-blob.targetY})`
-            : undefined;
-
           const outerPoints = blob.vertices.map(v => v.pos);
           const insetPoints = getInsetPath(outerPoints, physics.wallThickness);
           const bounds = getBounds(insetPoints);
@@ -2349,7 +2379,7 @@ export function SoftBodyProto8() {
           const clipId = `unfilled-clip-${blob.id}`;
 
           return (
-            <g key={`inner-${blob.id}`} transform={scaleTransform}>
+            <g key={`inner-${blob.id}`}>
               <defs>
                 <clipPath id={clipId}>
                   <rect

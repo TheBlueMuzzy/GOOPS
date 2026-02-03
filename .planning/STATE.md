@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-01-31
+updated: 2026-02-03
 ---
 
 # Project State
@@ -35,6 +35,7 @@ Test what happens when goop is cleared — pop effect with droplet residue.
 - Dev menu toggles with ` key
 - Save/Load settings to localStorage
 - Debug vertex visualization for merged blobs (yellow numbered dots)
+- **Ready-to-pop indicator:** Physics-based impulse (one-time outward push when blob fills, settles naturally via springs/damping)
 
 **Pressure System Rebuilt:**
 Old area-based pressure had bugs with complex merged shapes (inverted blobs). New approach:
@@ -47,6 +48,7 @@ Old area-based pressure had bugs with complex merged shapes (inverted blobs). Ne
 - Perimeter winding order matters for pressure normals (CCW = outward)
 - Added winding detection and auto-reversal if clockwise
 - Momentum transfer during merge was causing instability (needs review)
+- Ready-to-pop: Physics impulse > continuous animation (more organic, uses existing physics)
 
 **Key Files:**
 - `prototypes/SoftBodyProto8.tsx` — Pop mechanics prototype
@@ -259,26 +261,22 @@ How does freed goop behave when disconnected?
 
 ## Session Continuity
 
-Last session: 2026-02-01
+Last session: 2026-02-03
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Build:** 112
+**Build:** 114
 
 ### Resume Command
 ```
-Proto-7 Merge COMPLETE. Branch: soft-body-experiment
-Server: localhost:5173/GOOPS/?proto=7
+Proto-8 Pop IN PROGRESS. Branch: soft-body-experiment
+Server: localhost:5174/GOOPS/?proto=8
 
 COMPLETED THIS SESSION:
-- Return Speed slider (falling pieces stay snappy)
-- Viscosity slider for honey-like return (goes up to 3.0)
-- Distance-based cross springs (floppy arms)
-- Solid container with soft boundary damping
-- Fixed impact effect direction (lateral instead of downward)
-- Tuned all default physics values
+- Ready-to-pop indicator: replaced scale-based boop with physics impulse
+- One-time outward push when blob fills to 100%
+- Springs/damping naturally settle the blob back (organic wobble)
 
-NEXT: Proto-8 (Pop) — what happens when goop is cleared?
-File: prototypes/SoftBodyProto8.tsx (to be created)
+NEXT: Continue Proto-8 tuning, then Proto-9 (Loose Goop)
 ```
 
 ---
