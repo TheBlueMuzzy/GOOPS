@@ -22,6 +22,7 @@ None
 - [[v1.2-ROADMAP|v1.2 Progression System]] — Phases 14-20 (shipped 2026-01-25)
 - [[v1.3-ROADMAP|v1.3 Shape Changes]] — Phase 21 (shipped 2026-01-26)
 - [[v1.4-ROADMAP|v1.4 Naming Standardization]] — Phases 22-24 (shipped 2026-01-27)
+- 🚧 **v1.5 Soft-Body Integration** — Phases 25-30 (in progress)
 
 ## Experimental Branch: Soft-Body Goop (SBG)
 
@@ -66,6 +67,74 @@ Research spike exploring soft-body physics for goop rendering. Built 5 prototype
 - Performance budget for mobile (current protos run well)
 - State sync between game logic and visual physics
 - Animation timing (fill, pop, fall, merge)
+
+---
+
+### 🚧 v1.5 Soft-Body Integration (In Progress)
+
+**Milestone Goal:** Port soft-body physics visuals from prototypes into main game rendering, replacing static grid cells with deformable, gooey blobs.
+
+#### Phase 25: Physics Foundation
+
+**Goal**: Port Verlet physics engine and adapt to game coordinate system
+**Depends on**: Prototype research complete
+**Research**: Likely (cylindrical projection implications)
+**Research topics**: How to apply cylindrical transform to physics vertices, or whether to flatten rendering
+**Plans**: TBD
+
+Plans:
+- [ ] 25-01: TBD (run /gsd:plan-phase 25 to break down)
+
+#### Phase 26: Perimeter & Blob System
+
+**Goal**: Replace goopGroupId rect rendering with perimeter-traced soft-body blobs
+**Depends on**: Phase 25
+**Research**: Unlikely (Proto-7 has perimeter tracing algorithm)
+**Plans**: TBD
+
+Plans:
+- [ ] 26-01: TBD
+
+#### Phase 27: Active Piece Physics
+
+**Goal**: Falling pieces use soft-body physics (snappy, no viscosity)
+**Depends on**: Phase 26
+**Research**: Unlikely (Proto-7 solved falling piece physics)
+**Plans**: TBD
+
+Plans:
+- [ ] 27-01: TBD
+
+#### Phase 28: Locked Goop Behavior
+
+**Goal**: Viscosity, fill animation, ready-to-pop impulse, attraction springs
+**Depends on**: Phase 27
+**Research**: Unlikely (Protos 6-8 have all mechanics)
+**Plans**: TBD
+
+Plans:
+- [ ] 28-01: TBD
+
+#### Phase 29: Pop & Cascade
+
+**Goal**: Pop effects with droplets, support detection, loose goop, corrupted splitting
+**Depends on**: Phase 28
+**Research**: Unlikely (Protos 8-9 have all mechanics)
+**Plans**: TBD
+
+Plans:
+- [ ] 29-01: TBD
+
+#### Phase 30: Polish & Performance
+
+**Goal**: Mobile optimization, parameter tuning, edge case handling
+**Depends on**: Phase 29
+**Research**: Likely (mobile profiling, edge cases with dump pieces/wild goop/cracks)
+**Research topics**: React performance profiling, requestAnimationFrame timing, mobile throttling
+**Plans**: TBD
+
+Plans:
+- [ ] 30-01: TBD
 
 ---
 
@@ -200,6 +269,12 @@ See [[v1.4-ROADMAP]] for full details.
 | 22. Audit & Glossary | v1.4 | 1/1 | Shipped | 2026-01-27 |
 | 23. Code Rename | v1.4 | 7/7 | Shipped | 2026-01-27 |
 | 24. UI & Documentation | v1.4 | 1/1 | Shipped | 2026-01-27 |
+| 25. Physics Foundation | v1.5 | 0/? | Not started | - |
+| 26. Perimeter & Blob System | v1.5 | 0/? | Not started | - |
+| 27. Active Piece Physics | v1.5 | 0/? | Not started | - |
+| 28. Locked Goop Behavior | v1.5 | 0/? | Not started | - |
+| 29. Pop & Cascade | v1.5 | 0/? | Not started | - |
+| 30. Polish & Performance | v1.5 | 0/? | Not started | - |
 
 ## Related
 
