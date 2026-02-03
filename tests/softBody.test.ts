@@ -24,6 +24,15 @@ import {
   vecDistance,
   rotatePoint,
 } from '../core/softBody/types';
+import {
+  findBoundaryEdges,
+  tracePerimeter,
+  gridToPixels,
+  ensureCCW,
+  createBlobFromCells,
+  PHYSICS_CELL_SIZE,
+  PHYSICS_GRID_OFFSET,
+} from '../core/softBody/blobFactory';
 
 // =============================================================================
 // Helper: Create a minimal blob for testing
@@ -330,5 +339,200 @@ describe('DEFAULT_PHYSICS', () => {
     expect(DEFAULT_PHYSICS.returnSpeed).toBe(0.5);
     expect(DEFAULT_PHYSICS.viscosity).toBe(2.5);
     expect(DEFAULT_PHYSICS.gravity).toBe(10);
+  });
+});
+
+// =============================================================================
+// Blob Factory Tests
+// =============================================================================
+
+describe('findBoundaryEdges', () => {
+  it('finds 4 edges for a single cell', () => {
+    const cells: Vec2[] = [{ x: 0, y: 0 }];
+    const edges = findBoundaryEdges(cells);
+
+    // Single cell should have 4 boundary edges
+    expect(edges.length).toBe(4);
+  });
+
+  it('finds 8 edges for a 2x2 cell block', () => {
+    const cells: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+    ];
+    const edges = findBoundaryEdges(cells);
+
+    // 2x2 block should have 8 boundary edges (perimeter)
+    expect(edges.length).toBe(8);
+  });
+
+  it('finds correct edges for L-shape', () => {
+    // L-shape: 3 cells
+    //  [X]
+    //  [X]
+    //  [X][X]
+    const cells: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: 1, y: 2 },
+    ];
+    const edges = findBoundaryEdges(cells);
+
+    // L-shape has 10 boundary edges
+    expect(edges.length).toBe(10);
+  });
+});
+
+describe('tracePerimeter', () => {
+  it('returns empty array for no edges', () => {
+    const perimeter = tracePerimeter([]);
+    expect(perimeter.length).toBe(0);
+  });
+
+  it('traces closed loop for 2x2 block', () => {
+    const cells: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+    ];
+    const edges = findBoundaryEdges(cells);
+    const perimeter = tracePerimeter(edges);
+
+    // 2x2 block should trace 8 corners (one for each edge)
+    expect(perimeter.length).toBe(8);
+  });
+
+  it('traces closed loop for single cell', () => {
+    const cells: Vec2[] = [{ x: 0, y: 0 }];
+    const edges = findBoundaryEdges(cells);
+    const perimeter = tracePerimeter(edges);
+
+    // Single cell should have 4 corners
+    expect(perimeter.length).toBe(4);
+  });
+});
+
+describe('gridToPixels', () => {
+  it('converts grid coordinates to pixels', () => {
+    const gridPoints: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+    ];
+    const pixels = gridToPixels(gridPoints);
+
+    expect(pixels[0].x).toBe(PHYSICS_GRID_OFFSET.x);
+    expect(pixels[0].y).toBe(PHYSICS_GRID_OFFSET.y);
+    expect(pixels[1].x).toBe(PHYSICS_GRID_OFFSET.x + PHYSICS_CELL_SIZE);
+    expect(pixels[1].y).toBe(PHYSICS_GRID_OFFSET.y);
+  });
+});
+
+describe('ensureCCW', () => {
+  it('keeps CCW points unchanged', () => {
+    // Counter-clockwise square
+    const ccwSquare: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+      { x: 0, y: 1 },
+    ];
+    const result = ensureCCW(ccwSquare);
+
+    // Should be unchanged (already CCW)
+    expect(result[0].x).toBe(0);
+    expect(result[0].y).toBe(0);
+  });
+
+  it('reverses CW points to CCW', () => {
+    // Clockwise square
+    const cwSquare: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 1, y: 0 },
+    ];
+    const result = ensureCCW(cwSquare);
+
+    // Should be reversed to CCW
+    expect(result.length).toBe(4);
+    // First point should now be (1,0) after reversal
+    expect(result[0].x).toBe(1);
+    expect(result[0].y).toBe(0);
+  });
+});
+
+describe('createBlobFromCells', () => {
+  it('creates valid blob from single cell', () => {
+    const cells: Vec2[] = [{ x: 5, y: 5 }];
+    const blob = createBlobFromCells(cells, '#ff0000', 'test-blob', false);
+
+    expect(blob.id).toBe('test-blob');
+    expect(blob.color).toBe('#ff0000');
+    expect(blob.isLocked).toBe(false);
+    expect(blob.vertices.length).toBeGreaterThanOrEqual(4);
+    expect(blob.ringsprings.length).toBeGreaterThanOrEqual(4);
+    expect(blob.restArea).toBeGreaterThan(0);
+    expect(blob.fillAmount).toBe(1); // Falling blob starts full
+  });
+
+  it('creates valid blob from 2x2 cells', () => {
+    const cells: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+    ];
+    const blob = createBlobFromCells(cells, '#00ff00', 'square-blob', true);
+
+    expect(blob.id).toBe('square-blob');
+    expect(blob.color).toBe('#00ff00');
+    expect(blob.isLocked).toBe(true);
+    expect(blob.fillAmount).toBe(0); // Locked blob starts empty
+    expect(blob.vertices.length).toBe(8); // 2x2 has 8 perimeter corners
+    expect(blob.ringsprings.length).toBe(8); // Ring spring for each vertex
+    expect(blob.gridCells.length).toBe(4);
+  });
+
+  it('creates blob with inner vertices', () => {
+    const cells: Vec2[] = [{ x: 0, y: 0 }];
+    const blob = createBlobFromCells(cells, '#0000ff', 'inner-test', true);
+
+    // Should have at least one inner vertex (centroid)
+    expect(blob.innerVertices.length).toBeGreaterThanOrEqual(1);
+    expect(blob.innerVertices[0].homeOffset.x).toBe(0);
+    expect(blob.innerVertices[0].homeOffset.y).toBe(0);
+  });
+
+  it('sets correct target position from cell centroid', () => {
+    const cells: Vec2[] = [{ x: 2, y: 3 }];
+    const blob = createBlobFromCells(cells, '#ff00ff', 'target-test', false);
+
+    // Target should be at centroid of cells in pixel space
+    const expectedX = PHYSICS_GRID_OFFSET.x + (2 + 0.5) * PHYSICS_CELL_SIZE;
+    const expectedY = PHYSICS_GRID_OFFSET.y + (3 + 0.5) * PHYSICS_CELL_SIZE;
+    expect(blob.targetX).toBe(expectedX);
+    expect(blob.targetY).toBe(expectedY);
+  });
+
+  it('creates cross springs only for nearby vertices', () => {
+    // Create a larger L-shape to test cross spring filtering
+    const cells: Vec2[] = [
+      { x: 0, y: 0 },
+      { x: 0, y: 1 },
+      { x: 0, y: 2 },
+      { x: 1, y: 2 },
+      { x: 2, y: 2 },
+    ];
+    const blob = createBlobFromCells(cells, '#ffff00', 'cross-test', false);
+
+    // All cross springs should be shorter than 1.5 cell sizes
+    const maxDist = PHYSICS_CELL_SIZE * 1.5;
+    for (const spring of blob.crossSprings) {
+      expect(spring.restLength).toBeLessThan(maxDist);
+    }
   });
 });
