@@ -2,7 +2,7 @@
 title: Project Definition
 type: reference
 tags: [requirements, context, decisions]
-updated: 2026-01-27
+updated: 2026-02-03
 ---
 
 # Goops
@@ -68,8 +68,16 @@ The game feels satisfying to play on mobile - responsive controls, smooth animat
 
 ### Active
 
-**Research:**
+**Research: Soft-Body Goop (branch: `soft-body-experiment`)**
 
+Completed 5 prototypes exploring soft-body physics for goop rendering:
+- **Proto 5b-5c:** Goo filter (SVG blur + alpha) and cell wall rendering
+- **Proto 6:** Fill/pour mechanics using "trim" approach (clip inner cutout)
+- **Proto 7:** Dynamic merge with viscosity tuning and momentum transfer
+- **Proto 8:** Pop effects with droplets and physics-based ready-to-pop pulse
+- **Proto 9:** Loose goop with support detection, cascade, corrupted shape splitting
+
+Key findings documented in ROADMAP.md. Ready for integration planning.
 
 **Recently Fixed (v1.1.27):**
 - [x] Gravity pieces now interact with cracks
@@ -173,6 +181,34 @@ Progression is organized into bands of 10 ranks. See `.planning/PRD.md` for full
 
 ## Future Version Ideas
 
+### Soft-Body Goop Integration
+
+**Branch:** `soft-body-experiment` (prototypes complete)
+
+**What it adds:**
+- Goop pieces wobble, squish, and stretch with physics
+- Same-color blobs merge with gooey connection animation
+- Pop effect sends droplet particles scattering
+- Loose goop falls with soft-body wobble when support removed
+- Corrupted shapes split into separate falling pieces
+
+**Integration approach:**
+1. Replace SVG path rendering with soft-body physics layer
+2. Sync game state (grid cells) with visual physics (blob vertices)
+3. Port tuned parameters from prototypes
+4. Add mobile performance guards (vertex count limits, physics budget)
+
+**Technical stack:**
+- Verlet integration for physics
+- SVG feGaussianBlur + feColorMatrix for goo filter
+- Per-vertex home positions with stiffness springs
+- Radial pressure for volume maintenance
+- Viscosity for honey-like locked blob feel
+
+**Status:** Prototypes complete. Needs integration planning phase.
+
+---
+
 ### SlowMode Concept
 
 **Core idea:** Eliminate XP/points, make progression purely crack-based.
@@ -213,4 +249,4 @@ Progression is organized into bands of 10 ranks. See `.planning/PRD.md` for full
 - [[DESIGN_VISION]] - Design philosophy
 
 ---
-*Last updated: 2026-01-27 after v1.4 milestone*
+*Last updated: 2026-02-03 after soft-body prototype completion*

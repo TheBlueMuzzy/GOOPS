@@ -15,7 +15,7 @@ updated: 2026-02-03
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `soft-body-experiment` — Soft Body Goop (SBG) visual overhaul (Proto-9 IN PROGRESS)
+- `soft-body-experiment` — Soft Body Goop (SBG) visual overhaul (ALL PROTOTYPES COMPLETE)
 
 ## Next Steps
 

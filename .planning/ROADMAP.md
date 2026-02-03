@@ -2,7 +2,7 @@
 title: Roadmap
 type: roadmap
 tags: [milestones, phases, progress]
-updated: 2026-01-27
+updated: 2026-02-03
 ---
 
 # Roadmap: Goops Complications & Progression
@@ -22,6 +22,52 @@ None
 - [[v1.2-ROADMAP|v1.2 Progression System]] — Phases 14-20 (shipped 2026-01-25)
 - [[v1.3-ROADMAP|v1.3 Shape Changes]] — Phase 21 (shipped 2026-01-26)
 - [[v1.4-ROADMAP|v1.4 Naming Standardization]] — Phases 22-24 (shipped 2026-01-27)
+
+## Experimental Branch: Soft-Body Goop (SBG)
+
+**Branch:** `soft-body-experiment`
+**Status:** All prototypes complete, ready for integration planning
+**Date:** 2026-01-28 to 2026-02-03
+
+Research spike exploring soft-body physics for goop rendering. Built 5 prototypes testing different mechanics.
+
+### Completed Prototypes
+
+| Proto | Focus | Key Findings |
+|-------|-------|--------------|
+| 5b | Goo Filter | SVG feGaussianBlur + feColorMatrix = gold standard goo effect |
+| 5c | Cell Walls | Inner cutout derived from outer vertices for consistent wobble |
+| 6 | Fill/Pour | "Trim" approach - clip inner cutout to reveal fill from bottom |
+| 7 | Merge | Dynamic blob generation, viscosity tuning, momentum transfer |
+| 8 | Pop | Droplet particles, radial pressure, physics-based ready-to-pop pulse |
+| 9 | Loose Goop | Support detection, cascade, corrupted shape splitting |
+
+### Technical Findings
+
+**Physics Parameters (Tuned Defaults):**
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Damping | 0.97 | High, preserves momentum |
+| Stiffness | 1 | Very low, loose springs |
+| Pressure | 5 | Strong volume maintenance |
+| Home Stiffness | 0.3 | Shape retention without rigidity |
+| Return Speed | 0.5 | Moderate return speed |
+| Viscosity | 2.5 | Honey-like feel for locked blobs |
+
+**Key Algorithms:**
+- Perimeter tracing for dynamic blob generation from grid cells
+- BFS connectivity detection for corrupted shape splitting
+- Radial spring pressure (vertex distance from center)
+- Momentum dampening (30%) on merge to prevent implosion
+- Blob collision only when at least one blob is moving
+
+**Integration Considerations:**
+- Rendering layer replacement (SVG paths → soft-body physics)
+- Performance budget for mobile (current protos run well)
+- State sync between game logic and visual physics
+- Animation timing (fill, pop, fall, merge)
+
+---
 
 ## Completed Milestones
 
