@@ -10,11 +10,11 @@ updated: 2026-02-03
 ## Current Position
 
 Phase: 25 of 30 (Physics Foundation)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-03 - Completed 25-01-PLAN.md (Physics types and Verlet engine)
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-03 - Completed 25-02-PLAN.md (Blob factory & integration hook)
 
-Progress: █░░░░░░░░░ ~3%
+Progress: █░░░░░░░░░ ~7%
 
 ## Branch Workflow (SOP)
 
@@ -102,14 +102,14 @@ Last session: 2026-02-03
 
 ### Resume Command
 ```
-Plan 25-01 complete. Physics foundation ready.
+Phase 25 (Physics Foundation) COMPLETE.
 
 COMPLETED THIS SESSION:
-- Created soft-body types (Vec2, Vertex, Spring, SoftBlob, PhysicsParams)
-- Ported Verlet physics engine (6 core functions)
-- 19 new tests, 180 total passing
+- Plan 25-01: Physics types and Verlet engine (19 tests)
+- Plan 25-02: Blob factory and integration hook (14 tests)
+- 33 soft-body tests total, 194 passing overall
 
-NEXT: /gsd:execute-plan .planning/phases/25-physics-foundation/25-02-PLAN.md
+NEXT: /gsd:plan-phase 26 (Perimeter & Blob System)
 ```
 
 ---

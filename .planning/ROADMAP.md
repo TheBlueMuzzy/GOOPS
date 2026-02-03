@@ -84,7 +84,7 @@ Research spike exploring soft-body physics for goop rendering. Built 5 prototype
 
 Plans:
 - [x] 25-01: Physics types and Verlet engine (completed 2026-02-03)
-- [ ] 25-02: TBD
+- [x] 25-02: Blob factory and integration hook (completed 2026-02-03)
 
 #### Phase 26: Perimeter & Blob System
 
@@ -270,7 +270,7 @@ See [[v1.4-ROADMAP]] for full details.
 | 22. Audit & Glossary | v1.4 | 1/1 | Shipped | 2026-01-27 |
 | 23. Code Rename | v1.4 | 7/7 | Shipped | 2026-01-27 |
 | 24. UI & Documentation | v1.4 | 1/1 | Shipped | 2026-01-27 |
-| 25. Physics Foundation | v1.5 | 1/2 | In progress | - |
+| 25. Physics Foundation | v1.5 | 2/2 | Complete | 2026-02-03 |
 | 26. Perimeter & Blob System | v1.5 | 0/? | Not started | - |
 | 27. Active Piece Physics | v1.5 | 0/? | Not started | - |
 | 28. Locked Goop Behavior | v1.5 | 0/? | Not started | - |
