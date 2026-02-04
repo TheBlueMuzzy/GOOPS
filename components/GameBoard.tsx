@@ -1,7 +1,7 @@
 // --- Imports ---
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { GameState, GoopState, TankSystem, ScreenType, GoopTemplate, DumpPiece, Crack } from '../types';
-import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, COLORS, TANK_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
+import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, COLORS, TANK_WIDTH, TANK_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
 import { isMobile } from '../utils/device';
 import { HudMeter } from './HudMeter';
@@ -24,7 +24,26 @@ import {
   DEFAULT_FILTER,
   getFilterMatrix,
 } from '../core/softBody/rendering';
+import { CYLINDER_WIDTH_PIXELS } from '../core/softBody/blobFactory';
 import './GameBoard.css';
+
+// =============================================================================
+// Edge-Straddling Blob Detection
+// =============================================================================
+
+/**
+ * Check if a blob straddles the wrap boundary (vertices span > 300px on X axis).
+ * Returns true if the blob needs to be rendered twice (once on each side).
+ */
+function blobStraddlesBoundary(blob: SoftBlob): boolean {
+  if (blob.vertices.length < 3) return false;
+  const xs = blob.vertices.map(v => v.pos.x);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const span = maxX - minX;
+  // If the span is larger than 300px (viewport is 360px), blob straddles
+  return span > 300;
+}
 
 // --- Props Interface ---
 // Input callbacks removed - now handled via EventBus (see Game.tsx subscriptions)
@@ -116,14 +135,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // --- Soft-Body Blob Sync (Phase 26) ---
   // Sync soft-body blobs with current grid state
-  // Uses direct position calculation instead of incremental shifts for robustness
+  // Key insight: blobs should persist even when off-screen, only removed when popped
   useEffect(() => {
       if (!softBodyPhysics || isMobile) return;
 
-      // Collect current goopGroupIds from grid (only locked goop, not cracks)
+      // 1. Scan FULL grid to get ALL goopGroupIds that exist (for removal check)
+      // This prevents blobs from being removed just because they're off-screen
+      const allGroupIds = new Set<string>();
+      for (let gridY = BUFFER_HEIGHT; gridY < TANK_HEIGHT; gridY++) {
+          for (let gridX = 0; gridX < TANK_WIDTH; gridX++) {
+              const cell = grid[gridY]?.[gridX];
+              if (cell?.goopGroupId) {
+                  allGroupIds.add(cell.goopGroupId);
+              }
+          }
+      }
+
+      // 2. Collect VISIBLE goopGroupIds and their cells (for blob creation only)
       // Grid is indexed as grid[y][x], matching buildRenderableGroups
-      // Also calculate visual centroid for position updates
-      const groups = new Map<string, { cells: Vec2[]; color: string; centroidX: number; centroidY: number }>();
+      const visibleGroups = new Map<string, { cells: Vec2[]; color: string }>();
       for (let visY = 0; visY < TANK_VIEWPORT_HEIGHT; visY++) {
           const gridY = visY + BUFFER_HEIGHT;
           for (let visX = 0; visX < TANK_VIEWPORT_WIDTH; visX++) {
@@ -132,73 +162,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               // Only process cells with goopGroupId (locked goop)
               if (cell?.goopGroupId) {
                   const groupId = cell.goopGroupId;
-                  if (!groups.has(groupId)) {
-                      groups.set(groupId, { cells: [], color: cell.color, centroidX: 0, centroidY: 0 });
+                  if (!visibleGroups.has(groupId)) {
+                      visibleGroups.set(groupId, { cells: [], color: cell.color });
                   }
-                  groups.get(groupId)!.cells.push({ x: visX, y: visY });
+                  visibleGroups.get(groupId)!.cells.push({ x: visX, y: visY });
               }
           }
       }
 
-      // Calculate centroids for each group (in physics coordinates)
-      const PHYSICS_OFFSET_X = -180;
-      const PHYSICS_OFFSET_Y = 0;
-      const CELL_SIZE = 30;
-      for (const [, data] of groups) {
-          let cx = 0, cy = 0;
-          for (const cell of data.cells) {
-              cx += PHYSICS_OFFSET_X + (cell.x + 0.5) * CELL_SIZE;
-              cy += PHYSICS_OFFSET_Y + (cell.y + 0.5) * CELL_SIZE;
-          }
-          data.centroidX = cx / data.cells.length;
-          data.centroidY = cy / data.cells.length;
-      }
-
-      // Create blobs for new groups
+      // 3. Create blobs for NEW groups that we haven't seen before
+      // Blobs are only created when first visible (when piece locks, it should be fully visible)
       const existingIds = new Set(softBodyPhysics.blobs.map(b => b.id));
       let changed = false;
-      for (const [groupId, data] of groups) {
+      for (const [groupId, data] of visibleGroups) {
           if (!existingIds.has(groupId)) {
               softBodyPhysics.createBlob(data.cells, data.color, groupId, true, tankRotation);
               changed = true;
           }
       }
 
-      // Update existing blob positions to match current visual coordinates
-      // This handles tank rotation by recalculating where the blob should be
-      for (const blob of softBodyPhysics.blobs) {
-          const data = groups.get(blob.id);
-          if (data) {
-              // Calculate position delta
-              const deltaX = data.centroidX - blob.targetX;
-              const deltaY = data.centroidY - blob.targetY;
+      // 4. Shift existing blob positions when tank rotation changes
+      // Use shiftBlobsForRotation which handles cylindrical wrapping correctly
+      // This replaces the old approach of recalculating from visible cells
+      softBodyPhysics.shiftBlobsForRotation(tankRotation);
 
-              // Only update if there's a meaningful difference (rotation happened)
-              if (Math.abs(deltaX) > 0.1 || Math.abs(deltaY) > 0.1) {
-                  // Shift all vertices by the delta
-                  for (const v of blob.vertices) {
-                      v.pos.x += deltaX;
-                      v.pos.y += deltaY;
-                      v.oldPos.x += deltaX;
-                      v.oldPos.y += deltaY;
-                  }
-                  for (const v of blob.innerVertices) {
-                      v.pos.x += deltaX;
-                      v.pos.y += deltaY;
-                      v.oldPos.x += deltaX;
-                      v.oldPos.y += deltaY;
-                  }
-                  // Update target
-                  blob.targetX = data.centroidX;
-                  blob.targetY = data.centroidY;
-              }
-          }
-      }
-
-      // Remove blobs for groups that no longer exist
-      const currentIds = new Set(groups.keys());
+      // 5. Remove blobs ONLY when the goopGroupId no longer exists in the FULL grid
+      // (i.e., the goop was popped, not just scrolled off-screen)
       for (const blob of softBodyPhysics.blobs) {
-          if (!currentIds.has(blob.id)) {
+          if (!allGroupIds.has(blob.id)) {
               softBodyPhysics.removeBlob(blob.id);
               changed = true;
           }
@@ -613,11 +604,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Soft-Body Blob Rendering (Phase 26 - Desktop only) */}
             {/* Renders soft-body blobs with goo filter using Catmull-Rom curves */}
+            {/* Edge-straddling blobs are rendered twice (once shifted) for seamless wrap */}
             {!isMobile && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (
               <g filter="url(#goo-filter)">
                 {softBodyPhysics.blobs.map(blob => {
                   const outerPath = getSoftBlobPath(blob);
                   const outerPoints = blob.vertices.map(v => v.pos);
+                  const straddles = blobStraddlesBoundary(blob);
+
+                  // If blob straddles the wrap boundary, render it twice
+                  // (once at current position, once shifted by cylinder width)
+                  const transforms = straddles
+                    ? ['', `translate(${CYLINDER_WIDTH_PIXELS}, 0)`, `translate(${-CYLINDER_WIDTH_PIXELS}, 0)`]
+                    : [''];
 
                   // Only show fill animation for locked blobs that aren't full
                   const showFillAnimation = blob.isLocked && blob.fillAmount < 1;
@@ -635,42 +634,51 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
                     return (
                       <g key={`soft-${blob.id}`}>
-                        {/* Outer blob shape */}
-                        <path
-                          d={outerPath}
-                          fill={blob.color}
-                          stroke={blob.color}
-                          strokeWidth="2"
-                        />
-                        {/* Inner cutout (unfilled region) */}
-                        <defs>
-                          <clipPath id={clipId}>
-                            <rect
-                              x={bounds.minX - padding}
-                              y={bounds.minY - padding}
-                              width={bounds.maxX - bounds.minX + padding * 2}
-                              height={fillTop - bounds.minY + padding}
+                        {transforms.map((transform, idx) => (
+                          <g key={`soft-${blob.id}-${idx}`} transform={transform}>
+                            {/* Outer blob shape */}
+                            <path
+                              d={outerPath}
+                              fill={blob.color}
+                              stroke={blob.color}
+                              strokeWidth="2"
                             />
-                          </clipPath>
-                        </defs>
-                        <path
-                          d={insetPath}
-                          fill="#1e293b"
-                          clipPath={`url(#${clipId})`}
-                        />
+                            {/* Inner cutout (unfilled region) */}
+                            <defs>
+                              <clipPath id={`${clipId}-${idx}`}>
+                                <rect
+                                  x={bounds.minX - padding}
+                                  y={bounds.minY - padding}
+                                  width={bounds.maxX - bounds.minX + padding * 2}
+                                  height={fillTop - bounds.minY + padding}
+                                />
+                              </clipPath>
+                            </defs>
+                            <path
+                              d={insetPath}
+                              fill="#1e293b"
+                              clipPath={`url(#${clipId}-${idx})`}
+                            />
+                          </g>
+                        ))}
                       </g>
                     );
                   }
 
-                  // Fully filled blob - just render outer shape
+                  // Fully filled blob - just render outer shape (with duplicate if straddling)
                   return (
-                    <path
-                      key={`soft-${blob.id}`}
-                      d={outerPath}
-                      fill={blob.color}
-                      stroke={blob.color}
-                      strokeWidth="2"
-                    />
+                    <g key={`soft-${blob.id}`}>
+                      {transforms.map((transform, idx) => (
+                        <path
+                          key={`soft-${blob.id}-${idx}`}
+                          d={outerPath}
+                          fill={blob.color}
+                          stroke={blob.color}
+                          strokeWidth="2"
+                          transform={transform}
+                        />
+                      ))}
+                    </g>
                   );
                 })}
               </g>

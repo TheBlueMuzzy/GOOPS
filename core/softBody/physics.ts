@@ -13,6 +13,48 @@ import {
   rotatePoint,
   vecLength,
 } from './types';
+import {
+  CYLINDER_WIDTH_PIXELS,
+  VIEWPORT_WIDTH_PIXELS,
+  PHYSICS_GRID_OFFSET,
+} from './blobFactory';
+
+// =============================================================================
+// Cylindrical Wrapping Helpers
+// =============================================================================
+
+/**
+ * Wrap a pixel X position to stay within the viewport range.
+ * When a vertex goes past one edge, it wraps to the other side.
+ *
+ * The visible range is [-180, 180] (VIEWPORT_WIDTH_PIXELS centered at 0).
+ * But the cylinder is 900px wide, so positions can be anywhere in that range.
+ * This normalizes to the visible range by adding/subtracting cylinder width.
+ */
+export function wrapPixelX(x: number): number {
+  const minX = PHYSICS_GRID_OFFSET.x;  // -180
+  const maxX = minX + VIEWPORT_WIDTH_PIXELS;  // 180
+
+  // Wrap to closest position within one cylinder width of visible area
+  while (x < minX - CYLINDER_WIDTH_PIXELS / 2) x += CYLINDER_WIDTH_PIXELS;
+  while (x > maxX + CYLINDER_WIDTH_PIXELS / 2) x -= CYLINDER_WIDTH_PIXELS;
+
+  return x;
+}
+
+/**
+ * Calculate the shortest distance between two X positions on the cylinder.
+ * Handles wrap-around: distance from x=170 to x=-170 is 20, not 340.
+ */
+export function cylindricalDistanceX(x1: number, x2: number): number {
+  let dx = x2 - x1;
+
+  // If the direct distance is more than half the cylinder, go the other way
+  if (dx > CYLINDER_WIDTH_PIXELS / 2) dx -= CYLINDER_WIDTH_PIXELS;
+  if (dx < -CYLINDER_WIDTH_PIXELS / 2) dx += CYLINDER_WIDTH_PIXELS;
+
+  return dx;
+}
 
 // =============================================================================
 // Integration (Verlet)
@@ -94,7 +136,8 @@ export function applyHomeForce(
       const targetX = blob.targetX + rotatedHome.x;
       const targetY = blob.targetY + rotatedHome.y;
 
-      const dx = targetX - v.pos.x;
+      // Use cylindrical distance for X (shortest path around cylinder)
+      const dx = cylindricalDistanceX(v.pos.x, targetX);
       const dy = targetY - v.pos.y;
 
       const forceX = dx * params.homeStiffness * speedMult;
@@ -117,7 +160,8 @@ export function applyHomeForce(
       const targetX = blob.targetX + rotatedHome.x;
       const targetY = blob.targetY + rotatedHome.y;
 
-      const dx = targetX - v.pos.x;
+      // Use cylindrical distance for X
+      const dx = cylindricalDistanceX(v.pos.x, targetX);
       const dy = targetY - v.pos.y;
 
       const forceX = dx * params.innerHomeStiffness * speedMult;
@@ -141,6 +185,7 @@ export function applyHomeForce(
 /**
  * Solves a single spring constraint between two vertices.
  * Moves vertices toward satisfying the rest length.
+ * Uses cylindrical distance for X to handle wrap-around.
  */
 function solveSpring(
   vertices: Vertex[],
@@ -150,7 +195,8 @@ function solveSpring(
   const a = vertices[spring.a];
   const b = vertices[spring.b];
 
-  const dx = b.pos.x - a.pos.x;
+  // Use cylindrical distance for X (shortest path around cylinder)
+  const dx = cylindricalDistanceX(a.pos.x, b.pos.x);
   const dy = b.pos.y - a.pos.y;
   const dist = Math.sqrt(dx * dx + dy * dy);
 
@@ -255,7 +301,8 @@ export interface Bounds {
 
 /**
  * Keeps vertices inside the specified boundaries.
- * Vertices are clamped and their velocity is dampened on contact.
+ * HORIZONTAL: Wraps around the cylinder (no hard walls).
+ * VERTICAL: Clamps to floor/ceiling with velocity dampening.
  */
 export function applyBoundaryConstraints(
   blobs: SoftBlob[],
@@ -267,48 +314,39 @@ export function applyBoundaryConstraints(
   for (const blob of blobs) {
     // Constrain outer vertices
     for (const v of blob.vertices) {
-      constrainVertex(v, bounds, MARGIN, BOUNDARY_DAMPING);
+      // HORIZONTAL: Wrap around cylinder (no hard walls)
+      v.pos.x = wrapPixelX(v.pos.x);
+      v.oldPos.x = wrapPixelX(v.oldPos.x);
+
+      // VERTICAL: Keep hard floor/ceiling (top/bottom of tank)
+      // Top wall
+      if (v.pos.y < bounds.minY + MARGIN) {
+        v.pos.y = bounds.minY + MARGIN;
+        const vy = v.pos.y - v.oldPos.y;
+        v.oldPos.y = v.pos.y - vy * BOUNDARY_DAMPING;
+      }
+      // Bottom wall
+      if (v.pos.y > bounds.maxY - MARGIN) {
+        v.pos.y = bounds.maxY - MARGIN;
+        const vy = v.pos.y - v.oldPos.y;
+        v.oldPos.y = v.pos.y - vy * BOUNDARY_DAMPING;
+      }
     }
 
     // Constrain inner vertices
     for (const v of blob.innerVertices) {
-      constrainVertex(v, bounds, MARGIN, BOUNDARY_DAMPING);
-    }
-  }
-}
+      // HORIZONTAL: Wrap around cylinder
+      v.pos.x = wrapPixelX(v.pos.x);
+      v.oldPos.x = wrapPixelX(v.oldPos.x);
 
-/**
- * Helper function to constrain a single vertex to bounds
- */
-function constrainVertex(
-  v: Vertex,
-  bounds: Bounds,
-  margin: number,
-  damping: number
-): void {
-  // Left wall
-  if (v.pos.x < bounds.minX + margin) {
-    v.pos.x = bounds.minX + margin;
-    const vx = v.pos.x - v.oldPos.x;
-    v.oldPos.x = v.pos.x - vx * damping;
-  }
-  // Right wall
-  if (v.pos.x > bounds.maxX - margin) {
-    v.pos.x = bounds.maxX - margin;
-    const vx = v.pos.x - v.oldPos.x;
-    v.oldPos.x = v.pos.x - vx * damping;
-  }
-  // Top wall
-  if (v.pos.y < bounds.minY + margin) {
-    v.pos.y = bounds.minY + margin;
-    const vy = v.pos.y - v.oldPos.y;
-    v.oldPos.y = v.pos.y - vy * damping;
-  }
-  // Floor
-  if (v.pos.y > bounds.maxY - margin) {
-    v.pos.y = bounds.maxY - margin;
-    const vy = v.pos.y - v.oldPos.y;
-    v.oldPos.y = v.pos.y - vy * damping;
+      // VERTICAL: Hard floor/ceiling
+      if (v.pos.y < bounds.minY + MARGIN) {
+        v.pos.y = bounds.minY + MARGIN;
+      }
+      if (v.pos.y > bounds.maxY - MARGIN) {
+        v.pos.y = bounds.maxY - MARGIN;
+      }
+    }
   }
 }
 
@@ -433,8 +471,8 @@ export function updateAttractionSprings(
       // Only same-color blobs attract
       if (blobA.color !== blobB.color) continue;
 
-      // Quick center distance check
-      const centerDx = blobA.targetX - blobB.targetX;
+      // Quick center distance check (use cylindrical distance)
+      const centerDx = cylindricalDistanceX(blobB.targetX, blobA.targetX);
       const centerDy = blobA.targetY - blobB.targetY;
       const centerDist = Math.sqrt(centerDx * centerDx + centerDy * centerDy);
 
@@ -451,7 +489,8 @@ export function updateAttractionSprings(
           const maxRadiusB = params.attractionRadius * vB.attractionRadius;
           const maxRadius = (maxRadiusA + maxRadiusB) / 2;
 
-          const dx = vB.pos.x - vA.pos.x;
+          // Use cylindrical distance for X
+          const dx = cylindricalDistanceX(vA.pos.x, vB.pos.x);
           const dy = vB.pos.y - vA.pos.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
@@ -480,6 +519,7 @@ export function updateAttractionSprings(
 /**
  * Applies attraction spring forces between connected blob vertices.
  * Stiffness increases as vertices get closer (variable stiffness).
+ * Uses cylindrical distance for X to handle wrap-around.
  */
 export function applyAttractionSprings(
   blobs: SoftBlob[],
@@ -498,7 +538,8 @@ export function applyAttractionSprings(
     const vB = blobB.vertices[spring.vertexB];
     if (!vA || !vB) continue;
 
-    const dx = vB.pos.x - vA.pos.x;
+    // Use cylindrical distance for X (shortest path around cylinder)
+    const dx = cylindricalDistanceX(vA.pos.x, vB.pos.x);
     const dy = vB.pos.y - vA.pos.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < 0.0001) continue;

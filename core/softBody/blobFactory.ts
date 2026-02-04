@@ -3,7 +3,7 @@
 // Ported from prototypes/SoftBodyProto9.tsx (lines 180-541)
 // ============================================================================
 
-import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT } from '../../constants';
+import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, TANK_WIDTH } from '../../constants';
 import { SoftBlob, Vertex, Spring, Vec2, vecDistance } from './types';
 
 // =============================================================================
@@ -21,6 +21,13 @@ export const PHYSICS_GRID_OFFSET = {
   x: -(TANK_VIEWPORT_WIDTH / 2) * PHYSICS_CELL_SIZE,  // -180
   y: 0
 };
+
+// Cylindrical wrapping - the tank is 30 columns wide in game logic
+// but we only see 12 columns at a time. The full cylinder in pixels:
+export const CYLINDER_WIDTH_PIXELS = TANK_WIDTH * PHYSICS_CELL_SIZE;  // 30 * 30 = 900
+
+// Visible viewport width in pixels
+export const VIEWPORT_WIDTH_PIXELS = TANK_VIEWPORT_WIDTH * PHYSICS_CELL_SIZE;  // 12 * 30 = 360
 
 // =============================================================================
 // Edge Types

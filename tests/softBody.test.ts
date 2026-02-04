@@ -309,23 +309,37 @@ describe('applyPressure', () => {
 });
 
 describe('applyBoundaryConstraints', () => {
-  it('keeps vertices inside bounds', () => {
+  it('keeps vertices inside Y bounds (clamps top/bottom)', () => {
     const blob = createTestBlob('test', 100, 100);
-    const bounds: Bounds = { minX: 50, maxX: 150, minY: 50, maxY: 150 };
+    const bounds: Bounds = { minX: -180, maxX: 180, minY: 50, maxY: 150 };
 
-    // Move vertices outside bounds
-    blob.vertices[0].pos.x = 0; // Way left of minX
-    blob.vertices[1].pos.x = 200; // Way right of maxX
+    // Move vertices outside Y bounds
     blob.vertices[2].pos.y = 0; // Way above minY
     blob.vertices[3].pos.y = 200; // Way below maxY
 
     applyBoundaryConstraints([blob], bounds);
 
-    // Check that vertices are now inside bounds (with small margin)
-    expect(blob.vertices[0].pos.x).toBeGreaterThanOrEqual(bounds.minX);
-    expect(blob.vertices[1].pos.x).toBeLessThanOrEqual(bounds.maxX);
+    // Check that Y vertices are now inside bounds (with small margin)
     expect(blob.vertices[2].pos.y).toBeGreaterThanOrEqual(bounds.minY);
     expect(blob.vertices[3].pos.y).toBeLessThanOrEqual(bounds.maxY);
+  });
+
+  it('wraps X positions for cylindrical wrapping (no X bounds)', () => {
+    const blob = createTestBlob('test', 100, 100);
+    const bounds: Bounds = { minX: -180, maxX: 180, minY: 50, maxY: 150 };
+
+    // Move vertices way outside valid cylinder range (beyond ±630)
+    // The wrap range is [-630, 630] based on viewport [-180, 180] + half cylinder (±450)
+    blob.vertices[0].pos.x = -700; // Beyond wrap range left
+    blob.vertices[1].pos.x = 700; // Beyond wrap range right
+
+    applyBoundaryConstraints([blob], bounds);
+
+    // Vertices should now be wrapped to within the valid cylinder range
+    // -700 wraps by adding 900 = 200 (within range)
+    // 700 wraps by subtracting 900 = -200 (within range)
+    expect(blob.vertices[0].pos.x).toBe(200);
+    expect(blob.vertices[1].pos.x).toBe(-200);
   });
 });
 
