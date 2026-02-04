@@ -9,12 +9,12 @@ updated: 2026-02-03
 
 ## Current Position
 
-Phase: 26 of 30 (Perimeter & Blob System)
-Plan: 1 of 3 in current phase
-Status: Plan 26-01 complete
-Last activity: 2026-02-03 - Completed 26-01-PLAN.md (Goo filter & physics integration)
+Phase: 26.1 (Flatten Coordinate System) + SBG Integration
+Plan: Phase 26.1-01 executed, SBG rendering ported from Proto 9
+Status: SBG rendering works but has edge-of-screen clumping issue
+Last activity: 2026-02-03 - Major SBG port from Proto 9
 
-Progress: █░░░░░░░░░ ~10%
+Progress: ██████░░░░ ~60%
 
 ## Branch Workflow (SOP)
 
@@ -28,9 +28,32 @@ Progress: █░░░░░░░░░ ~10%
 
 ## Next Steps
 
-**Current:** Phase 26 - Perimeter & Blob System
-**Status:** Plan 26-01 complete, ready to execute 26-02
+**Current:** Debug SBG edge-of-screen clumping issue
+**Status:** Vertex debug added, need to diagnose why blobs collapse at edges
 **Branch:** `soft-body-experiment`
+
+### Immediate Issue
+
+When SBG blobs approach the edge of the viewport (left or right), they "clump" or collapse into a small portion of their original shape. This is likely related to:
+1. Cylindrical wrapping - cells may wrap around but centroid calculation doesn't handle this
+2. Visual coordinates vs physics coordinates mismatch at edges
+
+**Debug tools added:**
+- Press backtick (`) for debug panel
+- Enable "Show Vertices" checkbox to see numbered vertices and target marker
+
+### What's Working
+- SBG appears on lock
+- Fill animation with inset path
+- Fill pulse (ready-to-pop impulse)
+- Same-color blob merging with attraction springs
+- Position stays aligned when rotating (fixed!)
+- Catmull-Rom smooth curves (not jagged polygons)
+
+### What's NOT Working
+- Edge-of-screen clumping/collapse
+- Pop particles (droplets) - not implemented yet
+- Some sliders may not be connected
 
 ### v1.5 Soft-Body Integration Overview
 
@@ -40,56 +63,33 @@ Port soft-body physics visuals from completed prototypes (5b-9) into main game r
 |-------|------|------|
 | 25 | Physics Foundation | Port Verlet engine, adapt to game coordinates |
 | 26 | Perimeter & Blob System | Replace rect rendering with perimeter-traced blobs |
+| 26.1 | Flatten Coordinates | Remove cylindrical projection (DONE) |
 | 27 | Active Piece Physics | Falling pieces use soft-body (snappy) |
 | 28 | Locked Goop Behavior | Viscosity, fill, ready-to-pop, attraction |
 | 29 | Pop & Cascade | Droplets, support detection, loose goop |
 | 30 | Polish & Performance | Mobile optimization, parameter tuning |
 
-### Key Integration Considerations
-
-From codebase audits:
-
-**Main Game Architecture:**
-- SVG-based rendering with cylindrical projection (`visXToScreenX`)
-- Grid-centric: cells grouped by `goopGroupId`
-- Fill animation: row-by-row timing based on timestamps
-- No physics: positions are grid-snapped
-
-**Prototype Architecture:**
-- Verlet physics with springs, pressure, damping
-- Perimeter tracing converts grid cells → vertex loop
-- SVG goo filter for merging effect
-- Cell wall: dual-layer (outer + inner cutout)
-
-**Key Decision Point:** Cylindrical projection
-- Main game uses cylindrical transform for 3D effect
-- Prototypes work in flat 2D space
-- Phase 25 must resolve: apply physics in cylinder space, or flatten rendering?
-
 ---
 
-## Prototype Reference (Complete)
+## Proto 9 Final Settings (Source of Truth)
 
-All prototypes (5b-9) are complete and documented. Key findings preserved in ROADMAP.md.
+These are the FINAL tweaked values from Proto 9:
 
-| Proto | URL | Focus |
-|-------|-----|-------|
-| 5b | `?proto=5b` | Goo filter, attraction springs |
-| 5c | `?proto=5c` | Cell wall dual-layer |
-| 6 | `?proto=6` | Fill/pour trim approach |
-| 7 | `?proto=7` | Merge, viscosity, perimeter tracing |
-| 8 | `?proto=8` | Pop, droplets, radial pressure |
-| 9 | `?proto=9` | Loose goop, cascade, splitting |
-
-**Tuned Physics Parameters:**
 | Parameter | Value | Notes |
 |-----------|-------|-------|
+| WallThickness | 8px | Fill animation wall |
 | Damping | 0.97 | High, preserves momentum |
 | Stiffness | 1 | Very low, loose springs |
-| Pressure | 5 | Strong volume maintenance |
-| Home Stiffness | 0.3 | Shape retention |
-| Return Speed | 0.5 | Moderate |
+| Pressure | 3.0 | Volume maintenance |
+| HomeStiffness | 0.3 | Shape retention |
+| InnerStiffness | 0.1 | Inner vertex stability |
+| ReturnSpeed | 0.5 | Moderate |
 | Viscosity | 2.5 | Honey-like for locked blobs |
+| Iterations | 3 | Constraint solver |
+| Goopiness | 25px | SVG filter strength |
+| AttractRadius | 20px | Tendril detection range |
+| AttractStiffness | 0.005 | Tendril pull strength |
+| TendrilSize | 10px | Tendril endpoint radius |
 
 ---
 
@@ -98,26 +98,35 @@ All prototypes (5b-9) are complete and documented. Key findings preserved in ROA
 Last session: 2026-02-03
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Build:** 120
+**Build:** 147
+
+### Files Modified This Session
+
+**New files:**
+- `core/softBody/rendering.ts` - Catmull-Rom curves, inset path, filter matrix
+
+**Modified:**
+- `core/softBody/types.ts` - Added wasFullLastFrame, all Proto 9 params
+- `core/softBody/physics.ts` - Added applyOutwardImpulse, attraction springs
+- `core/softBody/blobFactory.ts` - Initialize wasFullLastFrame
+- `hooks/useSoftBodyPhysics.ts` - Fill animation, impulse, attraction springs
+- `components/GameBoard.tsx` - Smooth curve rendering, fill animation, vertex debug
+- `Game.tsx` - All Proto 9 sliders, vertex debug toggle
+- `tests/softBody.test.ts` - Updated for new default values
 
 ### Resume Command
 ```
-Phase 26-01 (Goo Filter & Physics Integration) COMPLETE.
+SBG rendering ported from Proto 9. Main features working but edge clumping bug exists.
 
-COMPLETED THIS SESSION:
-- Added SVG goo filter to GameBoard defs
-- Modified useGameEngine to accept onPhysicsStep callback
-- Integrated useSoftBodyPhysics in Game.tsx (desktop-only)
-- 194 tests passing
+NEXT: Debug edge-of-screen clumping
+1. Enable vertex debug (backtick → Show Vertices)
+2. Lock a piece near edge of screen
+3. Rotate to push it to the edge
+4. Watch what happens to vertices - they should stay evenly distributed
 
-NEXT: /gsd:execute-plan .planning/phases/26-perimeter-blob/26-02-PLAN.md
+HYPOTHESIS: Centroid calculation breaks when cells wrap around the cylindrical tank
+(some cells at visX=0, others at visX=11 → average is visX=5.5 which is wrong)
 ```
-
----
-
-## Roadmap Evolution
-
-- Milestone v1.5 created: Soft-body integration, 6 phases (Phase 25-30)
 
 ---
 

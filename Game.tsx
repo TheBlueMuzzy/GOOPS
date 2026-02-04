@@ -1,11 +1,12 @@
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { ScreenType, TankSystem, SaveData } from './types';
 import { GameBoard } from './components/GameBoard';
 import { Controls } from './components/Controls';
 import { ConsoleView } from './components/ConsoleView';
 import { useGameEngine } from './hooks/useGameEngine';
 import { useSoftBodyPhysics } from './hooks/useSoftBodyPhysics';
+import { DEFAULT_PHYSICS, PhysicsParams } from './core/softBody/types';
 import { isMobile } from './utils/device';
 import { Play, Home } from 'lucide-react';
 import { gameEventBus } from './core/events/EventBus';
@@ -41,10 +42,17 @@ interface GameProps {
 }
 
 const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, powerUps = {}, scraps, settings, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade, onRefundUpgrade, equippedActives = [], onToggleEquip }) => {
+  // Soft-body physics debug panel (toggle with backtick key)
+  const [showPhysicsDebug, setShowPhysicsDebug] = useState(false);
+  const [physicsParams, setPhysicsParams] = useState<PhysicsParams>({ ...DEFAULT_PHYSICS });
+  const [normalGoopOpacity, setNormalGoopOpacity] = useState(0.25); // 0-1, for debugging SBGs (default 25%)
+  const [showVertexDebug, setShowVertexDebug] = useState(false); // Show numbered vertices on SBGs
+
   // Soft-body physics for goop rendering (Phase 26)
   // Desktop only for now - mobile uses simplified rendering
   const softBodyPhysics = useSoftBodyPhysics({
     enabled: !isMobile,
+    params: physicsParams,
   });
 
   const { engine, gameState } = useGameEngine(
@@ -197,6 +205,13 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           if (e.repeat) return;
           heldKeys.current.add(e.code);
 
+          // Toggle physics debug panel with backtick
+          if (e.key === '`') {
+              e.preventDefault();
+              setShowPhysicsDebug(prev => !prev);
+              return;
+          }
+
           if (e.key === 'Backspace') {
                if (gameState.phase === ScreenType.TankScreen) engine.execute(new SetPhaseCommand(ScreenType.ConsoleScreen));
           }
@@ -345,6 +360,8 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             storedGoop={engine.state.storedGoop}
             nextGoop={engine.state.nextGoop}
             softBodyPhysics={softBodyPhysics}
+            normalGoopOpacity={normalGoopOpacity}
+            showVertexDebug={showVertexDebug}
          />
          {/* Lights brightness is now controlled by state.lightsBrightness (player-controlled via fast drop) */}
       </div>
@@ -374,22 +391,170 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       </div>
 
       {/* LAYER 3: PERISCOPE HUD (Visible in Periscope Phase) */}
-      <div 
+      <div
         className={`absolute inset-0 z-20 pointer-events-none transition-opacity duration-500 ${
             gameState.phase === ScreenType.TankScreen ? 'opacity-100' : 'opacity-0'
         }`}
       >
-          <Controls 
-            state={gameState} 
+          <Controls
+            state={gameState}
             onRestart={() => engine.execute(new StartRunCommand())}
-            onExit={() => { 
-                gameEventBus.emit(GameEventType.GAME_EXITED); 
+            onExit={() => {
+                gameEventBus.emit(GameEventType.GAME_EXITED);
                 engine.execute(new SetPhaseCommand(ScreenType.ConsoleScreen));
             }}
             initialTotalScore={engine.initialTotalScore}
             maxTime={engine.maxTime}
           />
       </div>
+
+      {/* LAYER 4: PHYSICS DEBUG PANEL (Toggle with backtick key) */}
+      {showPhysicsDebug && !isMobile && (
+        <div
+          className="absolute top-2 right-2 z-[100] bg-black/90 text-white p-3 rounded-lg text-xs font-mono pointer-events-auto"
+          style={{ minWidth: 220 }}
+        >
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-bold">Physics Debug</span>
+            <button onClick={() => setShowPhysicsDebug(false)} className="text-gray-400 hover:text-white">✕</button>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block">
+              <span>Damping: {physicsParams.damping.toFixed(2)}</span>
+              <input type="range" min="0.8" max="0.99" step="0.01" value={physicsParams.damping}
+                onChange={e => setPhysicsParams(p => ({ ...p, damping: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <label className="block">
+              <span>Stiffness: {physicsParams.stiffness}</span>
+              <input type="range" min="1" max="30" step="1" value={physicsParams.stiffness}
+                onChange={e => setPhysicsParams(p => ({ ...p, stiffness: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <label className="block">
+              <span>Pressure: {physicsParams.pressure}</span>
+              <input type="range" min="0" max="20" step="1" value={physicsParams.pressure}
+                onChange={e => setPhysicsParams(p => ({ ...p, pressure: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <label className="block">
+              <span>Home Stiffness: {physicsParams.homeStiffness.toFixed(2)}</span>
+              <input type="range" min="0" max="1" step="0.05" value={physicsParams.homeStiffness}
+                onChange={e => setPhysicsParams(p => ({ ...p, homeStiffness: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <label className="block">
+              <span>Return Speed: {physicsParams.returnSpeed.toFixed(2)}</span>
+              <input type="range" min="0" max="1" step="0.05" value={physicsParams.returnSpeed}
+                onChange={e => setPhysicsParams(p => ({ ...p, returnSpeed: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <label className="block">
+              <span>Viscosity: {physicsParams.viscosity.toFixed(1)}</span>
+              <input type="range" min="0" max="5" step="0.1" value={physicsParams.viscosity}
+                onChange={e => setPhysicsParams(p => ({ ...p, viscosity: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <label className="block">
+              <span>Gravity: {physicsParams.gravity}</span>
+              <input type="range" min="0" max="50" step="1" value={physicsParams.gravity}
+                onChange={e => setPhysicsParams(p => ({ ...p, gravity: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <label className="block">
+              <span>Inner Home Stiffness: {physicsParams.innerHomeStiffness.toFixed(2)}</span>
+              <input type="range" min="0" max="1" step="0.01" value={physicsParams.innerHomeStiffness}
+                onChange={e => setPhysicsParams(p => ({ ...p, innerHomeStiffness: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
+            <div className="pt-2 border-t border-gray-600">
+              <div className="text-gray-400 mb-1">Attraction</div>
+              <label className="block">
+                <span>Radius: {physicsParams.attractionRadius}</span>
+                <input type="range" min="0" max="100" step="5" value={physicsParams.attractionRadius}
+                  onChange={e => setPhysicsParams(p => ({ ...p, attractionRadius: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Rest Length: {physicsParams.attractionRestLength}</span>
+                <input type="range" min="0" max="50" step="1" value={physicsParams.attractionRestLength}
+                  onChange={e => setPhysicsParams(p => ({ ...p, attractionRestLength: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Stiffness: {physicsParams.attractionStiffness.toFixed(3)}</span>
+                <input type="range" min="0" max="0.1" step="0.001" value={physicsParams.attractionStiffness}
+                  onChange={e => setPhysicsParams(p => ({ ...p, attractionStiffness: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+            </div>
+
+            <div className="pt-2 border-t border-gray-600">
+              <div className="text-gray-400 mb-1">Rendering</div>
+              <label className="block">
+                <span>Goopiness: {physicsParams.goopiness}</span>
+                <input type="range" min="0" max="50" step="1" value={physicsParams.goopiness}
+                  onChange={e => setPhysicsParams(p => ({ ...p, goopiness: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Tendril End Radius: {physicsParams.tendrilEndRadius}</span>
+                <input type="range" min="0" max="30" step="1" value={physicsParams.tendrilEndRadius}
+                  onChange={e => setPhysicsParams(p => ({ ...p, tendrilEndRadius: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Tendril Skinniness: {physicsParams.tendrilSkinniness.toFixed(2)}</span>
+                <input type="range" min="0" max="1" step="0.05" value={physicsParams.tendrilSkinniness}
+                  onChange={e => setPhysicsParams(p => ({ ...p, tendrilSkinniness: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Wall Thickness: {physicsParams.wallThickness}</span>
+                <input type="range" min="1" max="20" step="1" value={physicsParams.wallThickness}
+                  onChange={e => setPhysicsParams(p => ({ ...p, wallThickness: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+            </div>
+
+            <div className="pt-2 border-t border-gray-600">
+              <label className="block">
+                <span>Normal Goop Opacity: {normalGoopOpacity.toFixed(2)}</span>
+                <input type="range" min="0" max="1" step="0.05" value={normalGoopOpacity}
+                  onChange={e => setNormalGoopOpacity(Number(e.target.value))}
+                  className="w-full" />
+              </label>
+            </div>
+
+            <div className="pt-2 border-t border-gray-600 text-gray-400">
+              <div>Blobs: {softBodyPhysics.blobs.length}</div>
+              <label className="flex items-center gap-2 mt-1">
+                <input
+                  type="checkbox"
+                  checked={showVertexDebug}
+                  onChange={e => setShowVertexDebug(e.target.checked)}
+                />
+                <span>Show Vertices</span>
+              </label>
+              <button
+                onClick={() => { setPhysicsParams({ ...DEFAULT_PHYSICS }); setNormalGoopOpacity(0.25); setShowVertexDebug(false); }}
+                className="mt-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+              >
+                Reset to Defaults
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

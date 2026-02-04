@@ -9,13 +9,30 @@ import {
   PhysicsParams,
   DEFAULT_PHYSICS,
   Vec2,
+  AttractionSpring,
 } from '../core/softBody/types';
-import { stepPhysics, Bounds } from '../core/softBody/physics';
+import {
+  stepPhysics,
+  Bounds,
+  applyOutwardImpulse,
+  updateAttractionSprings,
+  applyAttractionSprings,
+} from '../core/softBody/physics';
 import {
   createBlobFromCells,
   PHYSICS_GRID_OFFSET,
   PHYSICS_CELL_SIZE,
 } from '../core/softBody/blobFactory';
+
+// =============================================================================
+// Constants
+// =============================================================================
+
+/** Fill rate for locked blobs (per second) */
+const FILL_RATE = 0.5;
+
+/** Impulse strength when blob fills to 100% */
+const PULSE_AMPLITUDE = 4;
 
 // =============================================================================
 // Types
@@ -38,7 +55,8 @@ export interface UseSoftBodyPhysicsReturn {
     cells: Vec2[],
     color: string,
     id: string,
-    isLocked: boolean
+    isLocked: boolean,
+    tankRotation?: number
   ) => SoftBlob;
   /** Remove a blob by ID */
   removeBlob: (id: string) => void;
@@ -52,6 +70,8 @@ export interface UseSoftBodyPhysicsReturn {
   clearBlobs: () => void;
   /** Get a blob by ID */
   getBlob: (id: string) => SoftBlob | undefined;
+  /** Shift all blob positions when tank rotation changes */
+  shiftBlobsForRotation: (newRotation: number) => void;
 }
 
 // =============================================================================
@@ -106,7 +126,11 @@ export function useSoftBodyPhysics(
   // Mutable blob array (avoids re-renders on physics ticks)
   const blobsRef = useRef<SoftBlob[]>([]);
 
+  // Attraction springs for merge tendrils between same-color blobs
+  const attractionSpringsRef = useRef<AttractionSpring[]>([]);
+
   // Physics parameters (merged with defaults)
+  // Use the passed params directly, merging with defaults for any missing values
   const paramsRef = useRef<PhysicsParams>({
     ...DEFAULT_PHYSICS,
     ...paramOverrides,
@@ -115,10 +139,29 @@ export function useSoftBodyPhysics(
   // Boundary constraints
   const boundsRef = useRef<Bounds>(bounds ?? getDefaultBounds());
 
-  // Update params if they change
+  // Update params if they change - check each param individually for changes
   useEffect(() => {
-    paramsRef.current = { ...DEFAULT_PHYSICS, ...paramOverrides };
-  }, [paramOverrides]);
+    if (paramOverrides) {
+      paramsRef.current = { ...DEFAULT_PHYSICS, ...paramOverrides };
+    }
+  }, [
+    paramOverrides?.damping,
+    paramOverrides?.stiffness,
+    paramOverrides?.pressure,
+    paramOverrides?.iterations,
+    paramOverrides?.homeStiffness,
+    paramOverrides?.innerHomeStiffness,
+    paramOverrides?.returnSpeed,
+    paramOverrides?.viscosity,
+    paramOverrides?.gravity,
+    paramOverrides?.attractionRadius,
+    paramOverrides?.attractionRestLength,
+    paramOverrides?.attractionStiffness,
+    paramOverrides?.goopiness,
+    paramOverrides?.tendrilEndRadius,
+    paramOverrides?.tendrilSkinniness,
+    paramOverrides?.wallThickness,
+  ]);
 
   // Update bounds if they change
   useEffect(() => {
@@ -135,9 +178,10 @@ export function useSoftBodyPhysics(
       cells: Vec2[],
       color: string,
       id: string,
-      isLocked: boolean
+      isLocked: boolean,
+      tankRotation: number = 0
     ): SoftBlob => {
-      const blob = createBlobFromCells(cells, color, id, isLocked);
+      const blob = createBlobFromCells(cells, color, id, isLocked, tankRotation);
       blobsRef.current = [...blobsRef.current, blob];
       return blob;
     },
@@ -181,12 +225,45 @@ export function useSoftBodyPhysics(
    * Run one physics simulation step.
    * Should be called from the game's animation loop.
    *
+   * Includes:
+   * - Core physics (integration, home force, springs, pressure, boundaries)
+   * - Fill animation for locked blobs
+   * - Ready-to-pop impulse when fill reaches 100%
+   * - Attraction springs for merge tendrils
+   *
    * @param dt - Delta time in seconds (capped at 33ms for stability)
    */
   const step = useCallback(
     (dt: number) => {
       if (!enabled || blobsRef.current.length === 0) return;
-      stepPhysics(blobsRef.current, dt, paramsRef.current, boundsRef.current);
+
+      const blobs = blobsRef.current;
+      const params = paramsRef.current;
+
+      // 1. Core physics step
+      stepPhysics(blobs, dt, params, boundsRef.current);
+
+      // 2. Fill animation for locked blobs
+      for (const blob of blobs) {
+        if (blob.isLocked && blob.fillAmount < 1) {
+          blob.fillAmount = Math.min(1, blob.fillAmount + FILL_RATE * dt);
+
+          // Check for ready-to-pop impulse
+          const isFull = blob.fillAmount >= 1;
+          if (isFull && !blob.wasFullLastFrame) {
+            applyOutwardImpulse(blob, PULSE_AMPLITUDE);
+          }
+          blob.wasFullLastFrame = isFull;
+        }
+      }
+
+      // 3. Attraction springs (merge tendrils between same-color blobs)
+      attractionSpringsRef.current = updateAttractionSprings(
+        blobs,
+        attractionSpringsRef.current,
+        params
+      );
+      applyAttractionSprings(blobs, attractionSpringsRef.current, params);
     },
     [enabled]
   );
@@ -196,6 +273,7 @@ export function useSoftBodyPhysics(
    */
   const clearBlobs = useCallback(() => {
     blobsRef.current = [];
+    attractionSpringsRef.current = [];
   }, []);
 
   /**
@@ -203,6 +281,39 @@ export function useSoftBodyPhysics(
    */
   const getBlob = useCallback((id: string): SoftBlob | undefined => {
     return blobsRef.current.find((b) => b.id === id);
+  }, []);
+
+  /**
+   * Shift all blob vertex positions when tank rotation changes.
+   * This keeps blobs visually aligned with their grid cells as the tank rotates.
+   *
+   * @param newRotation - The new tank rotation value
+   */
+  const shiftBlobsForRotation = useCallback((newRotation: number) => {
+    for (const blob of blobsRef.current) {
+      // Calculate rotation delta from when blob was created
+      const delta = newRotation - blob.createdAtRotation;
+
+      // Convert rotation delta to pixel offset (negative because rotating right
+      // means visual positions move left)
+      const pixelOffset = -delta * PHYSICS_CELL_SIZE;
+
+      // Shift all vertices
+      for (const v of blob.vertices) {
+        v.pos.x += pixelOffset;
+        v.oldPos.x += pixelOffset;
+      }
+      for (const v of blob.innerVertices) {
+        v.pos.x += pixelOffset;
+        v.oldPos.x += pixelOffset;
+      }
+
+      // Update target position
+      blob.targetX += pixelOffset;
+
+      // Update createdAtRotation to new value (so next shift is relative to this)
+      blob.createdAtRotation = newRotation;
+    }
   }, []);
 
   return {
@@ -214,5 +325,6 @@ export function useSoftBodyPhysics(
     step,
     clearBlobs,
     getBlob,
+    shiftBlobsForRotation,
   };
 }

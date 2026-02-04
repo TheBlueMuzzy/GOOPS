@@ -240,17 +240,19 @@ export function ensureCCW(points: Vec2[]): Vec2[] {
 /**
  * Create a soft-body blob from a set of grid cells.
  *
- * @param cells - Grid cell coordinates
+ * @param cells - Grid cell coordinates (in visual space: 0-11 for x, 0-15 for y)
  * @param color - CSS color string
  * @param id - Unique blob identifier
  * @param isLocked - Whether the blob is locked in place (vs falling)
+ * @param tankRotation - Current tank rotation (for position sync when tank rotates)
  * @returns Complete SoftBlob with vertices, springs, and physics state
  */
 export function createBlobFromCells(
   cells: Vec2[],
   color: string,
   id: string,
-  isLocked: boolean
+  isLocked: boolean,
+  tankRotation: number = 0
 ): SoftBlob {
   // 1. Find boundary edges and trace perimeter
   const edges = findBoundaryEdges(cells);
@@ -347,9 +349,11 @@ export function createBlobFromCells(
     gridCells: cells,
     isLocked,
     fillAmount: isLocked ? 0 : 1, // Locked = start filling, Falling = full
+    wasFullLastFrame: !isLocked,   // Falling pieces start full, locked start empty
     rotation: 0,
     targetX: cx,
     targetY: cy,
     visualOffsetY: 0,
+    createdAtRotation: tankRotation,
   };
 }

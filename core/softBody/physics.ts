@@ -8,6 +8,7 @@ import {
   PhysicsParams,
   Vertex,
   Spring,
+  AttractionSpring,
   Vec2,
   rotatePoint,
   vecLength,
@@ -110,8 +111,7 @@ export function applyHomeForce(
       }
     }
 
-    // Apply to inner vertices (with higher stiffness for stability)
-    const innerStiffness = params.homeStiffness * 10; // Inner vertices are more stable
+    // Apply to inner vertices (use innerHomeStiffness param)
     for (const v of blob.innerVertices) {
       const rotatedHome = rotatePoint(v.homeOffset, blob.rotation);
       const targetX = blob.targetX + rotatedHome.x;
@@ -120,8 +120,8 @@ export function applyHomeForce(
       const dx = targetX - v.pos.x;
       const dy = targetY - v.pos.y;
 
-      const forceX = dx * innerStiffness * speedMult;
-      const forceY = dy * innerStiffness * speedMult;
+      const forceX = dx * params.innerHomeStiffness * speedMult;
+      const forceY = dy * params.innerHomeStiffness * speedMult;
 
       v.pos.x += forceX * positionFactor;
       v.pos.y += forceY * positionFactor;
@@ -335,4 +335,188 @@ export function stepPhysics(
   solveConstraints(blobs, params);
   applyPressure(blobs, params);
   applyBoundaryConstraints(blobs, bounds);
+}
+
+// =============================================================================
+// Outward Impulse (Ready-to-Pop Effect)
+// =============================================================================
+
+/**
+ * Applies outward impulse to blob vertices when it fills to 100%.
+ * Creates a bouncy "ready to pop" effect by pushing vertices outward.
+ * Uses Verlet trick: move oldPos inward to create outward velocity.
+ */
+export function applyOutwardImpulse(blob: SoftBlob, impulseStrength: number): void {
+  const vertices = blob.vertices;
+  const n = vertices.length;
+
+  for (let i = 0; i < n; i++) {
+    const prev = vertices[(i - 1 + n) % n];
+    const curr = vertices[i];
+    const next = vertices[(i + 1) % n];
+
+    // Edge vectors
+    const e1x = curr.pos.x - prev.pos.x;
+    const e1y = curr.pos.y - prev.pos.y;
+    const e2x = next.pos.x - curr.pos.x;
+    const e2y = next.pos.y - curr.pos.y;
+
+    // Edge lengths
+    const len1 = Math.sqrt(e1x * e1x + e1y * e1y);
+    const len2 = Math.sqrt(e2x * e2x + e2y * e2y);
+    if (len1 < 0.0001 || len2 < 0.0001) continue;
+
+    // Outward normals (CCW winding: rotate edges +90 degrees for outward)
+    const n1x = e1y / len1;
+    const n1y = -e1x / len1;
+    const n2x = e2y / len2;
+    const n2y = -e2x / len2;
+
+    // Average outward normal
+    let avgNx = n1x + n2x;
+    let avgNy = n1y + n2y;
+    const avgLen = Math.sqrt(avgNx * avgNx + avgNy * avgNy);
+    if (avgLen < 0.0001) continue;
+    avgNx /= avgLen;
+    avgNy /= avgLen;
+
+    // Move oldPos inward to create outward velocity (Verlet trick)
+    vertices[i].oldPos.x -= avgNx * impulseStrength;
+    vertices[i].oldPos.y -= avgNy * impulseStrength;
+  }
+}
+
+// =============================================================================
+// Attraction Springs (Merge Tendrils)
+// =============================================================================
+
+/**
+ * Updates attraction springs between nearby same-color blob vertices.
+ * Creates tendril connections that visually merge adjacent blobs.
+ */
+export function updateAttractionSprings(
+  blobs: SoftBlob[],
+  existingSprings: AttractionSpring[],
+  params: PhysicsParams
+): AttractionSpring[] {
+  const newSprings: AttractionSpring[] = [];
+  const existingPairs = new Set<string>();
+
+  // Keep existing springs that are still valid
+  for (const spring of existingSprings) {
+    const blobA = blobs[spring.blobA];
+    const blobB = blobs[spring.blobB];
+    if (!blobA || !blobB) continue;
+    if (blobA.color !== blobB.color) continue;
+
+    const vA = blobA.vertices[spring.vertexA];
+    const vB = blobB.vertices[spring.vertexB];
+    if (!vA || !vB) continue;
+
+    const dx = vB.pos.x - vA.pos.x;
+    const dy = vB.pos.y - vA.pos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // Keep spring if still within goopiness range
+    if (dist < params.goopiness) {
+      newSprings.push(spring);
+      existingPairs.add(`${spring.blobA}-${spring.vertexA}-${spring.blobB}-${spring.vertexB}`);
+    }
+  }
+
+  // Look for new potential springs between same-color blobs
+  for (let i = 0; i < blobs.length; i++) {
+    for (let j = i + 1; j < blobs.length; j++) {
+      const blobA = blobs[i];
+      const blobB = blobs[j];
+
+      // Only same-color blobs attract
+      if (blobA.color !== blobB.color) continue;
+
+      // Quick center distance check
+      const centerDx = blobA.targetX - blobB.targetX;
+      const centerDy = blobA.targetY - blobB.targetY;
+      const centerDist = Math.sqrt(centerDx * centerDx + centerDy * centerDy);
+
+      // Skip if centers too far apart
+      if (centerDist > params.attractionRadius * 6) continue;
+
+      // Check each vertex pair
+      for (let vi = 0; vi < blobA.vertices.length; vi++) {
+        const vA = blobA.vertices[vi];
+        const maxRadiusA = params.attractionRadius * vA.attractionRadius;
+
+        for (let vj = 0; vj < blobB.vertices.length; vj++) {
+          const vB = blobB.vertices[vj];
+          const maxRadiusB = params.attractionRadius * vB.attractionRadius;
+          const maxRadius = (maxRadiusA + maxRadiusB) / 2;
+
+          const dx = vB.pos.x - vA.pos.x;
+          const dy = vB.pos.y - vA.pos.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          // Skip if pair already exists or too far
+          const pairKey = `${i}-${vi}-${j}-${vj}`;
+          if (existingPairs.has(pairKey)) continue;
+          if (dist > maxRadius) continue;
+
+          // Create new attraction spring
+          newSprings.push({
+            blobA: i,
+            blobB: j,
+            vertexA: vi,
+            vertexB: vj,
+            restLength: params.attractionRestLength,
+          });
+          existingPairs.add(pairKey);
+        }
+      }
+    }
+  }
+
+  return newSprings;
+}
+
+/**
+ * Applies attraction spring forces between connected blob vertices.
+ * Stiffness increases as vertices get closer (variable stiffness).
+ */
+export function applyAttractionSprings(
+  blobs: SoftBlob[],
+  springs: AttractionSpring[],
+  params: PhysicsParams
+): void {
+  const MIN_STIFFNESS = 0.1;
+  const MAX_STIFFNESS = 1.0;
+
+  for (const spring of springs) {
+    const blobA = blobs[spring.blobA];
+    const blobB = blobs[spring.blobB];
+    if (!blobA || !blobB) continue;
+
+    const vA = blobA.vertices[spring.vertexA];
+    const vB = blobB.vertices[spring.vertexB];
+    if (!vA || !vB) continue;
+
+    const dx = vB.pos.x - vA.pos.x;
+    const dy = vB.pos.y - vA.pos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 0.0001) continue;
+
+    // Variable stiffness: stronger when closer
+    const t = Math.max(0, Math.min(1, 1 - dist / params.goopiness));
+    const stiffnessMult = MIN_STIFFNESS + t * (MAX_STIFFNESS - MIN_STIFFNESS);
+
+    const error = dist - spring.restLength;
+    const force = error * params.attractionStiffness * stiffnessMult;
+
+    // Move both vertices toward each other
+    const fx = (dx / dist) * force;
+    const fy = (dy / dist) * force;
+
+    vA.pos.x += fx;
+    vA.pos.y += fy;
+    vB.pos.x -= fx;
+    vB.pos.y -= fy;
+  }
 }

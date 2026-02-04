@@ -1,5 +1,5 @@
 // --- Imports ---
-import React, { useMemo, useCallback, useState, useEffect } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { GameState, GoopState, TankSystem, ScreenType, GoopTemplate, DumpPiece, Crack } from '../types';
 import { TANK_VIEWPORT_WIDTH, TANK_VIEWPORT_HEIGHT, COLORS, TANK_WIDTH, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 import { normalizeX, getGhostY, getPaletteForRank } from '../utils/gameLogic';
@@ -14,26 +14,17 @@ import { ActiveAbilityCircle } from './ActiveAbilityCircle';
 import { PiecePreview } from './PiecePreview';
 import { UPGRADES } from '../constants';
 import { UseSoftBodyPhysicsReturn } from '../hooks/useSoftBodyPhysics';
-import { Vec2, SoftBlob } from '../core/softBody/types';
+import { Vec2, SoftBlob, PhysicsParams } from '../core/softBody/types';
+import {
+  getSoftBlobPath,
+  getPath,
+  getInsetPath,
+  getBounds,
+  FilterParams,
+  DEFAULT_FILTER,
+  getFilterMatrix,
+} from '../core/softBody/rendering';
 import './GameBoard.css';
-
-// --- Soft-Body Blob Helpers ---
-/**
- * Generate SVG path string from soft-body blob vertices.
- * Coordinates now match directly - no transform needed (Phase 26.1).
- */
-function getBlobVertexPath(blob: SoftBlob): string {
-  const verts = blob.vertices;
-  if (verts.length < 3) return '';
-
-  // Coordinates now match directly - no transform needed
-  let path = `M ${verts[0].pos.x} ${verts[0].pos.y}`;
-  for (let i = 1; i < verts.length; i++) {
-    path += ` L ${verts[i].pos.x} ${verts[i].pos.y}`;
-  }
-  path += ' Z';
-  return path;
-}
 
 // --- Props Interface ---
 // Input callbacks removed - now handled via EventBus (see Game.tsx subscriptions)
@@ -52,6 +43,8 @@ interface GameBoardProps {
   storedGoop?: GoopTemplate | null;  // Held goop for preview
   nextGoop?: GoopTemplate | null;    // Next goop for preview
   softBodyPhysics?: UseSoftBodyPhysicsReturn;  // Soft-body physics for blob rendering (Phase 26)
+  normalGoopOpacity?: number;  // 0-1, for fading normal goop to see SBGs (debug)
+  showVertexDebug?: boolean;   // Show numbered vertices on SBGs (debug)
 }
 
 // --- Component ---
@@ -59,7 +52,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     state, rank, maxTime, lightsBrightness = 100,
     laserCharge = 100, controlsHeat = 0, complicationCooldowns,
     equippedActives = [], activeCharges = {}, onActivateAbility,
-    powerUps, storedGoop, nextGoop, softBodyPhysics
+    powerUps, storedGoop, nextGoop, softBodyPhysics, normalGoopOpacity = 1, showVertexDebug = false
 }) => {
   const { grid, tankRotation, activeGoop, looseGoop, floatingTexts, shiftTime, goalMarks, crackCells, dumpPieces } = state;
 
@@ -122,24 +115,43 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, []);
 
   // --- Soft-Body Blob Sync (Phase 26) ---
-  // Sync soft-body blobs with current grid state when goopGroupIds change
+  // Sync soft-body blobs with current grid state
+  // Uses direct position calculation instead of incremental shifts for robustness
   useEffect(() => {
       if (!softBodyPhysics || isMobile) return;
 
-      // Collect current goopGroupIds from grid
-      const groups = new Map<string, { cells: Vec2[]; color: string }>();
-      for (let y = 0; y < TANK_VIEWPORT_HEIGHT; y++) {
+      // Collect current goopGroupIds from grid (only locked goop, not cracks)
+      // Grid is indexed as grid[y][x], matching buildRenderableGroups
+      // Also calculate visual centroid for position updates
+      const groups = new Map<string, { cells: Vec2[]; color: string; centroidX: number; centroidY: number }>();
+      for (let visY = 0; visY < TANK_VIEWPORT_HEIGHT; visY++) {
+          const gridY = visY + BUFFER_HEIGHT;
           for (let visX = 0; visX < TANK_VIEWPORT_WIDTH; visX++) {
-              const x = (tankRotation + visX) % TANK_WIDTH;
-              const cell = grid[x]?.[y + BUFFER_HEIGHT];
+              const gridX = (tankRotation + visX) % TANK_WIDTH;
+              const cell = grid[gridY]?.[gridX];
+              // Only process cells with goopGroupId (locked goop)
               if (cell?.goopGroupId) {
                   const groupId = cell.goopGroupId;
                   if (!groups.has(groupId)) {
-                      groups.set(groupId, { cells: [], color: cell.color });
+                      groups.set(groupId, { cells: [], color: cell.color, centroidX: 0, centroidY: 0 });
                   }
-                  groups.get(groupId)!.cells.push({ x: visX, y });
+                  groups.get(groupId)!.cells.push({ x: visX, y: visY });
               }
           }
+      }
+
+      // Calculate centroids for each group (in physics coordinates)
+      const PHYSICS_OFFSET_X = -180;
+      const PHYSICS_OFFSET_Y = 0;
+      const CELL_SIZE = 30;
+      for (const [, data] of groups) {
+          let cx = 0, cy = 0;
+          for (const cell of data.cells) {
+              cx += PHYSICS_OFFSET_X + (cell.x + 0.5) * CELL_SIZE;
+              cy += PHYSICS_OFFSET_Y + (cell.y + 0.5) * CELL_SIZE;
+          }
+          data.centroidX = cx / data.cells.length;
+          data.centroidY = cy / data.cells.length;
       }
 
       // Create blobs for new groups
@@ -147,8 +159,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       let changed = false;
       for (const [groupId, data] of groups) {
           if (!existingIds.has(groupId)) {
-              softBodyPhysics.createBlob(data.cells, data.color, groupId, true);
+              softBodyPhysics.createBlob(data.cells, data.color, groupId, true, tankRotation);
               changed = true;
+          }
+      }
+
+      // Update existing blob positions to match current visual coordinates
+      // This handles tank rotation by recalculating where the blob should be
+      for (const blob of softBodyPhysics.blobs) {
+          const data = groups.get(blob.id);
+          if (data) {
+              // Calculate position delta
+              const deltaX = data.centroidX - blob.targetX;
+              const deltaY = data.centroidY - blob.targetY;
+
+              // Only update if there's a meaningful difference (rotation happened)
+              if (Math.abs(deltaX) > 0.1 || Math.abs(deltaY) > 0.1) {
+                  // Shift all vertices by the delta
+                  for (const v of blob.vertices) {
+                      v.pos.x += deltaX;
+                      v.pos.y += deltaY;
+                      v.oldPos.x += deltaX;
+                      v.oldPos.y += deltaY;
+                  }
+                  for (const v of blob.innerVertices) {
+                      v.pos.x += deltaX;
+                      v.pos.y += deltaY;
+                      v.oldPos.x += deltaX;
+                      v.oldPos.y += deltaY;
+                  }
+                  // Update target
+                  blob.targetX = data.centroidX;
+                  blob.targetY = data.centroidY;
+              }
           }
       }
 
@@ -433,6 +476,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             })}
 
             {/* Main Goop Groups */}
+            <g opacity={normalGoopOpacity}>
             {Array.from(groups.entries()).map(([gid, cells]) => {
                 if (cells.length === 0) return null;
                 const sample = cells[0];
@@ -565,20 +609,123 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     </g>
                 );
             })}
+            </g>
 
             {/* Soft-Body Blob Rendering (Phase 26 - Desktop only) */}
-            {/* Renders soft-body blobs with goo filter on top of existing goop for comparison */}
+            {/* Renders soft-body blobs with goo filter using Catmull-Rom curves */}
             {!isMobile && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (
               <g filter="url(#goo-filter)">
+                {softBodyPhysics.blobs.map(blob => {
+                  const outerPath = getSoftBlobPath(blob);
+                  const outerPoints = blob.vertices.map(v => v.pos);
+
+                  // Only show fill animation for locked blobs that aren't full
+                  const showFillAnimation = blob.isLocked && blob.fillAmount < 1;
+
+                  if (showFillAnimation) {
+                    // Wall thickness for fill animation (8px default)
+                    const wallThickness = 8;
+                    const insetPoints = getInsetPath(outerPoints, wallThickness);
+                    const insetPath = getPath(insetPoints);
+                    const bounds = getBounds(insetPoints);
+                    const height = bounds.maxY - bounds.minY;
+                    const fillTop = bounds.maxY - height * blob.fillAmount;
+                    const clipId = `fill-clip-${blob.id}`;
+                    const padding = 50;
+
+                    return (
+                      <g key={`soft-${blob.id}`}>
+                        {/* Outer blob shape */}
+                        <path
+                          d={outerPath}
+                          fill={blob.color}
+                          stroke={blob.color}
+                          strokeWidth="2"
+                        />
+                        {/* Inner cutout (unfilled region) */}
+                        <defs>
+                          <clipPath id={clipId}>
+                            <rect
+                              x={bounds.minX - padding}
+                              y={bounds.minY - padding}
+                              width={bounds.maxX - bounds.minX + padding * 2}
+                              height={fillTop - bounds.minY + padding}
+                            />
+                          </clipPath>
+                        </defs>
+                        <path
+                          d={insetPath}
+                          fill="#1e293b"
+                          clipPath={`url(#${clipId})`}
+                        />
+                      </g>
+                    );
+                  }
+
+                  // Fully filled blob - just render outer shape
+                  return (
+                    <path
+                      key={`soft-${blob.id}`}
+                      d={outerPath}
+                      fill={blob.color}
+                      stroke={blob.color}
+                      strokeWidth="2"
+                    />
+                  );
+                })}
+              </g>
+            )}
+
+            {/* Vertex Debug Rendering (when enabled via debug panel) */}
+            {showVertexDebug && !isMobile && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (
+              <g>
                 {softBodyPhysics.blobs.map(blob => (
-                  <path
-                    key={`soft-${blob.id}`}
-                    d={getBlobVertexPath(blob)}
-                    fill={blob.color}
-                    fillOpacity={0.8}
-                    stroke={blob.color}
-                    strokeWidth="2"
-                  />
+                  <g key={`debug-${blob.id}`}>
+                    {/* Target position marker */}
+                    <circle
+                      cx={blob.targetX}
+                      cy={blob.targetY}
+                      r={4}
+                      fill="yellow"
+                      stroke="black"
+                      strokeWidth={1}
+                    />
+                    {/* Numbered vertices */}
+                    {blob.vertices.map((v, i) => (
+                      <g key={`v-${blob.id}-${i}`}>
+                        <circle
+                          cx={v.pos.x}
+                          cy={v.pos.y}
+                          r={6}
+                          fill="white"
+                          stroke="black"
+                          strokeWidth={1}
+                        />
+                        <text
+                          x={v.pos.x}
+                          y={v.pos.y + 3}
+                          textAnchor="middle"
+                          fontSize={8}
+                          fontWeight="bold"
+                          fill="black"
+                        >
+                          {i}
+                        </text>
+                      </g>
+                    ))}
+                    {/* Inner vertices (smaller, gray) */}
+                    {blob.innerVertices.map((v, i) => (
+                      <circle
+                        key={`iv-${blob.id}-${i}`}
+                        cx={v.pos.x}
+                        cy={v.pos.y}
+                        r={3}
+                        fill="gray"
+                        stroke="white"
+                        strokeWidth={1}
+                      />
+                    ))}
+                  </g>
                 ))}
               </g>
             )}

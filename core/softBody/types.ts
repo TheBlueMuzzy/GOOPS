@@ -136,10 +136,12 @@ export interface SoftBlob {
   gridCells: Vec2[];         // Which grid cells this blob occupies
   isLocked: boolean;         // Locked = viscous, Falling = snappy
   fillAmount: number;        // 0-1 for fill animation
+  wasFullLastFrame: boolean; // For triggering impulse when fill reaches 100%
   rotation: number;          // Current rotation angle
   targetX: number;           // Target center X (pixels)
   targetY: number;           // Target center Y (pixels)
   visualOffsetY: number;     // Smooth falling offset
+  createdAtRotation: number; // Tank rotation when blob was created (for position sync)
 }
 
 // =============================================================================
@@ -152,24 +154,45 @@ export interface SoftBlob {
 export interface PhysicsParams {
   damping: number;           // Energy loss per frame (0.97 = high)
   stiffness: number;         // Spring correction strength (1 = very low)
-  pressure: number;          // Volume maintenance force (5 = strong)
+  pressure: number;          // Volume maintenance force (3 = good)
   iterations: number;        // Constraint solver iterations (3-5)
-  homeStiffness: number;     // Shape retention strength (0.3)
+  homeStiffness: number;     // Shape retention strength (0.01)
+  innerHomeStiffness: number; // Inner vertex home stiffness (0.1)
   returnSpeed: number;       // Home position return rate (0.5)
   viscosity: number;         // Locked blob dampening (2.5)
   gravity: number;           // Downward acceleration (10)
+  // Attraction params (for merge tendrils)
+  attractionRadius: number;      // Max distance for attraction (20)
+  attractionRestLength: number;  // Target distance for attraction springs (0)
+  attractionStiffness: number;   // Strength of attraction springs (0.005)
+  // Rendering params
+  goopiness: number;         // SVG filter strength (25)
+  tendrilEndRadius: number;  // Tendril endpoint size (10)
+  tendrilSkinniness: number; // Tendril mid-point scaling (0.7)
+  wallThickness: number;     // Stroke width (8)
 }
 
 /**
  * Default parameters (tuned from Proto-9)
+ * These are the FINAL tweaked values from Proto 9, not the initial defaults
  */
 export const DEFAULT_PHYSICS: PhysicsParams = {
   damping: 0.97,
   stiffness: 1,
-  pressure: 5,
+  pressure: 3,
   iterations: 3,
-  homeStiffness: 0.3,
+  homeStiffness: 0.3,      // Proto 9 final: 0.3
+  innerHomeStiffness: 0.1,
   returnSpeed: 0.5,
   viscosity: 2.5,
   gravity: 10,
+  // Attraction params
+  attractionRadius: 20,
+  attractionRestLength: 0,
+  attractionStiffness: 0.005,
+  // Rendering params
+  goopiness: 25,
+  tendrilEndRadius: 10,
+  tendrilSkinniness: 0.7,
+  wallThickness: 8,
 };

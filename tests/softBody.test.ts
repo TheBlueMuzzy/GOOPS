@@ -330,15 +330,26 @@ describe('applyBoundaryConstraints', () => {
 });
 
 describe('DEFAULT_PHYSICS', () => {
-  it('has expected default values', () => {
+  it('has expected default values (Proto 9 tuned)', () => {
+    // Core physics
     expect(DEFAULT_PHYSICS.damping).toBe(0.97);
     expect(DEFAULT_PHYSICS.stiffness).toBe(1);
-    expect(DEFAULT_PHYSICS.pressure).toBe(5);
+    expect(DEFAULT_PHYSICS.pressure).toBe(3);
     expect(DEFAULT_PHYSICS.iterations).toBe(3);
     expect(DEFAULT_PHYSICS.homeStiffness).toBe(0.3);
+    expect(DEFAULT_PHYSICS.innerHomeStiffness).toBe(0.1);
     expect(DEFAULT_PHYSICS.returnSpeed).toBe(0.5);
     expect(DEFAULT_PHYSICS.viscosity).toBe(2.5);
     expect(DEFAULT_PHYSICS.gravity).toBe(10);
+    // Attraction params
+    expect(DEFAULT_PHYSICS.attractionRadius).toBe(20);
+    expect(DEFAULT_PHYSICS.attractionRestLength).toBe(0);
+    expect(DEFAULT_PHYSICS.attractionStiffness).toBe(0.005);
+    // Rendering params
+    expect(DEFAULT_PHYSICS.goopiness).toBe(25);
+    expect(DEFAULT_PHYSICS.tendrilEndRadius).toBe(10);
+    expect(DEFAULT_PHYSICS.tendrilSkinniness).toBe(0.7);
+    expect(DEFAULT_PHYSICS.wallThickness).toBe(8);
   });
 });
 
