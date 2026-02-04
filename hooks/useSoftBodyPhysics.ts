@@ -10,6 +10,7 @@ import {
   DEFAULT_PHYSICS,
   Vec2,
   AttractionSpring,
+  Droplet,
 } from '../core/softBody/types';
 import {
   stepPhysics,
@@ -17,6 +18,7 @@ import {
   applyOutwardImpulse,
   updateAttractionSprings,
   applyAttractionSprings,
+  applyBlobCollisions,
 } from '../core/softBody/physics';
 import {
   createBlobFromCells,
@@ -72,6 +74,10 @@ export interface UseSoftBodyPhysicsReturn {
   getBlob: (id: string) => SoftBlob | undefined;
   /** Shift all blob positions when tank rotation changes */
   shiftBlobsForRotation: (newRotation: number) => void;
+  /** Current array of droplets (pop effect particles) */
+  droplets: Droplet[];
+  /** Create droplets from a popping blob */
+  createDropletsForPop: (blob: SoftBlob) => void;
 }
 
 // =============================================================================
@@ -128,6 +134,10 @@ export function useSoftBodyPhysics(
 
   // Attraction springs for merge tendrils between same-color blobs
   const attractionSpringsRef = useRef<AttractionSpring[]>([]);
+
+  // Droplets for pop effect (particles that scatter when blob pops)
+  const dropletsRef = useRef<Droplet[]>([]);
+  const dropletIdCounter = useRef(0);
 
   // Physics parameters (merged with defaults)
   // Use the passed params directly, merging with defaults for any missing values
@@ -217,6 +227,8 @@ export function useSoftBodyPhysics(
     const blob = blobsRef.current.find((b) => b.id === id);
     if (blob) {
       blob.isLocked = true;
+      blob.isFalling = false;
+      blob.isLoose = false;
       blob.fillAmount = 0; // Start fill animation
     }
   }, []);
@@ -235,45 +247,136 @@ export function useSoftBodyPhysics(
    */
   const step = useCallback(
     (dt: number) => {
-      if (!enabled || blobsRef.current.length === 0) return;
+      if (!enabled) return;
 
       const blobs = blobsRef.current;
       const params = paramsRef.current;
+      const hasBlobs = blobs.length > 0;
 
-      // 1. Core physics step
-      stepPhysics(blobs, dt, params, boundsRef.current);
+      // Blob physics only runs when there are blobs
+      if (hasBlobs) {
+        // 1. Core physics step
+        stepPhysics(blobs, dt, params, boundsRef.current);
 
-      // 2. Fill animation for locked blobs
-      for (const blob of blobs) {
-        if (blob.isLocked && blob.fillAmount < 1) {
-          blob.fillAmount = Math.min(1, blob.fillAmount + FILL_RATE * dt);
+        // 2. Fill animation for locked blobs
+        for (const blob of blobs) {
+          if (blob.isLocked && blob.fillAmount < 1) {
+            blob.fillAmount = Math.min(1, blob.fillAmount + FILL_RATE * dt);
 
-          // Check for ready-to-pop impulse
-          const isFull = blob.fillAmount >= 1;
-          if (isFull && !blob.wasFullLastFrame) {
-            applyOutwardImpulse(blob, PULSE_AMPLITUDE);
+            // Check for ready-to-pop impulse
+            const isFull = blob.fillAmount >= 1;
+            if (isFull && !blob.wasFullLastFrame) {
+              applyOutwardImpulse(blob, PULSE_AMPLITUDE);
+            }
+            blob.wasFullLastFrame = isFull;
           }
-          blob.wasFullLastFrame = isFull;
         }
+
+        // 3. Attraction springs (merge tendrils between same-color blobs)
+        attractionSpringsRef.current = updateAttractionSprings(
+          blobs,
+          attractionSpringsRef.current,
+          params
+        );
+        applyAttractionSprings(blobs, attractionSpringsRef.current, params);
+
+        // 4. Blob collisions (push different colors apart)
+        applyBlobCollisions(blobs, PHYSICS_CELL_SIZE);
       }
 
-      // 3. Attraction springs (merge tendrils between same-color blobs)
-      attractionSpringsRef.current = updateAttractionSprings(
-        blobs,
-        attractionSpringsRef.current,
-        params
+      // 5. Update droplets (pop effect particles) - runs even with no blobs
+      const DROPLET_GRAVITY = 300;
+      const physBounds = boundsRef.current;
+
+      for (const droplet of dropletsRef.current) {
+        // Apply gravity
+        droplet.vel.y += DROPLET_GRAVITY * dt;
+
+        // Apply velocity
+        droplet.pos.x += droplet.vel.x * dt;
+        droplet.pos.y += droplet.vel.y * dt;
+
+        // Side bounds: kill droplet
+        if (
+          droplet.pos.x + droplet.radius < physBounds.minX ||
+          droplet.pos.x - droplet.radius > physBounds.maxX
+        ) {
+          droplet.lifetime = 0;
+        }
+        // Top: kill if escapes
+        if (droplet.pos.y + droplet.radius < physBounds.minY) {
+          droplet.lifetime = 0;
+        }
+        // Floor: bounce with damping
+        if (droplet.pos.y + droplet.radius > physBounds.maxY) {
+          droplet.pos.y = physBounds.maxY - droplet.radius;
+          droplet.vel.y *= -0.3; // 30% rebound
+        }
+
+        // Decrease lifetime and fade
+        droplet.lifetime -= dt;
+        droplet.opacity = Math.max(0, droplet.lifetime / droplet.maxLifetime);
+
+        // Shrink as it fades
+        droplet.radius *= 0.995;
+      }
+
+      // Remove dead droplets
+      dropletsRef.current = dropletsRef.current.filter(
+        (d) => d.lifetime > 0 && d.opacity > 0.01
       );
-      applyAttractionSprings(blobs, attractionSpringsRef.current, params);
     },
     [enabled]
   );
 
   /**
-   * Clear all blobs from the simulation.
+   * Clear all blobs and droplets from the simulation.
    */
   const clearBlobs = useCallback(() => {
     blobsRef.current = [];
     attractionSpringsRef.current = [];
+    dropletsRef.current = [];
+  }, []);
+
+  /**
+   * Create droplets from a popping blob.
+   * Spawns particles at random vertex positions with radial velocity.
+   * Ported from Proto-9 popBlob() lines 1889-1944.
+   */
+  const createDropletsForPop = useCallback((blob: SoftBlob) => {
+    const params = paramsRef.current;
+    const centerX = blob.targetX;
+    const centerY = blob.targetY;
+
+    for (let i = 0; i < params.dropletCount; i++) {
+      // Pick a random vertex position
+      const vertIndex = Math.floor(Math.random() * blob.vertices.length);
+      const vert = blob.vertices[vertIndex];
+
+      // Direction: outward from center with some randomness
+      const dx = vert.pos.x - centerX;
+      const dy = vert.pos.y - centerY;
+      const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.8; // Add spread
+
+      // Random speed variation (50%-130%)
+      const speed = params.dropletSpeed * (0.5 + Math.random() * 0.8);
+
+      const droplet: Droplet = {
+        id: `droplet-${dropletIdCounter.current++}`,
+        pos: { x: vert.pos.x, y: vert.pos.y },
+        vel: {
+          x: Math.cos(angle) * speed,
+          y: Math.sin(angle) * speed - 50, // Slight upward bias for "pop" feel
+        },
+        radius: params.dropletSize * (0.5 + Math.random() * 0.7), // 50%-120%
+        color: blob.color,
+        opacity: 1,
+        lifetime: params.dropletLifetime * (0.7 + Math.random() * 0.6), // 70%-130%
+        maxLifetime: params.dropletLifetime,
+      };
+
+      dropletsRef.current.push(droplet);
+    }
   }, []);
 
   /**
@@ -332,5 +435,7 @@ export function useSoftBodyPhysics(
     clearBlobs,
     getBlob,
     shiftBlobsForRotation,
+    droplets: dropletsRef.current,
+    createDropletsForPop,
   };
 }

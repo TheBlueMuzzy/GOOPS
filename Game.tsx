@@ -476,6 +476,13 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
                 className="w-full" />
             </label>
 
+            <label className="block">
+              <span>Iterations: {physicsParams.iterations}</span>
+              <input type="range" min="1" max="10" step="1" value={physicsParams.iterations}
+                onChange={e => setPhysicsParams(p => ({ ...p, iterations: Number(e.target.value) }))}
+                className="w-full" />
+            </label>
+
             <div className="pt-2 border-t border-gray-600">
               <div className="text-gray-400 mb-1">Attraction</div>
               <label className="block">
@@ -522,6 +529,34 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
                 <span>Wall Thickness: {physicsParams.wallThickness}</span>
                 <input type="range" min="1" max="20" step="1" value={physicsParams.wallThickness}
                   onChange={e => setPhysicsParams(p => ({ ...p, wallThickness: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+            </div>
+
+            <div className="pt-2 border-t border-gray-600">
+              <div className="text-gray-400 mb-1">Droplets (Pop Effect)</div>
+              <label className="block">
+                <span>Count: {physicsParams.dropletCount}</span>
+                <input type="range" min="0" max="100" step="5" value={physicsParams.dropletCount}
+                  onChange={e => setPhysicsParams(p => ({ ...p, dropletCount: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Speed: {physicsParams.dropletSpeed}</span>
+                <input type="range" min="10" max="300" step="10" value={physicsParams.dropletSpeed}
+                  onChange={e => setPhysicsParams(p => ({ ...p, dropletSpeed: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Lifetime: {physicsParams.dropletLifetime}s</span>
+                <input type="range" min="0.5" max="5" step="0.5" value={physicsParams.dropletLifetime}
+                  onChange={e => setPhysicsParams(p => ({ ...p, dropletLifetime: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Size: {physicsParams.dropletSize}</span>
+                <input type="range" min="2" max="30" step="1" value={physicsParams.dropletSize}
+                  onChange={e => setPhysicsParams(p => ({ ...p, dropletSize: Number(e.target.value) }))}
                   className="w-full" />
               </label>
             </div>

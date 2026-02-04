@@ -135,6 +135,8 @@ export interface SoftBlob {
   restArea: number;          // Target area (Shoelace formula)
   gridCells: Vec2[];         // Which grid cells this blob occupies
   isLocked: boolean;         // Locked = viscous, Falling = snappy
+  isFalling: boolean;        // Active falling piece (not yet locked)
+  isLoose: boolean;          // Falling after losing support (was locked)
   fillAmount: number;        // 0-1 for fill animation
   wasFullLastFrame: boolean; // For triggering impulse when fill reaches 100%
   rotation: number;          // Current rotation angle
@@ -142,6 +144,26 @@ export interface SoftBlob {
   targetY: number;           // Target center Y (pixels)
   visualOffsetY: number;     // Smooth falling offset
   createdAtRotation: number; // Tank rotation when blob was created (for position sync)
+}
+
+// =============================================================================
+// Droplet (Pop Effect Particles)
+// =============================================================================
+
+/**
+ * Small particle that scatters when a blob pops.
+ * Rendered as simple circles without the goo filter.
+ * Ported from Proto-9 lines 77-87.
+ */
+export interface Droplet {
+  id: string;
+  pos: Vec2;
+  vel: Vec2;
+  radius: number;
+  color: string;
+  opacity: number;
+  lifetime: number;      // Seconds remaining
+  maxLifetime: number;   // For opacity calculation
 }
 
 // =============================================================================
@@ -170,6 +192,11 @@ export interface PhysicsParams {
   tendrilEndRadius: number;  // Tendril endpoint size (10)
   tendrilSkinniness: number; // Tendril mid-point scaling (0.7)
   wallThickness: number;     // Stroke width (8)
+  // Droplet params (for pop effect)
+  dropletCount: number;      // Droplets per pop (30)
+  dropletSpeed: number;      // Initial scatter speed (100)
+  dropletLifetime: number;   // Seconds to fade out (3)
+  dropletSize: number;       // Base radius (15)
 }
 
 /**
@@ -181,7 +208,7 @@ export const DEFAULT_PHYSICS: PhysicsParams = {
   stiffness: 1,
   pressure: 3,
   iterations: 3,
-  homeStiffness: 0.3,      // Proto 9 final: 0.3
+  homeStiffness: 0.01,     // Proto 9 final: 0.01 (user-tweaked)
   innerHomeStiffness: 0.1,
   returnSpeed: 0.5,
   viscosity: 2.5,
@@ -195,4 +222,11 @@ export const DEFAULT_PHYSICS: PhysicsParams = {
   tendrilEndRadius: 10,
   tendrilSkinniness: 0.7,
   wallThickness: 8,
+  // Droplet params (scaled from Proto-9 values for 30px cells vs Proto's 50px)
+  // Proto-9 values: count=30, speed=100, lifetime=3, size=15
+  // Size scaled: 15 * (50/30) = 25 to match visual proportion
+  dropletCount: 30,
+  dropletSpeed: 167,  // 100 * (50/30) scaled for cell size
+  dropletLifetime: 3,
+  dropletSize: 25,    // 15 * (50/30) scaled for cell size
 };

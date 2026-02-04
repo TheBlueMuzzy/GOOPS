@@ -250,20 +250,10 @@ export function applyPressure(
     // Only locked blobs get pressure
     if (!blob.isLocked) continue;
 
-    // Calculate current centroid
-    let cx = 0;
-    let cy = 0;
-    for (const v of blob.vertices) {
-      cx += v.pos.x;
-      cy += v.pos.y;
-    }
-    cx /= blob.vertices.length;
-    cy /= blob.vertices.length;
-
-    // Calculate average rest distance from home offsets
-    const restDist =
-      blob.vertices.reduce((sum, v) => sum + vecLength(v.homeOffset), 0) /
-      blob.vertices.length;
+    // Use target position as pressure center (Proto-9 approach)
+    // This is more stable than calculated centroid
+    const cx = blob.targetX;
+    const cy = blob.targetY;
 
     const pressureStrength = params.pressure * 0.002;
 
@@ -272,6 +262,11 @@ export function applyPressure(
       const dx = v.pos.x - cx;
       const dy = v.pos.y - cy;
       const currentDist = Math.sqrt(dx * dx + dy * dy);
+
+      // Rest distance for THIS vertex (how far it should be from center)
+      const restDist = Math.sqrt(
+        v.homeOffset.x * v.homeOffset.x + v.homeOffset.y * v.homeOffset.y
+      );
 
       if (currentDist > 0.0001 && restDist > 0.0001) {
         // Error: positive if compressed (need to push out), negative if stretched
@@ -557,5 +552,77 @@ export function applyAttractionSprings(
     vA.pos.y += fy;
     vB.pos.x -= fx;
     vB.pos.y -= fy;
+  }
+}
+
+// =============================================================================
+// Blob-to-Blob Collision (Different Colors)
+// =============================================================================
+
+/**
+ * Push apart vertices of different-colored blobs when they overlap.
+ * Only runs when at least one blob is moving (falling/loose).
+ * Prevents blobs from visually overlapping each other.
+ * Ported from Proto-9 lines 970-1029.
+ */
+export function applyBlobCollisions(
+  blobs: SoftBlob[],
+  cellSize: number = 30
+): void {
+  const MIN_DISTANCE = 20;    // Minimum distance between vertices
+  const PUSH_STRENGTH = 0.8;  // How hard to push apart
+  const ITERATIONS = 3;       // Multiple passes for stability
+
+  for (let iter = 0; iter < ITERATIONS; iter++) {
+    for (let i = 0; i < blobs.length; i++) {
+      for (let j = i + 1; j < blobs.length; j++) {
+        const blobA = blobs[i];
+        const blobB = blobs[j];
+
+        // Skip same-color blobs (they can overlap/merge)
+        if (blobA.color === blobB.color) continue;
+
+        // Skip collision between two locked blobs - they're grid-aligned
+        // Only apply collision when at least one blob is moving
+        const aIsMoving = blobA.isFalling || blobA.isLoose;
+        const bIsMoving = blobB.isFalling || blobB.isLoose;
+        if (!aIsMoving && !bIsMoving) continue;
+
+        // Quick bounding box check to skip distant blobs
+        const dx = blobA.targetX - blobB.targetX;
+        const dy = blobA.targetY - blobB.targetY;
+        const centerDist = Math.sqrt(dx * dx + dy * dy);
+        if (centerDist > cellSize * 4) continue;
+
+        // Check vertex-to-vertex collisions
+        for (const vA of blobA.vertices) {
+          for (const vB of blobB.vertices) {
+            const vdx = vB.pos.x - vA.pos.x;
+            const vdy = vB.pos.y - vA.pos.y;
+            const dist = Math.sqrt(vdx * vdx + vdy * vdy);
+
+            if (dist < MIN_DISTANCE && dist > 0.01) {
+              const overlap = MIN_DISTANCE - dist;
+              const nx = vdx / dist;
+              const ny = vdy / dist;
+              const push = overlap * PUSH_STRENGTH;
+
+              // Move both vertices apart (positions)
+              vA.pos.x -= nx * push * 0.5;
+              vA.pos.y -= ny * push * 0.5;
+              vB.pos.x += nx * push * 0.5;
+              vB.pos.y += ny * push * 0.5;
+
+              // Also update oldPos to kill velocity into each other
+              // This prevents "bouncing" through each other
+              vA.oldPos.x -= nx * push * 0.3;
+              vA.oldPos.y -= ny * push * 0.3;
+              vB.oldPos.x += nx * push * 0.3;
+              vB.oldPos.y += ny * push * 0.3;
+            }
+          }
+        }
+      }
+    }
   }
 }

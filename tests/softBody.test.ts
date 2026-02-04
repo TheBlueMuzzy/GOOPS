@@ -348,7 +348,7 @@ describe('DEFAULT_PHYSICS', () => {
     expect(DEFAULT_PHYSICS.stiffness).toBe(1);
     expect(DEFAULT_PHYSICS.pressure).toBe(3);
     expect(DEFAULT_PHYSICS.iterations).toBe(3);
-    expect(DEFAULT_PHYSICS.homeStiffness).toBe(0.3);
+    expect(DEFAULT_PHYSICS.homeStiffness).toBe(0.01);
     expect(DEFAULT_PHYSICS.innerHomeStiffness).toBe(0.1);
     expect(DEFAULT_PHYSICS.returnSpeed).toBe(0.5);
     expect(DEFAULT_PHYSICS.viscosity).toBe(2.5);

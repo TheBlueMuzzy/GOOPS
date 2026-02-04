@@ -9,12 +9,12 @@ updated: 2026-02-04
 
 ## Current Position
 
-Phase: 26.1 (Flatten Coordinate System) + SBG Integration
-Plan: 3/3 complete - PHASE COMPLETE
-Status: Seam wrapping works! Ready for visual tuning
-Last activity: 2026-02-04 - Completed 26.1-03 seam wrapping
+Phase: Proto-9 Parity (SBG visual tuning)
+Plan: In progress - fixing discrepancies between game SBG and Proto-9
+Status: Major physics fixes done, droplet system added, still tuning
+Last activity: 2026-02-04 - Proto-9 parity work
 
-Progress: ███████░░░ ~70%
+Progress: ███████░░░ ~75%
 
 ## Branch Workflow (SOP)
 
@@ -28,27 +28,27 @@ Progress: ███████░░░ ~70%
 
 ## Next Steps
 
-**Current:** Finetune goo filter visuals (user feedback: "messed up this round")
-**Status:** Seam wrapping works, visuals need tuning
+**Current:** Continue Proto-9 parity tuning
+**Status:** Core fixes done, droplets working, but still issues to resolve
 **Branch:** `soft-body-experiment`
 
-### Seam Wrapping: SOLVED (2026-02-04)
+### Proto-9 Parity: IN PROGRESS (2026-02-04)
 
-**Design document:** `.planning/phases/26.1-flatten-coordinate-system/SEAM-WRAPPING-DESIGN.md`
-**Visual reference:** `/art/wrap_example.png`
+**What was fixed this session:**
 
-**Solution:** Goo filter merges duplicate blob renders at seam boundaries. No complex path clipping needed!
+| Fix | Before | After |
+|-----|--------|-------|
+| Home Stiffness | 0.3 (30x too stiff) | 0.01 (matches Proto-9) |
+| Pressure Center | Calculated centroid | targetX/targetY (stable) |
+| Blob Collision | Missing | Restored (MIN_DIST=20, PUSH=0.8) |
+| Droplet System | Missing | Full system with gravity, bounce, fade |
+| isFalling/isLoose flags | Missing | Added for collision logic |
+| Per-color goo filter | All blobs in one group | Each color separate (no cross-merge) |
+| Debug sliders | Missing iterations, droplets | All Proto-9 sliders exposed |
 
-**How it works:**
-1. `getBlobRenderOffsets()` detects when blob straddles viewport edge
-2. Blob rendered at multiple X offsets (original + shifted by ±900px)
-3. ClipPath masks each copy to viewport
-4. Goo filter (stdDeviation=12, matrix 25/-15) visually merges the copies
-
-**Debug tools:**
-- Press backtick (`) for debug panel
-- Enable "Show Vertices" for Proto-9 style vertex display
-- Console logs when blob straddles seam
+**Still needs work:**
+- Droplet visuals may need more tuning (cell size scaling: 30px vs Proto's 50px)
+- User reports things still "messing up"
 
 ### What's Working
 - SBG appears on lock
@@ -56,60 +56,50 @@ Progress: ███████░░░ ~70%
 - Fill pulse (ready-to-pop impulse)
 - Same-color blob merging with attraction springs
 - Position stays aligned when rotating
-- Catmull-Rom smooth curves (not jagged polygons)
-- ClipPath masks blobs to viewport (no rendering past edges)
-- Physics no longer wraps individual vertices (prevents explosion)
-- Debug vertices updated to Proto-9 style
-- **Seam crossing WORKS** - goo filter merges duplicate renders at seam boundaries
+- Seam crossing via goo filter merge
+- **Blob collision** - different colors push apart
+- **Droplet system** - particles scatter on pop, fall, bounce, fade
+- **Per-color goo filter** - unlike colors don't visually merge
+- **All Proto-9 sliders** in debug panel (press `)
 
 ### What's NOT Working
-- **Goo filter visuals need tuning** - user reports visuals "messed up" after parameter changes
-- Pop particles (droplets) - not implemented yet
-- Some sliders may not be connected
+- Some visual parameter differences from Proto-9 (cell size scaling)
+- User still tuning to match Proto-9 look
 
-### Changes Made This Session (2026-02-04)
-- Added `tank-viewport-clip` clipPath to mask SBG rendering
-- Removed X wrapping from `applyBoundaryConstraints()` - physics drifts freely
-- Removed X wrapping from `shiftBlobsForRotation()` - prevents vertex explosion
-- Updated `getBlobRenderOffsets()` to calculate which positions overlap viewport
-- Updated debug vertices to Proto-9 style (yellow r=4 circles, lime edges, fill % label)
-- Updated test for new no-wrap behavior
+### Key Discovery: Cell Size Difference
 
-### v1.5 Soft-Body Integration Overview
+Proto-9 uses `CELL_SIZE = 50px`, game uses `PHYSICS_CELL_SIZE = 30px`.
+This affects how droplet size/speed values translate between the two.
 
-Port soft-body physics visuals from completed prototypes (5b-9) into main game rendering.
-
-| Phase | Name | Goal |
-|-------|------|------|
-| 25 | Physics Foundation | Port Verlet engine, adapt to game coordinates |
-| 26 | Perimeter & Blob System | Replace rect rendering with perimeter-traced blobs |
-| 26.1 | Flatten Coordinates | Remove cylindrical projection (DONE) |
-| 27 | Active Piece Physics | Falling pieces use soft-body (snappy) |
-| 28 | Locked Goop Behavior | Viscosity, fill, ready-to-pop, attraction |
-| 29 | Pop & Cascade | Droplets, support detection, loose goop |
-| 30 | Polish & Performance | Mobile optimization, parameter tuning |
+Scaling factor: 50/30 = 1.67
+- Proto-9 dropletSize 15 → Game needs ~25 for same proportion
+- Proto-9 dropletSpeed 100 → Game needs ~167 for same proportion
 
 ---
 
-## Proto 9 Final Settings (Source of Truth)
+## Proto 9 Final Settings (User-Tweaked)
 
-These are the FINAL tweaked values from Proto 9:
+These are the user's tweaked values from Proto 9:
 
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| WallThickness | 8px | Fill animation wall |
-| Damping | 0.97 | High, preserves momentum |
-| Stiffness | 1 | Very low, loose springs |
-| Pressure | 3.0 | Volume maintenance |
-| HomeStiffness | 0.3 | Shape retention |
-| InnerStiffness | 0.1 | Inner vertex stability |
-| ReturnSpeed | 0.5 | Moderate |
-| Viscosity | 2.5 | Honey-like for locked blobs |
-| Iterations | 3 | Constraint solver |
-| Goopiness | 25px | SVG filter strength |
-| AttractRadius | 20px | Tendril detection range |
-| AttractStiffness | 0.005 | Tendril pull strength |
-| TendrilSize | 10px | Tendril endpoint radius |
+| Parameter | Proto-9 Value | Game Value (scaled) | Notes |
+|-----------|---------------|---------------------|-------|
+| HomeStiffness | 0.01 | 0.01 | Fixed from 0.3 |
+| Damping | 0.97 | 0.97 | Same |
+| Stiffness | 1 | 1 | Same |
+| Pressure | 3 | 3 | Same |
+| InnerStiffness | 0.1 | 0.1 | Same |
+| ReturnSpeed | 0.5 | 0.5 | Same |
+| Viscosity | 2.5 | 2.5 | Same |
+| Iterations | 3 | 3 | Same |
+| Goopiness | 25px | 25px | Same |
+| AttractRadius | 20px | 20px | Same |
+| AttractStiffness | 0.005 | 0.005 | Same |
+| TendrilSize | 10px | 10px | Same |
+| WallThickness | 8px | 8px | Same |
+| DropletCount | 30 | 30 | Same |
+| DropletSpeed | 100 | 167 | Scaled for cell size |
+| DropletLifetime | 3s | 3s | Same |
+| DropletSize | 15 | 25 | Scaled for cell size |
 
 ---
 
@@ -118,31 +108,38 @@ These are the FINAL tweaked values from Proto 9:
 Last session: 2026-02-04
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Build:** 168
+**Build:** 173
 
 ### Files Modified This Session (2026-02-04)
 
-**New files:**
-- `.planning/phases/26.1-flatten-coordinate-system/SEAM-WRAPPING-DESIGN.md` - Full design document
-- `.planning/phases/26.1-flatten-coordinate-system/26.1-03-SUMMARY.md` - Plan completion
-
 **Modified:**
-- `core/softBody/physics.ts` - Removed X wrapping from boundary constraints
-- `hooks/useSoftBodyPhysics.ts` - Removed wrapPixelX from rotation shift
-- `components/GameBoard.tsx` - Goo filter tuning (stdDeviation 8→12, matrix 25/-15), seam debug logging
-- `tests/softBody.test.ts` - Updated test for no-wrap behavior
+- `core/softBody/types.ts` - Fixed homeStiffness 0.3→0.01, added Droplet type, isFalling/isLoose flags, droplet params
+- `core/softBody/physics.ts` - Fixed pressure calc (use target not centroid), added applyBlobCollisions()
+- `core/softBody/blobFactory.ts` - Initialize isFalling/isLoose flags
+- `hooks/useSoftBodyPhysics.ts` - Added droplet system, blob collisions, step runs even with no blobs
+- `components/GameBoard.tsx` - Per-color goo filter, droplet rendering, droplet trigger on pop (not loose)
+- `Game.tsx` - Added iterations slider, droplet sliders to debug panel
+- `tests/softBody.test.ts` - Updated expected homeStiffness value
 
 ### Resume Command
 ```
-SEAM WRAPPING WORKS! Phase 26.1 complete.
+Proto-9 parity work in progress.
 
-Goo filter successfully merges duplicate blob renders at seam.
-Parameters: stdDeviation=12, feColorMatrix values="... 25 -15"
+DONE:
+- Fixed homeStiffness 0.3 → 0.01
+- Fixed pressure center (target, not centroid)
+- Added blob collision for different colors
+- Added droplet system with full physics
+- Added all missing debug sliders
+- Per-color goo filter groups
+- Droplets only on true pop (not loose goop)
 
-User feedback: Visuals "messed up" - need to finetune goo filter appearance.
-The seam crossing works, but overall blob look may need adjustment.
+STILL TUNING:
+- Cell size difference (30px vs 50px) affects visual scaling
+- User still seeing issues, needs more adjustment
 
-NEXT: Finetune goo filter visuals based on user feedback.
+Debug panel: Press backtick (`) to access all sliders
+Proto-9 reference: http://localhost:5173/GOOPS/?proto=9
 ```
 
 ---

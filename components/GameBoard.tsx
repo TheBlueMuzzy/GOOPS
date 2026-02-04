@@ -218,9 +218,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       softBodyPhysics.shiftBlobsForRotation(tankRotation);
 
       // 5. Remove blobs ONLY when the goopGroupId no longer exists in the FULL grid
-      // (i.e., the goop was popped, not just scrolled off-screen)
+      // AND is not currently falling as loose goop (i.e., truly popped)
+      // Loose goop keeps its goopGroupId but is removed from grid temporarily
+      const looseGoopIds = new Set(looseGoop.map(lg => lg.data.goopGroupId));
       for (const blob of softBodyPhysics.blobs) {
-          if (!allGroupIds.has(blob.id)) {
+          if (!allGroupIds.has(blob.id) && !looseGoopIds.has(blob.id)) {
+              // Create droplets before removing (pop effect)
+              softBodyPhysics.createDropletsForPop(blob);
               softBodyPhysics.removeBlob(blob.id);
               changed = true;
           }
@@ -642,9 +646,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {/* Renders soft-body blobs with goo filter using Catmull-Rom curves */}
             {/* Edge-straddling blobs are rendered twice (once shifted) for seamless wrap */}
             {/* clipPath masks blobs to tank viewport - prevents rendering past edges */}
-            {!isMobile && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (
-              <g filter="url(#goo-filter)" clipPath="url(#tank-viewport-clip)">
-                {softBodyPhysics.blobs.map(blob => {
+            {/* Each color gets its own goo filter group so unlike colors don't visually merge */}
+            {!isMobile && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (() => {
+              // Group blobs by color so each color gets its own goo filter
+              const blobsByColor = new Map<string, typeof softBodyPhysics.blobs>();
+              for (const blob of softBodyPhysics.blobs) {
+                const existing = blobsByColor.get(blob.color) || [];
+                existing.push(blob);
+                blobsByColor.set(blob.color, existing);
+              }
+
+              return Array.from(blobsByColor.entries()).map(([color, blobs]) => (
+                <g key={`color-group-${color}`} filter="url(#goo-filter)" clipPath="url(#tank-viewport-clip)">
+                  {blobs.map(blob => {
                   const outerPath = getSoftBlobPath(blob);
                   const outerPoints = blob.vertices.map(v => v.pos);
 
@@ -717,7 +731,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                       ))}
                     </g>
                   );
-                })}
+                  })}
+                </g>
+              ));
+            })()}
+
+            {/* Droplets from popped blobs (NO goo filter - simple circles) */}
+            {!isMobile && softBodyPhysics && softBodyPhysics.droplets.length > 0 && (
+              <g>
+                {softBodyPhysics.droplets.map(droplet => (
+                  <circle
+                    key={droplet.id}
+                    cx={droplet.pos.x}
+                    cy={droplet.pos.y}
+                    r={droplet.radius}
+                    fill={droplet.color}
+                    opacity={droplet.opacity}
+                  />
+                ))}
               </g>
             )}
 

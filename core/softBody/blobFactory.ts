@@ -355,6 +355,8 @@ export function createBlobFromCells(
     restArea,
     gridCells: cells,
     isLocked,
+    isFalling: !isLocked,          // If not locked, it's falling
+    isLoose: false,                // Only set true when blob loses support
     fillAmount: isLocked ? 0 : 1, // Locked = start filling, Falling = full
     wasFullLastFrame: !isLocked,   // Falling pieces start full, locked start empty
     rotation: 0,
