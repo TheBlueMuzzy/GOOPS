@@ -17,7 +17,6 @@ import {
   applyOutwardImpulse,
   updateAttractionSprings,
   applyAttractionSprings,
-  wrapPixelX,
 } from '../core/softBody/physics';
 import {
   createBlobFromCells,
@@ -287,7 +286,12 @@ export function useSoftBodyPhysics(
   /**
    * Shift all blob vertex positions when tank rotation changes.
    * This keeps blobs visually aligned with their grid cells as the tank rotates.
-   * Uses cylindrical wrapping to keep vertices within the valid range.
+   *
+   * IMPORTANT: We do NOT wrap positions here. Wrapping individual vertices
+   * causes the "explosion" bug where some vertices wrap to +X while others
+   * stay at -X, tearing the blob apart. Instead, we let blobs drift freely
+   * in X space, and the rendering system handles showing them at the correct
+   * viewport position by applying translate transforms.
    *
    * @param newRotation - The new tank rotation value
    */
@@ -300,18 +304,18 @@ export function useSoftBodyPhysics(
       // means visual positions move left)
       const pixelOffset = -delta * PHYSICS_CELL_SIZE;
 
-      // Shift and wrap all vertices
+      // Shift all vertices (NO WRAPPING - let them drift freely)
       for (const v of blob.vertices) {
-        v.pos.x = wrapPixelX(v.pos.x + pixelOffset);
-        v.oldPos.x = wrapPixelX(v.oldPos.x + pixelOffset);
+        v.pos.x += pixelOffset;
+        v.oldPos.x += pixelOffset;
       }
       for (const v of blob.innerVertices) {
-        v.pos.x = wrapPixelX(v.pos.x + pixelOffset);
-        v.oldPos.x = wrapPixelX(v.oldPos.x + pixelOffset);
+        v.pos.x += pixelOffset;
+        v.oldPos.x += pixelOffset;
       }
 
-      // Update and wrap target position
-      blob.targetX = wrapPixelX(blob.targetX + pixelOffset);
+      // Update target position (NO WRAPPING)
+      blob.targetX += pixelOffset;
 
       // Update createdAtRotation to new value (so next shift is relative to this)
       blob.createdAtRotation = newRotation;

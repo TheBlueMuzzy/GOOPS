@@ -314,9 +314,9 @@ export function applyBoundaryConstraints(
   for (const blob of blobs) {
     // Constrain outer vertices
     for (const v of blob.vertices) {
-      // HORIZONTAL: Wrap around cylinder (no hard walls)
-      v.pos.x = wrapPixelX(v.pos.x);
-      v.oldPos.x = wrapPixelX(v.oldPos.x);
+      // HORIZONTAL: No constraints - blobs can exist anywhere in X
+      // Wrapping is handled at RENDER time, not physics time.
+      // This prevents the "explosion" when vertices wrap mid-physics.
 
       // VERTICAL: Keep hard floor/ceiling (top/bottom of tank)
       // Top wall
@@ -335,9 +335,7 @@ export function applyBoundaryConstraints(
 
     // Constrain inner vertices
     for (const v of blob.innerVertices) {
-      // HORIZONTAL: Wrap around cylinder
-      v.pos.x = wrapPixelX(v.pos.x);
-      v.oldPos.x = wrapPixelX(v.oldPos.x);
+      // HORIZONTAL: No constraints (same as outer)
 
       // VERTICAL: Hard floor/ceiling
       if (v.pos.y < bounds.minY + MARGIN) {
