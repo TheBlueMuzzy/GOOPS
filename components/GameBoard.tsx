@@ -638,14 +638,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             })}
             </g>
 
-            {/* Debug: Seam boundary markers (Task 1 - temporary) */}
-            {!isMobile && (
-              <>
-                <line x1={-180} y1={-100} x2={-180} y2={200} stroke="red" strokeWidth="2" opacity="0.5" />
-                <line x1={180} y1={-100} x2={180} y2={200} stroke="red" strokeWidth="2" opacity="0.5" />
-              </>
-            )}
-
             {/* Soft-Body Blob Rendering (Phase 26 - Desktop only) */}
             {/* Renders soft-body blobs with goo filter using Catmull-Rom curves */}
             {/* Edge-straddling blobs are rendered twice (once shifted) for seamless wrap */}
