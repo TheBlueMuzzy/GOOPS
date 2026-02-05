@@ -24,7 +24,7 @@ import {
   DEFAULT_FILTER,
   getFilterMatrix,
 } from '../core/softBody/rendering';
-import { CYLINDER_WIDTH_PIXELS, PHYSICS_CELL_SIZE } from '../core/softBody/blobFactory';
+import { CYLINDER_WIDTH_PIXELS, PHYSICS_CELL_SIZE, PHYSICS_GRID_OFFSET } from '../core/softBody/blobFactory';
 import './GameBoard.css';
 
 // =============================================================================
@@ -276,6 +276,99 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           setBlobRenderKey(k => k + 1);
       }
   }, [grid, tankRotation, softBodyPhysics]);
+
+  // --- Active Piece Soft-Body Blob (Phase 27) ---
+  // Create a soft-body blob for the active falling piece
+  // Track previous activeGoop to detect lock transitions (using spawnTimestamp as unique ID)
+  const prevActiveGoopRef = useRef<typeof activeGoop>(null);
+
+  // Create blob when new active piece spawns (falling state)
+  useEffect(() => {
+      if (!softBodyPhysics || isMobile) return;
+      if (!activeGoop || activeGoop.state !== GoopState.FALLING) return;
+
+      // Use spawnTimestamp as unique ID since ActivePiece doesn't have an id field
+      const blobId = `active-${activeGoop.spawnTimestamp}`;
+      const existingBlob = softBodyPhysics.getBlob(blobId);
+
+      // Create blob if it doesn't exist
+      if (!existingBlob) {
+          // Convert piece cells to absolute grid coordinates (in visual space)
+          const cells = activeGoop.cells.map(cell => ({
+              x: cell.x,  // Relative to piece origin, converted to visual space below
+              y: cell.y
+          }));
+
+          // For the visual position, we use the piece's visual X (relative to rotation)
+          // The blob needs cells in visual grid coordinates (0-11 for visible area)
+          let visX = activeGoop.x - tankRotation;
+          if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+          if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
+
+          // Convert to visual grid cells
+          const visualCells = cells.map(cell => ({
+              x: visX + cell.x,
+              y: (activeGoop.y + cell.y) - BUFFER_HEIGHT
+          }));
+
+          // Get color (handle multi-color pieces by using first cell color)
+          const color = activeGoop.definition.cellColors?.[0] ?? activeGoop.definition.color;
+
+          softBodyPhysics.createBlob(visualCells, color, blobId, false, tankRotation);
+          setBlobRenderKey(k => k + 1);
+      }
+  }, [activeGoop?.spawnTimestamp, softBodyPhysics, tankRotation]);
+
+  // Update blob position every frame while falling
+  useEffect(() => {
+      if (!softBodyPhysics || isMobile) return;
+      if (!activeGoop || activeGoop.state !== GoopState.FALLING) return;
+
+      const blobId = `active-${activeGoop.spawnTimestamp}`;
+      const blob = softBodyPhysics.getBlob(blobId);
+      if (!blob) return;
+
+      // Calculate piece center in visual coordinates
+      let visX = activeGoop.x - tankRotation;
+      if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+      if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
+
+      // Calculate centroid of piece cells
+      const cells = activeGoop.cells;
+      let sumX = 0, sumY = 0;
+      for (const cell of cells) {
+          sumX += visX + cell.x;
+          sumY += (activeGoop.y + cell.y) - BUFFER_HEIGHT;
+      }
+      const centerX = sumX / cells.length;
+      const centerY = sumY / cells.length;
+
+      // Grid to pixel: PHYSICS_GRID_OFFSET + (grid + 0.5) * PHYSICS_CELL_SIZE
+      const targetX = PHYSICS_GRID_OFFSET.x + (centerX + 0.5) * PHYSICS_CELL_SIZE;
+      const targetY = PHYSICS_GRID_OFFSET.y + (centerY + 0.5) * PHYSICS_CELL_SIZE;
+
+      softBodyPhysics.updateBlobTarget(blobId, targetX, targetY);
+  }, [activeGoop?.x, activeGoop?.y, activeGoop?.state, softBodyPhysics, tankRotation]);
+
+  // Handle lock transition: remove falling blob when piece locks
+  useEffect(() => {
+      if (!softBodyPhysics || isMobile) return;
+
+      const prevPiece = prevActiveGoopRef.current;
+      const currPiece = activeGoop;
+
+      // Piece locked: was falling, now null or new piece
+      if (prevPiece && prevPiece.state === GoopState.FALLING &&
+          (!currPiece || currPiece.spawnTimestamp !== prevPiece.spawnTimestamp)) {
+          const blobId = `active-${prevPiece.spawnTimestamp}`;
+
+          // Remove the falling blob — locked goop sync will create a new blob for locked cells
+          softBodyPhysics.removeBlob(blobId);
+          setBlobRenderKey(k => k + 1);
+      }
+
+      prevActiveGoopRef.current = currPiece;
+  }, [activeGoop, softBodyPhysics]);
 
   const now = Date.now();
 
