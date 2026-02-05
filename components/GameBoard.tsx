@@ -906,7 +906,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                           stroke="white"
                           strokeWidth="2"
                           transform={transform}
-                          className={isWild ? "wild-stroke" : undefined}
+                          className={isWild ? "wild-stroke wild-fill" : undefined}
                         />
                       );
                     });
