@@ -256,8 +256,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       // 6. Remove blobs ONLY when the goopGroupId no longer exists in the FULL grid
       // AND is not currently falling as loose goop (i.e., truly popped)
       // Loose goop keeps its goopGroupId but is removed from grid temporarily
+      // NOTE: Skip active falling blobs (id starts with "active-") - they're managed separately
       const looseGoopIds = new Set(looseGoop.map(lg => lg.data.goopGroupId));
       for (const blob of softBodyPhysics.blobs) {
+          // Skip active falling blobs - they have special IDs and are managed by the active piece effects
+          if (blob.id.startsWith('active-')) continue;
+
           if (!allGroupIds.has(blob.id) && !looseGoopIds.has(blob.id)) {
               // Only create droplets if this was an explicit pop (not merge/consolidation)
               // Merge removes the blob but shouldn't spawn droplets
@@ -292,7 +296,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const existingBlob = softBodyPhysics.getBlob(blobId);
 
       // Create blob if it doesn't exist
-      if (!existingBlob) {
+      // Safeguard: Don't create falling blob if piece is already near floor (y > 5)
+      // This prevents recreation bugs when tank rotation triggers effect during lock
+      if (!existingBlob && activeGoop.y <= 5) {
           // Convert piece cells to absolute grid coordinates (in visual space)
           const cells = activeGoop.cells.map(cell => ({
               x: cell.x,  // Relative to piece origin, converted to visual space below
@@ -314,13 +320,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           // Get color (handle multi-color pieces by using first cell color)
           const color = activeGoop.definition.cellColors?.[0] ?? activeGoop.definition.color;
 
+          // DEBUG: Log initial blob creation with more context
+          console.log(`[BLOB CREATE] spawnTimestamp=${activeGoop.spawnTimestamp} state=${activeGoop.state} y=${activeGoop.y} BUFFER_HEIGHT=${BUFFER_HEIGHT}`);
+          console.log(`[BLOB CREATE] visualCells.y=[${visualCells.map(c => c.y.toFixed(2)).join(',')}] color=${color}`);
+
           softBodyPhysics.createBlob(visualCells, color, blobId, false, tankRotation);
           setBlobRenderKey(k => k + 1);
+      } else if (!existingBlob && activeGoop.y > 5) {
+          console.log(`[BLOB CREATE SKIPPED] y=${activeGoop.y} > 5, piece already falling - don't recreate blob`);
       }
   }, [activeGoop?.spawnTimestamp, softBodyPhysics, tankRotation]);
 
-  // Update blob X position and shape when tank rotates or piece rotates
-  // NOTE: Y position is now owned by physics (stepActivePieceFalling), NOT synced from game
+  // Track previous rotation to detect actual rotation changes
+  const prevRotationRef = useRef<number | null>(null);
+  const prevTankRotationRef = useRef<number>(0);
+
+  // Update blob X position when tank rotates, and shape when piece rotates
+  // NOTE: Y position is owned by physics (stepActivePieceFalling), NOT synced from game
+  // This effect ONLY updates X and shape - never touches Y except during rotation
   useEffect(() => {
       if (!softBodyPhysics || isMobile) return;
       if (!activeGoop || activeGoop.state !== GoopState.FALLING) return;
@@ -334,36 +351,59 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
       if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-      // Update blob's gridCells when piece shape changes (rotation)
-      // Preserve the current base Y position from physics
-      const currentBaseY = blob.gridCells.length > 0 ? blob.gridCells[0].y : 0;
+      const pieceRotation = activeGoop.rotation;
+      const rotationChanged = prevRotationRef.current !== null && prevRotationRef.current !== pieceRotation;
+      const tankRotationChanged = prevTankRotationRef.current !== tankRotation;
 
-      // Calculate the relative Y offset for each cell based on current gridCells average
-      // This preserves the accumulated fall distance
-      let avgOldY = 0;
-      for (const cell of blob.gridCells) {
-          avgOldY += cell.y;
+      // Only update gridCells when piece ACTUALLY rotates (not every frame)
+      if (rotationChanged) {
+          console.log(`[ROTATION SYNC] Piece rotated: ${prevRotationRef.current} -> ${pieceRotation}`);
+
+          // Preserve the piece's Y position when shape changes
+          // Use MINIMUM Y (the "top" of the piece) as the anchor point
+          let minOldY = blob.gridCells.length > 0 ? blob.gridCells[0].y : 0;
+          for (const cell of blob.gridCells) {
+              if (cell.y < minOldY) minOldY = cell.y;
+          }
+
+          // Find minimum relative Y in the new shape
+          let minRelativeY = activeGoop.cells.length > 0 ? activeGoop.cells[0].y : 0;
+          for (const cell of activeGoop.cells) {
+              if (cell.y < minRelativeY) minRelativeY = cell.y;
+          }
+
+          // Build new gridCells: anchor at minOldY, offset by relative position
+          const newCells = activeGoop.cells.map(cell => ({
+              x: visX + cell.x,
+              y: minOldY + (cell.y - minRelativeY)  // Anchor at top of piece
+          }));
+
+          console.log(`[ROTATION SYNC] oldMinY=${minOldY.toFixed(2)} newCells.y=[${newCells.map(c => c.y.toFixed(2)).join(',')}]`);
+          blob.gridCells = newCells;
       }
-      avgOldY = blob.gridCells.length > 0 ? avgOldY / blob.gridCells.length : 0;
 
-      // Build new gridCells from current piece cells, using preserved Y
-      const newCells = activeGoop.cells.map(cell => ({
-          x: visX + cell.x,
-          y: avgOldY + cell.y  // Use average Y plus relative cell offset
-      }));
-      blob.gridCells = newCells;
+      // Update X position when tank rotates (don't touch Y)
+      if (tankRotationChanged || rotationChanged) {
+          // Update X coordinates in gridCells
+          for (let i = 0; i < blob.gridCells.length && i < activeGoop.cells.length; i++) {
+              blob.gridCells[i].x = visX + activeGoop.cells[i].x;
+          }
 
-      // Calculate X centroid of new cells
-      let sumX = 0;
-      for (const cell of newCells) {
-          sumX += cell.x;
+          // Calculate X centroid
+          let sumX = 0;
+          for (const cell of blob.gridCells) {
+              sumX += cell.x;
+          }
+          const centerX = sumX / blob.gridCells.length;
+
+          // Update targetX
+          blob.targetX = PHYSICS_GRID_OFFSET.x + (centerX + 0.5) * PHYSICS_CELL_SIZE;
       }
-      const centerX = sumX / newCells.length;
 
-      // Convert to pixel X, preserve physics-controlled Y
-      const targetX = PHYSICS_GRID_OFFSET.x + (centerX + 0.5) * PHYSICS_CELL_SIZE;
-      blob.targetX = targetX;
-  }, [activeGoop?.x, activeGoop?.rotation, activeGoop?.cells, activeGoop?.state, softBodyPhysics, tankRotation]);
+      // Update refs for next comparison
+      prevRotationRef.current = pieceRotation;
+      prevTankRotationRef.current = tankRotation;
+  }, [activeGoop?.x, activeGoop?.rotation, activeGoop?.state, softBodyPhysics, tankRotation, isMobile]);
 
   // Handle lock transition: remove falling blob when piece locks
   useEffect(() => {

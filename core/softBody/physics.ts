@@ -651,6 +651,11 @@ export function applyBlobCollisions(
  * @param grid - The game grid for collision detection
  * @param gridRows - Number of rows in the grid
  */
+// DEBUG: Track calls for fall speed measurement
+let debugLastLogTime = 0;
+let debugFrameCount = 0;
+let debugTotalFallAmount = 0;
+
 export function stepActivePieceFalling(
   blob: SoftBlob,
   dt: number,
@@ -661,17 +666,39 @@ export function stepActivePieceFalling(
   // Skip if not a falling blob
   if (blob.isLocked || blob.isLoose) return;
 
+  // DEBUG: Log every second
+  debugFrameCount++;
+  debugTotalFallAmount += fallSpeed * dt;
+  const now = Date.now();
+  if (now - debugLastLogTime > 1000) {
+    const avgCellY = blob.gridCells.reduce((s, c) => s + c.y, 0) / blob.gridCells.length;
+    console.log(`[FALL DEBUG] ` +
+      `frames=${debugFrameCount} ` +
+      `totalFall=${debugTotalFallAmount.toFixed(1)}px ` +
+      `cellY=${avgCellY.toFixed(2)} ` +
+      `visualOffsetY=${blob.visualOffsetY.toFixed(1)} ` +
+      `gridRows=${gridRows} ` +
+      `dt=${dt.toFixed(4)} ` +
+      `fallSpeed=${fallSpeed.toFixed(1)}`
+    );
+    debugFrameCount = 0;
+    debugTotalFallAmount = 0;
+    debugLastLogTime = now;
+  }
+
   // Check collision BEFORE moving
   let canFallMore = true;
   for (const cell of blob.gridCells) {
     const nextY = cell.y + 1;
     if (nextY >= gridRows) {
+      console.log(`[FLOOR HIT] cell.y=${cell.y.toFixed(2)} nextY=${nextY.toFixed(2)} >= gridRows=${gridRows}`);
       canFallMore = false;
       break;
     }
     // Check if cell below is occupied (by different blob)
     const targetCell = grid[nextY]?.[cell.x];
     if (targetCell && targetCell.goopGroupId !== undefined) {
+      console.log(`[GOOP HIT] cell.y=${cell.y.toFixed(2)} hit goopGroupId=${targetCell.goopGroupId}`);
       canFallMore = false;
       break;
     }

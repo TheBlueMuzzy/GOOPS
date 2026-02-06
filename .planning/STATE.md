@@ -10,11 +10,11 @@ updated: 2026-02-05
 ## Current Position
 
 Phase: 27.1 Physics-Controlled Active Piece
-Plan: MASTER-PLAN complete (9/9 tasks)
-Status: Implementation complete. Ready for manual testing.
-Last activity: 2026-02-05 - Completed 27.1-MASTER-PLAN.md
+Plan: MASTER-PLAN complete (9/9 tasks) — but has critical bugs
+Status: Deep debugging session revealed multiple interacting bugs
+Last activity: 2026-02-05 - Debug session, identified root causes
 
-Progress: ████████░░ ~80% (wiring done, testing pending)
+Progress: ████░░░░░░ ~40% (wiring done, bugs identified, fixes needed)
 
 ## Branch Workflow (SOP)
 
@@ -33,7 +33,7 @@ Progress: ████████░░ ~80% (wiring done, testing pending)
 
 ### 27.1 Status (2026-02-05)
 
-**MASTER-PLAN COMPLETE** — All 9 tasks executed successfully.
+**MASTER-PLAN COMPLETE** — But deep debugging revealed critical bugs.
 
 **Commits:**
 - `c053204` feat: update scaling parameters for 30px cells
@@ -42,20 +42,45 @@ Progress: ████████░░ ~80% (wiring done, testing pending)
 - `7cb7839` refactor: remove Y sync from GameBoard to physics
 - `200cc95` feat: sync blob shape on piece rotation
 
-**Key Implementation:**
-- Physics now OWNS the Y position during falling
-- GameEngine READS position via `syncActivePieceFromPhysics()`
-- Data flow reversed: physics→game (correct direction)
-- All parameters scaled ×0.6 for 30px cells
+**Debug Fixes Applied This Session:**
+1. Active blob removal bug: Added `if (blob.id.startsWith('active-')) continue;` in GameBoard.tsx:261 — blobs with "active-{timestamp}" IDs were being removed by locked goop sync
+2. Rotation sync spam: Added refs to track previous rotation — dependency array `activeGoop?.cells` created new array reference each render
+3. Rotation math shift: Changed from average Y to minimum Y as anchor — preserved piece top position
+4. Wrong Y on blob recreation: Added safeguard `activeGoop.y <= 5` — tank rotation effect re-ran when blob removed, using floor position
+
+### Known Issues (Remaining Bugs)
+
+**Critical — Must Fix Before Phase Complete:**
+
+1. **Visual rotation doesn't match physics**
+   - Ghost piece rotates correctly
+   - Actual falling blob does NOT visually rotate
+   - Blob shape updates in gridCells, but rendering doesn't reflect it
+   - Likely: physics blob vs visual rendering disconnect
+
+2. **Pieces lock inside each other**
+   - First piece lands correctly
+   - Second piece spawns and slams into exact same space (overlapping)
+   - Collision detection passes but placement is wrong
+   - Likely: Grid state not updated after first piece locks
+
+3. **Fast fall breaks subsequent spawns**
+   - Press S for fast fall, piece hits bottom
+   - NO pieces fall after that — spawning stops
+   - Likely: State machine stuck or blob cleanup issue
+
+4. **Tank rotation causes wobble (minor)**
+   - Falling piece should move instantly when tank rotates
+   - Instead: Springs toward new position with wobble
+   - Expected: Instant X update, keep smooth Y falling
 
 ### Next Steps
 
-**Manual Testing Required:**
-1. Piece falls smoothly with soft-body wobble
-2. Fall speed matches expected (2 cells/sec, 8x when fast-dropping)
-3. Piece stops at floor and on top of other goop
-4. Rotation updates blob shape without Y reset
-5. Tank rotation keeps piece visually centered
+**Do NOT attempt fixes without reading debug logs first:**
+1. Add more console logging to identify exact failure points
+2. Check grid state after piece locks (is cell marked occupied?)
+3. Check blob lifecycle during fast fall (is cleanup correct?)
+4. Verify rendering pulls from blob.gridCells correctly
 
 ---
 
@@ -64,24 +89,30 @@ Progress: ████████░░ ~80% (wiring done, testing pending)
 Last session: 2026-02-05
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Build:** 190+
+**Build:** 204
 
 ### Resume Command
 ```
-27.1 MASTER-PLAN EXECUTED SUCCESSFULLY.
+27.1 MASTER-PLAN executed but HAS CRITICAL BUGS.
 
-COMPLETED:
-- All 9 implementation tasks
-- Physics step context and getActivePieceState()
-- Game.tsx handlePhysicsStep wiring
-- GameEngine syncActivePieceFromPhysics()
-- Blob shape rotation sync
-- All parameters scaled ×0.6
+SESSION ACCOMPLISHMENTS:
+- Deep debugging with extensive console logging
+- Fixed 4 interacting bugs (blob removal, rotation spam, rotation math, blob Y position)
+- Identified 4 remaining critical bugs (listed in Known Issues)
+- Fall speed confirmed correct: ~38.5 px/sec = ~780ms per cell
+- Floor collision detection working: [FLOOR HIT] logs at cell.y=15
 
-SUMMARY LOCATION:
-.planning/phases/27.1-physics-controlled-active-piece/27.1-MASTER-SUMMARY.md
+REMAINING BUGS (DO NOT FIX WITHOUT DEBUG LOGS):
+1. Visual rotation doesn't match physics (ghost rotates, blob doesn't)
+2. Pieces lock inside each other (second piece overlaps first)
+3. Fast fall breaks subsequent spawns (no pieces after fast fall)
+4. Tank rotation causes wobble (should be instant X move)
 
-Next: Manual testing to verify physics-controlled falling works
+FILES WITH DEBUG LOGGING:
+- core/softBody/physics.ts (stepActivePieceFalling debug)
+- components/GameBoard.tsx (blob lifecycle logging)
+
+Next: Add more targeted logging, identify exact failure points
 ```
 
 ---
