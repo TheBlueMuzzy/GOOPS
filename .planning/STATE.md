@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-02-04
+updated: 2026-02-05
 ---
 
 # Project State
@@ -10,11 +10,11 @@ updated: 2026-02-04
 ## Current Position
 
 Phase: 27.1 Physics-Controlled Active Piece
-Plan: 1 of 3 complete
-Status: Falling physics foundation ready, wire-up next
-Last activity: 2026-02-05 - Completed 27.1-01-PLAN.md
+Plan: REPLANNED - See 27.1-MASTER-PLAN.md
+Status: Previous implementation reverted. Comprehensive audit complete. Ready for clean implementation.
+Last activity: 2026-02-05 - Created 27.1-MASTER-PLAN.md after failed implementation
 
-Progress: ███████░░░ ~78%
+Progress: ██████░░░░ ~60% (audit done, implementation pending)
 
 ## Branch Workflow (SOP)
 
@@ -28,30 +28,37 @@ Progress: ███████░░░ ~78%
 
 ## Next Steps
 
-**Completed:** 27.1-01-PLAN.md (Physics falling foundation)
+**Completed:** 27.1-01 + 27.1-02 (Physics falling integrated)
 **Branch:** `soft-body-experiment`
 
-### 27.1-01 Completed (2026-02-05)
+### 27.1 Status (2026-02-05)
 
-| Task | Commit | Description |
-|------|--------|-------------|
-| SoftBlob type | b6cdd66 | Add isColliding property |
-| Blob factory | 1655ea8 | Initialize isColliding, copy gridCells |
-| Falling physics | da47d81 | Implement stepActivePieceFalling function |
+**Previous plans (01, 02, 03) are SUPERSEDED by 27.1-MASTER-PLAN.md**
 
-**What's ready:**
-- SoftBlob has `gridCells`, `visualOffsetY`, `isColliding` properties
-- `stepActivePieceFalling` implements Proto-9's smooth falling pattern
-- Grid collision detection (O(1) cell lookup)
-- GameEngine can read `blob.isColliding` to trigger lock timer
+A 4-hour implementation session failed due to:
+- Missing scaling (50px proto → 30px live)
+- Coordinate system confusion
+- Data flow going wrong direction (game→physics instead of physics→game)
 
-### What's Still Open
-- 27.1-02: Wire up stepActivePieceFalling to useSoftBodyPhysics hook
-- 27.1-03: Add spinning/rotation physics
+**Comprehensive audit completed covering:**
+- All scaling parameters identified (×0.6 factor)
+- Data flow architecture documented
+- Bug root causes identified
+- Complete implementation plan written
 
-### Next: 27.1-02 Plan
+### Key Findings
 
-Wire up the falling physics to the game loop so active pieces use physics-owned motion instead of sync-to-game-state.
+1. `stepActivePieceFalling()` exists and is COMPLETE but NEVER CALLED
+2. GameEngine.tickActivePiece() expects physics data but never receives it
+3. preStepCallback syncs WRONG direction (game→physics instead of physics→game)
+4. Category 1 parameters all need ×0.6 scaling
+5. Droplet params were scaled BACKWARDS (should be smaller, not larger)
+
+### Next Steps
+
+1. Read and approve 27.1-MASTER-PLAN.md
+2. Execute implementation tasks in order
+3. Tune via sliders after implementation
 
 ---
 
@@ -60,21 +67,23 @@ Wire up the falling physics to the game loop so active pieces use physics-owned 
 Last session: 2026-02-05
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Build:** 184
+**Build:** 190
 
 ### Resume Command
 ```
-27.1-01 plan complete.
+27.1 REPLANNED after failed implementation.
 
-DONE:
-- SoftBlob.isColliding property for lock signaling
-- stepActivePieceFalling with Proto-9 visualOffsetY pattern
-- Grid collision detection via gridCells lookup
+COMPLETED:
+- Deep audit of proto vs live differences
+- Scaling analysis (50px→30px, ×0.6 factor)
+- Data flow architecture documented
+- Bug root causes identified
+- Comprehensive master plan written
 
-READY FOR:
-- 27.1-02: Wire up falling physics to useSoftBodyPhysics
+MASTER PLAN LOCATION:
+.planning/phases/27.1-physics-controlled-active-piece/27.1-MASTER-PLAN.md
 
-Next: /gsd:execute-plan .planning/phases/27.1-physics-controlled-active-piece/27.1-02-PLAN.md
+Next: Review master plan, then implement tasks in order
 ```
 
 ---
