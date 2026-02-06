@@ -195,14 +195,16 @@ export interface PhysicsParams {
   wallThickness: number;     // Stroke width (8)
   // Droplet params (for pop effect)
   dropletCount: number;      // Droplets per pop (30)
-  dropletSpeed: number;      // Initial scatter speed (100)
+  dropletSpeed: number;      // Initial scatter speed (60)
   dropletLifetime: number;   // Seconds to fade out (3)
-  dropletSize: number;       // Base radius (15)
+  dropletSize: number;       // Base radius (9)
+  dropletGravity: number;    // Droplet gravity (180, separate from blob gravity)
 }
 
 /**
  * Default parameters (tuned from Proto-9)
- * These are the FINAL tweaked values from Proto 9, not the initial defaults
+ * These are the FINAL tweaked values from Proto 9, scaled for 30px cells.
+ * All distance/size parameters scaled by 0.6 (30px / 50px proto cell size)
  */
 export const DEFAULT_PHYSICS: PhysicsParams = {
   damping: 0.97,
@@ -214,20 +216,19 @@ export const DEFAULT_PHYSICS: PhysicsParams = {
   returnSpeed: 0.5,
   viscosity: 2.5,
   gravity: 10,
-  // Attraction params
-  attractionRadius: 20,
+  // Attraction params (scaled x0.6)
+  attractionRadius: 12,    // Proto 20 x 0.6 = 12
   attractionRestLength: 0,
   attractionStiffness: 0.005,
-  // Rendering params
-  goopiness: 25,
-  tendrilEndRadius: 10,
+  // Rendering params (scaled x0.6)
+  goopiness: 15,           // Proto 25 x 0.6 = 15
+  tendrilEndRadius: 6,     // Proto 10 x 0.6 = 6
   tendrilSkinniness: 0.7,
-  wallThickness: 8,
-  // Droplet params (scaled from Proto-9 values for 30px cells vs Proto's 50px)
-  // Proto-9 values: count=30, speed=100, lifetime=3, size=15
-  // Size scaled: 15 * (50/30) = 25 to match visual proportion
+  wallThickness: 4.8,      // Proto 8 x 0.6 = 4.8
+  // Droplet params (scaled x0.6 from Proto-9 values)
   dropletCount: 30,
-  dropletSpeed: 167,  // 100 * (50/30) scaled for cell size
+  dropletSpeed: 60,        // Proto 100 x 0.6 = 60
   dropletLifetime: 3,
-  dropletSize: 25,    // 15 * (50/30) scaled for cell size
+  dropletSize: 9,          // Proto 15 x 0.6 = 9
+  dropletGravity: 180,     // Proto 300 x 0.6 = 180 (separate from blob gravity)
 };

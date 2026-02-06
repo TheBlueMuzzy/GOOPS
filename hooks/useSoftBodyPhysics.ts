@@ -33,8 +33,8 @@ import {
 /** Fill rate for locked blobs (per second) */
 const FILL_RATE = 0.5;
 
-/** Impulse strength when blob fills to 100% */
-const PULSE_AMPLITUDE = 4;
+/** Impulse strength when blob fills to 100% (scaled x0.6 from Proto 4) */
+const PULSE_AMPLITUDE = 2.4;
 
 // =============================================================================
 // Types
@@ -176,6 +176,7 @@ export function useSoftBodyPhysics(
     paramOverrides?.dropletSpeed,
     paramOverrides?.dropletLifetime,
     paramOverrides?.dropletSize,
+    paramOverrides?.dropletGravity,
   ]);
 
   // Update bounds if they change
@@ -290,12 +291,12 @@ export function useSoftBodyPhysics(
       }
 
       // 5. Update droplets (pop effect particles) - runs even with no blobs
-      const DROPLET_GRAVITY = 300;
+      const dropletGravity = params.dropletGravity;
       const physBounds = boundsRef.current;
 
       for (const droplet of dropletsRef.current) {
         // Apply gravity
-        droplet.vel.y += DROPLET_GRAVITY * dt;
+        droplet.vel.y += dropletGravity * dt;
 
         // Apply velocity
         droplet.pos.x += droplet.vel.x * dt;

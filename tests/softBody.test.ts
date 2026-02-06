@@ -342,8 +342,8 @@ describe('applyBoundaryConstraints', () => {
 });
 
 describe('DEFAULT_PHYSICS', () => {
-  it('has expected default values (Proto 9 tuned)', () => {
-    // Core physics
+  it('has expected default values (Proto 9 tuned, scaled x0.6 for 30px cells)', () => {
+    // Core physics (unchanged)
     expect(DEFAULT_PHYSICS.damping).toBe(0.97);
     expect(DEFAULT_PHYSICS.stiffness).toBe(1);
     expect(DEFAULT_PHYSICS.pressure).toBe(3);
@@ -353,15 +353,21 @@ describe('DEFAULT_PHYSICS', () => {
     expect(DEFAULT_PHYSICS.returnSpeed).toBe(0.5);
     expect(DEFAULT_PHYSICS.viscosity).toBe(2.5);
     expect(DEFAULT_PHYSICS.gravity).toBe(10);
-    // Attraction params
-    expect(DEFAULT_PHYSICS.attractionRadius).toBe(20);
+    // Attraction params (scaled x0.6)
+    expect(DEFAULT_PHYSICS.attractionRadius).toBe(12);   // Proto 20 x 0.6
     expect(DEFAULT_PHYSICS.attractionRestLength).toBe(0);
     expect(DEFAULT_PHYSICS.attractionStiffness).toBe(0.005);
-    // Rendering params
-    expect(DEFAULT_PHYSICS.goopiness).toBe(25);
-    expect(DEFAULT_PHYSICS.tendrilEndRadius).toBe(10);
+    // Rendering params (scaled x0.6)
+    expect(DEFAULT_PHYSICS.goopiness).toBe(15);          // Proto 25 x 0.6
+    expect(DEFAULT_PHYSICS.tendrilEndRadius).toBe(6);    // Proto 10 x 0.6
     expect(DEFAULT_PHYSICS.tendrilSkinniness).toBe(0.7);
-    expect(DEFAULT_PHYSICS.wallThickness).toBe(8);
+    expect(DEFAULT_PHYSICS.wallThickness).toBe(4.8);     // Proto 8 x 0.6
+    // Droplet params (scaled x0.6)
+    expect(DEFAULT_PHYSICS.dropletCount).toBe(30);
+    expect(DEFAULT_PHYSICS.dropletSpeed).toBe(60);       // Proto 100 x 0.6
+    expect(DEFAULT_PHYSICS.dropletLifetime).toBe(3);
+    expect(DEFAULT_PHYSICS.dropletSize).toBe(9);         // Proto 15 x 0.6
+    expect(DEFAULT_PHYSICS.dropletGravity).toBe(180);    // Proto 300 x 0.6
   });
 });
 
