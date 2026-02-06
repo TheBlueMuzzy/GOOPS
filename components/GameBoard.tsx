@@ -319,7 +319,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
   }, [activeGoop?.spawnTimestamp, softBodyPhysics, tankRotation]);
 
-  // Update blob X position when tank rotates (keeps blob visually centered)
+  // Update blob X position and shape when tank rotates or piece rotates
   // NOTE: Y position is now owned by physics (stepActivePieceFalling), NOT synced from game
   useEffect(() => {
       if (!softBodyPhysics || isMobile) return;
@@ -334,20 +334,36 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
       if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-      // Calculate X centroid of piece cells
-      const cells = activeGoop.cells;
-      let sumX = 0;
-      for (const cell of cells) {
-          sumX += visX + cell.x;
+      // Update blob's gridCells when piece shape changes (rotation)
+      // Preserve the current base Y position from physics
+      const currentBaseY = blob.gridCells.length > 0 ? blob.gridCells[0].y : 0;
+
+      // Calculate the relative Y offset for each cell based on current gridCells average
+      // This preserves the accumulated fall distance
+      let avgOldY = 0;
+      for (const cell of blob.gridCells) {
+          avgOldY += cell.y;
       }
-      const centerX = sumX / cells.length;
+      avgOldY = blob.gridCells.length > 0 ? avgOldY / blob.gridCells.length : 0;
 
-      // Convert to pixel X
+      // Build new gridCells from current piece cells, using preserved Y
+      const newCells = activeGoop.cells.map(cell => ({
+          x: visX + cell.x,
+          y: avgOldY + cell.y  // Use average Y plus relative cell offset
+      }));
+      blob.gridCells = newCells;
+
+      // Calculate X centroid of new cells
+      let sumX = 0;
+      for (const cell of newCells) {
+          sumX += cell.x;
+      }
+      const centerX = sumX / newCells.length;
+
+      // Convert to pixel X, preserve physics-controlled Y
       const targetX = PHYSICS_GRID_OFFSET.x + (centerX + 0.5) * PHYSICS_CELL_SIZE;
-
-      // Only update X, preserve physics-controlled Y
       blob.targetX = targetX;
-  }, [activeGoop?.x, activeGoop?.state, softBodyPhysics, tankRotation]);
+  }, [activeGoop?.x, activeGoop?.rotation, activeGoop?.cells, activeGoop?.state, softBodyPhysics, tankRotation]);
 
   // Handle lock transition: remove falling blob when piece locks
   useEffect(() => {
