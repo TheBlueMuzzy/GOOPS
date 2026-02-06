@@ -319,7 +319,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
   }, [activeGoop?.spawnTimestamp, softBodyPhysics, tankRotation]);
 
-  // Update blob position every frame while falling
+  // Update blob X position when tank rotates (keeps blob visually centered)
+  // NOTE: Y position is now owned by physics (stepActivePieceFalling), NOT synced from game
   useEffect(() => {
       if (!softBodyPhysics || isMobile) return;
       if (!activeGoop || activeGoop.state !== GoopState.FALLING) return;
@@ -328,27 +329,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const blob = softBodyPhysics.getBlob(blobId);
       if (!blob) return;
 
-      // Calculate piece center in visual coordinates
+      // Calculate piece center X in visual coordinates
       let visX = activeGoop.x - tankRotation;
       if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
       if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
 
-      // Calculate centroid of piece cells
+      // Calculate X centroid of piece cells
       const cells = activeGoop.cells;
-      let sumX = 0, sumY = 0;
+      let sumX = 0;
       for (const cell of cells) {
           sumX += visX + cell.x;
-          sumY += (activeGoop.y + cell.y) - BUFFER_HEIGHT;
       }
       const centerX = sumX / cells.length;
-      const centerY = sumY / cells.length;
 
-      // Grid to pixel: PHYSICS_GRID_OFFSET + (grid + 0.5) * PHYSICS_CELL_SIZE
+      // Convert to pixel X
       const targetX = PHYSICS_GRID_OFFSET.x + (centerX + 0.5) * PHYSICS_CELL_SIZE;
-      const targetY = PHYSICS_GRID_OFFSET.y + (centerY + 0.5) * PHYSICS_CELL_SIZE;
 
-      softBodyPhysics.updateBlobTarget(blobId, targetX, targetY);
-  }, [activeGoop?.x, activeGoop?.y, activeGoop?.state, softBodyPhysics, tankRotation]);
+      // Only update X, preserve physics-controlled Y
+      blob.targetX = targetX;
+  }, [activeGoop?.x, activeGoop?.state, softBodyPhysics, tankRotation]);
 
   // Handle lock transition: remove falling blob when piece locks
   useEffect(() => {
