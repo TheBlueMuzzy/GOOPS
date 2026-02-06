@@ -639,9 +639,6 @@ export class GameEngine {
     }
 
     public spawnNewPiece(pieceDef?: GoopTemplate, gridOverride?: TankCell[][], offsetOverride?: number) {
-        // DEBUG Bug #3: Log spawn attempts
-        console.log(`[SPAWN] spawnNewPiece called. isFastDropping=${this.isFastDropping}`);
-
         const currentGrid = gridOverride || this.state.grid;
         const currentOffset = offsetOverride !== undefined ? offsetOverride : this.state.tankRotation;
         const currentTotalScore = this.initialTotalScore + this.state.shiftScore;
@@ -764,9 +761,6 @@ export class GameEngine {
 
         this.state.activeGoop = piece;
         this.state.canSwap = true;
-
-        // DEBUG Bug #3: Confirm spawn completed
-        console.log(`[SPAWN] New piece spawned: state=${piece.state} y=${piece.y} spawnTimestamp=${piece.spawnTimestamp}`);
 
         this.emitChange();
     }
@@ -1241,23 +1235,7 @@ export class GameEngine {
         const y = getGhostY(this.state.grid, this.state.activeGoop, this.state.tankRotation);
         const finalPiece = { ...this.state.activeGoop, y };
 
-        // DEBUG Bug #2: Log where piece is locking
-        const cellPositions = finalPiece.cells.map(c =>
-            `(${(finalPiece.x + c.x)},${(y + c.y)})`
-        ).join(',');
-        console.log(`[LOCK PIECE] x=${finalPiece.x} ghostY=${y} cells=[${cellPositions}]`);
-
         let { grid: newGrid, consumedGoals, destroyedGoals } = mergePiece(this.state.grid, finalPiece, this.state.goalMarks);
-
-        // DEBUG Bug #2: Verify grid was updated
-        let occupiedCells = 0;
-        for (let row = 0; row < newGrid.length; row++) {
-            for (let col = 0; col < newGrid[row].length; col++) {
-                const cell = newGrid[row][col];
-                if (cell && cell.groupId !== null) occupiedCells++;
-            }
-        }
-        console.log(`[LOCK PIECE] Grid now has ${occupiedCells} occupied cells, gridSize=${newGrid.length}x${newGrid[0]?.length}`);
 
         // Process wild piece conversions (wild spreads to neighbors, or non-wild converts wild neighbors)
         if (finalPiece.definition.isWild || this.hasAdjacentWild(newGrid, finalPiece)) {
@@ -1372,7 +1350,6 @@ export class GameEngine {
             // Start lock timer when physics reports collision
             if (this.lockStartTime === null) {
                 this.lockStartTime = Date.now();
-                console.log(`[LOCK TIMER] Started at y=${physicsGridY}, isFastDropping=${this.isFastDropping}`);
             }
 
             const lockedTime = Date.now() - this.lockStartTime;
@@ -1380,7 +1357,6 @@ export class GameEngine {
 
             // Lock if: timer expired OR hit 10-reset limit
             if (lockedTime > effectiveLockDelay || this.lockResetCount >= 10) {
-                console.log(`[LOCK TIMER] Locking piece. lockedTime=${lockedTime}ms, lockResetCount=${this.lockResetCount}`);
                 this.lockActivePiece();
             }
         } else {

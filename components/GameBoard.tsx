@@ -320,14 +320,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           // Get color (handle multi-color pieces by using first cell color)
           const color = activeGoop.definition.cellColors?.[0] ?? activeGoop.definition.color;
 
-          // DEBUG: Log initial blob creation with more context
-          console.log(`[BLOB CREATE] spawnTimestamp=${activeGoop.spawnTimestamp} state=${activeGoop.state} y=${activeGoop.y} BUFFER_HEIGHT=${BUFFER_HEIGHT}`);
-          console.log(`[BLOB CREATE] visualCells.y=[${visualCells.map(c => c.y.toFixed(2)).join(',')}] color=${color}`);
-
           softBodyPhysics.createBlob(visualCells, color, blobId, false, tankRotation);
           setBlobRenderKey(k => k + 1);
-      } else if (!existingBlob && activeGoop.y > 5) {
-          console.log(`[BLOB CREATE SKIPPED] y=${activeGoop.y} > 5, piece already falling - don't recreate blob`);
       }
   }, [activeGoop?.spawnTimestamp, softBodyPhysics, tankRotation]);
 
@@ -357,8 +351,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       // Only update gridCells when piece ACTUALLY rotates (not every frame)
       if (rotationChanged) {
-          console.log(`[ROTATION SYNC] Piece rotated: ${prevRotationRef.current} -> ${pieceRotation}`);
-
           // Preserve the piece's Y position when shape changes
           // Use MINIMUM Y (the "top" of the piece) as the anchor point
           let minOldY = blob.gridCells.length > 0 ? blob.gridCells[0].y : 0;
@@ -378,13 +370,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               y: minOldY + (cell.y - minRelativeY)  // Anchor at top of piece
           }));
 
-          console.log(`[ROTATION SYNC] oldMinY=${minOldY.toFixed(2)} newCells.y=[${newCells.map(c => c.y.toFixed(2)).join(',')}]`);
           blob.gridCells = newCells;
 
-          // FIX BUG #1: Update blob rotation so physics rotates vertices correctly
+          // Update blob rotation so physics rotates vertices correctly
           // pieceRotation is 0-3, blob.rotation expects degrees (0, 90, 180, 270)
           blob.rotation = pieceRotation * 90;
-          console.log(`[ROTATION SYNC] Set blob.rotation=${blob.rotation}°`);
       }
 
       // Update X position when tank rotates (don't touch Y)
@@ -401,8 +391,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           }
           const centerX = sumX / blob.gridCells.length;
 
-          // Update targetX
-          blob.targetX = PHYSICS_GRID_OFFSET.x + (centerX + 0.5) * PHYSICS_CELL_SIZE;
+          // Calculate new targetX
+          const newTargetX = PHYSICS_GRID_OFFSET.x + (centerX + 0.5) * PHYSICS_CELL_SIZE;
+
+          // FIX: Tank rotation wobble - shift vertices INSTANTLY to new position
+          // Without this, vertices spring toward target causing wobble
+          if (tankRotationChanged) {
+              const deltaX = newTargetX - blob.targetX;
+              for (const v of blob.vertices) {
+                  v.pos.x += deltaX;
+                  v.oldPos.x += deltaX;
+              }
+              for (const v of blob.innerVertices) {
+                  v.pos.x += deltaX;
+                  v.oldPos.x += deltaX;
+              }
+          }
+
+          blob.targetX = newTargetX;
       }
 
       // Update refs for next comparison
@@ -421,9 +427,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       if (prevPiece && prevPiece.state === GoopState.FALLING &&
           (!currPiece || currPiece.spawnTimestamp !== prevPiece.spawnTimestamp)) {
           const blobId = `active-${prevPiece.spawnTimestamp}`;
-
-          // DEBUG Bug #3: Log blob removal on lock
-          console.log(`[BLOB REMOVE] Removing falling blob id=${blobId}, newPieceTimestamp=${currPiece?.spawnTimestamp || 'none'}`);
 
           // Remove the falling blob — locked goop sync will create a new blob for locked cells
           softBodyPhysics.removeBlob(blobId);

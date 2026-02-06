@@ -652,40 +652,16 @@ export function applyBlobCollisions(
  * @param grid - The game grid for collision detection
  * @param gridRows - Number of rows in the grid
  */
-// DEBUG: Track calls for fall speed measurement
-let debugLastLogTime = 0;
-let debugFrameCount = 0;
-let debugTotalFallAmount = 0;
-
 export function stepActivePieceFalling(
   blob: SoftBlob,
   dt: number,
   fallSpeed: number,
   grid: TankCell[][],
-  gridRows: number
+  gridRows: number,
+  tankRotation: number = 0
 ): void {
   // Skip if not a falling blob
   if (blob.isLocked || blob.isLoose) return;
-
-  // DEBUG: Log every second
-  debugFrameCount++;
-  debugTotalFallAmount += fallSpeed * dt;
-  const now = Date.now();
-  if (now - debugLastLogTime > 1000) {
-    const avgCellY = blob.gridCells.reduce((s, c) => s + c.y, 0) / blob.gridCells.length;
-    console.log(`[FALL DEBUG] ` +
-      `frames=${debugFrameCount} ` +
-      `totalFall=${debugTotalFallAmount.toFixed(1)}px ` +
-      `cellY=${avgCellY.toFixed(2)} ` +
-      `visualOffsetY=${blob.visualOffsetY.toFixed(1)} ` +
-      `gridRows=${gridRows} ` +
-      `dt=${dt.toFixed(4)} ` +
-      `fallSpeed=${fallSpeed.toFixed(1)}`
-    );
-    debugFrameCount = 0;
-    debugTotalFallAmount = 0;
-    debugLastLogTime = now;
-  }
 
   // Check collision BEFORE moving
   let canFallMore = true;
@@ -694,7 +670,6 @@ export function stepActivePieceFalling(
 
     // Floor check (visual coordinates)
     if (nextVisualY >= gridRows) {
-      console.log(`[FLOOR HIT] cell.y=${cell.y.toFixed(2)} nextY=${nextVisualY.toFixed(2)} >= gridRows=${gridRows}`);
       canFallMore = false;
       break;
     }
@@ -704,17 +679,15 @@ export function stepActivePieceFalling(
     // Visual coords: 0-15, Full grid coords: 0-18 (buffer rows 0-2)
     const fullGridY = Math.floor(nextVisualY) + BUFFER_HEIGHT;
 
-    // Handle cylindrical X wrapping (cell.x might be in visual space -6 to 5 or similar)
-    // Need to convert to grid column (0 to TANK_WIDTH-1)
-    // The visual X is relative to viewport center, game grid X is absolute
-    let gridX = Math.floor(cell.x);
+    // Convert visual X to game grid X
+    // Visual X = gameGridX - tankRotation, so gameGridX = visualX + tankRotation
+    let gridX = Math.floor(cell.x) + tankRotation;
     // Wrap to valid range (game grid is TANK_WIDTH=30 columns)
     while (gridX < 0) gridX += TANK_WIDTH;
     while (gridX >= TANK_WIDTH) gridX -= TANK_WIDTH;
 
     const targetCell = grid[fullGridY]?.[gridX];
     if (targetCell && targetCell.goopGroupId !== undefined) {
-      console.log(`[GOOP HIT] visualY=${cell.y.toFixed(2)} fullGridY=${fullGridY} gridX=${gridX} goopGroupId=${targetCell.goopGroupId}`);
       canFallMore = false;
       break;
     }

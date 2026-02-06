@@ -285,7 +285,8 @@ export function useSoftBodyPhysics(
               dt,
               context.fallSpeed,
               context.grid,
-              TANK_VIEWPORT_HEIGHT  // Visible rows (16)
+              TANK_VIEWPORT_HEIGHT,  // Visible rows (16)
+              context.tankRotation   // For converting visual X to game grid X
             );
           }
         }
@@ -470,12 +471,6 @@ export function useSoftBodyPhysics(
   const getActivePieceState = useCallback((): { gridY: number; isColliding: boolean } | null => {
     const activeBlob = blobsRef.current.find(b => b.isFalling && !b.isLocked);
     if (!activeBlob) {
-      // DEBUG Bug #3: Log when no active blob found (possible cause of spawn break)
-      const blobCount = blobsRef.current.length;
-      const blobStates = blobsRef.current.map(b => `${b.id}:falling=${b.isFalling},locked=${b.isLocked}`).join(', ');
-      if (blobCount > 0) {
-        console.log(`[PHYSICS STATE] No active blob. Total=${blobCount} states=[${blobStates}]`);
-      }
       return null;
     }
 
