@@ -19,12 +19,15 @@ import {
   updateAttractionSprings,
   applyAttractionSprings,
   applyBlobCollisions,
+  stepActivePieceFalling,
 } from '../core/softBody/physics';
+import { TankCell } from '../types';
 import {
   createBlobFromCells,
   PHYSICS_GRID_OFFSET,
   PHYSICS_CELL_SIZE,
 } from '../core/softBody/blobFactory';
+import { TANK_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT } from '../constants';
 
 // =============================================================================
 // Constants
@@ -39,6 +42,16 @@ const PULSE_AMPLITUDE = 2.4;
 // =============================================================================
 // Types
 // =============================================================================
+
+/**
+ * Context passed to physics step for falling piece control.
+ * Physics owns the falling motion; GameEngine reads the collision state.
+ */
+export interface PhysicsStepContext {
+  grid: TankCell[][];
+  tankRotation: number;
+  fallSpeed: number;  // Pixels per second (GameEngine controls fast-fall)
+}
 
 export interface UseSoftBodyPhysicsOptions {
   /** Whether physics simulation is active */
@@ -66,8 +79,8 @@ export interface UseSoftBodyPhysicsReturn {
   updateBlobTarget: (id: string, targetX: number, targetY: number) => void;
   /** Lock a blob in place (transitions from falling to locked state) */
   lockBlob: (id: string) => void;
-  /** Run one physics step (call from game loop) */
-  step: (dt: number) => void;
+  /** Run one physics step (call from game loop). Pass context for falling piece physics. */
+  step: (dt: number, context?: PhysicsStepContext) => void;
   /** Clear all blobs */
   clearBlobs: () => void;
   /** Get a blob by ID */
@@ -78,6 +91,8 @@ export interface UseSoftBodyPhysicsReturn {
   droplets: Droplet[];
   /** Create droplets from a popping blob */
   createDropletsForPop: (blob: SoftBlob) => void;
+  /** Get the active falling piece's physics state (gridY and isColliding) */
+  getActivePieceState: () => { gridY: number; isColliding: boolean } | null;
 }
 
 // =============================================================================
@@ -244,20 +259,37 @@ export function useSoftBodyPhysics(
    * Should be called from the game's animation loop.
    *
    * Includes:
+   * - Falling piece physics (when context provided)
    * - Core physics (integration, home force, springs, pressure, boundaries)
    * - Fill animation for locked blobs
    * - Ready-to-pop impulse when fill reaches 100%
    * - Attraction springs for merge tendrils
    *
    * @param dt - Delta time in seconds (capped at 33ms for stability)
+   * @param context - Optional context for falling piece physics
    */
   const step = useCallback(
-    (dt: number) => {
+    (dt: number, context?: PhysicsStepContext) => {
       if (!enabled) return;
 
       const blobs = blobsRef.current;
       const params = paramsRef.current;
       const hasBlobs = blobs.length > 0;
+
+      // Step falling blobs BEFORE core physics (when context provided)
+      if (context && hasBlobs) {
+        for (const blob of blobs) {
+          if (blob.isFalling && !blob.isLocked) {
+            stepActivePieceFalling(
+              blob,
+              dt,
+              context.fallSpeed,
+              context.grid,
+              TANK_VIEWPORT_HEIGHT  // Visible rows (16)
+            );
+          }
+        }
+      }
 
       // Blob physics only runs when there are blobs
       if (hasBlobs) {
@@ -431,6 +463,30 @@ export function useSoftBodyPhysics(
     }
   }, []);
 
+  /**
+   * Get the active falling piece's physics state.
+   * Returns gridY (with BUFFER_HEIGHT added back) and isColliding for GameEngine.
+   */
+  const getActivePieceState = useCallback((): { gridY: number; isColliding: boolean } | null => {
+    const activeBlob = blobsRef.current.find(b => b.isFalling && !b.isLocked);
+    if (!activeBlob) return null;
+
+    // Calculate grid Y from blob's gridCells (average Y of all cells)
+    let sumY = 0;
+    for (const cell of activeBlob.gridCells) {
+      sumY += cell.y;
+    }
+    const avgY = sumY / activeBlob.gridCells.length;
+
+    // Add BUFFER_HEIGHT to convert visual Y back to full grid Y
+    const gridY = avgY + BUFFER_HEIGHT;
+
+    return {
+      gridY,
+      isColliding: activeBlob.isColliding
+    };
+  }, []);
+
   return {
     blobs: blobsRef.current,
     createBlob,
@@ -443,5 +499,6 @@ export function useSoftBodyPhysics(
     shiftBlobsForRotation,
     droplets: dropletsRef.current,
     createDropletsForPop,
+    getActivePieceState,
   };
 }
