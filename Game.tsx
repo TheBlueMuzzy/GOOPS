@@ -13,6 +13,8 @@ import { Play, Home } from 'lucide-react';
 import { gameEventBus } from './core/events/EventBus';
 import { GameEventType, RotatePayload, DragPayload, FastDropPayload, BlockTapPayload, SwapHoldPayload } from './core/events/GameEvents';
 import { calculateRankDetails } from './utils/progression';
+import { getPaletteForRank } from './utils/gameLogic';
+import { TETRA_NORMAL, TETRA_CORRUPTED, PENTA_NORMAL, PENTA_CORRUPTED, HEXA_NORMAL, HEXA_CORRUPTED, COLORS } from './constants';
 import { SpinTankCommand, RotateGoopCommand, SetFastDropCommand, SwapPieceCommand, StartRunCommand, SetPhaseCommand, TogglePauseCommand, ResolveComplicationCommand, PopGoopCommand, ActivateAbilityCommand } from './core/commands/actions';
 
 // STATE ARCHITECTURE:
@@ -45,6 +47,10 @@ interface GameProps {
 const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, powerUps = {}, scraps, settings, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade, onRefundUpgrade, equippedActives = [], onToggleEquip }) => {
   // Soft-body physics debug panel (toggle with backtick key)
   const [showPhysicsDebug, setShowPhysicsDebug] = useState(false);
+  // Dev piece picker panel (toggle with ~ key)
+  const [showPiecePicker, setShowPiecePicker] = useState(false);
+  const [selectedPieceColor, setSelectedPieceColor] = useState(COLORS.RED);
+  const [randomPieces, setRandomPieces] = useState(true);
   const [physicsParams, setPhysicsParams] = useState<PhysicsParams>({ ...DEFAULT_PHYSICS });
   const [normalGoopOpacity, setNormalGoopOpacity] = useState(0.2); // 0-1, for debugging SBGs
   const [showVertexDebug, setShowVertexDebug] = useState(false); // Show numbered vertices on SBGs
@@ -254,6 +260,13 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           if (e.key === '`') {
               e.preventDefault();
               setShowPhysicsDebug(prev => !prev);
+              return;
+          }
+
+          // Toggle piece picker panel with tilde
+          if (e.key === '~') {
+              e.preventDefault();
+              setShowPiecePicker(prev => !prev);
               return;
           }
 
@@ -720,30 +733,6 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
 
             <div className="pt-2 border-t border-gray-600 text-gray-400">
               <div>Blobs: {softBodyPhysics.blobs.length}</div>
-              <label className="flex items-center gap-2 mt-1">
-                <input
-                  type="checkbox"
-                  checked={showVertexDebug}
-                  onChange={e => setShowVertexDebug(e.target.checked)}
-                />
-                <span>Show Vertices</span>
-              </label>
-              <label className="flex items-center gap-2 mt-1">
-                <input
-                  type="checkbox"
-                  checked={engine.freezeTimer}
-                  onChange={e => { engine.freezeTimer = e.target.checked; }}
-                />
-                <span>Freeze Timer</span>
-              </label>
-              <label className="flex items-center gap-2 mt-1">
-                <input
-                  type="checkbox"
-                  checked={engine.freezeFalling}
-                  onChange={e => { engine.freezeFalling = e.target.checked; }}
-                />
-                <span>Freeze Falling</span>
-              </label>
               <div className="flex gap-1 mt-1">
                 <button
                   onClick={() => { setPhysicsParams({ ...DEFAULT_PHYSICS }); setNormalGoopOpacity(0.25); setShowVertexDebug(false); setGooStdDev(8); setGooAlphaMul(24); setGooAlphaOff(-13); setFallingGooStdDev(8); setFallingGooAlphaMul(24); setFallingGooAlphaOff(-13); }}
@@ -776,6 +765,188 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           </div>
         </div>
       )}
+
+      {/* LAYER 5: PIECE PICKER DEV PANEL (Toggle with ~ key) */}
+      {showPiecePicker && !isMobile && (() => {
+        const rank = calculateRankDetails(initialTotalScore).rank;
+        const activePalette = getPaletteForRank(rank);
+        const allColors = [
+          { key: 'RED', hex: COLORS.RED },
+          { key: 'BLUE', hex: COLORS.BLUE },
+          { key: 'GREEN', hex: COLORS.GREEN },
+          { key: 'YELLOW', hex: COLORS.YELLOW },
+          { key: 'PURPLE', hex: COLORS.PURPLE },
+          { key: 'WHITE', hex: COLORS.WHITE },
+          { key: 'BLACK', hex: COLORS.BLACK },
+        ];
+
+        const MINI_BOX = 36;
+        const MINI_CELL = 7;
+
+        const renderMiniPiece = (piece: typeof TETRA_NORMAL[number], idx: number) => {
+          const minX = Math.min(...piece.cells.map(c => c.x));
+          const maxX = Math.max(...piece.cells.map(c => c.x));
+          const minY = Math.min(...piece.cells.map(c => c.y));
+          const maxY = Math.max(...piece.cells.map(c => c.y));
+          const pw = maxX - minX + 1;
+          const ph = maxY - minY + 1;
+          const offX = (MINI_BOX - pw * MINI_CELL) / 2;
+          const offY = (MINI_BOX - ph * MINI_CELL) / 2;
+
+          return (
+            <div
+              key={idx}
+              onClick={() => {
+                const override = {
+                  ...piece,
+                  color: selectedPieceColor,
+                };
+                engine.state.nextGoop = override;
+                if (!randomPieces) {
+                  engine.devOverrideNextGoop = override;
+                }
+                engine.emitChange();
+              }}
+              style={{
+                cursor: 'pointer',
+                borderRadius: 4,
+                border: '1px solid #334155',
+                background: 'rgba(30, 41, 59, 0.5)',
+              }}
+              title={piece.type}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(51, 65, 85, 0.8)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(30, 41, 59, 0.5)')}
+            >
+              <svg width={MINI_BOX} height={MINI_BOX}>
+                {piece.cells.map((cell, i) => (
+                  <rect
+                    key={i}
+                    x={offX + (cell.x - minX) * MINI_CELL}
+                    y={offY + (cell.y - minY) * MINI_CELL}
+                    width={MINI_CELL - 1}
+                    height={MINI_CELL - 1}
+                    fill={selectedPieceColor}
+                    rx={1}
+                  />
+                ))}
+              </svg>
+            </div>
+          );
+        };
+
+        const pieceGroups = [
+          { label: 'TETRA', normal: TETRA_NORMAL, corrupted: TETRA_CORRUPTED },
+          { label: 'PENTA', normal: PENTA_NORMAL, corrupted: PENTA_CORRUPTED },
+          { label: 'HEXA', normal: HEXA_NORMAL, corrupted: HEXA_CORRUPTED },
+        ];
+
+        return (
+          <div
+            className="absolute top-2 left-2 z-[100] bg-black/90 text-white p-3 rounded-lg text-xs font-mono pointer-events-auto overflow-y-auto"
+            style={{ minWidth: 280, maxHeight: '95vh' }}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-bold">Piece Picker</span>
+              <button onClick={() => setShowPiecePicker(false)} className="text-gray-400 hover:text-white px-1">✕</button>
+            </div>
+
+            {/* Current Next / Hold preview */}
+            <div className="flex gap-3 mb-2 pb-2 border-b border-gray-700">
+              <div className="text-gray-400">
+                <span className="text-[10px] uppercase tracking-wider">Next:</span>{' '}
+                <span className="text-gray-200">{gameState.nextGoop?.type ?? '—'}</span>
+              </div>
+              <div className="text-gray-400">
+                <span className="text-[10px] uppercase tracking-wider">Hold:</span>{' '}
+                <span className="text-gray-200">{gameState.storedGoop?.type ?? '—'}</span>
+              </div>
+            </div>
+
+            {/* Color selector */}
+            <div className="mb-2 pb-2 border-b border-gray-700">
+              <div className="text-[10px] uppercase tracking-wider text-gray-400 mb-1">Color</div>
+              <div className="flex gap-1.5">
+                {allColors.map(c => {
+                  const unlocked = activePalette.includes(c.hex);
+                  const selected = selectedPieceColor === c.hex;
+                  return (
+                    <div
+                      key={c.key}
+                      onClick={() => unlocked && setSelectedPieceColor(c.hex)}
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: c.hex,
+                        opacity: unlocked ? 1 : 0.3,
+                        cursor: unlocked ? 'pointer' : 'not-allowed',
+                        border: selected ? '3px solid #facc15' : unlocked ? '2px solid #475569' : '2px dashed #334155',
+                        boxSizing: 'border-box',
+                      }}
+                      title={`${c.key}${unlocked ? '' : ' (locked)'}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Dev toggles (moved from physics panel) */}
+            <div className="mb-2 pb-2 border-b border-gray-700 space-y-1">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={randomPieces}
+                  onChange={e => {
+                    setRandomPieces(e.target.checked);
+                    if (e.target.checked) {
+                      engine.devOverrideNextGoop = null;
+                    }
+                  }}
+                />
+                <span>Random Pieces</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={showVertexDebug}
+                  onChange={e => setShowVertexDebug(e.target.checked)}
+                />
+                <span>Show Vertices</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={engine.freezeTimer}
+                  onChange={e => { engine.freezeTimer = e.target.checked; }}
+                />
+                <span>Freeze Timer</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={engine.freezeFalling}
+                  onChange={e => { engine.freezeFalling = e.target.checked; }}
+                />
+                <span>Freeze Falling</span>
+              </label>
+            </div>
+
+            {/* Piece grids by category */}
+            {pieceGroups.map(group => (
+              <div key={group.label} className="mb-2">
+                <div className="text-[10px] uppercase tracking-wider text-cyan-400 mb-1">{group.label} — Normal</div>
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                  {group.normal.map((p, i) => renderMiniPiece(p, i))}
+                </div>
+                <div className="text-[10px] uppercase tracking-wider text-orange-400 mb-1">{group.label} — Corrupted</div>
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                  {group.corrupted.map((p, i) => renderMiniPiece(p, i))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
     </div>
   );

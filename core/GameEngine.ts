@@ -48,6 +48,7 @@ export class GameEngine {
     public usePhysicsForFalling: boolean = false;  // Set true when soft-body physics controls falling (desktop)
     public freezeTimer: boolean = false;  // Debug: freeze shiftTime countdown (infinite time)
     public freezeFalling: boolean = false;  // Debug: freeze piece falling (pieces hover in place)
+    public devOverrideNextGoop: GoopTemplate | null = null;  // Dev: override next piece with picker selection
     public lastGoalSpawnTime: number = 0;
     public lastComplicationCheckTime: number = 0;
     public isFastDropping: boolean = false;
@@ -711,6 +712,11 @@ export class GameEngine {
             }
 
             this.state.nextGoop = newNext;
+
+            // Dev override: replace randomly generated next piece with picker selection
+            if (this.devOverrideNextGoop) {
+                this.state.nextGoop = { ...this.devOverrideNextGoop };
+            }
         }
 
         const piece = spawnPiece(pieceToSpawn, currentRank);

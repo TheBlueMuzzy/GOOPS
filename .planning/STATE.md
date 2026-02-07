@@ -11,8 +11,8 @@ updated: 2026-02-06
 
 Phase: 27.1 Physics-Controlled Active Piece
 Plan: MASTER-PLAN complete (9/9 tasks) — ALL BUGS FIXED + getGhostY safety net
-Status: Deployed — soft body physics, tendril rendering, ghost Y overshoot fix all live
-Last activity: 2026-02-07 - getGhostY safety net for physics overshoot piece overwrite bug
+Status: Deployed — soft body physics + dev piece picker tool
+Last activity: 2026-02-07 - Dev piece picker panel (~) with repeat mode and debug toggles
 Branch: `soft-body-experiment` (merged to master for deploy)
 
 Progress: █████████░ ~90% (core physics working, deployed, falling blob tendrils still TODO)
@@ -47,14 +47,14 @@ Progress: █████████░ ~90% (core physics working, deployed, f
 
 ### What was done THIS session:
 
-1. **getGhostY safety net** — Added upward retreat loop so `getGhostY` self-heals when physics overshoot places a piece inside occupied cells. Prevents the piece overwrite bug during fast-drop with physics-controlled falling.
-2. **Added 3 new getGhostY tests** — Normal landing, overshoot retreat, and floor landing cases.
-3. **Prior sessions:** Tendril goo filter fix, physics param research, debug features, soft body integration.
+1. **Dev piece picker panel** — New `~` key toggles a left-side dev panel showing all 54 pieces organized by Tetra/Penta/Hexa (normal + corrupted), with color selector respecting rank-locked colors.
+2. **Random Pieces toggle** — Checkbox (default: on). When unchecked, clicking a piece repeats it every spawn via `engine.devOverrideNextGoop`.
+3. **Moved debug checkboxes** — Show Vertices, Freeze Timer, Freeze Falling moved from physics panel (`) to piece picker panel (~).
 
 ### Files modified (this session):
 
-- `utils/gameLogic.ts` — `getGhostY` upward retreat safety net
-- `tests/gameLogic.test.ts` — 3 new `getGhostY` tests (210 total)
+- `Game.tsx` — Piece picker panel, state, key handler, moved checkboxes
+- `core/GameEngine.ts` — `devOverrideNextGoop` property + override in `spawnGoop()`
 
 ### Known Issues
 
@@ -75,15 +75,17 @@ Progress: █████████░ ~90% (core physics working, deployed, f
 Last session: 2026-02-07
 **Version:** 1.1.13
 **Branch:** soft-body-experiment (deployed to master)
-**Build:** 215
+**Build:** 218
 
 ### Resume Command
 ```
-DEPLOYED — Soft body physics + getGhostY safety net live on GitHub Pages.
+DEPLOYED — Dev piece picker panel + soft body physics live on GitHub Pages.
 
 SESSION ACCOMPLISHMENTS:
-- Added getGhostY upward retreat to prevent piece overwrite on physics overshoot
-- 3 new tests (210 total), all passing
+- Dev piece picker panel (~ key) with all 54 pieces, color selector, rank-locked colors
+- Random Pieces toggle (uncheck = selected piece repeats every spawn)
+- Moved debug checkboxes (vertices, freeze timer/falling) from physics to picker panel
+- 210 tests, all passing
 - Deployed to production
 
 REMAINING WORK:
