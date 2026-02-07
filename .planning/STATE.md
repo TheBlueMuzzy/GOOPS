@@ -10,12 +10,12 @@ updated: 2026-02-06
 ## Current Position
 
 Phase: 27.1 Physics-Controlled Active Piece
-Plan: MASTER-PLAN complete (9/9 tasks) — ALL BUGS FIXED
-Status: Tendril rendering partially fixed, falling blob tendrils still TODO
-Last activity: 2026-02-06 - Tendril goo filter fix + physics param research
-Branch: `soft-body-experiment`
+Plan: MASTER-PLAN complete (9/9 tasks) — ALL BUGS FIXED + getGhostY safety net
+Status: Deployed — soft body physics, tendril rendering, ghost Y overshoot fix all live
+Last activity: 2026-02-07 - getGhostY safety net for physics overshoot piece overwrite bug
+Branch: `soft-body-experiment` (merged to master for deploy)
 
-Progress: ████████░░ ~85% (core physics working, tendril polish in progress)
+Progress: █████████░ ~90% (core physics working, deployed, falling blob tendrils still TODO)
 
 ## Branch Workflow (SOP)
 
@@ -47,23 +47,18 @@ Progress: ████████░░ ~85% (core physics working, tendril pol
 
 ### What was done THIS session:
 
-1. **Fixed tendril rendering** — Moved tendrils from outside goo filter to INSIDE per-color goo filter groups (matching Proto 9). Tendrils now blur together into smooth gooey strands instead of showing as individual dots.
-2. **Researched physics params** — `homeStiffness` (0.01) is the correct param for anchoring blobs against attraction spring pull, not returnSpeed/viscosity. User's current param values match all defaults.
-3. **Added debug features (prior session)** — freezeTimer, freezeFalling checkboxes, save params snapshot button in Game.tsx
-4. **Exposed attractionSprings + params** from useSoftBodyPhysics hook for rendering
+1. **getGhostY safety net** — Added upward retreat loop so `getGhostY` self-heals when physics overshoot places a piece inside occupied cells. Prevents the piece overwrite bug during fast-drop with physics-controlled falling.
+2. **Added 3 new getGhostY tests** — Normal landing, overshoot retreat, and floor landing cases.
+3. **Prior sessions:** Tendril goo filter fix, physics param research, debug features, soft body integration.
 
-### Files modified (uncommitted on soft-body-experiment):
+### Files modified (this session):
 
-- `Game.tsx` — Debug panel: freeze checkboxes, save snapshot button, goo filter sliders
-- `components/GameBoard.tsx` — Tendril rendering moved inside goo filter groups (THE KEY FIX)
-- `core/GameEngine.ts` — freezeTimer/freezeFalling debug flags
-- `core/softBody/types.ts` — wallThickness: 4.8 → 8
-- `hooks/useSoftBodyPhysics.ts` — Exposed attractionSprings + params from hook return
-- `tests/softBody.test.ts` — Updated wallThickness expectation to 8
+- `utils/gameLogic.ts` — `getGhostY` upward retreat safety net
+- `tests/gameLogic.test.ts` — 3 new `getGhostY` tests (210 total)
 
 ### Known Issues
 
-- **Falling blob tendrils not rendered** (described above — next task)
+- **Falling blob tendrils not rendered** — tendrils only render for locked blobs, not falling blobs (next task)
 - Physics "looseness" could be tuned (blobs are a bit wobbly)
 
 ### Decisions Made
@@ -77,34 +72,25 @@ Progress: ████████░░ ~85% (core physics working, tendril pol
 
 ## Session Continuity
 
-Last session: 2026-02-06
+Last session: 2026-02-07
 **Version:** 1.1.13
-**Branch:** soft-body-experiment
-**Build:** 208
+**Branch:** soft-body-experiment (deployed to master)
+**Build:** 215
 
 ### Resume Command
 ```
-TENDRIL FIX IN PROGRESS — Locked blob tendrils fixed, falling blob tendrils TODO.
+DEPLOYED — Soft body physics + getGhostY safety net live on GitHub Pages.
 
 SESSION ACCOMPLISHMENTS:
-- Moved tendril rendering inside per-color goo filter groups (Proto 9 style)
-- Removed standalone unfiltered tendril block
-- Researched homeStiffness vs returnSpeed/viscosity for blob anchoring
-- All physics params confirmed matching defaults
+- Added getGhostY upward retreat to prevent piece overwrite on physics overshoot
+- 3 new tests (210 total), all passing
+- Deployed to production
 
 REMAINING WORK:
 - Add tendril rendering to falling blobs section in GameBoard.tsx (~line 997-1034)
 - Tendrils must go INSIDE the falling blobs' goo filter group
 - Filter springs where at least one blob is falling
-- Use same bead rendering code as locked blob tendrils
-
-FILES MODIFIED (uncommitted):
-- Game.tsx (debug panel enhancements)
-- components/GameBoard.tsx (tendril goo filter fix — KEY FILE)
-- core/GameEngine.ts (freeze debug flags)
-- core/softBody/types.ts (wallThickness 4.8→8)
-- hooks/useSoftBodyPhysics.ts (exposed attractionSprings + params)
-- tests/softBody.test.ts (wallThickness expectation)
+- Physics looseness tuning
 
 Next: Implement falling blob tendrils in GameBoard.tsx
 ```

@@ -79,6 +79,7 @@ export function integrate(
     // Proto-9 uses damping directly for all blobs
     // Viscosity affects home force, not damping
     const effectiveDamping = params.damping;
+    const gravity = blob.isLocked ? params.gravity : params.fallingGravity;
 
     // Update outer vertices
     for (const v of blob.vertices) {
@@ -89,7 +90,7 @@ export function integrate(
       v.oldPos.y = v.pos.y;
 
       v.pos.x += vx;
-      v.pos.y += vy + params.gravity * cappedDt * cappedDt;
+      v.pos.y += vy + gravity * cappedDt * cappedDt;
     }
 
     // Update inner vertices (same logic)
@@ -101,7 +102,7 @@ export function integrate(
       v.oldPos.y = v.pos.y;
 
       v.pos.x += vx;
-      v.pos.y += vy + params.gravity * cappedDt * cappedDt;
+      v.pos.y += vy + gravity * cappedDt * cappedDt;
     }
   }
 }
@@ -119,18 +120,19 @@ export function applyHomeForce(
   params: PhysicsParams
 ): void {
   for (const blob of blobs) {
-    // Speed multiplier: locked blobs return slower (squared for finer control at low values)
-    // Falling blobs use full speed to keep up with grid position changes
-    const speedMult = blob.isLocked
-      ? params.returnSpeed * params.returnSpeed
-      : 1.0;
+    // Speed multiplier: squared for finer control at low values
+    const returnSpeed = blob.isLocked ? params.returnSpeed : params.fallingReturnSpeed;
+    const speedMult = returnSpeed * returnSpeed;
 
     // Viscosity: converts instant position correction into gradual velocity-based movement
     // 0 = normal (position-based, snappy)
     // 1+ = full viscosity (velocity-based, honey-like slow return)
-    const viscosity = blob.isLocked ? params.viscosity : 0;
+    const viscosity = blob.isLocked ? params.viscosity : params.fallingViscosity;
     const positionFactor = Math.max(0, 1 - viscosity);
     const velocityFactor = viscosity > 0 ? 0.03 / Math.max(1, viscosity) : 0;
+
+    // Select homeStiffness based on locked/falling
+    const homeStiffness = blob.isLocked ? params.homeStiffness : params.fallingHomeStiffness;
 
     // Apply to outer vertices
     for (const v of blob.vertices) {
@@ -143,8 +145,8 @@ export function applyHomeForce(
       const dx = targetX - v.pos.x;
       const dy = targetY - v.pos.y;
 
-      const forceX = dx * params.homeStiffness * speedMult;
-      const forceY = dy * params.homeStiffness * speedMult;
+      const forceX = dx * homeStiffness * speedMult;
+      const forceY = dy * homeStiffness * speedMult;
 
       // Position correction (instant, jello-like)
       v.pos.x += forceX * positionFactor;
@@ -574,7 +576,7 @@ export function applyBlobCollisions(
   blobs: SoftBlob[],
   cellSize: number = 30
 ): void {
-  const MIN_DISTANCE = 20;    // Minimum distance between vertices
+  const MIN_DISTANCE = 2.5;   // Minimum distance between vertices (reduced to prevent locked blob displacement)
   const PUSH_STRENGTH = 0.8;  // How hard to push apart
   const ITERATIONS = 3;       // Multiple passes for stability
 

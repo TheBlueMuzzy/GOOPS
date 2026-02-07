@@ -91,27 +91,26 @@ export class RotateGoopCommand implements Command {
         const p = engine.state.activeGoop;
         const nextRot = (p.rotation + (this.clockwise ? 1 : -1) + 4) % 4;
 
-        // O pieces: shape stays same, just rotate the cellColors array
-        if (p.definition.type === GoopShape.O) {
+        // O pieces (2x2 squares): shape stays same, rotate cellColors if multi-color
+        if (p.definition.type === GoopShape.O || p.definition.type === GoopShape.T_O) {
             const colors = p.definition.cellColors;
-            if (colors && colors.length === 4) {
-                // Rotate colors: cells are [0,0], [1,0], [0,1], [1,1] (indices 0,1,2,3)
-                const rotatedColors = this.clockwise
+            const rotatedColors = (colors && colors.length === 4)
+                ? (this.clockwise
                     ? [colors[2], colors[0], colors[3], colors[1]]  // CW: bottom-left→top-left, etc.
-                    : [colors[1], colors[3], colors[0], colors[2]]; // CCW: top-right→top-left, etc.
+                    : [colors[1], colors[3], colors[0], colors[2]]) // CCW: top-right→top-left, etc.
+                : colors; // Single-color: keep colors unchanged
 
-                gameEventBus.emit(GameEventType.PIECE_ROTATED);
-                engine.state.activeGoop = {
-                    ...p,
-                    rotation: nextRot,
-                    definition: { ...p.definition, cellColors: rotatedColors }
-                };
-                engine.emitChange();
-            }
+            gameEventBus.emit(GameEventType.PIECE_ROTATED);
+            engine.state.activeGoop = {
+                ...p,
+                rotation: nextRot,
+                definition: { ...p.definition, cellColors: rotatedColors }
+            };
+            engine.emitChange();
             return;
         }
 
-        const nextCells = getRotatedCells(p.cells, this.clockwise);
+        const nextCells = getRotatedCells(p.cells, this.clockwise, p.rotationCenter);
         const tempPiece = { ...p, cells: nextCells, rotation: nextRot };
 
         // Wall kicks: test offset positions when rotation is blocked
@@ -210,10 +209,14 @@ export class SwapPieceCommand implements Command {
 
         if (nextDef) {
             // Check if stored piece can fit at current position BEFORE committing
+            // Calculate fixed integer rotation center for the swapped-in piece
+            const rcx = Math.round(nextDef.cells.reduce((sum, c) => sum + c.x, 0) / nextDef.cells.length);
+            const rcy = Math.round(nextDef.cells.reduce((sum, c) => sum + c.y, 0) / nextDef.cells.length);
             const testPiece: ActivePiece = {
                 definition: nextDef,
                 cells: [...nextDef.cells],
                 rotation: 0,
+                rotationCenter: { x: rcx, y: rcy },
                 spawnTimestamp: Date.now(),
                 startSpawnY: currentPiece.y,
                 screenX: currentPiece.screenX,

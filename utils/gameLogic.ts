@@ -6,12 +6,20 @@ import { TANK_WIDTH, TANK_HEIGHT, PIECES, GAME_COLORS, TANK_VIEWPORT_WIDTH, BUFF
 export { normalizeX } from './coordinates';
 import { normalizeX } from './coordinates';
 
-export const getRotatedCells = (cells: Coordinate[], clockwise: boolean): Coordinate[] => {
+export const getRotatedCells = (cells: Coordinate[], clockwise: boolean, center?: Coordinate): Coordinate[] => {
+  // Use provided center or calculate centroid rounded to integer
+  const cx = center ? center.x : Math.round(cells.reduce((sum, c) => sum + c.x, 0) / cells.length);
+  const cy = center ? center.y : Math.round(cells.reduce((sum, c) => sum + c.y, 0) / cells.length);
+
   return cells.map(({ x, y }) => {
+    // Shift to origin, rotate, shift back
+    // Integer center + integer cells = integer results, no rounding needed
+    const dx = x - cx;
+    const dy = y - cy;
     if (clockwise) {
-      return { x: -y, y: x };
+      return { x: -dy + cx, y: dx + cy };
     } else {
-      return { x: y, y: -x };
+      return { x: dy + cx, y: -dx + cy };
     }
   });
 };
@@ -31,6 +39,10 @@ export const spawnPiece = (definition?: GoopTemplate, rank: number = 1): ActiveP
   const isValidColor = definition?.color && palette.includes(definition.color);
   const color = isValidColor ? definition.color : palette[Math.floor(Math.random() * palette.length)];
 
+  // Calculate fixed integer rotation center from centroid of base cells
+  const rcx = Math.round(def.cells.reduce((sum, c) => sum + c.x, 0) / def.cells.length);
+  const rcy = Math.round(def.cells.reduce((sum, c) => sum + c.y, 0) / def.cells.length);
+
   return {
     definition: { ...def, color },
     x: 0, // Set by caller
@@ -38,6 +50,7 @@ export const spawnPiece = (definition?: GoopTemplate, rank: number = 1): ActiveP
     screenX: 0, // Set by caller
     rotation: 0,
     cells: [...def.cells],
+    rotationCenter: { x: rcx, y: rcy },
     spawnTimestamp: Date.now(),
     startSpawnY: 0, // Set by caller
     state: GoopState.SPAWNED
@@ -128,14 +141,21 @@ export const checkCollision = (grid: TankCell[][], piece: ActivePiece, tankRotat
 };
 
 export const getGhostY = (grid: TankCell[][], piece: ActivePiece, tankRotation: number): number => {
-  const startY = Math.floor(piece.y);
+  let startY = Math.floor(piece.y);
+
+  // Safety: if piece is already inside a collision (physics overshoot),
+  // retreat upward until clear before searching down
+  while (startY > -5 && checkCollision(grid, { ...piece, y: startY }, tankRotation)) {
+    startY -= 1;
+  }
+
   let y = startY;
 
   // Search downwards for the first invalid position
   while (y < TANK_HEIGHT && !checkCollision(grid, { ...piece, y: y + 1 }, tankRotation)) {
     y += 1;
   }
-  
+
   return Math.max(startY, y);
 };
 

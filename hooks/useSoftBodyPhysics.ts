@@ -27,14 +27,7 @@ import {
   PHYSICS_GRID_OFFSET,
   PHYSICS_CELL_SIZE,
 } from '../core/softBody/blobFactory';
-import { TANK_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT } from '../constants';
-
-// =============================================================================
-// Constants
-// =============================================================================
-
-/** Fill rate for locked blobs (per second) */
-const FILL_RATE = 0.5;
+import { TANK_WIDTH, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT, PER_BLOCK_DURATION } from '../constants';
 
 /** Impulse strength when blob fills to 100% (scaled x0.6 from Proto 4) */
 const PULSE_AMPLITUDE = 2.4;
@@ -183,6 +176,10 @@ export function useSoftBodyPhysics(
     paramOverrides?.returnSpeed,
     paramOverrides?.viscosity,
     paramOverrides?.gravity,
+    paramOverrides?.fallingHomeStiffness,
+    paramOverrides?.fallingReturnSpeed,
+    paramOverrides?.fallingViscosity,
+    paramOverrides?.fallingGravity,
     paramOverrides?.attractionRadius,
     paramOverrides?.attractionRestLength,
     paramOverrides?.attractionStiffness,
@@ -190,6 +187,9 @@ export function useSoftBodyPhysics(
     paramOverrides?.tendrilEndRadius,
     paramOverrides?.tendrilSkinniness,
     paramOverrides?.wallThickness,
+    paramOverrides?.fallingGoopiness,
+    paramOverrides?.fallingTendrilEndRadius,
+    paramOverrides?.fallingTendrilSkinniness,
     // Droplet params (were missing - caused sliders to not work)
     paramOverrides?.dropletCount,
     paramOverrides?.dropletSpeed,
@@ -301,10 +301,12 @@ export function useSoftBodyPhysics(
         // 1. Core physics step
         stepPhysics(blobs, dt, params, boundsRef.current);
 
-        // 2. Fill animation for locked blobs
+        // 2. Fill animation for locked blobs (rate matches normal goop: groupSize * PER_BLOCK_DURATION)
         for (const blob of blobs) {
           if (blob.isLocked && blob.fillAmount < 1) {
-            blob.fillAmount = Math.min(1, blob.fillAmount + FILL_RATE * dt);
+            const fillDuration = blob.gridCells.length * PER_BLOCK_DURATION / 1000; // seconds
+            const fillRate = 1.0 / fillDuration;
+            blob.fillAmount = Math.min(1, blob.fillAmount + fillRate * dt);
 
             // Check for ready-to-pop impulse
             const isFull = blob.fillAmount >= 1;

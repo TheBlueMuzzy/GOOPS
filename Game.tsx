@@ -46,12 +46,16 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   // Soft-body physics debug panel (toggle with backtick key)
   const [showPhysicsDebug, setShowPhysicsDebug] = useState(false);
   const [physicsParams, setPhysicsParams] = useState<PhysicsParams>({ ...DEFAULT_PHYSICS });
-  const [normalGoopOpacity, setNormalGoopOpacity] = useState(0.25); // 0-1, for debugging SBGs (default 25%)
+  const [normalGoopOpacity, setNormalGoopOpacity] = useState(0.2); // 0-1, for debugging SBGs
   const [showVertexDebug, setShowVertexDebug] = useState(false); // Show numbered vertices on SBGs
   // Goo filter params (SVG blur/threshold that creates blobby merge effect)
-  const [gooStdDev, setGooStdDev] = useState(8);
-  const [gooAlphaMul, setGooAlphaMul] = useState(24);
-  const [gooAlphaOff, setGooAlphaOff] = useState(-13);
+  const [gooStdDev, setGooStdDev] = useState(5);
+  const [gooAlphaMul, setGooAlphaMul] = useState(40);
+  const [gooAlphaOff, setGooAlphaOff] = useState(-11);
+  // Falling blob goo filter (independent from locked)
+  const [fallingGooStdDev, setFallingGooStdDev] = useState(5);
+  const [fallingGooAlphaMul, setFallingGooAlphaMul] = useState(40);
+  const [fallingGooAlphaOff, setFallingGooAlphaOff] = useState(-11);
 
   // Soft-body physics for goop rendering (Phase 26)
   // Desktop only for now - mobile uses simplified rendering
@@ -406,6 +410,9 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             gooStdDev={gooStdDev}
             gooAlphaMul={gooAlphaMul}
             gooAlphaOff={gooAlphaOff}
+            fallingGooStdDev={fallingGooStdDev}
+            fallingGooAlphaMul={fallingGooAlphaMul}
+            fallingGooAlphaOff={fallingGooAlphaOff}
          />
          {/* Lights brightness is now controlled by state.lightsBrightness (player-controlled via fast drop) */}
       </div>
@@ -455,79 +462,176 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
       {/* LAYER 4: PHYSICS DEBUG PANEL (Toggle with backtick key) */}
       {showPhysicsDebug && !isMobile && (
         <div
-          className="absolute top-2 right-2 z-[100] bg-black/90 text-white p-3 rounded-lg text-xs font-mono pointer-events-auto"
-          style={{ minWidth: 220 }}
+          className="absolute top-2 right-2 z-[100] bg-black/90 text-white p-3 rounded-lg text-xs font-mono pointer-events-auto overflow-y-auto"
+          style={{ minWidth: 460, maxHeight: '95vh' }}
         >
           <div className="flex justify-between items-center mb-2">
             <span className="font-bold">Physics Debug</span>
             <button onClick={() => setShowPhysicsDebug(false)} className="text-gray-400 hover:text-white">✕</button>
           </div>
 
-          <div className="space-y-2">
+          {/* === SHARED PARAMS (full width) === */}
+          <div className="space-y-2 mb-2">
+            <div className="text-gray-400 text-[10px] uppercase tracking-wider">Shared</div>
             <label className="block">
               <span>Damping: {physicsParams.damping.toFixed(2)}</span>
               <input type="range" min="0.8" max="0.99" step="0.01" value={physicsParams.damping}
                 onChange={e => setPhysicsParams(p => ({ ...p, damping: Number(e.target.value) }))}
                 className="w-full" />
             </label>
-
             <label className="block">
               <span>Stiffness: {physicsParams.stiffness}</span>
               <input type="range" min="1" max="30" step="1" value={physicsParams.stiffness}
                 onChange={e => setPhysicsParams(p => ({ ...p, stiffness: Number(e.target.value) }))}
                 className="w-full" />
             </label>
-
             <label className="block">
               <span>Pressure: {physicsParams.pressure}</span>
               <input type="range" min="0" max="20" step="1" value={physicsParams.pressure}
                 onChange={e => setPhysicsParams(p => ({ ...p, pressure: Number(e.target.value) }))}
                 className="w-full" />
             </label>
-
-            <label className="block">
-              <span>Home Stiffness: {physicsParams.homeStiffness.toFixed(2)}</span>
-              <input type="range" min="0" max="1" step="0.05" value={physicsParams.homeStiffness}
-                onChange={e => setPhysicsParams(p => ({ ...p, homeStiffness: Number(e.target.value) }))}
-                className="w-full" />
-            </label>
-
-            <label className="block">
-              <span>Return Speed: {physicsParams.returnSpeed.toFixed(2)}</span>
-              <input type="range" min="0" max="1" step="0.05" value={physicsParams.returnSpeed}
-                onChange={e => setPhysicsParams(p => ({ ...p, returnSpeed: Number(e.target.value) }))}
-                className="w-full" />
-            </label>
-
-            <label className="block">
-              <span>Viscosity: {physicsParams.viscosity.toFixed(1)}</span>
-              <input type="range" min="0" max="5" step="0.1" value={physicsParams.viscosity}
-                onChange={e => setPhysicsParams(p => ({ ...p, viscosity: Number(e.target.value) }))}
-                className="w-full" />
-            </label>
-
-            <label className="block">
-              <span>Gravity: {physicsParams.gravity}</span>
-              <input type="range" min="0" max="50" step="1" value={physicsParams.gravity}
-                onChange={e => setPhysicsParams(p => ({ ...p, gravity: Number(e.target.value) }))}
-                className="w-full" />
-            </label>
-
             <label className="block">
               <span>Inner Home Stiffness: {physicsParams.innerHomeStiffness.toFixed(2)}</span>
               <input type="range" min="0" max="1" step="0.01" value={physicsParams.innerHomeStiffness}
                 onChange={e => setPhysicsParams(p => ({ ...p, innerHomeStiffness: Number(e.target.value) }))}
                 className="w-full" />
             </label>
-
             <label className="block">
               <span>Iterations: {physicsParams.iterations}</span>
               <input type="range" min="1" max="10" step="1" value={physicsParams.iterations}
                 onChange={e => setPhysicsParams(p => ({ ...p, iterations: Number(e.target.value) }))}
                 className="w-full" />
             </label>
+          </div>
 
-            <div className="pt-2 border-t border-gray-600">
+          {/* === TWO-COLUMN: LOCKED vs FALLING === */}
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-600">
+            {/* LEFT COLUMN: Locked Blobs */}
+            <div className="space-y-2">
+              <div className="text-yellow-400 text-[10px] uppercase tracking-wider">Locked</div>
+              <label className="block">
+                <span>Home Stiffness: {physicsParams.homeStiffness.toFixed(2)}</span>
+                <input type="range" min="0" max="1" step="0.05" value={physicsParams.homeStiffness}
+                  onChange={e => setPhysicsParams(p => ({ ...p, homeStiffness: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Return Speed: {physicsParams.returnSpeed.toFixed(2)}</span>
+                <input type="range" min="0" max="1" step="0.05" value={physicsParams.returnSpeed}
+                  onChange={e => setPhysicsParams(p => ({ ...p, returnSpeed: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Viscosity: {physicsParams.viscosity.toFixed(1)}</span>
+                <input type="range" min="0" max="5" step="0.1" value={physicsParams.viscosity}
+                  onChange={e => setPhysicsParams(p => ({ ...p, viscosity: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Gravity: {physicsParams.gravity}</span>
+                <input type="range" min="0" max="50" step="1" value={physicsParams.gravity}
+                  onChange={e => setPhysicsParams(p => ({ ...p, gravity: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <div className="pt-1 border-t border-gray-700">
+                <div className="text-gray-500 text-[10px]">Goo Filter</div>
+                <label className="block">
+                  <span>Blur: {gooStdDev}</span>
+                  <input type="range" min="1" max="25" step="1" value={gooStdDev}
+                    onChange={e => setGooStdDev(Number(e.target.value))}
+                    className="w-full" />
+                </label>
+                <label className="block">
+                  <span>Alpha Mul: {gooAlphaMul}</span>
+                  <input type="range" min="1" max="50" step="1" value={gooAlphaMul}
+                    onChange={e => setGooAlphaMul(Number(e.target.value))}
+                    className="w-full" />
+                </label>
+                <label className="block">
+                  <span>Alpha Off: {gooAlphaOff}</span>
+                  <input type="range" min="-30" max="0" step="1" value={gooAlphaOff}
+                    onChange={e => setGooAlphaOff(Number(e.target.value))}
+                    className="w-full" />
+                </label>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Falling Blobs */}
+            <div className="space-y-2">
+              <div className="text-cyan-400 text-[10px] uppercase tracking-wider">Falling</div>
+              <label className="block">
+                <span>Home Stiffness: {physicsParams.fallingHomeStiffness.toFixed(2)}</span>
+                <input type="range" min="0" max="1" step="0.05" value={physicsParams.fallingHomeStiffness}
+                  onChange={e => setPhysicsParams(p => ({ ...p, fallingHomeStiffness: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Return Speed: {physicsParams.fallingReturnSpeed.toFixed(2)}</span>
+                <input type="range" min="0" max="1" step="0.05" value={physicsParams.fallingReturnSpeed}
+                  onChange={e => setPhysicsParams(p => ({ ...p, fallingReturnSpeed: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Viscosity: {physicsParams.fallingViscosity.toFixed(1)}</span>
+                <input type="range" min="0" max="5" step="0.1" value={physicsParams.fallingViscosity}
+                  onChange={e => setPhysicsParams(p => ({ ...p, fallingViscosity: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <label className="block">
+                <span>Gravity: {physicsParams.fallingGravity}</span>
+                <input type="range" min="0" max="50" step="1" value={physicsParams.fallingGravity}
+                  onChange={e => setPhysicsParams(p => ({ ...p, fallingGravity: Number(e.target.value) }))}
+                  className="w-full" />
+              </label>
+              <div className="pt-1 border-t border-gray-700">
+                <div className="text-gray-500 text-[10px]">Tendrils</div>
+                <label className="block">
+                  <span>Goopiness: {physicsParams.fallingGoopiness}</span>
+                  <input type="range" min="1" max="50" step="1" value={physicsParams.fallingGoopiness}
+                    onChange={e => setPhysicsParams(p => ({ ...p, fallingGoopiness: Number(e.target.value) }))}
+                    className="w-full" />
+                </label>
+                <label className="block">
+                  <span>End Radius: {physicsParams.fallingTendrilEndRadius}</span>
+                  <input type="range" min="1" max="20" step="1" value={physicsParams.fallingTendrilEndRadius}
+                    onChange={e => setPhysicsParams(p => ({ ...p, fallingTendrilEndRadius: Number(e.target.value) }))}
+                    className="w-full" />
+                </label>
+                <label className="block">
+                  <span>Skinniness: {physicsParams.fallingTendrilSkinniness.toFixed(2)}</span>
+                  <input type="range" min="0" max="1" step="0.05" value={physicsParams.fallingTendrilSkinniness}
+                    onChange={e => setPhysicsParams(p => ({ ...p, fallingTendrilSkinniness: Number(e.target.value) }))}
+                    className="w-full" />
+                </label>
+              </div>
+              <div className="pt-1 border-t border-gray-700">
+                <div className="text-gray-500 text-[10px]">Goo Filter</div>
+                <label className="block">
+                  <span>Blur: {fallingGooStdDev}</span>
+                  <input type="range" min="1" max="25" step="1" value={fallingGooStdDev}
+                    onChange={e => setFallingGooStdDev(Number(e.target.value))}
+                    className="w-full" />
+                </label>
+                <label className="block">
+                  <span>Alpha Mul: {fallingGooAlphaMul}</span>
+                  <input type="range" min="1" max="50" step="1" value={fallingGooAlphaMul}
+                    onChange={e => setFallingGooAlphaMul(Number(e.target.value))}
+                    className="w-full" />
+                </label>
+                <label className="block">
+                  <span>Alpha Off: {fallingGooAlphaOff}</span>
+                  <input type="range" min="-30" max="0" step="1" value={fallingGooAlphaOff}
+                    onChange={e => setFallingGooAlphaOff(Number(e.target.value))}
+                    className="w-full" />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* === SHARED SECTIONS (full width below columns) === */}
+          <div className="space-y-2 pt-2 border-t border-gray-600 mt-2">
+            <div className="pt-0">
               <div className="text-gray-400 mb-1">Attraction</div>
               <label className="block">
                 <span>Radius: {physicsParams.attractionRadius}</span>
@@ -573,28 +677,6 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
                 <span>Wall Thickness: {physicsParams.wallThickness}</span>
                 <input type="range" min="1" max="20" step="1" value={physicsParams.wallThickness}
                   onChange={e => setPhysicsParams(p => ({ ...p, wallThickness: Number(e.target.value) }))}
-                  className="w-full" />
-              </label>
-            </div>
-
-            <div className="pt-2 border-t border-gray-600">
-              <div className="text-gray-400 mb-1">Goo Filter</div>
-              <label className="block">
-                <span>Blur (stdDev): {gooStdDev}</span>
-                <input type="range" min="1" max="25" step="1" value={gooStdDev}
-                  onChange={e => setGooStdDev(Number(e.target.value))}
-                  className="w-full" />
-              </label>
-              <label className="block">
-                <span>Alpha Mul: {gooAlphaMul}</span>
-                <input type="range" min="1" max="50" step="1" value={gooAlphaMul}
-                  onChange={e => setGooAlphaMul(Number(e.target.value))}
-                  className="w-full" />
-              </label>
-              <label className="block">
-                <span>Alpha Off: {gooAlphaOff}</span>
-                <input type="range" min="-30" max="0" step="1" value={gooAlphaOff}
-                  onChange={e => setGooAlphaOff(Number(e.target.value))}
                   className="w-full" />
               </label>
             </div>
@@ -664,7 +746,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
               </label>
               <div className="flex gap-1 mt-1">
                 <button
-                  onClick={() => { setPhysicsParams({ ...DEFAULT_PHYSICS }); setNormalGoopOpacity(0.25); setShowVertexDebug(false); setGooStdDev(8); setGooAlphaMul(24); setGooAlphaOff(-13); }}
+                  onClick={() => { setPhysicsParams({ ...DEFAULT_PHYSICS }); setNormalGoopOpacity(0.25); setShowVertexDebug(false); setGooStdDev(8); setGooAlphaMul(24); setGooAlphaOff(-13); setFallingGooStdDev(8); setFallingGooAlphaMul(24); setFallingGooAlphaOff(-13); }}
                   className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
                 >
                   Reset to Defaults
@@ -676,6 +758,9 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
                       gooStdDev,
                       gooAlphaMul,
                       gooAlphaOff,
+                      fallingGooStdDev,
+                      fallingGooAlphaMul,
+                      fallingGooAlphaOff,
                       normalGoopOpacity,
                     };
                     console.log('=== DEBUG PARAMS SNAPSHOT ===');

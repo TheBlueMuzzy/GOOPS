@@ -103,6 +103,7 @@ export interface ActivePiece {
   screenX: number; // TankViewport-relative X coordinate (floating point allowed)
   rotation: number; // 0-3 (0, 90, 180, 270)
   cells: Coordinate[]; // Current relative cells after rotation
+  rotationCenter: Coordinate; // Fixed integer center for rotation (calculated at spawn, never changes)
   spawnTimestamp: number; // When this piece was created
   startSpawnY: number;    // Where it started falling from
   state: GoopState;      // State of the piece lifecycle

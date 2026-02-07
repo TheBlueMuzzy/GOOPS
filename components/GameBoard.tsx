@@ -98,6 +98,9 @@ interface GameBoardProps {
   gooStdDev?: number;          // SVG goo filter blur radius (debug)
   gooAlphaMul?: number;        // SVG goo filter alpha multiplier (debug)
   gooAlphaOff?: number;        // SVG goo filter alpha offset (debug)
+  fallingGooStdDev?: number;   // Falling blob goo filter blur (debug)
+  fallingGooAlphaMul?: number; // Falling blob goo filter alpha mul (debug)
+  fallingGooAlphaOff?: number; // Falling blob goo filter alpha off (debug)
 }
 
 // --- Component ---
@@ -106,7 +109,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     laserCharge = 100, controlsHeat = 0, complicationCooldowns,
     equippedActives = [], activeCharges = {}, onActivateAbility,
     powerUps, storedGoop, nextGoop, softBodyPhysics, normalGoopOpacity = 1, showVertexDebug = false,
-    gooStdDev = 8, gooAlphaMul = 24, gooAlphaOff = -13
+    gooStdDev = 8, gooAlphaMul = 24, gooAlphaOff = -13,
+    fallingGooStdDev, fallingGooAlphaMul, fallingGooAlphaOff
 }) => {
   const { grid, tankRotation, activeGoop, looseGoop, floatingTexts, shiftTime, goalMarks, crackCells, dumpPieces } = state;
 
@@ -562,7 +566,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         >
             {maskDefinitions}
 
-            {/* Soft-body goo filter - creates blobby merge effect (Phase 26) */}
+            {/* Soft-body goo filters - creates blobby merge effect (Phase 26) */}
             <defs>
               <filter id="goo-filter" colorInterpolationFilters="sRGB">
                 <feGaussianBlur in="SourceGraphic" stdDeviation={gooStdDev} result="blur" />
@@ -570,6 +574,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   in="blur"
                   mode="matrix"
                   values={`1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${gooAlphaMul} ${gooAlphaOff}`}
+                  result="goo"
+                />
+                <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+              </filter>
+              <filter id="goo-filter-falling" colorInterpolationFilters="sRGB">
+                <feGaussianBlur in="SourceGraphic" stdDeviation={fallingGooStdDev ?? gooStdDev} result="blur" />
+                <feColorMatrix
+                  in="blur"
+                  mode="matrix"
+                  values={`1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${fallingGooAlphaMul ?? gooAlphaMul} ${fallingGooAlphaOff ?? gooAlphaOff}`}
                   result="goo"
                 />
                 <feComposite in="SourceGraphic" in2="goo" operator="atop" />
@@ -887,6 +901,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     const stretchRatio = Math.min(1, dist / sbParams.goopiness);
                     const endRadius = sbParams.tendrilEndRadius;
+                    if (endRadius < 1) return null; // Guard: skip tendrils when endRadius too small
                     const minMiddleScale = 1 - sbParams.tendrilSkinniness;
                     const maxMiddleScale = 1 - sbParams.tendrilSkinniness * 0.3;
                     const middleScale = maxMiddleScale - (maxMiddleScale - minMiddleScale) * stretchRatio;
@@ -994,8 +1009,52 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               // TODO Phase 28+: Multi-color pieces render as single-color blob using first cell color.
               // True multi-color rendering would require splitting into separate blobs per color.
 
+              const springs = softBodyPhysics.attractionSprings;
+              const sbParams = softBodyPhysics.params;
+
               return (
-                <g filter="url(#goo-filter)" clipPath="url(#tank-viewport-clip)">
+                <g filter="url(#goo-filter-falling)" clipPath="url(#tank-viewport-clip)">
+                  {/* Tendrils for falling blobs - uses falling-specific params */}
+                  {springs.map((spring, i) => {
+                    const blobA = softBodyPhysics.blobs[spring.blobA];
+                    const blobB = softBodyPhysics.blobs[spring.blobB];
+                    if (!blobA || !blobB) return null;
+                    // Only render if at least one blob is falling
+                    if (!blobA.isFalling && !blobB.isFalling) return null;
+
+                    const vA = blobA.vertices[spring.vertexA];
+                    const vB = blobB.vertices[spring.vertexB];
+                    if (!vA || !vB) return null;
+
+                    const dx = vB.pos.x - vA.pos.x;
+                    const dy = vB.pos.y - vA.pos.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const stretchRatio = Math.min(1, dist / sbParams.fallingGoopiness);
+                    const endRadius = sbParams.fallingTendrilEndRadius;
+                    if (endRadius < 1) return null; // Guard: skip tendrils when endRadius too small
+                    const minMiddleScale = 1 - sbParams.fallingTendrilSkinniness;
+                    const maxMiddleScale = 1 - sbParams.fallingTendrilSkinniness * 0.3;
+                    const middleScale = maxMiddleScale - (maxMiddleScale - minMiddleScale) * stretchRatio;
+                    const middleRadius = endRadius * middleScale;
+                    const beadSpacing = endRadius * 1.4;
+                    const numBeads = Math.max(2, Math.ceil(dist / beadSpacing));
+
+                    const beads = [];
+                    for (let j = 0; j <= numBeads; j++) {
+                      const t = j / numBeads;
+                      const middleness = Math.sin(t * Math.PI);
+                      const r = endRadius - (endRadius - middleRadius) * middleness;
+                      beads.push({ cx: vA.pos.x + dx * t, cy: vA.pos.y + dy * t, r: Math.max(2, r) });
+                    }
+
+                    return (
+                      <g key={`falling-tendril-${i}`}>
+                        {beads.map((bead, j) => (
+                          <circle key={j} cx={bead.cx} cy={bead.cy} r={bead.r} fill={blobA.color} />
+                        ))}
+                      </g>
+                    );
+                  })}
                   {fallingBlobs.map(blob => {
                     // Get render offsets for cylindrical wrapping
                     const offsets = getBlobRenderOffsets(blob);

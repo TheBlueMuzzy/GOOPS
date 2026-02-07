@@ -3,6 +3,7 @@ import {
   getRotatedCells,
   getPaletteForRank,
   checkCollision,
+  getGhostY,
   findContiguousGroup,
   getFloatingBlocks,
   calculateHeightBonus,
@@ -26,6 +27,10 @@ const createMockPiece = (x: number, y: number, cells: { x: number; y: number }[]
   screenX: x,
   rotation: 0,
   cells,
+  rotationCenter: {
+    x: Math.round(cells.reduce((s, c) => s + c.x, 0) / cells.length),
+    y: Math.round(cells.reduce((s, c) => s + c.y, 0) / cells.length),
+  },
   spawnTimestamp: Date.now(),
   startSpawnY: 0,
   state: GoopState.FALLING,
@@ -54,37 +59,88 @@ describe('getRotatedCells', () => {
   // Helper to normalize -0 to 0 for comparison
   const normalize = (n: number) => (n === 0 ? 0 : n);
 
-  it('rotates cells clockwise correctly', () => {
-    const cells = [{ x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }]; // Vertical line
+  it('rotates origin-centered cells clockwise correctly', () => {
+    const cells = [{ x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }]; // Vertical line centered at origin
     const rotated = getRotatedCells(cells, true).map(c => ({ x: normalize(c.x), y: normalize(c.y) }));
 
-    // Clockwise: (x, y) -> (-y, x)
+    // Centroid is (0,0), so rotation around origin: (x,y) -> (-y,x)
     expect(rotated[0]).toEqual({ x: 1, y: 0 });
     expect(rotated[1]).toEqual({ x: 0, y: 0 });
     expect(rotated[2]).toEqual({ x: -1, y: 0 });
   });
 
-  it('rotates cells counter-clockwise correctly', () => {
-    const cells = [{ x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }]; // Vertical line
+  it('rotates origin-centered cells counter-clockwise correctly', () => {
+    const cells = [{ x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }]; // Vertical line centered at origin
     const rotated = getRotatedCells(cells, false).map(c => ({ x: normalize(c.x), y: normalize(c.y) }));
 
-    // Counter-clockwise: (x, y) -> (y, -x)
+    // Centroid is (0,0), so rotation around origin: (x,y) -> (y,-x)
     expect(rotated[0]).toEqual({ x: -1, y: 0 });
     expect(rotated[1]).toEqual({ x: 0, y: 0 });
     expect(rotated[2]).toEqual({ x: 1, y: 0 });
   });
 
-  it('rotating 4 times clockwise returns to original', () => {
-    const original = [{ x: 1, y: 0 }, { x: 0, y: 1 }];
+  it('rotating 4 times clockwise returns to original (origin-centered)', () => {
+    const original = [{ x: 0, y: -1 }, { x: 0, y: 0 }, { x: 0, y: 1 }];
+    const center = { x: 0, y: 0 }; // Fixed integer center
     let cells = original;
 
     for (let i = 0; i < 4; i++) {
-      cells = getRotatedCells(cells, true);
+      cells = getRotatedCells(cells, true, center);
     }
 
-    // Normalize and compare
     const normalized = cells.map(c => ({ x: normalize(c.x), y: normalize(c.y) }));
     expect(normalized).toEqual(original);
+  });
+
+  it('rotates off-center cells around fixed integer center (corrupted T_I_C shape)', () => {
+    // Corrupted T_I_C: cells at (0,2),(0,3),(1,0),(1,1) — centroid at (0.5, 1.5), rounds to (1,2)
+    const cells = [{ x: 0, y: 2 }, { x: 0, y: 3 }, { x: 1, y: 0 }, { x: 1, y: 1 }];
+    const center = { x: 1, y: 2 }; // Rounded from (0.5, 1.5)
+    const rotated = getRotatedCells(cells, true, center);
+
+    // With integer center, results should be exact integers
+    rotated.forEach(c => {
+      expect(Number.isInteger(c.x)).toBe(true);
+      expect(Number.isInteger(c.y)).toBe(true);
+    });
+  });
+
+  it('rotating 4 times returns EXACTLY to original with fixed center (off-center cells)', () => {
+    const original = [{ x: 0, y: 2 }, { x: 0, y: 3 }, { x: 1, y: 0 }, { x: 1, y: 1 }];
+    const center = { x: 1, y: 2 }; // Rounded from (0.5, 1.5)
+    let cells = original;
+
+    for (let i = 0; i < 4; i++) {
+      cells = getRotatedCells(cells, true, center);
+    }
+
+    // With fixed integer center: zero drift, exact return
+    expect(cells).toEqual(original);
+  });
+
+  it('I-bar with fixed center rotates 4 times and returns exactly to original', () => {
+    // Standard I-bar: cells at (-1,0),(0,0),(1,0),(2,0) — centroid at (0.5, 0), rounds to (1, 0)
+    const original = [{ x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }];
+    const center = { x: 1, y: 0 }; // Rounded from (0.5, 0)
+    let cells = original;
+
+    for (let i = 0; i < 4; i++) {
+      cells = getRotatedCells(cells, true, center);
+    }
+
+    // Integer center + integer cells = exact return after 4 rotations
+    expect(cells).toEqual(original);
+  });
+
+  it('I-bar rotates around fixed center (not origin)', () => {
+    // Standard I-bar: cells at (-1,0),(0,0),(1,0),(2,0) — centroid at (0.5, 0)
+    const cells = [{ x: -1, y: 0 }, { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }];
+    const center = { x: 1, y: 0 };
+    const rotated = getRotatedCells(cells, true, center);
+
+    // Should produce a vertical bar centered at x=1
+    const rotCx = rotated.reduce((s, c) => s + c.x, 0) / rotated.length;
+    expect(rotCx).toBe(1); // All cells should have x=1 after rotating vertical
   });
 });
 
@@ -351,5 +407,46 @@ describe('Scoring Functions', () => {
 
       expect(bonus).toBe(5); // 1 neighbor * 5
     });
+  });
+});
+
+describe('getGhostY', () => {
+  it('lands piece on top of existing blocks', () => {
+    const grid = createEmptyGrid();
+    // Place blocks at row 17
+    placeCell(grid, 5, 17, COLORS.RED, 'group1');
+    placeCell(grid, 6, 17, COLORS.RED, 'group1');
+
+    // Piece above the blocks
+    const piece = createMockPiece(5, 10, [{ x: 0, y: 0 }, { x: 1, y: 0 }]);
+
+    const ghostY = getGhostY(grid, piece, 0);
+
+    // Should land at row 16 (one above the blocks at 17)
+    expect(ghostY).toBe(16);
+  });
+
+  it('retreats upward when piece starts inside collision (physics overshoot)', () => {
+    const grid = createEmptyGrid();
+    // Place blocks at row 17
+    placeCell(grid, 5, 17, COLORS.RED, 'group1');
+    placeCell(grid, 6, 17, COLORS.RED, 'group1');
+
+    // Piece already overlapping at row 17 (simulates physics overshoot)
+    const piece = createMockPiece(5, 17, [{ x: 0, y: 0 }, { x: 1, y: 0 }]);
+
+    const ghostY = getGhostY(grid, piece, 0);
+
+    // Should retreat to row 16 (one above the blocks), not stay at 17
+    expect(ghostY).toBe(16);
+  });
+
+  it('lands on floor when no obstacles', () => {
+    const grid = createEmptyGrid();
+    const piece = createMockPiece(5, 0, [{ x: 0, y: 0 }]);
+
+    const ghostY = getGhostY(grid, piece, 0);
+
+    expect(ghostY).toBe(TANK_HEIGHT - 1);
   });
 });

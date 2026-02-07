@@ -184,6 +184,11 @@ export interface PhysicsParams {
   returnSpeed: number;       // Home position return rate (0.5)
   viscosity: number;         // Locked blob dampening (2.5)
   gravity: number;           // Downward acceleration (10)
+  // Falling-specific overrides (independent tuning for falling pieces)
+  fallingHomeStiffness: number;   // Home stiffness for falling blobs
+  fallingReturnSpeed: number;     // Return speed for falling blobs
+  fallingViscosity: number;       // Viscosity for falling blobs (0 = snappy)
+  fallingGravity: number;         // Gravity for falling blobs
   // Attraction params (for merge tendrils)
   attractionRadius: number;      // Max distance for attraction (20)
   attractionRestLength: number;  // Target distance for attraction springs (0)
@@ -193,6 +198,10 @@ export interface PhysicsParams {
   tendrilEndRadius: number;  // Tendril endpoint size (10)
   tendrilSkinniness: number; // Tendril mid-point scaling (0.7)
   wallThickness: number;     // Stroke width (8)
+  // Falling-specific rendering overrides
+  fallingGoopiness: number;         // Goopiness for falling blobs (also affects attraction range)
+  fallingTendrilEndRadius: number;  // Tendril endpoint size for falling blobs
+  fallingTendrilSkinniness: number; // Tendril skinniness for falling blobs
   // Droplet params (for pop effect)
   dropletCount: number;      // Droplets per pop (30)
   dropletSpeed: number;      // Initial scatter speed (60)
@@ -207,28 +216,32 @@ export interface PhysicsParams {
  * All distance/size parameters scaled by 0.6 (30px / 50px proto cell size)
  */
 export const DEFAULT_PHYSICS: PhysicsParams = {
-  damping: 0.97,
-  stiffness: 1,
-  pressure: 3,
+  damping: 0.98,
+  stiffness: 15,
+  pressure: 20,
   iterations: 3,
-  homeStiffness: 0.01,     // Proto 9 final: 0.01 (user-tweaked)
-  innerHomeStiffness: 0.1,
-  returnSpeed: 0.5,
-  viscosity: 2.5,
+  homeStiffness: 0.35,
+  innerHomeStiffness: 0.64,
+  returnSpeed: 0.8,
+  viscosity: 0.7,
   gravity: 10,
-  // Attraction params (scaled x0.6)
-  attractionRadius: 12,    // Proto 20 x 0.6 = 12
-  attractionRestLength: 0,
-  attractionStiffness: 0.005,
-  // Rendering params (scaled x0.6)
-  goopiness: 15,           // Proto 25 x 0.6 = 15
-  tendrilEndRadius: 6,     // Proto 10 x 0.6 = 6
-  tendrilSkinniness: 0.7,
+  fallingHomeStiffness: 0.35,
+  fallingReturnSpeed: 0.8,
+  fallingViscosity: 0.7,
+  fallingGravity: 10,
+  attractionRadius: 30,
+  attractionRestLength: 1,
+  attractionStiffness: 0.037,
+  goopiness: 36,
+  tendrilEndRadius: 1,
+  tendrilSkinniness: 0.2,
   wallThickness: 8,
-  // Droplet params (scaled x0.6 from Proto-9 values)
+  fallingGoopiness: 36,
+  fallingTendrilEndRadius: 1,
+  fallingTendrilSkinniness: 0.2,
   dropletCount: 30,
-  dropletSpeed: 60,        // Proto 100 x 0.6 = 60
+  dropletSpeed: 60,
   dropletLifetime: 3,
-  dropletSize: 9,          // Proto 15 x 0.6 = 9
-  dropletGravity: 180,     // Proto 300 x 0.6 = 180 (separate from blob gravity)
+  dropletSize: 9,
+  dropletGravity: 180,
 };

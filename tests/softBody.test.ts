@@ -265,6 +265,75 @@ describe('applyHomeForce', () => {
   });
 });
 
+describe('falling-specific params', () => {
+  it('DEFAULT_PHYSICS includes all falling params', () => {
+    expect(DEFAULT_PHYSICS.fallingHomeStiffness).toBeDefined();
+    expect(DEFAULT_PHYSICS.fallingReturnSpeed).toBeDefined();
+    expect(DEFAULT_PHYSICS.fallingViscosity).toBeDefined();
+    expect(DEFAULT_PHYSICS.fallingGravity).toBeDefined();
+  });
+
+  it('falling blobs use fallingGravity in integrate', () => {
+    const fallingBlob = createTestBlob('falling', 100, 100, false);
+    const initialY = fallingBlob.vertices[0].pos.y;
+
+    // Use high fallingGravity, low locked gravity
+    const customParams = { ...DEFAULT_PHYSICS, gravity: 0, fallingGravity: 50 };
+    for (let i = 0; i < 10; i++) {
+      integrate([fallingBlob], 0.016, customParams);
+    }
+
+    // Falling blob should move down (using fallingGravity=50, not gravity=0)
+    expect(fallingBlob.vertices[0].pos.y).toBeGreaterThan(initialY);
+  });
+
+  it('locked blobs use gravity (not fallingGravity) in integrate', () => {
+    const lockedBlob = createTestBlob('locked', 100, 100, true);
+    const initialY = lockedBlob.vertices[0].pos.y;
+
+    // Set gravity=0 for locked, high fallingGravity
+    const customParams = { ...DEFAULT_PHYSICS, gravity: 0, fallingGravity: 50 };
+    for (let i = 0; i < 10; i++) {
+      integrate([lockedBlob], 0.016, customParams);
+    }
+
+    // Locked blob should NOT move down (gravity=0)
+    expect(lockedBlob.vertices[0].pos.y).toBeCloseTo(initialY, 1);
+  });
+
+  it('falling blobs use fallingHomeStiffness in applyHomeForce', () => {
+    const fallingBlob = createTestBlob('falling', 100, 100, false);
+
+    // Displace vertex
+    const homeX = fallingBlob.targetX + fallingBlob.vertices[0].homeOffset.x;
+    fallingBlob.vertices[0].pos.x = homeX + 50;
+
+    // Use different stiffness for falling vs locked
+    const customParams = { ...DEFAULT_PHYSICS, homeStiffness: 0, fallingHomeStiffness: 0.5, fallingReturnSpeed: 1.0, fallingViscosity: 0 };
+    applyHomeForce([fallingBlob], customParams);
+
+    // Should have moved back toward home (fallingHomeStiffness=0.5 is strong)
+    const newDist = Math.abs(fallingBlob.vertices[0].pos.x - homeX);
+    expect(newDist).toBeLessThan(50);
+  });
+
+  it('falling blobs use fallingViscosity in applyHomeForce', () => {
+    const fallingBlob = createTestBlob('falling', 100, 100, false);
+
+    // Displace vertex
+    const homeX = fallingBlob.targetX + fallingBlob.vertices[0].homeOffset.x;
+    fallingBlob.vertices[0].pos.x = homeX + 50;
+
+    // Set high fallingViscosity - force should go to velocity (oldPos) not position
+    const customParams = { ...DEFAULT_PHYSICS, fallingHomeStiffness: 0.35, fallingReturnSpeed: 1.0, fallingViscosity: 3 };
+    const oldPosXBefore = fallingBlob.vertices[0].oldPos.x;
+    applyHomeForce([fallingBlob], customParams);
+
+    // With viscosity > 0, oldPos should be modified (velocity correction)
+    expect(fallingBlob.vertices[0].oldPos.x).not.toBe(oldPosXBefore);
+  });
+});
+
 describe('applyPressure', () => {
   it('only affects locked blobs', () => {
     const lockedBlob = createTestBlob('locked', 100, 100, true);
@@ -342,32 +411,32 @@ describe('applyBoundaryConstraints', () => {
 });
 
 describe('DEFAULT_PHYSICS', () => {
-  it('has expected default values (Proto 9 tuned, scaled x0.6 for 30px cells)', () => {
-    // Core physics (unchanged)
-    expect(DEFAULT_PHYSICS.damping).toBe(0.97);
-    expect(DEFAULT_PHYSICS.stiffness).toBe(1);
-    expect(DEFAULT_PHYSICS.pressure).toBe(3);
+  it('has expected default values (user-tuned)', () => {
+    // Core physics
+    expect(DEFAULT_PHYSICS.damping).toBe(0.98);
+    expect(DEFAULT_PHYSICS.stiffness).toBe(15);
+    expect(DEFAULT_PHYSICS.pressure).toBe(20);
     expect(DEFAULT_PHYSICS.iterations).toBe(3);
-    expect(DEFAULT_PHYSICS.homeStiffness).toBe(0.01);
-    expect(DEFAULT_PHYSICS.innerHomeStiffness).toBe(0.1);
-    expect(DEFAULT_PHYSICS.returnSpeed).toBe(0.5);
-    expect(DEFAULT_PHYSICS.viscosity).toBe(2.5);
+    expect(DEFAULT_PHYSICS.homeStiffness).toBe(0.35);
+    expect(DEFAULT_PHYSICS.innerHomeStiffness).toBe(0.64);
+    expect(DEFAULT_PHYSICS.returnSpeed).toBe(0.8);
+    expect(DEFAULT_PHYSICS.viscosity).toBe(0.7);
     expect(DEFAULT_PHYSICS.gravity).toBe(10);
-    // Attraction params (scaled x0.6)
-    expect(DEFAULT_PHYSICS.attractionRadius).toBe(12);   // Proto 20 x 0.6
-    expect(DEFAULT_PHYSICS.attractionRestLength).toBe(0);
-    expect(DEFAULT_PHYSICS.attractionStiffness).toBe(0.005);
-    // Rendering params (scaled x0.6)
-    expect(DEFAULT_PHYSICS.goopiness).toBe(15);          // Proto 25 x 0.6
-    expect(DEFAULT_PHYSICS.tendrilEndRadius).toBe(6);    // Proto 10 x 0.6
-    expect(DEFAULT_PHYSICS.tendrilSkinniness).toBe(0.7);
+    // Attraction params
+    expect(DEFAULT_PHYSICS.attractionRadius).toBe(30);
+    expect(DEFAULT_PHYSICS.attractionRestLength).toBe(1);
+    expect(DEFAULT_PHYSICS.attractionStiffness).toBe(0.037);
+    // Rendering params
+    expect(DEFAULT_PHYSICS.goopiness).toBe(36);
+    expect(DEFAULT_PHYSICS.tendrilEndRadius).toBe(1);
+    expect(DEFAULT_PHYSICS.tendrilSkinniness).toBe(0.2);
     expect(DEFAULT_PHYSICS.wallThickness).toBe(8);
-    // Droplet params (scaled x0.6)
+    // Droplet params
     expect(DEFAULT_PHYSICS.dropletCount).toBe(30);
-    expect(DEFAULT_PHYSICS.dropletSpeed).toBe(60);       // Proto 100 x 0.6
+    expect(DEFAULT_PHYSICS.dropletSpeed).toBe(60);
     expect(DEFAULT_PHYSICS.dropletLifetime).toBe(3);
-    expect(DEFAULT_PHYSICS.dropletSize).toBe(9);         // Proto 15 x 0.6
-    expect(DEFAULT_PHYSICS.dropletGravity).toBe(180);    // Proto 300 x 0.6
+    expect(DEFAULT_PHYSICS.dropletSize).toBe(9);
+    expect(DEFAULT_PHYSICS.dropletGravity).toBe(180);
   });
 });
 
