@@ -46,6 +46,8 @@ export class GameEngine {
     public lockStartTime: number | null = null;
     public lockResetCount: number = 0;  // Move reset counter (max 10 resets before force lock)
     public usePhysicsForFalling: boolean = false;  // Set true when soft-body physics controls falling (desktop)
+    public freezeTimer: boolean = false;  // Debug: freeze shiftTime countdown (infinite time)
+    public freezeFalling: boolean = false;  // Debug: freeze piece falling (pieces hover in place)
     public lastGoalSpawnTime: number = 0;
     public lastComplicationCheckTime: number = 0;
     public isFastDropping: boolean = false;
@@ -803,10 +805,12 @@ export class GameEngine {
             ? (1 - focusLevel * 0.10)  // At level 4: 0.60 (40% slower)
             : 1;
 
-        this.state.shiftTime = Math.max(0, this.state.shiftTime - (dt * timeMultiplier));
-        if (this.state.shiftTime <= 0) {
-            this.finalizeGame();
-            return false;
+        if (!this.freezeTimer) {
+            this.state.shiftTime = Math.max(0, this.state.shiftTime - (dt * timeMultiplier));
+            if (this.state.shiftTime <= 0) {
+                this.finalizeGame();
+                return false;
+            }
         }
         return true;
     }

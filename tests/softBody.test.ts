@@ -361,7 +361,7 @@ describe('DEFAULT_PHYSICS', () => {
     expect(DEFAULT_PHYSICS.goopiness).toBe(15);          // Proto 25 x 0.6
     expect(DEFAULT_PHYSICS.tendrilEndRadius).toBe(6);    // Proto 10 x 0.6
     expect(DEFAULT_PHYSICS.tendrilSkinniness).toBe(0.7);
-    expect(DEFAULT_PHYSICS.wallThickness).toBe(4.8);     // Proto 8 x 0.6
+    expect(DEFAULT_PHYSICS.wallThickness).toBe(8);
     // Droplet params (scaled x0.6)
     expect(DEFAULT_PHYSICS.dropletCount).toBe(30);
     expect(DEFAULT_PHYSICS.dropletSpeed).toBe(60);       // Proto 100 x 0.6

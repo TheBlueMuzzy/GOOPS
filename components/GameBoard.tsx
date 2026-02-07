@@ -861,8 +861,55 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 blobsByColor.set(blob.color, existing);
               }
 
-              return Array.from(blobsByColor.entries()).map(([color, blobs]) => (
+              // Get attraction springs and physics params for tendril rendering
+              const springs = softBodyPhysics.attractionSprings;
+              const sbParams = softBodyPhysics.params;
+
+
+              return (<>
+              {/* Locked blobs + tendrils: per-color goo filter groups */}
+              {/* Tendrils rendered INSIDE goo filter so blur+threshold merges dots into smooth strands (like Proto 9) */}
+              {Array.from(blobsByColor.entries()).map(([color, blobs]) => (
                 <g key={`color-group-${color}`} filter="url(#goo-filter)" clipPath="url(#tank-viewport-clip)">
+                  {/* Tendrils for this color - rendered first so goo filter merges them with blob shapes */}
+                  {springs.map((spring, i) => {
+                    const blobA = softBodyPhysics.blobs[spring.blobA];
+                    const blobB = softBodyPhysics.blobs[spring.blobB];
+                    if (!blobA || !blobB) return null;
+                    if (blobA.color !== color) return null;
+
+                    const vA = blobA.vertices[spring.vertexA];
+                    const vB = blobB.vertices[spring.vertexB];
+                    if (!vA || !vB) return null;
+
+                    const dx = vB.pos.x - vA.pos.x;
+                    const dy = vB.pos.y - vA.pos.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const stretchRatio = Math.min(1, dist / sbParams.goopiness);
+                    const endRadius = sbParams.tendrilEndRadius;
+                    const minMiddleScale = 1 - sbParams.tendrilSkinniness;
+                    const maxMiddleScale = 1 - sbParams.tendrilSkinniness * 0.3;
+                    const middleScale = maxMiddleScale - (maxMiddleScale - minMiddleScale) * stretchRatio;
+                    const middleRadius = endRadius * middleScale;
+                    const beadSpacing = endRadius * 1.4;
+                    const numBeads = Math.max(2, Math.ceil(dist / beadSpacing));
+
+                    const beads = [];
+                    for (let j = 0; j <= numBeads; j++) {
+                      const t = j / numBeads;
+                      const middleness = Math.sin(t * Math.PI);
+                      const r = endRadius - (endRadius - middleRadius) * middleness;
+                      beads.push({ cx: vA.pos.x + dx * t, cy: vA.pos.y + dy * t, r: Math.max(2, r) });
+                    }
+
+                    return (
+                      <g key={`tendril-${i}`}>
+                        {beads.map((bead, j) => (
+                          <circle key={j} cx={bead.cx} cy={bead.cy} r={bead.r} fill={blobA.color} />
+                        ))}
+                      </g>
+                    );
+                  })}
                   {blobs.map(blob => {
                   const outerPath = getSoftBlobPath(blob);
                   const outerPoints = blob.vertices.map(v => v.pos);
@@ -878,8 +925,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   const showFillAnimation = blob.isLocked && blob.fillAmount < 1;
 
                   if (showFillAnimation) {
-                    // Wall thickness for fill animation (8px default)
-                    const wallThickness = 8;
+                    const wallThickness = sbParams.wallThickness;
                     const insetPoints = getInsetPath(outerPoints, wallThickness);
                     const insetPath = getPath(insetPoints);
                     const bounds = getBounds(insetPoints);
@@ -934,7 +980,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   );
                   })}
                 </g>
-              ));
+              ))}
+              </>);
             })()}
 
             {/* Soft-body falling pieces (desktop only) */}

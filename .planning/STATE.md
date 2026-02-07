@@ -11,10 +11,11 @@ updated: 2026-02-06
 
 Phase: 27.1 Physics-Controlled Active Piece
 Plan: MASTER-PLAN complete (9/9 tasks) — ALL BUGS FIXED
-Status: Physics-controlled falling piece fully working + goo filter tuned + overflow bug fixed
-Last activity: 2026-02-06 - Goo filter tuning, overflow game-over bug fix
+Status: Tendril rendering partially fixed, falling blob tendrils still TODO
+Last activity: 2026-02-06 - Tendril goo filter fix + physics param research
+Branch: `soft-body-experiment`
 
-Progress: ████████░░ ~80% (core physics working, needs polish)
+Progress: ████████░░ ~85% (core physics working, tendril polish in progress)
 
 ## Branch Workflow (SOP)
 
@@ -28,46 +29,49 @@ Progress: ████████░░ ~80% (core physics working, needs polis
 
 ## Next Steps
 
-**Completed:** 27.1-01 + 27.1-02 + 27.1-03 (Physics falling fully integrated)
-**Branch:** `soft-body-experiment`
+### TODO: Add tendrils to falling blobs
 
-### 27.1 Status (2026-02-06)
+**The problem:** Tendrils (attraction spring beads) only render for locked blobs, not falling blobs.
 
-**ALL CRITICAL BUGS FIXED** — Physics-controlled active piece working.
+**Root cause:** In `GameBoard.tsx`, `blobsByColor` is built with `if (blob.isFalling) continue;`, so falling blobs don't get a per-color goo filter group. Tendrils are rendered inside these per-color groups, so falling blob tendrils are invisible.
 
-**Recent Commits:**
-- `34fcfcf` fix(27.1): resolve 3 critical physics bugs (rotation, overlap, spawn)
-- Previous: rotation sync, Y sync, physics wiring
+**What needs to happen:**
+- In the falling blobs rendering section (~line 997-1034 of GameBoard.tsx), add tendril rendering for springs that involve falling blobs
+- Tendrils must be INSIDE the `<g filter="url(#goo-filter)">` group so the goo filter merges the bead dots into smooth strands
+- Filter springs where at least one blob is falling AND matches the color being rendered
+- The tendril bead code is identical to what's in the locked blob section (lines ~878-912)
 
-**Bugs Fixed This Session:**
-1. **Visual rotation mismatch** — Added `blob.rotation = pieceRotation * 90`
-2. **Pieces overlapping** — Fixed Y coordinate conversion (visual → full grid with BUFFER_HEIGHT)
-3. **No second piece after lock** — Physics sync now checks blob timestamp matches current piece
-4. **Tank rotation wobble** — Vertices now shift instantly with target position
-5. **Displacement bug (X coords)** — Added tankRotation to convert visual X → game grid X
+**Physics note:** `updateAttractionSprings()` in `core/softBody/physics.ts` does NOT filter by isFalling — springs CAN connect falling↔locked and falling↔falling blobs. The rendering just doesn't show them.
 
-**Key Fixes:**
-- Physics collision now correctly converts visual coords to game grid coords
-- Y: `fullGridY = visualY + BUFFER_HEIGHT`
-- X: `gridX = visualX + tankRotation` (with wrapping)
-- Physics sync only updates blob matching current piece's spawnTimestamp
+**Reference:** Proto 9 (`prototypes/SoftBodyProto9.tsx`) rendered everything in ONE goo filter group. Current code splits by locked/falling. Need tendrils in both.
+
+### What was done THIS session:
+
+1. **Fixed tendril rendering** — Moved tendrils from outside goo filter to INSIDE per-color goo filter groups (matching Proto 9). Tendrils now blur together into smooth gooey strands instead of showing as individual dots.
+2. **Researched physics params** — `homeStiffness` (0.01) is the correct param for anchoring blobs against attraction spring pull, not returnSpeed/viscosity. User's current param values match all defaults.
+3. **Added debug features (prior session)** — freezeTimer, freezeFalling checkboxes, save params snapshot button in Game.tsx
+4. **Exposed attractionSprings + params** from useSoftBodyPhysics hook for rendering
+
+### Files modified (uncommitted on soft-body-experiment):
+
+- `Game.tsx` — Debug panel: freeze checkboxes, save snapshot button, goo filter sliders
+- `components/GameBoard.tsx` — Tendril rendering moved inside goo filter groups (THE KEY FIX)
+- `core/GameEngine.ts` — freezeTimer/freezeFalling debug flags
+- `core/softBody/types.ts` — wallThickness: 4.8 → 8
+- `hooks/useSoftBodyPhysics.ts` — Exposed attractionSprings + params from hook return
+- `tests/softBody.test.ts` — Updated wallThickness expectation to 8
 
 ### Known Issues
 
-None critical. Minor polish items:
+- **Falling blob tendrils not rendered** (described above — next task)
 - Physics "looseness" could be tuned (blobs are a bit wobbly)
-- Could optimize by reducing debug variable declarations
 
-### Decisions Made This Session
-- **Goo filter defaults:** stdDeviation=8, alphaMul=24, alphaOff=-13 (user-tuned via live sliders)
-- **No stroke on blob SVG paths** — goo filter handles edge definition alone
-- **Goo filter sliders** added to backtick debug panel (Goo Filter section)
+### Decisions Made
 
-### Next Steps
-
-1. Test edge cases (fast fall, rotation near floor, tank rotation during collision)
-2. Consider physics parameter tuning for tighter feel
-3. Move to next phase (Phase 28: Locked Goop Behavior)
+- Goo filter defaults: stdDeviation=8, alphaMul=24, alphaOff=-13 (user-tuned)
+- All physics params confirmed at defaults (user saved snapshot matches)
+- `homeStiffness` is the right param for anchoring against attraction pull (not returnSpeed/viscosity)
+- Tendrils must be inside goo filter groups to get the smooth Proto 9 look
 
 ---
 
@@ -76,33 +80,33 @@ None critical. Minor polish items:
 Last session: 2026-02-06
 **Version:** 1.1.13
 **Branch:** soft-body-experiment
-**Build:** 206
+**Build:** 208
 
 ### Resume Command
 ```
-27.1 COMPLETE — Goo filter tuned + overflow bug fixed.
+TENDRIL FIX IN PROGRESS — Locked blob tendrils fixed, falling blob tendrils TODO.
 
 SESSION ACCOMPLISHMENTS:
-- Tuned goo filter defaults (8/24/-13) with live debug sliders
-- Removed blob strokes (goo filter handles edges)
-- Added goo filter sliders to backtick debug panel
-- Fixed P0 overflow game-over bug (3 root causes):
-  1. lockActivePiece() had no gameOver guard → lock loop
-  2. spawnNewPiece() continued after finalizeGame() → set stale activeGoop
-  3. resetSession() didn't clear activeGoop → physics re-triggered game over on dismiss
-- Added gameOver/isSessionActive guards to physics callback
-- Added touch-action: none to monitor drag element
-- Updated PRD with goo filter reference docs
+- Moved tendril rendering inside per-color goo filter groups (Proto 9 style)
+- Removed standalone unfiltered tendril block
+- Researched homeStiffness vs returnSpeed/viscosity for blob anchoring
+- All physics params confirmed matching defaults
 
-FILES MODIFIED:
-- Game.tsx (goo filter state, physics guards, debug sliders)
-- components/GameBoard.tsx (dynamic filter values, removed blob strokes)
-- components/Art.tsx (touch-action: none on monitor)
-- core/GameEngine.ts (overflow guards in lockActivePiece, spawnNewPiece, syncActivePieceFromPhysics, resetSession)
-- core/softBody/rendering.ts (updated filter defaults/presets)
-- .planning/PRD.md (goo filter reference docs)
+REMAINING WORK:
+- Add tendril rendering to falling blobs section in GameBoard.tsx (~line 997-1034)
+- Tendrils must go INSIDE the falling blobs' goo filter group
+- Filter springs where at least one blob is falling
+- Use same bead rendering code as locked blob tendrils
 
-Next: Test edge cases, physics tuning, or move to Phase 28
+FILES MODIFIED (uncommitted):
+- Game.tsx (debug panel enhancements)
+- components/GameBoard.tsx (tendril goo filter fix — KEY FILE)
+- core/GameEngine.ts (freeze debug flags)
+- core/softBody/types.ts (wallThickness 4.8→8)
+- hooks/useSoftBodyPhysics.ts (exposed attractionSprings + params)
+- tests/softBody.test.ts (wallThickness expectation)
+
+Next: Implement falling blob tendrils in GameBoard.tsx
 ```
 
 ---

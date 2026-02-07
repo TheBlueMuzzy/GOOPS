@@ -65,6 +65,10 @@ export interface UseSoftBodyPhysicsOptions {
 export interface UseSoftBodyPhysicsReturn {
   /** Current array of blobs (mutable ref - read-only for rendering) */
   blobs: SoftBlob[];
+  /** Current attraction springs between same-color blobs (for tendril rendering) */
+  attractionSprings: AttractionSpring[];
+  /** Current physics params (for rendering that needs param values) */
+  params: PhysicsParams;
   /** Create a new blob from grid cells */
   createBlob: (
     cells: Vec2[],
@@ -493,6 +497,8 @@ export function useSoftBodyPhysics(
 
   return {
     blobs: blobsRef.current,
+    attractionSprings: attractionSpringsRef.current,
+    params: paramsRef.current,
     createBlob,
     removeBlob,
     updateBlobTarget,

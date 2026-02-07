@@ -224,7 +224,7 @@ export const DEFAULT_PHYSICS: PhysicsParams = {
   goopiness: 15,           // Proto 25 x 0.6 = 15
   tendrilEndRadius: 6,     // Proto 10 x 0.6 = 6
   tendrilSkinniness: 0.7,
-  wallThickness: 4.8,      // Proto 8 x 0.6 = 4.8
+  wallThickness: 8,
   // Droplet params (scaled x0.6 from Proto-9 values)
   dropletCount: 30,
   dropletSpeed: 60,        // Proto 100 x 0.6 = 60

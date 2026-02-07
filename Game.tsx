@@ -68,7 +68,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
     const context: PhysicsStepContext = {
       grid: engine.state.grid,
       tankRotation: engine.state.tankRotation,
-      fallSpeed: engine.getFallSpeed()
+      fallSpeed: engine.freezeFalling ? 0 : engine.getFallSpeed()
     };
 
     // Run physics with context (steps falling blobs + core physics)
@@ -646,12 +646,47 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
                 />
                 <span>Show Vertices</span>
               </label>
-              <button
-                onClick={() => { setPhysicsParams({ ...DEFAULT_PHYSICS }); setNormalGoopOpacity(0.25); setShowVertexDebug(false); setGooStdDev(8); setGooAlphaMul(24); setGooAlphaOff(-13); }}
-                className="mt-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-              >
-                Reset to Defaults
-              </button>
+              <label className="flex items-center gap-2 mt-1">
+                <input
+                  type="checkbox"
+                  checked={engine.freezeTimer}
+                  onChange={e => { engine.freezeTimer = e.target.checked; }}
+                />
+                <span>Freeze Timer</span>
+              </label>
+              <label className="flex items-center gap-2 mt-1">
+                <input
+                  type="checkbox"
+                  checked={engine.freezeFalling}
+                  onChange={e => { engine.freezeFalling = e.target.checked; }}
+                />
+                <span>Freeze Falling</span>
+              </label>
+              <div className="flex gap-1 mt-1">
+                <button
+                  onClick={() => { setPhysicsParams({ ...DEFAULT_PHYSICS }); setNormalGoopOpacity(0.25); setShowVertexDebug(false); setGooStdDev(8); setGooAlphaMul(24); setGooAlphaOff(-13); }}
+                  className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
+                >
+                  Reset to Defaults
+                </button>
+                <button
+                  onClick={() => {
+                    const snapshot = {
+                      ...physicsParams,
+                      gooStdDev,
+                      gooAlphaMul,
+                      gooAlphaOff,
+                      normalGoopOpacity,
+                    };
+                    console.log('=== DEBUG PARAMS SNAPSHOT ===');
+                    console.log(JSON.stringify(snapshot, null, 2));
+                    console.log('============================');
+                  }}
+                  className="px-2 py-1 bg-blue-700 hover:bg-blue-600 rounded text-xs"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
         </div>
