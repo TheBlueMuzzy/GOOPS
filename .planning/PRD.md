@@ -82,13 +82,13 @@ Displays when the shift ends (pressure reaches 100%).
 |----------|-------|-------|
 | Total Width | 30 columns | Full cylinder circumference |
 | Visible Width | 12 columns | ~40% visible through periscope |
-| Total Height | 19 rows | Including buffer |
-| Visible Height | 16 rows | Rows 3-18 (0-indexed) |
+| Total Height | 24 rows | Including 3-row buffer |
+| Visible Height | 21 rows | Rows 3-23 (0-indexed), 9:16 aspect ratio |
 | Buffer Height | 3 rows | Spawn area above visible (rows 0-2) |
 
 The tank is cylindrical — coordinates wrap horizontally. Rotating the tank changes which section is visible. Goop groups can wrap around the cylinder.
 
-> **Tech Note:** Buffer rows 0-2 are not visible to the player. Pieces spawn at row 0 and fall into the visible area starting at row 3.
+> **Tech Note:** Buffer rows 0-2 are not visible to the player. Pieces spawn at row 0 and fall into the visible area starting at row 3. `BUFFER_HEIGHT = TANK_HEIGHT - TANK_VIEWPORT_HEIGHT`.
 
 ### Pressure System
 
@@ -101,12 +101,12 @@ Pressure represents time remaining. It builds continuously and determines:
 
 **Formulas:**
 ```
-tankPressure = 1 - (shiftTime / maxTime)
-waterHeightBlocks = 1 + (tankPressure * 15)
+tankPressure = max(0, 1 - (shiftTime / maxTime))
+waterHeightBlocks = 1 + (tankPressure * (TANK_VIEWPORT_HEIGHT - 1))   // 1 + (pressure * 20)
 pressureLineY = floor(TANK_HEIGHT - waterHeightBlocks)
 ```
 
-> **Tech Note:** `pressureLineY` ranges from row 18 (bottom, at game start) to row 3 (top, constrained by BUFFER_HEIGHT at game end).
+> **Tech Note:** `pressureLineY` ranges from row 23 (bottom, at game start) to row 3 (top, constrained by BUFFER_HEIGHT at game end).
 
 **Pressure Recovery (from popping goop):**
 ```
@@ -207,26 +207,121 @@ Soft-body blobs use an SVG goo filter to create the blobby merge effect. The fil
 2. **Alpha Threshold** — A color matrix sharpens the blurred alpha back to solid edges. Formula: `output = (blurred_alpha × AlphaMul) + AlphaOff`
 3. **Composite** — Original sharp color composited back onto the thresholded shape.
 
-**Tuned Defaults (v1.5):**
+**Two independent filter sets exist:**
+- **Locked blobs filter** (`goo-filter`) — For settled goop, rendered per-color to prevent cross-color bleeding
+- **Falling blobs filter** (`goo-filter-falling`) — For the active falling piece, rendered separately
 
-| Parameter | Value | Range | Effect |
-|-----------|-------|-------|--------|
-| Blur (stdDeviation) | **8** | 1–25 | Merge radius. Higher = fluffier, more merging between nearby blobs |
-| Alpha Multiplier | **24** | 1–50 | Edge steepness. Higher = harder/crisper cutoff |
-| Alpha Offset | **-13** | -30–0 | Edge position. More negative = blobs shrink inward, gaps widen |
+**Current Defaults:**
+
+| Parameter | Locked | Falling | Range | Effect |
+|-----------|--------|---------|-------|--------|
+| Blur (stdDeviation) | **5** | **5** | 1–25 | Merge radius. Higher = fluffier, more merging |
+| Alpha Multiplier | **40** | **40** | 1–50 | Edge steepness. Higher = harder/crisper cutoff |
+| Alpha Offset | **-11** | **-11** | -30–0 | Edge position. More negative = blobs shrink inward |
 
 **Reference Presets:**
 
 | Preset | Blur | Mul | Off | Notes |
 |--------|------|-----|-----|-------|
-| Subtle | 5 | 15 | -6 | Minimal merge, soft edges |
-| Medium | 8 | 24 | -13 | **Current default** — balanced merge + crisp edges |
+| Subtle | 3 | 20 | -6 | Minimal merge, soft edges |
+| Current | 5 | 40 | -11 | **Active default** — tight merge, crisp edges |
+| Fluffy | 8 | 24 | -13 | Wider merge radius, softer edges |
 | Aggressive | 12 | 25 | -9 | Maximum fluffiness, heavy merge |
 
 **Key notes:**
 - Alpha Mul and Alpha Off both affect the edge but from different angles: Mul adjusts contrast (steepness), Off adjusts position (where the cutoff sits)
 - No stroke on blob SVG paths — the filter handles edge definition on its own
+- Locked and falling filters are independently tunable via debug panel
 - Debug sliders available via backtick (`` ` ``) panel under "Goo Filter" section
+
+### Soft-Body Physics (Rendering System)
+
+Goop blobs are rendered using a Verlet-integration soft-body physics engine. Each grid cell is represented by a physics blob with 12 vertices arranged in a hexagonal ring, connected by springs. This creates organic, blobby motion instead of rigid grid squares.
+
+**Physics Pipeline:**
+1. Verlet integration moves vertices based on velocity + gravity
+2. Constraint solving (3 iterations): ring springs, cross springs, pressure
+3. Home anchoring pulls vertices toward rest shape
+4. Attraction springs connect nearby same-color blobs (merge tendrils)
+5. Catmull-Rom curves smooth vertices into SVG paths
+6. SVG goo filter merges nearby blob shapes into membrane effect
+
+**Core Physics Parameters:**
+
+| Parameter | Default | Purpose |
+|-----------|---------|---------|
+| damping | 0.98 | Velocity decay per frame |
+| stiffness | 10 | Spring constraint strength |
+| pressure | 20 | Volume maintenance (gas-law, Shoelace area) |
+| iterations | 3 | Constraint solver passes per frame |
+| innerHomeStiffness | 0.64 | Core vertex anchoring (prevents collapse) |
+
+**Locked vs Falling Blobs** have independent parameter sets:
+
+| Parameter | Locked | Falling | Effect |
+|-----------|--------|---------|--------|
+| homeStiffness | 0.35 | 0.35 | Shape retention to rest position |
+| returnSpeed | 0.8 | 0.8 | Snap-back speed to home |
+| viscosity | 0.7 | 0.7 | Movement dampening |
+| gravity | 10 | 10 | Downward acceleration |
+
+**Attraction Springs (Merge Tendrils):**
+
+| Parameter | Default | Effect |
+|-----------|---------|--------|
+| attractionRadius | 30px | Max distance for blob-to-blob attraction |
+| attractionRestLength | 1px | Target gap between attracted vertices |
+| attractionStiffness | 0.037 | Spring force strength |
+
+When same-color blobs are within `attractionRadius`, spring forces pull their nearest vertices together, creating visible tendrils that stretch between merging groups.
+
+**Tendril Rendering:**
+
+| Parameter | Default | Effect |
+|-----------|---------|--------|
+| goopiness | 36 | SVG filter stretch threshold |
+| tendrilEndRadius | 1px | Bead size at tendril endpoints |
+| tendrilSkinniness | 0.2 | Mid-point taper (0=needle, 1=bulbous) |
+
+> **Tech Note:** Tendrils MUST render inside the goo filter group. Otherwise beads appear as individual dots instead of smooth strands (Proto 9 lesson).
+
+**Droplet Particles (Pop Effect):**
+
+| Parameter | Default | Effect |
+|-----------|---------|--------|
+| dropletCount | 30 | Particles per pop event |
+| dropletSpeed | 60 px/s | Initial scatter velocity |
+| dropletLifetime | 3s | Fade-out duration |
+| dropletSize | 9px | Droplet radius |
+| dropletGravity | 180 | Separate from blob gravity |
+
+Droplets spray outward when goop is popped. They render as simple circles with NO goo filter applied.
+
+**Loose Goop Ease-In:** When locked goop loses support (blocks below popped), gravity ramps from 0 to full over 0.6 seconds using a cubic ease-in curve (t³). This prevents jarring instant-fall.
+
+**Rendering Architecture:**
+- Locked blobs: Rendered per-color inside shared goo filter (prevents cross-color bleeding)
+- Falling blobs: Rendered separately with independent filter params
+- Tendrils: Rendered inside goo filter for smooth membrane merging
+- Inner cutouts (fill animation): Rendered OUTSIDE goo filter to prevent dark fringe bleed
+- Droplets: Simple circles, no goo filter
+
+> **Tech Note:** All 43 physics parameters are exposed via the backtick (`` ` ``) debug panel for real-time tuning. The "Save Snapshot" button logs current params as JSON to browser console.
+
+### Mobile Rendering
+
+Mobile devices use conditional rendering to maintain 40fps performance.
+
+| Feature | Desktop | Mobile |
+|---------|---------|--------|
+| Frame Rate | 60fps (16ms) | 40fps (25ms) |
+| Soft-Body Rendering | Full physics | Enabled (simplified) |
+| CRT Scanline Effect | Yes | No |
+| Grid Lines | Yes | No |
+| Viewport Mask | Yes | No |
+| Fill Animation | Per-cell bottom-up | Group-level horizontal sweep |
+
+> **Tech Note:** Mobile detection via `isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)`. Do NOT remove `isMobile` checks without understanding why they exist — they prevent severe performance degradation.
 
 ### Popping (Laser)
 
@@ -271,7 +366,7 @@ Tapping filled goop destroys it.
 
 At rank 30+, unsealed cracks grow over time.
 
-**Growth Check:** 7-12 seconds per crack cell (random: `5000 + random * 5000` ms)
+**Growth Check:** 5-10 seconds per crack cell (random: `5000 + random * 5000` ms)
 
 **Spread Chance:**
 ```
@@ -548,8 +643,8 @@ Active abilities are upgrades that can be equipped and manually activated.
 ```
 perUnit = baseScore + heightBonus + offscreenBonus
 baseScore = 10
-heightBonus = (19 - y) * 10    // 0-190 points
-offscreenBonus = 50            // if distance from viewport center > 6
+heightBonus = max(0, (TANK_HEIGHT - y) * 10)   // 10-210 for visible rows (y=3 to y=23)
+offscreenBonus = 50                              // if distance from viewport center > 6
 
 popStreakMultiplier = 1 + (popStreak * 0.1)
 
@@ -677,17 +772,17 @@ Five performance categories averaged for letter grade:
 | Lock Delay | 500ms (50ms when fast dropping) | — |
 | Fill Duration | groupSize * 375ms | — |
 | Crack Spawn Interval | 5,000ms | — |
-| Crack Growth Interval | 7,000-12,000ms per cell | — |
+| Crack Growth Interval | 5,000-10,000ms per cell | — |
 | Swap Hold Duration | 1,500ms | -250ms per GOOP_SWAP level (min 500ms) |
 
 ### Grid
 
 | Constant | Value |
 |----------|-------|
-| Total Width | 30 |
-| Visible Width | 12 |
-| Total Height | 19 |
-| Visible Height | 16 |
+| Total Width (TANK_WIDTH) | 30 |
+| Visible Width (TANK_VIEWPORT_WIDTH) | 12 |
+| Total Height (TANK_HEIGHT) | 24 |
+| Visible Height (TANK_VIEWPORT_HEIGHT) | 21 |
 | Buffer Height | 3 |
 
 ### Spawning
@@ -722,13 +817,46 @@ Five performance categories averaged for letter grade:
 | Wave Delay | 600ms between waves |
 | Fall Speed | 0.03 grid units/ms |
 
+### Soft-Body Physics
+
+| Constant | Value | Notes |
+|----------|-------|-------|
+| Vertices per Blob | 12 | Hexagonal ring |
+| Damping | 0.98 | Per-frame velocity decay |
+| Stiffness | 10 | Spring constraint strength |
+| Pressure | 20 | Volume maintenance |
+| Solver Iterations | 3 | Per frame |
+| Home Stiffness (locked) | 0.35 | Shape retention |
+| Home Stiffness (falling) | 0.35 | Shape retention |
+| Gravity (locked/falling) | 10 | Downward acceleration |
+| Attraction Radius | 30px | Merge tendril range |
+| Attraction Stiffness | 0.037 | Tendril spring force |
+| Loose Goop Ease-In | 0.6s | Cubic (t³) gravity ramp |
+| Droplet Count | 30 | Per pop event |
+| Droplet Speed | 60 px/s | Initial scatter velocity |
+| Droplet Lifetime | 3s | Fade-out duration |
+| Frame Rate (desktop) | 60fps (16ms) | — |
+| Frame Rate (mobile) | 40fps (25ms) | Throttled |
+
+### Pressure Recovery
+
+| Constant | Value |
+|----------|-------|
+| Base Recovery | 0ms |
+| Per-Unit Recovery | 100ms per unit |
+| Tier Threshold | 15 units (tier bonus starts) |
+| Tier Step | 10 units per additional tier |
+| Tier Bonus | 250ms per tier |
+| Infused Bonus | 3,000ms per infused unit |
+
 ---
 
 ## Future Ideas
 
 **Visual Polish:**
 - **Pressure venting visual** — animated graphic flies from pop location to pressure meter, reinforcing "venting pressure" concept
-- Soft-body shader rendering for goop
+- **Undulation effect** — two waves traveling around blob perimeter for idle organic motion
+- **Advanced merge visualization** — smooth membrane slide as blobs merge (animated tendril shortening, contour deformation)
 
 **Progression:**
 - Additional bands (ranks 40+)
@@ -742,6 +870,6 @@ Five performance categories averaged for letter grade:
 
 ---
 
-*Document Version: 6.0*
-*Game Version: 1.5*
-*Last Updated: January 2026*
+*Document Version: 7.0*
+*Game Version: 1.1.13*
+*Last Updated: February 2026*
