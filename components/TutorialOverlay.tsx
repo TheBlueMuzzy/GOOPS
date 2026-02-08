@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { IntercomMessage } from '../types/tutorial';
-import { IntercomMessageDisplay } from './IntercomMessage';
+import { IntercomMessageDisplay, PhaseDotInfo } from './IntercomMessage';
 
 // --- Highlight Region Definitions ---
 // Maps highlightElement strings (from TrainingStep.setup.highlightElement)
@@ -32,6 +32,11 @@ interface TutorialOverlayProps {
   onDismiss: () => void;     // Dismiss without completing
   highlightElement?: string; // Element key to highlight (from training step setup)
   messagePosition?: 'top' | 'center' | 'bottom'; // Contextual position for intercom window
+  trainingProgress?: {
+    phaseName: string;
+    stepProgress: string;
+    phaseDots: PhaseDotInfo[];
+  };
 }
 
 /**
@@ -51,6 +56,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
   onDismiss,
   highlightElement,
   messagePosition = 'center',
+  trainingProgress,
 }) => {
   // Track the step being displayed (for fade-out: keep rendering while fading)
   const [displayedStep, setDisplayedStep] = useState<DisplayableStep | null>(null);
@@ -137,6 +143,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
           onDismiss={onDismiss}
           onComplete={onComplete}
           position={messagePosition}
+          trainingProgress={trainingProgress}
         />
       </div>
     </div>

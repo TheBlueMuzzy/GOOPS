@@ -18,9 +18,11 @@ import { TETRA_NORMAL, TETRA_CORRUPTED, PENTA_NORMAL, PENTA_CORRUPTED, HEXA_NORM
 import { SpinTankCommand, RotateGoopCommand, SetFastDropCommand, SwapPieceCommand, StartRunCommand, SetPhaseCommand, TogglePauseCommand, ResolveComplicationCommand, PopGoopCommand, ActivateAbilityCommand } from './core/commands/actions';
 import { IntercomMessageDisplay } from './components/IntercomMessage';
 import { TutorialOverlay } from './components/TutorialOverlay';
-import { TrainingHUD } from './components/TrainingHUD';
 import { useTutorial } from './hooks/useTutorial';
 import { useTrainingFlow } from './hooks/useTrainingFlow';
+import { TRAINING_PHASE_NAMES, TRAINING_SEQUENCE, getPhaseSteps } from './data/trainingScenarios';
+import { TrainingPhase } from './types/training';
+import { PhaseDotInfo } from './components/IntercomMessage';
 
 // STATE ARCHITECTURE:
 // - Game state flows down: useGameEngine → state prop → child components
@@ -424,6 +426,26 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
     gameEngine: engine,
     rank: startingRank,
   });
+
+  // Compute training progress for the intercom header (replaces TrainingHUD)
+  const ALL_PHASES: TrainingPhase[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+  const trainingProgress = isInTraining && trainingStep ? (() => {
+    const stepIndex = TRAINING_SEQUENCE.findIndex(s => s.id === trainingStep.id);
+    const phaseDots: PhaseDotInfo[] = ALL_PHASES.map(phase => {
+      const phaseSteps = getPhaseSteps(phase);
+      const allComplete = phaseSteps.every(s => completedStepIds.includes(s.id));
+      const isCurrent = trainingStep.phase === phase;
+      return {
+        phase,
+        status: allComplete ? 'complete' as const : isCurrent ? 'current' as const : 'upcoming' as const,
+      };
+    });
+    return {
+      phaseName: `Phase ${trainingStep.phase}: ${TRAINING_PHASE_NAMES[trainingStep.phase]}`,
+      stepProgress: `Step ${stepIndex + 1} of ${TRAINING_SEQUENCE.length}`,
+      phaseDots,
+    };
+  })() : undefined;
 
   // During training: show training messages via overlay, with appropriate callbacks
   // Tap steps: dismiss = advance. Action/event steps: dismiss just hides message.
@@ -1014,14 +1036,6 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
         );
       })()}
 
-      {/* LAYER 5c: TRAINING HUD (z-[85] — below TutorialOverlay, above game) */}
-      {isInTraining && trainingStep && gameState.phase === ScreenType.TankScreen && (
-        <TrainingHUD
-          currentStep={trainingStep}
-          completedStepIds={completedStepIds}
-        />
-      )}
-
       {/* LAYER 6: TUTORIAL OVERLAY (z-[90] — above TransitionOverlay, non-blocking) */}
       <TutorialOverlay
         activeStep={overlayActiveStep}
@@ -1029,6 +1043,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
         onDismiss={overlayOnDismiss}
         highlightElement={trainingStep?.setup?.highlightElement}
         messagePosition={isInTraining ? trainingMessagePosition : undefined}
+        trainingProgress={trainingProgress}
       />
 
     </div>

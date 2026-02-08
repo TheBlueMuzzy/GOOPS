@@ -19,3 +19,30 @@
 .intercom-enter {
   animation: intercom-fade-in 0.3s ease-out forwards;
 }
+
+/* Phase progress dots (training mode header) */
+.intercom-phase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.intercom-phase-dot--complete {
+  background: #94a3b8; /* slate-400 */
+}
+
+.intercom-phase-dot--current {
+  background: #38bdf8; /* sky-400 */
+  animation: intercom-phase-pulse 1.5s ease-in-out infinite;
+}
+
+.intercom-phase-dot--upcoming {
+  background: transparent;
+  border: 1px solid #475569; /* slate-600 */
+}
+
+@keyframes intercom-phase-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}

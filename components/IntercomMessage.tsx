@@ -4,12 +4,24 @@ import { IntercomMessage as IntercomMessageType } from '../types/tutorial';
 import { IntercomText } from './IntercomText';
 import './IntercomMessage.css';
 
+// Phase dot status for training progress display
+export interface PhaseDotInfo {
+  phase: string;
+  status: 'complete' | 'current' | 'upcoming';
+}
+
 interface IntercomMessageProps {
   message: IntercomMessageType;
   onDismiss: () => void;
   onComplete: () => void;
   position?: 'top' | 'center' | 'bottom';
   className?: string;
+  // Training progress (optional — only shown during rank 0 training)
+  trainingProgress?: {
+    phaseName: string;       // e.g. "Phase B: Goop Basics"
+    stepProgress: string;    // e.g. "Step 4 of 17"
+    phaseDots: PhaseDotInfo[];
+  };
 }
 
 /** Characters revealed per tick during typewriter effect */
@@ -23,6 +35,7 @@ export const IntercomMessageDisplay: React.FC<IntercomMessageProps> = ({
   onComplete,
   position = 'top',
   className = '',
+  trainingProgress,
 }) => {
   const [visibleChars, setVisibleChars] = useState(0);
   const [isFullyRevealed, setIsFullyRevealed] = useState(false);
@@ -82,12 +95,38 @@ export const IntercomMessageDisplay: React.FC<IntercomMessageProps> = ({
       <div className="bg-slate-900/95 border border-slate-700 rounded-sm shadow-lg shadow-black/50 overflow-hidden">
 
         {/* Header bar */}
-        <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-800 bg-slate-950/60">
-          <span className="t-body text-slate-500 uppercase tracking-widest font-mono">
-            Intercom
-          </span>
-          {/* Blinking transmission indicator */}
-          <span className="w-1.5 h-1.5 rounded-full bg-orange-500 intercom-blink" />
+        <div className="px-3 py-1.5 border-b border-slate-800 bg-slate-950/60">
+          {trainingProgress ? (
+            <>
+              {/* Training mode header: phase name + step count */}
+              <div className="flex items-center justify-between">
+                <span className="t-caption text-slate-400 leading-tight truncate">
+                  {trainingProgress.phaseName}
+                </span>
+                <span className="t-caption text-slate-500 leading-tight flex-shrink-0 ml-2">
+                  {trainingProgress.stepProgress}
+                </span>
+              </div>
+              {/* Phase dots row */}
+              <div className="flex items-center justify-center gap-1.5 mt-1">
+                {trainingProgress.phaseDots.map(dot => (
+                  <span
+                    key={dot.phase}
+                    className={`intercom-phase-dot intercom-phase-dot--${dot.status}`}
+                    title={`Phase ${dot.phase}`}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="t-body text-slate-500 uppercase tracking-widest font-mono">
+                Intercom
+              </span>
+              {/* Blinking transmission indicator */}
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 intercom-blink" />
+            </div>
+          )}
         </div>
 
         {/* Message body */}
