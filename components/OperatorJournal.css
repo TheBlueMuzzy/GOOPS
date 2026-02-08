@@ -1,0 +1,24 @@
+/* OperatorJournal page content transition */
+.journal-page-enter {
+  animation: journal-fade-in 0.2s ease-out;
+}
+
+@keyframes journal-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hide scrollbar on tab strip (horizontal mode) */
+.journal-tabs-strip::-webkit-scrollbar {
+  display: none;
+}
+.journal-tabs-strip {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
