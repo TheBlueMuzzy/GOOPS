@@ -51,12 +51,12 @@ export const TRAINING_MESSAGES: Record<TrainingStepId, IntercomMessage> = {
     fullText: 'The goop extruder drops material into the tank. Watch where it lands.',
   },
   B2_FAST_FALL: {
-    keywords: ['hold down', 'speed up', 'drop'],
-    fullText: 'Hold down to speed up the drop. Or just tap to slam it down. Your call.',
+    keywords: ['swipe down', 'press S', 'speed up', 'drop', 'fast-drop'],
+    fullText: 'Swipe down or press S to fast-drop. The faster you place it, the better.',
   },
   B3_PIECE_ROTATION: {
-    keywords: ['rotate', 'piece', 'Q', 'E'],
-    fullText: 'Rotate the piece before it lands. Q and E keys, or tap the screen edges.',
+    keywords: ['rotate', 'piece', 'tap', 'arrows', 'Q', 'E'],
+    fullText: 'Rotate the piece before it lands. Tap the rotation arrows, or press Q and E.',
   },
   C1_POP_INTRO: {
     keywords: ['pop', 'goop', 'pressure', 'tap'],
@@ -75,8 +75,8 @@ export const TRAINING_MESSAGES: Record<TrainingStepId, IntercomMessage> = {
     fullText: 'A crack in the tank wall. Only matching color goop can seal it. That is literally your one job.',
   },
   D2_TANK_ROTATION: {
-    keywords: ['rotate', 'tank', 'swipe', 'A', 'D'],
-    fullText: 'The goop is not above the crack. Rotate the tank to line it up. Swipe or use A and D keys.',
+    keywords: ['rotate', 'tank', 'swipe left', 'swipe right', 'A', 'D'],
+    fullText: 'The goop is not above the crack. Swipe left or right to rotate the tank, or use A and D keys.',
   },
   E1_PRESSURE_REVEAL: {
     keywords: ['pressure', 'rising', 'goop'],

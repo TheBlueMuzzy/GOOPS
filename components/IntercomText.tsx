@@ -49,10 +49,14 @@ function getLeadingPunctuation(word: string): string {
   return match ? match[0] : '';
 }
 
+// Garble level for non-keyword words
+type GarbleLevel = 'none' | 'partial' | 'full';
+
 interface ProcessedWord {
   isKeyword: boolean;
   display: string;     // The rendered text (garbled or clear)
   original: string;    // The original word
+  garbleLevel: GarbleLevel;  // How corrupted this word is
 }
 
 export const IntercomText: React.FC<IntercomTextProps> = ({
@@ -70,7 +74,7 @@ export const IntercomText: React.FC<IntercomTextProps> = ({
     return words.map((token): ProcessedWord => {
       // Whitespace tokens pass through as-is
       if (/^\s+$/.test(token)) {
-        return { isKeyword: false, display: token, original: token };
+        return { isKeyword: false, display: token, original: token, garbleLevel: 'none' };
       }
 
       const coreWord = stripPunctuation(token);
@@ -82,11 +86,48 @@ export const IntercomText: React.FC<IntercomTextProps> = ({
       wordIndex++;
 
       if (revealed || isKeyword) {
-        return { isKeyword, display: token, original: token };
+        return { isKeyword, display: token, original: token, garbleLevel: 'none' };
       }
 
-      // Garble: replace each character of the core word with a static character
+      // Light corruption: most text readable, some garbled for radio-static flavor
+      // 70% clear, 15% partial (1-2 chars garbled), 15% fully garbled
       const rng = seededRandom(currentIndex * 7919 + 31);
+      const roll = rng(); // 0-1 determines corruption level
+
+      if (roll < 0.70) {
+        // Clear — word renders as-is
+        return {
+          isKeyword: false,
+          display: token,
+          original: token,
+          garbleLevel: 'none',
+        };
+      }
+
+      if (roll < 0.85) {
+        // Partial garble — 1-2 characters within the word are corrupted
+        const chars = coreWord.split('');
+        const garbleCount = Math.min(chars.length, coreWord.length <= 2 ? 1 : (rng() < 0.5 ? 1 : 2));
+        const indicesToGarble = new Set<number>();
+        while (indicesToGarble.size < garbleCount) {
+          indicesToGarble.add(Math.floor(rng() * chars.length));
+        }
+        const partialGarbled = chars
+          .map((ch, idx) => indicesToGarble.has(idx)
+            ? GARBLE_CHARS[Math.floor(rng() * GARBLE_CHARS.length)]
+            : ch
+          )
+          .join('');
+
+        return {
+          isKeyword: false,
+          display: leading + partialGarbled + trailing,
+          original: token,
+          garbleLevel: 'partial',
+        };
+      }
+
+      // Full garble — entire word replaced with block chars
       const garbled = coreWord
         .split('')
         .map(() => GARBLE_CHARS[Math.floor(rng() * GARBLE_CHARS.length)])
@@ -96,6 +137,7 @@ export const IntercomText: React.FC<IntercomTextProps> = ({
         isKeyword: false,
         display: leading + garbled + trailing,
         original: token,
+        garbleLevel: 'full',
       };
     });
   }, [fullText, keywords, revealed]);
@@ -141,11 +183,17 @@ export const IntercomText: React.FC<IntercomTextProps> = ({
           );
         }
 
-        // Garbled word
+        // Garbled or partially garbled word
+        // Full garble: muted color so it blends as static, not redaction
+        // Partial garble: normal text color (corrupted chars blend in)
+        const garbleClass = word.garbleLevel === 'full'
+          ? 'text-slate-500 font-mono'
+          : 'text-slate-300';
+
         return (
           <span
             key={i}
-            className="text-slate-600 font-mono"
+            className={garbleClass}
           >
             {displayText}
           </span>
