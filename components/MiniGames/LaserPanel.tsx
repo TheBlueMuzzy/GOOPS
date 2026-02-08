@@ -10,6 +10,7 @@ interface LaserPanelProps {
   textState: MinigameTextState;
   isComplicationActive?: boolean;
   recentlyFixed?: boolean;
+  isUnlocked?: boolean;
 }
 
 /**
@@ -24,9 +25,10 @@ export const LaserPanel: React.FC<LaserPanelProps> = ({
   getLaserLightColors,
   textState,
   isComplicationActive = false,
+  isUnlocked = true,
 }) => {
   return (
-    <g id="Reset_Laser_Top">
+    <g id="Reset_Laser_Top" className={isUnlocked ? 'minigame-active' : 'minigame-inactive'}>
       {/* Background Texture (Zig-Zags) - Static */}
       <g pointerEvents="none">
         {/* Top Left */}

@@ -25,6 +25,7 @@ interface LightsPanelProps {
   onPurpleClick?: () => void;
   isComplicationActive?: boolean;
   recentlyFixed?: boolean;
+  isUnlocked?: boolean;
 }
 
 /**
@@ -50,12 +51,13 @@ export const LightsPanel: React.FC<LightsPanelProps> = ({
   onPurpleClick,
   isComplicationActive = false,
   recentlyFixed = false,
+  isUnlocked = true,
 }) => {
   const sliderLightColors = getLightsSliderLightColors();
   const isButtonDisabled = lightsComplication.phase === 'slider1' || lightsComplication.phase === 'showing';
 
   return (
-    <g id="Reset_Lights">
+    <g id="Reset_Lights" className={isUnlocked ? 'minigame-active' : 'minigame-inactive'}>
       {/* Purple Base */}
       <polygon fill="#45486c" points="608.7 1720.12 341.17 1720.12 341.17 1452.22 564.14 1452.22 608.7 1720.12" className={isComplicationActive ? 'minigame-active-pulse' : recentlyFixed ? 'minigame-solved-fade' : ''}/>
       <text

@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { EndGameScreen } from './EndGameScreen';
-import { GameStats, Complication } from '../types';
+import { GameStats, Complication, TankSystem } from '../types';
 import { UPGRADES } from '../constants';
+import { isComplicationUnlocked } from '../complicationConfig';
 
 // Minigame hooks
 import { useLaserMinigame } from '../hooks/useLaserMinigame';
@@ -101,6 +102,11 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     const isLaserMaxed = (upgradeLevels['CAPACITOR_EFFICIENCY'] || 0) >= UPGRADES.CAPACITOR_EFFICIENCY.maxLevel;
     const isLightsMaxed = (upgradeLevels['CIRCUIT_STABILIZER'] || 0) >= UPGRADES.CIRCUIT_STABILIZER.maxLevel;
     const isControlsMaxed = (upgradeLevels['GEAR_LUBRICATION'] || 0) >= UPGRADES.GEAR_LUBRICATION.maxLevel;
+
+    // Complication unlock flags (greyed out until rank is high enough)
+    const isLaserUnlocked = isComplicationUnlocked(TankSystem.LASER, rank);
+    const isLightsUnlocked = isComplicationUnlocked(TankSystem.LIGHTS, rank);
+    const isControlsUnlocked = isComplicationUnlocked(TankSystem.CONTROLS, rank);
 
     // UI state
     const [pressedBtn, setPressedBtn] = useState<string | null>(null);
@@ -356,6 +362,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                     textState={getLaserTextState()}
                     isComplicationActive={laserComplicationActive}
                     recentlyFixed={laserRecentlyFixed}
+                    isUnlocked={isLaserUnlocked}
                 />
             </g>
 
@@ -376,6 +383,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 onPurpleClick={onPurpleClick}
                 isComplicationActive={lightsComplicationActive}
                 recentlyFixed={lightsRecentlyFixed}
+                isUnlocked={isLightsUnlocked}
             />
 
             {/* Reset Controls (Dial) */}
@@ -391,6 +399,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
                 isDialAligned={isDialAligned()}
                 isComplicationActive={controlsComplicationActive}
                 recentlyFixed={controlsRecentlyFixed}
+                isUnlocked={isControlsUnlocked}
             />
 
             {/* Hidden reference point for coordinate conversion - MUST be outside rotating groups */}

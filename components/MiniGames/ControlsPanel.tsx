@@ -17,6 +17,7 @@ interface ControlsPanelProps {
   isDialAligned: boolean;
   isComplicationActive: boolean;
   recentlyFixed?: boolean;
+  isUnlocked?: boolean;
 }
 
 /**
@@ -38,9 +39,10 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
   isDialAligned,
   isComplicationActive,
   recentlyFixed = false,
+  isUnlocked = true,
 }) => {
   return (
-    <g id="Reset_Controls">
+    <g id="Reset_Controls" className={isUnlocked ? 'minigame-active' : 'minigame-inactive'}>
       {/* Dial Base Panel - Corrected Shape */}
       <path fill="#45486c" d="M290.21,1663.73c10.78-17.3,17.01-37.73,17.01-59.61,0-23.97-7.48-46.2-20.22-64.48,7.77-.06,15.53-3.05,21.46-8.98,11.98-11.98,11.98-31.4,0-43.37-1.9-1.9-3.99-3.5-6.21-4.8-.5-17.51-14.85-31.56-32.48-31.56H121.34c-17.78,0-32.22,14.28-32.49,32-1.95,1.22-3.81,2.66-5.5,4.36-11.98,11.98-11.98,31.4,0,43.37,5.16,5.16,11.69,8.09,18.42,8.8-12.82,18.31-20.34,40.6-20.34,64.65,0,22.08,6.34,42.67,17.3,60.07-5.63,1.18-11,3.95-15.38,8.32-11.98,11.98-11.98,31.4,0,43.37,11.98,11.98,31.4,11.98,43.37,0,4.44-4.44,7.23-9.91,8.38-15.64,17.22,10.63,37.5,16.77,59.22,16.77,22.93,0,44.26-6.84,62.07-18.59.88,6.39,3.78,12.55,8.69,17.46,11.98,11.98,31.4,11.98,43.37,0,11.98-11.98,11.98-31.4,0-43.37-5.11-5.11-11.58-8.03-18.24-8.78Z" className={isComplicationActive ? 'minigame-active-pulse' : recentlyFixed ? 'minigame-solved-fade' : ''}/>
 
