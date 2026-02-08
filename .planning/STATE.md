@@ -10,11 +10,11 @@ updated: 2026-02-08
 ## Current Position
 
 Phase: 31 of 38 (Tutorial Infrastructure)
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-08 - Milestone v1.6 Progressive Tutorial created
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-08 - Completed 31-01-PLAN.md
 
-Progress: ░░░░░░░░░░ 0%
+Progress: █░░░░░░░░░ 10%
 
 ## Branch Workflow (SOP)
 
@@ -30,10 +30,12 @@ Progress: ░░░░░░░░░░ 0%
 
 ### What was done THIS session:
 
-1. **v1.5 shipped as-is** — Soft-body integration shipped with phases 25-27.1 complete. Phases 28-30 deferred to future milestone.
-2. **v1.6 milestone created** — Progressive Tutorial, 8 phases (31-38)
-3. **PRD narrative section added** — Full story arc documented: employer exploitation theme, intercom system, veteran character, brain-in-liquid reveal, rank titles
-4. **Research completed** — Progressive tutorial design patterns, cross-game analysis (Candy Crush, Hades, Into the Breach, The Witness, Puyo Puyo, Baba Is You, Tetris Effect), visual style direction (Lethal Company + Uncle Chop's Rocket Shop)
+1. **31-01 complete** — Tutorial state machine, SaveData persistence, event bus hooks
+   - types/tutorial.ts: TutorialStepId, TutorialStep, TutorialTrigger, IntercomMessage, TutorialState
+   - hooks/useTutorial.ts: state machine with rank/event triggers, persistence
+   - data/tutorialSteps.ts: placeholder steps (WELCOME, ROTATE_INTRO)
+   - SaveData extended with tutorialProgress field
+   - 3 new tutorial event types on GameEventBus
 
 ### Key Design Decisions (v1.6):
 
@@ -70,24 +72,15 @@ Progress: ░░░░░░░░░░ 0%
 
 Last session: 2026-02-08
 **Version:** 1.1.13
-**Branch:** master
+**Branch:** feature/tutorial-infrastructure
 **Build:** 224
 
 ### Resume Command
 ```
-v1.6 MILESTONE CREATED — Progressive Tutorial (8 phases, 31-38)
+31-01 COMPLETE — Tutorial state machine, persistence, events
 
-RESEARCH COMPLETED:
-- Progressive tutorial patterns (cross-game analysis)
-- Player flow & trigger points (codebase analysis)
-- Visual style direction (Lethal Company + Uncle Chop)
-- PRD narrative arc documented
-
-NEXT: /gsd:plan-phase 31 (Tutorial Infrastructure)
-- Intercom text system with static rendering
-- TutorialOverlay component
-- Tutorial state machine + localStorage
-- Event bus hooks for triggers
+NEXT: /gsd:execute-plan .planning/phases/31-tutorial-infrastructure/31-02-PLAN.md
+- Intercom text rendering (static effect with clear keywords)
 
 /clear first → fresh context window
 ```

@@ -85,7 +85,9 @@ Research spike exploring soft-body physics for goop rendering. Built 5 prototype
 **Plans**: TBD
 
 Plans:
-- [ ] 31-01: TBD (run /gsd:plan-phase 31 to break down)
+- [x] 31-01: Tutorial state machine, SaveData persistence, event bus hooks
+- [ ] 31-02: TBD
+- [ ] 31-03: TBD
 
 #### Phase 32: Journal System
 
@@ -319,7 +321,7 @@ See [[v1.4-ROADMAP]] for full details.
 | 27. Active Piece Physics | v1.5 | 1/2 | Shipped (1 deferred) | 2026-02-05 |
 | 27.1 Physics-Controlled Active Piece | v1.5 | 2/2 | Complete | 2026-02-05 |
 | 28-30. Locked Goop / Pop / Polish | v1.5 | — | Deferred | - |
-| 31. Tutorial Infrastructure | v1.6 | 0/? | Not started | - |
+| 31. Tutorial Infrastructure | v1.6 | 1/3 | In progress | - |
 | 32. Journal System | v1.6 | 0/? | Not started | - |
 | 33. Rank 0 Training Sequence | v1.6 | 0/? | Not started | - |
 | 34. Rank-Gated UI | v1.6 | 0/? | Not started | - |
