@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { TutorialStepId, TutorialStep, TutorialState } from '../types/tutorial';
+import { SaveData } from '../types';
 import { gameEventBus } from '../core/events/EventBus';
 import { GameEventType } from '../core/events/GameEvents';
 import { TUTORIAL_STEPS } from '../data/tutorialSteps';
@@ -8,17 +9,21 @@ import { TUTORIAL_STEPS } from '../data/tutorialSteps';
 interface UseTutorialOptions {
   rank: number;
   isSessionActive: boolean;
+  saveData: SaveData;
+  setSaveData: (updater: (prev: SaveData) => SaveData) => void;
 }
 
 export const useTutorial = ({
   rank,
   isSessionActive,
+  saveData,
+  setSaveData,
 }: UseTutorialOptions) => {
-  const [tutorialState, setTutorialState] = useState<TutorialState>({
+  const [tutorialState, setTutorialState] = useState<TutorialState>(() => ({
     activeStep: null,
-    completedSteps: [],
+    completedSteps: (saveData.tutorialProgress?.completedSteps ?? []) as TutorialStepId[],
     dismissed: false,
-  });
+  }));
 
   // Keep a ref to completedSteps for use in event handlers (avoid stale closure)
   const completedRef = useRef(tutorialState.completedSteps);
@@ -56,13 +61,20 @@ export const useTutorial = ({
   );
 
   /**
-   * Mark the current step as complete
+   * Mark the current step as complete — persists to SaveData immediately
    */
   const completeStep = useCallback(() => {
     setTutorialState(prev => {
       if (!prev.activeStep) return prev;
 
-      const newCompleted = [...prev.completedSteps, prev.activeStep];
+      const stepId = prev.activeStep;
+      const newCompleted = [...prev.completedSteps, stepId];
+
+      // Persist to SaveData
+      setSaveData(sd => ({
+        ...sd,
+        tutorialProgress: { completedSteps: newCompleted as string[] },
+      }));
 
       return {
         activeStep: null,
@@ -70,7 +82,7 @@ export const useTutorial = ({
         dismissed: false,
       };
     });
-  }, []);
+  }, [setSaveData]);
 
   /**
    * Dismiss the current step (does NOT mark complete — will re-trigger)

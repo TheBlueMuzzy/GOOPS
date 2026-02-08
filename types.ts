@@ -328,6 +328,9 @@ export interface SaveData {
   unlockedUpgrades: string[]; // IDs of upgrades that have been revealed to player
   firstRunComplete: boolean;
   milestonesReached: number[];  // Milestone ranks achieved [10, 20, 30...]
+  tutorialProgress: {
+    completedSteps: string[];  // TutorialStepId values
+  };
   settings: {
     masterVolume: number;
     musicVolume: number;

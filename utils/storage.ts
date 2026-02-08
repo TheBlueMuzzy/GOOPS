@@ -13,6 +13,7 @@ export const getDefaultSaveData = (): SaveData => ({
   unlockedUpgrades: [],     // No upgrades revealed yet (first at rank 1)
   firstRunComplete: false,
   milestonesReached: [],
+  tutorialProgress: { completedSteps: [] },
   settings: {
     masterVolume: 50,
     musicVolume: 80,
@@ -72,6 +73,7 @@ export const loadSaveData = (): SaveData => {
         ...parsed,
         settings: { ...defaults.settings, ...(parsed.settings || {}) },
         powerUps: { ...defaults.powerUps, ...(parsed.powerUps || {}) },
+        tutorialProgress: { ...defaults.tutorialProgress, ...(parsed.tutorialProgress || {}) },
         // Arrays: use parsed if exists, otherwise default
         equippedActives: parsed.equippedActives || defaults.equippedActives,
         unlockedUpgrades: parsed.unlockedUpgrades || defaults.unlockedUpgrades,
