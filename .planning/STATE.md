@@ -10,11 +10,11 @@ updated: 2026-02-08
 ## Current Position
 
 Phase: 31 of 38 (Tutorial Infrastructure)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-08 - Completed 31-01-PLAN.md
+Last activity: 2026-02-08 - Completed 31-02-PLAN.md
 
-Progress: █░░░░░░░░░ 10%
+Progress: ██░░░░░░░░ 20%
 
 ## Branch Workflow (SOP)
 
@@ -31,11 +31,12 @@ Progress: █░░░░░░░░░ 10%
 ### What was done THIS session:
 
 1. **31-01 complete** — Tutorial state machine, SaveData persistence, event bus hooks
-   - types/tutorial.ts: TutorialStepId, TutorialStep, TutorialTrigger, IntercomMessage, TutorialState
-   - hooks/useTutorial.ts: state machine with rank/event triggers, persistence
-   - data/tutorialSteps.ts: placeholder steps (WELCOME, ROTATE_INTRO)
-   - SaveData extended with tutorialProgress field
-   - 3 new tutorial event types on GameEventBus
+2. **31-02 complete** — Intercom text rendering system
+   - IntercomText.tsx: garble renderer with seeded PRNG, keyword highlighting
+   - IntercomMessage.tsx: typewriter reveal, maintenance-order styling, 48x48 action buttons
+   - IntercomMessage.css: blink + fade-in animations
+   - Game.tsx: dev-only test trigger
+   - Sizes tuned live: 36px body, 18px header, 48x48 buttons
 
 ### Key Design Decisions (v1.6):
 
@@ -73,14 +74,14 @@ Progress: █░░░░░░░░░ 10%
 Last session: 2026-02-08
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 224
+**Build:** 234
 
 ### Resume Command
 ```
-31-01 COMPLETE — Tutorial state machine, persistence, events
+31-02 COMPLETE — Intercom text rendering system (garble + typewriter + mobile-sized buttons)
 
-NEXT: /gsd:execute-plan .planning/phases/31-tutorial-infrastructure/31-02-PLAN.md
-- Intercom text rendering (static effect with clear keywords)
+NEXT: /gsd:execute-plan .planning/phases/31-tutorial-infrastructure/31-03-PLAN.md
+- TutorialOverlay component (integrates intercom with state machine)
 
 /clear first → fresh context window
 ```
