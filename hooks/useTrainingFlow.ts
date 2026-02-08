@@ -63,11 +63,37 @@ export const useTrainingFlow = ({
   // For tap steps: dismiss = advance. For action/event: dismiss just hides message.
   const [messageVisible, setMessageVisible] = useState(true);
 
-  // Show message when step changes
+  // Transition delay timer ref — cleaned up on unmount
+  const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Show message when step changes, with a brief delay for reading rhythm
   useEffect(() => {
-    if (currentStep) {
-      setMessageVisible(true);
+    if (transitionTimerRef.current) {
+      clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
     }
+
+    if (currentStep) {
+      // Pause the game immediately on step transition
+      if (gameEngine && gameEngine.isSessionActive) {
+        gameEngine.state.isPaused = true;
+        gameEngine.emitChange();
+      }
+
+      // Brief delay before showing the message (let player see result of previous action)
+      setMessageVisible(false);
+      transitionTimerRef.current = setTimeout(() => {
+        setMessageVisible(true);
+        transitionTimerRef.current = null;
+      }, 400);
+    }
+
+    return () => {
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+      }
+    };
   }, [currentStep?.id]);
 
   // Track completion ref for event handler (avoid stale closure)
@@ -125,9 +151,10 @@ export const useTrainingFlow = ({
 
     completeCurrentStep();
 
-    // Unpause if we had paused
-    if (gameEngine && gameEngine.isSessionActive && gameEngine.state.isPaused) {
-      gameEngine.state.isPaused = false;
+    // Pause immediately — the next step's useEffect will handle the transition delay
+    // (Don't unpause here; the step-change effect will manage pause state)
+    if (gameEngine && gameEngine.isSessionActive) {
+      gameEngine.state.isPaused = true;
       gameEngine.emitChange();
     }
 
@@ -154,30 +181,28 @@ export const useTrainingFlow = ({
   const dismissMessage = useCallback(() => {
     setMessageVisible(false);
 
-    // Unpause if this step had paused the game
-    if (gameEngine && currentStep?.pauseGame && gameEngine.isSessionActive) {
+    // Unpause so the player can perform the required action
+    if (gameEngine && gameEngine.isSessionActive) {
       gameEngine.state.isPaused = false;
       gameEngine.emitChange();
     }
-  }, [gameEngine, currentStep]);
+  }, [gameEngine]);
 
-  // --- Pause game when training step has pauseGame: true ---
+  // --- Pause management during training ---
+  // Game is always paused on step transitions (handled by step-change effect above).
+  // The pauseGame field on the step controls what happens AFTER the player dismisses:
+  // - pauseGame: true + tap advance → stays paused until tap advances (no unpause on dismiss)
+  // - pauseGame: false → unpauses when message appears (gameplay needs to run for events)
   useEffect(() => {
     if (!gameEngine || !currentStep || !isInTraining) return;
     if (!gameEngine.isSessionActive) return;
 
-    if (currentStep.pauseGame && messageVisible) {
-      gameEngine.state.isPaused = true;
+    // For non-pausing steps (like B1 watch-only), unpause once the message is visible
+    // so gameplay can run and the event-based advance can fire
+    if (!currentStep.pauseGame && messageVisible) {
+      gameEngine.state.isPaused = false;
       gameEngine.emitChange();
     }
-
-    return () => {
-      // Unpause on cleanup (step change)
-      if (gameEngine.isSessionActive && gameEngine.state.isPaused) {
-        gameEngine.state.isPaused = false;
-        gameEngine.emitChange();
-      }
-    };
   }, [currentStep?.id, messageVisible, gameEngine, isInTraining]);
 
   // --- Event/action advance listeners ---
