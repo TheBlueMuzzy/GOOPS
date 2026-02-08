@@ -117,6 +117,7 @@ export const useTrainingFlow = ({
     currentStep,
     isInTraining,
     isTrainingDone: trainingDone,
+    completedStepIds: completedSteps,
     advanceStep,
     completeCurrentStep,
   };

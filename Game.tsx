@@ -18,6 +18,7 @@ import { TETRA_NORMAL, TETRA_CORRUPTED, PENTA_NORMAL, PENTA_CORRUPTED, HEXA_NORM
 import { SpinTankCommand, RotateGoopCommand, SetFastDropCommand, SwapPieceCommand, StartRunCommand, SetPhaseCommand, TogglePauseCommand, ResolveComplicationCommand, PopGoopCommand, ActivateAbilityCommand } from './core/commands/actions';
 import { IntercomMessageDisplay } from './components/IntercomMessage';
 import { TutorialOverlay } from './components/TutorialOverlay';
+import { TrainingHUD } from './components/TrainingHUD';
 import { useTutorial } from './hooks/useTutorial';
 import { useTrainingFlow } from './hooks/useTrainingFlow';
 
@@ -409,7 +410,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
 
   // Training flow — manages rank 0 scripted training sequence
   // Sets engine.pendingTrainingPalette so enterPeriscope() uses startTraining()
-  const { isInTraining, currentStep: trainingStep } = useTrainingFlow({
+  const { isInTraining, currentStep: trainingStep, completedStepIds } = useTrainingFlow({
     saveData,
     setSaveData,
     gameEngine: engine,
@@ -993,6 +994,14 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           </div>
         );
       })()}
+
+      {/* LAYER 5c: TRAINING HUD (z-[85] — below TutorialOverlay, above game) */}
+      {isInTraining && trainingStep && (
+        <TrainingHUD
+          currentStep={trainingStep}
+          completedStepIds={completedStepIds}
+        />
+      )}
 
       {/* LAYER 6: TUTORIAL OVERLAY (z-[90] — above TransitionOverlay, non-blocking) */}
       <TutorialOverlay
