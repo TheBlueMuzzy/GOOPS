@@ -66,6 +66,7 @@ export class GameEngine {
     public maxPieceSize: number | null = null;  // Training: limit piece cell count (null = no limit)
     public pendingTrainingPalette: string[] | null = null; // Set by useTrainingFlow to intercept next session start
     public trainingAllowedControls: AllowedControls | null = null; // Set by useTrainingFlow per step
+    public trainingPressureRate: number = 0; // Set by useTrainingFlow per step (0=frozen, 1=normal speed)
     public equippedActives: string[] = [];
     private crackManager: CrackManager;
 
@@ -352,7 +353,7 @@ export class GameEngine {
      */
     public startTraining(palette: string[]) {
         this.isTrainingMode = true;
-        this.maxTime = 999999; // Match shiftTime so PSI display calculates correctly (0%)
+        this.maxTime = SHIFT_DURATION; // Real max time so PSI bar has meaningful scale
         this.maxPieceSize = null; // Flow controller sets this per-step via maxPieceSize property
 
         // Clean grid (no junk in training)
@@ -390,7 +391,7 @@ export class GameEngine {
             looseGoop: [],
             dumpPieces: [],
             dumpQueue: [],
-            shiftTime: 999999, // Effectively infinite — no timer pressure during training
+            shiftTime: SHIFT_DURATION, // Real timer — trainingPressureRate controls how fast it decreases
             floatingTexts: [],
             goalMarks: [],
             crackCells: [],
@@ -928,6 +929,15 @@ export class GameEngine {
      * Handle timer countdown. Returns false if game ended (caller should stop processing).
      */
     private tickTimer(dt: number): boolean {
+        // Training mode: advance time at pressureRate speed, never end the game
+        if (this.isTrainingMode) {
+            if (!this.freezeTimer && this.trainingPressureRate > 0) {
+                this.state.shiftTime = Math.max(0, this.state.shiftTime - (dt * this.trainingPressureRate));
+                // Don't call finalizeGame — clamp at 0 (100% PSI)
+            }
+            return true;
+        }
+
         // FOCUS_MODE: slow time during minigames (-10% per level)
         const focusLevel = this.powerUps['FOCUS_MODE'] || 0;
         const isInMinigame = this.state.phase === ScreenType.COMPLICATION_MINIGAME;

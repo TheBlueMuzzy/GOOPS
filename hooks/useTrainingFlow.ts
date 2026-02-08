@@ -259,6 +259,17 @@ export const useTrainingFlow = ({
     }
   }, [gameEngine, currentStep?.id, isInTraining]);
 
+  // --- Sync pressure rate to engine on step change ---
+  useEffect(() => {
+    if (!gameEngine) return;
+
+    if (isInTraining && currentStep?.setup?.pressureRate != null) {
+      gameEngine.trainingPressureRate = currentStep.setup.pressureRate;
+    } else {
+      gameEngine.trainingPressureRate = 0; // Default: pressure frozen
+    }
+  }, [gameEngine, currentStep?.id, isInTraining]);
+
   // Subscribe to TRAINING_SCENARIO_COMPLETE event for cleanup
   useEffect(() => {
     const unsub = gameEventBus.on(GameEventType.TRAINING_SCENARIO_COMPLETE, () => {
@@ -266,6 +277,7 @@ export const useTrainingFlow = ({
         gameEngine.isTrainingMode = false;
         gameEngine.pendingTrainingPalette = null;
         gameEngine.trainingAllowedControls = null;
+        gameEngine.trainingPressureRate = 0;
       }
     });
     return unsub;
