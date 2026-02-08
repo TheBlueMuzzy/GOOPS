@@ -16,6 +16,7 @@ import { calculateRankDetails } from './utils/progression';
 import { getPaletteForRank } from './utils/gameLogic';
 import { TETRA_NORMAL, TETRA_CORRUPTED, PENTA_NORMAL, PENTA_CORRUPTED, HEXA_NORMAL, HEXA_CORRUPTED, COLORS } from './constants';
 import { SpinTankCommand, RotateGoopCommand, SetFastDropCommand, SwapPieceCommand, StartRunCommand, SetPhaseCommand, TogglePauseCommand, ResolveComplicationCommand, PopGoopCommand, ActivateAbilityCommand } from './core/commands/actions';
+import { IntercomMessageDisplay } from './components/IntercomMessage';
 
 // STATE ARCHITECTURE:
 // - Game state flows down: useGameEngine → state prop → child components
@@ -49,6 +50,8 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   const [showPhysicsDebug, setShowPhysicsDebug] = useState(false);
   // Dev piece picker panel (toggle with ~ key)
   const [showPiecePicker, setShowPiecePicker] = useState(false);
+  // Dev intercom test
+  const [showTestIntercom, setShowTestIntercom] = useState(false);
   const [selectedPieceColor, setSelectedPieceColor] = useState(COLORS.RED);
   const [randomPieces, setRandomPieces] = useState(true);
   const [physicsParams, setPhysicsParams] = useState<PhysicsParams>({ ...DEFAULT_PHYSICS });
@@ -764,6 +767,27 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             </div>
           </div>
         </div>
+      )}
+
+      {/* LAYER 5b: DEV INTERCOM TEST */}
+      {import.meta.env.DEV && (
+        <button
+          onClick={() => setShowTestIntercom(true)}
+          className="absolute bottom-2 left-2 z-[100] px-2 py-1 bg-slate-800 text-slate-400 text-[10px] font-mono rounded border border-slate-700 hover:text-slate-200 pointer-events-auto"
+        >
+          Test Intercom
+        </button>
+      )}
+      {showTestIntercom && (
+        <IntercomMessageDisplay
+          message={{
+            fullText: "Attention operator. Begin rotation training immediately. Failure will result in demotion.",
+            keywords: ["rotation", "training"],
+          }}
+          onDismiss={() => setShowTestIntercom(false)}
+          onComplete={() => setShowTestIntercom(false)}
+          position="top"
+        />
       )}
 
       {/* LAYER 5: PIECE PICKER DEV PANEL (Toggle with ~ key) */}
