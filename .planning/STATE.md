@@ -10,11 +10,11 @@ updated: 2026-02-08
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-08 - Completed 33-02-PLAN.md
+Last activity: 2026-02-08 - Completed 33-03-PLAN.md
 
-Progress: ███░░░░░░░ 32%
+Progress: ████░░░░░░ 35%
 
 ## Branch Workflow (SOP)
 
@@ -28,7 +28,7 @@ Progress: ███░░░░░░░ 32%
 
 ## Next Steps
 
-Phase 33 plan 2 of 4 complete. Next: 33-03 (Intercom scripts & journal content).
+Phase 33 plan 3 of 4 complete. Next: 33-04 (Training HUD, highlight system & verification).
 
 ### Decisions Made
 
@@ -39,6 +39,7 @@ Phase 33 plan 2 of 4 complete. Next: 33-03 (Intercom scripts & journal content).
 - Training uses COLORS.RED hex values matching engine convention
 - Training mode: pendingTrainingPalette interception pattern in enterPeriscope()
 - Training tick() gates skip all normal gameplay systems (complications, goals, cracks, heat, lights)
+- TRAINING_MESSAGES as separate Record export alongside TUTORIAL_STEPS (Phase 31 system untouched)
 
 ### Known Issues
 
@@ -61,7 +62,7 @@ Last session: 2026-02-08
 
 ### Resume Command
 ```
-Phase 33 IN PROGRESS — 2/4 plans complete
+Phase 33 IN PROGRESS — 3/4 plans complete
 
 WHAT'S DONE:
 - Phase 31: Tutorial Infrastructure (3/3 plans)
@@ -75,10 +76,14 @@ WHAT'S DONE:
   - useTrainingFlow hook for sequence management
   - pendingTrainingPalette interception in enterPeriscope()
   - TRAINING_SCENARIO_COMPLETE event
+- Phase 33-03: Intercom scripts & journal content (COMPLETE)
+  - TRAINING_MESSAGES: 17 intercom messages (keywords + fullText)
+  - Journal pages updated with practical training content
+  - TEXT_MANIFEST.md synced
 
-NEXT: Plan 33-03 (Intercom scripts & journal content)
+NEXT: Plan 33-04 (Training HUD, highlight system & verification)
 
-/gsd:plan-phase 33 (or execute 33-03 if plan exists)
+/gsd:execute-plan .planning/phases/33-rank-0-training-sequence/33-04-PLAN.md
 ```
 
 ---

@@ -109,7 +109,7 @@ Plans:
 Plans:
 - [x] 33-01: Training scenario data model & configs
 - [x] 33-02: GameEngine training mode & flow controller
-- [ ] 33-03: Intercom scripts & journal content
+- [x] 33-03: Intercom scripts & journal content
 - [ ] 33-04: Training HUD, highlight system & verification
 
 #### Phase 34: Rank-Gated UI
@@ -326,7 +326,7 @@ See [[v1.4-ROADMAP]] for full details.
 | 28-30. Locked Goop / Pop / Polish | v1.5 | — | Deferred | - |
 | 31. Tutorial Infrastructure | v1.6 | 3/3 | Complete | 2026-02-08 |
 | 32. Journal System | v1.6 | 1/1 | Complete | 2026-02-08 |
-| 33. Rank 0 Training Sequence | v1.6 | 2/4 | In progress | - |
+| 33. Rank 0 Training Sequence | v1.6 | 3/4 | In progress | - |
 | 34. Rank-Gated UI | v1.6 | 0/? | Not started | - |
 | 35. Complication Introductions | v1.6 | 0/? | Not started | - |
 | 36. Upgrade & Progression Onboarding | v1.6 | 0/? | Not started | - |
