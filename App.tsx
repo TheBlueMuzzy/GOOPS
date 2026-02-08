@@ -230,6 +230,8 @@ const App: React.FC = () => {
           onRefundUpgrade={handleRefundUpgrade}
           equippedActives={saveData.equippedActives}
           onToggleEquip={handleToggleEquip}
+          saveData={saveData}
+          setSaveData={setSaveData}
         />
       )}
 

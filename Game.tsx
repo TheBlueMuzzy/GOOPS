@@ -17,6 +17,8 @@ import { getPaletteForRank } from './utils/gameLogic';
 import { TETRA_NORMAL, TETRA_CORRUPTED, PENTA_NORMAL, PENTA_CORRUPTED, HEXA_NORMAL, HEXA_CORRUPTED, COLORS } from './constants';
 import { SpinTankCommand, RotateGoopCommand, SetFastDropCommand, SwapPieceCommand, StartRunCommand, SetPhaseCommand, TogglePauseCommand, ResolveComplicationCommand, PopGoopCommand, ActivateAbilityCommand } from './core/commands/actions';
 import { IntercomMessageDisplay } from './components/IntercomMessage';
+import { TutorialOverlay } from './components/TutorialOverlay';
+import { useTutorial } from './hooks/useTutorial';
 
 // STATE ARCHITECTURE:
 // - Game state flows down: useGameEngine → state prop → child components
@@ -43,9 +45,11 @@ interface GameProps {
   onRefundUpgrade?: (upgradeId: string) => void;
   equippedActives?: string[];
   onToggleEquip?: (upgradeId: string) => void;
+  saveData: SaveData;
+  setSaveData: (updater: (prev: SaveData) => SaveData) => void;
 }
 
-const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, powerUps = {}, scraps, settings, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade, onRefundUpgrade, equippedActives = [], onToggleEquip }) => {
+const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, powerUps = {}, scraps, settings, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade, onRefundUpgrade, equippedActives = [], onToggleEquip, saveData, setSaveData }) => {
   // Soft-body physics debug panel (toggle with backtick key)
   const [showPhysicsDebug, setShowPhysicsDebug] = useState(false);
   // Dev piece picker panel (toggle with ~ key)
@@ -393,6 +397,14 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
 
   // Use starting rank for HUD meter visibility - complications unlock based on starting rank, not mid-run
   const startingRank = calculateRankDetails(initialTotalScore).rank;
+
+  // Tutorial system — triggers intercom messages during gameplay
+  const { activeStep, completeStep, dismissStep } = useTutorial({
+    rank: startingRank,
+    isSessionActive: engine.isSessionActive,
+    saveData,
+    setSaveData,
+  });
 
   // Lights brightness is now continuous (player-controlled via fast drop)
   // Only apply dimming effect in PERISCOPE phase
@@ -971,6 +983,13 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           </div>
         );
       })()}
+
+      {/* LAYER 6: TUTORIAL OVERLAY (z-[90] — above TransitionOverlay, non-blocking) */}
+      <TutorialOverlay
+        activeStep={activeStep}
+        onComplete={completeStep}
+        onDismiss={dismissStep}
+      />
 
     </div>
   );
