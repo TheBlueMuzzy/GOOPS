@@ -54,6 +54,11 @@ export const useTutorial = ({
         if (prev.activeStep !== null) return prev;
         if (prev.completedSteps.includes(step.id)) return prev;
 
+        gameEventBus.emit(GameEventType.TUTORIAL_STEP_TRIGGERED, {
+          stepId: step.id,
+          message: step.message,
+        });
+
         return { ...prev, activeStep: step.id, dismissed: false };
       });
     },
@@ -69,6 +74,8 @@ export const useTutorial = ({
 
       const stepId = prev.activeStep;
       const newCompleted = [...prev.completedSteps, stepId];
+
+      gameEventBus.emit(GameEventType.TUTORIAL_STEP_COMPLETED, { stepId });
 
       // Persist to SaveData
       setSaveData(sd => ({
@@ -90,6 +97,10 @@ export const useTutorial = ({
   const dismissStep = useCallback(() => {
     setTutorialState(prev => {
       if (!prev.activeStep) return prev;
+
+      gameEventBus.emit(GameEventType.TUTORIAL_STEP_DISMISSED, {
+        stepId: prev.activeStep,
+      });
 
       return { ...prev, activeStep: null, dismissed: true };
     });

@@ -37,7 +37,12 @@ export enum GameEventType {
     INPUT_FAST_DROP = 'INPUT_FAST_DROP',
     INPUT_SWAP = 'INPUT_SWAP',
     INPUT_BLOCK_TAP = 'INPUT_BLOCK_TAP',
-    INPUT_SWAP_HOLD = 'INPUT_SWAP_HOLD'  // Keyboard hold-to-swap progress
+    INPUT_SWAP_HOLD = 'INPUT_SWAP_HOLD',  // Keyboard hold-to-swap progress
+
+    // Tutorial events
+    TUTORIAL_STEP_TRIGGERED = 'TUTORIAL_STEP_TRIGGERED',
+    TUTORIAL_STEP_COMPLETED = 'TUTORIAL_STEP_COMPLETED',
+    TUTORIAL_STEP_DISMISSED = 'TUTORIAL_STEP_DISMISSED',
 }
 
 export interface PopPayload {
@@ -73,4 +78,18 @@ export interface BlockTapPayload {
 
 export interface SwapHoldPayload {
     progress: number;  // 0-100, or -1 to indicate cancelled/inactive
+}
+
+// Tutorial event payloads
+export interface TutorialStepTriggeredPayload {
+    stepId: string;       // TutorialStepId
+    message: { keywords: string[]; fullText: string };  // IntercomMessage
+}
+
+export interface TutorialStepCompletedPayload {
+    stepId: string;       // TutorialStepId
+}
+
+export interface TutorialStepDismissedPayload {
+    stepId: string;       // TutorialStepId
 }
