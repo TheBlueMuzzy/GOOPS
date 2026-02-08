@@ -10,9 +10,9 @@ updated: 2026-02-08
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 3 of 4 in current phase
+Plan: 4 of 4 in current phase (IN PROGRESS — UAT checkpoint)
 Status: In progress
-Last activity: 2026-02-08 - Completed 33-03-PLAN.md
+Last activity: 2026-02-08 - Executing 33-04 checkpoint verification
 
 Progress: ████░░░░░░ 35%
 
@@ -28,7 +28,7 @@ Progress: ████░░░░░░ 35%
 
 ## Next Steps
 
-Phase 33 plan 3 of 4 complete. Next: 33-04 (Training HUD, highlight system & verification).
+33-04 tasks 1-2 complete, checkpoint 3 (human-verify) in progress. Fixing issues found during UAT.
 
 ### Decisions Made
 
@@ -40,11 +40,15 @@ Phase 33 plan 3 of 4 complete. Next: 33-04 (Training HUD, highlight system & ver
 - Training mode: pendingTrainingPalette interception pattern in enterPeriscope()
 - Training tick() gates skip all normal gameplay systems (complications, goals, cracks, heat, lights)
 - TRAINING_MESSAGES as separate Record export alongside TUTORIAL_STEPS (Phase 31 system untouched)
+- Console idle text shrunk from t-display (36px) to t-heading (24px) to prevent wrapping
 
 ### Known Issues
 
 - PiecePreview NEXT/HOLD labels at 18px may be too large for 48px box — revisit layout later
-- Some SVG text in Art.tsx (PROMOTION THRESHOLD at 12px, XP at 14px) not yet standardized — SVG coordinate space differs from screen pixels
+- Some SVG text in Art.tsx (PROMOTION THRESHOLD at 12px, XP at 14px) not yet standardized
+- Per-step piece spawning (specific sizes, autoFall, slowFall) not yet implemented — pieces come from palette queue
+- Per-step crack spawning and pressure rate changes not yet active
+- `goop-merged` event has 4s fallback auto-advance (no direct merge event in engine)
 
 ### Roadmap Evolution
 
@@ -58,30 +62,22 @@ Phase 33 plan 3 of 4 complete. Next: 33-04 (Training HUD, highlight system & ver
 Last session: 2026-02-08
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 236
+**Build:** 237
 
 ### Resume Command
 ```
-Phase 33 IN PROGRESS — 3/4 plans complete
+Phase 33 Plan 04 IN PROGRESS — UAT checkpoint active
 
-WHAT'S DONE:
-- Phase 31: Tutorial Infrastructure (3/3 plans)
-- Phase 32: Journal System (1/1 plans)
-- Phase 33-01: Training data model & configs (COMPLETE)
-  - 17-step scripted sequence across 7 phases (A-G)
-  - Types: TrainingStep, StepSetup, StepAdvance
-  - Data: TRAINING_SEQUENCE + helpers
-- Phase 33-02: GameEngine training mode & flow controller (COMPLETE)
-  - GameEngine.startTraining() with palette/maxPieceSize constraints
-  - useTrainingFlow hook for sequence management
-  - pendingTrainingPalette interception in enterPeriscope()
-  - TRAINING_SCENARIO_COMPLETE event
-- Phase 33-03: Intercom scripts & journal content (COMPLETE)
-  - TRAINING_MESSAGES: 17 intercom messages (keywords + fullText)
-  - Journal pages updated with practical training content
-  - TEXT_MANIFEST.md synced
+WHAT'S DONE THIS SESSION:
+- 33-04 Task 1: TrainingHUD component (phase name, dots, step counter) — fee0dd0
+- 33-04 Task 2: Highlight system clip-path cutout in TutorialOverlay — e6090c7
+- 33-04 Fix: Wired training messages to overlay, step advancement,
+  PSI fix, double-periscope fix, pause support — ddee8ae
+- Console text shrunk to t-heading to prevent wrapping
 
-NEXT: Plan 33-04 (Training HUD, highlight system & verification)
+CHECKPOINT 3: Human verification of full 17-step training flow
+- User testing in progress, fixing issues iteratively
+- Dev server: npm run dev -- --host
 
 /gsd:execute-plan .planning/phases/33-rank-0-training-sequence/33-04-PLAN.md
 ```

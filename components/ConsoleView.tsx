@@ -215,11 +215,11 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, careerS
                     )
                 ) : (
                     monitorMsgIndex === 0 ? (
-                        <div className="text-[#f1a941] t-display font-black tracking-widest font-['From_Where_You_Are'] animate-pulse leading-none">
+                        <div className="text-[#f1a941] t-heading font-black tracking-widest font-['From_Where_You_Are'] animate-pulse leading-none">
                             TO START SHIFT
                         </div>
                     ) : (
-                        <div className="text-[#f1a941] t-display font-black tracking-widest font-['From_Where_You_Are'] animate-pulse leading-none">
+                        <div className="text-[#f1a941] t-heading font-black tracking-widest font-['From_Where_You_Are'] animate-pulse leading-none">
                             PULL DOWN PERISCOPE
                         </div>
                     )
