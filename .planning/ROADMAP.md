@@ -22,7 +22,8 @@ None
 - [[v1.2-ROADMAP|v1.2 Progression System]] — Phases 14-20 (shipped 2026-01-25)
 - [[v1.3-ROADMAP|v1.3 Shape Changes]] — Phase 21 (shipped 2026-01-26)
 - [[v1.4-ROADMAP|v1.4 Naming Standardization]] — Phases 22-24 (shipped 2026-01-27)
-- 🚧 **v1.5 Soft-Body Integration** — Phases 25-30 (in progress)
+- ✅ **v1.5 Soft-Body Integration** — Phases 25-27.1 (shipped 2026-02-08)
+- 🚧 **v1.6 Progressive Tutorial** — Phases 31-38 (in progress)
 
 ## Experimental Branch: Soft-Body Goop (SBG)
 
@@ -70,118 +71,118 @@ Research spike exploring soft-body physics for goop rendering. Built 5 prototype
 
 ---
 
-### 🚧 v1.5 Soft-Body Integration (In Progress)
+### 🚧 v1.6 Progressive Tutorial (In Progress)
 
-**Milestone Goal:** Port soft-body physics visuals from prototypes into main game rendering, replacing static grid cells with deformable, gooey blobs.
+**Milestone Goal:** Build a progressive tutorial system with narrative-driven onboarding. Intercom transmissions teach mechanics through static-corrupted speech where key terms come through clearly. Multiple constrained training scenarios at rank 0 introduce mechanics one at a time. UI progressively reveals as the player ranks up.
 
-#### Phase 25: Physics Foundation
+**Narrative Foundation:** See PRD § Narrative Arc. The employer communicates via intercom (tutorial delivery). The veteran character hijacks the radio (upgrade delivery, future milestone). The operator keeps a journal (? button, player reference).
 
-**Goal**: Port Verlet physics engine and adapt to game coordinate system
-**Depends on**: Prototype research complete
-**Research**: Likely (cylindrical projection implications)
-**Research topics**: How to apply cylindrical transform to physics vertices, or whether to flatten rendering
+#### Phase 31: Tutorial Infrastructure
+
+**Goal**: Intercom text system (static rendering with clear keywords), TutorialOverlay component, event bus hooks for tutorial triggers, tutorial state machine + localStorage persistence
+**Depends on**: v1.5 complete
+**Research**: Unlikely (internal patterns)
 **Plans**: TBD
 
 Plans:
-- [x] 25-01: Physics types and Verlet engine (completed 2026-02-03)
-- [x] 25-02: Blob factory and integration hook (completed 2026-02-03)
+- [ ] 31-01: TBD (run /gsd:plan-phase 31 to break down)
 
-#### Phase 26: Perimeter & Blob System
+#### Phase 32: Journal System
 
-**Goal**: Replace goopGroupId rect rendering with perimeter-traced soft-body blobs
-**Depends on**: Phase 25
-**Research**: No (perimeter tracing already ported in Phase 25, goo filter from Proto-7)
-**Plans**: 3
-
-Plans:
-- [x] 26-01: Goo filter & physics integration (completed 2026-02-03)
-- [ ] 26-02: Soft-body blob rendering (PAUSED - blocked by coordinate mismatch)
-- [ ] 26-03: Fill animation & rendering cutover
-
-#### Phase 26.1: Flatten Coordinate System (INSERTED)
-
-**Goal**: Remove cylindrical projection, use flat 2D coordinates for all rendering
-**Depends on**: Phase 26-01 complete
-**Research**: No
-**Rationale**: Cylindrical projection (`visXToScreenX`) causes constant coordinate mismatches between game rendering and soft-body physics. Removing it simplifies integration significantly. The curved visual effect can be re-added later via WebGL shader if desired.
-**Plans**: 1
-
-Plans:
-- [x] 26.1-01: Remove cylindrical projection, flatten coordinate system (completed 2026-02-03)
-- [x] 26.1-02: Add cylindrical wrapping to SBG physics (completed 2026-02-04)
-- [x] 26.1-03: Seam wrapping visual merge (completed 2026-02-04)
-
-**Context from implementation session:**
-- Physics runs in flat pixel space (PHYSICS_GRID_OFFSET + PHYSICS_CELL_SIZE)
-- Game SVG uses cylindrical projection (VIEWBOX centered at 0, sin() transform for X)
-- Blobs created at x=200+ are outside viewBox range (-115 to +115)
-- Every rendering path requires coordinate transforms, causing ongoing integration friction
-
-#### Phase 27: Active Piece Physics
-
-**Goal**: Falling pieces use soft-body physics (snappy, no viscosity)
-**Depends on**: Phase 26.1
-**Research**: No (Proto-7 solved falling piece physics)
-**Plans**: 2
-
-Plans:
-- [x] 27-01: Active piece blob lifecycle (completed 2026-02-05)
-- [ ] 27-02: Rendering switch
-
-#### Phase 27.1: Physics-Controlled Active Piece (INSERTED)
-
-**Goal**: Transfer falling/spinning/fast-fall motion from GameEngine to SoftBodyPhysics
-**Depends on**: Phase 27-01 complete
-**Research**: Yes (need to map all player inputs to physics, explore control feel)
-**Rationale**: Current approach syncs blob position TO game state, causing timing issues and flickering. Proto-9 pattern has physics OWN the falling motion directly, which is cleaner and guaranteed to look right.
-**Plans**: TBD (run /gsd:plan-phase 27.1 to break down)
-
-**Scope:**
-- Smooth falling via `visualOffsetY` (like Proto-9)
-- Piece rotation/spinning physics
-- Fast-fall: gravity boost or velocity injection?
-- Lock detection via collision (not timer)
-- Player input → physics forces translation
-- What stays in GameEngine vs moves to Physics?
-
-Plans:
-- [x] 27.1-01: Physics falling foundation (completed 2026-02-05)
-- [x] 27.1-MASTER: Wire up physics-controlled falling (completed 2026-02-05)
-
-#### Phase 28: Locked Goop Behavior
-
-**Goal**: Viscosity, fill animation, ready-to-pop impulse, attraction springs
-**Depends on**: Phase 27.1
-**Research**: Unlikely (Protos 6-8 have all mechanics)
+**Goal**: The ? button becomes a living "Operator Journal" — records learned mechanics from intercom transmissions. Pages unlock as player progresses. Replaces static HowToPlay
+**Depends on**: Phase 31
+**Research**: Unlikely (internal patterns)
 **Plans**: TBD
 
 Plans:
-- [ ] 28-01: TBD
+- [ ] 32-01: TBD
 
-#### Phase 29: Pop & Cascade
+#### Phase 33: Rank 0 Training Sequence
 
-**Goal**: Pop effects with droplets, support detection, loose goop, corrupted splitting
-**Depends on**: Phase 28
-**Research**: Unlikely (Protos 8-9 have all mechanics)
+**Goal**: Multiple constrained training scenarios (0TA through 0T?) with intercom-guided progression. Each teaches one concept: rotation, dropping, crack sealing, pop timing tension (scaffolding vs pressure), cylindrical wrapping, first real shift. As many levels as needed to prove out core mechanics before rank 1
+**Depends on**: Phase 32 (journal records what's learned)
+**Research**: Unlikely (gameplay constraints, needs design iteration)
 **Plans**: TBD
 
 Plans:
-- [ ] 29-01: TBD
+- [ ] 33-01: TBD
 
-#### Phase 30: Polish & Performance
+#### Phase 34: Rank-Gated UI
 
-**Goal**: Mobile optimization, parameter tuning, edge case handling
-**Depends on**: Phase 29
-**Research**: Likely (mobile profiling, edge cases with dump pieces/wild goop/cracks)
-**Research topics**: React performance profiling, requestAnimationFrame timing, mobile throttling
+**Goal**: Console panels, complication indicators, upgrade slots, ability circles — hidden until their unlock rank. Console elements glow to guide player when new things appear
+**Depends on**: Phase 31 (tutorial state drives visibility)
+**Research**: Unlikely (conditional rendering)
 **Plans**: TBD
 
 Plans:
-- [ ] 30-01: TBD
+- [ ] 34-01: TBD
+
+#### Phase 35: Complication Introductions
+
+**Goal**: Intercom warnings when LIGHTS (rank 2), LASER (rank 4), CONTROLS (rank 6) first fire. Non-blocking during gameplay. Mini-game first-time walkthrough with HUD element teaching
+**Depends on**: Phase 34 (rank-gated UI reveals complication panels)
+**Research**: Unlikely (reuses Phase 31 overlay)
+**Plans**: TBD
+
+Plans:
+- [ ] 35-01: TBD
+
+#### Phase 36: Upgrade & Progression Onboarding
+
+**Goal**: First upgrade spotlight, active ability explanation, scraps introduction. Infrastructure for the veteran's radio hijack system (content TBD, delivery system built)
+**Depends on**: Phase 35
+**Research**: Unlikely (internal patterns)
+**Plans**: TBD
+
+Plans:
+- [ ] 36-01: TBD
+
+#### Phase 37: Post-10 Progressive Hints
+
+**Goal**: Rank-up narrative beat infrastructure. New colors (Purple@10, White@30), multi-color pieces@20, wild goop@40 — intercom + journal entries at each unlock rank. Extensible system for full 0-50 story arc
+**Depends on**: Phase 36
+**Research**: Unlikely (reuses overlay + journal)
+**Plans**: TBD
+
+Plans:
+- [ ] 37-01: TBD
+
+#### Phase 38: Returning Player, Polish & Testing
+
+**Goal**: Rank-based competence inference (rank 10+ = skip basics), handle localStorage clears, "How to Play" replay in settings, skip button, edge cases (multi-rank jumps), mobile performance, test coverage
+**Depends on**: Phase 37
+**Research**: Unlikely (internal logic)
+**Plans**: TBD
+
+Plans:
+- [ ] 38-01: TBD
 
 ---
 
 ## Completed Milestones
+
+<details>
+<summary>✅ v1.5 Soft-Body Integration (Phases 25-27.1) — SHIPPED 2026-02-08</summary>
+
+- [x] Phase 25: Physics Foundation (2/2 plans) — completed 2026-02-03
+- [x] Phase 26: Perimeter & Blob System (1/3 plans completed, 2 deferred)
+- [x] Phase 26.1: Flatten Coordinate System (3/3 plans) — completed 2026-02-04
+- [x] Phase 27: Active Piece Physics (1/2 plans completed, 1 deferred)
+- [x] Phase 27.1: Physics-Controlled Active Piece (2/2 plans) — completed 2026-02-05
+
+**Key accomplishments:**
+- Verlet physics engine ported to game coordinate system
+- Perimeter tracing and goo filter integration
+- Cylindrical projection removed, flat 2D coordinate system
+- Cylindrical wrapping added to physics (seam visual merge)
+- Physics-controlled falling pieces (smooth, no flicker)
+- Donut hole support (compound SVG paths + evenodd fill)
+- Loose goop gravity ease-in (cubic ramp)
+- 210 tests passing
+
+**Deferred to future:** Phases 28-30 (locked goop behavior, pop & cascade, polish) — remaining SBG visual work can resume in a future milestone.
+
+</details>
 
 <details>
 <summary>v1.0 MVP (Phases 1-7) — SHIPPED 2026-01-21</summary>
@@ -313,12 +314,19 @@ See [[v1.4-ROADMAP]] for full details.
 | 23. Code Rename | v1.4 | 7/7 | Shipped | 2026-01-27 |
 | 24. UI & Documentation | v1.4 | 1/1 | Shipped | 2026-01-27 |
 | 25. Physics Foundation | v1.5 | 2/2 | Complete | 2026-02-03 |
-| 26. Perimeter & Blob System | v1.5 | 0/? | Not started | - |
-| 27. Active Piece Physics | v1.5 | 2/2 | Complete | 2026-02-05 |
-| 27.1 Physics-Controlled Active Piece | v1.5 | 1/1 | Complete | 2026-02-05 |
-| 28. Locked Goop Behavior | v1.5 | 0/? | Not started | - |
-| 29. Pop & Cascade | v1.5 | 0/? | Not started | - |
-| 30. Polish & Performance | v1.5 | 0/? | Not started | - |
+| 26. Perimeter & Blob System | v1.5 | 1/3 | Shipped (2 deferred) | 2026-02-08 |
+| 26.1 Flatten Coordinate System | v1.5 | 3/3 | Complete | 2026-02-04 |
+| 27. Active Piece Physics | v1.5 | 1/2 | Shipped (1 deferred) | 2026-02-05 |
+| 27.1 Physics-Controlled Active Piece | v1.5 | 2/2 | Complete | 2026-02-05 |
+| 28-30. Locked Goop / Pop / Polish | v1.5 | — | Deferred | - |
+| 31. Tutorial Infrastructure | v1.6 | 0/? | Not started | - |
+| 32. Journal System | v1.6 | 0/? | Not started | - |
+| 33. Rank 0 Training Sequence | v1.6 | 0/? | Not started | - |
+| 34. Rank-Gated UI | v1.6 | 0/? | Not started | - |
+| 35. Complication Introductions | v1.6 | 0/? | Not started | - |
+| 36. Upgrade & Progression Onboarding | v1.6 | 0/? | Not started | - |
+| 37. Post-10 Progressive Hints | v1.6 | 0/? | Not started | - |
+| 38. Returning Player, Polish & Testing | v1.6 | 0/? | Not started | - |
 
 ## Related
 

@@ -2,20 +2,19 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-02-07
+updated: 2026-02-08
 ---
 
 # Project State
 
 ## Current Position
 
-Phase: 27.1 Physics-Controlled Active Piece
-Plan: MASTER-PLAN complete (9/9 tasks) — ALL BUGS FIXED + getGhostY safety net
-Status: Deploying — soft body rendering fixes + hole support + loose goop ease-in
-Last activity: 2026-02-07 - Multiple rendering fixes, donut hole support, loose goop ease-in
-Branch: `soft-body-experiment` (merging to master for deploy)
+Phase: 31 of 38 (Tutorial Infrastructure)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-08 - Milestone v1.6 Progressive Tutorial created
 
-Progress: █████████░ ~92% (core physics working, holes supported, rendering polished)
+Progress: ░░░░░░░░░░ 0%
 
 ## Branch Workflow (SOP)
 
@@ -25,26 +24,28 @@ Progress: █████████░ ~92% (core physics working, holes suppo
 - Merge to master only after human verification passes
 
 **Active feature branches:**
-- `soft-body-experiment` — Soft Body Goop (SBG) integration (v1.5 milestone)
+- None (v1.5 shipped to master)
 
 ## Next Steps
 
 ### What was done THIS session:
 
-1. **Tendril cylindrical wrapping fix** — Tendrils now use `cylindricalDistanceX()` so they don't stretch across the screen when vertex positions straddle the cylinder boundary
-2. **Wall/blur color bleed fix** — Inner cutouts (`#1e293b`) moved outside goo filter group so dark fill can't contaminate the goo blur fringe
-3. **Donut hole support** — New `traceAllLoops()` separates outer boundary from inner hole boundaries. Compound SVG paths + `fillRule="evenodd"` render holes correctly. Ring springs respect loop boundaries. Pieces like P_S_C now show hollow centers.
-4. **Default stiffness** — Changed from 15 → 10
-5. **Loose goop gravity ease-in** — Cubic ease-in (`t³`) over 0.6s so loose blobs drip/peel slowly before ripping away. No more instant collapse.
+1. **v1.5 shipped as-is** — Soft-body integration shipped with phases 25-27.1 complete. Phases 28-30 deferred to future milestone.
+2. **v1.6 milestone created** — Progressive Tutorial, 8 phases (31-38)
+3. **PRD narrative section added** — Full story arc documented: employer exploitation theme, intercom system, veteran character, brain-in-liquid reveal, rank titles
+4. **Research completed** — Progressive tutorial design patterns, cross-game analysis (Candy Crush, Hades, Into the Breach, The Witness, Puyo Puyo, Baba Is You, Tetris Effect), visual style direction (Lethal Company + Uncle Chop's Rocket Shop)
 
-### Files modified (this session):
+### Key Design Decisions (v1.6):
 
-- `components/GameBoard.tsx` — fillRule="evenodd", cylindrical tendril fix, cutout layer separation
-- `core/softBody/blobFactory.ts` — `traceAllLoops()`, multi-loop blob creation, loop-aware ring springs
-- `core/softBody/physics.ts` — Loose goop gravity ease-in with cubic ramp
-- `core/softBody/rendering.ts` — Compound SVG path generation for blobs with holes
-- `core/softBody/types.ts` — `loopStarts`, `looseTime` fields, stiffness default
-- `tests/softBody.test.ts` — Updated stiffness default
+- **Intercom system** — employer speaks through static-corrupted PA. Key tutorial terms come through clearly, flavor words are garbled. Brilliant dual-purpose: teaches mechanics AND establishes grungy world.
+- **Multiple rank 0 training levels** — 0TA, 0TB, 0TC, etc. As many as needed. Each teaches one concept through constrained play.
+- **The aha moment** — pop timing tension (pop too early = lose scaffolding to reach cracks; pop too late = pressure maxes). NOT the cylinder wrap.
+- **Journal (? button)** — living reference that grows. Player writes down what they learn from transmissions.
+- **Rank-gated UI** — console elements hidden until their unlock rank. Glow when new.
+- **Multi-modal delivery** — intercom pop-ups, HUD hints, console glow, journal entries
+- **8 words max per instruction** — keep it brief
+- **Max 1 tooltip per game** — non-blocking during gameplay
+- **Rank IS the tutorial gate** — no separate tutorial progression
 
 ### Known Issues
 
@@ -52,41 +53,43 @@ Progress: █████████░ ~92% (core physics working, holes suppo
 
 ### Decisions Made
 
-- Goo filter defaults: stdDeviation=5, alphaMul=40, alphaOff=-11 (user-tuned)
-- Stiffness default = 10 (user-tuned, was 15)
-- Donut holes use separate boundary loops + evenodd fill, not figure-8 paths
-- Inner cutouts render OUTSIDE goo filter to prevent color bleed
-- Loose goop uses cubic ease-in (t³) over 0.6s for drip/rip feel
-- `homeStiffness` is the right param for anchoring against attraction pull (not returnSpeed/viscosity)
-- Tendrils must be inside goo filter groups to get the smooth Proto 9 look
+- v1.5 shipped with deferred phases (28-30 can be a future milestone)
+- Tutorial visual style: grungy low-tech (Lethal Company meets Uncle Chop), not scan-lines (performance issues). "Maintenance order" tooltip style.
+- Story theme: modern indentured servitude, employer appears benign but is exploitative
+- The veteran character provides upgrades (radio hijack system, content TBD)
+- Full story arc is PRD-documented but most content is future milestone scope
+
+### Roadmap Evolution
+
+- Milestone v1.5 shipped: Soft-body goop rendering, 4 completed phases (2026-02-08)
+- Milestone v1.6 created: Progressive Tutorial, 8 phases (Phase 31-38)
 
 ---
 
 ## Session Continuity
 
-Last session: 2026-02-07
+Last session: 2026-02-08
 **Version:** 1.1.13
-**Branch:** soft-body-experiment (deploying to master)
+**Branch:** master
 **Build:** 224
 
 ### Resume Command
 ```
-DEPLOYED — Rendering fixes + hole support + loose goop ease-in live on GitHub Pages.
+v1.6 MILESTONE CREATED — Progressive Tutorial (8 phases, 31-38)
 
-SESSION ACCOMPLISHMENTS:
-- Tendril cylindrical wrapping fix (no more cross-screen stretching)
-- Wall/blur color bleed fix (cutouts outside goo filter)
-- Donut hole support (traceAllLoops + compound paths + evenodd)
-- Stiffness default 15 → 10
-- Loose goop cubic ease-in (0.6s ramp, t³ curve)
-- 210 tests, all passing
-- Deployed to production
+RESEARCH COMPLETED:
+- Progressive tutorial patterns (cross-game analysis)
+- Player flow & trigger points (codebase analysis)
+- Visual style direction (Lethal Company + Uncle Chop)
+- PRD narrative arc documented
 
-REMAINING WORK:
-- Further physics tuning if needed
-- Falling blob tendril improvements
+NEXT: /gsd:plan-phase 31 (Tutorial Infrastructure)
+- Intercom text system with static rendering
+- TutorialOverlay component
+- Tutorial state machine + localStorage
+- Event bus hooks for triggers
 
-Next: User testing of deployed version
+/clear first → fresh context window
 ```
 
 ---
