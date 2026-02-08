@@ -66,7 +66,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
   // Soft-body physics for goop rendering (Phase 26)
   // Desktop only for now - mobile uses simplified rendering
   const softBodyPhysics = useSoftBodyPhysics({
-    enabled: !isMobile,
+    enabled: true,
     params: physicsParams,
   });
 

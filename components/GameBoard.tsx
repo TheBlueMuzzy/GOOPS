@@ -177,7 +177,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Sync soft-body blobs with current grid state
   // Key insight: blobs should persist even when off-screen, only removed when popped
   useEffect(() => {
-      if (!softBodyPhysics || isMobile) return;
+      if (!softBodyPhysics) return;
 
       // 1. Scan FULL grid to get ALL goopGroupIds that exist (for removal check)
       // This prevents blobs from being removed just because they're off-screen
@@ -297,7 +297,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Create blob when new active piece spawns (falling state)
   useEffect(() => {
-      if (!softBodyPhysics || isMobile) return;
+      if (!softBodyPhysics) return;
       if (!activeGoop || activeGoop.state !== GoopState.FALLING) return;
 
       // Use spawnTimestamp as unique ID since ActivePiece doesn't have an id field
@@ -342,7 +342,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // NOTE: Y position is owned by physics (stepActivePieceFalling), NOT synced from game
   // This effect ONLY updates X and shape - never touches Y except during rotation
   useEffect(() => {
-      if (!softBodyPhysics || isMobile) return;
+      if (!softBodyPhysics) return;
       if (!activeGoop || activeGoop.state !== GoopState.FALLING) return;
 
       const blobId = `active-${activeGoop.spawnTimestamp}`;
@@ -423,11 +423,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       // Update refs for next comparison
       prevRotationRef.current = pieceRotation;
       prevTankRotationRef.current = tankRotation;
-  }, [activeGoop?.x, activeGoop?.rotation, activeGoop?.state, softBodyPhysics, tankRotation, isMobile]);
+  }, [activeGoop?.x, activeGoop?.rotation, activeGoop?.state, softBodyPhysics, tankRotation]);
 
   // Handle lock transition: remove falling blob when piece locks
   useEffect(() => {
-      if (!softBodyPhysics || isMobile) return;
+      if (!softBodyPhysics) return;
 
       const prevPiece = prevActiveGoopRef.current;
       const currPiece = activeGoop;
@@ -865,7 +865,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             {/* Edge-straddling blobs are rendered twice (once shifted) for seamless wrap */}
             {/* clipPath masks blobs to tank viewport - prevents rendering past edges */}
             {/* Each color gets its own goo filter group so unlike colors don't visually merge */}
-            {!isMobile && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (() => {
+            {softBodyPhysics && softBodyPhysics.blobs.length > 0 && (() => {
               // Group LOCKED blobs by color so each color gets its own goo filter
               // (falling blobs are rendered separately below with different styling)
               const blobsByColor = new Map<string, typeof softBodyPhysics.blobs>();
@@ -999,7 +999,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Soft-body falling pieces (desktop only) */}
             {/* Falling blobs render with higher opacity, white stroke, no fill animation */}
-            {!isMobile && softBodyPhysics && (() => {
+            {softBodyPhysics && (() => {
               // Find all falling blobs
               const fallingBlobs = softBodyPhysics.blobs.filter(b => b.isFalling && !b.isLocked);
               if (fallingBlobs.length === 0) return null;
@@ -1084,7 +1084,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             })()}
 
             {/* Droplets from popped blobs (NO goo filter - simple circles) */}
-            {!isMobile && softBodyPhysics && softBodyPhysics.droplets.length > 0 && (
+            {softBodyPhysics && softBodyPhysics.droplets.length > 0 && (
               <g>
                 {softBodyPhysics.droplets.map(droplet => (
                   <circle
@@ -1100,7 +1100,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             )}
 
             {/* Vertex Debug Rendering (when enabled via debug panel) */}
-            {showVertexDebug && !isMobile && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (
+            {showVertexDebug && softBodyPhysics && softBodyPhysics.blobs.length > 0 && (
               <g>
                 {softBodyPhysics.blobs.map(blob => (
                   <g key={`debug-${blob.id}`}>
@@ -1283,7 +1283,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Active Piece - Grid cells (mobile fallback only) */}
             {/* Desktop uses soft-body blob rendering above; mobile uses simple rects */}
-            {isMobile && activeGoop && activeGoop.state === GoopState.FALLING && (() => {
+            {!softBodyPhysics && activeGoop && activeGoop.state === GoopState.FALLING && (() => {
                 const isWild = activeGoop.definition.isWild;
                 const apCells = activeGoop.cells.map((cell, idx) => {
                     const color = activeGoop.definition.cellColors?.[idx] ?? activeGoop.definition.color;
