@@ -885,116 +885,112 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               {/* Locked blobs + tendrils: per-color goo filter groups */}
               {/* Tendrils rendered INSIDE goo filter so blur+threshold merges dots into smooth strands (like Proto 9) */}
               {Array.from(blobsByColor.entries()).map(([color, blobs]) => (
-                <g key={`color-group-${color}`} filter="url(#goo-filter)" clipPath="url(#tank-viewport-clip)">
-                  {/* Tendrils for this color - rendered first so goo filter merges them with blob shapes */}
-                  {springs.map((spring, i) => {
-                    const blobA = softBodyPhysics.blobs[spring.blobA];
-                    const blobB = softBodyPhysics.blobs[spring.blobB];
-                    if (!blobA || !blobB) return null;
-                    if (blobA.color !== color) return null;
+                <g key={`color-group-${color}`}>
+                  {/* Goo-filtered layer: only solid color shapes (no dark cutouts to contaminate blur) */}
+                  <g filter="url(#goo-filter)" clipPath="url(#tank-viewport-clip)">
+                    {/* Tendrils for this color - rendered first so goo filter merges them with blob shapes */}
+                    {springs.map((spring, i) => {
+                      const blobA = softBodyPhysics.blobs[spring.blobA];
+                      const blobB = softBodyPhysics.blobs[spring.blobB];
+                      if (!blobA || !blobB) return null;
+                      if (blobA.color !== color) return null;
 
-                    const vA = blobA.vertices[spring.vertexA];
-                    const vB = blobB.vertices[spring.vertexB];
-                    if (!vA || !vB) return null;
+                      const vA = blobA.vertices[spring.vertexA];
+                      const vB = blobB.vertices[spring.vertexB];
+                      if (!vA || !vB) return null;
 
-                    const dx = cylindricalDistanceX(vA.pos.x, vB.pos.x);
-                    const dy = vB.pos.y - vA.pos.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    const stretchRatio = Math.min(1, dist / sbParams.goopiness);
-                    const endRadius = sbParams.tendrilEndRadius;
-                    if (endRadius < 1) return null; // Guard: skip tendrils when endRadius too small
-                    const minMiddleScale = 1 - sbParams.tendrilSkinniness;
-                    const maxMiddleScale = 1 - sbParams.tendrilSkinniness * 0.3;
-                    const middleScale = maxMiddleScale - (maxMiddleScale - minMiddleScale) * stretchRatio;
-                    const middleRadius = endRadius * middleScale;
-                    const beadSpacing = endRadius * 1.4;
-                    const numBeads = Math.max(2, Math.ceil(dist / beadSpacing));
+                      const dx = cylindricalDistanceX(vA.pos.x, vB.pos.x);
+                      const dy = vB.pos.y - vA.pos.y;
+                      const dist = Math.sqrt(dx * dx + dy * dy);
+                      const stretchRatio = Math.min(1, dist / sbParams.goopiness);
+                      const endRadius = sbParams.tendrilEndRadius;
+                      if (endRadius < 1) return null; // Guard: skip tendrils when endRadius too small
+                      const minMiddleScale = 1 - sbParams.tendrilSkinniness;
+                      const maxMiddleScale = 1 - sbParams.tendrilSkinniness * 0.3;
+                      const middleScale = maxMiddleScale - (maxMiddleScale - minMiddleScale) * stretchRatio;
+                      const middleRadius = endRadius * middleScale;
+                      const beadSpacing = endRadius * 1.4;
+                      const numBeads = Math.max(2, Math.ceil(dist / beadSpacing));
 
-                    const beads = [];
-                    for (let j = 0; j <= numBeads; j++) {
-                      const t = j / numBeads;
-                      const middleness = Math.sin(t * Math.PI);
-                      const r = endRadius - (endRadius - middleRadius) * middleness;
-                      beads.push({ cx: vA.pos.x + dx * t, cy: vA.pos.y + dy * t, r: Math.max(2, r) });
-                    }
+                      const beads = [];
+                      for (let j = 0; j <= numBeads; j++) {
+                        const t = j / numBeads;
+                        const middleness = Math.sin(t * Math.PI);
+                        const r = endRadius - (endRadius - middleRadius) * middleness;
+                        beads.push({ cx: vA.pos.x + dx * t, cy: vA.pos.y + dy * t, r: Math.max(2, r) });
+                      }
 
-                    return (
-                      <g key={`tendril-${i}`}>
-                        {beads.map((bead, j) => (
-                          <circle key={j} cx={bead.cx} cy={bead.cy} r={bead.r} fill={blobA.color} />
-                        ))}
-                      </g>
-                    );
-                  })}
-                  {blobs.map(blob => {
-                  const outerPath = getSoftBlobPath(blob);
-                  const outerPoints = blob.vertices.map(v => v.pos);
-
-                  // Calculate which positions to render blob at (handles cylindrical wrap)
-                  // Physics doesn't wrap, so we render at all positions that overlap viewport
-                  const renderOffsets = getBlobRenderOffsets(blob);
-                  const transforms = renderOffsets.map(offset =>
-                    offset === 0 ? '' : `translate(${offset}, 0)`
-                  );
-
-                  // Only show fill animation for locked blobs that aren't full
-                  const showFillAnimation = blob.isLocked && blob.fillAmount < 1;
-
-                  if (showFillAnimation) {
-                    const wallThickness = sbParams.wallThickness;
-                    const insetPoints = getInsetPath(outerPoints, wallThickness);
-                    const insetPath = getPath(insetPoints);
-                    const bounds = getBounds(insetPoints);
-                    const height = bounds.maxY - bounds.minY;
-                    const fillTop = bounds.maxY - height * blob.fillAmount;
-                    const clipId = `fill-clip-${blob.id}`;
-                    const padding = 50;
-
-                    return (
-                      <g key={`soft-${blob.id}`}>
-                        {transforms.map((transform, idx) => (
-                          <g key={`soft-${blob.id}-${idx}`} transform={transform}>
-                            {/* Outer blob shape */}
+                      return (
+                        <g key={`tendril-${i}`}>
+                          {beads.map((bead, j) => (
+                            <circle key={j} cx={bead.cx} cy={bead.cy} r={bead.r} fill={blobA.color} />
+                          ))}
+                        </g>
+                      );
+                    })}
+                    {/* All blob outer shapes (solid color only - no cutouts here) */}
+                    {blobs.map(blob => {
+                      const outerPath = getSoftBlobPath(blob);
+                      const renderOffsets = getBlobRenderOffsets(blob);
+                      const transforms = renderOffsets.map(offset =>
+                        offset === 0 ? '' : `translate(${offset}, 0)`
+                      );
+                      return (
+                        <g key={`soft-${blob.id}`}>
+                          {transforms.map((transform, idx) => (
                             <path
+                              key={`soft-${blob.id}-${idx}`}
                               d={outerPath}
                               fill={blob.color}
+                              transform={transform}
                             />
-                            {/* Inner cutout (unfilled region) */}
-                            <defs>
-                              <clipPath id={`${clipId}-${idx}`}>
-                                <rect
-                                  x={bounds.minX - padding}
-                                  y={bounds.minY - padding}
-                                  width={bounds.maxX - bounds.minX + padding * 2}
-                                  height={fillTop - bounds.minY + padding}
-                                />
-                              </clipPath>
-                            </defs>
-                            <path
-                              d={insetPath}
-                              fill="#1e293b"
-                              clipPath={`url(#${clipId}-${idx})`}
-                            />
-                          </g>
-                        ))}
-                      </g>
-                    );
-                  }
-
-                  // Fully filled blob - just render outer shape (with duplicate if straddling)
-                  return (
-                    <g key={`soft-${blob.id}`}>
-                      {transforms.map((transform, idx) => (
-                        <path
-                          key={`soft-${blob.id}-${idx}`}
-                          d={outerPath}
-                          fill={blob.color}
-                          transform={transform}
-                        />
-                      ))}
-                    </g>
-                  );
-                  })}
+                          ))}
+                        </g>
+                      );
+                    })}
+                  </g>
+                  {/* Inner cutouts rendered OUTSIDE goo filter so dark fill can't bleed into blur fringe */}
+                  <g clipPath="url(#tank-viewport-clip)">
+                    {blobs.map(blob => {
+                      if (!blob.isLocked || blob.fillAmount >= 1) return null;
+                      const outerPoints = blob.vertices.map(v => v.pos);
+                      const wallThickness = sbParams.wallThickness;
+                      const insetPoints = getInsetPath(outerPoints, wallThickness);
+                      const insetPath = getPath(insetPoints);
+                      const bounds = getBounds(insetPoints);
+                      const height = bounds.maxY - bounds.minY;
+                      const fillTop = bounds.maxY - height * blob.fillAmount;
+                      const clipId = `fill-clip-${blob.id}`;
+                      const padding = 50;
+                      const renderOffsets = getBlobRenderOffsets(blob);
+                      const transforms = renderOffsets.map(offset =>
+                        offset === 0 ? '' : `translate(${offset}, 0)`
+                      );
+                      return (
+                        <g key={`cutout-${blob.id}`}>
+                          {transforms.map((transform, idx) => (
+                            <g key={`cutout-${blob.id}-${idx}`} transform={transform}>
+                              <defs>
+                                <clipPath id={`${clipId}-${idx}`}>
+                                  <rect
+                                    x={bounds.minX - padding}
+                                    y={bounds.minY - padding}
+                                    width={bounds.maxX - bounds.minX + padding * 2}
+                                    height={fillTop - bounds.minY + padding}
+                                  />
+                                </clipPath>
+                              </defs>
+                              <path
+                                d={insetPath}
+                                fill="#1e293b"
+                                clipPath={`url(#${clipId}-${idx})`}
+                              />
+                            </g>
+                          ))}
+                        </g>
+                      );
+                    })}
+                  </g>
                 </g>
               ))}
               </>);
