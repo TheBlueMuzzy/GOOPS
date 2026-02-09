@@ -23,9 +23,10 @@ interface ConsoleViewProps {
     onDismissGameOver?: () => void;
     equippedActives?: string[];
     onToggleEquip?: (upgradeId: string) => void;
+    pulsePeriscope?: boolean;
 }
 
-export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, careerScore, scraps, powerUps = {}, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade, onRefundUpgrade, onDismissGameOver, equippedActives = [], onToggleEquip }) => {
+export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, careerScore, scraps, powerUps = {}, onOpenSettings, onOpenHelp, onOpenUpgrades, onSetRank, onPurchaseUpgrade, onRefundUpgrade, onDismissGameOver, equippedActives = [], onToggleEquip, pulsePeriscope = false }) => {
     // Calculate Rank:
     // - During/after a game (shiftScore > 0): use capped progression to show what they'll earn
     // - Idle console (shiftScore = 0): use careerScore prop from App (the saved value)
@@ -294,6 +295,9 @@ export const ConsoleView: React.FC<ConsoleViewProps> = ({ engine, state, careerS
 
                         // Upgrade levels for max-level minigame effects
                         upgradeLevels={powerUps}
+
+                        // Training: pulse periscope to draw attention
+                        pulsePeriscope={pulsePeriscope}
                     />
                 </div>
             </div>

@@ -41,6 +41,7 @@ interface ConsoleLayoutProps {
     screenContent?: React.ReactNode;
     isGameOver?: boolean;
     isSessionActive?: boolean;
+    pulsePeriscope?: boolean;
 
     // Stats for End Game Screen
     rank: number;
@@ -96,7 +97,8 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
     maxTime = 75000,
     complications = [],
     onResolveComplication,
-    upgradeLevels = {}
+    upgradeLevels = {},
+    pulsePeriscope = false,
 }) => {
     // Extract max-level flags for minigame effects
     const isLaserMaxed = (upgradeLevels['CAPACITOR_EFFICIENCY'] || 0) >= UPGRADES.CAPACITOR_EFFICIENCY.maxLevel;
@@ -468,7 +470,7 @@ export const ConsoleLayoutSVG: React.FC<ConsoleLayoutProps> = ({
             />
 
             {/* 2. PERISCOPE (Draggable) */}
-            <g id="Periscope" transform={`translate(0, ${periscopeY})`} style={{ transition: isPeriscopeDragging || isSnapping ? 'none' : 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'grab' }} {...dragHandlers}>
+            <g id="Periscope" className={pulsePeriscope ? 'periscope-pulse' : ''} transform={`translate(0, ${periscopeY})`} style={{ transition: isPeriscopeDragging || isSnapping ? 'none' : 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'grab' }} {...dragHandlers}>
                 <rect fill="#087962" x="22.36" y="978.45" width="603.66" height="51.13" rx="11.03" ry="11.03"/>
                 {/* Periscope Stem/Body - Infinite Extension Upwards + Rounded Bottom Shape */}
                 <path fill="#087962" d="M 390.17 -1000 V 1111.98 c 0 13.74 -11.16 24.9 -24.9 24.9 h -88.54 c -13.74 0 -24.9 -11.16 -24.9 -24.9 V -1000 H 390.17 Z" />

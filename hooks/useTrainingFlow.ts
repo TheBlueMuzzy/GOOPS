@@ -78,6 +78,7 @@ export const useTrainingFlow = ({
       // Pause the game immediately on step transition
       if (gameEngine && gameEngine.isSessionActive) {
         gameEngine.state.isPaused = true;
+        gameEngine.freezeFalling = true;  // Actually stop piece physics too
         gameEngine.emitChange();
       }
 
@@ -156,6 +157,7 @@ export const useTrainingFlow = ({
     // (Don't unpause here; the step-change effect will manage pause state)
     if (gameEngine && gameEngine.isSessionActive) {
       gameEngine.state.isPaused = true;
+      gameEngine.freezeFalling = true;  // Actually stop piece physics too
       gameEngine.emitChange();
     }
 
@@ -185,6 +187,7 @@ export const useTrainingFlow = ({
     // Unpause so the player can perform the required action
     if (gameEngine && gameEngine.isSessionActive) {
       gameEngine.state.isPaused = false;
+      gameEngine.freezeFalling = false;  // Resume piece physics
       gameEngine.emitChange();
     }
   }, [gameEngine]);
@@ -268,6 +271,7 @@ export const useTrainingFlow = ({
         gameEngine.pendingTrainingPalette = null;
         gameEngine.trainingAllowedControls = null;
         gameEngine.trainingPressureRate = 0;
+        gameEngine.freezeFalling = false;
       }
     });
     return unsub;

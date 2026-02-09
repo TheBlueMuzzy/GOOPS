@@ -16,9 +16,8 @@ interface HighlightRegion {
 }
 
 const HIGHLIGHT_REGIONS: Record<string, HighlightRegion> = {
-  // Periscope drag handle — centered horizontally, bottom area of console view
-  // The handle is a small white up-arrow at the very bottom of the console
-  periscope: { left: 25, top: 72, right: 75, bottom: 92 },
+  // Periscope now uses CSS pulse animation on the SVG element instead of overlay cutout.
+  // Add future highlight regions here if needed for other training steps.
 };
 
 // Accepts any object with a message — compatible with both TutorialStep and training display steps

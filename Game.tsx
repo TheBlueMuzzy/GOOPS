@@ -518,6 +518,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             onDismissGameOver={() => engine.resetSession()}
             equippedActives={equippedActives}
             onToggleEquip={onToggleEquip}
+            pulsePeriscope={trainingStep?.setup?.highlightElement === 'periscope' && !!trainingDisplayStep}
           />
       </div>
 
