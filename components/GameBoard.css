@@ -119,14 +119,16 @@
 }
 
 /* === Periscope Pulse (Training) === */
+/* Uses standalone `scale` property so it doesn't conflict with the
+   inline `transform: translate()` used for drag positioning. */
 @keyframes periscopePulse {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0px transparent); }
-    50% { transform: scale(1.03); filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6)); }
+    0%, 100% { scale: 1; filter: drop-shadow(0 0 0px transparent); }
+    50% { scale: 1.03; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6)); }
 }
 
 .periscope-pulse {
     animation: periscopePulse 1.2s ease-in-out infinite;
-    transform-origin: center 1050px; /* Approximate vertical center of periscope body */
+    transform-origin: center 1050px;
 }
 
 /* === Wild Goop Animations === */
