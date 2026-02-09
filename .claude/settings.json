@@ -2,11 +2,33 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "clear|startup|resume",
+        "matcher": "startup|resume|clear|compact",
         "hooks": [
           {
             "type": "command",
-            "command": "echo '=== SESSION START ===' && cat \"$CLAUDE_PROJECT_DIR/.planning/STATE.md\" && echo '' && echo '=== GIT STATUS ===' && git -C \"$CLAUDE_PROJECT_DIR\" status --short"
+            "command": "BMUZ_V=$(cat \"$HOME/.claude/config/bmuz/version\" 2>/dev/null); if [ -n \"$BMUZ_V\" ]; then echo '══════════════════════════════════════'; echo \"  BMUZ v${BMUZ_V} — Game Dev Toolkit\"; echo '══════════════════════════════════════'; fi && bash \"$HOME/.claude/config/bmuz/templates/check-permissions.sh\" 2>/dev/null && echo '' && echo '=== SESSION CONTEXT ===' && cat \"$CLAUDE_PROJECT_DIR/.planning/STATE.md\" 2>/dev/null && echo '' && echo '=== GIT STATUS ===' && git -C \"$CLAUDE_PROJECT_DIR\" status --short && echo '' && echo '=== BRANCH ===' && git -C \"$CLAUDE_PROJECT_DIR\" branch --show-current && echo '' && echo '=== RECENT COMMITS ===' && git -C \"$CLAUDE_PROJECT_DIR\" log --oneline -5"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cp \"$CLAUDE_PROJECT_DIR/.planning/STATE.md\" \"$CLAUDE_PROJECT_DIR/.planning/STATE.md.bak\" 2>/dev/null; echo 'STATE.md backed up before auto-compaction'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review this conversation: $ARGUMENTS\n\nCheck TWO things:\n1. Did Claude make code changes (Edit/Write tool calls) in this turn?\n2. If yes, did Claude update .planning/STATE.md with what changed?\n\nIMPORTANT: If stop_hook_active is true, respond {\"ok\": true} to prevent loops.\n\nIf code changes were made WITHOUT updating STATE.md, respond:\n{\"ok\": false, \"reason\": \"Code changes detected but STATE.md not updated. Update .planning/STATE.md with: what changed, current status, any decisions made, and next steps. Then provide the Handoff Block.\"}\n\nOtherwise respond {\"ok\": true}",
+            "timeout": 30
           }
         ]
       }
