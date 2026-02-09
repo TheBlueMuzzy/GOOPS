@@ -8,6 +8,7 @@ export type TrainingStepId =
   | 'A1_BRIEFING'
   | 'A2_PERISCOPE'
   | 'B1_GOOP_INTRO'
+  | 'B1B_SLOW_COMMENT'
   | 'B2_FAST_FALL'
   | 'B3_PIECE_ROTATION'
   | 'C1_POP_INTRO'

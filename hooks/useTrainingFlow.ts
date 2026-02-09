@@ -37,7 +37,7 @@ const AUTO_ADVANCE_FALLBACK_MS = 4000;
 /**
  * Manages the rank 0 training sequence.
  *
- * Sequences the player through 14 scripted training steps (phases A-F).
+ * Sequences the player through 15 scripted training steps (phases A-F).
  * Sets up the GameEngine for training mode when the player is at rank 0
  * and hasn't completed all training steps.
  *
@@ -75,19 +75,32 @@ export const useTrainingFlow = ({
     }
 
     if (currentStep) {
-      // Pause the game immediately on step transition
       if (gameEngine && gameEngine.isSessionActive) {
-        gameEngine.state.isPaused = true;
-        gameEngine.freezeFalling = true;  // Actually stop piece physics too
-        gameEngine.emitChange();
+        if (currentStep.pauseGame !== false) {
+          // Pause/freeze for steps that need the player to read before acting
+          gameEngine.state.isPaused = true;
+          gameEngine.freezeFalling = true;
+          gameEngine.emitChange();
+        } else {
+          // Non-pausing step (e.g. B1B) — ensure game is running
+          // (advanceStep may have paused momentarily during transition)
+          gameEngine.state.isPaused = false;
+          gameEngine.freezeFalling = false;
+          gameEngine.emitChange();
+        }
       }
 
       // Brief delay before showing the message (let player see result of previous action)
-      setMessageVisible(false);
-      transitionTimerRef.current = setTimeout(() => {
+      // Skip delay for non-pausing steps — show immediately since gameplay is live
+      if (currentStep.pauseGame === false) {
         setMessageVisible(true);
-        transitionTimerRef.current = null;
-      }, 400);
+      } else {
+        setMessageVisible(false);
+        transitionTimerRef.current = setTimeout(() => {
+          setMessageVisible(true);
+          transitionTimerRef.current = null;
+        }, 400);
+      }
     }
 
     return () => {
@@ -206,6 +219,14 @@ export const useTrainingFlow = ({
 
     // Tap advances are handled by overlay buttons, not event listeners
     if (advance.type === 'tap') return;
+
+    // Auto-advance after a fixed delay
+    if (advance.type === 'auto') {
+      const timer = setTimeout(() => {
+        advanceStepRef.current();
+      }, advance.delayMs);
+      return () => clearTimeout(timer);
+    }
 
     // Determine which game events to listen for
     let eventKey: string | undefined;

@@ -53,6 +53,10 @@ export const TRAINING_MESSAGES: Record<TrainingStepId, IntercomMessage> = {
     keywords: ['goop', 'tank'],
     fullText: '[The goop] extruder [drops] goop into [the] tank. [The goop] drops slowly.',
   },
+  B1B_SLOW_COMMENT: {
+    keywords: ['slow'],
+    fullText: '[Yeah.] It\'s slow.',
+  },
   B2_FAST_FALL: {
     keywords: ['fast-drop'],
     fullText: 'Swipe down or [press] S [to] fast-drop. [The] faster [you place it, the] better.',

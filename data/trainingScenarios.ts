@@ -19,7 +19,7 @@ export const TRAINING_PHASE_NAMES: Record<TrainingPhase, string> = {
  * The flow controller reads these steps and orchestrates game state.
  * Intercom message content is defined separately in tutorialSteps.ts.
  *
- * 14 steps across 6 phases (A-F).
+ * 15 steps across 6 phases (A-F).
  * Pressure introduced at C1, cracks at D1, free practice at F2.
  */
 export const TRAINING_SEQUENCE: TrainingStep[] = [
@@ -75,7 +75,21 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
     },
     pauseGame: false,
-    advance: { type: 'event', event: 'piece-landed' },
+    advance: { type: 'auto', delayMs: 3500 },  // Mid-fall, then B1B takes over
+  },
+
+  {
+    id: 'B1B_SLOW_COMMENT',
+    phase: 'B',
+    name: 'Slow Comment',
+    teaches: 'patience-acknowledgment',
+    setup: {
+      // No new piece spawn — the B1 piece is still falling
+      pressureRate: 0,
+      allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
+    },
+    pauseGame: false,  // Piece keeps falling while message shows
+    advance: { type: 'event', event: 'piece-landed' },  // Wait for it to land
   },
 
   {
