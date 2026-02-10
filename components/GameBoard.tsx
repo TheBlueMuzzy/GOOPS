@@ -102,6 +102,9 @@ interface GameBoardProps {
   fallingGooStdDev?: number;   // Falling blob goo filter blur (debug)
   fallingGooAlphaMul?: number; // Falling blob goo filter alpha mul (debug)
   fallingGooAlphaOff?: number; // Falling blob goo filter alpha off (debug)
+  trainingHighlightColor?: string | null; // Pulse-highlight goops of this color during training
+  disableSwap?: boolean; // Training: disable hold-to-swap gesture
+  disablePop?: boolean; // Training: all pops blocked (shake + reject on tap)
 }
 
 // --- Component ---
@@ -111,7 +114,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     equippedActives = [], activeCharges = {}, onActivateAbility,
     powerUps, storedGoop, nextGoop, softBodyPhysics, normalGoopOpacity = 1, showVertexDebug = false,
     gooStdDev = 8, gooAlphaMul = 24, gooAlphaOff = -13,
-    fallingGooStdDev, fallingGooAlphaMul, fallingGooAlphaOff
+    fallingGooStdDev, fallingGooAlphaMul, fallingGooAlphaOff,
+    trainingHighlightColor, disableSwap, disablePop
 }) => {
   const { grid, tankRotation, activeGoop, looseGoop, floatingTexts, shiftTime, goalMarks, crackCells, dumpPieces } = state;
 
@@ -156,7 +160,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       tankRotation,
       grid,
       tankPressure,
-      powerUps  // For GOOP_SWAP: reduces hold-to-swap duration
+      powerUps, // For GOOP_SWAP: reduces hold-to-swap duration
+      trainingHighlightColor,
+      disableSwap,
+      disablePop
   });
 
   // --- KEYBOARD SWAP HOLD (via EventBus) ---
@@ -882,8 +889,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               return (<>
               {/* Locked blobs + tendrils: per-color goo filter groups */}
               {/* Tendrils rendered INSIDE goo filter so blur+threshold merges dots into smooth strands (like Proto 9) */}
-              {Array.from(blobsByColor.entries()).map(([color, blobs]) => (
-                <g key={`color-group-${color}`}>
+              {Array.from(blobsByColor.entries()).map(([color, blobs]) => {
+                const isTrainingHighlight = trainingHighlightColor != null && color === trainingHighlightColor;
+                return (
+                <g key={`color-group-${color}`}
+                   className={isTrainingHighlight ? "training-pulse" : undefined}>
                   {/* Goo-filtered layer: only solid color shapes (no dark cutouts to contaminate blur) */}
                   <g filter="url(#goo-filter)" clipPath="url(#tank-viewport-clip)">
                     {/* Tendrils for this color - rendered first so goo filter merges them with blob shapes */}
@@ -928,13 +938,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     })}
                     {/* All blob outer shapes (solid color only - no cutouts here) */}
                     {blobs.map(blob => {
+                      const isBlobShaking = blob.id === shakingGroupId || state.prePoppedGoopGroups.has(blob.id);
                       const outerPath = getSoftBlobPath(blob);
                       const renderOffsets = getBlobRenderOffsets(blob);
                       const transforms = renderOffsets.map(offset =>
                         offset === 0 ? '' : `translate(${offset}, 0)`
                       );
                       return (
-                        <g key={`soft-${blob.id}`}>
+                        <g key={`soft-${blob.id}`} className={isBlobShaking ? "shake-anim" : undefined}>
                           {transforms.map((transform, idx) => (
                             <path
                               key={`soft-${blob.id}-${idx}`}
@@ -952,6 +963,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   <g clipPath="url(#tank-viewport-clip)">
                     {blobs.map(blob => {
                       if (!blob.isLocked || blob.fillAmount >= 1) return null;
+                      const isBlobShaking = blob.id === shakingGroupId || state.prePoppedGoopGroups.has(blob.id);
                       const outerPoints = blob.vertices.map(v => v.pos);
                       const wallThickness = sbParams.wallThickness;
                       const insetPoints = getInsetPath(outerPoints, wallThickness);
@@ -966,7 +978,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                         offset === 0 ? '' : `translate(${offset}, 0)`
                       );
                       return (
-                        <g key={`cutout-${blob.id}`}>
+                        <g key={`cutout-${blob.id}`} className={isBlobShaking ? "shake-anim" : undefined}>
                           {transforms.map((transform, idx) => (
                             <g key={`cutout-${blob.id}-${idx}`} transform={transform}>
                               <defs>
@@ -991,7 +1003,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     })}
                   </g>
                 </g>
-              ))}
+              );
+              })}
               </>);
             })()}
 

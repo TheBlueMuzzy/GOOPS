@@ -1,6 +1,7 @@
 
 import { TrainingStep, TrainingStepId, TrainingPhase } from '../types/training';
 import { COLORS } from '../constants';
+import { GoopShape } from '../types';
 
 // Phase display names
 export const TRAINING_PHASE_NAMES: Record<TrainingPhase, string> = {
@@ -70,10 +71,10 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     teaches: 'what-goop-is',
     setup: {
       view: 'tank',
-      spawnPiece: { color: COLORS.BLUE, size: 1, autoFall: true },
+      spawnPiece: { color: COLORS.BLUE, shape: GoopShape.T_I, rotation: 1, autoFall: true },
       pressureRate: 0,
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
-      advanceAtRow: 13,  // Auto-advance to B1B when piece reaches ~60% down visually
+      advanceAtRow: 8,  // Auto-advance to B1B when piece reaches ~25% down visually
     },
     pauseGame: false,
     advance: { type: 'event', event: 'piece-landed' },  // Fallback if piece lands before 50%
@@ -88,9 +89,10 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       // No new piece spawn — the B1 piece is still falling
       pressureRate: 0,
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
+      advanceAtRow: 11,  // Auto-advance to B2 when piece reaches ~40% down
     },
     pauseGame: false,  // Piece continues falling while "slow" message shows
-    advance: { type: 'event', event: 'piece-landed' },  // Advances when piece lands
+    advance: { type: 'event', event: 'piece-landed' },  // Fallback if piece lands before 40%
   },
 
   {
@@ -99,13 +101,11 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Fast Fall',
     teaches: 'fast-fall-input',
     setup: {
-      spawnPiece: { color: COLORS.BLUE, size: 1, slowFall: true },
+      // No new piece spawn — same B1 piece still falling, now with fast-drop enabled
       allowedControls: { fastDrop: true, rotate: false, tankRotate: false },
-      reshowAtRow: 13,              // Re-show message if player hasn't fast-dropped by ~50%
-      reshowUntilAction: 'fast-fall', // Cancel re-show once they fast-drop
     },
-    pauseGame: true,
-    advance: { type: 'event', event: 'piece-landed' },  // Piece lands → advance (even without fast-drop)
+    pauseGame: false,  // Piece continues falling, player can fast-drop
+    advance: { type: 'event', event: 'piece-landed' },  // Piece lands → advance
   },
 
   {
@@ -114,13 +114,26 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Piece Rotation',
     teaches: 'piece-rotation-input',
     setup: {
-      spawnPiece: { color: COLORS.YELLOW, size: 3 },
+      spawnPiece: { color: COLORS.YELLOW, shape: GoopShape.T_T },
       allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
       pauseDelay: 1200,  // Piece starts falling, then message appears after 1.2s
     },
     pauseGame: true,
     advance: { type: 'event', event: 'piece-landed' },  // Wait for piece to land after rotation
     markComplete: 'DROP_INTRO',
+  },
+
+  {
+    id: 'B4_PRACTICE',
+    phase: 'B',
+    name: 'Practice Drop',
+    teaches: 'practice-basics',
+    setup: {
+      spawnPiece: { color: COLORS.BLUE, shape: GoopShape.T_O },
+      allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
+    },
+    pauseGame: true,
+    advance: { type: 'event', event: 'piece-landed' },
   },
 
   // ═══════════════════════════════════════════════════════════════
@@ -134,9 +147,39 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Pressure & Laser',
     teaches: 'pressure-and-popping',
     setup: {
-      spawnPiece: { color: COLORS.BLUE, size: 2 },
-      pressureRate: 0.2,
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
+      // No piece spawn — let pressure rise over existing pieces from B-phase
+      pressureRate: 0.5,
+      allowedControls: { fastDrop: false, rotate: false, tankRotate: false, pop: false },
+      advanceAtPressure: 5,  // Advance when PSI reaches 5%
+    },
+    pauseGame: true,
+    advance: { type: 'auto', delayMs: 60000 },  // Safety fallback
+  },
+
+  {
+    id: 'C1B_PRESSURE_RISING',
+    phase: 'C',
+    name: 'Pressure Rising',
+    teaches: 'pressure-pacing',
+    setup: {
+      pressureRate: 0.5,
+      allowedControls: { fastDrop: false, rotate: false, tankRotate: false, pop: false },
+      advanceWhenPressureAbovePieces: true,  // Advance when pressure line passes yellow goop
+      advancePressureAboveColor: COLORS.YELLOW,  // Only check yellow — don't wait for pressure to cover all blues too
+    },
+    pauseGame: true,
+    advance: { type: 'auto', delayMs: 60000 },  // Safety fallback
+  },
+
+  {
+    id: 'C1C_POP_INSTRUCTION',
+    phase: 'C',
+    name: 'Pop Instruction',
+    teaches: 'how-to-pop',
+    setup: {
+      pressureRate: 0,  // Freeze pressure while reading
+      allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
+      highlightGoopColor: COLORS.YELLOW,  // Pulse yellow goop, only yellow can be popped
     },
     pauseGame: true,
     advance: { type: 'action', action: 'pop-goop' },
@@ -150,8 +193,9 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     setup: {
       pressureRate: 0.2,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
+      pauseDelay: 1000,  // Wait 1s after pop before showing merge message
     },
-    pauseGame: false,
+    pauseGame: true,
     advance: { type: 'event', event: 'goop-merged' },
   },
 
@@ -195,7 +239,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Tank Rotation',
     teaches: 'tank-rotation-input',
     setup: {
-      spawnPiece: { color: COLORS.GREEN, size: 1 },
+      spawnPiece: { color: COLORS.GREEN, shape: GoopShape.T_O },
       pressureRate: 0.3,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
     },

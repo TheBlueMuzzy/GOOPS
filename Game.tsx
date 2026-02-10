@@ -420,6 +420,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
     dismissMessage: trainingDismiss,
     trainingDisplayStep,
     messagePosition: trainingMessagePosition,
+    highlightColor: trainingHighlightColor,
   } = useTrainingFlow({
     saveData,
     setSaveData,
@@ -493,6 +494,9 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
             fallingGooStdDev={fallingGooStdDev}
             fallingGooAlphaMul={fallingGooAlphaMul}
             fallingGooAlphaOff={fallingGooAlphaOff}
+            trainingHighlightColor={trainingHighlightColor}
+            disableSwap={isInTraining}
+            disablePop={isInTraining && trainingStep?.setup?.allowedControls?.pop === false}
          />
          {/* Lights brightness is now controlled by state.lightsBrightness (player-controlled via fast drop) */}
       </div>

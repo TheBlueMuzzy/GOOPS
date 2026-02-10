@@ -58,16 +58,28 @@ export const TRAINING_MESSAGES: Record<TrainingStepId, IntercomMessage> = {
     fullText: '[Yeah.] It\'s slow.',
   },
   B2_FAST_FALL: {
-    keywords: ['fast-drop', 'Swipe', 'down', 'press', 'S'],
+    keywords: ['fast-drop', 'Swipe', 'S'],
     fullText: 'Swipe down [or] press S [to] fast-drop. [The] faster [you place it, the] better.',
   },
   B3_PIECE_ROTATION: {
     keywords: ['Rotate', 'goop', 'Q/E', 'tap', 'left/right', 'tank'],
     fullText: 'Rotate [the] goop [with] Q/E or tap [the] left/right side [of the] tank.',
   },
+  B4_PRACTICE: {
+    keywords: ['Practice', 'goop'],
+    fullText: 'Practice [what you\'ve] learned [with] another goop.',
+  },
   C1_POP_INTRO: {
     keywords: ['Pressure', 'laser', 'goop', 'pressure'],
     fullText: 'Pressure [increases] over time. [Use the] laser [to] pop goop [to] vent [some of the] pressure.',
+  },
+  C1B_PRESSURE_RISING: {
+    keywords: ['Pressure'],
+    fullText: '[The] Pressure rises slowly... but [it\'s always] faster than you think.',
+  },
+  C1C_POP_INSTRUCTION: {
+    keywords: ['Pressure', 'pop', 'goop', 'Tap'],
+    fullText: '[The] Pressure [is] high enough [now]. Tap [to] pop [the] goop below [the Pressure] line.',
   },
   C2_MERGE: {
     keywords: ['goop', 'merges'],

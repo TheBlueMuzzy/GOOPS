@@ -67,6 +67,7 @@ export class GameEngine {
     public pendingTrainingPalette: string[] | null = null; // Set by useTrainingFlow to intercept next session start
     public trainingAllowedControls: AllowedControls | null = null; // Set by useTrainingFlow per step
     public trainingPressureRate: number = 0; // Set by useTrainingFlow per step (0=frozen, 1=normal speed)
+    public trainingHighlightColor: string | null = null; // Set by useTrainingFlow per step — pulse this color, restrict pops to it
     public equippedActives: string[] = [];
     private crackManager: CrackManager;
 

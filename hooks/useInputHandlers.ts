@@ -29,6 +29,9 @@ interface UseInputHandlersParams {
     grid: (TankCell | null)[][];
     tankPressure: number;
     powerUps?: Record<string, number>; // For GOOP_SWAP upgrade effect
+    trainingHighlightColor?: string | null; // Training: only this color can be popped
+    disableSwap?: boolean; // Training: disable hold-to-swap gesture
+    disablePop?: boolean; // Training: all pops blocked (shake + reject on tap)
 }
 
 interface UseInputHandlersReturn {
@@ -45,7 +48,10 @@ export function useInputHandlers({
     tankRotation,
     grid,
     tankPressure,
-    powerUps
+    powerUps,
+    trainingHighlightColor,
+    disableSwap,
+    disablePop
 }: UseInputHandlersParams): UseInputHandlersReturn {
     // Destructure optional callbacks
     const { onBlockTap, onRotate, onDragInput, onSwipeUp, onFastDrop, onSwap } = callbacks;
@@ -160,32 +166,34 @@ export function useInputHandlers({
             actionConsumed: false
         };
 
-        // Start Hold Timer
-        setHoldPosition({ x: relX, y: relY });
-        setHoldProgress(0);
+        // Start Hold Timer (skip entirely if swap disabled during training)
+        if (!disableSwap) {
+            setHoldPosition({ x: relX, y: relY });
+            setHoldProgress(0);
 
-        const startHoldTime = Date.now();
-        holdIntervalRef.current = window.setInterval(() => {
-            const now = Date.now();
-            const totalElapsed = now - startHoldTime;
+            const startHoldTime = Date.now();
+            holdIntervalRef.current = window.setInterval(() => {
+                const now = Date.now();
+                const totalElapsed = now - startHoldTime;
 
-            // Don't start filling/logic until delay has passed
-            if (totalElapsed < HOLD_DELAY) return;
+                // Don't start filling/logic until delay has passed
+                if (totalElapsed < HOLD_DELAY) return;
 
-            const effectiveElapsed = totalElapsed - HOLD_DELAY;
-            const progress = Math.min(100, (effectiveElapsed / holdDuration) * 100);
-            setHoldProgress(progress);
+                const effectiveElapsed = totalElapsed - HOLD_DELAY;
+                const progress = Math.min(100, (effectiveElapsed / holdDuration) * 100);
+                setHoldProgress(progress);
 
-            if (progress >= 100) {
-                // Trigger Swap
-                if (pointerRef.current) pointerRef.current.actionConsumed = true;
-                gameEventBus.emit(GameEventType.INPUT_SWAP);
-                onSwap?.();
-                clearHold();
-                // Haptic feedback if available
-                if (navigator.vibrate) navigator.vibrate(50);
-            }
-        }, 16);
+                if (progress >= 100) {
+                    // Trigger Swap
+                    if (pointerRef.current) pointerRef.current.actionConsumed = true;
+                    gameEventBus.emit(GameEventType.INPUT_SWAP);
+                    onSwap?.();
+                    clearHold();
+                    // Haptic feedback if available
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }
+            }, 16);
+        }
 
         // Visual feedback for tapping blocks
         const hit = getHitData(vx, vy);
@@ -195,7 +203,15 @@ export function useInputHandlers({
             const elapsed = Date.now() - hit.cell.timestamp;
             const thresholdY = (TANK_HEIGHT - 1) - (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
 
-            if (hit.cell.groupMinY < thresholdY) {
+            if (disablePop) {
+                setShakingGroupId(hit.cell.goopGroupId);
+                gameEventBus.emit(GameEventType.ACTION_REJECTED);
+                setTimeout(() => setShakingGroupId(prev => prev === hit.cell!.goopGroupId ? null : prev), 300);
+            } else if (trainingHighlightColor && hit.cell.color !== trainingHighlightColor) {
+                setShakingGroupId(hit.cell.goopGroupId);
+                gameEventBus.emit(GameEventType.ACTION_REJECTED);
+                setTimeout(() => setShakingGroupId(prev => prev === hit.cell!.goopGroupId ? null : prev), 300);
+            } else if (hit.cell.groupMinY < thresholdY) {
                 setShakingGroupId(hit.cell.goopGroupId);
                 gameEventBus.emit(GameEventType.ACTION_REJECTED);
                 setTimeout(() => setShakingGroupId(prev => prev === hit.cell!.goopGroupId ? null : prev), 300);
@@ -207,7 +223,7 @@ export function useInputHandlers({
                 setHighlightedGroupId(hit.cell.goopGroupId);
             }
         }
-    }, [getViewportCoords, getHitData, tankPressure, clearHold, holdDuration]);
+    }, [getViewportCoords, getHitData, tankPressure, clearHold, holdDuration, trainingHighlightColor, disablePop, disableSwap]);
 
     /**
      * Handle pointer move - detect drag direction and apply input.
@@ -376,28 +392,30 @@ export function useInputHandlers({
             actionConsumed: false
         };
 
-        // Start Hold Timer
-        setHoldPosition({ x: relX, y: relY });
-        setHoldProgress(0);
+        // Start Hold Timer (skip entirely if swap disabled during training)
+        if (!disableSwap) {
+            setHoldPosition({ x: relX, y: relY });
+            setHoldProgress(0);
 
-        const startHoldTime = Date.now();
-        holdIntervalRef.current = window.setInterval(() => {
-            const now = Date.now();
-            const totalElapsed = now - startHoldTime;
-            if (totalElapsed < HOLD_DELAY) return;
+            const startHoldTime = Date.now();
+            holdIntervalRef.current = window.setInterval(() => {
+                const now = Date.now();
+                const totalElapsed = now - startHoldTime;
+                if (totalElapsed < HOLD_DELAY) return;
 
-            const effectiveElapsed = totalElapsed - HOLD_DELAY;
-            const progress = Math.min(100, (effectiveElapsed / holdDuration) * 100);
-            setHoldProgress(progress);
+                const effectiveElapsed = totalElapsed - HOLD_DELAY;
+                const progress = Math.min(100, (effectiveElapsed / holdDuration) * 100);
+                setHoldProgress(progress);
 
-            if (progress >= 100) {
-                if (pointerRef.current) pointerRef.current.actionConsumed = true;
-                gameEventBus.emit(GameEventType.INPUT_SWAP);
-                onSwap?.();
-                clearHold();
-                if (navigator.vibrate) navigator.vibrate(50);
-            }
-        }, 16);
+                if (progress >= 100) {
+                    if (pointerRef.current) pointerRef.current.actionConsumed = true;
+                    gameEventBus.emit(GameEventType.INPUT_SWAP);
+                    onSwap?.();
+                    clearHold();
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }
+            }, 16);
+        }
 
         // Visual feedback for tapping blocks
         const hit = getHitData(vx, vy);
@@ -406,7 +424,15 @@ export function useInputHandlers({
             const elapsed = Date.now() - hit.cell.timestamp;
             const thresholdY = (TANK_HEIGHT - 1) - (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
 
-            if (hit.cell.groupMinY < thresholdY) {
+            if (disablePop) {
+                setShakingGroupId(hit.cell.goopGroupId);
+                gameEventBus.emit(GameEventType.ACTION_REJECTED);
+                setTimeout(() => setShakingGroupId(prev => prev === hit.cell!.goopGroupId ? null : prev), 300);
+            } else if (trainingHighlightColor && hit.cell.color !== trainingHighlightColor) {
+                setShakingGroupId(hit.cell.goopGroupId);
+                gameEventBus.emit(GameEventType.ACTION_REJECTED);
+                setTimeout(() => setShakingGroupId(prev => prev === hit.cell!.goopGroupId ? null : prev), 300);
+            } else if (hit.cell.groupMinY < thresholdY) {
                 setShakingGroupId(hit.cell.goopGroupId);
                 gameEventBus.emit(GameEventType.ACTION_REJECTED);
                 setTimeout(() => setShakingGroupId(prev => prev === hit.cell!.goopGroupId ? null : prev), 300);
@@ -544,7 +570,7 @@ export function useInputHandlers({
         window.addEventListener('touchend', handleEnd);
         window.addEventListener('touchcancel', handleEnd);
 
-    }, [getViewportCoords, getHitData, tankPressure, clearHold, holdDuration, onSwap, onFastDrop, onDragInput, onBlockTap, onRotate, onSwipeUp, removeTouchListeners]);
+    }, [getViewportCoords, getHitData, tankPressure, clearHold, holdDuration, onSwap, onFastDrop, onDragInput, onBlockTap, onRotate, onSwipeUp, removeTouchListeners, trainingHighlightColor, disablePop, disableSwap]);
 
     // Cleanup listeners on unmount
     useEffect(() => {

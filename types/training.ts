@@ -1,5 +1,6 @@
 
 import { TutorialStepId } from './tutorial';
+import { GoopShape } from '../types';
 
 // --- Training Step Identifiers ---
 
@@ -11,7 +12,10 @@ export type TrainingStepId =
   | 'B1B_SLOW_COMMENT'
   | 'B2_FAST_FALL'
   | 'B3_PIECE_ROTATION'
+  | 'B4_PRACTICE'
   | 'C1_POP_INTRO'
+  | 'C1B_PRESSURE_RISING'
+  | 'C1C_POP_INSTRUCTION'
   | 'C2_MERGE'
   | 'C3_FILL_TIMING'
   | 'D1_CRACK_APPEARS'
@@ -29,7 +33,8 @@ export type TrainingPhase = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 // Piece to spawn for this step
 export interface PieceSpawn {
   color: string;        // COLORS.RED, COLORS.BLUE, etc.
-  size: number;         // 1=Mono, 2=Duo, 3=Tri, 4=Tetra
+  shape: GoopShape;     // Which piece shape (T_I, T_T, T_O, etc.)
+  rotation?: number;    // Initial rotation steps (0-3, default 0)
   autoFall?: boolean;   // Falls without player input (player watches)
   slowFall?: boolean;   // Falls at reduced speed for learning
 }
@@ -45,6 +50,7 @@ export interface AllowedControls {
   fastDrop?: boolean;
   rotate?: boolean;
   tankRotate?: boolean;
+  pop?: boolean;
 }
 
 // What to set up before this step activates
@@ -62,6 +68,10 @@ export interface StepSetup {
   advanceAtRow?: number;        // Auto-advance when active piece reaches this grid row
   reshowAtRow?: number;         // Re-show message if player hasn't acted by this row
   reshowUntilAction?: string;   // Cancel re-show if this action is performed (key into ADVANCE_EVENT_MAP)
+  advanceAtPressure?: number;   // Auto-advance when PSI reaches this percentage (0-100)
+  advanceWhenPressureAbovePieces?: boolean;  // Auto-advance when pressure line rises above highest locked goop
+  advancePressureAboveColor?: string;       // Only check goops of this color for the pressure-above check
+  highlightGoopColor?: string;  // Pulse-highlight goops of this color (also restricts popping to only this color)
 }
 
 // How the player advances past this step

@@ -8,7 +8,8 @@ import { gameEventBus } from '../core/events/EventBus';
 import { GameEventType } from '../core/events/GameEvents';
 import { getNextTrainingStep, isTrainingComplete } from '../data/trainingScenarios';
 import { TRAINING_MESSAGES } from '../data/tutorialSteps';
-import { COLORS } from '../constants';
+import { COLORS, TANK_HEIGHT, TANK_VIEWPORT_HEIGHT, TETRA_NORMAL, PENTA_NORMAL, HEXA_NORMAL } from '../constants';
+import { getRotatedCells } from '../utils/gameLogic';
 
 interface UseTrainingFlowOptions {
   saveData: SaveData;
@@ -124,9 +125,20 @@ export const useTrainingFlow = ({
         // so each piece must be explicitly spawned by the step that needs it)
         if (currentStep.setup?.spawnPiece) {
           const spawn = currentStep.setup.spawnPiece;
-          const cells = Array.from({ length: spawn.size }, (_, i) => ({ x: i, y: 0 }));
-          const template: GoopTemplate = { type: GoopShape.I, cells, color: spawn.color };
-          gameEngine.spawnNewPiece(template);
+          // Find the matching shape template from piece constants
+          const allPieces = [...TETRA_NORMAL, ...PENTA_NORMAL, ...HEXA_NORMAL];
+          const shapeTemplate = allPieces.find(p => p.type === spawn.shape);
+          if (shapeTemplate) {
+            let cells = shapeTemplate.cells.map(c => ({ ...c }));
+            // Apply initial rotation if specified
+            if (spawn.rotation && spawn.rotation > 0) {
+              for (let r = 0; r < spawn.rotation; r++) {
+                cells = getRotatedCells(cells, true);
+              }
+            }
+            const template: GoopTemplate = { type: spawn.shape, cells, color: spawn.color };
+            gameEngine.spawnNewPiece(template);
+          }
         }
       }
 
@@ -337,12 +349,18 @@ export const useTrainingFlow = ({
       }
 
       const reshowPoll = setInterval(() => {
-        // If they already performed the action, cancel
-        if (actionPerformed.current) {
+        // Cancel if action was performed OR piece is currently fast-dropping
+        // (isFastDropping check catches keyboard S which doesn't emit INPUT_FAST_DROP on event bus)
+        if (actionPerformed.current || gameEngine.isFastDropping) {
           clearInterval(reshowPoll);
           return;
         }
-        const pieceY = gameEngine.state.activeGoop?.y ?? 0;
+        // Cancel if piece already landed (no active goop)
+        if (!gameEngine.state.activeGoop) {
+          clearInterval(reshowPoll);
+          return;
+        }
+        const pieceY = gameEngine.state.activeGoop.y ?? 0;
         if (pieceY >= threshold) {
           clearInterval(reshowPoll);
           // Re-pause game and re-show message
@@ -355,6 +373,62 @@ export const useTrainingFlow = ({
         }
       }, 150);
       cleanups.push(() => clearInterval(reshowPoll));
+    }
+
+    // Pressure-threshold advance: poll PSI and advance when it reaches the target percentage.
+    // Used for C1/C1B where pressure must rise to specific levels before next teaching step.
+    if (currentStep.setup?.advanceAtPressure != null && gameEngine) {
+      const targetPsi = currentStep.setup.advanceAtPressure / 100; // Convert percentage to 0-1
+      const pressurePoll = setInterval(() => {
+        if (!advanceArmedRef.current) return;
+
+        const maxTime = gameEngine.maxTime ?? 1;
+        const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
+
+        if (psi >= targetPsi) {
+          clearInterval(pressurePoll);
+          advanceStepRef.current();
+        }
+      }, 250);
+      cleanups.push(() => clearInterval(pressurePoll));
+    }
+
+    // Pressure-above-pieces advance: poll until pressure line rises above the highest locked goop.
+    // Dynamic — works regardless of what pieces are on the board.
+    if (currentStep.setup?.advanceWhenPressureAbovePieces && gameEngine) {
+      const piecePressurePoll = setInterval(() => {
+        if (!advanceArmedRef.current) return;
+
+        const maxTime = gameEngine.maxTime ?? 1;
+        const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
+
+        // Pressure line grid row — matches GameBoard.tsx rendering exactly:
+        // waterHeightBlocks = 1 + (psi * (VIEWPORT_HEIGHT - 1))
+        // In grid coords: pressureLineRow = BUFFER_HEIGHT + (VIEWPORT_HEIGHT - 1) - psi * (VIEWPORT_HEIGHT - 1)
+        const pressureLineRow = (TANK_HEIGHT - 1) - (psi * (TANK_VIEWPORT_HEIGHT - 1));
+
+        // Find highest occupied row (lowest Y = highest visually)
+        // If advancePressureAboveColor is set, only check cells of that color
+        const colorFilter = currentStep.setup?.advancePressureAboveColor ?? null;
+        let highestOccupiedRow = TANK_HEIGHT; // Default: nothing on grid
+        for (let y = 0; y < TANK_HEIGHT; y++) {
+          for (let x = 0; x < gameEngine.state.grid[y].length; x++) {
+            const cell = gameEngine.state.grid[y][x];
+            if (cell !== null && (colorFilter === null || cell.color === colorFilter)) {
+              highestOccupiedRow = y;
+              break;
+            }
+          }
+          if (highestOccupiedRow < TANK_HEIGHT) break;
+        }
+
+        // Advance when pressure line is above the highest piece
+        if (pressureLineRow < highestOccupiedRow) {
+          clearInterval(piecePressurePoll);
+          advanceStepRef.current();
+        }
+      }, 250);
+      cleanups.push(() => clearInterval(piecePressurePoll));
     }
 
     // Tap advances are handled by overlay buttons, not event listeners
@@ -434,6 +508,17 @@ export const useTrainingFlow = ({
     }
   }, [gameEngine, currentStep?.id, isInTraining]);
 
+  // --- Sync highlight color to engine on step change ---
+  useEffect(() => {
+    if (!gameEngine) return;
+
+    if (isInTraining && currentStep?.setup?.highlightGoopColor) {
+      gameEngine.trainingHighlightColor = currentStep.setup.highlightGoopColor;
+    } else {
+      gameEngine.trainingHighlightColor = null;
+    }
+  }, [gameEngine, currentStep?.id, isInTraining]);
+
   // Subscribe to TRAINING_SCENARIO_COMPLETE event for cleanup
   useEffect(() => {
     const unsub = gameEventBus.on(GameEventType.TRAINING_SCENARIO_COMPLETE, () => {
@@ -442,6 +527,7 @@ export const useTrainingFlow = ({
         gameEngine.pendingTrainingPalette = null;
         gameEngine.trainingAllowedControls = null;
         gameEngine.trainingPressureRate = 0;
+        gameEngine.trainingHighlightColor = null;
         gameEngine.freezeFalling = false;
       }
     });
@@ -458,6 +544,9 @@ export const useTrainingFlow = ({
   // Message position for the current training step (default: 'center')
   const messagePosition = currentStep?.setup?.messagePosition ?? 'center';
 
+  // Highlight color for the current step (null = no highlight)
+  const highlightColor = (isInTraining && currentStep?.setup?.highlightGoopColor) || null;
+
   return {
     currentStep,
     isInTraining,
@@ -467,5 +556,6 @@ export const useTrainingFlow = ({
     dismissMessage,
     trainingDisplayStep,
     messagePosition,
+    highlightColor,
   };
 };

@@ -262,9 +262,16 @@ export class PopGoopCommand implements Command {
 
     execute(engine: GameEngine): void {
         if (engine.state.gameOver || engine.state.isPaused) return;
+        if (engine.trainingAllowedControls?.pop === false) return;
 
          const cell = engine.state.grid[this.y][this.x];
          if (!cell) return;
+
+         // Training: only allow popping goops matching the highlight color
+         if (engine.trainingHighlightColor && cell.color !== engine.trainingHighlightColor) {
+             gameEventBus.emit(GameEventType.ACTION_REJECTED);
+             return;
+         }
          
          const tankPressure = Math.max(0, 1 - (engine.state.shiftTime / engine.maxTime));
          const thresholdY = (TANK_HEIGHT - 1) - (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
