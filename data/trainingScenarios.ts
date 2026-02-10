@@ -75,7 +75,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
     },
     pauseGame: false,
-    advance: { type: 'tap' },  // Player dismisses manually, piece keeps falling
+    advance: { type: 'event', event: 'piece-landed' },  // Wait for piece to land, then advance
   },
 
   {
@@ -84,13 +84,12 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Slow Comment',
     teaches: 'patience-acknowledgment',
     setup: {
-      // No new piece spawn — the B1 piece is still falling
+      // No new piece spawn — the B1 piece already landed and the game froze
       pressureRate: 0,
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
-      showWhenPieceBelow: 12,  // Only show message when piece Y >= 12 (halfway down)
     },
-    pauseGame: false,  // Piece keeps falling while message shows
-    advance: { type: 'event', event: 'piece-landed' },  // Wait for it to land
+    pauseGame: true,  // Game already frozen from piece landing
+    advance: { type: 'tap' },
   },
 
   {

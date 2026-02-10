@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SaveData } from '../types';
-import { TrainingStep } from '../types/training';
+import { SaveData, GoopTemplate, GoopShape } from '../types';
+import { TrainingStep, PieceSpawn } from '../types/training';
 import { IntercomMessage } from '../types/tutorial';
 import { GameEngine } from '../core/GameEngine';
 import { gameEventBus } from '../core/events/EventBus';
@@ -64,6 +64,12 @@ export const useTrainingFlow = ({
   // For tap steps: dismiss = advance. For action/event: dismiss just hides message.
   const [messageVisible, setMessageVisible] = useState(true);
 
+  // Advance arming — prevents event listeners from firing before message is dismissed.
+  // For pauseGame: true steps, the listener is "disarmed" until dismissMessage() is called.
+  // For pauseGame: false steps, the listener is armed immediately (game already running).
+  const advanceArmedRef = useRef(true);
+  const armTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Transition delay timer ref — cleaned up on unmount
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Position-polling interval ref for showWhenPieceBelow
@@ -80,7 +86,17 @@ export const useTrainingFlow = ({
       positionPollRef.current = null;
     }
 
+    // Clear any pending arm timer from previous step
+    if (armTimerRef.current) {
+      clearTimeout(armTimerRef.current);
+      armTimerRef.current = null;
+    }
+
     if (currentStep) {
+      // Arm advance listeners: disarmed for pausing steps (wait for dismiss),
+      // armed immediately for non-pausing steps (game already running)
+      advanceArmedRef.current = currentStep.pauseGame === false;
+
       if (gameEngine && gameEngine.isSessionActive) {
         if (currentStep.pauseGame !== false) {
           // Pause/freeze for steps that need the player to read before acting
@@ -88,11 +104,20 @@ export const useTrainingFlow = ({
           gameEngine.freezeFalling = true;
           gameEngine.emitChange();
         } else {
-          // Non-pausing step (e.g. B1, B1B) — ensure game is running
+          // Non-pausing step (e.g. B1) — ensure game is running
           // (advanceStep may have paused momentarily during transition)
           gameEngine.state.isPaused = false;
           gameEngine.freezeFalling = false;
           gameEngine.emitChange();
+        }
+
+        // Spawn a piece if this step defines one (training mode gates auto-spawn,
+        // so each piece must be explicitly spawned by the step that needs it)
+        if (currentStep.setup?.spawnPiece) {
+          const spawn = currentStep.setup.spawnPiece;
+          const cells = Array.from({ length: spawn.size }, (_, i) => ({ x: i, y: 0 }));
+          const template: GoopTemplate = { type: GoopShape.I, cells, color: spawn.color };
+          gameEngine.spawnNewPiece(template);
         }
       }
 
@@ -132,6 +157,10 @@ export const useTrainingFlow = ({
       if (positionPollRef.current) {
         clearInterval(positionPollRef.current);
         positionPollRef.current = null;
+      }
+      if (armTimerRef.current) {
+        clearTimeout(armTimerRef.current);
+        armTimerRef.current = null;
       }
     };
   }, [currentStep?.id]);
@@ -189,6 +218,9 @@ export const useTrainingFlow = ({
   const advanceStep = useCallback(() => {
     if (!currentStep) return;
 
+    // Disarm to prevent double-advance from rapid events
+    advanceArmedRef.current = false;
+
     completeCurrentStep();
 
     // Pause immediately — the next step's useEffect will handle the transition delay
@@ -228,6 +260,14 @@ export const useTrainingFlow = ({
       gameEngine.freezeFalling = false;  // Resume piece physics
       gameEngine.emitChange();
     }
+
+    // Arm the advance listener after a brief delay — prevents the dismiss
+    // tap from also triggering the advance event (e.g. fast-drop) on the same frame
+    if (armTimerRef.current) clearTimeout(armTimerRef.current);
+    armTimerRef.current = setTimeout(() => {
+      advanceArmedRef.current = true;
+      armTimerRef.current = null;
+    }, 150);
   }, [gameEngine]);
 
   // --- Pause management during training ---
@@ -259,7 +299,9 @@ export const useTrainingFlow = ({
       // Special case: drag-periscope is handled by GAME_START event
       if (advance.action === 'drag-periscope') {
         const unsub = gameEventBus.on(GameEventType.GAME_START, () => {
-          advanceStepRef.current();
+          if (advanceArmedRef.current) {
+            advanceStepRef.current();
+          }
         });
         return unsub;
       }
@@ -271,10 +313,12 @@ export const useTrainingFlow = ({
     const gameEvents = eventKey ? ADVANCE_EVENT_MAP[eventKey] : undefined;
 
     if (gameEvents && gameEvents.length > 0) {
-      // Listen for mapped game events
+      // Listen for mapped game events (only advance when armed)
       const unsubs = gameEvents.map(event =>
         gameEventBus.on(event, () => {
-          advanceStepRef.current();
+          if (advanceArmedRef.current) {
+            advanceStepRef.current();
+          }
         })
       );
       return () => unsubs.forEach(unsub => unsub());

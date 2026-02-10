@@ -154,7 +154,11 @@ export const IntercomMessageDisplay: React.FC<IntercomMessageProps> = ({
                   e.stopPropagation();
                   onDismiss();
                 }}
-                className="w-12 h-12 flex items-center justify-center t-heading font-mono text-slate-500 hover:text-slate-300 border border-slate-700 rounded-sm transition-colors"
+                className={`w-12 h-12 flex items-center justify-center t-heading font-mono rounded-sm transition-colors ${
+                  advanceType === 'dismiss'
+                    ? 'text-green-400 hover:text-green-300 border border-green-900 hover:border-green-700'
+                    : 'text-slate-500 hover:text-slate-300 border border-slate-700'
+                }`}
               >
                 ✗
               </button>

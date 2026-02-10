@@ -437,7 +437,9 @@ export class GameEngine {
         // No active abilities in training
         this.state.activeCharges = {};
 
-        this.spawnNewPiece();
+        // Don't spawn a piece here — the training flow controller spawns pieces
+        // explicitly via each step's spawnPiece config. This prevents a stray
+        // initial piece from conflicting with B1's scripted spawn.
         gameEventBus.emit(GameEventType.GAME_START);
         this.emitChange();
     }
@@ -1416,7 +1418,17 @@ export class GameEngine {
         }
         this.state.grid = gridAfterGravity;
 
-        this.spawnNewPiece(undefined, gridAfterGravity);
+        // In training mode, don't auto-spawn the next piece — let the
+        // training flow controller decide when to spawn via step setup.
+        // Also freeze so the player can read the current message.
+        if (this.isTrainingMode) {
+            this.state.activeGoop = null;
+            this.state.isPaused = true;
+            this.freezeFalling = true;
+            this.emitChange();
+        } else {
+            this.spawnNewPiece(undefined, gridAfterGravity);
+        }
         this.state.popStreak = 0;
         this.isFastDropping = false;
     }

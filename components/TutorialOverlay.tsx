@@ -32,6 +32,7 @@ interface TutorialOverlayProps {
   highlightElement?: string; // Element key to highlight (from training step setup)
   messagePosition?: 'top' | 'center' | 'bottom'; // Contextual position for intercom window
   advanceType?: 'tap' | 'dismiss'; // Button mode: tap=✓ only, dismiss=✗ only
+  blockInteraction?: boolean; // When true, overlay captures all touches (blocks game interaction)
   trainingProgress?: {
     phaseName: string;
     stepProgress: string;
@@ -57,6 +58,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
   highlightElement,
   messagePosition = 'center',
   advanceType,
+  blockInteraction = false,
   trainingProgress,
 }) => {
   // Track the step being displayed (for fade-out: keep rendering while fading)
@@ -119,10 +121,11 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
 
   return (
     <div
-      className="absolute inset-0 z-[90] pointer-events-none"
+      className={`absolute inset-0 z-[90] ${blockInteraction ? 'pointer-events-auto' : 'pointer-events-none'}`}
       style={{
-        transition: 'opacity 150ms ease-out',
+        transition: 'opacity 150ms ease-out, background-color 150ms ease-out',
         opacity: isVisible ? 1 : 0,
+        backgroundColor: blockInteraction ? 'rgba(0, 0, 0, 0.35)' : 'transparent',
       }}
     >
       {/* Highlight overlay — semi-transparent with clip-path cutout */}

@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-02-09
+updated: 2026-02-10
 ---
 
 # Project State
@@ -10,9 +10,9 @@ updated: 2026-02-09
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 in current phase — FIX plan executed, AT CHECKPOINT (UAT round 3)
-Status: In progress — waiting for human verification
-Last activity: 2026-02-09 - Executed 33-04-FIX (3 code fixes, 5 already done)
+Plan: 4 of 4 in current phase — FIX plan, UAT round 4 in progress
+Status: In progress — fixing UAT issues from round 3
+Last activity: 2026-02-10 - UAT round 3 partial (steps 1-9 pass, step 10+ fixing)
 
 Progress: ████░░░░░░ 35%
 
@@ -28,24 +28,29 @@ Progress: ████░░░░░░ 35%
 
 ## Next Steps
 
-33-04-FIX executed. At checkpoint — need UAT round 3 verification of all 9 fixes.
-After verification: create SUMMARY, update ROADMAP, complete plan metadata commit.
+UAT round 3 found issues. Fixes applied (uncommitted). Need UAT round 4 verification:
+- Steps 1-9 already passed
+- Step 10+ needs re-testing (B2 fast-drop advance was firing immediately on dismiss)
+- Also fixed: training piece spawning, garble renderer, interaction blocking
+
+After full verification: commit fixes, create SUMMARY, update ROADMAP, metadata commit.
 
 ### Decisions Made
 
 - Typography: 18px minimum body, CSS classes with !important, full project sweep
 - Journal layout: accordion (single column) over sidebar+content (two column)
 - TEXT_MANIFEST.md as editable text source-of-truth
-- **Training: 15 steps, 6 phases (A-F) — added B1B "Yeah. It's slow." mid-fall**
-- **Garble system: bracket notation `[text]` in fullText for explicit garble control**
-- **Garble chars: Unicode block elements (░▒▓█▌▐■▬▮▪), light corruption (70/15/15 model), slate-500 color**
+- **Training: 15 steps, 6 phases (A-F) — B1B now post-landing tap step (not mid-fall)**
+- **Garble system: bracket notation `[text]` = full-word garble, no brackets = clear, keywords = green. NO partial/random corruption.**
+- **Garble chars: Unicode block elements (░▒▓█▌▐■▬▮▪), slate-500 color**
 - Training uses COLORS.RED hex values matching engine convention
 - Training mode: pendingTrainingPalette interception pattern in enterPeriscope()
 - Training tick() gates skip all normal gameplay systems
 - **freezeFalling used alongside isPaused** — isPaused only stops tick, freezeFalling stops physics
 - **Periscope pulse (CSS scale+glow) replaces broken highlight cutout overlay**
-- **pauseGame: false steps don't freeze on transition, show message immediately**
-- **showWhenPieceBelow: position-gated message display (polls activeGoop.y every 200ms)**
+- **Training piece spawning: engine does NOT auto-spawn in training mode. Each step's spawnPiece config triggers explicit spawn via useTrainingFlow.**
+- **Advance arming: event listeners disarmed until message dismissed (prevents dismiss-tap from triggering advance)**
+- **Overlay blockInteraction: pauseGame:true steps show dark scrim + block all touches until message closed**
 - `goop-merged` advance maps to PIECE_DROPPED (merge happens on landing)
 - `game-over` advance maps to GAME_OVER (for F2 practice mode)
 
@@ -53,7 +58,6 @@ After verification: create SUMMARY, update ROADMAP, complete plan metadata commi
 
 - PiecePreview NEXT/HOLD labels at 18px may be too large for 48px box — revisit layout later
 - Some SVG text in Art.tsx (PROMOTION THRESHOLD at 12px, XP at 14px) not yet standardized
-- Per-step piece spawning (specific sizes, autoFall, slowFall) not yet implemented — pieces come from palette queue
 - Per-step crack spawning not yet active
 
 ### Roadmap Evolution
@@ -65,33 +69,37 @@ After verification: create SUMMARY, update ROADMAP, complete plan metadata commi
 
 ## Session Continuity
 
-Last session: 2026-02-09
+Last session: 2026-02-10
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 243
+**Build:** 244
 
 ### Resume Command
 ```
-Phase 33 Plan 04-FIX — AT CHECKPOINT (UAT round 3 verification)
+Phase 33 Plan 04-FIX — UAT round 4 needed
 
 EXECUTE: /gsd:execute-plan .planning/phases/33-rank-0-training-sequence/33-04-FIX.md
 
-WHAT'S DONE (code committed, 3 commits):
-- bf70e26: Garble renderer light corruption (70% clear, 15% partial, 15% full)
-- bf70e26: B2/B3/D2 messages now include HOW to do controls + keywords tagged
-- 2070e0f: Falling pieces visible — spawn at BUFFER_HEIGHT-1 + fallback renders in buffer
-- a081eda: messagePosition 'top' for E1/F1/F2 pressure steps
+CHANGES THIS SESSION (uncommitted, 7 files modified):
+- IntercomText.tsx: Garble fixed — brackets = full garble, removed 70/15/15 random model
+- useTrainingFlow.ts: Advance arming (disarmed until dismiss), explicit piece spawning from step setup
+- TutorialOverlay.tsx: blockInteraction prop — dark scrim + pointer-events-auto for paused steps
+- IntercomMessage.tsx: Dismiss button green outline when in dismiss-only mode
+- GameEngine.ts: lockActivePiece() no auto-spawn in training, startTraining() no initial spawn
+- trainingScenarios.ts: B1 advance=piece-landed, B1B=pauseGame:true+tap (was mid-fall event)
+- Game.tsx: Pass blockInteraction prop to TutorialOverlay
 
-ALREADY IMPLEMENTED (no changes needed):
-- Control gating (Task 2), pause between steps (Task 3), highlight/pulse (Task 6)
-- Training progress in intercom header (Task 7), pressure meter (Task 8)
+UAT ROUND 3 STATUS:
+- Steps 1-9: PASSED
+- Step 10+: Needs re-testing after fixes
 
 WHAT TO DO:
 1. Start dev server: npm run dev -- --host
 2. Clear localStorage, reload at rank 0
-3. Run through all 15 UAT verification steps from the checkpoint
-4. Type "approved" or describe issues
-5. After approval: SUMMARY + STATE + ROADMAP update + metadata commit
+3. Verify steps 1-9 still pass (no regression)
+4. Verify step 10+ (B2 dismiss doesn't auto-advance, B-phase piece flow works)
+5. Continue through rest of UAT checklist
+6. After approval: commit all fixes, SUMMARY, ROADMAP update, metadata commit
 ```
 
 ---

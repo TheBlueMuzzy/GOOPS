@@ -50,7 +50,7 @@ function getLeadingPunctuation(word: string): string {
 }
 
 // Garble level for non-keyword words
-type GarbleLevel = 'none' | 'partial';
+type GarbleLevel = 'none' | 'garbled';
 
 interface ProcessedWord {
   isKeyword: boolean;
@@ -105,38 +105,19 @@ export const IntercomText: React.FC<IntercomTextProps> = ({
             continue;
           }
 
-          // Light corruption: 70% clear, 15% partial (1-2 chars), 15% full garble
+          // Bracketed word → full garble (replace entire word with block characters)
+          // Brackets provide EXPLICIT control: [word] = garbled, no randomness.
           const rng = seededRandom(currentIndex * 7919 + 31);
-          const roll = rng();
-
-          if (roll < 0.70) {
-            // Clear — show the word as-is
-            result.push({ isKeyword: false, display: token, original: token, garbleLevel: 'none' });
-          } else if (roll < 0.85) {
-            // Partial — corrupt 1-2 characters within the word
-            const chars = coreWord.split('');
-            const numToCorrupt = Math.min(chars.length, Math.ceil(rng() * 2)); // 1 or 2
-            const indices = new Set<number>();
-            while (indices.size < numToCorrupt && indices.size < chars.length) {
-              indices.add(Math.floor(rng() * chars.length));
-            }
-            const corrupted = chars.map((ch, ci) =>
-              indices.has(ci) ? GARBLE_CHARS[Math.floor(rng() * GARBLE_CHARS.length)] : ch
-            ).join('');
-            result.push({ isKeyword: false, display: leading + corrupted + trailing, original: token, garbleLevel: 'partial' });
-          } else {
-            // Full garble — replace entire word with block characters
-            const garbled = coreWord.split('')
-              .map(() => GARBLE_CHARS[Math.floor(rng() * GARBLE_CHARS.length)])
-              .join('');
-            result.push({ isKeyword: false, display: leading + garbled + trailing, original: token, garbleLevel: 'partial' });
-          }
+          const garbled = coreWord.split('')
+            .map(() => GARBLE_CHARS[Math.floor(rng() * GARBLE_CHARS.length)])
+            .join('');
+          result.push({ isKeyword: false, display: leading + garbled + trailing, original: token, garbleLevel: 'garbled' });
         }
       }
       return result;
     }
 
-    // --- Legacy random garbling (no brackets in fullText) ---
+    // --- Fallback: no brackets in fullText — garble all non-keyword words ---
     const words = fullText.split(/(\s+)/);
     let wordIndex = 0;
     return words.map((token): ProcessedWord => {
@@ -154,18 +135,12 @@ export const IntercomText: React.FC<IntercomTextProps> = ({
         return { isKeyword, display: token, original: token, garbleLevel: 'none' };
       }
 
-      // Legacy: 70% clear, 30% fully garbled
+      // No brackets → full garble on all non-keyword words
       const rng = seededRandom(currentIndex * 7919 + 31);
-      const roll = rng();
-
-      if (roll < 0.70) {
-        return { isKeyword: false, display: token, original: token, garbleLevel: 'none' };
-      }
-
       const garbled = coreWord.split('')
         .map(() => GARBLE_CHARS[Math.floor(rng() * GARBLE_CHARS.length)])
         .join('');
-      return { isKeyword: false, display: leading + garbled + trailing, original: token, garbleLevel: 'partial' };
+      return { isKeyword: false, display: leading + garbled + trailing, original: token, garbleLevel: 'garbled' };
     });
   }, [fullText, keywords, revealed]);
 

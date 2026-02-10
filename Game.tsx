@@ -1045,6 +1045,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
         highlightElement={trainingStep?.setup?.highlightElement}
         messagePosition={isInTraining ? trainingMessagePosition : undefined}
         advanceType={isInTraining ? (isTapAdvance ? 'tap' : 'dismiss') : undefined}
+        blockInteraction={isInTraining && trainingStep?.pauseGame !== false && !!trainingDisplayStep}
         trainingProgress={trainingProgress}
       />
 
