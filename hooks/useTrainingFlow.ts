@@ -194,10 +194,15 @@ export const useTrainingFlow = ({
       } else if (currentStep.pauseGame === false) {
         // Non-pausing step — show immediately, after delay, or on input
         if (currentStep.setup?.messageDelay && currentStep.setup?.showOnInput) {
-          // Show only when user tries input (after delay) — patient users never see it
+          // Input-responsive: arm immediately so any input shows message instantly.
+          // Delay is fallback auto-show for patient users who don't interact.
           setMessageVisible(false);
+          readyToShowOnInputRef.current = true;
           transitionTimerRef.current = setTimeout(() => {
-            readyToShowOnInputRef.current = true;
+            if (readyToShowOnInputRef.current) {
+              setMessageVisible(true);
+              readyToShowOnInputRef.current = false;
+            }
             transitionTimerRef.current = null;
           }, currentStep.setup.messageDelay);
         } else if (currentStep.setup?.messageDelay) {
@@ -374,12 +379,8 @@ export const useTrainingFlow = ({
       armTimerRef.current = null;
     }, 150);
 
-    // Re-show reminder after inactivity if step has reshowAfterMs
+    // Re-show reminder after delay if step has reshowAfterMs
     if (reshowTimerRef.current) clearTimeout(reshowTimerRef.current);
-    if (reshowInputCleanupRef.current) {
-      reshowInputCleanupRef.current();
-      reshowInputCleanupRef.current = null;
-    }
     if (currentStep?.setup?.reshowAfterMs) {
       const isNonDismissible = !!currentStep.setup.reshowNonDismissible;
       const delay = currentStep.setup.reshowAfterMs;
@@ -387,41 +388,28 @@ export const useTrainingFlow = ({
       const doReshow = () => {
         // Only re-show if advance hasn't fired yet (step hasn't changed)
         if (advanceArmedRef.current && gameEngine && gameEngine.isSessionActive) {
-          gameEngine.state.isPaused = true;
-          gameEngine.freezeFalling = true;
-          pauseStartTimeRef.current = Date.now();
-          gameEngine.emitChange();
-          setMessageVisible(true);
           if (isNonDismissible) {
-            // Non-dismissible: keep advance armed so action (e.g. pop) still works
+            // Non-dismissible: freeze pressure but keep game running so player can still pop.
+            // Don't pause — isPaused blocks input. Instead zero the pressure rate.
+            gameEngine.trainingPressureRate = 0;
+            gameEngine.emitChange();
+            setMessageVisible(true);
             setCanDismiss(false);
           } else {
+            // Dismissible: full pause
+            gameEngine.state.isPaused = true;
+            gameEngine.freezeFalling = true;
+            pauseStartTimeRef.current = Date.now();
+            gameEngine.emitChange();
+            setMessageVisible(true);
             advanceArmedRef.current = false;
           }
-        }
-        // Clean up inactivity listeners
-        if (reshowInputCleanupRef.current) {
-          reshowInputCleanupRef.current();
-          reshowInputCleanupRef.current = null;
         }
         reshowTimerRef.current = null;
       };
 
-      // Start inactivity timer — any input resets the countdown
+      // Simple countdown from dismiss — fires once after delay
       reshowTimerRef.current = setTimeout(doReshow, delay);
-
-      const onInput = () => {
-        if (reshowTimerRef.current) {
-          clearTimeout(reshowTimerRef.current);
-          reshowTimerRef.current = setTimeout(doReshow, delay);
-        }
-      };
-      document.addEventListener('pointerdown', onInput);
-      document.addEventListener('keydown', onInput);
-      reshowInputCleanupRef.current = () => {
-        document.removeEventListener('pointerdown', onInput);
-        document.removeEventListener('keydown', onInput);
-      };
     }
   }, [adjustFillTimestampsForPause, gameEngine, currentStep]);
 
@@ -447,11 +435,15 @@ export const useTrainingFlow = ({
           readyToShowOnInputRef.current = false;
         }
       };
-      document.addEventListener('pointerdown', showOnInputHandler);
-      document.addEventListener('keydown', showOnInputHandler);
+      // Capture phase — fires before any stopPropagation in game board handlers.
+      // touchstart needed because iOS doesn't reliably fire pointerdown for touches.
+      document.addEventListener('pointerdown', showOnInputHandler, true);
+      document.addEventListener('touchstart', showOnInputHandler, true);
+      document.addEventListener('keydown', showOnInputHandler, true);
       cleanups.push(() => {
-        document.removeEventListener('pointerdown', showOnInputHandler);
-        document.removeEventListener('keydown', showOnInputHandler);
+        document.removeEventListener('pointerdown', showOnInputHandler, true);
+        document.removeEventListener('touchstart', showOnInputHandler, true);
+        document.removeEventListener('keydown', showOnInputHandler, true);
       });
     }
 

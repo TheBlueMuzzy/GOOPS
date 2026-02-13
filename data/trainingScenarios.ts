@@ -166,10 +166,8 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false, pop: false },
       advanceWhenPressureAbovePieces: true,  // Advance when pressure line passes yellow goop
       advancePressureAboveColor: COLORS.YELLOW,  // Only check yellow — don't wait for pressure to cover all blues too
-      messageDelay: 1000,   // Wait 1s before arming input trigger
-      showOnInput: true,    // Only show "be patient" if user tries to interact
     },
-    pauseGame: false,  // Pressure must keep rising
+    pauseGame: false,  // Pressure must keep rising — message shows immediately while watching
     advance: { type: 'auto', delayMs: 60000 },  // Safety fallback — pressure threshold advances first
   },
 
@@ -179,13 +177,13 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Pop Instruction',
     teaches: 'how-to-pop',
     setup: {
-      pressureRate: 0.625,  // Pressure rises after dismiss (pauses on reshow)
+      pressureRate: 0,  // Pressure frozen during pop instruction — focus on learning to pop
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
       highlightGoopColor: COLORS.YELLOW,  // Pulse yellow goop, only yellow can be popped
-      reshowAfterMs: 3000,  // Re-remind after 3s of no input
+      reshowAfterMs: 3000,  // Re-remind 3s after dismiss if goop not popped
       reshowNonDismissible: true,  // Can't close re-shown message — only clears on pop
     },
-    pauseGame: true,
+    pauseGame: false,  // Keep game running so player can pop goop while reading
     advance: { type: 'action', action: 'pop-goop' },
   },
 
@@ -223,7 +221,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Pop Prompt',
     teaches: 'first-pop-practice',
     setup: {
-      pressureRate: 0,  // Freeze pressure — focus on popping, not pressure stress
+      pressureRate: 0.3125,  // Pressure keeps rising so it reaches the merged goop
       allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
       messageDelay: 2000,  // Wait for fill to complete before showing hint
     },
