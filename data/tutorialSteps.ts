@@ -32,90 +32,86 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
 ];
 
 /**
- * Intercom messages for all 14 training steps.
+ * Tutorial v2 — Intercom messages for all 14 training steps.
  *
- * Keyed by TrainingStepId so the training flow controller can look up
- * the message to display at each step.
+ * Voice: bored shift supervisor reading from a manual he's memorized
+ * against his will. Never "please" or "try to." Imperative mood. Brief.
+ * Garble system: [brackets] = garbled, no brackets = clear, keywords = green.
  *
- * Keywords are single words that render as green (clear) text.
- * Non-keyword text gets garbled by the intercom renderer.
+ * Average: 7.6 words per message.
  */
 export const TRAINING_MESSAGES: Record<TrainingStepId, IntercomMessage> = {
-  A1_BRIEFING: {
-    keywords: ['Operator', 'shift'],
-    fullText: '[Welcome] Operator. [You must complete] training [before your first] shift.',
+  A1_WELCOME: {
+    keywords: ['Operator', 'training', 'periscope'],
+    fullText: '[Your] Operator training [begins now]. Drag [the] periscope down [to] start.',
   },
-  A2_PERISCOPE: {
-    keywords: ['periscope', 'tank'],
-    fullText: '[Use the] periscope [to] look inside [the] tank. Drag [it] down [to] start [your shift].',
-  },
-  B1_GOOP_INTRO: {
+  B1_GOOP_FALLS: {
     keywords: ['goop', 'tank'],
-    fullText: '[The goop] extruder [drops] goop into [the] tank. [The goop] drops slowly.',
+    fullText: '[The] extruder drops goop into [the] tank.',
   },
-  B1B_SLOW_COMMENT: {
-    keywords: ['slow'],
-    fullText: '[Yeah.] It\'s slow.',
+  B2_FAST_DROP: {
+    keywords: ['slow', 'Swipe', 'S', 'fast-drop'],
+    fullText: '[Yeah.] It\'s slow. Swipe down or [press] S [to] fast-drop.',
   },
-  B2_FAST_FALL: {
-    keywords: ['fast-drop', 'Swipe', 'S'],
-    fullText: 'Swipe down [or] press S [to] fast-drop. [The] faster [you place it, the] better.',
-  },
-  B3_PIECE_ROTATION: {
-    keywords: ['Rotate', 'goop', 'Q/E', 'tap', 'left/right', 'tank'],
-    fullText: 'Rotate [the] goop [with] Q/E or tap [the] left/right side [of the] tank.',
+  B3_ROTATION: {
+    keywords: ['Rotate', 'Q/E', 'tap', 'left/right', 'tank'],
+    fullText: 'Rotate [with] Q/E or tap [the] left/right [side of the] tank.',
   },
   B4_PRACTICE: {
-    keywords: ['Practice', 'goop'],
-    fullText: 'Practice [what you\'ve] learned [with] another goop.',
+    keywords: [],
+    fullText: '[Do it] again.',
   },
-  C1_POP_INTRO: {
-    keywords: ['Pressure', 'laser', 'goop', 'pressure'],
-    fullText: 'Pressure [increases] over time. [Use the] laser [to] pop goop [to] vent [some of the] pressure.',
-  },
-  C1B_PRESSURE_RISING: {
+  C1_PRESSURE: {
     keywords: ['Pressure'],
-    fullText: '[The] Pressure rises slowly... but [it\'s always] faster than you think.',
+    fullText: 'Pressure [builds] over time.',
   },
-  C1C_POP_INSTRUCTION: {
-    keywords: ['Pressure', 'pop', 'goop', 'Tap'],
-    fullText: '[The] Pressure [is] high enough [now]. Tap [to] pop [the] goop below [the Pressure] line.',
+  C2_POP: {
+    keywords: ['Tap', 'goop', 'pressure', 'pop'],
+    fullText: 'Tap goop below [the] pressure [line] to pop [it].',
   },
-  C2_MERGE: {
-    keywords: ['goop', 'merges'],
-    fullText: 'Same color goop merges [together into] bigger [goop]. Popping bigger [goops] vents more [pressure].',
+  C3_MERGE_SOLIDIFY: {
+    keywords: ['goop', 'merges', 'Bigger', 'vent', 'set'],
+    fullText: 'Same-color goop merges. Bigger [blobs] vent more. [Fresh goop] needs a moment to set.',
   },
-  C3_FILL_TIMING: {
-    keywords: ['goop', 'pressure'],
-    fullText: 'Fresh goop needs [time to] solidify before [it can be] popped. [The] pressure must [be] high [enough] as well.',
+  C4_PRACTICE_POP: {
+    keywords: ['Pop'],
+    fullText: 'Pop [it].',
   },
-  C3B_POP_HINT: {
-    keywords: ['Pop', 'goop'],
-    fullText: 'Pop [the] goop.',
-  },
-  D1_CRACK_APPEARS: {
-    keywords: ['Cracks', 'tank', 'goop', 'laser'],
-    fullText: 'You [have] one job! Cracks form in [the] tank [wall]. Cover [them with matching] color goop. [Then] seal [them] with [the] laser.',
+  D1_CRACK: {
+    keywords: ['Cracks', 'tank', 'goop', 'seal'],
+    fullText: 'Cracks [form in the] tank [wall]. Drop matching [color] goop [on them] to seal.',
   },
   D2_TANK_ROTATION: {
-    keywords: ['tank', 'goop', 'crack', 'Swipe', 'left/right', 'A/D', 'spin'],
-    fullText: 'Swipe left/right [or use] A/D [to] spin [the] tank. [This will] align [the falling] goop [with the] crack.',
+    keywords: ['Swipe', 'left/right', 'A/D', 'spin', 'tank'],
+    fullText: 'Swipe left/right [or] A/D [to] spin [the] tank.',
   },
-  D3_OFFSCREEN_CRACKS: {
+  D3_OFFSCREEN: {
     keywords: ['tank', 'Cracks'],
-    fullText: '[You] only see 1/3 [of the] tank [at a time]. Cracks [can] form anywhere. Spin [the] tank [to] find [the next] crack.',
+    fullText: '[You] only see 1/3 [of the] tank. Cracks [can] spawn anywhere.',
   },
   E1_SCAFFOLDING: {
-    keywords: ['Cracks', 'pressure', 'goop', 'cracks'],
-    fullText: 'Cracks [form] higher [as the] pressure increases. Stack goop [to] reach higher cracks.',
+    keywords: ['Cracks', 'pressure', 'goop', 'reach'],
+    fullText: 'Cracks [spawn] higher as [the] pressure builds. Stack goop [to] reach [them].',
   },
-  F1_CLEANUP: {
-    keywords: ['goop', 'shift', 'tank'],
-    fullText: "Clear [as much] residual goop [as possible] before [the] shift end. Don't let [the] goop overflow [the top of] the tank!",
+  F1_GRADUATION: {
+    keywords: ['basics', 'goop', 'high'],
+    fullText: '[That] covers [the] basics. Don\'t [let the] goop [pile] too high.',
   },
-  F2_PRACTICE: {
-    keywords: ['pressure', 'tank'],
-    fullText: "We'll turn [the] pressure off [so you can] practice. When [you're] done practicing, [just let the goop] overflow [the] tank.",
+};
+
+/**
+ * F1 ending messages — shown when graduation game ends.
+ * These are separate from TRAINING_MESSAGES because they're triggered
+ * by game conditions within F1, not by step transitions.
+ */
+export const F1_ENDING_MESSAGES: Record<string, IntercomMessage> = {
+  PRESSURE_CAP: {
+    keywords: ['Swipe up', 'leave training'],
+    fullText: '[I\'ve] stopped [the] pressure [so you can] practice. Swipe up [to] leave training.',
+  },
+  OVERFLOW: {
+    keywords: ['Swipe up', 'end'],
+    fullText: 'Training [is] over. Swipe up [to] end.',
   },
 };
 
@@ -125,7 +121,7 @@ export const TRAINING_MESSAGES: Record<TrainingStepId, IntercomMessage> = {
  */
 export const TRAINING_RETRY_MESSAGES: Record<string, IntercomMessage> = {
   D2_RETRY: {
-    keywords: ['tank', 'goop', 'crack'],
-    fullText: "Try again! Spin [the] tank [with] A/D or [by] dragging left/right so that [the] goop covers [the] crack.",
+    keywords: ['tank', 'goop', 'crack', 'Spin'],
+    fullText: 'Try again! Spin [the] tank [to] align [the] goop with [the] crack.',
   },
 };

@@ -28,7 +28,7 @@ export const TrainingHUD: React.FC<TrainingHUDProps> = ({
   const totalSteps = TRAINING_SEQUENCE.length;
 
   // Step label: "Phase B1: Goop Basics" — includes step number for easier UAT tracking
-  const stepSuffix = currentStep.id.replace(/^[A-F]/, '');  // "B1_GOOP_INTRO" → "1_GOOP_INTRO"
+  const stepSuffix = currentStep.id.replace(/^[A-F]/, '');  // "B1_GOOP_FALLS" → "1_GOOP_FALLS"
   const stepNum = stepSuffix.split('_')[0];                  // "1_GOOP_INTRO" → "1" or "1B" → "1B"
   const phaseLabel = `Phase ${currentStep.phase}${stepNum}: ${TRAINING_PHASE_NAMES[currentStep.phase]}`;
 

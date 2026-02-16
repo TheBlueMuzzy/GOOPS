@@ -846,16 +846,14 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
           onClick={() => {
             // Mark all A/B/C steps (+ their markComplete entries) as done
             const completedSteps = [
-              'A1_BRIEFING', 'WELCOME',
-              'A2_PERISCOPE',
-              'B1_GOOP_INTRO', 'B1B_SLOW_COMMENT', 'B2_FAST_FALL',
-              'B3_PIECE_ROTATION', 'DROP_INTRO',
+              'A1_WELCOME', 'WELCOME',
+              'B1_GOOP_FALLS', 'B2_FAST_DROP',
+              'B3_ROTATION', 'DROP_INTRO',
               'B4_PRACTICE',
-              'C1_POP_INTRO', 'C1B_PRESSURE_RISING',
-              'C1C_POP_INSTRUCTION',
-              'C2_MERGE',
-              'C3_FILL_TIMING', 'POP_TIMING',
-              'C3B_POP_HINT',
+              'C1_PRESSURE',
+              'C2_POP',
+              'C3_MERGE_SOLIDIFY', 'POP_TIMING',
+              'C4_PRACTICE_POP',
             ];
             // Update save data to skip A/B/C
             setSaveData(sd => ({

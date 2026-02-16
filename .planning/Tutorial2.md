@@ -161,15 +161,16 @@
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Message**  | `Pop [it].`                                                                                                                                                                                              |
 | **Keywords** | Pop                                                                                                                                                                                                      |
-| **Intent**   | Second pop rep. The merged blue is now visible, pressure is rising above it, and the fill timer is running. The player waits for solidify (experiencing C3's lesson) then pops.                          |
+| **Intent**   | Second pop rep. The merged blue is visible, fill timer is running. The player waits for solidify (experiencing C3's lesson) then pops.                                                                   |
 | **Spawns**   | None                                                                                                                                                                                                     |
-| **Pressure** | 0.3125 rate (needs to reach the merged blue goop)                                                                                                                                                        |
+| **Pressure** | 0 (frozen — focus on pop timing, not pressure management)                                                                                                                                                |
 | **Controls** | Fast-drop + rotate ENABLED. Pop enabled.                                                                                                                                                                 |
-| **Timing**   | Game NOT paused. Pressure rises. Fill timer runs. Message after 2s delay or on first input, whichever comes first.                                                                                       |
+| **Highlight** | Blue goop pulses (restrict popping to blue only)                                                                                                                                                        |
+| **Timing**   | Game NOT paused. Fill timer runs. Message after 2s delay.                                                                                                                                                |
 | **Advance**  | Action: `pop-goop`                                                                                                                                                                                       |
 | **Why?**     | One pop isn't muscle memory. The player needs to pop twice (yellow, then blue) before moving on. This rep also tests their understanding of the fill timer — they can't pop the merged blue immediately. |
 
-> **C-phase experience:** Pressure rises fast (~3s) → pop yellow (instant) → blues merge (1s) → read about it → fill timer (~1.5s) → pop blue. Total: ~15-20 seconds. No dead time.
+> **C-phase experience:** Pressure rises fast (~3s) → pop yellow (instant) → blues merge (1s) → read about it → pressure frozen, blue pulses, fill timer (~1.5s) → pop blue. Total: ~15-20 seconds. No dead time.
 
 ---
 
@@ -201,14 +202,16 @@
 
 **D2 Retry (if piece lands without sealing):**
 
-| Phase  | Delay     | What Happens                                                                           |
-| ------ | --------- | -------------------------------------------------------------------------------------- |
-| Freeze | Immediate | Pressure stops. Falling stops. Piece visible on the board.                             |
-| Pop    | +1s       | All goop pops with droplet animation. Board cleared.                                   |
-| Retry  | +1.5s     | New green crack at bottom rows. "Try again" message. New green piece spawned (frozen). |
+| Phase   | Delay | What Happens                                                                           |
+| ------- | ----- | -------------------------------------------------------------------------------------- |
+| Unpause | +0s   | Game unpauses. Pressure frozen. Piece locks and fill begins naturally.                 |
+| Pop     | +2s   | All goop pops with droplet animation. Board cleared.                                   |
+| Retry   | +2s   | New green crack near stack. "Try again" message. New green piece spawned (frozen).     |
 
 **Retry message:** `Try again! Spin [the] tank [to] align [the] goop with [the] crack.`
 **On dismiss:** Pressure restores. Piece falls. Player retries.
+
+> **Why these timings?** The player needs to see their piece lock, fill, and land naturally. Then the pop is dramatic (all goop explodes). Then 2 seconds for droplets to fade before the retry message appears. Total: ~4s, feels intentional not janky.
 
 #### D3: Offscreen Cracks (Discovery)
 |                       |                                                                                                                                                                                                                                                              |
@@ -235,8 +238,8 @@
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Message**             | `Cracks [spawn] higher as [the] Pressure builds. Stack goop [to] reach [them].`                                                                                |
 | **Keywords**            | Cracks, pressure, goop, reach                                                                                                                                  |
-| **Intent**              | The final concept: vertical strategy. A crack is placed HIGH — unreachable without stacking. Player must build up to it.                                       |
-| **Spawns**              | Green crack at row 10-12 (high, requires stacking). Pieces spawn continuously (new feature: each piece-landed triggers next piece spawn within this step).     |
+| **Intent**              | The final concept: vertical strategy. Crack spawns at the pressure line — as pressure rises, cracks naturally appear higher, requiring stacking.               |
+| **Spawns**              | Green crack at pressure line (uses same formula as real game). Pieces spawn continuously (each piece-landed triggers next spawn).                               |
 | **Pressure**            | 0.46875 rate                                                                                                                                                   |
 | **Controls**            | ALL ENABLED                                                                                                                                                    |
 | **Timing**              | Game paused. Message shows immediately. Shows AFTER crack has spawned and is visible (player sees the high crack, then reads about stacking).                  |
@@ -244,7 +247,7 @@
 | **Safety net**          | Auto-advance after 90s (if player truly can't figure out stacking, move to graduation rather than soft-locking)                                                |
 | **Continuous spawning** | New feature required: `continuousSpawn: true` — after each piece lands, a new piece spawns automatically. This simulates real gameplay within a training step. |
 
-> **Why this works:** The player has sealed a ground-level crack in D2. Now they see one at row 10 and think "I can't reach that from here." The message confirms: stack up to it. The continuous piece supply lets them experiment. The crack is green (matching pieces available), and the board has existing goop from D-phase to build on.
+> **Why this works:** The player has sealed a ground-level crack in D2. Now, with pressure rising, the crack spawns at the pressure line — naturally higher than before. The message confirms: stack up to it. The continuous piece supply lets them experiment. The crack is green (matching pieces available), and the board has existing goop from D-phase to build on. No forced positioning — the pressure-line formula means cracks are exactly where they'd be in real gameplay.
 
 ---
 
@@ -367,7 +370,7 @@ The boss is a shift supervisor who's given this training 500 times. He reads fro
 | C1 | Pressure never reaches goop | Auto-advance after 10s |
 | C2 | Player can't figure out popping | Reshow after 3s (non-dismissible). Highlight pulses on target. |
 | C4 | Player tries to pop before goop solidifies | Shake rejection provides feedback. Fill animation shows progress. |
-| D2 | Player lands piece without sealing | Full retry: freeze → 1s → pop → 1.5s → retry message + new crack + new piece |
+| D2 | Player lands piece without sealing | Retry: unpause → fill naturally (2s) → pop all (2s for droplets) → retry message + new crack + new piece |
 | D3 | Player never rotates crack offscreen | Auto-skip after 15s. Trigger stays armed through E/F. |
 | E1 | Player can't figure out stacking | Auto-advance after 90s (move to graduation rather than soft-lock) |
 | F1 | Pressure reaches 95% | Pressure freezes. Practice message + "Swipe up to leave training." |
@@ -432,7 +435,7 @@ A-B:  0       ← no threat, learn controls
 C1:   2.5     ← fast rise, reaches goop in ~3s
 C2:   0       ← frozen for pop lesson
 C3:   0.3125  ← moderate, post-pop
-C4:   0.3125  ← moderate, reaches blue
+C4:   0       ← frozen, focus on pop timing
 D1:   0       ← frozen, just introducing cracks
 D2-3: 0.46875 ← real urgency (player is active)
 E1:   0.46875 ← same
@@ -450,7 +453,26 @@ F1:   0.2     ← gentle graduation, caps at 95%
 | C1 + C1B | Separate steps (intro / watch rise) | One step (watch it rise IS the intro) | The dramatic visual teaches more than text |
 | C2 + C3 | Separate steps (merge / solidify) | One step (both are "goop behavior") | Related concepts, one message |
 | D1 message | "Seal them with the laser" | "Drop matching goop to seal" | Sealing is automatic. Laser is a rank 4 complication. |
-| E1 | Bare message, no spawns | High crack + continuous piece spawning | Player must actually practice scaffolding |
+| E1 | Bare message, no spawns | Pressure-line crack + continuous piece spawning | Player must actually practice scaffolding |
 | F1 + F2 | "Clear goop" + "Overflow on purpose" | Graduation: free play, pressure caps at 95%, swipe-up exit | Pressure = time. Teach the exit gesture. No fake game-over. |
 | D3 auto-skip | Lost forever | Persistent through E/F | The lesson finds the player |
 | Total steps | 19 | 14 | 5 fewer steps, better E/F phases |
+
+---
+
+## Implementation Notes (from UAT)
+
+### PIECE_DROPPED Event Timing
+The engine emits `PIECE_DROPPED` at line 1413 of `lockActivePiece()` **before** setting the training-mode auto-pause at lines 1426-1429. Event listeners fire synchronously during emit, so any state changes (like `isPaused = false`) get immediately overwritten by the engine's subsequent pause. **All PIECE_DROPPED handlers must defer with `setTimeout(0)`** to run after the engine finishes its lock sequence.
+
+### PIECE_DROPPED Dual Source
+`tickLooseGoop()` (line 1197) **also** emits `PIECE_DROPPED` when loose goop settles after a pop. Continuous spawn and D2 retry handlers must guard with `if (gameEngine.state.activeGoop) return` — if a piece is still actively falling, the event came from loose goop, not a real piece lock.
+
+### Crack Positioning
+All training cracks use the same pressure-line formula as the real game (`spawnGoalMark()` in `utils/gameLogic.ts`). X coordinates are constrained to the visible viewport (12 of 30 columns). No forced rows — cracks appear where they naturally would based on current pressure.
+
+### F1 Pressure Continuity
+F1 does NOT reset pressure. It continues from whatever pressure accumulated during D and E phases. This means F1 may reach 95% cap faster if the player took a long time in D/E.
+
+### F1 Overflow Detection
+Stack overflow is detected via polling (checks row 3 every 500ms) in addition to the GAME_OVER event listener, since GAME_OVER may not fire reliably from `tickTimer()` in training mode but CAN fire from `spawnNewPiece()` collision checks.

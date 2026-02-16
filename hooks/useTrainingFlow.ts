@@ -1,13 +1,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SaveData, GoopTemplate, GoopShape, Crack } from '../types';
-import { TrainingStep, PieceSpawn } from '../types/training';
+import { TrainingStep, PieceSpawn, CrackSpawn } from '../types/training';
 import { IntercomMessage } from '../types/tutorial';
 import { GameEngine } from '../core/GameEngine';
 import { gameEventBus } from '../core/events/EventBus';
 import { GameEventType } from '../core/events/GameEvents';
 import { getNextTrainingStep, isTrainingComplete } from '../data/trainingScenarios';
-import { TRAINING_MESSAGES, TRAINING_RETRY_MESSAGES } from '../data/tutorialSteps';
+import { TRAINING_MESSAGES, TRAINING_RETRY_MESSAGES, F1_ENDING_MESSAGES } from '../data/tutorialSteps';
 import { COLORS, TANK_WIDTH, TANK_VIEWPORT_WIDTH, TANK_HEIGHT, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT, TETRA_NORMAL, PENTA_NORMAL, HEXA_NORMAL } from '../constants';
 import { getRotatedCells } from '../utils/gameLogic';
 import { normalizeX } from '../utils/coordinates';
@@ -26,9 +26,10 @@ const ADVANCE_EVENT_MAP: Record<string, GameEventType[]> = {
   'rotate-piece': [GameEventType.PIECE_ROTATED],
   'pop-goop': [GameEventType.GOOP_POPPED],
   'rotate-tank': [GameEventType.INPUT_DRAG],
+  'swipe-up': [GameEventType.INPUT_SWIPE_UP],
   // Events
   'piece-landed': [GameEventType.PIECE_DROPPED],
-  'goop-merged': [GameEventType.PIECE_DROPPED],  // Merge happens on landing
+  'goop-merged': [GameEventType.PIECE_DROPPED],
   'crack-sealed': [GameEventType.GOAL_CAPTURED],
   'game-over': [GameEventType.GAME_OVER],
 };
@@ -36,18 +37,173 @@ const ADVANCE_EVENT_MAP: Record<string, GameEventType[]> = {
 // Events without direct mappings get auto-advanced after this delay
 const AUTO_ADVANCE_FALLBACK_MS = 4000;
 
+// Default training palette
+const TRAINING_PALETTE = [COLORS.BLUE, COLORS.YELLOW, COLORS.GREEN, COLORS.RED];
+
+// ─── Helpers ───────────────────────────────────────────────────
+
 /**
- * Manages the rank 0 training sequence.
+ * Add a crack to the engine's grid at a specific position.
+ */
+function addCrackToGrid(engine: GameEngine, x: number, y: number, color: string): void {
+  const now = Date.now();
+  const crackId = Math.random().toString(36).substr(2, 9);
+  engine.state.crackCells.push({
+    id: crackId,
+    x, y, color,
+    originCrackId: [],
+    branchCrackIds: [],
+    lastGrowthCheck: now,
+    crackBranchInterval: 999999, // No growth in training
+    spawnTime: now,
+  });
+  engine.state.goalMarks.push({
+    id: crackId,
+    x, y, color,
+    spawnTime: now,
+  });
+}
+
+/**
+ * Find a valid position for a crack based on CrackSpawn config.
+ * Returns {x, y} or null if no valid position found.
+ */
+function findCrackPosition(
+  engine: GameEngine,
+  config: CrackSpawn
+): { x: number; y: number } | null {
+  const grid = engine.state.grid;
+  const rotation = engine.state.tankRotation;
+
+  if (config.placement === 'near-stack') {
+    // Right side of viewport, specific row or default row 22
+    const rightScreenX = TANK_VIEWPORT_WIDTH - 3;
+    const x = normalizeX(rotation + rightScreenX);
+    const y = config.row ?? (TANK_HEIGHT - 2);
+    return { x, y };
+  }
+
+  if (config.placement === 'high' || config.placement === 'at-pressure-line') {
+    // Same pressure-line formula as spawnGoalMark() in utils/gameLogic.ts
+    const maxTime = engine.maxTime ?? 1;
+    const tankPressure = Math.max(0, 1 - (engine.state.shiftTime / maxTime));
+    const waterHeightBlocks = 1 + (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
+    const pressureLineY = Math.floor(TANK_HEIGHT - waterHeightBlocks);
+    const targetRow = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY));
+
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const screenX = 2 + Math.floor(Math.random() * (TANK_VIEWPORT_WIDTH - 4));
+      const gx = normalizeX(rotation + screenX);
+      if (grid[targetRow]?.[gx] === null) {
+        return { x: gx, y: targetRow };
+      }
+    }
+    return null;
+  }
+
+  if (config.placement === 'offscreen' || config.placement === 'high-offscreen') {
+    const offscreenCols: number[] = [];
+    for (let gx = 0; gx < TANK_WIDTH; gx++) {
+      const screenX = ((gx - rotation) % TANK_WIDTH + TANK_WIDTH) % TANK_WIDTH;
+      if (screenX >= TANK_VIEWPORT_WIDTH) offscreenCols.push(gx);
+    }
+    if (offscreenCols.length > 0) {
+      const yRange = config.placement === 'high-offscreen'
+        ? { min: BUFFER_HEIGHT, max: BUFFER_HEIGHT + 4 }
+        : { min: TANK_HEIGHT - 6, max: TANK_HEIGHT - 1 };
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const gx = offscreenCols[Math.floor(Math.random() * offscreenCols.length)];
+        const gy = yRange.min + Math.floor(Math.random() * (yRange.max - yRange.min + 1));
+        if (grid[gy]?.[gx] === null) return { x: gx, y: gy };
+      }
+    }
+    return null;
+  }
+
+  // 'away-from-stack': random visible empty cell in lower area
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const screenX = Math.floor(Math.random() * TANK_VIEWPORT_WIDTH);
+    const gx = normalizeX(rotation + screenX);
+    const gy = TANK_HEIGHT - 5 + Math.floor(Math.random() * 3);
+    if (gy >= BUFFER_HEIGHT && gy < TANK_HEIGHT && grid[gy]?.[gx] === null) {
+      return { x: gx, y: gy };
+    }
+  }
+  return null;
+}
+
+/**
+ * Spawn a piece from a PieceSpawn config.
+ */
+function spawnPieceFromConfig(engine: GameEngine, spawn: PieceSpawn): void {
+  const allPieces = [...TETRA_NORMAL, ...PENTA_NORMAL, ...HEXA_NORMAL];
+  const shapeTemplate = allPieces.find(p => p.type === spawn.shape);
+  if (!shapeTemplate) return;
+
+  let cells = shapeTemplate.cells.map(c => ({ ...c }));
+  if (spawn.rotation && spawn.rotation > 0) {
+    for (let r = 0; r < spawn.rotation; r++) {
+      cells = getRotatedCells(cells, true);
+    }
+  }
+  const template: GoopTemplate = { type: spawn.shape, cells, color: spawn.color };
+  engine.spawnNewPiece(template);
+}
+
+/**
+ * Spawn a random crack at the pressure line — same formula as the real game's
+ * spawnGoalMark() in utils/gameLogic.ts (lines 661-668).
+ */
+function spawnRandomCrack(engine: GameEngine): void {
+  const rotation = engine.state.tankRotation;
+  const color = TRAINING_PALETTE[Math.floor(Math.random() * TRAINING_PALETTE.length)];
+
+  // Same pressure-line formula as spawnGoalMark() in utils/gameLogic.ts:
+  const maxTime = engine.maxTime ?? 1;
+  const tankPressure = Math.max(0, 1 - (engine.state.shiftTime / maxTime));
+  const waterHeightBlocks = 1 + (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
+  const pressureLineY = Math.floor(TANK_HEIGHT - waterHeightBlocks);
+  const spawnY = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY));
+
+  // Spawn in visible viewport only (not across full 30-col cylinder)
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const screenX = Math.floor(Math.random() * TANK_VIEWPORT_WIDTH);
+    const gx = normalizeX(rotation + screenX);
+    const cell = engine.state.grid[spawnY]?.[gx];
+    const overlaps = engine.state.crackCells.some(c => c.x === gx && c.y === spawnY);
+    if (cell === null && !overlaps) {
+      addCrackToGrid(engine, gx, spawnY, color);
+      engine.emitChange();
+      return;
+    }
+  }
+}
+
+/**
+ * Check if any crack is offscreen from the current viewport.
+ */
+function isAnyCrackOffscreen(engine: GameEngine): boolean {
+  const cracks = engine.state.crackCells;
+  if (cracks.length === 0) return false;
+
+  const rot = engine.state.tankRotation;
+  const centerCol = normalizeX(rot + TANK_VIEWPORT_WIDTH / 2);
+  return cracks.some(c => {
+    let diff = c.x - centerCol;
+    if (diff > TANK_WIDTH / 2) diff -= TANK_WIDTH;
+    if (diff < -TANK_WIDTH / 2) diff += TANK_WIDTH;
+    return Math.abs(diff) >= TANK_VIEWPORT_WIDTH / 2;
+  });
+}
+
+// ─── Hook ──────────────────────────────────────────────────────
+
+/**
+ * Manages the rank 0 training sequence (Tutorial v2).
  *
- * Sequences the player through 15 scripted training steps (phases A-F).
+ * Sequences the player through 14 scripted training steps (phases A-F).
  * Sets up the GameEngine for training mode when the player is at rank 0
  * and hasn't completed all training steps.
- *
- * Provides:
- * - trainingDisplayStep: A message object for TutorialOverlay to display
- * - advanceStep: Advance to next training step (for tap-type advances)
- * - dismissMessage: Hide current message without advancing (for action/event advances)
- * - Event listeners that auto-advance on action/event conditions
  */
 export const useTrainingFlow = ({
   saveData,
@@ -62,39 +218,58 @@ export const useTrainingFlow = ({
   const isInTraining = rank === 0 && !trainingDone;
   const currentStep = isInTraining ? getNextTrainingStep(completedSteps) : null;
 
-  // Message visibility — separate from step advancement
-  // For tap steps: dismiss = advance. For action/event: dismiss just hides message.
-  const [messageVisible, setMessageVisible] = useState(true);
+  // ─── State ─────────────────────────────────────────────────
 
-  // Advance arming — prevents event listeners from firing before message is dismissed.
-  // For pauseGame: true steps, the listener is "disarmed" until dismissMessage() is called.
-  // For pauseGame: false steps, the listener is armed immediately (game already running).
+  // Message visibility — separate from step advancement
+  const [messageVisible, setMessageVisible] = useState(true);
+  // Whether dismiss button is shown (false = non-dismissible, e.g. reshow or F1 ending)
+  const [canDismiss, setCanDismiss] = useState(true);
+  // Override message (retries, F1 endings, D3 interrupt)
+  const [retryMessage, setRetryMessage] = useState<IntercomMessage | null>(null);
+
+  // ─── Refs ──────────────────────────────────────────────────
+
+  // Advance arming — prevents event listeners from firing before message is dismissed
   const advanceArmedRef = useRef(true);
   const armTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Transition delay timer ref — cleaned up on unmount
+  // Transition delay timer
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Track when game paused for training message — used to adjust fill timestamps on unpause
+  // Track when game paused for training message — adjusts fill timestamps on unpause
   const pauseStartTimeRef = useRef<number | null>(null);
-  // When true, any user input will trigger message visibility (showOnInput feature)
+  // showOnInput: any user input triggers message visibility
   const readyToShowOnInputRef = useRef(false);
-  // Position-polling interval ref for showWhenPieceBelow
+  // Position-polling interval for showWhenPieceBelow
   const positionPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Re-show message timer ref for reshowAfterMs feature
+  // Re-show timer for reshowAfterMs
   const reshowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Cleanup function for inactivity DOM listeners (pointerdown/keydown that reset reshow timer)
+  // Cleanup for inactivity DOM listeners
   const reshowInputCleanupRef = useRef<(() => void) | null>(null);
-  // Whether the current message is a non-dismissible re-show (buttons hidden, only action clears it)
-  const [canDismiss, setCanDismiss] = useState(true);
-  // Override message for retries (shown instead of the step's normal message)
-  const [retryMessage, setRetryMessage] = useState<IntercomMessage | null>(null);
-  // Cracks-offscreen polling interval ref
+  // Cracks-offscreen polling interval
   const cracksOffscreenPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Flag: was a crack sealed this piece-lock cycle? (set by GOAL_CAPTURED, read by PIECE_DROPPED)
+  // Was a crack sealed this piece-lock cycle? (retry detection)
   const crackSealedThisCycleRef = useRef(false);
 
-  // Show message when step changes, with a brief delay for reading rhythm
+  // --- v2 new refs ---
+  // Persistent D3 discovery trigger: if D3 auto-skipped, stays armed through E/F
+  const pendingD3DiscoveryRef = useRef(false);
+  // Whether the D3 offscreen message was shown (prevents autoSkip from arming persistent flag)
+  const d3MessageShownRef = useRef(false);
+  // Whether the D3 discovery interrupt is currently showing
+  const discoveryInterruptRef = useRef(false);
+  // F1 ending sub-state: 'none' during free play, 'pressure-cap' or 'overflow' when ending
+  const f1EndingRef = useRef<'none' | 'pressure-cap' | 'overflow'>('none');
+  // Periodic crack spawning interval (started after F1 dismiss)
+  const periodicCrackRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Track completion ref for event handler (avoid stale closure)
+  const completedRef = useRef(completedSteps);
+  completedRef.current = completedSteps;
+
+  // ─── Step-Change Effect ────────────────────────────────────
+  // Runs when currentStep changes. Sets up game state, spawns, message visibility.
+
   useEffect(() => {
+    // Cleanup timers/intervals from previous step
     if (transitionTimerRef.current) {
       clearTimeout(transitionTimerRef.current);
       transitionTimerRef.current = null;
@@ -103,8 +278,6 @@ export const useTrainingFlow = ({
       clearInterval(positionPollRef.current);
       positionPollRef.current = null;
     }
-
-    // Clear any pending arm timer from previous step
     if (armTimerRef.current) {
       clearTimeout(armTimerRef.current);
       armTimerRef.current = null;
@@ -117,250 +290,157 @@ export const useTrainingFlow = ({
       reshowInputCleanupRef.current();
       reshowInputCleanupRef.current = null;
     }
-    readyToShowOnInputRef.current = false;
-    setCanDismiss(true);
-    setRetryMessage(null);
-    crackSealedThisCycleRef.current = false;
     if (cracksOffscreenPollRef.current) {
       clearInterval(cracksOffscreenPollRef.current);
       cracksOffscreenPollRef.current = null;
     }
+    if (periodicCrackRef.current) {
+      clearInterval(periodicCrackRef.current);
+      periodicCrackRef.current = null;
+    }
+    readyToShowOnInputRef.current = false;
+    setCanDismiss(true);
+    setRetryMessage(null);
+    crackSealedThisCycleRef.current = false;
+    discoveryInterruptRef.current = false;
+    d3MessageShownRef.current = false;
+    f1EndingRef.current = 'none';
 
-    if (currentStep) {
-      // Delayed-pause steps start unpaused (piece falls), then pause when condition is met.
-      // This includes: pauseDelay (time-based), showWhenPieceBelow (position-gated),
-      // and showWhenCracksOffscreen (rotation-gated).
-      const isDelayedPause = currentStep.pauseGame !== false && (
-        currentStep.setup?.pauseDelay != null ||
-        currentStep.setup?.showWhenPieceBelow != null ||
-        currentStep.setup?.showWhenCracksOffscreen
-      );
+    if (!currentStep) return;
 
-      // Arm advance listeners: disarmed for pausing steps (wait for dismiss),
-      // armed immediately for non-pausing steps (game already running)
-      // Delayed-pause steps are treated like pausing steps (disarmed until dismiss)
-      advanceArmedRef.current = currentStep.pauseGame === false && !isDelayedPause;
+    // Delayed-pause steps: start unpaused, pause when condition is met
+    const isDelayedPause = currentStep.pauseGame !== false && (
+      currentStep.setup?.pauseDelay != null ||
+      currentStep.setup?.showWhenPieceBelow != null ||
+      currentStep.setup?.showWhenCracksOffscreen
+    );
 
-      if (gameEngine && gameEngine.isSessionActive) {
-        if (isDelayedPause) {
-          // Delayed pause: start unpaused so piece can begin falling
-          gameEngine.state.isPaused = false;
-          gameEngine.freezeFalling = false;
-          gameEngine.emitChange();
-        } else if (currentStep.pauseGame !== false) {
-          // Pause/freeze for steps that need the player to read before acting
-          gameEngine.state.isPaused = true;
-          gameEngine.freezeFalling = true;
-          pauseStartTimeRef.current = Date.now();
-          gameEngine.emitChange();
-        } else {
-          // Non-pausing step (e.g. B1) — ensure game is running
-          // (advanceStep may have paused momentarily during transition)
-          gameEngine.state.isPaused = false;
-          gameEngine.freezeFalling = false;
-          gameEngine.emitChange();
-        }
+    // Arm advance: disarmed for pausing steps, armed for non-pausing
+    advanceArmedRef.current = currentStep.pauseGame === false && !isDelayedPause;
 
-        // Spawn a piece if this step defines one (training mode gates auto-spawn,
-        // so each piece must be explicitly spawned by the step that needs it)
-        if (currentStep.setup?.spawnPiece) {
-          const spawn = currentStep.setup.spawnPiece;
-          // Find the matching shape template from piece constants
-          const allPieces = [...TETRA_NORMAL, ...PENTA_NORMAL, ...HEXA_NORMAL];
-          const shapeTemplate = allPieces.find(p => p.type === spawn.shape);
-          if (shapeTemplate) {
-            let cells = shapeTemplate.cells.map(c => ({ ...c }));
-            // Apply initial rotation if specified
-            if (spawn.rotation && spawn.rotation > 0) {
-              for (let r = 0; r < spawn.rotation; r++) {
-                cells = getRotatedCells(cells, true);
-              }
-            }
-            const template: GoopTemplate = { type: spawn.shape, cells, color: spawn.color };
-            gameEngine.spawnNewPiece(template);
-          }
-        }
-
-        // Spawn a crack if this step defines one
-        if (currentStep.setup?.spawnCrack) {
-          const crackConfig = currentStep.setup.spawnCrack;
-          const grid = gameEngine.state.grid;
-          const rotation = gameEngine.state.tankRotation;
-          let crackX: number | null = null;
-          let crackY: number | null = null;
-
-          if (crackConfig.placement === 'near-stack') {
-            // Place crack on right side of viewport, 2nd row above floor (row 22).
-            // Right side avoids the falling piece path (pieces spawn center-left).
-            const rightScreenX = TANK_VIEWPORT_WIDTH - 3; // 3 cells from right edge
-            crackX = normalizeX(rotation + rightScreenX);
-            crackY = TANK_HEIGHT - 2; // 2nd row from bottom (row 22)
-          } else if (crackConfig.placement === 'offscreen' || crackConfig.placement === 'high-offscreen') {
-            const offscreenCols: number[] = [];
-            for (let gx = 0; gx < TANK_WIDTH; gx++) {
-              const screenX = ((gx - rotation) % TANK_WIDTH + TANK_WIDTH) % TANK_WIDTH;
-              if (screenX >= TANK_VIEWPORT_WIDTH) offscreenCols.push(gx);
-            }
-            if (offscreenCols.length > 0) {
-              const yRange = crackConfig.placement === 'high-offscreen'
-                ? { min: BUFFER_HEIGHT, max: BUFFER_HEIGHT + 4 }
-                : { min: TANK_HEIGHT - 6, max: TANK_HEIGHT - 1 };
-              for (let attempt = 0; attempt < 30; attempt++) {
-                const gx = offscreenCols[Math.floor(Math.random() * offscreenCols.length)];
-                const gy = yRange.min + Math.floor(Math.random() * (yRange.max - yRange.min + 1));
-                if (grid[gy][gx] === null) {
-                  crackX = gx;
-                  crackY = gy;
-                  break;
-                }
-              }
-            }
-          } else {
-            // 'away-from-stack': random visible empty cell in lower area
-            for (let attempt = 0; attempt < 30; attempt++) {
-              const screenX = Math.floor(Math.random() * TANK_VIEWPORT_WIDTH);
-              const gx = normalizeX(rotation + screenX);
-              const gy = TANK_HEIGHT - 5 + Math.floor(Math.random() * 3);
-              if (gy >= BUFFER_HEIGHT && gy < TANK_HEIGHT && grid[gy][gx] === null) {
-                crackX = gx;
-                crackY = gy;
-                break;
-              }
-            }
-          }
-
-          if (crackX !== null && crackY !== null) {
-            const now = Date.now();
-            const crackId = Math.random().toString(36).substr(2, 9);
-            const newCrack: Crack = {
-              id: crackId,
-              x: crackX,
-              y: crackY,
-              color: crackConfig.color,
-              originCrackId: [],
-              branchCrackIds: [],
-              lastGrowthCheck: now,
-              crackBranchInterval: 999999, // No growth in training
-              spawnTime: now,
-            };
-            gameEngine.state.crackCells.push(newCrack);
-            gameEngine.state.goalMarks.push({
-              id: crackId,
-              x: crackX,
-              y: crackY,
-              color: crackConfig.color,
-              spawnTime: now,
-            });
-            gameEngine.emitChange(); // Trigger re-render so crack is visible
-          }
-        }
+    if (gameEngine && gameEngine.isSessionActive) {
+      // --- Pause management ---
+      if (isDelayedPause) {
+        gameEngine.state.isPaused = false;
+        gameEngine.freezeFalling = false;
+        gameEngine.emitChange();
+      } else if (currentStep.pauseGame !== false) {
+        gameEngine.state.isPaused = true;
+        gameEngine.freezeFalling = true;
+        pauseStartTimeRef.current = Date.now();
+        gameEngine.emitChange();
+      } else {
+        gameEngine.state.isPaused = false;
+        gameEngine.freezeFalling = false;
+        gameEngine.emitChange();
       }
 
-      const pieceThreshold = currentStep.setup?.showWhenPieceBelow;
+      // --- Spawn piece if configured ---
+      if (currentStep.setup?.spawnPiece) {
+        spawnPieceFromConfig(gameEngine, currentStep.setup.spawnPiece);
+      }
 
-      if (pieceThreshold != null && gameEngine) {
-        // Position-gated message: poll piece Y until it reaches threshold
-        setMessageVisible(false);
-        positionPollRef.current = setInterval(() => {
-          const pieceY = gameEngine.state.activeGoop?.y ?? 0;
-          if (pieceY >= pieceThreshold) {
-            setMessageVisible(true);
-            if (positionPollRef.current) {
-              clearInterval(positionPollRef.current);
-              positionPollRef.current = null;
-            }
-            // Also pause game if this step wants pausing (position-gated pause)
-            if (currentStep.pauseGame !== false) {
-              gameEngine.state.isPaused = true;
-              gameEngine.freezeFalling = true;
-              pauseStartTimeRef.current = Date.now();
-              gameEngine.emitChange();
-            }
+      // --- Spawn crack if configured ---
+      if (currentStep.setup?.spawnCrack) {
+        // Clear leftover cracks from previous steps (prevents D2 retry cracks from
+        // triggering D3 offscreen detection immediately, and gives E1 a clean board)
+        gameEngine.state.crackCells = [];
+        gameEngine.state.goalMarks = [];
+
+        const pos = findCrackPosition(gameEngine, currentStep.setup.spawnCrack);
+        if (pos) {
+          addCrackToGrid(gameEngine, pos.x, pos.y, currentStep.setup.spawnCrack.color);
+          gameEngine.emitChange();
+        }
+      }
+    }
+
+    // --- Message visibility based on step config ---
+
+    const pieceThreshold = currentStep.setup?.showWhenPieceBelow;
+
+    if (pieceThreshold != null && gameEngine) {
+      // Position-gated message: poll piece Y until it reaches threshold
+      setMessageVisible(false);
+      positionPollRef.current = setInterval(() => {
+        const pieceY = gameEngine.state.activeGoop?.y ?? 0;
+        if (pieceY >= pieceThreshold) {
+          setMessageVisible(true);
+          if (positionPollRef.current) {
+            clearInterval(positionPollRef.current);
+            positionPollRef.current = null;
           }
-        }, 200);
-      } else if (currentStep.setup?.showWhenCracksOffscreen && gameEngine) {
-        // Discovery-gated message: triggers when ANY crack is rotated offscreen (arrow appears).
-        // This is a "discovered" moment — if the player doesn't rotate, auto-skip after timeout.
-        setMessageVisible(false);
-        cracksOffscreenPollRef.current = setInterval(() => {
-          const cracks = gameEngine.state.crackCells;
-          if (cracks.length === 0) return; // Wait until there's at least one crack to track
-          const rot = gameEngine.state.tankRotation;
-          // Match the arrow indicator threshold: >= half viewport from center
-          const centerCol = normalizeX(rot + TANK_VIEWPORT_WIDTH / 2);
-          const anyOffscreen = cracks.some(c => {
-            let diff = c.x - centerCol;
-            if (diff > TANK_WIDTH / 2) diff -= TANK_WIDTH;
-            if (diff < -TANK_WIDTH / 2) diff += TANK_WIDTH;
-            return Math.abs(diff) >= TANK_VIEWPORT_WIDTH / 2;
-          });
-          if (anyOffscreen) {
-            if (cracksOffscreenPollRef.current) {
-              clearInterval(cracksOffscreenPollRef.current);
-              cracksOffscreenPollRef.current = null;
-            }
-            setMessageVisible(true);
-            if (currentStep.pauseGame !== false) {
-              gameEngine.state.isPaused = true;
-              gameEngine.freezeFalling = true;
-              pauseStartTimeRef.current = Date.now();
-              gameEngine.emitChange();
-            }
-          }
-        }, 200);
-        // Auto-skip if player never rotates a crack offscreen (discovery is optional)
-        transitionTimerRef.current = setTimeout(() => {
-          if (cracksOffscreenPollRef.current) {
-            clearInterval(cracksOffscreenPollRef.current);
-            cracksOffscreenPollRef.current = null;
-          }
-          // Skip this step silently — player will learn about wrapping naturally
-          advanceStepRef.current();
-        }, 15000);
-      } else if (currentStep.setup?.pauseDelay != null) {
-        // Timer-based delayed pause: hide message, start unpaused, then after delay pause + show
-        setMessageVisible(false);
-        transitionTimerRef.current = setTimeout(() => {
-          if (gameEngine && gameEngine.isSessionActive) {
+          if (currentStep.pauseGame !== false) {
             gameEngine.state.isPaused = true;
             gameEngine.freezeFalling = true;
             pauseStartTimeRef.current = Date.now();
             gameEngine.emitChange();
           }
-          setMessageVisible(true);
-          transitionTimerRef.current = null;
-        }, currentStep.setup!.pauseDelay!);
-      } else if (currentStep.pauseGame === false) {
-        // Non-pausing step — show immediately, after delay, or on input
-        if (currentStep.setup?.messageDelay && currentStep.setup?.showOnInput) {
-          // Input-responsive: arm immediately so any input shows message instantly.
-          // Delay is fallback auto-show for patient users who don't interact.
-          setMessageVisible(false);
-          readyToShowOnInputRef.current = true;
-          transitionTimerRef.current = setTimeout(() => {
-            if (readyToShowOnInputRef.current) {
-              setMessageVisible(true);
-              readyToShowOnInputRef.current = false;
-            }
-            transitionTimerRef.current = null;
-          }, currentStep.setup.messageDelay);
-        } else if (currentStep.setup?.messageDelay) {
-          setMessageVisible(false);
-          transitionTimerRef.current = setTimeout(() => {
-            setMessageVisible(true);
-            transitionTimerRef.current = null;
-          }, currentStep.setup.messageDelay);
-        } else {
-          setMessageVisible(true);
         }
-      } else {
-        // Pausing step — brief delay before showing message
+      }, 200);
+
+    } else if (currentStep.setup?.showWhenCracksOffscreen && gameEngine) {
+      // Discovery-gated: show when any crack rotated offscreen
+      setMessageVisible(false);
+      cracksOffscreenPollRef.current = setInterval(() => {
+        if (isAnyCrackOffscreen(gameEngine)) {
+          if (cracksOffscreenPollRef.current) {
+            clearInterval(cracksOffscreenPollRef.current);
+            cracksOffscreenPollRef.current = null;
+          }
+          d3MessageShownRef.current = true;  // Track that message was shown
+          setMessageVisible(true);
+          if (currentStep.pauseGame !== false) {
+            gameEngine.state.isPaused = true;
+            gameEngine.freezeFalling = true;
+            pauseStartTimeRef.current = Date.now();
+            gameEngine.emitChange();
+          }
+        }
+      }, 200);
+
+    } else if (currentStep.setup?.pauseDelay != null) {
+      // Timer-based delayed pause: hide message, start unpaused, then pause + show
+      setMessageVisible(false);
+      transitionTimerRef.current = setTimeout(() => {
+        if (gameEngine && gameEngine.isSessionActive) {
+          gameEngine.state.isPaused = true;
+          gameEngine.freezeFalling = true;
+          pauseStartTimeRef.current = Date.now();
+          gameEngine.emitChange();
+        }
+        setMessageVisible(true);
+        transitionTimerRef.current = null;
+      }, currentStep.setup!.pauseDelay!);
+
+    } else if (currentStep.pauseGame === false) {
+      // Non-pausing step — show immediately, after delay, or on input
+      if (currentStep.setup?.messageDelay && currentStep.setup?.showOnInput) {
+        setMessageVisible(false);
+        readyToShowOnInputRef.current = true;
+        transitionTimerRef.current = setTimeout(() => {
+          if (readyToShowOnInputRef.current) {
+            setMessageVisible(true);
+            readyToShowOnInputRef.current = false;
+          }
+          transitionTimerRef.current = null;
+        }, currentStep.setup.messageDelay);
+      } else if (currentStep.setup?.messageDelay) {
         setMessageVisible(false);
         transitionTimerRef.current = setTimeout(() => {
           setMessageVisible(true);
           transitionTimerRef.current = null;
-        }, 400);
+        }, currentStep.setup.messageDelay);
+      } else {
+        setMessageVisible(true);
       }
+    } else {
+      // Pausing step — brief delay before showing message
+      setMessageVisible(false);
+      transitionTimerRef.current = setTimeout(() => {
+        setMessageVisible(true);
+        transitionTimerRef.current = null;
+      }, 400);
     }
 
     return () => {
@@ -388,28 +468,26 @@ export const useTrainingFlow = ({
         clearInterval(cracksOffscreenPollRef.current);
         cracksOffscreenPollRef.current = null;
       }
+      if (periodicCrackRef.current) {
+        clearInterval(periodicCrackRef.current);
+        periodicCrackRef.current = null;
+      }
     };
   }, [currentStep?.id]);
 
-  // Track completion ref for event handler (avoid stale closure)
-  const completedRef = useRef(completedSteps);
-  completedRef.current = completedSteps;
+  // ─── Training Palette Setup ────────────────────────────────
 
-  // Default training palette (4 colors for training)
-  const trainingPalette = [COLORS.BLUE, COLORS.YELLOW, COLORS.GREEN, COLORS.RED];
-
-  // Set up engine for training mode when applicable
   useEffect(() => {
     if (!gameEngine) return;
 
     if (isInTraining) {
-      // Tell engine to start training on next periscope enter
-      gameEngine.pendingTrainingPalette = trainingPalette;
+      gameEngine.pendingTrainingPalette = TRAINING_PALETTE;
     } else {
-      // Clear training flag — engine will use normal startRun()
       gameEngine.pendingTrainingPalette = null;
     }
   }, [gameEngine, isInTraining]);
+
+  // ─── Callbacks ─────────────────────────────────────────────
 
   /**
    * Mark a training step as complete in save data.
@@ -421,11 +499,10 @@ export const useTrainingFlow = ({
 
     setSaveData(sd => {
       const existing = sd.tutorialProgress?.completedSteps ?? [];
-      if (existing.includes(stepId)) return sd; // Already completed
+      if (existing.includes(stepId)) return sd;
 
       const newCompleted = [...existing, stepId];
 
-      // Also mark the tutorial step if this training step unlocks one
       if (currentStep.markComplete && !existing.includes(currentStep.markComplete)) {
         newCompleted.push(currentStep.markComplete);
       }
@@ -439,8 +516,7 @@ export const useTrainingFlow = ({
 
   /**
    * Adjust goop fill timestamps for pause duration.
-   * Prevents fill from appearing "instant" after reading a long message (fill uses Date.now()).
-   * Called whenever transitioning from "paused for message" to next state.
+   * Prevents fill from appearing "instant" after reading a long message.
    */
   const adjustFillTimestampsForPause = useCallback(() => {
     if (gameEngine && pauseStartTimeRef.current) {
@@ -460,24 +536,20 @@ export const useTrainingFlow = ({
 
   /**
    * Advance to the next training step.
-   * Called after the current step's advance condition is met.
    */
   const advanceStep = useCallback(() => {
     if (!currentStep) return;
 
-    // Disarm to prevent double-advance from rapid events
+    // Disarm to prevent double-advance
     advanceArmedRef.current = false;
 
-    // Adjust fill timestamps before transitioning (covers tap-advance steps)
     adjustFillTimestampsForPause();
-
     completeCurrentStep();
 
-    // Pause immediately — the next step's useEffect will handle the transition delay
-    // (Don't unpause here; the step-change effect will manage pause state)
+    // Pause immediately — next step's effect will handle transition
     if (gameEngine && gameEngine.isSessionActive) {
       gameEngine.state.isPaused = true;
-      gameEngine.freezeFalling = true;  // Actually stop piece physics too
+      gameEngine.freezeFalling = true;
       gameEngine.emitChange();
     }
 
@@ -485,7 +557,6 @@ export const useTrainingFlow = ({
     const updatedCompleted = [...completedRef.current, currentStep.id];
     if (currentStep.markComplete) updatedCompleted.push(currentStep.markComplete);
     if (isTrainingComplete(updatedCompleted)) {
-      // Training complete — emit event and clear engine training flag
       gameEventBus.emit(GameEventType.TRAINING_SCENARIO_COMPLETE);
       if (gameEngine) {
         gameEngine.pendingTrainingPalette = null;
@@ -499,18 +570,41 @@ export const useTrainingFlow = ({
 
   /**
    * Dismiss the current message without advancing.
-   * Used for action/event steps — hides message, unpauses game, player performs action.
+   * Hides message, unpauses game, arms advance listener.
+   * Also starts free-play features (continuous spawn, periodic cracks) if applicable.
    */
   const dismissMessage = useCallback(() => {
-    setMessageVisible(false);
+    // --- D3 discovery interrupt: dismiss and resume, don't affect step ---
+    if (discoveryInterruptRef.current) {
+      discoveryInterruptRef.current = false;
+      setRetryMessage(null);
+      setMessageVisible(false);
+      adjustFillTimestampsForPause();
+      if (gameEngine && gameEngine.isSessionActive) {
+        gameEngine.state.isPaused = false;
+        gameEngine.freezeFalling = false;
+        gameEngine.emitChange();
 
-    // Adjust fill timestamps before unpausing
+        // If in a continuous-spawn step (E1/F1), spawn a piece so game doesn't stall
+        if (currentStep?.setup?.continuousSpawn && !gameEngine.state.activeGoop) {
+          setTimeout(() => {
+            if (gameEngine.isSessionActive && !gameEngine.state.isPaused) {
+              gameEngine.spawnNewPiece();
+              gameEngine.emitChange();
+            }
+          }, 300);
+        }
+      }
+      return;
+    }
+
+    setMessageVisible(false);
     adjustFillTimestampsForPause();
 
     // Unpause so the player can perform the required action
     if (gameEngine && gameEngine.isSessionActive) {
       gameEngine.state.isPaused = false;
-      gameEngine.freezeFalling = false;  // Resume piece physics
+      gameEngine.freezeFalling = false;
       // Restore pressure rate (may have been zeroed during retry)
       if (currentStep?.setup?.pressureRate != null) {
         gameEngine.trainingPressureRate = currentStep.setup.pressureRate;
@@ -518,26 +612,45 @@ export const useTrainingFlow = ({
       gameEngine.emitChange();
     }
 
-    // Arm the advance listener after a brief delay — prevents the dismiss
-    // tap from also triggering the advance event (e.g. fast-drop) on the same frame
+    // Arm advance after brief delay (prevents dismiss tap from also triggering advance)
     if (armTimerRef.current) clearTimeout(armTimerRef.current);
     armTimerRef.current = setTimeout(() => {
       advanceArmedRef.current = true;
       armTimerRef.current = null;
     }, 150);
 
-    // Re-show reminder after delay if step has reshowAfterMs
+    // --- Start free-play features for continuous-spawn steps ---
+    if (currentStep?.setup?.continuousSpawn && gameEngine) {
+      // Spawn first piece after dismiss (training mode doesn't auto-spawn)
+      setTimeout(() => {
+        if (gameEngine.isSessionActive && f1EndingRef.current !== 'overflow') {
+          gameEngine.spawnNewPiece();
+          gameEngine.emitChange();
+        }
+      }, 300);
+
+      // Start periodic crack spawning if configured
+      if (currentStep.setup.periodicCrackIntervalMs) {
+        if (periodicCrackRef.current) clearInterval(periodicCrackRef.current);
+        periodicCrackRef.current = setInterval(() => {
+          if (f1EndingRef.current === 'overflow') return;
+          if (gameEngine.isSessionActive) {
+            spawnRandomCrack(gameEngine);
+          }
+        }, currentStep.setup.periodicCrackIntervalMs);
+      }
+    }
+
+    // --- Re-show reminder after delay if step has reshowAfterMs ---
     if (reshowTimerRef.current) clearTimeout(reshowTimerRef.current);
     if (currentStep?.setup?.reshowAfterMs) {
       const isNonDismissible = !!currentStep.setup.reshowNonDismissible;
       const delay = currentStep.setup.reshowAfterMs;
 
-      const doReshow = () => {
-        // Only re-show if advance hasn't fired yet (step hasn't changed)
+      reshowTimerRef.current = setTimeout(() => {
         if (advanceArmedRef.current && gameEngine && gameEngine.isSessionActive) {
           if (isNonDismissible) {
-            // Non-dismissible: freeze pressure but keep game running so player can still pop.
-            // Don't pause — isPaused blocks input. Instead zero the pressure rate.
+            // Non-dismissible: freeze pressure but keep game running so player can still act
             gameEngine.trainingPressureRate = 0;
             gameEngine.emitChange();
             setMessageVisible(true);
@@ -553,28 +666,21 @@ export const useTrainingFlow = ({
           }
         }
         reshowTimerRef.current = null;
-      };
-
-      // Simple countdown from dismiss — fires once after delay
-      reshowTimerRef.current = setTimeout(doReshow, delay);
+      }, delay);
     }
   }, [adjustFillTimestampsForPause, gameEngine, currentStep]);
 
-  // --- Pause management during training ---
-  // ALL steps start paused on transition (handled by step-change effect above).
-  // The game stays paused until the player dismisses the message.
-  // dismissMessage() handles unpausing for action/event steps.
-  // For tap steps, advanceStep() moves to next step (which pauses again).
+  // ─── Event/Action Listener Effect ──────────────────────────
+  // Sets up all event-based features: advance conditions, continuous spawn,
+  // pressure monitoring, retry logic, and persistent discovery.
 
-  // --- Event/action advance listeners ---
   useEffect(() => {
     if (!currentStep || !isInTraining) return;
 
     const { advance } = currentStep;
     const cleanups: (() => void)[] = [];
 
-    // showOnInput: show message when user tries any input (after messageDelay arms it)
-    // Uses DOM-level listeners to catch ALL touch/pointer/key input regardless of game state
+    // --- showOnInput: show message on any input ---
     if (currentStep.setup?.showOnInput) {
       const showOnInputHandler = () => {
         if (readyToShowOnInputRef.current) {
@@ -582,8 +688,6 @@ export const useTrainingFlow = ({
           readyToShowOnInputRef.current = false;
         }
       };
-      // Capture phase — fires before any stopPropagation in game board handlers.
-      // touchstart needed because iOS doesn't reliably fire pointerdown for touches.
       document.addEventListener('pointerdown', showOnInputHandler, true);
       document.addEventListener('touchstart', showOnInputHandler, true);
       document.addEventListener('keydown', showOnInputHandler, true);
@@ -594,9 +698,7 @@ export const useTrainingFlow = ({
       });
     }
 
-    // Position-based advance: poll piece Y and advance when it reaches the threshold.
-    // Runs alongside normal event listeners — whichever fires first wins
-    // (advanceStep disarms to prevent double-fire).
+    // --- Position-based advance: poll piece Y ---
     if (currentStep.setup?.advanceAtRow != null && gameEngine) {
       const threshold = currentStep.setup.advanceAtRow;
       const pollInterval = setInterval(() => {
@@ -609,13 +711,11 @@ export const useTrainingFlow = ({
       cleanups.push(() => clearInterval(pollInterval));
     }
 
-    // Re-show message if player hasn't performed the expected action by a certain row.
-    // One-shot: fires once, then the poll stops. If they still don't act, piece lands and we advance.
+    // --- Re-show message if player hasn't acted by a certain row ---
     if (currentStep.setup?.reshowAtRow != null && gameEngine) {
       const threshold = currentStep.setup.reshowAtRow;
       const actionPerformed = { current: false };
 
-      // Track if the expected action was performed (cancels the re-show)
       if (currentStep.setup.reshowUntilAction) {
         const events = ADVANCE_EVENT_MAP[currentStep.setup.reshowUntilAction];
         if (events) {
@@ -627,13 +727,10 @@ export const useTrainingFlow = ({
       }
 
       const reshowPoll = setInterval(() => {
-        // Cancel if action was performed OR piece is currently fast-dropping
-        // (isFastDropping check catches keyboard S which doesn't emit INPUT_FAST_DROP on event bus)
         if (actionPerformed.current || gameEngine.isFastDropping) {
           clearInterval(reshowPoll);
           return;
         }
-        // Cancel if piece already landed (no active goop)
         if (!gameEngine.state.activeGoop) {
           clearInterval(reshowPoll);
           return;
@@ -641,28 +738,23 @@ export const useTrainingFlow = ({
         const pieceY = gameEngine.state.activeGoop.y ?? 0;
         if (pieceY >= threshold) {
           clearInterval(reshowPoll);
-          // Re-pause game and re-show message
           gameEngine.state.isPaused = true;
           gameEngine.freezeFalling = true;
           gameEngine.emitChange();
           setMessageVisible(true);
-          // Disarm advance — will re-arm on next dismiss
           advanceArmedRef.current = false;
         }
       }, 150);
       cleanups.push(() => clearInterval(reshowPoll));
     }
 
-    // Pressure-threshold advance: poll PSI and advance when it reaches the target percentage.
-    // Used for C1/C1B where pressure must rise to specific levels before next teaching step.
+    // --- Pressure-threshold advance ---
     if (currentStep.setup?.advanceAtPressure != null && gameEngine) {
-      const targetPsi = currentStep.setup.advanceAtPressure / 100; // Convert percentage to 0-1
+      const targetPsi = currentStep.setup.advanceAtPressure / 100;
       const pressurePoll = setInterval(() => {
         if (!advanceArmedRef.current) return;
-
         const maxTime = gameEngine.maxTime ?? 1;
         const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
-
         if (psi >= targetPsi) {
           clearInterval(pressurePoll);
           advanceStepRef.current();
@@ -671,24 +763,16 @@ export const useTrainingFlow = ({
       cleanups.push(() => clearInterval(pressurePoll));
     }
 
-    // Pressure-above-pieces advance: poll until pressure line rises above the highest locked goop.
-    // Dynamic — works regardless of what pieces are on the board.
+    // --- Pressure-above-pieces advance ---
     if (currentStep.setup?.advanceWhenPressureAbovePieces && gameEngine) {
       const piecePressurePoll = setInterval(() => {
         if (!advanceArmedRef.current) return;
-
         const maxTime = gameEngine.maxTime ?? 1;
         const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
-
-        // Pressure line grid row — matches GameBoard.tsx rendering exactly:
-        // waterHeightBlocks = 1 + (psi * (VIEWPORT_HEIGHT - 1))
-        // In grid coords: pressureLineRow = BUFFER_HEIGHT + (VIEWPORT_HEIGHT - 1) - psi * (VIEWPORT_HEIGHT - 1)
         const pressureLineRow = (TANK_HEIGHT - 1) - (psi * (TANK_VIEWPORT_HEIGHT - 1));
 
-        // Find highest occupied row (lowest Y = highest visually)
-        // If advancePressureAboveColor is set, only check cells of that color
         const colorFilter = currentStep.setup?.advancePressureAboveColor ?? null;
-        let highestOccupiedRow = TANK_HEIGHT; // Default: nothing on grid
+        let highestOccupiedRow = TANK_HEIGHT;
         for (let y = 0; y < TANK_HEIGHT; y++) {
           for (let x = 0; x < gameEngine.state.grid[y].length; x++) {
             const cell = gameEngine.state.grid[y][x];
@@ -700,7 +784,6 @@ export const useTrainingFlow = ({
           if (highestOccupiedRow < TANK_HEIGHT) break;
         }
 
-        // Advance when pressure line is above the highest piece
         if (pressureLineRow < highestOccupiedRow) {
           clearInterval(piecePressurePoll);
           advanceStepRef.current();
@@ -709,133 +792,230 @@ export const useTrainingFlow = ({
       cleanups.push(() => clearInterval(piecePressurePoll));
     }
 
-    // --- Retry on piece land (D2-style: if piece lands without sealing a crack, retry) ---
+    // --- Retry on piece land (D2: piece lands without sealing → retry) ---
     if (currentStep.setup?.retryOnPieceLand && gameEngine) {
       const retryConfig = currentStep.setup.retryOnPieceLand;
 
-      // Track crack sealing: GOAL_CAPTURED fires before PIECE_DROPPED during piece lock
       const goalUnsub = gameEventBus.on(GameEventType.GOAL_CAPTURED, () => {
         crackSealedThisCycleRef.current = true;
       });
       cleanups.push(goalUnsub);
 
-      // On piece landing: check if crack was sealed this cycle
       const dropUnsub = gameEventBus.on(GameEventType.PIECE_DROPPED, () => {
         if (crackSealedThisCycleRef.current) {
           crackSealedThisCycleRef.current = false;
-          return; // Crack sealed — normal advance handler will fire
+          return;
         }
 
-        // Piece landed without sealing — staged retry sequence:
-        // Phase 1 (immediate): freeze pressure + falling
-        // Phase 2 (1s later): pop goop with animation
-        // Phase 3 (1.5s after pop): show retry message + spawn new crack/piece
-
-        // Phase 1: Freeze everything immediately
-        gameEngine.trainingPressureRate = 0;
-        gameEngine.freezeFalling = true;
-        gameEngine.emitChange();
-
-        // Phase 2: Pop goop after 1s (let the landed piece sit briefly)
+        // PIECE_DROPPED fires from BOTH lockActivePiece() and tickLooseGoop().
+        // Defer to next tick, then check: if activeGoop still exists, this was
+        // loose goop landing (not a real piece lock) — ignore.
         setTimeout(() => {
-          const grid = gameEngine.state.grid;
-          for (let y = 0; y < grid.length; y++) {
-            for (let x = 0; x < grid[y].length; x++) {
-              const cell = grid[y][x];
-              if (cell) {
-                gameEngine.state.poppedGoopGroupIds.add(cell.goopGroupId);
-                grid[y][x] = null;
-              }
-            }
-          }
+          if (gameEngine.state.activeGoop) return;
+          // Phase 1: Unpause so the fill animation renders, but freeze pressure
+          gameEngine.state.isPaused = false;
+          gameEngine.freezeFalling = false;
+          gameEngine.trainingPressureRate = 0;
           gameEngine.emitChange();
 
-          // Phase 3: After droplets settle, show message + set up retry
+          // Phase 2: Wait for fill to complete + 0.5s buffer, then pop all goop
+          // A 4-block T_O piece takes ~1500ms to fill (BASE_FILL + 4 × PER_BLOCK)
           setTimeout(() => {
-            // Spawn extra crack if configured (bottom rows within viewport)
-            if (retryConfig.spawnExtraCrack) {
-              const crackColor = retryConfig.spawnExtraCrack.color;
-              const rotation = gameEngine.state.tankRotation;
-              let crackX: number | null = null;
-              let crackY: number | null = null;
-              for (let attempt = 0; attempt < 30; attempt++) {
-                const screenX = Math.floor(Math.random() * TANK_VIEWPORT_WIDTH);
-                const gx = normalizeX(rotation + screenX);
-                const gy = TANK_HEIGHT - 1 - Math.floor(Math.random() * 2); // bottom 2 rows (22-23)
-                const overlaps = gameEngine.state.crackCells.some(c => c.x === gx && c.y === gy);
-                if (!overlaps) {
-                  crackX = gx;
-                  crackY = gy;
-                  break;
+            gameEngine.freezeFalling = true;
+            const grid = gameEngine.state.grid;
+            for (let y = 0; y < grid.length; y++) {
+              for (let x = 0; x < grid[y].length; x++) {
+                const cell = grid[y][x];
+                if (cell) {
+                  gameEngine.state.poppedGoopGroupIds.add(cell.goopGroupId);
+                  grid[y][x] = null;
                 }
               }
-              if (crackX !== null && crackY !== null) {
-                const now = Date.now();
-                const crackId = Math.random().toString(36).substr(2, 9);
-                const newCrack: Crack = {
-                  id: crackId,
-                  x: crackX,
-                  y: crackY,
-                  color: crackColor,
-                  originCrackId: [],
-                  branchCrackIds: [],
-                  lastGrowthCheck: now,
-                  crackBranchInterval: 999999,
-                  spawnTime: now,
-                };
-                gameEngine.state.crackCells.push(newCrack);
-                gameEngine.state.goalMarks.push({
-                  id: crackId,
-                  x: crackX,
-                  y: crackY,
-                  color: crackColor,
-                  spawnTime: now,
-                });
-              }
             }
+            gameEngine.emitChange();
 
-            // Pause game + show retry message
-            gameEngine.state.isPaused = true;
-            pauseStartTimeRef.current = Date.now();
-
-            const retryMsg = TRAINING_RETRY_MESSAGES[retryConfig.retryMessageId];
-            if (retryMsg) {
-              setRetryMessage(retryMsg);
-            }
-            setMessageVisible(true);
-            advanceArmedRef.current = false; // Disarm until dismiss
-
-            // Spawn new piece at top (frozen because paused)
-            if (currentStep.setup?.spawnPiece) {
-              const spawn = currentStep.setup.spawnPiece;
-              const allPieces = [...TETRA_NORMAL, ...PENTA_NORMAL, ...HEXA_NORMAL];
-              const shapeTemplate = allPieces.find(p => p.type === spawn.shape);
-              if (shapeTemplate) {
-                let cells = shapeTemplate.cells.map(c => ({ ...c }));
-                if (spawn.rotation && spawn.rotation > 0) {
-                  for (let r = 0; r < spawn.rotation; r++) {
-                    cells = getRotatedCells(cells, true);
+            // Phase 3: Wait for pop droplets to fade (~2s), then show retry message
+            setTimeout(() => {
+              if (retryConfig.spawnExtraCrack) {
+                const crackColor = retryConfig.spawnExtraCrack.color;
+                const rotation = gameEngine.state.tankRotation;
+                for (let attempt = 0; attempt < 30; attempt++) {
+                  const screenX = Math.floor(Math.random() * TANK_VIEWPORT_WIDTH);
+                  const gx = normalizeX(rotation + screenX);
+                  const gy = TANK_HEIGHT - 1 - Math.floor(Math.random() * 2);
+                  const overlaps = gameEngine.state.crackCells.some(c => c.x === gx && c.y === gy);
+                  if (!overlaps) {
+                    addCrackToGrid(gameEngine, gx, gy, crackColor);
+                    break;
                   }
                 }
-                const template: GoopTemplate = { type: spawn.shape, cells, color: spawn.color };
-                gameEngine.spawnNewPiece(template);
               }
-            }
 
-            gameEngine.emitChange();
-            crackSealedThisCycleRef.current = false;
-          }, 1500); // Wait for droplets to settle
-        }, 1000); // Wait 1s before popping
+              gameEngine.state.isPaused = true;
+              pauseStartTimeRef.current = Date.now();
+
+              const retryMsg = TRAINING_RETRY_MESSAGES[retryConfig.retryMessageId];
+              if (retryMsg) setRetryMessage(retryMsg);
+              setMessageVisible(true);
+              advanceArmedRef.current = false;
+
+              if (currentStep.setup?.spawnPiece) {
+                spawnPieceFromConfig(gameEngine, currentStep.setup.spawnPiece);
+              }
+
+              gameEngine.emitChange();
+              crackSealedThisCycleRef.current = false;
+            }, 2000);
+          }, 2000);
+        }, 0);
       });
       cleanups.push(dropUnsub);
     }
 
-    // Tap advances are handled by overlay buttons, not event listeners
+    // --- autoSkipMs: safety timer to auto-advance if condition not met ---
+    if (currentStep.setup?.autoSkipMs) {
+      const skipTimer = setTimeout(() => {
+        // D3 special: only set persistent discovery flag if message was NEVER shown
+        // (if the player saw the message and dismissed it, they learned the concept)
+        if (currentStep.id === 'D3_OFFSCREEN' && !d3MessageShownRef.current) {
+          pendingD3DiscoveryRef.current = true;
+        }
+        advanceStepRef.current();
+      }, currentStep.setup.autoSkipMs);
+      cleanups.push(() => clearTimeout(skipTimer));
+    }
+
+    // --- Continuous spawn: auto-spawn next piece after each landing ---
+    // PIECE_DROPPED fires from BOTH lockActivePiece() (real piece lock) AND
+    // tickLooseGoop() (loose goop settling after pop). We must only spawn a new
+    // piece when the REAL active piece locked — not when loose goop lands.
+    // Check: lockActivePiece sets activeGoop=null, so if activeGoop is already
+    // null after the deferred tick, it was a real lock. If activeGoop still exists,
+    // it was loose goop landing while a piece is in play.
+    if (currentStep.setup?.continuousSpawn && gameEngine) {
+      const spawnUnsub = gameEventBus.on(GameEventType.PIECE_DROPPED, () => {
+        if (f1EndingRef.current === 'overflow') return;
+
+        // Defer to next tick — lockActivePiece() hasn't finished yet
+        setTimeout(() => {
+          // If there's still an active piece, this was loose goop — ignore
+          if (gameEngine.state.activeGoop) return;
+
+          // Undo the engine's auto-pause from lockActivePiece()
+          gameEngine.state.isPaused = false;
+          gameEngine.freezeFalling = false;
+          gameEngine.emitChange();
+
+          // Spawn next piece after brief delay
+          setTimeout(() => {
+            if (gameEngine.isSessionActive && !gameEngine.state.isPaused && !gameEngine.state.activeGoop) {
+              gameEngine.spawnNewPiece();
+              gameEngine.emitChange();
+            }
+          }, 300);
+        }, 0);
+      });
+      cleanups.push(spawnUnsub);
+    }
+
+    // --- Pressure cap watcher ---
+    if (currentStep.setup?.pressureCap != null && gameEngine) {
+      const capValue = currentStep.setup.pressureCap;
+      const capPoll = setInterval(() => {
+        const maxTime = gameEngine.maxTime ?? 1;
+        const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
+        if (psi >= capValue) {
+          clearInterval(capPoll);
+          // Freeze pressure
+          gameEngine.trainingPressureRate = 0;
+          gameEngine.emitChange();
+
+          // F1: show pressure cap ending message
+          if (currentStep.id === 'F1_GRADUATION' && f1EndingRef.current === 'none') {
+            f1EndingRef.current = 'pressure-cap';
+            setRetryMessage(F1_ENDING_MESSAGES.PRESSURE_CAP);
+            setMessageVisible(true);
+            setCanDismiss(false);
+            advanceArmedRef.current = true;
+          }
+        }
+      }, 250);
+      cleanups.push(() => clearInterval(capPoll));
+    }
+
+    // --- F1 overflow detection ---
+    // GAME_OVER can fire in training when spawnNewPiece detects collision on spawn.
+    // Also poll for stack reaching buffer zone as a safety net.
+    if (currentStep.id === 'F1_GRADUATION' && gameEngine) {
+      const handleOverflow = () => {
+        if (f1EndingRef.current !== 'none') return; // Already in ending
+        f1EndingRef.current = 'overflow';
+
+        // Freeze everything
+        gameEngine.state.isPaused = true;
+        gameEngine.freezeFalling = true;
+        gameEngine.trainingPressureRate = 0;
+        gameEngine.emitChange();
+
+        setRetryMessage(F1_ENDING_MESSAGES.OVERFLOW);
+        setMessageVisible(true);
+        setCanDismiss(false);
+        advanceArmedRef.current = true;
+      };
+
+      const overflowUnsub = gameEventBus.on(GameEventType.GAME_OVER, handleOverflow);
+      cleanups.push(overflowUnsub);
+
+      // Poll: check if any goop reached buffer zone (stack overflow)
+      const overflowPoll = setInterval(() => {
+        if (f1EndingRef.current !== 'none') { clearInterval(overflowPoll); return; }
+        for (let x = 0; x < TANK_WIDTH; x++) {
+          if (gameEngine.state.grid[BUFFER_HEIGHT]?.[x] !== null) {
+            clearInterval(overflowPoll);
+            handleOverflow();
+            return;
+          }
+        }
+      }, 500);
+      cleanups.push(() => clearInterval(overflowPoll));
+    }
+
+    // --- Persistent D3 discovery trigger ---
+    // If D3 was auto-skipped, watch for offscreen cracks during E1/F1
+    if (pendingD3DiscoveryRef.current && gameEngine &&
+        (currentStep.id === 'E1_SCAFFOLDING' || currentStep.id === 'F1_GRADUATION')) {
+      const discoveryPoll = setInterval(() => {
+        if (discoveryInterruptRef.current) return; // Already showing
+        if (f1EndingRef.current !== 'none') return; // F1 ending active
+        if (gameEngine.state.isPaused) return; // Game paused
+
+        if (isAnyCrackOffscreen(gameEngine)) {
+          clearInterval(discoveryPoll);
+          pendingD3DiscoveryRef.current = false;
+          discoveryInterruptRef.current = true;
+
+          // Show D3 message as interrupt
+          setRetryMessage(TRAINING_MESSAGES.D3_OFFSCREEN);
+          setMessageVisible(true);
+
+          // Pause briefly so player can read
+          gameEngine.state.isPaused = true;
+          gameEngine.freezeFalling = true;
+          pauseStartTimeRef.current = Date.now();
+          gameEngine.emitChange();
+        }
+      }, 200);
+      cleanups.push(() => clearInterval(discoveryPoll));
+    }
+
+    // ─── Advance type handling ───────────────────────────────
+
+    // Tap advances: handled by overlay buttons, not event listeners
     if (advance.type === 'tap') {
       return cleanups.length > 0 ? () => cleanups.forEach(fn => fn()) : undefined;
     }
 
-    // Auto-advance after a fixed delay
+    // Auto-advance after fixed delay
     if (advance.type === 'auto') {
       const timer = setTimeout(() => {
         advanceStepRef.current();
@@ -844,10 +1024,10 @@ export const useTrainingFlow = ({
       return () => cleanups.forEach(fn => fn());
     }
 
-    // Determine which game events to listen for
+    // --- Action/event-based advance ---
     let eventKey: string | undefined;
     if (advance.type === 'action') {
-      // Special case: drag-periscope is handled by GAME_START event
+      // Special case: drag-periscope → GAME_START
       if (advance.action === 'drag-periscope') {
         const unsub = gameEventBus.on(GameEventType.GAME_START, () => {
           if (advanceArmedRef.current) {
@@ -857,6 +1037,18 @@ export const useTrainingFlow = ({
         cleanups.push(unsub);
         return () => cleanups.forEach(fn => fn());
       }
+
+      // Special case: swipe-up with F1 ending gate
+      if (advance.action === 'swipe-up') {
+        const unsub = gameEventBus.on(GameEventType.INPUT_SWIPE_UP, () => {
+          if (advanceArmedRef.current && f1EndingRef.current !== 'none') {
+            advanceStepRef.current();
+          }
+        });
+        cleanups.push(unsub);
+        return () => cleanups.forEach(fn => fn());
+      }
+
       eventKey = advance.action;
     } else if (advance.type === 'event') {
       eventKey = advance.event;
@@ -865,7 +1057,6 @@ export const useTrainingFlow = ({
     const gameEvents = eventKey ? ADVANCE_EVENT_MAP[eventKey] : undefined;
 
     if (gameEvents && gameEvents.length > 0) {
-      // Listen for mapped game events (only advance when armed)
       const unsubs = gameEvents.map(event =>
         gameEventBus.on(event, () => {
           if (advanceArmedRef.current) {
@@ -875,7 +1066,7 @@ export const useTrainingFlow = ({
       );
       cleanups.push(() => unsubs.forEach(unsub => unsub()));
     } else if (!currentStep.setup?.advanceAtRow) {
-      // Unmapped event/action with no position advance — auto-advance after timeout as fallback
+      // Unmapped event/action with no position advance — fallback timer
       const timer = setTimeout(() => {
         advanceStepRef.current();
       }, AUTO_ADVANCE_FALLBACK_MS);
@@ -885,32 +1076,31 @@ export const useTrainingFlow = ({
     return () => cleanups.forEach(fn => fn());
   }, [currentStep?.id, isInTraining]);
 
-  // --- Sync allowed controls to engine on step change ---
+  // ─── Sync Effects ──────────────────────────────────────────
+
+  // Sync allowed controls to engine
   useEffect(() => {
     if (!gameEngine) return;
-
     if (isInTraining && currentStep?.setup?.allowedControls) {
       gameEngine.trainingAllowedControls = currentStep.setup.allowedControls;
     } else {
-      gameEngine.trainingAllowedControls = null; // All controls allowed
+      gameEngine.trainingAllowedControls = null;
     }
   }, [gameEngine, currentStep?.id, isInTraining]);
 
-  // --- Sync pressure rate to engine on step change ---
+  // Sync pressure rate to engine
   useEffect(() => {
     if (!gameEngine) return;
-
     if (isInTraining && currentStep?.setup?.pressureRate != null) {
       gameEngine.trainingPressureRate = currentStep.setup.pressureRate;
     } else {
-      gameEngine.trainingPressureRate = 0; // Default: pressure frozen
+      gameEngine.trainingPressureRate = 0;
     }
   }, [gameEngine, currentStep?.id, isInTraining]);
 
-  // --- Sync highlight color to engine on step change ---
+  // Sync highlight color to engine
   useEffect(() => {
     if (!gameEngine) return;
-
     if (isInTraining && currentStep?.setup?.highlightGoopColor) {
       gameEngine.trainingHighlightColor = currentStep.setup.highlightGoopColor;
     } else {
@@ -918,32 +1108,42 @@ export const useTrainingFlow = ({
     }
   }, [gameEngine, currentStep?.id, isInTraining]);
 
-  // Subscribe to TRAINING_SCENARIO_COMPLETE event for cleanup
+  // Sync pop-lowers-pressure to engine
+  useEffect(() => {
+    if (!gameEngine) return;
+    if (isInTraining && currentStep?.setup?.popLowersPressure) {
+      gameEngine.trainingPopLowersPressure = true;
+    } else {
+      gameEngine.trainingPopLowersPressure = false;
+    }
+  }, [gameEngine, currentStep?.id, isInTraining]);
+
+  // ─── Training Complete Cleanup ─────────────────────────────
+
   useEffect(() => {
     const unsub = gameEventBus.on(GameEventType.TRAINING_SCENARIO_COMPLETE, () => {
       if (gameEngine) {
         gameEngine.isTrainingMode = false;
+        gameEngine.state.isPaused = false;
         gameEngine.pendingTrainingPalette = null;
         gameEngine.trainingAllowedControls = null;
         gameEngine.trainingPressureRate = 0;
         gameEngine.trainingHighlightColor = null;
         gameEngine.freezeFalling = false;
+        gameEngine.trainingPopLowersPressure = false;
       }
     });
     return unsub;
   }, [gameEngine]);
 
-  // --- Build display step for TutorialOverlay ---
-  // Returns a message-compatible object when there's a training message to show
+  // ─── Display Step ──────────────────────────────────────────
+
   const trainingDisplayStep: { message: IntercomMessage } | null =
     currentStep && messageVisible
       ? { message: retryMessage ?? TRAINING_MESSAGES[currentStep.id] ?? { keywords: [], fullText: currentStep.name } }
       : null;
 
-  // Message position for the current training step (default: 'center')
   const messagePosition = currentStep?.setup?.messagePosition ?? 'center';
-
-  // Highlight color for the current step (null = no highlight)
   const highlightColor = (isInTraining && currentStep?.setup?.highlightGoopColor) || null;
 
   return {

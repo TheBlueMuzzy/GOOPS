@@ -68,6 +68,7 @@ export class GameEngine {
     public trainingAllowedControls: AllowedControls | null = null; // Set by useTrainingFlow per step
     public trainingPressureRate: number = 0; // Set by useTrainingFlow per step (0=frozen, 1=normal speed)
     public trainingHighlightColor: string | null = null; // Set by useTrainingFlow per step — pulse this color, restrict pops to it
+    public trainingPopLowersPressure: boolean = false; // Set by useTrainingFlow — pop reduces pressure (always true in real gameplay, flag for documentation)
     public equippedActives: string[] = [];
     private crackManager: CrackManager;
 

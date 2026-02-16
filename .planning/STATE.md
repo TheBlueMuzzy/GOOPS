@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-02-10
+updated: 2026-02-16
 ---
 
 # Project State
@@ -10,11 +10,11 @@ updated: 2026-02-10
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 in current phase — Tutorial v2 redesign approved, full rebuild next
-Status: In progress — D-phase bugs fixed, Tutorial2.md finalized, ready for full tutorial rebuild
-Last activity: 2026-02-15 - Tutorial2.md design review complete, all 3 user concerns addressed
+Plan: 4 of 4 in current phase — Tutorial v2 full rebuild DONE, UAT rounds 1-4 complete
+Status: In progress — All critical bugs fixed. Tutorial2.md synced with implementation. Needs UAT round 5 to verify all fixes.
+Last activity: 2026-02-16 - UAT fixes committed: (1) PIECE_DROPPED timing deferred with setTimeout(0). (2) PIECE_DROPPED dual source guard (activeGoop check). (3) D2 retry timing (2s fill + 2s droplets). (4) D3 persistent flag only when message not shown. (5) All cracks use pressure-line formula. (6) C4 pressure frozen + blue highlight. (7) F1 pressure continues from D/E (no reset). (8) F1 overflow polling. (9) Discovery dismiss spawns piece in continuous-spawn steps. Tutorial2.md updated to match.
 
-Progress: █████░░░░░ 50%
+Progress: ████████░░ 80%
 
 ## Branch Workflow (SOP)
 
@@ -28,30 +28,31 @@ Progress: █████░░░░░ 50%
 
 ## Next Steps
 
-**Tutorial v2 redesign (Tutorial2.md) finalized.** Ready for full rebuild.
+**Tutorial v2 rebuilt. Needs manual UAT testing of full A1→F1 flow.**
 
-**Key design decisions (2026-02-15):**
+**What was rebuilt (2026-02-15):**
 - 14 steps (down from 19), 6 phases (A:1, B:4, C:4, D:3, E:1, F:1)
-- Player never waits > 3s without an action — C1 pressure sped up to 2.5 rate (~3s to reach goop)
-- Pressure is "honest": only rises when relevant, popping lowers it, never reaches 100%
-- D1 pressure = 0 (player just reading about cracks, not managing pressure)
-- F1 graduation: pressure caps at 95% → practice message → "swipe up to leave training" → console
-- Stack overflow during F1: "Training is over. Swipe up to end." → console (no end-game screen)
-- New features needed: continuous piece spawning, persistent D3 discovery trigger, pressure cap, swipe-up exit, pop-lowers-pressure during training
+- All new step IDs, messages, and scenario configs
+- 6 new features: continuousSpawn, pressureCap, periodicCrackInterval, autoSkipMs, persistent D3 discovery, F1 ending states
+- Pop-lowers-pressure works natively (no engine change needed)
+- F1 graduation: pressure caps at 95% → practice message → swipe up → console
+- F1 overflow: "Training is over. Swipe up to end." → console
 
-**D-phase bugs fixed (2026-02-14, in this commit):**
-1. D2 piece never falls — isDelayedPause expanded for position-gated + cracks-offscreen steps
-2. D3 soft-lock — added spawnCrack (green, near-stack) to D3 config
-3. D2 retry — staged 3-phase: freeze → 1s → pop → 1.5s → retry message
-4. D2 message-timing branch reorder — position-gated → cracks-offscreen → pauseDelay
-5. Offscreen arrow threshold — `>` to `>=` in GameBoard.tsx
-6. D3 discovery — `some()` not `every()`, auto-skip after 15s
+**Files changed:**
+- `types/training.ts`: New step IDs (14), new StepSetup fields (5)
+- `data/trainingScenarios.ts`: Full rewrite (14 steps)
+- `data/tutorialSteps.ts`: Full rewrite (new messages + F1 ending messages)
+- `hooks/useTrainingFlow.ts`: Full rewrite (~700 lines, extracted helpers)
+- `core/GameEngine.ts`: Added `trainingPopLowersPressure` property
+- `Game.tsx`: Updated dev jump button step IDs
+- `components/TrainingHUD.tsx`: Updated comment
 
-**What changed (uncommitted):**
-- All prior C-phase + D1 crack spawn changes (from last session)
-- `hooks/useTrainingFlow.ts`: isDelayedPause, branch reorder, staged retry (3 phases), discovery-gated D3 with auto-skip
-- `data/trainingScenarios.ts`: D3 spawnCrack added
-- `components/GameBoard.tsx`: offscreen arrow threshold `>` → `>=`
+**Known gaps to test:**
+- Swipe-up exit gesture needs to emit INPUT_SWIPE_UP during F1 ending
+- F1 overflow detection depends on GAME_OVER event firing in training mode
+- Persistent D3 discovery trigger if D3 auto-skips
+- Continuous spawning timing (300ms delay between piece-landed and next spawn)
+- Pressure cap at 95% triggers F1 ending message correctly
 
 ### Key Technical Changes This Session
 
@@ -154,26 +155,33 @@ Progress: █████░░░░░ 50%
 
 ## Session Continuity
 
-Last session: 2026-02-15
+Last session: 2026-02-16
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 266
+**Build:** 271
 
 ### Resume Command
 ```
-Phase 33 Plan 04 — Tutorial v2 full rebuild
+Phase 33 Plan 04 — Tutorial v2 UAT
 
-Tutorial2.md is the approved design spec (14 steps, 6 phases).
-D-phase bug fixes committed. 210 tests pass.
+Tutorial v2 rebuilt and UAT rounds 1-4 complete. 210 tests pass.
+Tutorial2.md synced with implementation (including implementation notes).
+
+Critical engine discoveries documented:
+- PIECE_DROPPED fires BEFORE training pause (setTimeout(0) required)
+- tickLooseGoop also emits PIECE_DROPPED (activeGoop guard required)
+- All cracks use pressure-line formula (same as spawnGoalMark)
 
 WHAT TO DO:
-1. Read .planning/Tutorial2.md — this IS the plan
-2. Rebuild entire tutorial from scratch based on Tutorial2.md
-3. Remove "jump to D" debug button
-4. New features needed: continuous piece spawning, pressure cap at 95%,
-   swipe-up exit, persistent D3 discovery trigger, pop-lowers-pressure
-5. Build top-to-bottom: types → scenarios → steps → flow hook → rendering
-6. Test full flow A1→F1
+1. Run full A1→F1 flow — verify all fixes from rounds 1-4
+2. Key things to test:
+   - D2 retry: piece fills naturally → pop → droplets → message (smooth, ~4s)
+   - E1 crack spawns at pressure line (not forced high)
+   - F1 continuous play works (pieces keep spawning after each lands)
+   - F1 pressure rises to 95% → practice message → swipe up → console
+   - F1 overflow → end message → swipe up → console
+   - Pieces don't change shape while falling (loose goop merge fixed)
+3. If all pass → <deploy>
 ```
 
 ---

@@ -5,252 +5,231 @@ import { GoopShape } from '../types';
 
 // Phase display names
 export const TRAINING_PHASE_NAMES: Record<TrainingPhase, string> = {
-  A: 'Console Briefing',
+  A: 'Enter the Tank',
   B: 'Goop Basics',
   C: 'Pressure & Popping',
   D: 'Cracks & Sealing',
   E: 'Scaffolding',
-  F: 'Endgame',
+  F: 'Graduation',
 };
 
 /**
- * The scripted rank 0 training sequence.
+ * Tutorial v2 — 14 steps across 6 phases (A-F).
  *
- * One continuous guided experience — NOT discrete levels.
- * The flow controller reads these steps and orchestrates game state.
- * Intercom message content is defined separately in tutorialSteps.ts.
- *
- * 15 steps across 6 phases (A-F).
- * Pressure introduced at C1, cracks at D1, free practice at F2.
+ * Design spec: .planning/Tutorial2.md
+ * Principles: show-then-name-then-do, one concept per step,
+ * under 20 words per message, always doing something within 3s.
  */
 export const TRAINING_SEQUENCE: TrainingStep[] = [
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase A: Console Briefing
-  // Player learns the premise and how to enter the tank
+  // Phase A — Enter the Tank (1 step)
+  // Welcome + periscope merged into one action
   // ═══════════════════════════════════════════════════════════════
 
   {
-    id: 'A1_BRIEFING',
+    id: 'A1_WELCOME',
     phase: 'A',
-    name: 'Welcome Briefing',
-    teaches: 'game-premise',
+    name: 'Welcome',
+    teaches: 'premise-and-entry',
     setup: {
       view: 'console',
       pressureRate: 0,
-      messagePosition: 'top',
-    },
-    pauseGame: true,
-    advance: { type: 'tap' },
-    markComplete: 'WELCOME',
-  },
-
-  {
-    id: 'A2_PERISCOPE',
-    phase: 'A',
-    name: 'Enter the Tank',
-    teaches: 'periscope-navigation',
-    setup: {
-      view: 'console',
       highlightElement: 'periscope',
       messagePosition: 'top',
     },
     pauseGame: true,
     advance: { type: 'action', action: 'drag-periscope' },
+    markComplete: 'WELCOME',
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase B: Goop Basics
-  // Player watches a piece fall, then learns fast-fall and rotation
+  // Phase B — Goop Basics (4 steps, 2 piece falls)
+  // Watch, fast-drop, rotate, practice
   // ═══════════════════════════════════════════════════════════════
 
   {
-    id: 'B1_GOOP_INTRO',
+    // B1: First piece falls. Player watches. No controls.
+    // Auto-advances to B2 when piece reaches row 8.
+    id: 'B1_GOOP_FALLS',
     phase: 'B',
-    name: 'Goop Introduction',
+    name: 'Goop Falls',
     teaches: 'what-goop-is',
     setup: {
       view: 'tank',
       spawnPiece: { color: COLORS.BLUE, shape: GoopShape.T_I, rotation: 1, autoFall: true },
       pressureRate: 0,
-      allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
-      advanceAtRow: 8,  // Auto-advance to B1B when piece reaches ~25% down visually
+      allowedControls: { fastDrop: false, rotate: false, tankRotate: false, pop: false },
+      advanceAtRow: 8,  // Auto-advance at ~25% down viewport
     },
-    pauseGame: false,
-    advance: { type: 'event', event: 'piece-landed' },  // Fallback if piece lands before 50%
+    pauseGame: false,  // Game running, piece falling, message visible
+    advance: { type: 'event', event: 'piece-landed' },  // Fallback if piece lands before row 8
   },
 
   {
-    id: 'B1B_SLOW_COMMENT',
+    // B2: Same piece still falling. Acknowledge slowness + teach fast-drop.
+    // "Yeah. It's slow. Drag down or press S to fast-drop."
+    // Controls: fast-drop enabled. Advance when piece lands.
+    id: 'B2_FAST_DROP',
     phase: 'B',
-    name: 'Slow Comment',
-    teaches: 'patience-acknowledgment',
+    name: 'Fast-Drop',
+    teaches: 'fast-drop-input',
     setup: {
-      // No new piece spawn — the B1 piece is still falling
+      // No spawn — same piece from B1 still falling
       pressureRate: 0,
-      allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
-      advanceAtRow: 11,  // Auto-advance to B2 when piece reaches ~40% down
+      allowedControls: { fastDrop: true, rotate: false, tankRotate: false, pop: false },
     },
-    pauseGame: false,  // Piece continues falling while "slow" message shows
-    advance: { type: 'event', event: 'piece-landed' },  // Fallback if piece lands before 40%
+    pauseGame: false,  // Piece keeps falling, player can fast-drop
+    advance: { type: 'event', event: 'piece-landed' },
   },
 
   {
-    id: 'B2_FAST_FALL',
+    // B3: New piece (yellow T_T). Teach rotation.
+    // Piece spawns and falls. After 1.2s, game pauses + message shows.
+    // Dismiss → piece resumes → player rotates and drops.
+    id: 'B3_ROTATION',
     phase: 'B',
-    name: 'Fast Fall',
-    teaches: 'fast-fall-input',
-    setup: {
-      // No new piece spawn — same B1 piece still falling, now with fast-drop enabled
-      allowedControls: { fastDrop: true, rotate: false, tankRotate: false },
-    },
-    pauseGame: false,  // Piece continues falling, player can fast-drop
-    advance: { type: 'event', event: 'piece-landed' },  // Piece lands → advance
-  },
-
-  {
-    id: 'B3_PIECE_ROTATION',
-    phase: 'B',
-    name: 'Piece Rotation',
+    name: 'Rotation',
     teaches: 'piece-rotation-input',
     setup: {
       spawnPiece: { color: COLORS.YELLOW, shape: GoopShape.T_T },
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
-      pauseDelay: 1200,  // Piece starts falling, then message appears after 1.2s
+      pressureRate: 0,
+      allowedControls: { fastDrop: true, rotate: true, tankRotate: false, pop: false },
+      pauseDelay: 1200,  // See piece moving, then freeze to read
     },
     pauseGame: true,
-    advance: { type: 'event', event: 'piece-landed' },  // Wait for piece to land after rotation
+    advance: { type: 'event', event: 'piece-landed' },
     markComplete: 'DROP_INTRO',
   },
 
   {
+    // B4: Practice rep. Blue 2x2 (simple, no rotation needed). Breather.
+    // "Do it again."
     id: 'B4_PRACTICE',
     phase: 'B',
-    name: 'Practice Drop',
+    name: 'Practice',
     teaches: 'practice-basics',
     setup: {
       spawnPiece: { color: COLORS.BLUE, shape: GoopShape.T_O },
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
+      pressureRate: 0,
+      allowedControls: { fastDrop: true, rotate: true, tankRotate: false, pop: false },
     },
-    pauseGame: true,
+    pauseGame: true,  // Message shows immediately, dismiss → piece falls
     advance: { type: 'event', event: 'piece-landed' },
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase C: Pressure & Popping
-  // Pressure starts rising. Learn to pop goop to vent it.
+  // Phase C — Pressure & Popping (4 steps)
+  // Introduce threat, first pop, merge+solidify, second pop
   // ═══════════════════════════════════════════════════════════════
 
   {
-    id: 'C1_POP_INTRO',
+    // C1: "Pressure builds over time." — 4 words.
+    // Dismiss → pressure rises fast (2.5 rate) → reaches yellow goop in ~3s → auto-advance.
+    // All controls disabled — watch only.
+    id: 'C1_PRESSURE',
     phase: 'C',
-    name: 'Pressure & Laser',
-    teaches: 'pressure-and-popping',
+    name: 'Pressure Rises',
+    teaches: 'pressure-concept',
     setup: {
-      // No piece spawn — let pressure rise over existing pieces from B-phase
-      pressureRate: 0.625,
+      pressureRate: 2.5,
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false, pop: false },
-      advanceAtPressure: 5,  // Advance when PSI reaches 5%
+      advanceWhenPressureAbovePieces: true,
+      advancePressureAboveColor: COLORS.YELLOW,
+      autoSkipMs: 10000,  // Safety fallback
     },
-    pauseGame: true,
-    advance: { type: 'auto', delayMs: 60000 },  // Safety fallback
+    pauseGame: true,  // Pause for message. Dismiss → pressure starts rising.
+    advance: { type: 'auto', delayMs: 60000 },  // Never fires — pressure-above-pieces advances first
   },
 
   {
-    id: 'C1B_PRESSURE_RISING',
+    // C2: "Tap goop below the pressure line to pop it."
+    // Pressure frozen (0). Yellow goop pulses. Reshow after 3s (non-dismissible).
+    // Game NOT paused — player can pop while reading.
+    id: 'C2_POP',
     phase: 'C',
-    name: 'Pressure Rising',
-    teaches: 'pressure-pacing',
-    setup: {
-      pressureRate: 0.625,
-      allowedControls: { fastDrop: false, rotate: false, tankRotate: false, pop: false },
-      advanceWhenPressureAbovePieces: true,  // Advance when pressure line passes yellow goop
-      advancePressureAboveColor: COLORS.YELLOW,  // Only check yellow — don't wait for pressure to cover all blues too
-    },
-    pauseGame: false,  // Pressure must keep rising — message shows immediately while watching
-    advance: { type: 'auto', delayMs: 60000 },  // Safety fallback — pressure threshold advances first
-  },
-
-  {
-    id: 'C1C_POP_INSTRUCTION',
-    phase: 'C',
-    name: 'Pop Instruction',
+    name: 'Pop',
     teaches: 'how-to-pop',
     setup: {
-      pressureRate: 0,  // Pressure frozen during pop instruction — focus on learning to pop
+      pressureRate: 0,  // Frozen — focus on learning to pop
       allowedControls: { fastDrop: false, rotate: false, tankRotate: false },
-      highlightGoopColor: COLORS.YELLOW,  // Pulse yellow goop, only yellow can be popped
-      reshowAfterMs: 3000,  // Re-remind 3s after dismiss if goop not popped
-      reshowNonDismissible: true,  // Can't close re-shown message — only clears on pop
+      highlightGoopColor: COLORS.YELLOW,
+      reshowAfterMs: 3000,
+      reshowNonDismissible: true,
+      popLowersPressure: true,
     },
-    pauseGame: false,  // Keep game running so player can pop goop while reading
+    pauseGame: false,  // Game running, player can pop while reading
     advance: { type: 'action', action: 'pop-goop' },
   },
 
   {
-    id: 'C2_MERGE',
+    // C3: Merge + solidify in one message.
+    // "Same-color goop merges. Bigger blobs vent more. Fresh goop needs a moment to set."
+    // Shows 1.5s after C2's pop (let droplets fade, merge animation play).
+    // Pressure 0.3125 (moderate, needs to reach merged blue).
+    id: 'C3_MERGE_SOLIDIFY',
     phase: 'C',
-    name: 'Color Merging',
-    teaches: 'same-color-merge',
+    name: 'Merge & Solidify',
+    teaches: 'merge-and-fill-timing',
     setup: {
       pressureRate: 0.3125,
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
-      pauseDelay: 1000,  // Wait 1s after pop before showing merge message
+      allowedControls: { fastDrop: true, rotate: true, tankRotate: false, pop: false },
+      pauseDelay: 1500,  // Wait for pop droplets + merge animation
     },
     pauseGame: true,
-    advance: { type: 'tap' },  // Merge already happened during pauseDelay — tap to acknowledge
-  },
-
-  {
-    id: 'C3_FILL_TIMING',
-    phase: 'C',
-    name: 'Solidify Timing',
-    teaches: 'fill-delay-mechanic',
-    setup: {
-      pressureRate: 0.3125,
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
-    },
-    pauseGame: true,
-    advance: { type: 'tap' },
+    advance: { type: 'tap' },  // Acknowledge merge+solidify info
     markComplete: 'POP_TIMING',
   },
 
   {
-    id: 'C3B_POP_HINT',
+    // C4: "Pop it." — second pop rep. Merged blue visible, pressure frozen.
+    // Blue goop pulses (highlight). Player waits for solidify, then pops.
+    // Message shows after 2s delay. Game NOT paused — player can pop while reading.
+    id: 'C4_PRACTICE_POP',
     phase: 'C',
-    name: 'Pop Prompt',
-    teaches: 'first-pop-practice',
+    name: 'Practice Pop',
+    teaches: 'second-pop-rep',
     setup: {
-      pressureRate: 0.3125,  // Pressure keeps rising so it reaches the merged goop
+      pressureRate: 0,  // Frozen — focus on pop timing, not pressure management
       allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
-      messageDelay: 2000,  // Wait for fill to complete before showing hint
+      highlightGoopColor: COLORS.BLUE,  // Pulse blue goop, restrict popping to blue
+      messageDelay: 2000,  // Wait for fill context to settle
+      popLowersPressure: true,
     },
-    pauseGame: false,  // Game running — hint shows while user plays
+    pauseGame: false,  // Game running so player can pop while reading
     advance: { type: 'action', action: 'pop-goop' },
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase D: Cracks & Sealing
-  // Introduce cracks, tank rotation, and offscreen awareness
+  // Phase D — Cracks & Tank Rotation (3 steps)
+  // See crack, learn tank rotation, discover cylinder
   // ═══════════════════════════════════════════════════════════════
 
   {
-    id: 'D1_CRACK_APPEARS',
+    // D1: Crack appears. "Cracks form in the tank wall. Drop matching color goop on them to seal."
+    // Spawns green crack near-stack, right side, row 22.
+    // Pressure 0 — just reading about cracks.
+    // 2.5s delay after C4's pop.
+    id: 'D1_CRACK',
     phase: 'D',
-    name: 'Crack + Seal',
+    name: 'Crack Appears',
     teaches: 'crack-sealing',
     setup: {
-      spawnCrack: { color: COLORS.GREEN, placement: 'near-stack' },
-      pressureRate: 0.46875,
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
-      pauseDelay: 2500,  // Wait for pop droplets to fade + crack to appear before message
+      spawnCrack: { color: COLORS.GREEN, placement: 'near-stack', row: 22 },
+      pressureRate: 0,
+      allowedControls: { fastDrop: true, rotate: true, tankRotate: false, pop: false },
+      pauseDelay: 2500,  // Let C4 droplets fade, crack spawns and becomes visible
     },
     pauseGame: true,
-    advance: { type: 'tap' },  // Introduce cracks visually — actual sealing comes in D2/E1
+    advance: { type: 'tap' },
     markComplete: 'CRACK_INTRO',
   },
 
   {
+    // D2: Tank rotation. Green T_O piece. Crack is off to one side.
+    // "Swipe left/right or A/D to spin the tank."
+    // All controls enabled. Message at row 8. Advance on crack-sealed.
+    // Retry: freeze → 1s → pop all → 1.5s → new crack + retry msg + new piece.
     id: 'D2_TANK_ROTATION',
     phase: 'D',
     name: 'Tank Rotation',
@@ -259,83 +238,91 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       spawnPiece: { color: COLORS.GREEN, shape: GoopShape.T_O },
       pressureRate: 0.46875,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
-      showWhenPieceBelow: 8,  // Show message when piece is ~25% down the viewport
+      showWhenPieceBelow: 8,  // Show when piece reaches ~25% down viewport
       retryOnPieceLand: {
         retryMessageId: 'D2_RETRY',
         spawnExtraCrack: { color: COLORS.GREEN, placement: 'near-stack' },
       },
+      popLowersPressure: true,
     },
-    pauseGame: true,  // Pause when position-gated message appears
+    pauseGame: true,  // Pause when position-gated message shows
     advance: { type: 'event', event: 'crack-sealed' },
     markComplete: 'ROTATE_INTRO',
   },
 
   {
-    id: 'D3_OFFSCREEN_CRACKS',
+    // D3: Offscreen discovery. Green crack visible.
+    // Triggers when ANY crack rotated offscreen. Auto-skip after 15s.
+    // If auto-skipped, trigger stays armed through E and F phases (persistent).
+    id: 'D3_OFFSCREEN',
     phase: 'D',
     name: 'Offscreen Cracks',
     teaches: 'cylindrical-awareness',
     setup: {
-      spawnCrack: { color: COLORS.GREEN, placement: 'near-stack' },  // Visible crack — message triggers when player rotates it offscreen
+      spawnCrack: { color: COLORS.GREEN, placement: 'near-stack' },
       pressureRate: 0.46875,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
-      showWhenCracksOffscreen: true,  // Message appears only when player rotates all cracks out of view
+      showWhenCracksOffscreen: true,
+      autoSkipMs: 15000,  // Auto-advance if player never rotates crack offscreen
+      popLowersPressure: true,
     },
-    pauseGame: true,  // Pause when message appears (after cracks go offscreen)
+    pauseGame: true,  // Pause when cracks-offscreen message appears
     advance: { type: 'tap' },
     markComplete: 'WRAP_INTRO',
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase E: Scaffolding
-  // Stack goop to reach higher cracks
+  // Phase E — Scaffolding (1 step)
+  // Stack goop to reach a high crack
   // ═══════════════════════════════════════════════════════════════
 
   {
+    // E1: High crack at row 10-12. Pieces spawn continuously.
+    // "Cracks spawn higher as Pressure builds. Stack goop to reach them."
+    // Safety: auto-advance after 90s.
     id: 'E1_SCAFFOLDING',
     phase: 'E',
     name: 'Build Scaffolding',
     teaches: 'scaffolding-strategy',
     setup: {
+      spawnCrack: { color: COLORS.GREEN, placement: 'at-pressure-line' },
       pressureRate: 0.46875,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
       messagePosition: 'top',
+      continuousSpawn: true,   // Auto-spawn next piece after each lands
+      autoSkipMs: 90000,       // Safety: move to graduation if stuck
+      popLowersPressure: true,
     },
-    pauseGame: true,
+    pauseGame: true,  // Pause for message. Dismiss → continuous play begins.
     advance: { type: 'event', event: 'crack-sealed' },
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase F: Endgame
-  // Cleanup message, then free practice until overflow
+  // Phase F — Graduation (1 step)
+  // Free play with all mechanics, gentle pressure, caps at 95%
   // ═══════════════════════════════════════════════════════════════
 
   {
-    id: 'F1_CLEANUP',
+    // F1: Graduation game. All mechanics active.
+    // Continuous pieces, periodic cracks every ~20s, pressure at 0.2 rate.
+    // Pressure caps at 95% → practice msg → swipe up → console.
+    // Stack overflow → end msg → swipe up → console.
+    // Pop lowers pressure (real game behavior).
+    id: 'F1_GRADUATION',
     phase: 'F',
-    name: 'Clear Residual',
-    teaches: 'cleanup-before-end',
+    name: 'Graduation',
+    teaches: 'free-play',
     setup: {
-      pressureRate: 0,
+      pressureRate: 0.2,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
       messagePosition: 'top',
+      continuousSpawn: true,
+      pressureCap: 0.95,
+      periodicCrackIntervalMs: 20000,
+      popLowersPressure: true,
     },
-    pauseGame: true,
-    advance: { type: 'tap' },
-  },
-
-  {
-    id: 'F2_PRACTICE',
-    phase: 'F',
-    name: 'Practice Mode',
-    teaches: 'free-practice',
-    setup: {
-      pressureRate: 0,
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
-      messagePosition: 'top',
-    },
-    pauseGame: true,
-    advance: { type: 'event', event: 'game-over' },
+    pauseGame: true,  // Pause for graduation message. Dismiss → free play begins.
+    advance: { type: 'action', action: 'swipe-up' },  // Swipe up to leave training
     markComplete: 'FIRST_SHIFT',
   },
 ];
