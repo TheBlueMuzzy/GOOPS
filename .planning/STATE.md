@@ -10,9 +10,9 @@ updated: 2026-02-16
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 in current phase — Tutorial v2 full rebuild DONE, UAT rounds 1-4 complete
-Status: In progress — All critical bugs fixed. Tutorial2.md synced with implementation. Needs UAT round 5 to verify all fixes.
-Last activity: 2026-02-16 - UAT fixes committed: (1) PIECE_DROPPED timing deferred with setTimeout(0). (2) PIECE_DROPPED dual source guard (activeGoop check). (3) D2 retry timing (2s fill + 2s droplets). (4) D3 persistent flag only when message not shown. (5) All cracks use pressure-line formula. (6) C4 pressure frozen + blue highlight. (7) F1 pressure continues from D/E (no reset). (8) F1 overflow polling. (9) Discovery dismiss spawns piece in continuous-spawn steps. Tutorial2.md updated to match.
+Plan: 4 of 4 in current phase — Tutorial v2 full rebuild DONE, UAT round 5 in progress
+Status: In progress — Multiple UAT round 5 fixes applied. Testing training completion flow.
+Last activity: 2026-02-16 - UAT round 5 fixes: (1) Training spawn-collision guard. (2) Removed flying orb animation. (3) Fixed arrow asymmetry. (4) Crack debug logging. (5) Full-width dismiss buttons. (6) D3 offscreen discoverable during D2/E1/F1. (7) Fixed mystery cracks (spawnGoalBurst in actions.ts skipped in training). (8) Training completion → console + rank 1. (9) F1 pressure 0.2→0.5. (10) isAnyCrackOffscreen uses viewport math.
 
 Progress: ████████░░ 80%
 

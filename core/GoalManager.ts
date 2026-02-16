@@ -100,6 +100,7 @@ export class GoalManager {
         const newGoal = spawnGoalMark(grid, existingMarks, currentRank, timeLeft, maxTime, crackDownActive);
 
         if (newGoal) {
+            console.log(`[CRACK] SPAWN via GoalManager at (${newGoal.x}, ${newGoal.y}) color=${newGoal.color} source="GoalManager-trySpawnCrack" time=${new Date().toLocaleTimeString()}`);
             // Convert GoalMark to Crack
             const newCrack: Crack = {
                 id: newGoal.id,

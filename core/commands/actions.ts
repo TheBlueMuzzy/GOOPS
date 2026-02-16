@@ -439,8 +439,8 @@ export class PopGoopCommand implements Command {
 
             const { grid: cleanGrid, looseGoop: newFalling } = getFloatingBlocks(tempGrid, poppedCells);
 
-            // Burst Logic
-            if (infusedCount > 0) {
+            // Burst Logic — skip in training (no goal system active)
+            if (infusedCount > 0 && !engine.isTrainingMode) {
                 if (engine.state.goalsCleared >= engine.state.goalsTarget) {
                      const tankPressure = Math.max(0, 1 - (engine.state.shiftTime / engine.maxTime));
                      const currentRank = calculateRankDetails(engine.initialTotalScore + engine.state.shiftScore).rank;

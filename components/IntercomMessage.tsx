@@ -147,33 +147,26 @@ export const IntercomMessageDisplay: React.FC<IntercomMessageProps> = ({
           />
         </div>
 
-        {/* Action buttons — only show when fully revealed and dismissible */}
+        {/* Action button — full-width, only show when fully revealed and dismissible */}
         {isFullyRevealed && canDismiss && (
-          <div className="flex justify-end gap-3 px-3 py-3 border-t border-slate-800">
-            {/* Dismiss button: shown for 'dismiss' mode or when no advanceType (legacy) */}
-            {advanceType !== 'tap' && (
+          <div className="px-3 py-3 border-t border-slate-800">
+            {advanceType !== 'tap' ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onDismiss();
                 }}
-                className={`w-12 h-12 flex items-center justify-center t-heading font-mono rounded-sm transition-colors ${
-                  advanceType === 'dismiss'
-                    ? 'text-green-400 hover:text-green-300 border border-green-900 hover:border-green-700'
-                    : 'text-slate-500 hover:text-slate-300 border border-slate-700'
-                }`}
+                className="w-full h-12 flex items-center justify-center t-heading font-mono text-green-400 hover:text-green-300 border border-green-900 hover:border-green-700 rounded-sm transition-colors"
               >
                 ✗
               </button>
-            )}
-            {/* Complete button: shown for 'tap' mode or when no advanceType (legacy) */}
-            {advanceType !== 'dismiss' && (
+            ) : (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   onComplete();
                 }}
-                className="w-12 h-12 flex items-center justify-center t-heading font-mono text-green-400 hover:text-green-300 border border-green-900 hover:border-green-700 rounded-sm transition-colors"
+                className="w-full h-12 flex items-center justify-center t-heading font-mono text-green-400 hover:text-green-300 border border-green-900 hover:border-green-700 rounded-sm transition-colors"
               >
                 ✓
               </button>

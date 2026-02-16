@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SaveData, GoopTemplate, GoopShape, Crack } from '../types';
+import { SaveData, GoopTemplate, GoopShape, Crack, ScreenType } from '../types';
 import { TrainingStep, PieceSpawn, CrackSpawn } from '../types/training';
 import { IntercomMessage } from '../types/tutorial';
 import { GameEngine } from '../core/GameEngine';
@@ -45,9 +45,10 @@ const TRAINING_PALETTE = [COLORS.BLUE, COLORS.YELLOW, COLORS.GREEN, COLORS.RED];
 /**
  * Add a crack to the engine's grid at a specific position.
  */
-function addCrackToGrid(engine: GameEngine, x: number, y: number, color: string): void {
+function addCrackToGrid(engine: GameEngine, x: number, y: number, color: string, source: string): void {
   const now = Date.now();
   const crackId = Math.random().toString(36).substr(2, 9);
+  console.log(`[CRACK] SPAWN id=${crackId} at (${x}, ${y}) color=${color} source="${source}" time=${new Date(now).toLocaleTimeString()} totalCracks=${engine.state.crackCells.length + 1}`);
   engine.state.crackCells.push({
     id: crackId,
     x, y, color,
@@ -89,7 +90,9 @@ function findCrackPosition(
     const tankPressure = Math.max(0, 1 - (engine.state.shiftTime / maxTime));
     const waterHeightBlocks = 1 + (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
     const pressureLineY = Math.floor(TANK_HEIGHT - waterHeightBlocks);
-    const targetRow = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY));
+    // Spawn 1-3 rows BELOW pressure line (higher Y = lower on screen = under the water)
+    const offset = 1 + Math.floor(Math.random() * 3);
+    const targetRow = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY + offset));
 
     for (let attempt = 0; attempt < 30; attempt++) {
       const screenX = 2 + Math.floor(Math.random() * (TANK_VIEWPORT_WIDTH - 4));
@@ -163,7 +166,11 @@ function spawnRandomCrack(engine: GameEngine): void {
   const tankPressure = Math.max(0, 1 - (engine.state.shiftTime / maxTime));
   const waterHeightBlocks = 1 + (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
   const pressureLineY = Math.floor(TANK_HEIGHT - waterHeightBlocks);
-  const spawnY = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY));
+  // Spawn 1-3 rows BELOW pressure line (higher Y = under the water)
+  const offset = 1 + Math.floor(Math.random() * 3);
+  const spawnY = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY + offset));
+
+  console.log(`[CRACK] PRESSURE DEBUG: psi=${(tankPressure * 100).toFixed(1)}% shiftTime=${engine.state.shiftTime.toFixed(1)} maxTime=${maxTime} waterHeight=${waterHeightBlocks.toFixed(1)} pressureLine=row${pressureLineY} offset=${offset} spawnY=row${spawnY}`);
 
   // Spawn in visible viewport only (not across full 30-col cylinder)
   for (let attempt = 0; attempt < 20; attempt++) {
@@ -172,7 +179,7 @@ function spawnRandomCrack(engine: GameEngine): void {
     const cell = engine.state.grid[spawnY]?.[gx];
     const overlaps = engine.state.crackCells.some(c => c.x === gx && c.y === spawnY);
     if (cell === null && !overlaps) {
-      addCrackToGrid(engine, gx, spawnY, color);
+      addCrackToGrid(engine, gx, spawnY, color, 'periodic-F1');
       engine.emitChange();
       return;
     }
@@ -187,12 +194,11 @@ function isAnyCrackOffscreen(engine: GameEngine): boolean {
   if (cracks.length === 0) return false;
 
   const rot = engine.state.tankRotation;
-  const centerCol = normalizeX(rot + TANK_VIEWPORT_WIDTH / 2);
   return cracks.some(c => {
-    let diff = c.x - centerCol;
-    if (diff > TANK_WIDTH / 2) diff -= TANK_WIDTH;
-    if (diff < -TANK_WIDTH / 2) diff += TANK_WIDTH;
-    return Math.abs(diff) >= TANK_VIEWPORT_WIDTH / 2;
+    let visX = c.x - rot;
+    if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+    if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
+    return visX < 0 || visX >= TANK_VIEWPORT_WIDTH;
   });
 }
 
@@ -269,6 +275,7 @@ export const useTrainingFlow = ({
   // Runs when currentStep changes. Sets up game state, spawns, message visibility.
 
   useEffect(() => {
+    console.log(`[STEP] === STEP CHANGE === ${currentStep?.id ?? 'null'} (${currentStep?.name ?? ''}) at ${new Date().toLocaleTimeString()}`);
     // Cleanup timers/intervals from previous step
     if (transitionTimerRef.current) {
       clearTimeout(transitionTimerRef.current);
@@ -342,14 +349,16 @@ export const useTrainingFlow = ({
 
       // --- Spawn crack if configured ---
       if (currentStep.setup?.spawnCrack) {
-        // Clear leftover cracks from previous steps (prevents D2 retry cracks from
-        // triggering D3 offscreen detection immediately, and gives E1 a clean board)
+        // Clear leftover cracks only when spawning a new one (gives this step a clean slate)
+        if (gameEngine.state.crackCells.length > 0) {
+          console.log(`[CRACK] CLEAR ALL — ${gameEngine.state.crackCells.length} cracks removed before spawning for ${currentStep.id}`);
+        }
         gameEngine.state.crackCells = [];
         gameEngine.state.goalMarks = [];
 
         const pos = findCrackPosition(gameEngine, currentStep.setup.spawnCrack);
         if (pos) {
-          addCrackToGrid(gameEngine, pos.x, pos.y, currentStep.setup.spawnCrack.color);
+          addCrackToGrid(gameEngine, pos.x, pos.y, currentStep.setup.spawnCrack.color, `step-setup[${currentStep.id}]`);
           gameEngine.emitChange();
         }
       }
@@ -623,7 +632,7 @@ export const useTrainingFlow = ({
     if (currentStep?.setup?.continuousSpawn && gameEngine) {
       // Spawn first piece after dismiss (training mode doesn't auto-spawn)
       setTimeout(() => {
-        if (gameEngine.isSessionActive && f1EndingRef.current !== 'overflow') {
+        if (gameEngine.isSessionActive && f1EndingRef.current === 'none') {
           gameEngine.spawnNewPiece();
           gameEngine.emitChange();
         }
@@ -631,10 +640,15 @@ export const useTrainingFlow = ({
 
       // Start periodic crack spawning if configured
       if (currentStep.setup.periodicCrackIntervalMs) {
+        console.log(`[CRACK] PERIODIC TIMER STARTED — interval=${currentStep.setup.periodicCrackIntervalMs}ms step=${currentStep.id}`);
         if (periodicCrackRef.current) clearInterval(periodicCrackRef.current);
         periodicCrackRef.current = setInterval(() => {
-          if (f1EndingRef.current === 'overflow') return;
+          if (f1EndingRef.current !== 'none') {
+            console.log(`[CRACK] PERIODIC SKIPPED — f1Ending=${f1EndingRef.current}`);
+            return;
+          }
           if (gameEngine.isSessionActive) {
+            console.log(`[CRACK] PERIODIC TICK — spawning random crack`);
             spawnRandomCrack(gameEngine);
           }
         }, currentStep.setup.periodicCrackIntervalMs);
@@ -845,7 +859,7 @@ export const useTrainingFlow = ({
                   const gy = TANK_HEIGHT - 1 - Math.floor(Math.random() * 2);
                   const overlaps = gameEngine.state.crackCells.some(c => c.x === gx && c.y === gy);
                   if (!overlaps) {
-                    addCrackToGrid(gameEngine, gx, gy, crackColor);
+                    addCrackToGrid(gameEngine, gx, gy, crackColor, 'retry-extra-crack');
                     break;
                   }
                 }
@@ -894,7 +908,7 @@ export const useTrainingFlow = ({
     // it was loose goop landing while a piece is in play.
     if (currentStep.setup?.continuousSpawn && gameEngine) {
       const spawnUnsub = gameEventBus.on(GameEventType.PIECE_DROPPED, () => {
-        if (f1EndingRef.current === 'overflow') return;
+        if (f1EndingRef.current !== 'none') return; // Stop during any F1 ending
 
         // Defer to next tick — lockActivePiece() hasn't finished yet
         setTimeout(() => {
@@ -932,6 +946,7 @@ export const useTrainingFlow = ({
 
           // F1: show pressure cap ending message
           if (currentStep.id === 'F1_GRADUATION' && f1EndingRef.current === 'none') {
+            console.log(`[F1] PRESSURE CAP reached (${(psi * 100).toFixed(1)}%) — showing ending message`);
             f1EndingRef.current = 'pressure-cap';
             setRetryMessage(F1_ENDING_MESSAGES.PRESSURE_CAP);
             setMessageVisible(true);
@@ -949,6 +964,7 @@ export const useTrainingFlow = ({
     if (currentStep.id === 'F1_GRADUATION' && gameEngine) {
       const handleOverflow = () => {
         if (f1EndingRef.current !== 'none') return; // Already in ending
+        console.log(`[F1] OVERFLOW detected — showing ending message`);
         f1EndingRef.current = 'overflow';
 
         // Freeze everything
@@ -980,10 +996,14 @@ export const useTrainingFlow = ({
       cleanups.push(() => clearInterval(overflowPoll));
     }
 
-    // --- Persistent D3 discovery trigger ---
-    // If D3 was auto-skipped, watch for offscreen cracks during E1/F1
-    if (pendingD3DiscoveryRef.current && gameEngine &&
-        (currentStep.id === 'E1_SCAFFOLDING' || currentStep.id === 'F1_GRADUATION')) {
+    // --- Discoverable D3 offscreen message ---
+    // If the D3 message hasn't been shown yet, watch for offscreen cracks during
+    // any step with cracks and tank rotation (D2, E1, F1). Shows as interrupt.
+    const stepsWithCracksAndRotation = ['D2_TANK_ROTATION', 'E1_SCAFFOLDING', 'F1_GRADUATION'];
+    if (!d3MessageShownRef.current && gameEngine &&
+        currentStep.id !== 'D3_OFFSCREEN' &&
+        stepsWithCracksAndRotation.includes(currentStep.id) &&
+        gameEngine.state.crackCells.length > 0) {
       const discoveryPoll = setInterval(() => {
         if (discoveryInterruptRef.current) return; // Already showing
         if (f1EndingRef.current !== 'none') return; // F1 ending active
@@ -991,6 +1011,7 @@ export const useTrainingFlow = ({
 
         if (isAnyCrackOffscreen(gameEngine)) {
           clearInterval(discoveryPoll);
+          d3MessageShownRef.current = true;
           pendingD3DiscoveryRef.current = false;
           discoveryInterruptRef.current = true;
 
@@ -998,11 +1019,20 @@ export const useTrainingFlow = ({
           setRetryMessage(TRAINING_MESSAGES.D3_OFFSCREEN);
           setMessageVisible(true);
 
-          // Pause briefly so player can read
+          // Pause so player can read
           gameEngine.state.isPaused = true;
           gameEngine.freezeFalling = true;
           pauseStartTimeRef.current = Date.now();
           gameEngine.emitChange();
+
+          // Mark D3 as learned so it auto-skips when we reach it
+          setSaveData(sd => {
+            const existing = sd.tutorialProgress?.completedSteps ?? [];
+            if (existing.includes('D3_OFFSCREEN')) return sd;
+            const updated = [...existing, 'D3_OFFSCREEN'];
+            if (!existing.includes('WRAP_INTRO')) updated.push('WRAP_INTRO');
+            return { ...sd, tutorialProgress: { completedSteps: updated } };
+          });
         }
       }, 200);
       cleanups.push(() => clearInterval(discoveryPoll));
@@ -1123,14 +1153,31 @@ export const useTrainingFlow = ({
   useEffect(() => {
     const unsub = gameEventBus.on(GameEventType.TRAINING_SCENARIO_COMPLETE, () => {
       if (gameEngine) {
+        // Clean up training flags
         gameEngine.isTrainingMode = false;
-        gameEngine.state.isPaused = false;
         gameEngine.pendingTrainingPalette = null;
         gameEngine.trainingAllowedControls = null;
         gameEngine.trainingPressureRate = 0;
         gameEngine.trainingHighlightColor = null;
         gameEngine.freezeFalling = false;
         gameEngine.trainingPopLowersPressure = false;
+
+        // Clear training cracks/marks
+        gameEngine.state.crackCells = [];
+        gameEngine.state.goalMarks = [];
+
+        // Grant training completion XP (enough to reach rank 1)
+        gameEngine.state.shiftScore = 3500;
+        gameEngine.state.goalsCleared = 1;
+        gameEngine.state.goalsTarget = 1; // Mark as "won" so rank-up applies
+
+        // End session and go to console (triggers rank-up via onRunComplete)
+        gameEngine.state.isPaused = false;
+        gameEngine.state.gameOver = true;
+        gameEngine.isSessionActive = false;
+        gameEngine.state.phase = ScreenType.ConsoleScreen;
+        gameEngine.emitChange();
+        gameEventBus.emit(GameEventType.GAME_OVER);
       }
     });
     return unsub;

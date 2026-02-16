@@ -149,6 +149,7 @@ export class CrackManager {
                 cell.branchCrackIds.push(newCrack.id);
 
                 // Add to crackCells array
+                console.log(`[CRACK] SPAWN id=${newCrack.id} at (${newCrack.x}, ${newCrack.y}) color=${newCrack.color} source="CrackManager-branch" time=${new Date().toLocaleTimeString()} totalCracks=${state.crackCells.length + 1}`);
                 state.crackCells.push(newCrack);
 
                 // Also add to goalMarks for backward compatibility

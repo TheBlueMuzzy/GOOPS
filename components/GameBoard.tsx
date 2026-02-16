@@ -139,20 +139,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const waterTopY = vbH - waterHeightPx;
 
   // Use imported coordinate transform functions (pure functions, no hooks needed)
-  const getScreenPercentCoords = useCallback((gridX: number, gridY: number) => {
-      let visX = gridX - tankRotation;
-      if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
-      if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
-
-      const svgX = visXToScreenX(visX);
-      const svgY = (gridY - BUFFER_HEIGHT) * BLOCK_SIZE + (BLOCK_SIZE / 2);
-
-      const pctX = ((svgX - vbX) / vbW) * 100;
-      const pctY = ((svgY - vbY) / vbH) * 100;
-
-      return { x: pctX, y: pctY };
-  }, [tankRotation]); // Only tankRotation changes - vbX/vbY/vbW/vbH are constants
-
   // --- INPUT HANDLING (via hook) ---
   // Events are now emitted via EventBus, subscribed in Game.tsx
   const { handlers, holdState, highlightedGroupId, shakingGroupId } = useInputHandlers({
@@ -521,7 +507,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [groups]);
 
   const activeColors = useMemo(() => new Set(goalMarks.map(m => m.color)), [goalMarks]);
-  const flyingOrbs = goalMarks.filter(m => now - m.spawnTime < 500);
 
   // Piece preview visibility based on upgrades
   const showHoldViewer = (powerUps?.['GOOP_HOLD_VIEWER'] || 0) >= 1;
@@ -711,13 +696,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
             {/* Offscreen Indicators */}
             {goalMarks.map(mark => {
-                const centerCol = normalizeX(tankRotation + TANK_VIEWPORT_WIDTH / 2);
-                let diff = mark.x - centerCol;
-                if (diff > TANK_WIDTH / 2) diff -= TANK_WIDTH;
-                if (diff < -TANK_WIDTH / 2) diff += TANK_WIDTH;
-                
-                if (Math.abs(diff) >= TANK_VIEWPORT_WIDTH / 2) {
-                    const isRight = diff > 0;
+                // Use same visX calculation as crack/goal rendering
+                let visX = mark.x - tankRotation;
+                if (visX > TANK_WIDTH / 2) visX -= TANK_WIDTH;
+                if (visX < -TANK_WIDTH / 2) visX += TANK_WIDTH;
+
+                // Offscreen = not in visible viewport [0, TANK_VIEWPORT_WIDTH)
+                if (visX < 0 || visX >= TANK_VIEWPORT_WIDTH) {
+                    const isRight = visX >= TANK_VIEWPORT_WIDTH;
                     const yPos = (mark.y - BUFFER_HEIGHT) * BLOCK_SIZE + (BLOCK_SIZE / 2);
                     const xPos = isRight ? (vbX + vbW - 5) : (vbX + 5);
                     return (
@@ -1565,18 +1551,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         )}
 
         {/* Flying Orbs & UI Overlay - Unchanged */}
-        {flyingOrbs.map(orb => {
-            const elapsed = now - orb.spawnTime;
-            const progress = Math.min(1, elapsed / 500);
-            const eased = 1 - (1 - progress) * (1 - progress);
-            const colorIndex = palette.indexOf(orb.color);
-            const startX = 50 + ((colorIndex - (palette.length - 1) / 2) * 8); 
-            const startY = 6; 
-            const endCoords = getScreenPercentCoords(orb.x, orb.y);
-            const currentX = startX + (endCoords.x - startX) * eased;
-            const currentY = startY + (endCoords.y - startY) * eased;
-            return <div key={`fly-${orb.id}`} className="absolute w-4 h-4 rounded-full shadow-lg border border-white/50 z-30" style={{ backgroundColor: orb.color, left: `${currentX}%`, top: `${currentY}%`, transform: 'translate(-50%, -50%)', boxShadow: isMobile ? `0 0 4px ${orb.color}` : `0 0 10px ${orb.color}` }} />;
-        })}
         
         {/* Piece Previews - side by side at top center (like old color pool) */}
         {state.phase === ScreenType.TankScreen && (showHoldViewer || showNextWindow) && (

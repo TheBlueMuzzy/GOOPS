@@ -899,6 +899,11 @@ export class GameEngine {
 
         // Check immediate collision on spawn (Game Over condition)
         if (checkCollision(currentGrid, piece, currentOffset)) {
+             if (this.isTrainingMode) {
+                 // In training, don't finalize — emit GAME_OVER so training handler can show its own message
+                 gameEventBus.emit(GameEventType.GAME_OVER);
+                 return;
+             }
              this.finalizeGame();
              return;
         }
@@ -981,6 +986,7 @@ export class GameEngine {
         this.lastGoalSpawnTime = newLastSpawnTime;
 
         if (crack) {
+            console.log(`[CRACK] SPAWN id=${crack.id} at (${crack.x}, ${crack.y}) color=${crack.color} source="ENGINE-tickGoals" time=${new Date().toLocaleTimeString()} totalCracks=${this.state.crackCells.length + 1} isTraining=${this.isTrainingMode}`);
             this.state.crackCells.push(crack);
             // Also add to goalMarks for backward compatibility (sealing detection uses goalMarks)
             this.state.goalMarks.push({

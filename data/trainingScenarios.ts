@@ -304,7 +304,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
 
   {
     // F1: Graduation game. All mechanics active.
-    // Continuous pieces, periodic cracks every ~20s, pressure at 0.2 rate.
+    // Continuous pieces, periodic cracks every ~20s, pressure at 0.5 rate.
     // Pressure caps at 95% → practice msg → swipe up → console.
     // Stack overflow → end msg → swipe up → console.
     // Pop lowers pressure (real game behavior).
@@ -313,7 +313,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     name: 'Graduation',
     teaches: 'free-play',
     setup: {
-      pressureRate: 0.2,
+      pressureRate: 0.5,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
       messagePosition: 'top',
       continuousSpawn: true,
