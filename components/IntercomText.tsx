@@ -187,7 +187,7 @@ export const IntercomText: React.FC<IntercomTextProps> = ({
 
         // Three-color system: green (keywords), white (clear), muted (garbled)
         const garbleClass = word.garbleLevel !== 'none'
-          ? 'text-slate-500'
+          ? 'text-slate-600'
           : 'text-slate-300';
 
         return (

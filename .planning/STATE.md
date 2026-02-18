@@ -2,7 +2,7 @@
 title: Project State
 type: session
 tags: [active, continuity, status]
-updated: 2026-02-16
+updated: 2026-02-17
 ---
 
 # Project State
@@ -10,11 +10,11 @@ updated: 2026-02-16
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 in current phase — Tutorial v2 full rebuild DONE, UAT round 5 in progress
-Status: In progress — Multiple UAT round 5 fixes applied. Testing training completion flow.
-Last activity: 2026-02-16 - UAT round 5 fixes: (1) Training spawn-collision guard. (2) Removed flying orb animation. (3) Fixed arrow asymmetry. (4) Crack debug logging. (5) Full-width dismiss buttons. (6) D3 offscreen discoverable during D2/E1/F1. (7) Fixed mystery cracks (spawnGoalBurst in actions.ts skipped in training). (8) Training completion → console + rank 1. (9) F1 pressure 0.2→0.5. (10) isAnyCrackOffscreen uses viewport math.
+Plan: 4 of 4 in current phase — Tutorial v2 full rebuild DONE, UAT round 5 complete → deploying
+Status: Deploying — All UAT issues resolved. Training completion goes straight to console, sets rank 1 directly.
+Last activity: 2026-02-17 - UAT round 5 final fixes: (15) Training completion no longer shows end game screen — goes straight to console. (16) Rank set to 1 directly via setSaveData (no scoring/XP). (17) Removed gameOver flag and GAME_OVER event from training completion.
 
-Progress: ████████░░ 80%
+Progress: █████████░ 90%
 
 ## Branch Workflow (SOP)
 

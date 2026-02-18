@@ -10,6 +10,7 @@ import { getNextTrainingStep, isTrainingComplete } from '../data/trainingScenari
 import { TRAINING_MESSAGES, TRAINING_RETRY_MESSAGES, F1_ENDING_MESSAGES } from '../data/tutorialSteps';
 import { COLORS, TANK_WIDTH, TANK_VIEWPORT_WIDTH, TANK_HEIGHT, TANK_VIEWPORT_HEIGHT, BUFFER_HEIGHT, TETRA_NORMAL, PENTA_NORMAL, HEXA_NORMAL } from '../constants';
 import { getRotatedCells } from '../utils/gameLogic';
+import { getScoreForRank } from '../utils/progression';
 import { normalizeX } from '../utils/coordinates';
 
 interface UseTrainingFlowOptions {
@@ -583,6 +584,58 @@ export const useTrainingFlow = ({
    * Also starts free-play features (continuous spawn, periodic cracks) if applicable.
    */
   const dismissMessage = useCallback(() => {
+    // --- F1 pressure-cap dismiss: resume play, pressure rises again, re-caps at 95% ---
+    if (f1EndingRef.current === 'pressure-cap' && !discoveryInterruptRef.current) {
+      setMessageVisible(false);
+      setRetryMessage(null);
+      f1EndingRef.current = 'none'; // Allow pieces/cracks to continue
+      adjustFillTimestampsForPause();
+
+      if (gameEngine && gameEngine.isSessionActive) {
+        gameEngine.state.isPaused = false;
+        gameEngine.freezeFalling = false;
+        // Resume pressure — it will rise again until re-capped at 95%
+        if (currentStep?.setup?.pressureRate != null) {
+          gameEngine.trainingPressureRate = currentStep.setup.pressureRate;
+        }
+        gameEngine.emitChange();
+
+        // Spawn piece if none active
+        if (!gameEngine.state.activeGoop) {
+          setTimeout(() => {
+            if (gameEngine.isSessionActive && f1EndingRef.current === 'none') {
+              gameEngine.spawnNewPiece();
+              gameEngine.emitChange();
+            }
+          }, 300);
+        }
+
+        // Re-watch for pressure cap — will freeze again at 95%
+        const capValue = currentStep?.setup?.pressureCap ?? 0.95;
+        const reCap = setInterval(() => {
+          if (f1EndingRef.current !== 'none') { clearInterval(reCap); return; }
+          const maxTime = gameEngine.maxTime ?? 1;
+          const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
+          if (psi >= capValue) {
+            clearInterval(reCap);
+            gameEngine.trainingPressureRate = 0;
+            gameEngine.emitChange();
+
+            f1EndingRef.current = 'pressure-cap';
+            setRetryMessage(F1_ENDING_MESSAGES.PRESSURE_CAP);
+            setMessageVisible(true);
+            setCanDismiss(true);
+            advanceArmedRef.current = true;
+            gameEngine.state.isPaused = true;
+            gameEngine.freezeFalling = true;
+            pauseStartTimeRef.current = Date.now();
+            gameEngine.emitChange();
+          }
+        }, 250);
+      }
+      return;
+    }
+
     // --- D3 discovery interrupt: dismiss and resume, don't affect step ---
     if (discoveryInterruptRef.current) {
       discoveryInterruptRef.current = false;
@@ -944,13 +997,13 @@ export const useTrainingFlow = ({
           gameEngine.trainingPressureRate = 0;
           gameEngine.emitChange();
 
-          // F1: show pressure cap ending message
+          // F1: show pressure cap ending message (dismissible — reshows every 30s)
           if (currentStep.id === 'F1_GRADUATION' && f1EndingRef.current === 'none') {
             console.log(`[F1] PRESSURE CAP reached (${(psi * 100).toFixed(1)}%) — showing ending message`);
             f1EndingRef.current = 'pressure-cap';
             setRetryMessage(F1_ENDING_MESSAGES.PRESSURE_CAP);
             setMessageVisible(true);
-            setCanDismiss(false);
+            setCanDismiss(true);
             advanceArmedRef.current = true;
           }
         }
@@ -981,19 +1034,6 @@ export const useTrainingFlow = ({
 
       const overflowUnsub = gameEventBus.on(GameEventType.GAME_OVER, handleOverflow);
       cleanups.push(overflowUnsub);
-
-      // Poll: check if any goop reached buffer zone (stack overflow)
-      const overflowPoll = setInterval(() => {
-        if (f1EndingRef.current !== 'none') { clearInterval(overflowPoll); return; }
-        for (let x = 0; x < TANK_WIDTH; x++) {
-          if (gameEngine.state.grid[BUFFER_HEIGHT]?.[x] !== null) {
-            clearInterval(overflowPoll);
-            handleOverflow();
-            return;
-          }
-        }
-      }, 500);
-      cleanups.push(() => clearInterval(overflowPoll));
     }
 
     // --- Discoverable D3 offscreen message ---
@@ -1166,22 +1206,22 @@ export const useTrainingFlow = ({
         gameEngine.state.crackCells = [];
         gameEngine.state.goalMarks = [];
 
-        // Grant training completion XP (enough to reach rank 1)
-        gameEngine.state.shiftScore = 3500;
-        gameEngine.state.goalsCleared = 1;
-        gameEngine.state.goalsTarget = 1; // Mark as "won" so rank-up applies
-
-        // End session and go to console (triggers rank-up via onRunComplete)
+        // Go straight to console — no end game screen, no scoring
         gameEngine.state.isPaused = false;
-        gameEngine.state.gameOver = true;
         gameEngine.isSessionActive = false;
         gameEngine.state.phase = ScreenType.ConsoleScreen;
         gameEngine.emitChange();
-        gameEventBus.emit(GameEventType.GAME_OVER);
+
+        // Set operator rank to 1 directly
+        setSaveData(sd => ({
+          ...sd,
+          careerRank: 1,
+          careerScore: getScoreForRank(1),
+        }));
       }
     });
     return unsub;
-  }, [gameEngine]);
+  }, [gameEngine, setSaveData]);
 
   // ─── Display Step ──────────────────────────────────────────
 

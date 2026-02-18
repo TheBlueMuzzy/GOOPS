@@ -111,7 +111,7 @@ export const F1_ENDING_MESSAGES: Record<string, IntercomMessage> = {
   },
   OVERFLOW: {
     keywords: ['Swipe up', 'end'],
-    fullText: 'Training [is] over. Swipe up [to] end.',
+    fullText: '[You] overflowed [the] tank! Training [is] over. Swipe up [to] end.',
   },
 };
 
