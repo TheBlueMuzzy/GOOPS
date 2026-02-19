@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { SaveData, GoopTemplate, GoopShape, Crack, ScreenType } from '../types';
 import { TrainingStep, PieceSpawn, CrackSpawn } from '../types/training';
 import { IntercomMessage } from '../types/tutorial';
@@ -599,10 +599,8 @@ export const useTrainingFlow = ({
       if (gameEngine && gameEngine.isSessionActive) {
         gameEngine.state.isPaused = false;
         gameEngine.freezeFalling = false;
-        // Resume pressure — it will rise again until re-capped at 95%
-        if (currentStep?.setup?.pressureRate != null) {
-          gameEngine.trainingPressureRate = currentStep.setup.pressureRate;
-        }
+        // Keep pressure frozen (rate stays 0) — re-cap interval resumes it
+        // only after player pops and pressure drops below cap
         gameEngine.emitChange();
 
         // Spawn piece if none active
@@ -615,16 +613,28 @@ export const useTrainingFlow = ({
           }, 300);
         }
 
-        // Re-watch for pressure cap — only trigger when pressure CROSSES from below to at/above cap
+        // Re-watch for pressure cap:
+        // 1. Wait for pressure to drop below cap (player pops goop)
+        // 2. Resume pressure rate so it can rise naturally
+        // 3. When pressure crosses back up to cap, re-cap
         const capValue = currentStep?.setup?.pressureCap ?? 0.95;
-        let belowThreshold = false;
+        const stepPressureRate = currentStep?.setup?.pressureRate ?? 0.5;
+        let pressureResumed = false;
         const reCap = setInterval(() => {
           if (f1EndingRef.current !== 'none') { clearInterval(reCap); return; }
           const maxTime = gameEngine.maxTime ?? 1;
           const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
-          if (psi < capValue) {
-            belowThreshold = true;
-          } else if (belowThreshold && psi >= capValue) {
+
+          if (!pressureResumed) {
+            if (psi < capValue) {
+              // Player popped — pressure dropped below cap, resume rate
+              pressureResumed = true;
+              gameEngine.trainingPressureRate = stepPressureRate;
+              gameEngine.emitChange();
+            }
+            // Don't check for re-cap until pressure has dropped first
+          } else if (psi >= capValue) {
+            // Pressure rose back to cap — re-cap
             clearInterval(reCap);
             gameEngine.trainingPressureRate = 0;
             gameEngine.emitChange();
@@ -1050,7 +1060,7 @@ export const useTrainingFlow = ({
     // --- Discoverable D3 offscreen message ---
     // If the D3 message hasn't been shown yet, watch for offscreen cracks during
     // any step with cracks and tank rotation (D2, E1, F1). Shows as interrupt.
-    const stepsWithCracksAndRotation = ['D2_TANK_ROTATION', 'E1_SCAFFOLDING', 'F1_GRADUATION'];
+    const stepsWithCracksAndRotation = ['D2_TANK_ROTATION', 'E1_SEAL_CRACK', 'F1_GRADUATION'];
     if (!d3MessageShownRef.current && gameEngine &&
         currentStep.id !== 'D3_OFFSCREEN' &&
         stepsWithCracksAndRotation.includes(currentStep.id) &&
@@ -1240,10 +1250,10 @@ export const useTrainingFlow = ({
 
   // ─── Display Step ──────────────────────────────────────────
 
-  const trainingDisplayStep: { message: IntercomMessage } | null =
-    currentStep && messageVisible
-      ? { message: retryMessage ?? TRAINING_MESSAGES[currentStep.id] ?? { keywords: [], fullText: currentStep.name } }
-      : null;
+  const trainingDisplayStep = useMemo<{ message: IntercomMessage } | null>(() => {
+    if (!currentStep || !messageVisible) return null;
+    return { message: retryMessage ?? TRAINING_MESSAGES[currentStep.id] ?? { keywords: [], fullText: currentStep.name } };
+  }, [currentStep?.id, messageVisible, retryMessage]);
 
   const messagePosition = currentStep?.setup?.messagePosition ?? 'center';
   const highlightColor = (isInTraining && currentStep?.setup?.highlightGoopColor) || null;

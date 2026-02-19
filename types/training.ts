@@ -3,7 +3,7 @@ import { TutorialStepId } from './tutorial';
 import { GoopShape } from '../types';
 
 // --- Training Step Identifiers ---
-// Tutorial v2: 14 steps across 6 phases (A:1, B:4, C:4, D:3, E:1, F:1)
+// Tutorial v2: 16 steps across 6 phases (A:1, B:4, C:4, D:3, E:3, F:1)
 
 export type TrainingStepId =
   | 'A1_WELCOME'
@@ -18,7 +18,9 @@ export type TrainingStepId =
   | 'D1_CRACK'
   | 'D2_TANK_ROTATION'
   | 'D3_OFFSCREEN'
-  | 'E1_SCAFFOLDING'
+  | 'E1_SEAL_CRACK'
+  | 'E2_POP_SEALED'
+  | 'E3_SCAFFOLDING'
   | 'F1_GRADUATION';
 
 // Phase groupings (A-F)

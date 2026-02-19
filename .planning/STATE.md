@@ -10,9 +10,9 @@ updated: 2026-02-17
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 in current phase — Tutorial v2 UAT round 6 bug fixes
-Status: Bug fixes in progress — 7 fixes applied, needs testing
-Last activity: 2026-02-19 — 7 fixes: message flash, D2 retry leak, fill holes, rank 2, C2 reshow, crack interval, F1 cap loop
+Plan: 4 of 4 in current phase — Tutorial v2 UAT round 7 bug fixes
+Status: Deploying — all fixes applied, 210 tests pass
+Last activity: 2026-02-19 — Save + commit + deploy (UAT round 7 fixes)
 
 Progress: █████████░ 93%
 
@@ -28,32 +28,31 @@ Progress: █████████░ 93%
 
 ## Session Changes (2026-02-19)
 
-### Bug Fixes This Session
+### UAT Round 7 Bug Fixes (This Session)
 
-1. **Message flash glitch** (`TutorialOverlay.tsx`) — When closing a message, the next message text briefly flashed before the window disappeared. Added a third branch for message-to-message transitions: fade out → swap content → fade in (160ms gap).
+1. **Messages not showing during non-paused steps** (`useTrainingFlow.ts`) — ROOT CAUSE: `trainingDisplayStep` created a new object on every render. TutorialOverlay's useEffect depended on `[activeStep]` (reference equality), so during non-paused steps (game ticking at 40-60fps), the "swap" branch's 160ms timeout was perpetually reset — message never faded back in. Fixed by memoizing `trainingDisplayStep` with `useMemo` keyed on `currentStep?.id`, `messageVisible`, and `retryMessage`. This also fixes C2's pop message not showing (yellow pulsing with no message).
 
-2. **D2 retry timeout leak** (`useTrainingFlow.ts`) — Retry handler's 3 nested setTimeout callbacks were never cancelled on step change. If player sealed the crack and advanced to D3, the D2 retry timeouts kept running — clearing D3's grid, showing D2's retry message, disarming advance. Fixed by storing timeout IDs in `retryTimeoutsRef` and clearing them in the step-change effect cleanup.
+2. **Pressure cap bypass on 2nd crossing** (`useTrainingFlow.ts`) — After dismissing 1st 95% cap message, pressure rate was restored immediately. But pressure was already at 95%, so the re-cap interval's `belowThreshold` crossing detection never fired (pressure never dropped below cap to set the flag). Fixed: keep pressure rate at 0 after dismiss. Re-cap interval now waits for pressure to drop below cap (from player popping), then resumes rate. When pressure rises back to cap, re-caps. No infinite loop, no bypass.
 
-3. **Fill shape holes rendering** (`rendering.ts`, `GameBoard.tsx`) — Fill animation shape treated all vertices (outer + hole loops) as one flat ring. Vertices connected across loops, creating incorrect shapes. Added `getInsetSoftBlobPath()` that insets each loop independently (mirrors `getSoftBlobPath` pattern). Added `fillRule="evenodd"` to fill path.
+3. **E-phase restructure: F1 before E1 race** (`trainingScenarios.ts`, `types/training.ts`, `tutorialSteps.ts`) — E1 advanced immediately on crack-sealed, jumping straight to F1 before player could pop or see scaffolding message. Split E1 into 3 steps:
+   - **E1_SEAL_CRACK**: Brief intro → continuous spawn → seal the high crack
+   - **E2_POP_SEALED**: Green goop pulses → 3s pop reminder (non-dismissible) → pop
+   - **E3_SCAFFOLDING**: 1.5s pause delay (pop animation settles) → scaffolding concept message → tap to dismiss → F1
 
-4. **Rank 2 after training** (`useTrainingFlow.ts`) — Training completion set rank 1 correctly but didn't reset `shiftScore` or `goalsCleared`. ConsoleView saw `shiftScore > 0`, treated it as a completed game, ran capped progression on rank 1 → rank 2. Fixed by resetting both to 0 in the training complete handler.
-
-5. **C2 reshow not firing** (`useTrainingFlow.ts`) — Reshow timer was guarded by `advanceArmedRef.current` which is false before dismiss. Removed the guard so the 3s non-dismissible "pop" reminder fires regardless of advance state.
-
-6. **Crack interval too slow** (`trainingScenarios.ts`) — Changed `periodicCrackIntervalMs` from 20000 to 10000 (20s → 10s).
-
-7. **F1 pressure cap infinite loop** (`useTrainingFlow.ts`) — Re-cap poll checked `psi >= 0.95` which was immediately true after dismiss (pressure still at 95%). Added `belowThreshold` crossing detection: pressure must drop below cap first, then rise back to trigger the message again.
+4. **C4 pop reminder missing** (`trainingScenarios.ts`) — After blue merge, C4 had no reshow timer. Added `reshowAfterMs: 3000, reshowNonDismissible: true` so "Pop it" re-shows if player doesn't act within 3s.
 
 ### Files Changed
-- `components/TutorialOverlay.tsx` — Message swap transition
-- `hooks/useTrainingFlow.ts` — Retry timeout cleanup, shiftScore reset, reshow guard fix, pressure cap crossing detection
-- `core/softBody/rendering.ts` — `getInsetSoftBlobPath()` for compound paths
-- `components/GameBoard.tsx` — Use new inset function + fillRule
-- `data/trainingScenarios.ts` — Crack interval 20s → 10s
+- `hooks/useTrainingFlow.ts` — Memoized trainingDisplayStep, pressure cap re-watch rewrite, E1 reference update
+- `types/training.ts` — Added E1_SEAL_CRACK, E2_POP_SEALED, E3_SCAFFOLDING step IDs (16 steps total)
+- `data/trainingScenarios.ts` — E-phase split into 3 steps, C4 reshowAfterMs added
+- `data/tutorialSteps.ts` — New messages for E1/E2/E3
+
+### Deferred
+- **Fill rendering "almost hole" inversion** — Documented in Known Issues. Needs isolated investigation.
 
 ## Next Steps
 
-**Test all 7 fixes, then deploy if clean.**
+**Deployed.** Phase 33 Plan 04 UAT complete. Next: continue Phase 33 Plan 05 or move to Phase 34.
 
 **What was rebuilt (2026-02-15):**
 - 14 steps (down from 19), 6 phases (A:1, B:4, C:4, D:3, E:1, F:1)
@@ -170,6 +169,7 @@ Progress: █████████░ 93%
 - PiecePreview NEXT/HOLD labels at 18px may be too large for 48px box
 - Some SVG text in Art.tsx not yet standardized
 - Per-step crack spawning now active (spawnCrack handler in useTrainingFlow.ts)
+- **Fill rendering "almost hole" inversion**: When a fill shape nearly closes a hole (vertices almost touching), `fillRule="evenodd"` causes inverted colors at the near-connection point. The inset algorithm treats near-touching vertices as "opposite sides" and limits inset too aggressively. Fix options: try `nonzero` fill rule, or fix inset algorithm for near-touching vertices. Files: `core/softBody/rendering.ts` (`getInsetSoftBlobPath`), `components/GameBoard.tsx` (fill cutout path).
 
 ### Roadmap Evolution
 

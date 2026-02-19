@@ -14,7 +14,7 @@ export const TRAINING_PHASE_NAMES: Record<TrainingPhase, string> = {
 };
 
 /**
- * Tutorial v2 — 14 steps across 6 phases (A-F).
+ * Tutorial v2 — 16 steps across 6 phases (A-F).
  *
  * Design spec: .planning/Tutorial2.md
  * Principles: show-then-name-then-do, one concept per step,
@@ -185,6 +185,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     // C4: "Pop it." — second pop rep. Merged blue visible, pressure frozen.
     // Blue goop pulses (highlight). Player waits for solidify, then pops.
     // Message shows after 2s delay. Game NOT paused — player can pop while reading.
+    // Reshow after 3s if player hasn't popped (non-dismissible reminder).
     id: 'C4_PRACTICE_POP',
     phase: 'C',
     name: 'Practice Pop',
@@ -194,6 +195,8 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       allowedControls: { fastDrop: true, rotate: true, tankRotate: false },
       highlightGoopColor: COLORS.BLUE,  // Pulse blue goop, restrict popping to blue
       messageDelay: 2000,  // Wait for fill context to settle
+      reshowAfterMs: 3000,
+      reshowNonDismissible: true,
       popLowersPressure: true,
     },
     pauseGame: false,  // Game running so player can pop while reading
@@ -272,29 +275,65 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
   },
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase E — Scaffolding (1 step)
-  // Stack goop to reach a high crack
+  // Phase E — Scaffolding (3 steps)
+  // Seal a high crack → pop → learn scaffolding concept
   // ═══════════════════════════════════════════════════════════════
 
   {
-    // E1: High crack at row 10-12. Pieces spawn continuously.
-    // "Cracks spawn higher as Pressure builds. Stack goop to reach them."
+    // E1: High crack at pressure line. Continuous spawn. Brief intro.
+    // Dismiss → play. Seal the crack → advance to E2.
     // Safety: auto-advance after 90s.
-    id: 'E1_SCAFFOLDING',
+    id: 'E1_SEAL_CRACK',
     phase: 'E',
-    name: 'Build Scaffolding',
-    teaches: 'scaffolding-strategy',
+    name: 'Seal the Crack',
+    teaches: 'high-crack-sealing',
     setup: {
       spawnCrack: { color: COLORS.GREEN, placement: 'at-pressure-line' },
       pressureRate: 0.46875,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
       messagePosition: 'top',
       continuousSpawn: true,   // Auto-spawn next piece after each lands
-      autoSkipMs: 90000,       // Safety: move to graduation if stuck
+      autoSkipMs: 90000,       // Safety: move on if stuck
       popLowersPressure: true,
     },
-    pauseGame: true,  // Pause for message. Dismiss → continuous play begins.
+    pauseGame: true,  // Brief message, dismiss → continuous play begins.
     advance: { type: 'event', event: 'crack-sealed' },
+  },
+
+  {
+    // E2: Crack is sealed. Green goop pulses. Pop reminder after 3s.
+    // No continuous spawn — focused pop moment.
+    id: 'E2_POP_SEALED',
+    phase: 'E',
+    name: 'Pop Sealed',
+    teaches: 'pop-after-seal',
+    setup: {
+      pressureRate: 0.46875,
+      allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
+      highlightGoopColor: COLORS.GREEN,
+      reshowAfterMs: 3000,
+      reshowNonDismissible: true,
+      popLowersPressure: true,
+    },
+    pauseGame: false,  // Game running, player pops green goop
+    advance: { type: 'action', action: 'pop-goop' },
+  },
+
+  {
+    // E3: Scaffolding concept. Shows after pop animation settles (1.5s delay).
+    // "Cracks spawn higher as pressure builds. Stack goop to reach them."
+    id: 'E3_SCAFFOLDING',
+    phase: 'E',
+    name: 'Scaffolding',
+    teaches: 'scaffolding-strategy',
+    setup: {
+      pressureRate: 0.46875,
+      allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
+      pauseDelay: 1500,  // Wait for pop droplets + blobs to disappear
+      popLowersPressure: true,
+    },
+    pauseGame: true,
+    advance: { type: 'tap' },
   },
 
   // ═══════════════════════════════════════════════════════════════

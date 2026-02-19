@@ -1,8 +1,9 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npm run test:run:*)"
-    ]
-  }
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "spinnerTipsEnabled": false
 }
