@@ -10,9 +10,9 @@ updated: 2026-02-17
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 in current phase — Tutorial v2 UAT round 7 bug fixes
-Status: Deploying — all fixes applied, 210 tests pass
-Last activity: 2026-02-19 — Save + commit + deploy (UAT round 7 fixes)
+Plan: 4 of 4 in current phase — Tutorial v2 UAT round 10
+Status: UAT round 10 — E-phase redesign + F1 soft crash fix. ONE REMAINING BUG (see Next Steps).
+Last activity: 2026-02-19 — E1/E2 redesign, F1 gen counter fix, message flash fix, E1 pulse still missing
 
 Progress: █████████░ 93%
 
@@ -28,31 +28,80 @@ Progress: █████████░ 93%
 
 ## Session Changes (2026-02-19)
 
-### UAT Round 7 Bug Fixes (This Session)
+### UAT Round 7 Bug Fixes (Previous Session)
 
-1. **Messages not showing during non-paused steps** (`useTrainingFlow.ts`) — ROOT CAUSE: `trainingDisplayStep` created a new object on every render. TutorialOverlay's useEffect depended on `[activeStep]` (reference equality), so during non-paused steps (game ticking at 40-60fps), the "swap" branch's 160ms timeout was perpetually reset — message never faded back in. Fixed by memoizing `trainingDisplayStep` with `useMemo` keyed on `currentStep?.id`, `messageVisible`, and `retryMessage`. This also fixes C2's pop message not showing (yellow pulsing with no message).
+1. Memoized `trainingDisplayStep` — fixes messages not showing during non-paused steps
+2. Pressure cap bypass on 2nd crossing — keep rate at 0 after dismiss, re-cap on next crossing
+3. E-phase restructure — Split E1 into E1_SEAL_CRACK, E2_POP_SEALED, E3_SCAFFOLDING (16 steps)
+4. C4 pop reminder — Added `reshowAfterMs: 3000, reshowNonDismissible: true`
 
-2. **Pressure cap bypass on 2nd crossing** (`useTrainingFlow.ts`) — After dismissing 1st 95% cap message, pressure rate was restored immediately. But pressure was already at 95%, so the re-cap interval's `belowThreshold` crossing detection never fired (pressure never dropped below cap to set the flag). Fixed: keep pressure rate at 0 after dismiss. Re-cap interval now waits for pressure to drop below cap (from player popping), then resumes rate. When pressure rises back to cap, re-caps. No infinite loop, no bypass.
+### UAT Round 8 Bug Fixes (This Session)
 
-3. **E-phase restructure: F1 before E1 race** (`trainingScenarios.ts`, `types/training.ts`, `tutorialSteps.ts`) — E1 advanced immediately on crack-sealed, jumping straight to F1 before player could pop or see scaffolding message. Split E1 into 3 steps:
-   - **E1_SEAL_CRACK**: Brief intro → continuous spawn → seal the high crack
-   - **E2_POP_SEALED**: Green goop pulses → 3s pop reminder (non-dismissible) → pop
-   - **E3_SCAFFOLDING**: 1.5s pause delay (pop animation settles) → scaffolding concept message → tap to dismiss → F1
+5. **E2 message showed immediately instead of as delayed hint** — E2 had `pauseGame: false` with no `messageDelay`, so message appeared instantly on step entry. Replaced `reshowAfterMs` + `reshowNonDismissible` with `messageDelay: 3000` + `nonDismissible: true`. Message now hidden for 3s; if player pops before timer, advances without ever showing message.
 
-4. **C4 pop reminder missing** (`trainingScenarios.ts`) — After blue merge, C4 had no reshow timer. Added `reshowAfterMs: 3000, reshowNonDismissible: true` so "Pop it" re-shows if player doesn't act within 3s.
+6. **E2 soft lock on non-dismissible reshow** — Previous reshowAfterMs handler showed non-dismissible message but didn't ensure goop was poppable. Now using messageDelay approach with `autoSkipMs: 30000` safety valve. Added `nonDismissible` field to StepSetup type and updated messageDelay handler to set `canDismiss(false)` when flag is true.
 
-### Files Changed
-- `hooks/useTrainingFlow.ts` — Memoized trainingDisplayStep, pressure cap re-watch rewrite, E1 reference update
-- `types/training.ts` — Added E1_SEAL_CRACK, E2_POP_SEALED, E3_SCAFFOLDING step IDs (16 steps total)
-- `data/trainingScenarios.ts` — E-phase split into 3 steps, C4 reshowAfterMs added
-- `data/tutorialSteps.ts` — New messages for E1/E2/E3
+### UAT Round 9 — E-Phase Flow Audit (This Session)
+
+Full audit of E-phase FTUE flow revealed 4 structural bugs causing cascading issues:
+
+7. **Overflow spawn position too low** — Training mode spawned pieces at row 2 (BUFFER_HEIGHT-1) instead of row 0. Overflow triggered when goop was only 2 rows into visible area. Fixed: spawn at row 0 for all modes.
+
+8. **Leaked setTimeout callbacks between step transitions** — Continuous spawn handler created `setTimeout(0)` + `setTimeout(300)` that persisted across step changes. When E1 advanced to E2 mid-continuous-spawn, the leaked callback unpaused the game between steps. Fixed: track timeouts in `continuousSpawnTimeoutsRef`, clear them in `advanceStep()` and step cleanup.
+
+9. **Message flash on step advance** — `advanceStep()` didn't call `setMessageVisible(false)`. For tap-advance steps (E3→F1), one render frame showed the next step's message before the step setup effect hid it. Fixed: hide message immediately in `advanceStep()`.
+
+10. **D3 discovery interrupt re-fired during E1** — `d3MessageShownRef` reset to `false` on every step change. Even though D3 was already completed during D2, E1 set up the D3 offscreen poll again. Fixed: check `completedSteps` (persistent) not just the ref.
+
+11. **E2 advance armed before message visible** — `pauseGame: false` armed advance immediately, but `messageDelay: 3000` hid the message for 3s. Any pop in those 3s advanced E2 before the user saw "Pop it." Fixed: steps with `messageDelay` start disarmed, arm when message becomes visible.
+
+### UAT Round 10 — E-Phase Redesign + F1 Soft Crash Fix (This Session)
+
+12. **F1 soft crash — continuous spawn handler broke on isPaused guard** — Round 9 added `if (gameEngine.state.isPaused) return;` to prevent leaked unpauses, but training mode auto-pauses on piece lock. The handler was SUPPOSED to undo that auto-pause. Fixed: replaced `isPaused` guard with `stepGenerationRef` counter. `advanceStep()` increments generation; leaked callbacks see stale generation and bail. Training auto-pause is correctly undone.
+
+13. **E1 redesign — two-phase GOAL_CAPTURED flow** — E1 no longer shows a message on entry. Continuous spawn runs freely until crack is sealed. When GOAL_CAPTURED fires: suppress spawns, freeze falling, arm advance. If player pops immediately → skip E2 → E3. After 3s → hint message "Pop the goop to seal the crack." After 3 more seconds → auto-advance to E2. Custom GOOP_POPPED handler marks E2 complete when popping during E1 (so getNextTrainingStep skips E2 → E3 is next).
+
+14. **E2 redesign — immediate non-dismissible message** — Removed `messageDelay: 3000`. Message shows immediately on step entry. Added `nonDismissible` check to default `pauseGame:false` branch in step setup (was only handled in messageDelay path). Green highlight restricts popping to green.
+
+15. **F1 graduation delay** — Added `pauseDelay: 2000` to F1 config. Graduation message now appears 2s after E3 confirm (breathing room) instead of default 400ms.
+
+16. **suppressContinuousSpawnRef** — New ref to stop continuous spawn within a step without pausing the game (E1 after crack sealed). Checked in both the initial PIECE_DROPPED handler AND the deferred setTimeout callbacks (handles race condition where PIECE_DROPPED fires before GOAL_CAPTURED in same lock cycle).
+
+17. **E1 message non-dismissible + pressure freeze** — E1 "Pop to seal" message now has no confirm button (`setCanDismiss(false)`) and freezes pressure (`trainingPressureRate = 0`) while displayed. Pressure resumes when pop advances to E3 (via sync effect). Timer is 4500ms from GOAL_CAPTURED (1500ms fill animation for 4-block T_O + 3000ms post-fill).
+
+18. **Message flash on step transition (re-fix)** — The default `pauseGame:false` branch in the step-change effect set `messageVisible(true)` immediately, before TutorialOverlay could fade out the previous message. Every other branch already used a delay. Fixed: added 200ms delay to match overlay's fade-out timing. Affects steps like B2, C2, E2 that show messages immediately on non-pausing steps.
+
+### Files Changed (This Session)
+- `types/training.ts` — Added `nonDismissible` field to StepSetup
+- `data/trainingScenarios.ts` — E1: pauseGame:false, messageDelay:999999, advance:pop-goop; E2: removed messageDelay; F1: added pauseDelay:2000
+- `data/tutorialSteps.ts` — E1 message: "Pop [the] goop [to] seal the crack."
+- `hooks/useTrainingFlow.ts` — All structural fixes: stepGenerationRef, suppressContinuousSpawnRef, E1 custom GOAL_CAPTURED/GOOP_POPPED handlers, nonDismissible in default branch
+- `core/GameEngine.ts` — Training spawn position fixed (row 0 for overflow)
 
 ### Deferred
 - **Fill rendering "almost hole" inversion** — Documented in Known Issues. Needs isolated investigation.
 
-## Next Steps
+## Next Steps — REMAINING BUG
 
-**Deployed.** Phase 33 Plan 04 UAT complete. Next: continue Phase 33 Plan 05 or move to Phase 34.
+**E1 green pulse missing when message shows.** The E1 GOAL_CAPTURED handler in `useTrainingFlow.ts` (around line 1172) needs ONE line added inside the 4500ms setTimeout callback, right alongside the other message-show actions:
+
+```typescript
+gameEngine.trainingHighlightColor = COLORS.GREEN;
+```
+
+This line goes inside the `const t1 = setTimeout(() => { ... }, 4500)` block in the E1 custom handler, next to `setMessageVisible(true)`, `setCanDismiss(false)`, and `gameEngine.trainingPressureRate = 0`.
+
+**What this does:** When the "Pop the goop to seal the crack" message appears 4.5s after crack is covered (1.5s fill + 3s wait), the green goop covering the crack should PULSE (CSS `training-pulse` animation) to draw the player's attention to what to pop. Currently the pulse only starts when E2 is reached (via `highlightGoopColor: COLORS.GREEN` in E2's config). It should also happen in E1 when the message shows.
+
+**Full E1 flow after fix:**
+1. Continuous play, crack at pressure line
+2. Player covers crack with green goop → GOAL_CAPTURED
+3. Spawning stops, falling freezes, advance armed
+4. 4.5s later (1.5s fill + 3s): message appears, green goop pulses, pressure freezes, no confirm button
+5. Player pops green → message closes, pressure resumes, skip E2 → E3
+6. OR 3s more → auto-advance to E2 (also has pulse + non-dismissible message)
+
+**After fixing, test full A1→F1 playthrough. If clean → commit + redeploy.**
 
 **What was rebuilt (2026-02-15):**
 - 14 steps (down from 19), 6 phases (A:1, B:4, C:4, D:3, E:1, F:1)
@@ -183,30 +232,23 @@ Progress: █████████░ 93%
 Last session: 2026-02-19
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 286
+**Build:** 298
 
 ### Resume Command
 ```
-Phase 33 Plan 04 — Tutorial v2 UAT
+Phase 33 Plan 04 — Tutorial v2 UAT round 10
 
-Tutorial v2 rebuilt and UAT rounds 1-4 complete. 210 tests pass.
-Tutorial2.md synced with implementation (including implementation notes).
+UAT rounds 7-10 complete. 210 tests pass. Build #298.
 
-Critical engine discoveries documented:
-- PIECE_DROPPED fires BEFORE training pause (setTimeout(0) required)
-- tickLooseGoop also emits PIECE_DROPPED (activeGoop guard required)
-- All cracks use pressure-line formula (same as spawnGoalMark)
+ONE REMAINING BUG: E1 green pulse missing when message shows.
+Read the "Next Steps — REMAINING BUG" section in STATE.md for exact fix.
 
 WHAT TO DO:
-1. Run full A1→F1 flow — verify all fixes from rounds 1-4
-2. Key things to test:
-   - D2 retry: piece fills naturally → pop → droplets → message (smooth, ~4s)
-   - E1 crack spawns at pressure line (not forced high)
-   - F1 continuous play works (pieces keep spawning after each lands)
-   - F1 pressure rises to 95% → practice message → swipe up → console
-   - F1 overflow → end message → swipe up → console
-   - Pieces don't change shape while falling (loose goop merge fixed)
-3. If all pass → <deploy>
+1. Add `gameEngine.trainingHighlightColor = COLORS.GREEN` to the E1
+   GOAL_CAPTURED handler's 4500ms setTimeout callback in useTrainingFlow.ts
+2. Run tests, restart dev server
+3. Full A1→F1 playthrough — verify E1 pulse + all prior fixes
+4. If clean → <save> then <deploy>
 ```
 
 ---

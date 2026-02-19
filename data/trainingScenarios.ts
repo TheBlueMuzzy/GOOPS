@@ -280,9 +280,10 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
   // ═══════════════════════════════════════════════════════════════
 
   {
-    // E1: High crack at pressure line. Continuous spawn. Brief intro.
-    // Dismiss → play. Seal the crack → advance to E2.
-    // Safety: auto-advance after 90s.
+    // E1: High crack at pressure line. Continuous spawn. No initial message.
+    // GOAL_CAPTURED → freeze + suppress spawn → 3s → message → pop advances.
+    // If pop during E1, skip E2 → go to E3.
+    // If 3s after message with no pop → auto-advance to E2.
     id: 'E1_SEAL_CRACK',
     phase: 'E',
     name: 'Seal the Crack',
@@ -292,17 +293,19 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       pressureRate: 0.46875,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
       messagePosition: 'top',
-      continuousSpawn: true,   // Auto-spawn next piece after each lands
+      continuousSpawn: true,
+      messageDelay: 999999,    // Message shown by custom GOAL_CAPTURED handler, not timer
       autoSkipMs: 90000,       // Safety: move on if stuck
       popLowersPressure: true,
     },
-    pauseGame: true,  // Brief message, dismiss → continuous play begins.
-    advance: { type: 'event', event: 'crack-sealed' },
+    pauseGame: false,  // Game running, no pause. Message controlled by GOAL_CAPTURED handler.
+    advance: { type: 'action', action: 'pop-goop' },  // Custom handler manages this
   },
 
   {
-    // E2: Crack is sealed. Green goop pulses. Pop reminder after 3s.
-    // No continuous spawn — focused pop moment.
+    // E2: Crack is sealed. Green goop pulses. Player should pop it.
+    // Non-dismissible message shows immediately. Green highlight restricts popping.
+    // Entered only if player didn't pop during E1's 3s window.
     id: 'E2_POP_SEALED',
     phase: 'E',
     name: 'Pop Sealed',
@@ -311,8 +314,8 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       pressureRate: 0.46875,
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
       highlightGoopColor: COLORS.GREEN,
-      reshowAfterMs: 3000,
-      reshowNonDismissible: true,
+      nonDismissible: true,       // Can't dismiss — must pop to advance
+      autoSkipMs: 30000,          // Safety: prevent soft lock if goop isn't poppable
       popLowersPressure: true,
     },
     pauseGame: false,  // Game running, player pops green goop
@@ -359,8 +362,9 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       pressureCap: 0.95,
       periodicCrackIntervalMs: 10000,
       popLowersPressure: true,
+      pauseDelay: 2000,  // 2s breathing room after E3 before showing graduation message
     },
-    pauseGame: true,  // Pause for graduation message. Dismiss → free play begins.
+    pauseGame: true,  // Delayed pause for graduation message. Dismiss → free play begins.
     advance: { type: 'action', action: 'swipe-up' },  // Swipe up to leave training
     markComplete: 'FIRST_SHIFT',
   },

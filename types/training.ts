@@ -87,6 +87,7 @@ export interface StepSetup {
   periodicCrackIntervalMs?: number;  // Spawn a crack every N ms (F1: ~20000)
   popLowersPressure?: boolean;       // Popping goop reduces the pressure bar (real gameplay behavior)
   autoSkipMs?: number;               // If step's show condition not met, auto-skip after N ms
+  nonDismissible?: boolean;          // Message can't be dismissed — player must perform advance action to proceed
 }
 
 // How the player advances past this step
