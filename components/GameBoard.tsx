@@ -19,6 +19,7 @@ import {
   getSoftBlobPath,
   getPath,
   getInsetPath,
+  getInsetSoftBlobPath,
   getBounds,
   FilterParams,
   DEFAULT_FILTER,
@@ -950,11 +951,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     {blobs.map(blob => {
                       if (!blob.isLocked || blob.fillAmount >= 1) return null;
                       const isBlobShaking = blob.id === shakingGroupId || state.prePoppedGoopGroups.has(blob.id);
-                      const outerPoints = blob.vertices.map(v => v.pos);
                       const wallThickness = sbParams.wallThickness;
-                      const insetPoints = getInsetPath(outerPoints, wallThickness);
-                      const insetPath = getPath(insetPoints);
-                      const bounds = getBounds(insetPoints);
+                      const { path: insetPath, bounds } = getInsetSoftBlobPath(blob, wallThickness);
                       const height = bounds.maxY - bounds.minY;
                       const fillTop = bounds.maxY - height * blob.fillAmount;
                       const clipId = `fill-clip-${blob.id}`;
@@ -980,6 +978,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                               <path
                                 d={insetPath}
                                 fill="#1e293b"
+                                fillRule="evenodd"
                                 clipPath={`url(#${clipId}-${idx})`}
                               />
                             </g>

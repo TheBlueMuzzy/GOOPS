@@ -267,6 +267,8 @@ export const useTrainingFlow = ({
   const f1EndingRef = useRef<'none' | 'pressure-cap' | 'overflow'>('none');
   // Periodic crack spawning interval (started after F1 dismiss)
   const periodicCrackRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Retry sequence timeouts (Phase 1/2/3) — must be cancellable on step change
+  const retryTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Track completion ref for event handler (avoid stale closure)
   const completedRef = useRef(completedSteps);
@@ -306,6 +308,9 @@ export const useTrainingFlow = ({
       clearInterval(periodicCrackRef.current);
       periodicCrackRef.current = null;
     }
+    // Cancel any pending retry sequence timeouts (Phase 1/2/3)
+    retryTimeoutsRef.current.forEach(id => clearTimeout(id));
+    retryTimeoutsRef.current = [];
     readyToShowOnInputRef.current = false;
     setCanDismiss(true);
     setRetryMessage(null);
@@ -610,13 +615,16 @@ export const useTrainingFlow = ({
           }, 300);
         }
 
-        // Re-watch for pressure cap — will freeze again at 95%
+        // Re-watch for pressure cap — only trigger when pressure CROSSES from below to at/above cap
         const capValue = currentStep?.setup?.pressureCap ?? 0.95;
+        let belowThreshold = false;
         const reCap = setInterval(() => {
           if (f1EndingRef.current !== 'none') { clearInterval(reCap); return; }
           const maxTime = gameEngine.maxTime ?? 1;
           const psi = maxTime > 0 ? Math.max(0, 1 - (gameEngine.state.shiftTime / maxTime)) : 0;
-          if (psi >= capValue) {
+          if (psi < capValue) {
+            belowThreshold = true;
+          } else if (belowThreshold && psi >= capValue) {
             clearInterval(reCap);
             gameEngine.trainingPressureRate = 0;
             gameEngine.emitChange();
@@ -715,7 +723,7 @@ export const useTrainingFlow = ({
       const delay = currentStep.setup.reshowAfterMs;
 
       reshowTimerRef.current = setTimeout(() => {
-        if (advanceArmedRef.current && gameEngine && gameEngine.isSessionActive) {
+        if (gameEngine && gameEngine.isSessionActive) {
           if (isNonDismissible) {
             // Non-dismissible: freeze pressure but keep game running so player can still act
             gameEngine.trainingPressureRate = 0;
@@ -877,7 +885,7 @@ export const useTrainingFlow = ({
         // PIECE_DROPPED fires from BOTH lockActivePiece() and tickLooseGoop().
         // Defer to next tick, then check: if activeGoop still exists, this was
         // loose goop landing (not a real piece lock) — ignore.
-        setTimeout(() => {
+        const t0 = setTimeout(() => {
           if (gameEngine.state.activeGoop) return;
           // Phase 1: Unpause so the fill animation renders, but freeze pressure
           gameEngine.state.isPaused = false;
@@ -887,7 +895,7 @@ export const useTrainingFlow = ({
 
           // Phase 2: Wait for fill to complete + 0.5s buffer, then pop all goop
           // A 4-block T_O piece takes ~1500ms to fill (BASE_FILL + 4 × PER_BLOCK)
-          setTimeout(() => {
+          const t1 = setTimeout(() => {
             gameEngine.freezeFalling = true;
             const grid = gameEngine.state.grid;
             for (let y = 0; y < grid.length; y++) {
@@ -902,7 +910,7 @@ export const useTrainingFlow = ({
             gameEngine.emitChange();
 
             // Phase 3: Wait for pop droplets to fade (~2s), then show retry message
-            setTimeout(() => {
+            const t2 = setTimeout(() => {
               if (retryConfig.spawnExtraCrack) {
                 const crackColor = retryConfig.spawnExtraCrack.color;
                 const rotation = gameEngine.state.tankRotation;
@@ -933,8 +941,11 @@ export const useTrainingFlow = ({
               gameEngine.emitChange();
               crackSealedThisCycleRef.current = false;
             }, 2000);
+            retryTimeoutsRef.current.push(t2);
           }, 2000);
+          retryTimeoutsRef.current.push(t1);
         }, 0);
+        retryTimeoutsRef.current.push(t0);
       });
       cleanups.push(dropUnsub);
     }
@@ -1205,6 +1216,10 @@ export const useTrainingFlow = ({
         // Clear training cracks/marks
         gameEngine.state.crackCells = [];
         gameEngine.state.goalMarks = [];
+
+        // Reset game session state so ConsoleView doesn't treat training as a game
+        gameEngine.state.shiftScore = 0;
+        gameEngine.state.goalsCleared = 0;
 
         // Go straight to console — no end game screen, no scoring
         gameEngine.state.isPaused = false;

@@ -10,11 +10,11 @@ updated: 2026-02-17
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 in current phase — Tutorial v2 full rebuild DONE, UAT round 5 complete → deploying
-Status: Deploying — All UAT issues resolved. Training completion goes straight to console, sets rank 1 directly.
-Last activity: 2026-02-17 - UAT round 5 final fixes: (15) Training completion no longer shows end game screen — goes straight to console. (16) Rank set to 1 directly via setSaveData (no scoring/XP). (17) Removed gameOver flag and GAME_OVER event from training completion.
+Plan: 4 of 4 in current phase — Tutorial v2 UAT round 6 bug fixes
+Status: Bug fixes in progress — 7 fixes applied, needs testing
+Last activity: 2026-02-19 — 7 fixes: message flash, D2 retry leak, fill holes, rank 2, C2 reshow, crack interval, F1 cap loop
 
-Progress: █████████░ 90%
+Progress: █████████░ 93%
 
 ## Branch Workflow (SOP)
 
@@ -26,9 +26,34 @@ Progress: █████████░ 90%
 **Active feature branches:**
 - `feature/tutorial-infrastructure` (Phase 31 complete, Phase 32 complete, Phase 33 in progress)
 
+## Session Changes (2026-02-19)
+
+### Bug Fixes This Session
+
+1. **Message flash glitch** (`TutorialOverlay.tsx`) — When closing a message, the next message text briefly flashed before the window disappeared. Added a third branch for message-to-message transitions: fade out → swap content → fade in (160ms gap).
+
+2. **D2 retry timeout leak** (`useTrainingFlow.ts`) — Retry handler's 3 nested setTimeout callbacks were never cancelled on step change. If player sealed the crack and advanced to D3, the D2 retry timeouts kept running — clearing D3's grid, showing D2's retry message, disarming advance. Fixed by storing timeout IDs in `retryTimeoutsRef` and clearing them in the step-change effect cleanup.
+
+3. **Fill shape holes rendering** (`rendering.ts`, `GameBoard.tsx`) — Fill animation shape treated all vertices (outer + hole loops) as one flat ring. Vertices connected across loops, creating incorrect shapes. Added `getInsetSoftBlobPath()` that insets each loop independently (mirrors `getSoftBlobPath` pattern). Added `fillRule="evenodd"` to fill path.
+
+4. **Rank 2 after training** (`useTrainingFlow.ts`) — Training completion set rank 1 correctly but didn't reset `shiftScore` or `goalsCleared`. ConsoleView saw `shiftScore > 0`, treated it as a completed game, ran capped progression on rank 1 → rank 2. Fixed by resetting both to 0 in the training complete handler.
+
+5. **C2 reshow not firing** (`useTrainingFlow.ts`) — Reshow timer was guarded by `advanceArmedRef.current` which is false before dismiss. Removed the guard so the 3s non-dismissible "pop" reminder fires regardless of advance state.
+
+6. **Crack interval too slow** (`trainingScenarios.ts`) — Changed `periodicCrackIntervalMs` from 20000 to 10000 (20s → 10s).
+
+7. **F1 pressure cap infinite loop** (`useTrainingFlow.ts`) — Re-cap poll checked `psi >= 0.95` which was immediately true after dismiss (pressure still at 95%). Added `belowThreshold` crossing detection: pressure must drop below cap first, then rise back to trigger the message again.
+
+### Files Changed
+- `components/TutorialOverlay.tsx` — Message swap transition
+- `hooks/useTrainingFlow.ts` — Retry timeout cleanup, shiftScore reset, reshow guard fix, pressure cap crossing detection
+- `core/softBody/rendering.ts` — `getInsetSoftBlobPath()` for compound paths
+- `components/GameBoard.tsx` — Use new inset function + fillRule
+- `data/trainingScenarios.ts` — Crack interval 20s → 10s
+
 ## Next Steps
 
-**Tutorial v2 rebuilt. Needs manual UAT testing of full A1→F1 flow.**
+**Test all 7 fixes, then deploy if clean.**
 
 **What was rebuilt (2026-02-15):**
 - 14 steps (down from 19), 6 phases (A:1, B:4, C:4, D:3, E:1, F:1)
@@ -155,10 +180,10 @@ Progress: █████████░ 90%
 
 ## Session Continuity
 
-Last session: 2026-02-16
+Last session: 2026-02-19
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 271
+**Build:** 286
 
 ### Resume Command
 ```

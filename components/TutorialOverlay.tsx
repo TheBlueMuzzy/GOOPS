@@ -76,17 +76,23 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
       fadeTimeoutRef.current = null;
     }
 
-    if (activeStep) {
-      // New step: show it immediately
+    if (activeStep && !displayedStep) {
+      // No current message — show new one immediately
       setDisplayedStep(activeStep);
-      // Small delay to ensure the DOM renders before triggering opacity transition
       requestAnimationFrame(() => setIsVisible(true));
-    } else if (displayedStep) {
+    } else if (activeStep && displayedStep) {
+      // Swapping messages — fade out first, then swap content and fade in
+      setIsVisible(false);
+      fadeTimeoutRef.current = setTimeout(() => {
+        setDisplayedStep(activeStep);
+        requestAnimationFrame(() => setIsVisible(true));
+      }, 160); // Wait for fade-out to complete before swapping content
+    } else if (!activeStep && displayedStep) {
       // Step removed: fade out, then clear
       setIsVisible(false);
       fadeTimeoutRef.current = setTimeout(() => {
         setDisplayedStep(null);
-      }, 150); // Match fade-out duration
+      }, 150);
     }
 
     return () => {

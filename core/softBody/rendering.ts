@@ -197,6 +197,42 @@ export function getInsetPath(points: Vec2[], insetAmount: number): Vec2[] {
   return insetPoints;
 }
 
+/**
+ * Create inset path for a SoftBlob, handling compound paths (outer + holes).
+ * Each loop is inset independently so vertices don't connect across loops.
+ */
+export function getInsetSoftBlobPath(
+  blob: SoftBlob,
+  insetAmount: number
+): { path: string; bounds: { minX: number; maxX: number; minY: number; maxY: number } } {
+  if (!blob.loopStarts || blob.loopStarts.length <= 1) {
+    // Single loop — no holes
+    const points = blob.vertices.map(v => v.pos);
+    const insetPoints = getInsetPath(points, insetAmount);
+    return { path: getPath(insetPoints), bounds: getBounds(insetPoints) };
+  }
+
+  // Compound path: inset each loop separately, combine paths
+  let compoundPath = '';
+  let allInsetPoints: Vec2[] = [];
+
+  for (let loopIdx = 0; loopIdx < blob.loopStarts.length; loopIdx++) {
+    const start = blob.loopStarts[loopIdx];
+    const end = loopIdx + 1 < blob.loopStarts.length
+      ? blob.loopStarts[loopIdx + 1]
+      : blob.vertices.length;
+    const loopVertices = blob.vertices.slice(start, end);
+    if (loopVertices.length >= 3) {
+      const loopPoints = loopVertices.map(v => v.pos);
+      const insetPoints = getInsetPath(loopPoints, insetAmount);
+      compoundPath += getPath(insetPoints) + ' ';
+      allInsetPoints = allInsetPoints.concat(insetPoints);
+    }
+  }
+
+  return { path: compoundPath.trim(), bounds: getBounds(allInsetPoints) };
+}
+
 // =============================================================================
 // Filter Matrix Generation
 // =============================================================================

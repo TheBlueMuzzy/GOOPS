@@ -318,7 +318,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
       messagePosition: 'top',
       continuousSpawn: true,
       pressureCap: 0.95,
-      periodicCrackIntervalMs: 20000,
+      periodicCrackIntervalMs: 10000,
       popLowersPressure: true,
     },
     pauseGame: true,  // Pause for graduation message. Dismiss → free play begins.
