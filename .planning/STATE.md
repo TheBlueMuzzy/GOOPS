@@ -10,9 +10,9 @@ updated: 2026-02-19
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 4 of 4 complete (v2) → Plans 05-07 planned (v3 rewrite)
-Status: Tutorial v3 rewrite — design complete, GSD plans pending approval
-Last activity: 2026-02-19 — Full audit, designer review, Tutorial3.md finalized
+Plan: 4 of 4 complete (v2) → Plans 05-07 committed (v3 rewrite)
+Status: Tutorial v3 — plans approved and committed, step walkthrough next
+Last activity: 2026-02-19 — Plans committed at b99ed73
 
 Progress: █████████░ 93%
 
@@ -52,7 +52,7 @@ Tutorial v2 had persistent bugs through 11 UAT rounds. Root cause: fragile archi
 | Garble system | Keep exactly as-is |
 | Future tutorials | Same system reused at higher ranks for new concepts |
 
-### GSD Plans (Pending Approval)
+### GSD Plans (Approved — committed b99ed73)
 ```
 Plan 33-05: Engine Prerequisites (2 tasks)
   1. Two-step crack sealing (plug on lock, seal on pop, glow indicator)
@@ -74,10 +74,10 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
 - `core/GameEngine.ts` — Debug logging from v2 (will be cleaned up)
 
 ### Next Steps
-1. User approves GSD plan breakdown (33-05 through 33-07)
-2. Write PLAN.md files
-3. Step-by-step walkthrough of each tutorial step (in conversation)
-4. Execute plans
+1. **Step-by-step walkthrough** — Claude presents each of the 15 steps, user approves or corrects
+2. Execute Plan 33-05: Engine prerequisites (crack sealing + CRACK_OFFSCREEN)
+3. Execute Plan 33-06: Framework + step configs
+4. Execute Plan 33-07: Custom handlers + integration + UAT
 
 ---
 
@@ -128,14 +128,12 @@ Last session: 2026-02-19
 ```
 Phase 33 — Tutorial v3 Rewrite
 
-Design complete. Tutorial3.md is the source of truth.
-GSD plan breakdown (33-05 through 33-07) pending user approval.
+Design complete. Plans approved and committed.
 
 WHAT TO DO:
-1. Read .planning/Tutorial3.md for full spec
-2. User approves/adjusts GSD plan breakdown
-3. Write PLAN.md files
-4. Execute plans in order: engine prereqs → framework → custom handlers + integration
+1. Read .planning/Tutorial3.md (Section 5: Step Spec)
+2. Walk through all 15 steps with user — present what each step does, user approves/corrects
+3. After walkthrough approved, execute plans 33-05 → 33-06 → 33-07
 ```
 
 ---
