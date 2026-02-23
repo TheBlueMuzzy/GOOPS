@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { SaveData, GoopTemplate, GoopShape, Crack, ScreenType } from '../types';
-import { TrainingStep, PieceSpawn, CrackSpawn, StepLifecycleState } from '../types/training';
+import { SaveData, GoopTemplate, ScreenType } from '../types';
+import { TrainingStep, PieceSpawn, CrackSpawn } from '../types/training';
 import { IntercomMessage } from '../types/tutorial';
 import { GameEngine } from '../core/GameEngine';
 import { gameEventBus } from '../core/events/EventBus';
@@ -52,7 +52,6 @@ const TRAINING_PALETTE = [COLORS.BLUE, COLORS.YELLOW, COLORS.GREEN, COLORS.RED];
 function addCrackToGrid(engine: GameEngine, x: number, y: number, color: string, source: string): void {
   const now = Date.now();
   const crackId = Math.random().toString(36).substr(2, 9);
-  console.log(`[CRACK] SPAWN id=${crackId} at (${x}, ${y}) color=${color} source="${source}" time=${new Date(now).toLocaleTimeString()} totalCracks=${engine.state.crackCells.length + 1}`);
   engine.state.crackCells.push({
     id: crackId,
     x, y, color,
@@ -174,8 +173,6 @@ function spawnRandomCrack(engine: GameEngine): void {
   const offset = 1 + Math.floor(Math.random() * 3);
   const spawnY = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY + offset));
 
-  console.log(`[CRACK] PRESSURE DEBUG: psi=${(tankPressure * 100).toFixed(1)}% shiftTime=${engine.state.shiftTime.toFixed(1)} maxTime=${maxTime} waterHeight=${waterHeightBlocks.toFixed(1)} pressureLine=row${pressureLineY} offset=${offset} spawnY=row${spawnY}`);
-
   // Spawn in visible viewport only (not across full 30-col cylinder)
   for (let attempt = 0; attempt < 20; attempt++) {
     const screenX = Math.floor(Math.random() * TANK_VIEWPORT_WIDTH);
@@ -280,8 +277,6 @@ export const useTrainingFlow = ({
   // Runs when currentStep changes. Clears pool, sets up game state, spawns, message visibility.
 
   useEffect(() => {
-    console.log(`[STEP] === STEP CHANGE === ${currentStep?.id ?? 'null'} (${currentStep?.name ?? ''}) at ${new Date().toLocaleTimeString()}`);
-
     // Cleanup: clear ALL timers from previous step
     pool.clearAll();
 
@@ -344,9 +339,6 @@ export const useTrainingFlow = ({
       // --- Spawn crack if configured ---
       if (currentStep.setup?.spawnCrack) {
         // Clear leftover cracks only when spawning a new one (gives this step a clean slate)
-        if (gameEngine.state.crackCells.length > 0) {
-          console.log(`[CRACK] CLEAR ALL — ${gameEngine.state.crackCells.length} cracks removed before spawning for ${currentStep.id}`);
-        }
         gameEngine.state.crackCells = [];
         gameEngine.state.goalMarks = [];
 
@@ -658,14 +650,9 @@ export const useTrainingFlow = ({
 
       // Start periodic crack spawning if configured
       if (currentStep.setup.periodicCrackIntervalMs) {
-        console.log(`[CRACK] PERIODIC TIMER STARTED — interval=${currentStep.setup.periodicCrackIntervalMs}ms step=${currentStep.id}`);
         pool.setInterval('periodic-cracks', () => {
-          if (f1EndingRef.current !== 'none') {
-            console.log(`[CRACK] PERIODIC SKIPPED — f1Ending=${f1EndingRef.current}`);
-            return;
-          }
+          if (f1EndingRef.current !== 'none') return;
           if (gameEngine.isSessionActive) {
-            console.log(`[CRACK] PERIODIC TICK — spawning random crack`);
             spawnRandomCrack(gameEngine);
           }
         }, currentStep.setup.periodicCrackIntervalMs);
@@ -903,7 +890,6 @@ export const useTrainingFlow = ({
 
           // F1: show pressure cap ending message
           if (currentStep.id === 'F1_GRADUATION' && f1EndingRef.current === 'none') {
-            console.log(`[F1] PRESSURE CAP reached (${(psi * 100).toFixed(1)}%) — showing ending message`);
             f1EndingRef.current = 'pressure-cap';
             setRetryMessage(F1_ENDING_MESSAGES.PRESSURE_CAP);
             setMessageVisible(true);
@@ -918,7 +904,6 @@ export const useTrainingFlow = ({
     if (currentStep.id === 'F1_GRADUATION' && gameEngine) {
       const handleOverflow = () => {
         if (f1EndingRef.current !== 'none') return;
-        console.log(`[F1] OVERFLOW detected — showing ending message`);
         f1EndingRef.current = 'overflow';
 
         gameEngine.state.isPaused = true;
@@ -976,7 +961,6 @@ export const useTrainingFlow = ({
     // --- E1 special: GOAL_CAPTURED → suppress spawn → 3s → message + pulse → 3s → auto-advance to E2 ---
     if (currentStep.id === 'E1_SEAL_CRACK' && gameEngine) {
       const e1GoalUnsub = gameEventBus.on(GameEventType.GOAL_CAPTURED, () => {
-        console.log('[E1] GOAL_CAPTURED fired! Setting up 3s message timer.');
         suppressContinuousSpawnRef.current = true;
         gameEngine.freezeFalling = true;
         gameEngine.emitChange();

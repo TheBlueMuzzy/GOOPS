@@ -1376,18 +1376,6 @@ export class GameEngine {
 
         let { grid: newGrid, consumedGoals, destroyedGoals } = mergePiece(this.state.grid, finalPiece, this.state.goalMarks);
 
-        // Training debug: log every piece lock with goal info
-        if (this.isTrainingMode) {
-            const cells = finalPiece.cells.map((c: {x:number,y:number}, i: number) => {
-                const cx = ((finalPiece.x + c.x) % TANK_WIDTH + TANK_WIDTH) % TANK_WIDTH;
-                const cy = Math.floor(finalPiece.y + c.y);
-                const col = finalPiece.definition.cellColors?.[i] ?? finalPiece.definition.color;
-                return `(${cx},${cy})${col.slice(0,3)}`;
-            });
-            const goals = this.state.goalMarks.map(g => `(${g.x},${g.y})${g.color.slice(0,3)}`);
-            console.log(`[LOCK] piece=${cells.join(' ')} | goals=${goals.length ? goals.join(' ') : 'NONE'} | consumed=${consumedGoals.length}`);
-        }
-
         // Process wild piece conversions (wild spreads to neighbors, or non-wild converts wild neighbors)
         if (finalPiece.definition.isWild || this.hasAdjacentWild(newGrid, finalPiece)) {
             newGrid = processWildConversions(newGrid, finalPiece);
