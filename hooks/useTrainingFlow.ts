@@ -242,6 +242,8 @@ export const useTrainingFlow = ({
   const [canDismiss, setCanDismiss] = useState(true);
   // Override message (retries, F1 endings, D3 interrupt)
   const [retryMessage, setRetryMessage] = useState<IntercomMessage | null>(null);
+  // Dynamic highlight color override (e.g. D2 post-plug pulse)
+  const [dynamicHighlight, setDynamicHighlight] = useState<string | null>(null);
 
   // ─── Refs ──────────────────────────────────────────────────
 
@@ -292,6 +294,7 @@ export const useTrainingFlow = ({
     // Reset per-step state
     setCanDismiss(true);
     setRetryMessage(null);
+    setDynamicHighlight(null);
     crackPluggedThisCycleRef.current = false;
     discoveryInterruptRef.current = false;
     d3MessageShownRef.current = false;
@@ -762,8 +765,8 @@ export const useTrainingFlow = ({
             // Crack was plugged! Unpause so player can pop to seal
             gameEngine.state.isPaused = false;
             gameEngine.freezeFalling = false;
-            gameEngine.trainingHighlightColor = currentStep.setup?.spawnCrack?.color ?? COLORS.GREEN;
             gameEngine.emitChange();
+            setDynamicHighlight(currentStep.setup?.spawnCrack?.color ?? COLORS.GREEN);
 
             // Hint timer: if no pop within 3s, show "Pop to seal" hint
             pool.set('plugged-hint', () => {
@@ -772,8 +775,6 @@ export const useTrainingFlow = ({
               setRetryMessage(TRAINING_MESSAGES['E1_SEAL_CRACK']);
               setMessageVisible(true);
               setCanDismiss(false);
-              gameEngine.trainingHighlightColor = currentStep.setup?.spawnCrack?.color ?? COLORS.GREEN;
-              gameEngine.emitChange();
             }, 3000);
             return;
           }
@@ -1116,15 +1117,12 @@ export const useTrainingFlow = ({
     }
   }, [gameEngine, currentStep?.id, isInTraining]);
 
-  // Sync highlight color to engine
+  // Sync highlight color to engine (static config + dynamic override)
   useEffect(() => {
     if (!gameEngine) return;
-    if (isInTraining && currentStep?.setup?.highlightGoopColor) {
-      gameEngine.trainingHighlightColor = currentStep.setup.highlightGoopColor;
-    } else {
-      gameEngine.trainingHighlightColor = null;
-    }
-  }, [gameEngine, currentStep?.id, isInTraining]);
+    const color = dynamicHighlight ?? (isInTraining && currentStep?.setup?.highlightGoopColor) || null;
+    gameEngine.trainingHighlightColor = color;
+  }, [gameEngine, currentStep?.id, isInTraining, dynamicHighlight]);
 
   // Sync pop-lowers-pressure to engine
   useEffect(() => {
@@ -1183,7 +1181,7 @@ export const useTrainingFlow = ({
   }, [currentStep?.id, messageVisible, retryMessage]);
 
   const messagePosition = currentStep?.setup?.messagePosition ?? 'center';
-  const highlightColor = (isInTraining && currentStep?.setup?.highlightGoopColor) || null;
+  const highlightColor = dynamicHighlight ?? (isInTraining && currentStep?.setup?.highlightGoopColor) || null;
 
   return {
     currentStep,
