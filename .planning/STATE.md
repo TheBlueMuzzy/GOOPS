@@ -78,7 +78,7 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
 - **Post-plug pulse**: Added `dynamicHighlight` state so highlight flows through React props (not just engine-direct). Green goop pulses + restricts popping to green only. Reuses E1_SEAL_CRACK message for "Pop to seal" hint after 3s.
 - **Operator precedence**: `??` mixed with `||` needs parentheses (TypeScript strict).
 - **D3 post-seal timing**: Added `pauseDelay: 1500` to D3 so pop droplets fade before message shows (matches C3 pattern).
-- **D3 rework — discovery only, not standalone step**: D3 should never show a message unless offscreen condition is met. Changed to `pauseGame: false` + `messageDelay: 999999` (no auto-message). Added D3-as-current-step polling: detects offscreen cracks → pauses → shows message → tap to advance. D2 restored as discovery-eligible. autoSkipMs: 15000 still handles timeout.
+- **D3 fully disabled**: D3 step commented out of TRAINING_SEQUENCE. All D3 inline code (discovery listener, D3-current-step poll, discovery interrupt dismiss, autoSkip D3 flag) commented out. Will be re-integrated later as a parallel listener, not a step. Sequence is now 14 steps: D2→E1 direct.
 
 ### What Plan 33-06 Built
 - **State machine:** `hooks/tutorial/stateMachine.ts` — 5 lifecycle states with derived properties

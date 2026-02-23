@@ -597,29 +597,8 @@ export const useTrainingFlow = ({
       return;
     }
 
-    // --- D3 discovery interrupt: dismiss and resume, don't affect step ---
-    if (discoveryInterruptRef.current) {
-      discoveryInterruptRef.current = false;
-      setRetryMessage(null);
-      setMessageVisible(false);
-      adjustFillTimestampsForPause();
-      if (gameEngine && gameEngine.isSessionActive) {
-        gameEngine.state.isPaused = false;
-        gameEngine.freezeFalling = false;
-        gameEngine.emitChange();
-
-        // If in a continuous-spawn step (E1/F1), spawn a piece so game doesn't stall
-        if (currentStep?.setup?.continuousSpawn && !gameEngine.state.activeGoop) {
-          pool.set('d3-respawn', () => {
-            if (gameEngine.isSessionActive && !gameEngine.state.isPaused) {
-              gameEngine.spawnNewPiece();
-              gameEngine.emitChange();
-            }
-          }, 300);
-        }
-      }
-      return;
-    }
+    // D3 discovery interrupt disabled — will be re-integrated later
+    // if (discoveryInterruptRef.current) { ... }
 
     setMessageVisible(false);
     adjustFillTimestampsForPause();
@@ -842,34 +821,16 @@ export const useTrainingFlow = ({
       cleanups.push(dropUnsub);
     }
 
-    // --- D3 as current step: poll for offscreen cracks ---
-    if (currentStep.id === 'D3_OFFSCREEN' && gameEngine) {
-      pool.setInterval('d3-current-poll', () => {
-        if (gameEngine.state.isPaused) return;
-        if (isAnyCrackOffscreen(gameEngine)) {
-          pool.clear('d3-current-poll');
-          d3MessageShownRef.current = true;
-
-          // Pause and show D3 message
-          gameEngine.state.isPaused = true;
-          gameEngine.freezeFalling = true;
-          pauseStartTimeRef.current = Date.now();
-          gameEngine.emitChange();
-
-          setMessageVisible(true);
-          stateMachine.showMessage();
-          advanceArmedRef.current = true;
-        }
-      }, 200);
-    }
+    // D3 as current step disabled — will be re-integrated later
+    // if (currentStep.id === 'D3_OFFSCREEN' && gameEngine) { ... }
 
     // --- autoSkipMs: safety timer to auto-advance if condition not met ---
     if (currentStep.setup?.autoSkipMs) {
       pool.set('auto-skip', () => {
-        // D3 special: only set persistent discovery flag if message was NEVER shown
-        if (currentStep.id === 'D3_OFFSCREEN' && !d3MessageShownRef.current) {
-          pendingD3DiscoveryRef.current = true;
-        }
+        // D3 special disabled — will be re-integrated later
+        // if (currentStep.id === 'D3_OFFSCREEN' && !d3MessageShownRef.current) {
+        //   pendingD3DiscoveryRef.current = true;
+        // }
         advanceStepRef.current();
       }, currentStep.setup.autoSkipMs);
     }
@@ -963,42 +924,9 @@ export const useTrainingFlow = ({
       cleanups.push(overflowUnsub);
     }
 
-    // --- Discoverable D3 offscreen message ---
-    const stepsWithCracksAndRotation = ['D2_TANK_ROTATION', 'E1_SEAL_CRACK', 'F1_GRADUATION'];
-    const d3AlreadyCompleted = completedRef.current.includes('D3_OFFSCREEN');
-    if (!d3AlreadyCompleted && !d3MessageShownRef.current && gameEngine &&
-        currentStep.id !== 'D3_OFFSCREEN' &&
-        stepsWithCracksAndRotation.includes(currentStep.id) &&
-        gameEngine.state.crackCells.length > 0) {
-      pool.setInterval('d3-discovery', () => {
-        if (discoveryInterruptRef.current) return;
-        if (f1EndingRef.current !== 'none') return;
-        if (gameEngine.state.isPaused) return;
-
-        if (isAnyCrackOffscreen(gameEngine)) {
-          pool.clear('d3-discovery');
-          d3MessageShownRef.current = true;
-          pendingD3DiscoveryRef.current = false;
-          discoveryInterruptRef.current = true;
-
-          setRetryMessage(TRAINING_MESSAGES.D3_OFFSCREEN);
-          setMessageVisible(true);
-
-          gameEngine.state.isPaused = true;
-          gameEngine.freezeFalling = true;
-          pauseStartTimeRef.current = Date.now();
-          gameEngine.emitChange();
-
-          setSaveData(sd => {
-            const existing = sd.tutorialProgress?.completedSteps ?? [];
-            if (existing.includes('D3_OFFSCREEN')) return sd;
-            const updated = [...existing, 'D3_OFFSCREEN'];
-            if (!existing.includes('WRAP_INTRO')) updated.push('WRAP_INTRO');
-            return { ...sd, tutorialProgress: { completedSteps: updated } };
-          });
-        }
-      }, 200);
-    }
+    // D3 discoverable offscreen message disabled — will be re-integrated later as parallel listener
+    // const stepsWithCracksAndRotation = ['D2_TANK_ROTATION', 'E1_SEAL_CRACK', 'F1_GRADUATION'];
+    // if (...) { pool.setInterval('d3-discovery', ...) }
 
     // --- E1 special: GOAL_PLUGGED → suppress spawn → 3s → message + pulse → pop → advance to E2 ---
     if (currentStep.id === 'E1_SEAL_CRACK' && gameEngine) {

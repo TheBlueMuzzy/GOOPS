@@ -262,26 +262,25 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     handlerType: 'retry',
   },
 
-  {
-    // D3: Offscreen discovery. Persistent listener for CRACK_OFFSCREEN event.
-    // Fires when ANY crack is rotated offscreen. Auto-skip after 15s.
-    // If auto-skipped, trigger stays armed through E and F phases (persistent).
-    id: 'D3_OFFSCREEN',
-    phase: 'D',
-    name: 'Offscreen Cracks',
-    teaches: 'cylindrical-awareness',
-    setup: {
-      pressureRate: 0.46875,
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
-      autoSkipMs: 15000,  // Auto-advance if player never rotates crack offscreen
-      messageDelay: 999999,  // Message shown by offscreen detection, not timer
-      popLowersPressure: true,
-    },
-    pauseGame: false,  // Game running — message only appears when offscreen detected
-    advance: { type: 'tap' },
-    markComplete: 'WRAP_INTRO',
-    handlerType: 'discovery',
-  },
+  // D3_OFFSCREEN commented out — discovery interrupt will be re-integrated later
+  // as a parallel listener, not a step in the sequence.
+  // {
+  //   id: 'D3_OFFSCREEN',
+  //   phase: 'D',
+  //   name: 'Offscreen Cracks',
+  //   teaches: 'cylindrical-awareness',
+  //   setup: {
+  //     pressureRate: 0.46875,
+  //     allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
+  //     autoSkipMs: 15000,
+  //     messageDelay: 999999,
+  //     popLowersPressure: true,
+  //   },
+  //   pauseGame: false,
+  //   advance: { type: 'tap' },
+  //   markComplete: 'WRAP_INTRO',
+  //   handlerType: 'discovery',
+  // },
 
   // ═══════════════════════════════════════════════════════════════
   // Phase E — Scaffolding (2 steps)
