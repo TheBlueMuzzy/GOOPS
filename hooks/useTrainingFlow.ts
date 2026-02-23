@@ -254,7 +254,7 @@ export const useTrainingFlow = ({
   // Suppress continuous spawn within a step (E1: after crack sealed, stop spawning new pieces)
   const suppressContinuousSpawnRef = useRef(false);
   // Was a crack sealed this piece-lock cycle? (retry detection)
-  const crackSealedThisCycleRef = useRef(false);
+  const crackPluggedThisCycleRef = useRef(false);
 
   // --- v2/v3 persistent refs ---
   // Persistent D3 discovery trigger: if D3 auto-skipped, stays armed through E/F
@@ -292,7 +292,7 @@ export const useTrainingFlow = ({
     // Reset per-step state
     setCanDismiss(true);
     setRetryMessage(null);
-    crackSealedThisCycleRef.current = false;
+    crackPluggedThisCycleRef.current = false;
     discoveryInterruptRef.current = false;
     d3MessageShownRef.current = false;
     suppressContinuousSpawnRef.current = false;
@@ -742,23 +742,42 @@ export const useTrainingFlow = ({
     if (currentStep.setup?.retryOnPieceLand && gameEngine) {
       const retryConfig = currentStep.setup.retryOnPieceLand;
 
-      const goalUnsub = gameEventBus.on(GameEventType.GOAL_CAPTURED, () => {
-        crackSealedThisCycleRef.current = true;
+      const goalUnsub = gameEventBus.on(GameEventType.GOAL_PLUGGED, () => {
+        crackPluggedThisCycleRef.current = true;
       });
       cleanups.push(goalUnsub);
 
       const dropUnsub = gameEventBus.on(GameEventType.PIECE_DROPPED, () => {
-        if (crackSealedThisCycleRef.current) {
-          crackSealedThisCycleRef.current = false;
-          return;
-        }
-
         const gen = stepGenerationRef.current;
 
-        pool.set('retry-phase1', () => {
-          if (gameEngine.state.activeGoop) return;
+        // Defer check so GOAL_PLUGGED has time to fire (it fires just before PIECE_DROPPED
+        // in lockActivePiece, but deferring is safer)
+        pool.set('retry-check', () => {
           if (stepGenerationRef.current !== gen) return;
+          if (gameEngine.state.activeGoop) return;
 
+          if (crackPluggedThisCycleRef.current) {
+            crackPluggedThisCycleRef.current = false;
+
+            // Crack was plugged! Unpause so player can pop to seal
+            gameEngine.state.isPaused = false;
+            gameEngine.freezeFalling = false;
+            gameEngine.emitChange();
+
+            // Hint timer: if no pop within 3s, show "Pop to seal" hint
+            pool.set('plugged-hint', () => {
+              if (stepGenerationRef.current !== gen) return;
+              if (!gameEngine.isSessionActive) return;
+              setRetryMessage(TRAINING_MESSAGES['E1_SEAL_CRACK']);
+              setMessageVisible(true);
+              setCanDismiss(false);
+              gameEngine.trainingHighlightColor = currentStep.setup?.spawnCrack?.color ?? COLORS.GREEN;
+              gameEngine.emitChange();
+            }, 3000);
+            return;
+          }
+
+          // Not plugged — retry sequence
           // Phase 1: Unpause so the fill animation renders, but freeze pressure
           gameEngine.state.isPaused = false;
           gameEngine.freezeFalling = false;
@@ -813,10 +832,10 @@ export const useTrainingFlow = ({
               }
 
               gameEngine.emitChange();
-              crackSealedThisCycleRef.current = false;
+              crackPluggedThisCycleRef.current = false;
             }, 2000);
           }, 2000);
-        }, 0);
+        }, 50);  // Small delay so GOAL_PLUGGED fires before check
       });
       cleanups.push(dropUnsub);
     }
@@ -958,9 +977,9 @@ export const useTrainingFlow = ({
       }, 200);
     }
 
-    // --- E1 special: GOAL_CAPTURED → suppress spawn → 3s → message + pulse → 3s → auto-advance to E2 ---
+    // --- E1 special: GOAL_PLUGGED → suppress spawn → 3s → message + pulse → pop → advance to E2 ---
     if (currentStep.id === 'E1_SEAL_CRACK' && gameEngine) {
-      const e1GoalUnsub = gameEventBus.on(GameEventType.GOAL_CAPTURED, () => {
+      const e1GoalUnsub = gameEventBus.on(GameEventType.GOAL_PLUGGED, () => {
         suppressContinuousSpawnRef.current = true;
         gameEngine.freezeFalling = true;
         gameEngine.emitChange();

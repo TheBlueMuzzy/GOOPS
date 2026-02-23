@@ -247,7 +247,7 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     teaches: 'tank-rotation-input',
     setup: {
       spawnPiece: { color: COLORS.GREEN, shape: GoopShape.T_O },
-      pressureRate: 0.46875,
+      pressureRate: 0,          // No pressure during D2 — retries would push cracks too high for E1
       allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
       showWhenPieceBelow: 8,  // Show when piece reaches ~25% down viewport
       retryOnPieceLand: {
