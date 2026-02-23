@@ -10,11 +10,11 @@ updated: 2026-02-23
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 33-06 complete → 33-07 next (Custom Handlers + Integration + UAT)
-Status: Tutorial v3 — Plan 33-06 committed (ef26d1d, c3ec712), ready for 33-07
-Last activity: 2026-02-23 — Plan 33-06 completed (state machine framework + 15 step configs)
+Plan: 33-07 UAT in progress — D2 bugs fixed, continuing playthrough
+Status: Tutorial v3 — UAT round 1: D2 fixed (3 commits), testing D2→F1 next
+Last activity: 2026-02-23 — Fixed D2 retry (GOAL_PLUGGED, zero pressure, pulse highlight)
 
-Progress: █████████░ 95%
+Progress: █████████░ 97%
 
 ## Branch Workflow (SOP)
 
@@ -63,10 +63,17 @@ Plan 33-06: Tutorial Framework + Step Configs (2 tasks) — COMPLETE (ef26d1d, c
   2. Step configs (15 steps) + messages + standard handler implementations
 
 Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
-  1. Custom handlers (D2 retry, D3 discovery, E1 seal+pop, F1 freeplay)
-  2. Wire into Game.tsx, GameBoard, TutorialOverlay, remove old code
-  3. Full A1->F1 playthrough verification
+  1. Custom handlers (D2 retry, D3 discovery, E1 seal+pop, F1 freeplay) — COMPLETE (64431c3)
+  2. Wire into Game.tsx, GameBoard, TutorialOverlay, remove old code — COMPLETE (c7c30cb)
+  3. Full A1->F1 playthrough verification — IN PROGRESS (UAT round 1)
+     - D2 bugs found and fixed (6157603, 5ddd66d, 66e2b91)
+     - A1→D2 verified working, continuing D2→F1
 ```
+
+### UAT Round 1 Fixes (D2)
+- **GOAL_PLUGGED vs GOAL_CAPTURED**: Retry handler listened for seal (pop) instead of plug (lock). Same fix applied to E1.
+- **D2 pressure → 0**: Retries caused pressure rise, making E1 cracks spawn too high.
+- **Post-plug pulse**: Added `dynamicHighlight` state so highlight flows through React props (not just engine-direct). Green goop pulses + restricts popping to green only. Reuses E1_SEAL_CRACK message for "Pop to seal" hint after 3s.
 
 ### What Plan 33-06 Built
 - **State machine:** `hooks/tutorial/stateMachine.ts` — 5 lifecycle states with derived properties
@@ -77,8 +84,18 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
 - **Step configs:** `data/trainingScenarios.ts` — 15 steps with handlerType assignments
 - **Messages:** `data/tutorialSteps.ts` — 15 messages, F1 endings, D2 retry
 
+### What Plan 33-07 Tasks 1-2 Built
+- **retryHandler.ts:** D2 retry with accumulating cracks, hint-after-plug pattern (135 lines)
+- **discoveryHandler.ts:** Cross-step CRACK_OFFSCREEN listener, fires once, parallel operation (114 lines)
+- **continuousHandler.ts:** E1 continuous spawn + GOAL_CAPTURED + hint pattern + E2 skip (134 lines)
+- **freeplayHandler.ts:** F1 free play, pressure cap cycle, overflow, swipe-up exit (131 lines)
+- **handlers.ts:** Extended HandlerContext with orchestrator state accessors and spawn helpers
+- **GameEngine.ts:** Removed [LOCK] v2 debug logging
+- **useTrainingFlow.ts:** Removed all v2 debug logging ([STEP], [CRACK], [E1], [F1]), cleaned unused imports
+
 ### Next Steps
-1. Execute Plan 33-07: Custom handlers + integration + UAT
+1. Continue UAT: D2 verified → play through D3, E1, E2, F1
+2. Fix any issues found, then complete plan 33-07
 
 ---
 
@@ -122,20 +139,21 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
 Last session: 2026-02-23
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 307
+**Build:** 315
 
 ### Resume Command
 ```
 Phase 33 — Tutorial v3 Rewrite
 
-Plans 33-05 and 33-06 COMPLETE. One plan remaining.
+Plan 33-07 UAT round 1 in progress. D2 bugs fixed and verified.
 
 WHAT TO DO:
-1. Execute Plan 33-07: Custom handlers + integration + UAT
-   - Read .planning/phases/33-rank-0-training-sequence/33-07-PLAN.md
-   - Implement D2 retry, D3 discovery, E1 continuous, F1 freeplay handlers
-   - Wire into Game.tsx, remove old v2 code
-   - Full A1->F1 playthrough verification
+1. Continue UAT from D2 onward (A1→D1 verified, D2 fixed)
+   - D3 discovery: fires once when offscreen arrow appears
+   - E1: continuous spawn + plug → hint → pop to seal
+   - E2: scaffolding message
+   - F1: graduation → free play → pressure cap cycle → overflow → exit
+2. Fix any issues found, then complete plan 33-07
 ```
 
 ---
