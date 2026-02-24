@@ -57,10 +57,6 @@ export const Controls: React.FC<ControlsProps> = ({
           </div>
       </div>
       
-      {/* Desktop Hints */}
-      <div className="absolute bottom-4 left-0 right-0 text-center text-slate-500 t-body pointer-events-none hidden md:block opacity-30 z-50 font-mono">
-        ARROWS / WASD to Rotate Cylinder &bull; SPACE to Drop &bull; CLICK Masses to Purge
-      </div>
     </>
   );
 };

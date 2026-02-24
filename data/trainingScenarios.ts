@@ -14,17 +14,20 @@ export const TRAINING_PHASE_NAMES: Record<TrainingPhase, string> = {
 };
 
 /**
- * Tutorial v3 — 15 steps across 6 phases (A-F).
+ * Tutorial v3 — 13 active steps across 6 phases (A-F).
  *
  * Design spec: .planning/Tutorial3.md
  * Principles: show-then-name-then-do, one concept per step,
  * under 20 words per message, always doing something within 3s.
  *
- * Step IDs:
+ * Active step IDs (13):
  *   A1_WELCOME, B1_GOOP_FALLS, B2_FAST_DROP, B3_ROTATION, B4_PRACTICE,
  *   C1_PRESSURE, C2_POP, C3_MERGE_SOLIDIFY, C4_PRACTICE_POP,
- *   D1_CRACK, D2_TANK_ROTATION, D3_OFFSCREEN,
- *   E1_SEAL_CRACK, E2_SCAFFOLDING, F1_GRADUATION
+ *   D1_CRACK, D2_TANK_ROTATION, E2_SCAFFOLDING, F1_GRADUATION
+ *
+ * Disabled:
+ *   D3_OFFSCREEN — will be re-integrated as parallel listener
+ *   E1_SEAL_CRACK — absorbed into D2 (plug→hint→pop cycle)
  */
 export const TRAINING_SEQUENCE: TrainingStep[] = [
 
@@ -283,38 +286,20 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
   // },
 
   // ═══════════════════════════════════════════════════════════════
-  // Phase E — Scaffolding (2 steps)
-  // Seal a high crack → pop → learn scaffolding concept
+  // Phase E — Scaffolding (1 step)
+  // D2 already handles plug → hint → pop. E2 teaches scaffolding concept.
   // ═══════════════════════════════════════════════════════════════
 
-  {
-    // E1: High crack at pressure line. Continuous spawn. No initial message.
-    // GOAL_CAPTURED → freeze + suppress spawn → 3s → message + pulse → pop advances.
-    // If pop during 3s window → skip E2 → go to F1.
-    id: 'E1_SEAL_CRACK',
-    phase: 'E',
-    name: 'Seal the Crack',
-    teaches: 'high-crack-sealing',
-    setup: {
-      spawnPiece: { shape: GoopShape.T_O, color: COLORS.GREEN },
-      spawnCrack: { color: COLORS.GREEN, placement: 'at-pressure-line' },
-      pressureRate: 0.46875,
-      allowedControls: { fastDrop: true, rotate: true, tankRotate: true },
-      messagePosition: 'top',
-      continuousSpawn: true,
-      messageDelay: 999999,    // Message shown by custom GOAL_CAPTURED handler, not timer
-      hintDelay: 3000,         // After crack plugged: wait 3s, then show hint
-      autoSkipMs: 90000,       // Safety: move on if stuck
-      popLowersPressure: true,
-    },
-    pauseGame: false,  // Game running, no pause. Message controlled by GOAL_CAPTURED handler.
-    advance: { type: 'action', action: 'pop-goop' },
-    handlerType: 'continuous',
-  },
+  // E1_SEAL_CRACK removed from sequence — D2 now handles the full plug→hint→pop
+  // cycle using its retry handler. After D2's pop (GOAL_CAPTURED), advances directly to E2.
+  // The E1 message ("Pop the goop to seal the crack") is still referenced by D2's
+  // post-plug hint (useTrainingFlow.ts retryOnPieceLand handler).
 
   {
     // E2: Scaffolding concept. Shows after pop animation settles (1.5s delay).
     // "Cracks spawn higher as pressure builds. Stack goop to reach them."
+    // Spawns 2 cracks (different colors): one on-screen, one off-screen.
+    // Reinforces the message about cracks appearing everywhere.
     id: 'E2_SCAFFOLDING',
     phase: 'E',
     name: 'Scaffolding',
@@ -322,6 +307,10 @@ export const TRAINING_SEQUENCE: TrainingStep[] = [
     setup: {
       pressureRate: 0.46875,
       pauseDelay: 1500,  // Wait for pop droplets + blobs to disappear
+      spawnCracks: [
+        { color: COLORS.RED, placement: 'at-pressure-line' },              // Visible on-screen, below pressure line
+        { color: COLORS.BLUE, placement: 'offscreen-pressure-line' },      // Off-screen, same height range
+      ],
     },
     pauseGame: true,
     advance: { type: 'tap' },

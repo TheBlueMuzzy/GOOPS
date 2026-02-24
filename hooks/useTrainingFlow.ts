@@ -107,20 +107,31 @@ function findCrackPosition(
     return null;
   }
 
-  if (config.placement === 'offscreen' || config.placement === 'high-offscreen') {
+  if (config.placement === 'offscreen' || config.placement === 'high-offscreen' || config.placement === 'offscreen-pressure-line') {
     const offscreenCols: number[] = [];
     for (let gx = 0; gx < TANK_WIDTH; gx++) {
       const screenX = ((gx - rotation) % TANK_WIDTH + TANK_WIDTH) % TANK_WIDTH;
       if (screenX >= TANK_VIEWPORT_WIDTH) offscreenCols.push(gx);
     }
     if (offscreenCols.length > 0) {
-      const yRange = config.placement === 'high-offscreen'
-        ? { min: BUFFER_HEIGHT, max: BUFFER_HEIGHT + 4 }
-        : { min: TANK_HEIGHT - 6, max: TANK_HEIGHT - 1 };
+      let targetRow: number;
+      if (config.placement === 'offscreen-pressure-line') {
+        // Same pressure-line formula, but offscreen columns
+        const maxTime = engine.maxTime ?? 1;
+        const tankPressure = Math.max(0, 1 - (engine.state.shiftTime / maxTime));
+        const waterHeightBlocks = 1 + (tankPressure * (TANK_VIEWPORT_HEIGHT - 1));
+        const pressureLineY = Math.floor(TANK_HEIGHT - waterHeightBlocks);
+        const offset = 1 + Math.floor(Math.random() * 3);
+        targetRow = Math.max(BUFFER_HEIGHT, Math.min(TANK_HEIGHT - 1, pressureLineY + offset));
+      } else {
+        const yRange = config.placement === 'high-offscreen'
+          ? { min: BUFFER_HEIGHT, max: BUFFER_HEIGHT + 4 }
+          : { min: TANK_HEIGHT - 6, max: TANK_HEIGHT - 1 };
+        targetRow = yRange.min + Math.floor(Math.random() * (yRange.max - yRange.min + 1));
+      }
       for (let attempt = 0; attempt < 30; attempt++) {
         const gx = offscreenCols[Math.floor(Math.random() * offscreenCols.length)];
-        const gy = yRange.min + Math.floor(Math.random() * (yRange.max - yRange.min + 1));
-        if (grid[gy]?.[gx] === null) return { x: gx, y: gy };
+        if (grid[targetRow]?.[gx] === null) return { x: gx, y: targetRow };
       }
     }
     return null;
@@ -339,17 +350,31 @@ export const useTrainingFlow = ({
         spawnPieceFromConfig(gameEngine, currentStep.setup.spawnPiece);
       }
 
-      // --- Spawn crack if configured ---
-      if (currentStep.setup?.spawnCrack) {
-        // Clear leftover cracks only when spawning a new one (gives this step a clean slate)
+      // --- Spawn crack(s) if configured ---
+      if (currentStep.setup?.spawnCrack || currentStep.setup?.spawnCracks) {
+        // Clear leftover cracks when spawning new ones (gives this step a clean slate)
         gameEngine.state.crackCells = [];
         gameEngine.state.goalMarks = [];
 
-        const pos = findCrackPosition(gameEngine, currentStep.setup.spawnCrack);
-        if (pos) {
-          addCrackToGrid(gameEngine, pos.x, pos.y, currentStep.setup.spawnCrack.color, `step-setup[${currentStep.id}]`);
-          gameEngine.emitChange();
+        // Single crack
+        if (currentStep.setup?.spawnCrack) {
+          const pos = findCrackPosition(gameEngine, currentStep.setup.spawnCrack);
+          if (pos) {
+            addCrackToGrid(gameEngine, pos.x, pos.y, currentStep.setup.spawnCrack.color, `step-setup[${currentStep.id}]`);
+          }
         }
+
+        // Multiple cracks
+        if (currentStep.setup?.spawnCracks) {
+          for (const crackConfig of currentStep.setup.spawnCracks) {
+            const pos = findCrackPosition(gameEngine, crackConfig);
+            if (pos) {
+              addCrackToGrid(gameEngine, pos.x, pos.y, crackConfig.color, `step-setup[${currentStep.id}]`);
+            }
+          }
+        }
+
+        gameEngine.emitChange();
       }
     }
 
@@ -928,50 +953,8 @@ export const useTrainingFlow = ({
     // const stepsWithCracksAndRotation = ['D2_TANK_ROTATION', 'E1_SEAL_CRACK', 'F1_GRADUATION'];
     // if (...) { pool.setInterval('d3-discovery', ...) }
 
-    // --- E1 special: GOAL_PLUGGED → suppress spawn → 3s → message + pulse → pop → advance to E2 ---
-    if (currentStep.id === 'E1_SEAL_CRACK' && gameEngine) {
-      const e1GoalUnsub = gameEventBus.on(GameEventType.GOAL_PLUGGED, () => {
-        suppressContinuousSpawnRef.current = true;
-        gameEngine.freezeFalling = true;
-        gameEngine.emitChange();
-
-        pool.set('e1-unpause', () => {
-          gameEngine.state.isPaused = false;
-          gameEngine.freezeFalling = true;
-          gameEngine.emitChange();
-        }, 0);
-
-        // Clear placeholder messageDelay timer
-        pool.clear('message-delay');
-
-        advanceArmedRef.current = true;
-
-        pool.set('e1-hint', () => {
-          setMessageVisible(true);
-          setCanDismiss(false);
-          gameEngine.trainingHighlightColor = COLORS.GREEN;
-          gameEngine.trainingPressureRate = 0;
-          gameEngine.emitChange();
-
-          pool.set('e1-auto-advance', () => {
-            if (advanceArmedRef.current) {
-              advanceStepRef.current();
-            }
-          }, 3000);
-        }, 3000);
-      });
-      cleanups.push(e1GoalUnsub);
-
-      const e1PopUnsub = gameEventBus.on(GameEventType.GOOP_POPPED, () => {
-        if (!advanceArmedRef.current) return;
-        // Always advance to E2 — scaffolding is a separate concept from pop-to-seal
-        advanceStepRef.current();
-      });
-      cleanups.push(e1PopUnsub);
-
-      // Skip standard advance type handling — E1 has custom pop handler above
-      return () => cleanups.forEach(fn => fn());
-    }
+    // E1_SEAL_CRACK removed from sequence — plug→hint→pop is now handled by D2's
+    // retryOnPieceLand handler. D2 advances on GOAL_CAPTURED (crack-sealed) directly to E2.
 
     // ─── Advance type handling ───────────────────────────────
 

@@ -39,7 +39,7 @@ export interface PieceSpawn {
 // Crack to spawn for this step
 export interface CrackSpawn {
   color: string;
-  placement: 'near-stack' | 'away-from-stack' | 'offscreen' | 'high-offscreen' | 'high' | 'at-pressure-line';
+  placement: 'near-stack' | 'away-from-stack' | 'offscreen' | 'high-offscreen' | 'high' | 'at-pressure-line' | 'offscreen-pressure-line';
   row?: number;         // Specific row override (e.g., D1 crack at row 22)
 }
 
@@ -55,6 +55,7 @@ export interface AllowedControls {
 export interface StepSetup {
   spawnPiece?: PieceSpawn;
   spawnCrack?: CrackSpawn;
+  spawnCracks?: CrackSpawn[];  // Spawn multiple cracks (clears existing, then spawns all)
   pressureRate?: number;        // 0=frozen, 0.3=slow, 1=normal, 2.5=fast
   showPressureLine?: boolean;   // Reveal the pressure indicator
   view?: 'console' | 'tank';   // Which view to be in

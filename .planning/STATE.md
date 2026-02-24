@@ -10,9 +10,9 @@ updated: 2026-02-23
 ## Current Position
 
 Phase: 33 of 38 (Rank 0 Training Sequence)
-Plan: 33-07 UAT in progress — D2 bugs fixed, continuing playthrough
-Status: Tutorial v3 — UAT round 1: D2 fixed (3 commits), testing D2→F1 next
-Last activity: 2026-02-23 — Fixed D2 retry (GOAL_PLUGGED, zero pressure, pulse highlight)
+Plan: 33-07 UAT in progress — E2 cracks fixed to use pressure-line placement
+Status: Tutorial v3 — UAT round 1: D2→E2→F1 flow, testing build 331
+Last activity: 2026-02-23 — E2 cracks now use at-pressure-line + offscreen-pressure-line (spawn below pressure line, never above)
 
 Progress: █████████░ 97%
 
@@ -70,7 +70,16 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
      - Operator precedence fix (0126ca8)
      - D3 post-seal delay added — droplets fade before message (next commit)
      - E1 pop always skipped E2 — removed E2 skip entirely (scaffolding is separate concept)
-     - A1→D2 verified working, continuing D2→F1
+     - E2 delay root cause 1: e1-auto-advance timer (3s after hint) raced player's pop
+       - Console showed NO GOOP_POPPED — auto-advance cleaned up listener before pop registered
+       - Fix: removed e1-auto-advance timer, pop handler is sole advance (90s safety fallback)
+     - E2 delay root cause 2: popBeforePlug flag tried but REVERTED
+       - Player pops goop → goop settles onto crack → GOAL_PLUGGED fires AFTER GOOP_POPPED
+       - popBeforePlug skipped the hint entirely — E1 advanced without teaching "pop to seal"
+       - Correct behavior: plug→3s→hint→pop→advance. Random pops before plug are ignored.
+       - "Two pops" in settling scenario is by design (first=random gameplay, second=intentional seal)
+     - Debug logging added to useTrainingFlow.ts (advanceStep, GOAL_PLUGGED, hint, autoSkipMs)
+     - A1→D2 verified working, E1 fixes applied (build 321), continuing E1→F1 verification
 ```
 
 ### UAT Round 1 Fixes
