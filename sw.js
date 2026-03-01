@@ -1,5 +1,5 @@
 // Cache version — deploy script replaces this on each build
-const CACHE_VERSION = '1772051074866';
+const CACHE_VERSION = '1772344620277';
 const CACHE_NAME = 'goops-' + CACHE_VERSION;
 
 // Install: activate immediately (don't wait for old tabs to close)
