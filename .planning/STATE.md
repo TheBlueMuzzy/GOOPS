@@ -146,29 +146,41 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
 - PiecePreview NEXT/HOLD labels at 18px may be too large for 48px box
 - Some SVG text in Art.tsx not yet standardized
 - **Fill rendering "almost hole" inversion**: fillRule="evenodd" issue with near-touching vertices
+- **I-piece locking bug (INVESTIGATED)**: Straight pieces (T_I, P_I, H_I) don't lock reliably in vertical orientation. Root cause: Y offset bug in `getActivePieceState()` — see `.planning/FIX-I-PIECE-LOCKING.md` for full fix plan
 
 ---
 
 ## Session Continuity
 
-Last session: 2026-02-23
+Last session: 2026-03-01
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 315
+**Build:** 331
 
 ### Resume Command
 ```
-Phase 33 — Tutorial v3 Rewrite
+I-PIECE LOCKING BUG — Fix ready to implement
 
-Plan 33-07 UAT round 1 in progress. D2 bugs fixed and verified.
+Full investigation completed. Fix plan at .planning/FIX-I-PIECE-LOCKING.md
+
+THE BUG: getActivePieceState() in hooks/useSoftBodyPhysics.ts:487-493
+computes gridY = minVisualY + BUFFER_HEIGHT, but doesn't account for
+negative cell Y offsets unique to I-pieces (T_I:-1, P_I:-2, H_I:-2).
+This makes piece.y 1-2 rows too high, breaking collision checks in
+rotation/spin commands, preventing the 500ms lock timer from working.
 
 WHAT TO DO:
-1. Continue UAT from D2 onward (A1→D1 verified, D2 fixed)
-   - D3 discovery: fires once when offscreen arrow appears
-   - E1: continuous spawn + plug → hint → pop to seal
-   - E2: scaffolding message
-   - F1: graduation → free play → pressure cap cycle → overflow → exit
-2. Fix any issues found, then complete plan 33-07
+1. Read .planning/FIX-I-PIECE-LOCKING.md for full context
+2. Implement Approach 3 (store minCellYOffset on blob):
+   - core/softBody/types.ts: add minCellYOffset to SoftBlob
+   - core/softBody/blobFactory.ts: initialize minCellYOffset: 0
+   - components/GameBoard.tsx ~line 324: set blob.minCellYOffset after creation
+   - hooks/useSoftBodyPhysics.ts ~line 493: fix gridY calculation
+3. Test: drop vertical I-piece, should lock in 500ms without input
+4. If still doesn't lock at rest, add debug log (see fix doc)
+5. Run npm run test:run (210 tests should pass)
+
+ALSO PENDING: Tutorial UAT (Phase 33, plan 33-07) — resume after fix
 ```
 
 ---
