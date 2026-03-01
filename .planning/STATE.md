@@ -146,7 +146,7 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
 - PiecePreview NEXT/HOLD labels at 18px may be too large for 48px box
 - Some SVG text in Art.tsx not yet standardized
 - **Fill rendering "almost hole" inversion**: fillRule="evenodd" issue with near-touching vertices
-- **I-piece locking bug (INVESTIGATED)**: Straight pieces (T_I, P_I, H_I) don't lock reliably in vertical orientation. Root cause: Y offset bug in `getActivePieceState()` — see `.planning/FIX-I-PIECE-LOCKING.md` for full fix plan
+- **I-piece locking bug (FIXED)**: Straight pieces (T_I, P_I, H_I) vertical locking — fixed via `minCellYOffset` on SoftBlob. Needs manual verification.
 
 ---
 
@@ -155,32 +155,22 @@ Plan 33-07: Custom Handlers + Integration + UAT (2 tasks + 1 checkpoint)
 Last session: 2026-03-01
 **Version:** 1.1.13
 **Branch:** feature/tutorial-infrastructure
-**Build:** 331
+**Build:** 337
 
 ### Resume Command
 ```
-I-PIECE LOCKING BUG — Fix ready to implement
+I-PIECE LOCKING BUG — Fix implemented, needs manual verification
 
-Full investigation completed. Fix plan at .planning/FIX-I-PIECE-LOCKING.md
+Fix applied (Approach 3 from FIX-I-PIECE-LOCKING.md):
+- Added minCellYOffset to SoftBlob type
+- Set from activeGoop.cells on blob creation in GameBoard.tsx
+- Corrected gridY formula in getActivePieceState() to subtract offset
+- 210 tests pass
 
-THE BUG: getActivePieceState() in hooks/useSoftBodyPhysics.ts:487-493
-computes gridY = minVisualY + BUFFER_HEIGHT, but doesn't account for
-negative cell Y offsets unique to I-pieces (T_I:-1, P_I:-2, H_I:-2).
-This makes piece.y 1-2 rows too high, breaking collision checks in
-rotation/spin commands, preventing the 500ms lock timer from working.
+VERIFY: Drop vertical I-piece (T_I), should lock in 500ms without input.
+If still broken at rest, add debug log from fix doc.
 
-WHAT TO DO:
-1. Read .planning/FIX-I-PIECE-LOCKING.md for full context
-2. Implement Approach 3 (store minCellYOffset on blob):
-   - core/softBody/types.ts: add minCellYOffset to SoftBlob
-   - core/softBody/blobFactory.ts: initialize minCellYOffset: 0
-   - components/GameBoard.tsx ~line 324: set blob.minCellYOffset after creation
-   - hooks/useSoftBodyPhysics.ts ~line 493: fix gridY calculation
-3. Test: drop vertical I-piece, should lock in 500ms without input
-4. If still doesn't lock at rest, add debug log (see fix doc)
-5. Run npm run test:run (210 tests should pass)
-
-ALSO PENDING: Tutorial UAT (Phase 33, plan 33-07) — resume after fix
+ALSO PENDING: Tutorial UAT (Phase 33, plan 33-07) — resume after fix verified
 ```
 
 ---

@@ -321,7 +321,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           // Get color (handle multi-color pieces by using first cell color)
           const color = activeGoop.definition.cellColors?.[0] ?? activeGoop.definition.color;
 
-          softBodyPhysics.createBlob(visualCells, color, blobId, false, tankRotation);
+          const newBlob = softBodyPhysics.createBlob(visualCells, color, blobId, false, tankRotation);
+          if (newBlob) {
+              newBlob.minCellYOffset = Math.min(...activeGoop.cells.map(c => c.y));
+          }
           setBlobRenderKey(k => k + 1);
       }
   }, [activeGoop?.spawnTimestamp, softBodyPhysics, tankRotation]);

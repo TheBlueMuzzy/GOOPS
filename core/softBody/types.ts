@@ -147,6 +147,7 @@ export interface SoftBlob {
   targetY: number;           // Target center Y (pixels)
   visualOffsetY: number;     // Smooth falling offset
   createdAtRotation: number; // Tank rotation when blob was created (for position sync)
+  minCellYOffset: number;    // Minimum Y offset from piece definition (for I-piece gridY correction)
 }
 
 // =============================================================================

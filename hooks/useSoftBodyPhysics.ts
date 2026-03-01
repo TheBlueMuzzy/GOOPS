@@ -490,7 +490,8 @@ export function useSoftBodyPhysics(
     }
 
     // Add BUFFER_HEIGHT to convert visual Y back to full grid Y
-    const gridY = minY + BUFFER_HEIGHT;
+    // Subtract minCellYOffset to correct for I-pieces with negative Y offsets (T_I:-1, P_I:-2, H_I:-2)
+    const gridY = minY + BUFFER_HEIGHT - (activeBlob.minCellYOffset ?? 0);
 
     return {
       gridY,

@@ -535,5 +535,6 @@ export function createBlobFromCells(
     targetY: cy,
     visualOffsetY: 0,
     createdAtRotation: tankRotation,
+    minCellYOffset: 0,
   };
 }
