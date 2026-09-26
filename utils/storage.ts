@@ -10,7 +10,7 @@ export const getDefaultSaveData = (): SaveData => ({
   powerUps: {},
   firstRunComplete: false,
   settings: {
-    masterVolume: 50,
+    masterVolume: 100,
     musicVolume: 80,
     sfxVolume: 100
   }

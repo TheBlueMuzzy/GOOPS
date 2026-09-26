@@ -42,13 +42,14 @@ export const Controls: React.FC<ControlsProps> = ({
   useEffect(() => {
     if (gameOver) {
         let animationFrameId: number;
+        // If Win, add win bonus to visual score too? 
+        // Logic handled in Game.tsx onRunComplete, here we just animate from Start -> End
+        // We need to know the 'final' score which is in `state.score` passed from Game, 
+        // BUT Game.tsx calculates bonus inside `onRunComplete` which updates global store, not local game state.
+        // For visual simplicity here, we animate what we have.
         
-        // Calculate the actual end score including the Win Bonus
-        const rankBonus = isWin ? 5000 * startRankInfo.rank : 0;
-        const totalRunScore = score + rankBonus;
-
         const start = initialTotalScore;
-        const end = initialTotalScore + totalRunScore;
+        const end = initialTotalScore + score;
         const duration = 2500; // 2.5 seconds to count up
         const startTime = performance.now();
 
@@ -73,7 +74,7 @@ export const Controls: React.FC<ControlsProps> = ({
         setAccumulatedPowerPts(0);
         prevRankRef.current = calculateRankDetails(initialTotalScore).rank;
     }
-  }, [gameOver, initialTotalScore, score, isWin, startRankInfo.rank]);
+  }, [gameOver, initialTotalScore, score]);
 
   // Detect Level Up during animation
   useEffect(() => {
@@ -112,8 +113,14 @@ export const Controls: React.FC<ControlsProps> = ({
               </div>
           </div>
 
-          {/* CENTER: Combo Only (Goals moved to GameBoard) */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-16 flex flex-col items-center">
+          {/* CENTER: Goals & Combo */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-4 flex flex-col items-center">
+              <div className="bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700/50 flex items-center gap-2 mb-2">
+                   <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                   <span className="text-xs font-bold text-slate-200 tracking-wider">GOALS</span>
+                   <span className="text-lg font-mono font-black text-white leading-none">{goalsCleared}/{goalsTarget}</span>
+              </div>
+              
               {combo > 1 && (
                   <div className="text-2xl text-yellow-400 animate-bounce font-black tracking-wider whitespace-nowrap drop-shadow-[0_4px_4px_rgba(0,0,0,0.9)] stroke-black">
                       x{combo} SURGE

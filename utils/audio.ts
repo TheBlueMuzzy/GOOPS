@@ -12,7 +12,7 @@ class AudioSystem {
   private droneLfo: OscillatorNode | null = null;
   
   private settings: SaveData['settings'] = {
-    masterVolume: 50,
+    masterVolume: 100,
     musicVolume: 80,
     sfxVolume: 100
   };
