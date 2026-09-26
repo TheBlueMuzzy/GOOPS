@@ -32,3 +32,7 @@ nul
 
 # Planning backup (temporary)
 .planning-old/
+
+# Local tool files
+.nemp/
+*.bak

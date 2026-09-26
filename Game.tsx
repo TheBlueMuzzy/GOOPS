@@ -422,6 +422,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
     messagePosition: trainingMessagePosition,
     highlightColor: trainingHighlightColor,
     canDismiss: trainingCanDismiss,
+    isF1Ending,
   } = useTrainingFlow({
     saveData,
     setSaveData,
@@ -1066,7 +1067,7 @@ const Game: React.FC<GameProps> = ({ onExit, onRunComplete, initialTotalScore, p
         highlightElement={trainingStep?.setup?.highlightElement}
         messagePosition={isInTraining ? trainingMessagePosition : undefined}
         advanceType={isInTraining ? (isTapAdvance ? 'tap' : 'dismiss') : undefined}
-        blockInteraction={isInTraining && trainingStep?.pauseGame !== false && !!trainingDisplayStep && trainingCanDismiss}
+        blockInteraction={isInTraining && trainingStep?.pauseGame !== false && !!trainingDisplayStep && trainingCanDismiss && !isF1Ending}
         trainingProgress={trainingProgress}
         canDismiss={isInTraining ? trainingCanDismiss : true}
       />

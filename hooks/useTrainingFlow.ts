@@ -278,6 +278,7 @@ export const useTrainingFlow = ({
   const discoveryInterruptRef = useRef(false);
   // F1 ending sub-state: 'none' during free play, 'pressure-cap' or 'overflow' when ending
   const f1EndingRef = useRef<'none' | 'pressure-cap' | 'overflow'>('none');
+  const [isF1Ending, setIsF1Ending] = useState(false);
 
   // Track completion ref for event handler (avoid stale closure)
   const completedRef = useRef(completedSteps);
@@ -311,6 +312,7 @@ export const useTrainingFlow = ({
     d3MessageShownRef.current = false;
     suppressContinuousSpawnRef.current = false;
     f1EndingRef.current = 'none';
+    setIsF1Ending(false);
 
     if (!currentStep) return;
 
@@ -570,6 +572,7 @@ export const useTrainingFlow = ({
       setMessageVisible(false);
       setRetryMessage(null);
       f1EndingRef.current = 'none'; // Allow pieces/cracks to continue
+      setIsF1Ending(false);
       adjustFillTimestampsForPause();
 
       if (gameEngine && gameEngine.isSessionActive) {
@@ -608,6 +611,7 @@ export const useTrainingFlow = ({
             gameEngine.emitChange();
 
             f1EndingRef.current = 'pressure-cap';
+            setIsF1Ending(true);
             setRetryMessage(F1_ENDING_MESSAGES.PRESSURE_CAP);
             setMessageVisible(true);
             setCanDismiss(true);
@@ -919,6 +923,7 @@ export const useTrainingFlow = ({
           // F1: show pressure cap ending message
           if (currentStep.id === 'F1_GRADUATION' && f1EndingRef.current === 'none') {
             f1EndingRef.current = 'pressure-cap';
+            setIsF1Ending(true);
             setRetryMessage(F1_ENDING_MESSAGES.PRESSURE_CAP);
             setMessageVisible(true);
             setCanDismiss(true);
@@ -933,6 +938,7 @@ export const useTrainingFlow = ({
       const handleOverflow = () => {
         if (f1EndingRef.current !== 'none') return;
         f1EndingRef.current = 'overflow';
+        setIsF1Ending(true);
 
         gameEngine.state.isPaused = true;
         gameEngine.freezeFalling = true;
@@ -1121,5 +1127,6 @@ export const useTrainingFlow = ({
     messagePosition,
     highlightColor,
     canDismiss,
+    isF1Ending,
   };
 };
