@@ -184,3 +184,7 @@ User shortcuts in CLAUDE.md: `<commands>`, `<npm>`, `<test>`, `<runtests>`, `<sa
 - [[HOME]] - Navigation hub
 - [[PROJECT]] - Full project definition
 - [[ROADMAP]] - All milestones
+
+## Housekeeping 2026-09-26
+- Committed + pushed leftover WIP on feature/tutorial-infrastructure (commit 380f489): F1-ending input-block fix, app icon sets, removed unused proto-9a.png, ignore .nemp/ and *.bak.
+- Old duplicate clones (Documents/GitHub/Goops, OneDrive Goops) removed during PC project consolidation. This folder is the only local copy.
