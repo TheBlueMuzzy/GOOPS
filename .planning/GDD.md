@@ -32,7 +32,9 @@
 - Full v1 rules and systems: `research/v1-review.md` §1–2 and `research/v1/PRD.md`.
 
 ## 5. Systems
-Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities · three breakdowns (laser, lights, controls) with console repair puzzles · colour and piece unlocks by rank · the garbled intercom · Operator Journal · save. Story (the Employer, the Veteran, fines, rank titles, the reveal, the takeover at rank 50) was **designed but never built in v1**; the remake builds it.
+Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities · three breakdowns (laser, lights, controls) with console repair puzzles · colour and piece unlocks by rank · the garbled intercom · Operator Journal · save.
+- **Story:** `design/story.md`: the Employer (intercom, always "policy"), the Veteran (radio hijacks, smuggled upgrades, a brain in a jar), fines, rank titles, beats per rank band, the takeover at 50. Designed in v1 but never built; the remake builds it.
+- **Progression:** `design/progression.md`: ranks and XP, scraps, colour schedule, starting junk, 20 upgrades in 4 bands, active abilities, the rank philosophy.
 
 ## 6. Look & sound
 Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of bright, wet, living goop. The intercom is mostly static, with key words coming through in green. v1 audio was placeholder synth beeps; the remake uses the framework audio module. Goo look directions: `research/goo-feel.md` §4.
@@ -47,13 +49,12 @@ Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of
 ## 9. Open questions  (each becomes a ❓ in ROADMAP at /define)
 1. **The goo technique:** A shader blobs + springs (recommended) / B v1 soft-body, but visual-only / C Puyo-style tiles + bridges / D A plus strands. A phone sketch should decide it (`research/goo-feel.md` §5).
 2. **How a crack gets sealed:** Muzzy's story settles the core: goop covers the crack, then you zap it with the laser (v1 also tried auto-sealing on landing, then plug on land + seal on zap). Still open: does the colour have to match, and what does a wrong-colour cover do?
-12. **The PRD's extra story beats** (the Veteran smuggling upgrades, fines, rank titles, the brain-in-a-jar reveal, the takeover at rank 50): Muzzy's 2026-10-16 telling doesn't mention them. Still in?
 3. **What pressure is:** a timer (v1) or how full the tank is (v1's own "SlowMode" note)?
 4. **Breakdowns:** keep all three, but tune them so each creates a choice instead of punishing a core action. Should all three ever be active at once?
 5. **Does the game pause at the console during a repair?**
 6. **Progression:** XP from score, or cracks sealed? How long is the climb to rank 50 (v1: ~481,000 XP)?
 7. **Shift length:** a snack (75 s) or a sit-down (up to 115 s with upgrades)?
-8. **Story as mechanics:** the Veteran, fines, rank titles, ranks 40–50, and what "taking over" at rank 50 means.
+8. **Story as mechanics** (`design/story.md`): how fines and rank titles show up in play, what ranks 40–50 add (v1 had no content past wild goop and black), and what "taking over" at rank 50 means (the PRD says "Ambiguous").
 9. **Tutorial:** how the new one teaches. Built late, as data, on the framework's teaching tools (callouts, tips) and the intercom.
 10. **Phone gestures:** swipe up (back to the console) vs hold (swap) vs drag (spin / fast drop).
 11. **Colour schedule:** which colour unlocks at which rank. v1's docs and code disagree.
