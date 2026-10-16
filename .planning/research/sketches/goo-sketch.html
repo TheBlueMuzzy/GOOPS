@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Goo Sketch</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #02040c; color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid #1e293b;
+    background: #0b1224d9; color: #e2e8f0; font: 600 14px system-ui, sans-serif; touch-action: manipulation; }
+  button:active { background: #1e293b; }
+  button.on { border-color: #a855f7; color: #e9d5ff; }
+  #bottom button { min-height: 56px; font-size: 24px; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #panel { position: fixed; top: 64px; left: 0; right: 0; margin: 0 auto; width: calc(100% - 32px); max-width: 420px;
+    box-sizing: border-box; padding: 12px 16px; border-radius: 14px; background: #0b1224f0; border: 1px solid #1e293b;
+    z-index: 3; display: none; }
+  #panel.open { display: block; }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 82px; }
+  #panel label b { flex: 0 0 40px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
+  #panel input { flex: 1; min-width: 0; accent-color: #a855f7; }
+  #panel p { margin: 8px 0 0; font-size: 11px; color: #64748b; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bFill">Fill</button><button id="bReset">Reset</button>
+  <button id="bPuyo">Puyo</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <button id="bLeft">&#9664;</button><button id="bRot">&#10227;</button>
+  <button id="bDrop">&#9660;</button><button id="bRight">&#9654;</button>
+</div>
+<script>
+'use strict';
+// ===== Tweakable goo values (the sketch's "content/goo.json") =====
+const GOO = {
+  roundness: 0.75,  // 0 = square cells, 1 = round blobs
+  fuse: 0.32,       // smooth-union blend radius = neck size between same colours (cells)
+  stiffness: 300,   // wobble spring stiffness (higher = faster jiggle)
+  damping: 10,      // wobble spring damping (lower = jiggles longer)
+  shine: 0.9,       // wet specular highlight strength
+  squash: 0.4,      // squash & stretch amount
+  ripple: 0.4,      // faint "alive" edge undulation
+  size: 0.92,       // blob size inside its cell (leaves a seam between colours)
+  maxDpr: 1.5,      // pixel-ratio cap (performance)
+  fallMs: 650,      // grid fall step
+  puyo: false,      // Direction C: rounded tiles + bridges, no SDF fuse
+};
+const KNOBS = [['roundness', 0, 1, 0.01], ['fuse', 0, 0.5, 0.01], ['stiffness', 40, 900, 10], ['damping', 2, 40, 0.5],
+  ['shine', 0, 1.5, 0.05], ['squash', 0, 1, 0.01], ['ripple', 0, 1, 0.05]];
+const COLORS = [[0, 0, 0], [0.94, 0.27, 0.27], [0.23, 0.51, 0.96], [0.13, 0.77, 0.37], [0.92, 0.70, 0.03], [0.66, 0.33, 0.97]];
+const SHAPES = [[[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [2, 0], [1, 1]],
+  [[0, 0], [0, 1], [0, 2], [1, 2]], [[1, 0], [2, 0], [0, 1], [1, 1]]];
+const W = 10;
+let H = 0; // rows are picked by layout() to fill the screen (min 14)
+const rnd = n => Math.floor(Math.random() * n);
+
+// ================= GAME LOGIC: a plain grid. Never reads the visuals. =================
+const G = { grid: null, piece: null, fallT: 0, gravityT: -1, ver: 0, events: [] };
+const idx = (x, y) => y * W + x;
+const emit = e => G.events.push(e);
+const cellAt = (x, y) => (x < 0 || x >= W || y >= H) ? 9 : (y < 0 ? 0 : G.grid[idx(x, y)]);
+const fits = (cells, px, py) => cells.every(([x, y]) => cellAt(px + x, py + y) === 0);
+
+function newGame() { G.grid = new Uint8Array(W * H); G.piece = null; G.gravityT = -1; G.ver++; emit({ type: 'reset' }); spawn(); }
+function spawn() {
+  const cells = SHAPES[rnd(SHAPES.length)].map(c => [...c]);
+  const p = { cells, x: 3, y: 0, color: 1 + rnd(5) };
+  if (!fits(cells, p.x, p.y)) return newGame(); // topped out: start over
+  G.piece = p; G.fallT = 0; emit({ type: 'spawn' });
+}
+function move(dx) { const p = G.piece; if (p && fits(p.cells, p.x + dx, p.y)) { p.x += dx; emit({ type: 'move', dx }); } }
+function rotate() {
+  const p = G.piece; if (!p) return;
+  const r = p.cells.map(([x, y]) => [-y, x]); // clockwise (y points down)
+  const mx = Math.min(...r.map(c => c[0])), my = Math.min(...r.map(c => c[1]));
+  const rc = r.map(([x, y]) => [x - mx, y - my]);
+  for (const k of [0, -1, 1, -2, 2]) if (fits(rc, p.x + k, p.y)) { p.cells = rc; p.x += k; emit({ type: 'rotate', kick: k }); return; }
+}
+function lock() {
+  const p = G.piece; const cells = p.cells.map(([x, y]) => [p.x + x, p.y + y]);
+  for (const [x, y] of cells) G.grid[idx(x, y)] = p.color;
+  G.piece = null; G.ver++; emit({ type: 'lock', cells, color: p.color }); spawn();
+}
+function step() { const p = G.piece; if (!p) return; if (fits(p.cells, p.x, p.y + 1)) { p.y++; emit({ type: 'step' }); } else lock(); }
+function hardDrop() { const p = G.piece; if (!p) return; let n = 0; while (fits(p.cells, p.x, p.y + 1)) { p.y++; n++; } emit({ type: 'drop', n }); lock(); }
+function groupAt(x, y) { // same-colour 4-way flood fill
+  const c = G.grid[idx(x, y)], out = [], seen = new Set([idx(x, y)]), stack = [[x, y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop(); out.push([cx, cy]);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy, i = idx(nx, ny);
+      if (nx >= 0 && nx < W && ny >= 0 && ny < H && !seen.has(i) && G.grid[i] === c) { seen.add(i); stack.push([nx, ny]); }
+    }
+  }
+  return out;
+}
+function pop(x, y) {
+  const c = G.grid[idx(x, y)]; if (!c) return;
+  const cells = groupAt(x, y);
+  if (cells.length < 4) return emit({ type: 'poke', cells });
+  for (const [cx, cy] of cells) G.grid[idx(cx, cy)] = 0;
+  G.ver++; emit({ type: 'pop', cells, color: c }); G.gravityT = 0.16; // short pause, then things fall
+}
+function applyGravity() { // per-cell column compaction
+  const moves = [];
+  for (let x = 0; x < W; x++) {
+    let to = H - 1;
+    for (let y = H - 1; y >= 0; y--) {
+      const c = G.grid[idx(x, y)]; if (!c) continue;
+      if (to !== y) { G.grid[idx(x, to)] = c; G.grid[idx(x, y)] = 0; moves.push({ fx: x, fy: y, tx: x, ty: to }); }
+      to--;
+    }
+  }
+  const p = G.piece; while (p && !fits(p.cells, p.x, p.y) && p.y > -3) p.y--; // nudge piece out of the way (rare)
+  G.ver++; if (moves.length) emit({ type: 'fall', moves });
+}
+function fillBoard() { // stress test: fill all but the top rows, with some same-colour clumping
+  const top = Math.floor(H * 0.45);
+  for (let y = H - 1; y >= top; y--) for (let x = 0; x < W; x++) {
+    if (G.piece && G.piece.cells.some(([px, py]) => G.piece.x + px === x && G.piece.y + py === y)) continue;
+    const left = x > 0 ? G.grid[idx(x - 1, y)] : 0, below = y < H - 1 ? G.grid[idx(x, y + 1)] : 0;
+    const r = Math.random();
+    G.grid[idx(x, y)] = r < 0.3 && left ? left : r < 0.55 && below ? below : 1 + rnd(5);
+  }
+  G.ver++;
+}
+function updateGame(dt) {
+  if (G.piece && (G.fallT += dt * 1000) >= GOO.fallMs) { G.fallT = 0; step(); }
+  if (G.gravityT >= 0 && (G.gravityT -= dt) < 0) applyGravity();
+}
+
+// ================= GOO RENDER LAYER: reads G + events, never writes G =================
+let blobs = [], dying = [], drops = [], groupSize = new Uint8Array(0), seenVer = -1, data = new Float32Array(0);
+const pv = { x: 0, vx: 0, y: 0, vy: 0, a: 0, va: 0, sq: 0, sqv: 0 }; // falling-piece pose springs
+const newBlob = color => ({ color, offX: 0, vxo: 0, offY: 0, vy: 0, falling: false, delay: 0, sq: 0, sqv: 0, k: GOO.fuse, kv: 0, glow: 0 });
+function spring(o, key, vkey, target, k, c, dt) { o[vkey] += ((target - o[key]) * k - o[vkey] * c) * dt; o[key] += o[vkey] * dt; }
+function kickNear(cells, r, amt) { // neighbours wobble when something happens nearby (each one kicked once, by its nearest source)
+  const kicks = new Map();
+  for (const [x, y] of cells) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    const nx = x + dx, ny = y + dy; if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+    const i = idx(nx, ny), k = amt / (1 + Math.abs(dx) + Math.abs(dy));
+    if (blobs[i] && k > (kicks.get(i) || 0)) kicks.set(i, k);
+  }
+  for (const [i, k] of kicks) blobs[i].sqv += k * (0.7 + Math.random() * 0.6) * ((i % W + Math.floor(i / W)) & 1 ? -1 : 1);
+}
+function handle(e) {
+  switch (e.type) {
+    case 'reset': blobs = new Array(W * H).fill(null); dying = []; drops = []; data = new Float32Array(W * H * 8); groupSize = new Uint8Array(W * H); break;
+    case 'spawn': Object.assign(pv, { x: 0, vx: 0, y: -1.2, vy: 0, a: 0, va: 0, sq: 0, sqv: 0 }); break;
+    case 'move': pv.x -= e.dx; break;
+    case 'step': pv.y -= 1; break;
+    case 'drop': pv.y -= e.n; break;
+    case 'rotate': pv.a -= Math.PI / 2; pv.x -= e.kick; break; // visual lags 90 degrees, springs over with overshoot
+    case 'lock': {
+      const dropping = pv.y < -0.4, mine = new Set(e.cells.map(([x, y]) => idx(x, y)));
+      for (const [x, y] of e.cells) {
+        const b = newBlob(e.color); b.offX = pv.x; b.offY = pv.y; b.k = GOO.fuse * 0.4;
+        if (dropping) { b.falling = true; b.vy = 20; } else b.sqv = 7;
+        blobs[idx(x, y)] = b;
+      }
+      for (const [x, y] of e.cells) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { // "slurp": touching same colour re-fuses
+        const nx = x + dx, ny = y + dy, i = idx(nx, ny), b = nx >= 0 && nx < W && ny >= 0 && ny < H && blobs[i];
+        if (b && !mine.has(i) && b.color === e.color) { b.k *= 0.4; b.sqv += 3; }
+      }
+      if (!dropping) kickNear(e.cells, 1, 3);
+      break;
+    }
+    case 'poke': for (const [x, y] of e.cells) { const b = blobs[idx(x, y)]; if (b) b.sqv += 9; } break;
+    case 'pop':
+      for (const [x, y] of e.cells) {
+        const b = blobs[idx(x, y)]; if (!b) continue;
+        dying.push({ x: x + 0.5 + b.offX, y: y + 0.5 + b.offY, color: e.color, t: 0 }); blobs[idx(x, y)] = null;
+        for (let n = 0; n < 3; n++) { const life = 0.45 + Math.random() * 0.35;
+          drops.push({ x: x + 0.5, y: y + 0.5, vx: (Math.random() - 0.5) * 9, vy: -2 - Math.random() * 9, r0: 0.09 + Math.random() * 0.09, life, life0: life, color: e.color }); }
+      }
+      kickNear(e.cells, 2, 8); break;
+    case 'fall': {
+      const moved = e.moves.map(m => [m, blobs[idx(m.fx, m.fy)]]);
+      for (const [m] of moved) blobs[idx(m.fx, m.fy)] = null;
+      for (const [m, b] of moved) if (b) { b.offY += m.fy - m.ty; b.falling = true; b.vy = 0; b.delay = 0.05; blobs[idx(m.tx, m.ty)] = b; }
+      break;
+    }
+  }
+}
+function updateVisuals(dt) {
+  for (let i = 0; i < W * H; i++) { // keep blobs in step with the grid (e.g. after Fill)
+    const c = G.grid[i];
+    if (c && !blobs[i]) { blobs[i] = newBlob(c); blobs[i].sqv = 4 + Math.random() * 4; }
+    else if (!c && blobs[i]) blobs[i] = null;
+  }
+  if (seenVer !== G.ver) { // group sizes, for the "ready to pop" glow
+    seenVer = G.ver; groupSize.fill(0);
+    for (let i = 0; i < W * H; i++) if (G.grid[i] && !groupSize[i]) { const g = groupAt(i % W, Math.floor(i / W)); for (const [x, y] of g) groupSize[idx(x, y)] = Math.min(g.length, 255); }
+  }
+  const K = GOO.stiffness, C = GOO.damping, crit = 2 * Math.sqrt(K);
+  for (let t = dt; t > 1e-6; t -= 1 / 120) { // fixed small substeps keep stiff springs stable
+    const h = Math.min(t, 1 / 120);
+    spring(pv, 'x', 'vx', 0, K, crit, h); spring(pv, 'y', 'vy', 0, K * 0.6, crit * 0.8, h);
+    spring(pv, 'a', 'va', 0, K * 0.7, C * 0.9, h);
+    spring(pv, 'sq', 'sqv', -Math.min(Math.max(pv.vy, 0) * 0.03, 0.5), K, C, h);
+    for (const b of blobs) {
+      if (!b) continue;
+      if (b.falling) {
+        if (b.delay > 0) b.delay -= h;
+        else { b.vy += 60 * h; b.offY += b.vy * h;
+          if (b.offY >= 0) { b.offY = 0; b.falling = false; b.sqv += Math.min(b.vy, 25) * 0.45; b.vy = 0; } }
+      }
+      spring(b, 'offX', 'vxo', 0, K, crit, h);
+      spring(b, 'sq', 'sqv', b.falling ? -Math.min(b.vy * 0.015, 0.5) : 0, K, C, h);
+      spring(b, 'k', 'kv', GOO.fuse, K * 0.35, C * 0.6, h);
+    }
+  }
+  for (let i = 0; i < W * H; i++) { const b = blobs[i]; if (b) b.glow += ((groupSize[i] >= 4 ? 1 : 0) - b.glow) * Math.min(1, dt * 6); }
+  for (const d of dying) d.t += dt;
+  dying = dying.filter(d => d.t < 0.24);
+  for (const d of drops) { d.vy += 30 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; }
+  drops = drops.filter(d => d.life > 0 && d.y < H + 1);
+}
+const pose = sq => { const s = Math.max(-0.9, Math.min(0.9, sq)) * GOO.squash; return [1 + s * (s > 0 ? 0.6 : 0.2), 1 - s]; }; // [sx, sy]: squash widens, stretch barely narrows (keeps pieces fused)
+function put(cx, cy, color, flags, sx, sy, k, glow, weak) { // one blob into the per-cell lookup texture
+  const bx = Math.floor(cx), by = Math.floor(cy);
+  if (bx < 0 || by < 0 || bx >= W || by >= H) return;
+  const a = (by * W + bx) * 4, b = ((by + H) * W + bx) * 4;
+  if (weak && data[a + 2] > 0) return;
+  data[a] = cx; data[a + 1] = cy; data[a + 2] = color; data[a + 3] = flags;
+  data[b] = sx; data[b + 1] = sy; data[b + 2] = k; data[b + 3] = glow;
+}
+const settled = b => b && !b.falling && Math.abs(b.offY) < 0.05 && Math.abs(b.offX) < 0.05;
+function packCells() {
+  data.fill(0);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const b = blobs[idx(x, y)]; if (!b) continue;
+    const [sx, sy] = pose(b.sq);
+    let flags = 0; // Puyo-mode bridges to the right (1) and below (2)
+    if (settled(b)) {
+      if (x < W - 1 && settled(blobs[idx(x + 1, y)]) && blobs[idx(x + 1, y)].color === b.color) flags |= 1;
+      if (y < H - 1 && settled(blobs[idx(x, y + 1)]) && blobs[idx(x, y + 1)].color === b.color) flags |= 2;
+    }
+    put(x + 0.5 + b.offX, y + 0.5 + b.offY + (1 - sy) * 0.5 * GOO.size, b.color, flags, sx, sy, Math.max(b.k, 0.001), b.glow, false);
+  }
+  for (const d of dying) { // pop: swell, necks snap (k=0), then shrink away
+    const s = d.t < 0.06 ? 1 + d.t / 0.06 * 0.2 : Math.max(0.01, 1.2 * (1 - (d.t - 0.06) / 0.18));
+    put(d.x, d.y, d.color, 0, s, s, 0.001, 1, true);
+  }
+}
+
+// ================= WebGL2: one full-screen triangle, one fragment shader =================
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
+if (!gl) document.body.innerHTML = '<p style="padding:16px">WebGL2 is not available on this device.</p>';
+const VS = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const FS = `#version 300 es
+precision highp float; precision highp int;
+uniform highp sampler2D uCells;       // W x 2H: row y = (cx, cy, colour, flags), row y+H = (sx, sy, k, glow)
+uniform vec2 uRes, uOrigin; uniform float uCell, uTime, uRound, uSize, uShine, uRipple, uPuyo;
+uniform ivec2 uGrid; uniform vec3 uCols[6];
+uniform vec4 uPiece[4]; uniform vec4 uPieceInfo;   // piece cells (cx, cy, sx, sy); info = (colour, angle, k, -)
+uniform vec4 uDrops[32]; uniform int uDropN;       // droplets (x, y, r, colour)
+out vec4 outColor;
+float sdBox(vec2 q, vec2 b, float r){ vec2 d = abs(q) - b + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
+float smin(float a, float b, float k){ float h = max(k - abs(a - b), 0.0) / k; return min(a, b) - h * h * k * 0.25; }
+float blob(vec2 q, vec2 s){ float h = 0.5 * uSize; return sdBox(q / s, vec2(h), uRound * h) * min(s.x, s.y); }
+float hlDist(vec2 q, vec2 s){ return length((q / s - vec2(-0.17, -0.2)) * vec2(1.0, 1.6)) - 0.09; }
+// soft height bump + its gradient; reaches 0 within 0.8 cells so it never crosses the 3x3 lookup (no seams)
+vec3 dome(vec2 q, vec2 s){ vec2 u = q / s; float t = max(1.0 - dot(u, u) / 0.64, 0.0); return vec3(t * t * t, -6.0 * t * t * u / (0.64 * s)); }
+void main(){
+  vec2 p = (vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) - uOrigin) / uCell;  // cell units, y down
+  bool puyo = uPuyo > 0.5;
+  float d[6]; float gw[6]; vec3 hg[6]; float hl = 1e3;   // per colour: distance, glow, dome height+gradient
+  for (int i = 0; i < 6; i++) { d[i] = 1e3; gw[i] = 0.0; hg[i] = vec3(0.0); }
+  ivec2 b0 = ivec2(floor(p));
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {   // only the 3x3 nearby cells
+    ivec2 c = b0 + ivec2(i, j);
+    if (c.x < 0 || c.y < 0 || c.x >= uGrid.x || c.y >= uGrid.y) continue;
+    vec4 A = texelFetch(uCells, c, 0);
+    if (A.z < 0.5) continue;
+    vec4 B = texelFetch(uCells, c + ivec2(0, uGrid.y), 0);
+    int col = int(A.z + 0.5); vec2 q = p - A.xy;
+    float bd = blob(q, B.xy); vec3 h = dome(q, B.xy);
+    hg[col] += h; gw[col] += B.w * h.x;                             // glow = dome-weighted blend (smooth, no seams)
+    if (puyo) {
+      int f = int(A.w + 0.5);
+      if ((f & 1) != 0) bd = min(bd, sdBox(q - vec2(0.5, 0.0), vec2(0.5, 0.3 * uSize), 0.0));
+      if ((f & 2) != 0) bd = min(bd, sdBox(q - vec2(0.0, 0.5), vec2(0.3 * uSize, 0.5), 0.0));
+      d[col] = min(d[col], bd); hl = min(hl, hlDist(q, B.xy));
+    } else d[col] = smin(d[col], bd, B.z);                         // same colour fuses, others don't
+  }
+  if (uPieceInfo.x > 0.5) {
+    int pc = int(uPieceInfo.x + 0.5); float ca = cos(-uPieceInfo.y), sa = sin(-uPieceInfo.y);
+    for (int k = 0; k < 4; k++) {
+      vec2 q = p - uPiece[k].xy; q = vec2(ca * q.x - sa * q.y, sa * q.x + ca * q.y);
+      float bd = blob(q, uPiece[k].zw);
+      if (puyo) { d[pc] = min(d[pc], bd); hl = min(hl, hlDist(q, uPiece[k].zw)); }
+      else { d[pc] = smin(d[pc], bd, uPieceInfo.z); vec3 h = dome(q, uPiece[k].zw); hg[pc] += vec3(h.x, ca * h.y + sa * h.z, -sa * h.y + ca * h.z); }
+    }
+  }
+  for (int k = 0; k < 32; k++) {
+    if (k >= uDropN) break;
+    int dc = int(uDrops[k].w + 0.5); float dd = length(p - uDrops[k].xy) - uDrops[k].z;
+    d[dc] = puyo ? min(d[dc], dd) : smin(d[dc], dd, 0.12);
+  }
+  float dm = 1e3; int ci = 0; float glow = 0.0; vec3 dh = vec3(0.0);
+  for (int i = 1; i < 6; i++) if (d[i] < dm) { dm = d[i]; ci = i; glow = gw[i] / max(hg[i].x, 1e-4); dh = hg[i]; }
+  if (!puyo) dm += uRipple * 0.03 * sin(p.x * 6.0 + uTime * 2.2) * sin(p.y * 5.0 - uTime * 1.7);  // alive ripple
+  // tank background
+  vec2 gs = vec2(uGrid); float px = 1.0 / uCell;
+  vec3 bg = vec3(0.008, 0.016, 0.04);
+  if (p.x >= 0.0 && p.x <= gs.x && p.y <= gs.y) {
+    vec2 f = abs(fract(p) - 0.5);
+    bg = vec3(0.02, 0.035, 0.08) + 0.025 * smoothstep(0.5 - px * 1.5, 0.5, max(f.x, f.y));
+  }
+  float edge = p.y <= gs.y ? min(abs(p.x), abs(p.x - gs.x)) : 1e3;
+  if (p.x >= 0.0 && p.x <= gs.x) edge = min(edge, abs(p.y - gs.y));
+  bg += vec3(0.08, 0.16, 0.3) * smoothstep(px * 3.0, 0.0, edge);
+  // goo shading
+  vec3 base = uCols[ci], col;
+  float a = clamp(0.5 - dm * uCell, 0.0, 1.0);
+  if (puyo) {                                         // Direction C: flat toy tile, outline, highlight dot
+    col = base * (0.88 + 0.18 * smoothstep(0.0, 0.4, -dm));
+    col = mix(base * 0.4, col, smoothstep(0.02, 0.06, -dm));
+    col = mix(col, vec3(1.0), clamp(0.5 - hl * uCell, 0.0, 1.0) * 0.85);
+  } else {                                            // Direction A: wet goo from the distance field
+    vec2 g = vec2(dFdx(dm), -dFdy(dm)); g = dot(g, g) > 1e-12 ? normalize(g) : vec2(0.0);
+    float s = 1.0 - clamp(-dm / 0.12, 0.0, 1.0);      // 1 at the edge, 0 inside the thin bevel
+    vec3 n = normalize(vec3(g * s / sqrt(max(1.0 - s * s, 0.02)) - dh.yz * 0.22, 1.0));  // edge bevel + soft lumpy dome
+    vec3 L = normalize(vec3(-0.5, -0.7, 0.6));
+    float spec = pow(max(dot(n, normalize(L + vec3(0.0, 0.0, 1.0))), 0.0), 60.0) * uShine;
+    col = base * (0.45 + 0.6 * max(dot(n, L), 0.0));
+    col = mix(base * 0.35, col, smoothstep(0.0, 0.09, -dm));      // darker rim
+    col += base * 0.35 * smoothstep(0.15, 0.6, -dm);              // inner glow
+    col += vec3(spec);                                             // sharp wet highlight
+  }
+  col += base * glow * (0.12 + 0.1 * sin(uTime * 7.0));            // ready-to-pop pulse
+  outColor = vec4(mix(bg, col, a), 1.0);
+}`;
+function compile(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog); gl.useProgram(prog); gl.bindVertexArray(gl.createVertexArray());
+const U = {};
+for (const n of ['uCells', 'uRes', 'uOrigin', 'uCell', 'uTime', 'uRound', 'uSize', 'uShine', 'uRipple', 'uPuyo', 'uGrid', 'uCols', 'uPiece', 'uPieceInfo', 'uDrops', 'uDropN'])
+  U[n] = gl.getUniformLocation(prog, n);
+const tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+gl.uniform1i(U.uCells, 0); gl.uniform3fv(U.uCols, COLORS.flat());
+const pieceArr = new Float32Array(16), dropArr = new Float32Array(128);
+
+let dpr = 1, cell = 30, ox = 0, oy = 0;
+function layout() {
+  dpr = Math.min(window.devicePixelRatio || 1, GOO.maxDpr);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  const top = document.getElementById('top').getBoundingClientRect().bottom + 6;
+  const bot = document.getElementById('bottom').getBoundingClientRect().top - 6;
+  const availH = bot - top;
+  cell = Math.min((innerWidth - 32) / W, availH / 14);
+  const rows = Math.max(14, Math.min(24, Math.floor(availH / cell))); // tall phones get extra rows, no dead band
+  ox = (innerWidth - W * cell) / 2; oy = bot - rows * cell;
+  if (rows !== H) { H = rows; newGame(); }
+}
+function draw(time) {
+  packCells();
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, W, H * 2, 0, gl.RGBA, gl.FLOAT, data);
+  gl.uniform2f(U.uRes, canvas.width, canvas.height); gl.uniform2f(U.uOrigin, ox * dpr, oy * dpr);
+  gl.uniform1f(U.uCell, cell * dpr); gl.uniform1f(U.uTime, time); gl.uniform2i(U.uGrid, W, H);
+  gl.uniform1f(U.uRound, GOO.roundness); gl.uniform1f(U.uSize, GOO.size); gl.uniform1f(U.uShine, GOO.shine);
+  gl.uniform1f(U.uRipple, GOO.ripple); gl.uniform1f(U.uPuyo, GOO.puyo ? 1 : 0);
+  const p = G.piece;
+  if (p) { // piece cells rotate around the piece centre by the lagging visual angle
+    const cs = p.cells.map(([x, y]) => [p.x + x + 0.5, p.y + y + 0.5]);
+    const cx = cs.reduce((s, c) => s + c[0], 0) / 4, cy = cs.reduce((s, c) => s + c[1], 0) / 4;
+    const ca = Math.cos(pv.a), sa = Math.sin(pv.a), [sx, sy] = pose(pv.sq);
+    cs.forEach(([x, y], k) => { const rx = x - cx, ry = y - cy;
+      pieceArr.set([cx + ca * rx - sa * ry + pv.x, cy + sa * rx + ca * ry + pv.y, sx, sy], k * 4); });
+    gl.uniform4fv(U.uPiece, pieceArr); gl.uniform4f(U.uPieceInfo, p.color, pv.a, Math.max(GOO.fuse, 0.001), 0);
+  } else gl.uniform4f(U.uPieceInfo, 0, 0, 0, 0);
+  const n = Math.min(drops.length, 32);
+  for (let i = 0; i < n; i++) { const d = drops[i]; dropArr.set([d.x, d.y, d.r0 * d.life / d.life0, d.color], i * 4); }
+  gl.uniform4fv(U.uDrops, dropArr); gl.uniform1i(U.uDropN, n);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// ================= Input + UI =================
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', e => {
+  if (!down) return; const dx = e.clientX - down.x, dy = e.clientY - down.y; down = null;
+  if (dy > 50 && dy > Math.abs(dx)) return hardDrop();            // swipe down
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) return move(Math.sign(dx));
+  const px = (e.clientX - ox) / cell, py = (e.clientY - oy) / cell, gx = Math.floor(px), gy = Math.floor(py);
+  if (gx >= 0 && gx < W && gy >= 0 && gy < H && G.grid[idx(gx, gy)]) return pop(gx, gy); // tap goop
+  const p = G.piece;
+  if (p && p.cells.some(([x, y]) => Math.hypot(p.x + x + 0.5 - px, p.y + y + 0.5 - py) < 1.3)) return rotate(); // tap piece
+  move(e.clientX < innerWidth / 2 ? -1 : 1);                       // tap left / right half
+});
+addEventListener('keydown', e => {
+  const k = { ArrowLeft: () => move(-1), ArrowRight: () => move(1), ArrowUp: rotate, ArrowDown: step, ' ': hardDrop }[e.key];
+  if (k) { k(); e.preventDefault(); }
+});
+const $ = id => document.getElementById(id);
+$('bLeft').onclick = () => move(-1); $('bRight').onclick = () => move(1); $('bRot').onclick = rotate; $('bDrop').onclick = hardDrop;
+$('bFill').onclick = fillBoard; $('bReset').onclick = newGame;
+$('bPuyo').onclick = () => { GOO.puyo = !GOO.puyo; $('bPuyo').classList.toggle('on', GOO.puyo); $('bPuyo').textContent = GOO.puyo ? 'Puyo ✓' : 'Puyo'; };
+$('bKnobs').onclick = () => $('panel').classList.toggle('open');
+$('panel').innerHTML = KNOBS.map(([k, lo, hi, st]) =>
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`).join('')
+  + '<p>Values live in the GOO object at the top of the file.</p>';
+for (const [k] of KNOBS) $('k_' + k).oninput = e => { GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k]; };
+addEventListener('resize', layout);
+
+// ================= Main loop =================
+let last = performance.now(), frames = 0, fpsT = last, fps = 0;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  updateGame(dt);                                  // rules first...
+  for (const e of G.events) handle(e);             // ...then the goo reacts to what happened
+  G.events.length = 0;
+  updateVisuals(dt); draw(now / 1000);
+  frames++;
+  if (now - fpsT >= 1000) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; $('fps').textContent = fps.toFixed(0) + ' fps'; }
+  requestAnimationFrame(frame);
+}
+layout();
+window.goo = { G, GOO, fps: () => fps, draw, move, rotate, hardDrop, fillBoard, newGame, pop, groupAt }; // for testing
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
