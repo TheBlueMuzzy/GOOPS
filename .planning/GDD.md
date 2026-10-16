@@ -7,6 +7,8 @@
 - **One line (rough):** A falling-goop puzzle game where you spin a cylindrical tank under the falling piece, merge and pop living goop to seal cracks before the pressure blows, and keep a crumbling console running for a faceless employer, one rank at a time.
 - **Platform:** web, phone first (portrait, one thumb), desktop too   **Audience:** general (not made for kids). Short-session puzzle players who like mastery and dark office comedy.
 - **References:** Tetris (lock delay, ghost, kicks: the movement feel) · Puyo Puyo (same-colour merge and pop, readable goo) · World of Goo / LocoRoco (goo that feels alive) · Papers, Please (a mundane job under a faceless employer) · Keep Talking and Nobody Explodes (hands-on console repairs). Deeper breakdown: `research/discovery.md`.
+- **The story (Muzzy, 2026-10-16, his words):** "this is a new job. your first day. your job is to clear the tank of the semi-sentient goop that builds up inside of it. there are cracks that will form because the tank is pressurized, so you have to use the goop to seal the cracks by zapping them with your laser when they cover the cracks. this company and job is not a good one. the machines are faulty and unreliable, the only way to move up is to do a good job, but moving up just means running into more issues/problems."
+  - So: popping = **zapping goop with the laser**; a crack is sealed by zapping goop **that covers it**. The tutorial is **your first day**. Breakdowns are **faulty machines**. Ranks are **promotions that bring more problems**. The goop is **semi-sentient** (feeds the "goo is alive" pillar).
 - **Remake brief (Muzzy, 2026-10-16):** "the remake should really keep everything, but I want it more optimized, and better overall … using all of the things we learned from updating the framework and BMUZ." Must keep: **the story, the goopiness, the controls, and the menu that is part of the game** (the console is the main menu; pulling down the periscope drops you into play). Must improve: **the goopiness** ("the intent of the system I created was good … research and come up with something better") and **the tutorial** (to be readdressed).
 
 ## 2. Experience targets  (MDA, rough; /define locks them)
@@ -44,7 +46,8 @@ Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of
 
 ## 9. Open questions  (each becomes a ❓ in ROADMAP at /define)
 1. **The goo technique:** A shader blobs + springs (recommended) / B v1 soft-body, but visual-only / C Puyo-style tiles + bridges / D A plus strands. A phone sketch should decide it (`research/goo-feel.md` §5).
-2. **How a crack gets sealed:** v1 changed it three times (cover + pop → auto on landing → plug on land, seal on pop). What does a wrong-colour cover do?
+2. **How a crack gets sealed:** Muzzy's story settles the core: goop covers the crack, then you zap it with the laser (v1 also tried auto-sealing on landing, then plug on land + seal on zap). Still open: does the colour have to match, and what does a wrong-colour cover do?
+12. **The PRD's extra story beats** (the Veteran smuggling upgrades, fines, rank titles, the brain-in-a-jar reveal, the takeover at rank 50): Muzzy's 2026-10-16 telling doesn't mention them. Still in?
 3. **What pressure is:** a timer (v1) or how full the tank is (v1's own "SlowMode" note)?
 4. **Breakdowns:** keep all three, but tune them so each creates a choice instead of punishing a core action. Should all three ever be active at once?
 5. **Does the game pause at the console during a repair?**
