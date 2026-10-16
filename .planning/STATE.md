@@ -1,6 +1,8 @@
 ## ▶ RESUME HERE
-Fresh remake of Goops with BMUZ 2, in /discover. The old v1 code still sits in the folder as a reference (also saved on branch `archive/goops-v1`). It gets cleared when /develop starts the new build.
-Next: finish discovery (Muzzy's answers + `research/v1-review.md`), then write the GDD's rough pitch, targets and directions, then go to /define.
+Discovery mapped: GDD draft (pitch, rough targets, pillars, 11 open questions) + research/v1-review.md + research/goo-feel.md + research/discovery.md.
+Doing: a throwaway goo sketch (direction A shader + springs, with a Puyo-mode toggle) for Muzzy to feel on his phone, in `.planning/research/sketches/`.
+Next: Muzzy tries the sketch → /define (lock scope: everything in v1 is a must + the story; settle the open questions; write the TDD + feature map).
+Muzzy: confirm my reading of "keep everything" = every feature + fiction stays, numbers and rules may be tuned.
 
 ## Where we are
 Stage: discover · Milestone: — · Sprint: — · Branch: master (default) · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
@@ -12,4 +14,5 @@ Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `n
 **Remote:** github.com/TheBlueMuzzy/GOOPS
 
 ## Log
+- 2026-10-16 — Discovery: v1 review, goo research, GDD draft
 - 2026-10-16 — Started the BMUZ 2 remake: old code archived to `archive/goops-v1`, GSD planning archived, /discover begun
