@@ -31,8 +31,14 @@ nul
 .planning/.obsidian/
 
 # Planning backup (temporary)
-.planning-old/
+.planning/archive/gsd/planning-old/
 
 # Local tool files
 .nemp/
 *.bak
+
+# BMUZ 2
+.claude/settings.local.json
+.planning/STATE.md.bak
+.playwright-mcp/
+.env
