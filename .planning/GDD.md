@@ -46,15 +46,20 @@ Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of
 - **Release path:** web (GitHub Pages, installable PWA like v1) first.   **Business:** none yet.
 - **Success looks like (rough):** it plays smoothly on a phone, people come back for "one more shift", and the remake proves the framework works for a real-time game.
 
-## 9. Open questions  (each becomes a ❓ in ROADMAP at /define)
-1. **The goo technique:** A shader blobs + springs (recommended) / B v1 soft-body, but visual-only / C Puyo-style tiles + bridges / D A plus strands. A phone sketch should decide it (`research/goo-feel.md` §5).
-2. **How a crack gets sealed:** Muzzy's story settles the core: goop covers the crack, then you zap it with the laser (v1 also tried auto-sealing on landing, then plug on land + seal on zap). Still open: does the colour have to match, and what does a wrong-colour cover do?
-3. **What pressure is:** a timer (v1) or how full the tank is (v1's own "SlowMode" note)?
-4. **Breakdowns:** keep all three, but tune them so each creates a choice instead of punishing a core action. Should all three ever be active at once?
-5. **Does the game pause at the console during a repair?**
-6. **Progression:** XP from score, or cracks sealed? How long is the climb to rank 50 (v1: ~481,000 XP)?
-7. **Shift length:** a snack (75 s) or a sit-down (up to 115 s with upgrades)?
-8. **Story as mechanics** (`design/story.md`): how fines and rank titles show up in play, what ranks 40–50 add (v1 had no content past wild goop and black), and what "taking over" at rank 50 means (the PRD says "Ambiguous").
-9. **Tutorial:** how the new one teaches. Built late, as data, on the framework's teaching tools (callouts, tips) and the intercom.
-10. **Phone gestures:** swipe up (back to the console) vs hold (swap) vs drag (spin / fast drop).
-11. **Colour schedule:** which colour unlocks at which rank. v1's docs and code disagree.
+## 9. Gap walk  (/define walks these one at a time, in this order; answers go into the sections above)
+**Already settled (no questions):** the tank (cylinder, spin the world), the controls (v1 PRD §Controls), pieces + lock feel, merge → fill → zap, console-as-menu + periscope, the story arc (`design/story.md`), progression + upgrades as designed (`design/progression.md`, numbers sim-checked later), web + PWA, colour schedule (v1 code and PRD agree: Purple@10, White@30, Black@50).
+
+| # | Gap | State | Blocks |
+|---|---|---|---|
+| 1 | **Feel targets**: confirm the primary feeling (§2) | drafted | everything (it's the judge for every other call) |
+| 2 | **Goo technique**: A / B / C / D (`research/goo-feel.md`) | needs the sketch | the TDD's rendering plan |
+| 3 | **Crack sealing**: zap goop covering a crack (settled); must the colour match? What does a wrong colour do? | open | core rules |
+| 4 | **Pressure**: a timer (v1) or how full the tank is (v1's SlowMode note)? | open | core rules, shift length |
+| 5 | **Shift length**: snack (75 s) or sit-down (up to 115 s)? | open | pacing, progression |
+| 6 | **Breakdowns**: keep all three, tune so each is a choice not a punishment; pause or slow at the console? | open | complications, upgrades |
+| 7 | **Scope + releases**: what the alpha must have vs beta / 1.0 (everything stays in, but in what order) | open | the roadmap |
+| 8 | **Progression**: XP from score or from cracks sealed? How long is the climb to 50? | drafted (v1) | upgrades, sim |
+| 9 | **Story in play**: how fines and rank titles show up, ranks 40–50 content, what the takeover at 50 means | open | rank content |
+| 10 | **Phone gestures**: swipe up vs hold vs drag conflicts | open | input |
+| 11 | **Look & sound**: keep the v1 console art and palette, or a refresh? Audio mood | open | art tasks |
+| 12 | **Tutorial**: "your first day", taught at the moment of action (last: it teaches the settled rules) | open | onboarding |
