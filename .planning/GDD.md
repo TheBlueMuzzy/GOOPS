@@ -11,13 +11,14 @@
   - So: popping = **zapping goop with the laser**; a crack is sealed by zapping goop **that covers it**. The tutorial is **your first day**. Breakdowns are **faulty machines**. Ranks are **promotions that bring more problems**. The goop is **semi-sentient** (feeds the "goo is alive" pillar).
 - **Remake brief (Muzzy, 2026-10-16):** "the remake should really keep everything, but I want it more optimized, and better overall … using all of the things we learned from updating the framework and BMUZ." Must keep: **the story, the goopiness, the controls, and the menu that is part of the game** (the console is the main menu; pulling down the periscope drops you into play). Must improve: **the goopiness** ("the intent of the system I created was good … research and come up with something better") and **the tutorial** (to be readdressed).
 
-## 2. Experience targets  (MDA, rough; /define locks them)
-| | Target | In players' words | We'll know when… (watchable) | Seen? |
+## 2. Experience targets  (MDA; gap 1 settled 2026-10-16: Muzzy wants all three, so each owns a time scale)
+| Time scale | Target | In players' words | We'll know when… (watchable) | Seen? |
 |---|---|---|---|---|
-| Primary | Mundane stress → mastery | "It's my crappy job and I'm weirdly good at it" | they start another shift without being asked; their shifts get cleaner over time | — |
-| Secondary | Tactile delight | "The goop is so satisfying to squish and pop" | they pop just to watch it, and mention the goop unprompted | — |
-| Secondary | Dark-comedy discovery | "What is this company?! What did the intercom just say?" | they read the intercom and want the next rank to see what changes | — |
+| Every second | Tactile goo delight | "The goop is so satisfying to squish and zap" | they zap just to watch it, and mention the goop unprompted | — |
+| Every shift | Stress → mastery | "It's my crappy job and I'm weirdly good at it" | they start another shift without being asked; their shifts get cleaner over time | — |
+| Across ranks | Dark-comedy discovery | "What IS this company? What did the intercom just say?" | they read the intercom and want the next rank to see what changes | — |
 | Not this game | Panic twitch arcade | — | — | — |
+**Tie-breaker:** when ideas clash, ask which time scale the change touches; that scale's feeling wins (e.g. a breakdown that makes zapping feel bad breaks the every-second delight).
 **Key moments** (rough): the first time the console turns into the tank (periscope pull) · a big same-colour merge popping and sealing a crack · a breakdown mid-shift that you fix just in time · a rank-up that changes your job (a new rule with a story reason).
 **Watch-outs:** the breakdowns punishing your best moves (v1: laser drains on pop, controls heat on spin, lights dim unless you fast-drop, so you get pushed to play badly) · pressure feeling like a plain countdown · repairs feeling like a tax · a tutorial that blocks instead of teaching at the moment of action.
 
@@ -51,7 +52,7 @@ Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of
 
 | # | Gap | State | Blocks |
 |---|---|---|---|
-| 1 | **Feel targets**: confirm the primary feeling (§2) | drafted | everything (it's the judge for every other call) |
+| 1 | ~~Feel targets~~ ✅ all three, one per time scale (§2) | settled | everything (it's the judge for every other call) |
 | 2 | **Goo technique**: A / B / C / D (`research/goo-feel.md`) | needs the sketch | the TDD's rendering plan |
 | 3 | **Crack sealing**: zap goop covering a crack (settled); must the colour match? What does a wrong colour do? | open | core rules |
 | 4 | **Pressure**: a timer (v1) or how full the tank is (v1's SlowMode note)? | open | core rules, shift length |
