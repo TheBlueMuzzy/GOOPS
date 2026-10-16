@@ -2,7 +2,8 @@
 Discovery mapped: GDD draft (pitch, rough targets, pillars, 11 open questions) + research/v1-review.md + research/goo-feel.md + research/discovery.md.
 Doing: a throwaway goo sketch (direction A shader + springs, with a Puyo-mode toggle) for Muzzy to feel on his phone, in `.planning/research/sketches/`.
 Next: Muzzy tries the sketch → /define (lock scope: everything in v1 is a must + the story; settle the open questions; write the TDD + feature map).
-Muzzy: confirm my reading of "keep everything" = every feature + fiction stays, numbers and rules may be tuned.
+Overview page (republish as gaps close): https://claude.ai/artifact/TT1QBXdiC2nqdBe89zHRNp — source in the session scratchpad; rebuild from GDD if lost.
+Gap walk: 1/12 done; next gap 3 (crack colour match). Gap 2 waits on the goo sketch.
 
 ## Where we are
 Stage: discover · Milestone: — · Sprint: — · Branch: master (default) · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
