@@ -47,3 +47,4 @@ nul
 # Remake
 e2e-shots
 *.tsbuildinfo
+.claude/worktrees/
