@@ -72,11 +72,13 @@ const GOO = {
   wetness: 0.9,       // highlight + glossy rim strength
   home: 0.3,          // home spring as a share of stiffness (keeps the body on its grid spot)
   corner: 0.32,       // corner rounding radius of the outline (cells)
-  tension: 0,         // surface tension: rounds the skin, same-colour bodies reach for and stick to each other, strands hold longer
+  magnetism: 1.4,     // same-colour jellies in other bodies reach for each other: reach 0.25 + 0.5×this cells (same scale as L3)
+  tension: 0.15,      // sticky strings: stretch up to 0.35 + 0.75×this cells before they snap (same scale as L3)
+  skin: 0,            // skin pull that rounds corners (fixed; Muzzy's pick had it off)
   maxDpr: 1.5,        // pixel-ratio cap (performance)
   fallMs: 650,        // grid fall step
 };
-const KNOBS = [['stiffness', 60, 1500, 10], ['viscosity', 0.5, 30, 0.5], ['wobble', 0, 3, 0.05], ['tension', 0, 1.5, 0.05],
+const KNOBS = [['stiffness', 60, 1500, 10], ['viscosity', 0.5, 30, 0.5], ['wobble', 0, 3, 0.05], ['magnetism', 0, 3, 0.05], ['tension', 0, 3, 0.05],
   ['gravity', 0.5, 20, 0.1], ['translucency', 0, 1, 0.01], ['wetness', 0, 1.5, 0.05]];
 const COLORS = [[0, 0, 0], [0.94, 0.27, 0.27], [0.23, 0.51, 0.96], [0.13, 0.77, 0.37], [0.92, 0.70, 0.03], [0.66, 0.33, 0.97]];
 const SHAPES = [[[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [2, 0], [1, 1]],
@@ -405,6 +407,7 @@ function buildPiece() {
   const old = pieceBody, B = makeBody(p.cells.map(c => [...c]), p.color, 'piece');
   computeHomes(B); transfer(B, old ? [old] : []);
   if (old) kick(B, 'twist', -2.2);
+  if (old) strands = strands.filter(S => S.A !== old && S.B !== old);
   pieceBody = B;
 }
 function stepBody(B, h, ks, kh, c, scale) {
@@ -425,7 +428,7 @@ function stepBody(B, h, ks, kh, c, scale) {
     if (B.y[i] > H) { B.y[i] = H; if (B.vy[i] > 0) B.vy[i] *= -0.3; }          // tank floor
     if (B.x[i] < 0) { B.x[i] = 0; if (B.vx[i] < 0) B.vx[i] *= -0.3; } else if (B.x[i] > W) { B.x[i] = W; if (B.vx[i] > 0) B.vx[i] *= -0.3; }
   }
-  const kl = 260 * GOO.tension * h; // surface tension: each skin point pulled toward its two neighbours (rounds, tightens)
+  const kl = 260 * GOO.skin * h; // surface tension: each skin point pulled toward its two neighbours (rounds, tightens)
   if (kl > 0) for (const [s0, cnt] of B.loops) for (let k = 0; k < cnt; k++) {
     const i = s0 + k, a = s0 + (k + cnt - 1) % cnt, b = s0 + (k + 1) % cnt;
     B.vx[i] += kl * (B.x[a] + B.x[b] - 2 * B.x[i]); B.vy[i] += kl * (B.y[a] + B.y[b] - 2 * B.y[i]);
@@ -438,9 +441,11 @@ function nearestPair(A, B) {
   for (let i = 0; i < A.n; i++) for (let j = 0; j < B.n; j++) { const d = (A.x[i] - B.x[j]) ** 2 + (A.y[i] - B.y[j]) ** 2; if (d < bd) { bd = d; ia = i; ib = j; } }
   return [ia, ib, Math.sqrt(bd)];
 }
+function strandSnap() { return 0.35 + 0.75 * GOO.tension; } // cells: 0 → 0.35 (no strings), 1 → 1.1, 3 → 2.6
 function makeStrand(A, B) {
+  if (GOO.tension <= 0) return;
   const [ia, ib, d] = nearestPair(A, B); if (d > 1.6) return;
-  const w0 = 0.34 + 0.22 * GOO.tension; // neck thickness (cells)
+  const w0 = 0.3 + 0.08 * GOO.tension; // neck thickness (cells)
   strands.push({ color: A.color, A, B, ia, ib, w0, V: w0 * Math.max(d, 0.5), t: 0, w: w0 });
 }
 function reanchorStrands(next) { // bodies were rebuilt: hook each strand end onto the nearest point of the new bodies
@@ -454,7 +459,7 @@ function reanchorStrands(next) { // bodies were rebuilt: hook each strand end on
   });
 }
 function strandPull(S, h) { // the neck pulls its two ends toward each other: the bodies stretch out into it
-  const k = (40 + 120 * GOO.tension) * (S.w / S.w0) * h;
+  const k = (30 + 50 * GOO.tension) * (S.w / S.w0) * h;
   for (const [P, i, Q, j] of [[S.A, S.ia, S.B, S.ib], [S.B, S.ib, S.A, S.ia]]) {
     const dx = Q.x[j] - P.x[i], dy = Q.y[j] - P.y[i], [s0, cnt] = loopOf(P, i);
     for (let o = -3; o <= 3; o++) { const m = s0 + ((i - s0 + o) % cnt + cnt) % cnt, wt = 1 - Math.abs(o) / 4;
@@ -467,7 +472,7 @@ function updateStrands(dt) {
     const L = Math.hypot(S.B.x[S.ib] - S.A.x[S.ia], S.B.y[S.ib] - S.A.y[S.ia]);
     // volume-preserving thinning as it stretches, plus a slow drain so a strand never hangs forever
     S.w = Math.min(S.w0, S.V / Math.max(L, 0.01)) * Math.exp(-S.t / (0.5 + 0.9 * GOO.tension));
-    if (S.w > 0.07 && L < 3.5) return true;
+    if (S.w > 0.07 && L < strandSnap()) return true;
     // tear: each end snaps back into its body (elastic release) and a bead drips off
     for (const [P, i, Q, j] of [[S.A, S.ia, S.B, S.ib], [S.B, S.ib, S.A, S.ia]]) {
       const [s0, cnt] = loopOf(P, i), dx = Q.x[j] - P.x[i], dy = Q.y[j] - P.y[i], d = Math.hypot(dx, dy) || 1;
@@ -479,19 +484,36 @@ function updateStrands(dt) {
     return false;
   });
 }
-function cohesion(dt) { // sticky reach: skin points of DIFFERENT same-colour bodies within reach pull toward each other
-  if (!GOO.tension) return;
-  const all = pieceBody && G.piece ? bodies.concat([pieceBody]) : bodies, R = 0.7, k = 90 * GOO.tension * dt, map = new Map();
+function cohesion(dt) { // magnetism: skin points of DIFFERENT same-colour bodies within reach pull toward each other
+  const M = GOO.magnetism; if (M <= 0) return;
+  const all = pieceBody && G.piece ? bodies.concat([pieceBody]) : bodies, R = 0.25 + 0.5 * M, pull = GOO.stiffness * 0.1 * M * dt, map = new Map();
   for (const B of all) for (let i = 0; i < B.n; i++) { const key = B.color * 1e6 + (Math.floor(B.x[i] / R) + 50) * 1000 + Math.floor(B.y[i] / R) + 100;
     if (!map.has(key)) map.set(key, []); map.get(key).push(B, i); }
   for (const B of all) for (let i = 0; i < B.n; i++) {
     const fx = Math.floor(B.x[i] / R), fy = Math.floor(B.y[i] / R);
+    let best = 0, ux = 0, uy = 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const L = map.get(B.color * 1e6 + (fx + dx + 50) * 1000 + fy + dy + 100); if (!L) continue;
       for (let j = 0; j < L.length; j += 2) { const O = L[j]; if (O === B) continue; const o = L[j + 1];
         const ex = O.x[o] - B.x[i], ey = O.y[o] - B.y[i], d = Math.hypot(ex, ey); if (d > R || d < 1e-4) continue;
-        const f = k * (1 - d / R); B.vx[i] += ex * f; B.vy[i] += ey * f; }
+        const a = pull * (1 - d / R); if (a > best) { best = a; ux = ex / d; uy = ey / d; } }
     }
+    B.vx[i] += ux * best; B.vy[i] += uy * best;
+  }
+}
+// Sticky touch (from L3): when the falling piece touches a same-colour jelly, they stick, and a string forms as they
+// slide apart. One string per jelly per piece; Tension decides how far it stretches.
+function stickyTouch() {
+  if (GOO.tension <= 0 || !pieceBody || !G.piece) return;
+  const P = pieceBody; P.stuck = P.stuck || new Set();
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  for (let i = 0; i < P.n; i++) { x0 = Math.min(x0, P.x[i]); x1 = Math.max(x1, P.x[i]); y0 = Math.min(y0, P.y[i]); y1 = Math.max(y1, P.y[i]); }
+  for (const B of bodies) {
+    if (B.color !== P.color || P.stuck.has(B.id)) continue;
+    let near = false; for (let i = 0; i < B.n && !near; i++) near = B.x[i] > x0 - 0.2 && B.x[i] < x1 + 0.2 && B.y[i] > y0 - 0.2 && B.y[i] < y1 + 0.2;
+    if (!near) continue;
+    const [, , d] = nearestPair(P, B); if (d > 0.15) continue;
+    P.stuck.add(B.id); makeStrand(P, B);
   }
 }
 function fanStrand(S) { // tapered neck: thick where it meets each body, thinnest in the middle
@@ -546,7 +568,7 @@ function updateVisuals(dt) {
       stepBody(B, h, ks * 0.8, 0, c, sc);
     }
   }
-  cohesion(dt); updateStrands(dt);
+  cohesion(dt); stickyTouch(); updateStrands(dt);
   for (const B of dying) { B.t += dt; B.alpha = 1 - Math.max(0, (B.t / DRAIN - 0.35) / 0.65) ** 1.3; }
   dying = dying.filter(B => B.t < DRAIN);
   for (const d of drops) { d.vy += g * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; }
@@ -772,7 +794,7 @@ function draw(time) {
   // 2) + 3) blurs
   gl.useProgram(PB.p); gl.bindVertexArray(vaoFsq); gl.uniform1i(PB.u.uT0, 0); gl.uniform1i(PB.u.uT1, 1);
   const cHalf = cell * dpr * hs;
-  const sg = cHalf * (0.06 + 0.06 * GOO.tension); // more tension = same colours fuse from further away
+  const sg = cHalf * (0.06 + 0.03 * GOO.magnetism); // more magnetism = same colours fuse from a little further away
   blur(TM, TA, 1, 0, sg); blur(TA, TS, 0, 1, sg);
   blur(TM, TB, 1, 0, cHalf * 0.5 * 0.42); blur(TB, TQ, 0, 1, cHalf * 0.5 * 0.42);
   // 4) final
@@ -817,7 +839,8 @@ const KNOB_HELP = {
  "stiffness": "How hard each jelly springs back to its grid shape. High = firm, fast jiggle; low = soft, slow sag.",
  "viscosity": "Damping. Low = jiggles keep going; high = they die out fast.",
  "wobble": "Size of the kicks when a jelly lands, rotates, merges, or gets zapped.",
- "tension": "Skin pull: rounds the corners, makes same-colour jellies reach for each other and stick, and makes the neck hold longer when they tear apart.",
+ "magnetism": "Same-colour jellies reach for each other: drop a piece past its colour and both sides bulge toward each other. Reach up to ~1.75 cells at 3. Same scale as L3.",
+ "tension": "Sticky strings: when same colours touch and pull apart (or a zap splits a jelly), how far the string stretches before it snaps (0 = none, 1 = about a cell, 3 = 2.6 cells). Same scale as L3.",
  "gravity": "Falling speed after a zap, on a hard drop, and for droplets. (The piece itself falls on the grid timer.)",
  "translucency": "0 = solid gummy, 1 = see-through jelly.",
  "wetness": "Shine and the glossy rim."
@@ -835,6 +858,7 @@ function setKnobs(v) {
 const DEFAULTS = readKnobs();
 let presets = [], activePreset = 'd';
 try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+for (const p of presets) { const v = p.values; if (!('magnetism' in v)) { v.magnetism = (v.tension || 0) * 2; v.tension = (v.tension || 0) * 2; } } // 2026-10-17 split
 function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
 function drawPresets() {
   $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
@@ -878,7 +902,7 @@ function frame(now) {
 }
 layout();
 window.goo = { G, GOO, fps: () => fps, draw, move, rotate, hardDrop, fillBoard, newGame, pop, groupAt, step,
-  bodies: () => bodies, strands: () => strands, dying: () => dying, piece: () => pieceBody }; // for testing
+  bodies: () => bodies, strands: () => strands, dying: () => dying, piece: () => pieceBody, emit }; // for testing
 requestAnimationFrame(frame);
 </script>
 </body>

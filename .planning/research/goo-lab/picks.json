@@ -1,10 +1,48 @@
 {
  "note": "Muzzy's tuned goo values (pasted 2026-10-17 from the sketches' Copy values button). L4 Jelly = the pick; its Preset 2 is now the L4 sketch default.",
  "L4-jelly": {
-  "pick (Preset 2)": { "stiffness": 700, "viscosity": 6.5, "wobble": 0.25, "tension": 0, "gravity": 3.9, "translucency": 0.5, "wetness": 0.9 },
-  "Preset 1": { "stiffness": 670, "viscosity": 9.5, "wobble": 0.45, "tension": 0.55, "gravity": 3.9, "translucency": 0.5, "wetness": 0.9 }
+  "pick (Preset 2)": {
+   "stiffness": 700,
+   "viscosity": 6.5,
+   "wobble": 0.25,
+   "tension": 0.15,
+   "gravity": 3.9,
+   "translucency": 0.5,
+   "wetness": 0.9,
+   "magnetism": 1.4
+  },
+  "Preset 1": {
+   "stiffness": 670,
+   "viscosity": 9.5,
+   "wobble": 0.45,
+   "tension": 0.55,
+   "gravity": 3.9,
+   "translucency": 0.5,
+   "wetness": 0.9
+  },
+  "note": "Magnetism + Tension carried over from L3 (same names, meaning and scale; Muzzy's L3 values 1.4 / 0.15 are L4's defaults). Old single \"tension\" was 0 in the pick (reach and necks off)."
  },
  "L3-particles": {
-  "Preset 1 (old names: tension = now magnetism, merge = now tension)": { "gravity": 4.1, "viscosity": 0.21, "stiffness": 189, "tension": 1.2, "merge": 0.2, "wobble": 0.15, "threshold": 0.25, "wetness": 1 }
+  "Preset 1 (old names: tension = now magnetism, merge = now tension)": {
+   "gravity": 4.1,
+   "viscosity": 0.21,
+   "stiffness": 189,
+   "tension": 1.2,
+   "merge": 0.2,
+   "wobble": 0.15,
+   "threshold": 0.25,
+   "wetness": 1
+  },
+  "Preset 1 (2026-10-17, new names)": {
+   "gravity": 4.1,
+   "viscosity": 0.21,
+   "stiffness": 189,
+   "magnetism": 1.4,
+   "tension": 0.15,
+   "wobble": 0.15,
+   "threshold": 0.25,
+   "wetness": 1
+  },
+  "dislikes": "Muzzy 2026-10-17: \"I don't like the pop and I don't like the way rotate looks/is handled\""
  }
 }

@@ -21,6 +21,10 @@ Goal: every design question the remake needs is answered, so /define can write t
   - [x] 🙋 Pick: L4 Jelly. Muzzy (2026-10-17): "this feels just about right. might make small tweaks in the future"
   - [x] 🤖 Fix the jelly's heavy lurch on the way down (it was yanked a cell per grid step; now glides) + one-line help under every L3/L4 knob
   - [ ] 🙋 Check the lurch is gone in L4 (its Default is now your Preset 2)
+  - [x] 🤖 L3: rebuilt Magnetism (same colours reach for each other) + Tension (string length before snapping), Muzzy's names; values → picks.json
+  - [x] 🤖 Carried Magnetism + Tension (and sticky touch → strings) into L4 Jelly, same scale as L3, defaults 1.4 / 0.15
+  - [ ] 🙋 Try Magnetism + Tension in L4 Jelly
+  note: L3 dislikes (2026-10-17): "I don't like the pop and I don't like the way rotate looks/is handled". Don't carry L3's zap or rotate anywhere
   - [x] 🤖 Write the pick into GDD §6
   - [ ] 🤖 TDD: goo renderer + soft-body plan from lab-L4-jelly.html (when /define writes the TDD)
   note: zap look is open (2026-10-17): "since I want the laser to explode/harden the goo, the current pop anim isn't right for my goals. Let's ignore that for a moment"

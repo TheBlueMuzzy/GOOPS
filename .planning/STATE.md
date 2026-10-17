@@ -1,7 +1,7 @@
 ## ▶ RESUME HERE
-F02 picked: L4 Jelly (2026-10-17), Muzzy's values saved (research/goo-lab/picks.json) and now L4's defaults. F02b = A (goo follows the grid).
-Fixed the jelly's heavy lurch on the way down (it now glides); every L3/L4 knob has a one-line explanation.
-Muzzy: check the lurch is gone in L4. Zap look (explode/harden) noted for later.
+F02 picked: L4 Jelly (2026-10-17). Values: research/goo-lab/picks.json (L4 defaults = Muzzy's pick + Magnetism 1.4 / Tension 0.15 carried over from L3).
+L4 now: smooth glide (no lurch), Magnetism (reach) + Tension (strings) on L3's scale, sticky touch → strings, help line per knob.
+Muzzy: try L4 (lurch gone? Magnetism/Tension feel?). L3's pop and rotate disliked; zap look (explode/harden) is for later.
 Next question: F03, crack colours.
 
 ## Where we are
