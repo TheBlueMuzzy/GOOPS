@@ -9,7 +9,8 @@
     "pressure": "Pressure",
     "cracks": "Cracks {n} / {total}",
     "cracksDone": "Quota met · keep going",
-    "pause": "Console"
+    "pause": "Console",
+    "swap": "Swapping piece"
   },
   "pause": {
     "title": "Console",
