@@ -11,8 +11,8 @@ Goal: every design question the remake needs is answered, so /define can write t
   - [x] 🤖 Research goo techniques — research/goo-feel.md
   - [x] 🤖 Build the phone sketch — research/sketches/goo-sketch.html
   - [x] 🙋 Try the sketch on the phone. Muzzy: "that one wasn't super great", try more approaches
-  - [ ] 🤖 Round 2 research: videos, CodePens, techniques (metaballs, particles + blur, PBD/MPM, SDF, sticky absorb) → research/goo-lab/
-  - [ ] 🤖 Goo lab: several new sketches side by side
+  - [x] 🤖 Round 2 research: videos, CodePens, techniques (metaballs, particles + blur, PBD/MPM, SDF, sticky absorb) → research/goo-lab/
+  - [ ] 🤖 Goo lab: L1 Pillow · L2 Splat (metaballs) · L3 Particles · L4 Jelly → planner Sketches tabs (brief: research/goo-lab/LAB-BRIEF.md)
   - [ ] 🙋 Try the goo lab, pick a direction
   - [ ] 🤖 Write the pick into GDD §6 + TDD
 - 📐 F03 ❓ Crack colours: must the goop match? What does a wrong colour do? — must:alpha
