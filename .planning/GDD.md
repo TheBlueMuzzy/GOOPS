@@ -47,20 +47,6 @@ Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of
 - **Release path:** web (GitHub Pages, installable PWA like v1) first.   **Business:** none yet.
 - **Success looks like (rough):** it plays smoothly on a phone, people come back for "one more shift", and the remake proves the framework works for a real-time game.
 
-## 9. Gap walk  (/define walks these one at a time, in this order; answers go into the sections above)
+## 9. Open questions
+They live in ROADMAP **M0 — Design decided** (F01–F12, ❓ items), in the order they're answered; each answer is written into the section above it belongs to.
 **Already settled (no questions):** the tank (cylinder, spin the world), the controls (v1 PRD §Controls), pieces + lock feel, merge → fill → zap, console-as-menu + periscope, the story arc (`design/story.md`), progression + upgrades as designed (`design/progression.md`, numbers sim-checked later), web + PWA, colour schedule (v1 code and PRD agree: Purple@10, White@30, Black@50).
-
-| # | Gap | State | Blocks |
-|---|---|---|---|
-| 1 | ~~Feel targets~~ ✅ all three, one per time scale (§2) | settled | everything (it's the judge for every other call) |
-| 2 | **Goo technique**: A / B / C / D (`research/goo-feel.md`) | needs the sketch | the TDD's rendering plan |
-| 3 | **Crack sealing**: zap goop covering a crack (settled); must the colour match? What does a wrong colour do? | open | core rules |
-| 4 | **Pressure**: a timer (v1) or how full the tank is (v1's SlowMode note)? | open | core rules, shift length |
-| 5 | **Shift length**: snack (75 s) or sit-down (up to 115 s)? | open | pacing, progression |
-| 6 | **Breakdowns**: keep all three, tune so each is a choice not a punishment; pause or slow at the console? | open | complications, upgrades |
-| 7 | **Scope + releases**: what the alpha must have vs beta / 1.0 (everything stays in, but in what order) | open | the roadmap |
-| 8 | **Progression**: XP from score or from cracks sealed? How long is the climb to 50? | drafted (v1) | upgrades, sim |
-| 9 | **Story in play**: how fines and rank titles show up, ranks 40–50 content, what the takeover at 50 means | open | rank content |
-| 10 | **Phone gestures**: swipe up vs hold vs drag conflicts | open | input |
-| 11 | **Look & sound**: keep the v1 console art and palette, or a refresh? Audio mood | open | art tasks |
-| 12 | **Tutorial**: "your first day", taught at the moment of action (last: it teaches the settled rules) | open | onboarding |
