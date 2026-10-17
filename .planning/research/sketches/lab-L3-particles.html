@@ -70,8 +70,8 @@ const GOO = {
   gravity: 2.0,     // m/s² (1 cell ≈ 5 cm, so 2.0 = 40 cells/s²; Earth is 9.8). Muzzy liked 2.0
   viscosity: 0.1,   // 0 = sloshy liquid, 1 = thick honey (damping + drag between neighbours)
   stiffness: 60,    // home spring + jelly springs between neighbours: liquid (10) ↔ firm jelly (200)
-  tension: 1.0,     // surface tension: same-colour particles pull into one rounded mass
-  merge: 1.0,       // sticky bonds: how hard same colours grab each other (absorb) and how strong strands are
+  magnetism: 1.0,   // same-colour goo in another group (the falling piece, a separate clump) reaches for it: reach + pull
+  tension: 1.0,     // sticky strings between same colours: how far they stretch before they snap, and how hard they pull
   wobble: 0.6,      // idle wander + how hard landings/pokes kick
   // Look
   threshold: 0.6,   // field level where goo starts: lower = fatter, higher = thinner
@@ -89,7 +89,7 @@ const GOO = {
   maxDpr: 1.5, fallMs: 650,
 };
 const KNOBS = [
-  ['Motion'], ['gravity', 0, 10, 0.1], ['viscosity', 0, 1, 0.01], ['stiffness', 5, 200, 1], ['tension', 0, 3, 0.05], ['merge', 0, 3, 0.05], ['wobble', 0, 2, 0.05],
+  ['Motion'], ['gravity', 0, 10, 0.1], ['viscosity', 0, 1, 0.01], ['stiffness', 5, 200, 1], ['magnetism', 0, 3, 0.05], ['tension', 0, 3, 0.05], ['wobble', 0, 2, 0.05],
   ['Look'], ['threshold', 0.15, 1.2, 0.01], ['wetness', 0, 2, 0.05]];
 const COLORS = [[0, 0, 0], [0.94, 0.25, 0.27], [0.22, 0.50, 0.97], [0.15, 0.78, 0.38], [0.97, 0.74, 0.08], [0.66, 0.33, 0.97]];
 const SHAPES = [[[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [2, 0], [1, 1]],
@@ -322,12 +322,50 @@ function pair(i, j) {
     const u = (VX[i] - VX[j]) * nx + (VY[i] - VY[j]) * ny;     // viscosity: neighbours share velocity
     const I = viscK * (1 - q) * u;
     AX[i] -= I * nx; AY[i] -= I * ny; AX[j] += I * nx; AY[j] += I * ny;
-    if (formBonds && d < MAKE && GOO.merge > 0) {             // sticky bond: lattice neighbours (or touching zapped goo)
+    if (formBonds && d < MAKE) {             // sticky bond: lattice neighbours (or touching zapped goo)
       if (zi) tryBond(i, j, d);
       else { const hs = Math.hypot(HX[j] - HX[i], HY[j] - HY[i]); if (hs < 0.55) tryBond(i, j, hs); }
     }
   } else if (d < RSEP) f += SEP * (1 - d / RSEP);              // other colours: a slight push → clean seam
   AX[i] -= f * nx; AY[i] -= f * ny; AX[j] += f * nx; AY[j] += f * ny;
+}
+
+// Strings snap past this length (cells): tension 0 = 0.35 (no strings), 1 = 1.1, 3 = 2.6
+function strandSnap() { return 0.35 + 0.75 * GOO.tension; }
+// Magnetism. grp[] = connected same-colour group per grid cell (rebuilt each frame); the piece counts as its own group.
+const grp = new Int32Array(4096);
+function groupCells() {
+  grp.fill(-1, 0, W * H); let g = 0; const st = [];
+  for (let i = 0; i < W * H; i++) {
+    if (!G.grid[i] || grp[i] >= 0) continue;
+    grp[i] = g; st.push(i);
+    while (st.length) { const c = st.pop(), x = c % W, y = (c / W) | 0;
+      for (const [nx, ny] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue; const n = ny * W + nx;
+        if (grp[n] < 0 && G.grid[n] === G.grid[i]) { grp[n] = g; st.push(n); } } }
+    g++;
+  }
+}
+// Strongest pull on particle i toward a same-colour cell (square of half-size 0.45 at cx, cy) of another group.
+function magnet(i, k) {
+  const M = GOO.magnetism; if (M <= 0) return;
+  const reach = 0.25 + 0.5 * M, pull = k * 0.3 * M, c = COL[i], o = OWN[i], mine = o >= 0 ? grp[o] : -2;
+  let best = 0, bx = 0, by = 0;
+  const test = (cx, cy) => {
+    const qx = Math.max(cx - 0.45, Math.min(cx + 0.45, X[i])), qy = Math.max(cy - 0.45, Math.min(cy + 0.45, Y[i]));
+    const dx = qx - X[i], dy = qy - Y[i], d = Math.sqrt(dx * dx + dy * dy);
+    if (d < 1e-4 || d >= reach) return;
+    const a = pull * (1 - d / reach); if (a > best) { best = a; bx = dx / d; by = dy / d; }
+  };
+  const x0 = Math.floor(X[i]), y0 = Math.floor(Y[i]), rr = Math.ceil(reach) + 1;
+  for (let y = Math.max(0, y0 - rr); y <= Math.min(H - 1, y0 + rr); y++)
+    for (let x = Math.max(0, x0 - rr); x <= Math.min(W - 1, x0 + rr); x++) {
+      const n = y * W + x; if (G.grid[n] !== c || grp[n] === mine) continue;
+      test(x + 0.5, y + 0.5);
+    }
+  const p = G.piece;
+  if (o >= 0 && p && p.color === c) for (let q = 0; q < p.cells.length; q++) test(pieceHome[q * 2], pieceHome[q * 2 + 1]);
+  AX[i] += best * bx; AY[i] += best * by;
 }
 
 let stepN = 0;
@@ -374,10 +412,11 @@ function simStep(h) {
       WT[i] = t < 0.1 ? 1 + t * 1.5 : t < 0.3 ? 1.15 : 1.15 * Math.exp(-(t - 0.3) / GOO.drain);
     }
     AX[i] = ax; AY[i] = ay;
+    if (ST[i] === 1) magnet(i, k);
   }
 
   // neighbour forces (each pair once: same bucket + 4 forward buckets)
-  cohK = GOO.tension * 110; viscK = 2 + GOO.viscosity * 30; formBonds = stepN % 3 === 0;
+  cohK = 60; viscK = 2 + GOO.viscosity * 30; formBonds = stepN % 3 === 0;
   for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) {
     const b = by * NBX + bx, s0 = bStart[b], e0 = bStart[b + 1];
     if (s0 === e0) continue;
@@ -397,19 +436,19 @@ function simStep(h) {
   // bonds. Between bound neighbours: a jelly spring whose rest length is their home spacing, so the group holds its
   // grid shape and jiggles as one. When the homes separate (cells pulled apart) the bond goes plastic: a honey strand
   // that stretches, thins and snaps. Zapped goo keeps plastic bonds, so draining goo strings out into drips.
-  const KJ = k * 0.9 + 10, KS = 20 + GOO.merge * 30;
+  const KJ = k * 0.9 + 10, KS = 15 + GOO.tension * 25, SNAP = strandSnap(), creep = 1.2 / (1 + GOO.tension);
   for (let b = 0; b < hiB; b++) {
     if (!BL[b]) continue;
     const i = BA[b], j = BB[b];
     const dx = X[j] - X[i], dy = Y[j] - Y[i], d = Math.sqrt(dx * dx + dy * dy) || 1e-6;
-    if (d > GOO.snap) { killBond(b); continue; }
-    let kb = KS;
+    let kb = KS, jelly = false;
     if (ST[i] === 1 && ST[j] === 1) {
       const hs = Math.hypot(HX[j] - HX[i], HY[j] - HY[i]);
-      if (hs < 0.55) { BR[b] = hs; kb = KJ; }                       // jelly: hold the shape
-      else if (Math.abs(d - BR[b]) > 0.06) BR[b] += (d - BR[b]) * Math.min(1, 1.2 * h); // strand: creep
-    } else if (Math.abs(d - BR[b]) > 0.06) BR[b] += (d - BR[b]) * Math.min(1, 1.2 * h);
-    const f = kb * (d - BR[b]) * (GOO.merge > 0 ? 1 : 0), nx = dx / d, ny = dy / d;
+      if (hs < 0.55) { BR[b] = hs; kb = KJ; jelly = true; }          // jelly: hold the shape
+      else if (Math.abs(d - BR[b]) > 0.06) BR[b] += (d - BR[b]) * Math.min(1, creep * h); // strand: creep (more tension = holds tighter)
+    } else if (Math.abs(d - BR[b]) > 0.06) BR[b] += (d - BR[b]) * Math.min(1, creep * h);
+    if (d > (jelly ? GOO.snap : SNAP)) { killBond(b); continue; }     // strings snap at the tension length
+    const f = kb * (d - BR[b]), nx = dx / d, ny = dy / d;
     AX[i] += f * nx; AY[i] += f * ny; AX[j] -= f * nx; AY[j] -= f * ny;
   }
 
@@ -433,7 +472,7 @@ function updateVisuals(dt) {
     if (c && !cellParts[i]) cellParts[i] = makeCell(c, i, i % W + 0.5, Math.floor(i / W) + 0.5, 0.3);
     else if (!c && cellParts[i]) { releaseCell(cellParts[i], i % W + 0.5, Math.floor(i / W) + 0.5, 0.5); cellParts[i] = null; }
   }
-  pieceHomes();
+  pieceHomes(); groupCells();
   const t0 = performance.now();
   simAcc = Math.min(simAcc + dt, SIM_DT * 4);
   while (simAcc >= SIM_DT) { simStep(SIM_DT); simAcc -= SIM_DT; }
@@ -643,7 +682,7 @@ function fillInstances() {
     const o = n * INST; instData[o] = X[i]; instData[o + 1] = Y[i]; instData[o + 2] = X[i]; instData[o + 3] = Y[i];
     instData[o + 4] = r; instData[o + 5] = w; instData[o + 6] = COL[i] + (ST[i] === 2 ? 10 : 0); n++;
   }
-  const L0 = 0.42, span = GOO.snap - L0;
+  const L0 = 0.42, span = Math.max(0.1, strandSnap() - L0);
   for (let b = 0; b < hiB; b++) { // stretched bonds become strings: thinner and weaker the closer they get to snapping
     if (!BL[b]) continue;
     const i = BA[b], j = BB[b], d = Math.hypot(X[j] - X[i], Y[j] - Y[i]);
@@ -734,8 +773,8 @@ const KNOB_HELP = {
  "gravity": "How hard loose goo falls (m/s²): goo catching up with a falling piece, and zapped goo draining.",
  "viscosity": "Thickness. Neighbouring bits share their speed, so the goo moves as one and settles sooner. Low = sloshy.",
  "stiffness": "How hard each bit is pulled to its grid spot. Low = floppy and lags behind; high = holds the block shape.",
- "tension": "Surface tension: same-colour bits near each other pull into a rounder blob. Only shows while goo is loose (falling, landing, draining); on the grid, stiffness wins.",
- "merge": "Stickiness: strings between same colours when they get pulled apart (a piece sliding past its colour, cells dropping after a zap). 0 = not sticky at all.",
+ "magnetism": "Same-colour goo reaches for each other: drop a piece past its colour and both sides bulge toward each other. Reach up to ~1.75 cells at 3.",
+ "tension": "Sticky strings: when same colours touch and pull apart, how far the string stretches before it snaps (0 = none, 1 = about a cell, 3 = 2.6 cells) and how hard it pulls back.",
  "wobble": "Idle wiggle, plus the kick when goo lands or gets zapped.",
  "threshold": "Where the edge is drawn. Lower = fatter, rounder goo; higher = thinner, beadier.",
  "wetness": "Shine and the bright rim."
@@ -753,6 +792,7 @@ function setKnobs(v) {
 const DEFAULTS = readKnobs();
 let presets = [], activePreset = 'd';
 try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+for (const p of presets) { const v = p.values; if ('merge' in v) { v.magnetism = v.tension; v.tension = v.merge; delete v.merge; } } // 2026-10-17 rename
 function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
 function drawPresets() {
   $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
@@ -800,6 +840,9 @@ function frame(now) {
 layout();
 window.goo = { G, GOO, fps: () => fps, stats: () => ({ particles: nAlive, simMs, floatOK }), move, rotate, hardDrop, fillBoard, newGame, zap, groupAt, step,
   _dbg: () => { let mx = 0, sum = 0, n = 0, far = 0, z = 0; for (let i = 0; i < hiP; i++) { if (ST[i] === 2) z++; if (ST[i] !== 1 || OWN[i] < 0) continue; const o = OWN[i], hx = o % W + 0.5 + OX[i], hy = ((o / W) | 0) + 0.5 + OY[i], d = Math.hypot(hx - X[i], hy - Y[i]); mx = Math.max(mx, d); sum += d; n++; if (d > 0.5) far++; } return { n, max: +mx.toFixed(2), avg: +(sum / Math.max(n, 1)).toFixed(3), far, zapped: z }; } };
+// for Playwright measurements: how far piece goo reaches sideways from home, and the longest live string
+window.goo._t = { emit, reach: () => { let m = 0; for (let i = 0; i < hiP; i++) if (ST[i] === 1 && OWN[i] < 0) m = Math.max(m, Math.abs(X[i] - HX[i])); return m; },
+  strand: () => { let m = 0, n = 0; for (let b = 0; b < hiB; b++) if (BL[b]) { const d = Math.hypot(X[BB[b]] - X[BA[b]], Y[BB[b]] - Y[BA[b]]); if (d > 0.6) n++; m = Math.max(m, d); } return { m, n }; } };
 requestAnimationFrame(frame);
 </script>
 </body>
