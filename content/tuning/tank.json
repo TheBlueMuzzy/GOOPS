@@ -1,0 +1,17 @@
+{
+  "background": "#05070d",
+  "tank": "#0a0f1c",
+  "grid": "#16203a",
+  "wallShade": 0.55,
+  "water": "#1f6b3a",
+  "waterAlpha": 0.28,
+  "pressureLine": "#4ade80",
+  "ghostAlpha": 0.55,
+  "crackWidth": 0.09,
+  "crackGlow": 0.35,
+  "cameraSpeed": 18,
+  "spinRepeatMs": 100,
+  "spinFirstDelayMs": 250,
+  "holdToSwapMs": 1500,
+  "holdDelayMs": 250
+}

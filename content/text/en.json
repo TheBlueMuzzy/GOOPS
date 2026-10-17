@@ -1,0 +1,31 @@
+{
+  "menu": {
+    "title": "GOOPS",
+    "subtitle": "Tank maintenance · day one",
+    "start": "Start shift",
+    "settings": "Settings"
+  },
+  "hud": {
+    "pressure": "Pressure",
+    "cracks": "Cracks {n} / {total}",
+    "cracksDone": "Quota met · keep going",
+    "pause": "Console"
+  },
+  "pause": {
+    "title": "Console",
+    "resume": "Back to the tank",
+    "settings": "Settings",
+    "quit": "End shift",
+    "quitTitle": "Clock out early?"
+  },
+  "end": {
+    "wonTitle": "Shift complete",
+    "wonMessage": "The tank held. Management has noted your adequate performance.",
+    "lostTitle": "Shift failed",
+    "lostMessage": "Not enough cracks sealed. This will go on your record.",
+    "score": "Score",
+    "cracks": "Cracks sealed",
+    "again": "Next shift",
+    "quit": "Back to the console"
+  }
+}

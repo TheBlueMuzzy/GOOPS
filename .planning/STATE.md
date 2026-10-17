@@ -8,7 +8,10 @@ Stage: develop (overnight M1) · Milestone: M1 Core shift · Sprint: 01 · Branc
 Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `npm run deploy`; stays up until the remake replaces it)
 
 ## Questions for Muzzy (from the overnight build)
-- (filled in as the build hits them)
+- **UI style:** I picked the kit's **Neon** (dark, glowing console readout; the goo stays the brightest thing on screen). Other options: clean, cozy, cartoon, pixel (pick sheet: framework/ui-kit/screenshots/pick-sheet.png). Keep Neon?
+- **Console-lite:** the start screen is a plain menu (Start shift · Settings) standing in for the real console-as-menu (pillar 1). The console's design is still open.
+- **Controls I changed from v1:** R swaps instantly (v1: hold R for 1.5 s); ↑ also rotates clockwise (v1: Q/E only). Swipe up / W / Space opens the Console (pause) menu.
+- **Rank:** every shift plays at rank 1 rules (no progression yet).
 
 ## Key facts
 **Run/deploy (v1):** `npm run dev -- --host` · tests `npm run test:run` (210 tests, husky runs them on commit) · deploy `npm run deploy` → gh-pages

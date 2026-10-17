@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.claude', '.planning', 'art', 'fonts', 'public', 'scripts']), // .planning holds the throwaway sketches; .claude = helpers' worktrees
+  globalIgnores(['dist', 'src/ui/kit', '.claude', '.planning', 'art', 'fonts', 'public', 'scripts']), // .planning holds the throwaway sketches; .claude = helpers' worktrees
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

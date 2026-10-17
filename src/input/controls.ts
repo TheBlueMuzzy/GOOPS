@@ -1,0 +1,137 @@
+// v1's controls (hooks/useInputHandlers.ts + Game.tsx on archive/goops-v1), rebuilt as one small controller.
+// Touch/mouse: drag sideways = spin the tank (joystick: hold past the dead zone to keep spinning) · drag down = fast drop
+// · tap goop = pop it · tap empty space = rotate (left half ↺, right half ↻) · quick swipe up = console/pause
+// · hold still 1.5 s = swap with the held piece.
+// Keys: ← → / A D spin · Q E rotate · S (hold) fast drop · R (hold) swap · W / Space console/pause.
+import tank from '../../content/tuning/tank.json'
+
+export interface ControlCallbacks {
+  spin(dir: 1 | -1): void
+  rotate(dir: 1 | -1): void
+  softDrop(on: boolean): void
+  tapCell(px: number, py: number): boolean // true if there was goop there (it tried to pop)
+  hold(): void
+  console(): void
+  holdProgress?(p: number | null): void // 0..1 while a hold-to-swap is charging, null when cancelled
+}
+
+const DRAG_LOCK = 10 // px before a touch counts as a drag
+const DRAG_DEADZONE = 20 // px sideways before the tank starts spinning
+const SWIPE_MS = 300
+const SWIPE_PX = 50
+
+export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: () => boolean) {
+  let ptr: { id: number; x: number; y: number; t: number; locked: 'H' | 'V' | null; consumed: boolean } | null = null
+  let dragDir: -1 | 0 | 1 = 0
+  const keys = new Set<string>()
+  let nextSpinAt = 0
+  let holdTimer = 0
+  let holdStart = 0
+  let raf = 0
+
+  // spinning repeats while a key or the drag is held
+  const spinDir = (): -1 | 0 | 1 => {
+    if (dragDir) return dragDir
+    if (keys.has('ArrowLeft') || keys.has('KeyA')) return 1
+    if (keys.has('ArrowRight') || keys.has('KeyD')) return -1
+    return 0
+  }
+  const loop = () => {
+    raf = 0
+    const dir = spinDir()
+    if (!dir) return
+    const now = performance.now()
+    if (now >= nextSpinAt && isActive()) { cb.spin(dir); nextSpinAt = now + tank.spinRepeatMs }
+    raf = requestAnimationFrame(loop)
+  }
+  const startLoop = () => { if (!raf) raf = requestAnimationFrame(loop) }
+
+  const clearHold = () => {
+    if (holdTimer) { cancelAnimationFrame(holdTimer); holdTimer = 0; cb.holdProgress?.(null) }
+  }
+  const tickHold = () => {
+    if (!ptr) return
+    const held = performance.now() - holdStart
+    if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (tank.holdToSwapMs - tank.holdDelayMs)))
+    if (held >= tank.holdToSwapMs) { holdTimer = 0; cb.holdProgress?.(null); ptr.consumed = true; if (isActive()) cb.hold(); return }
+    holdTimer = requestAnimationFrame(tickHold)
+  }
+
+  const down = (e: PointerEvent) => {
+    if (ptr || !isActive()) return
+    el.setPointerCapture(e.pointerId)
+    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), locked: null, consumed: false }
+    holdStart = performance.now()
+    holdTimer = requestAnimationFrame(tickHold)
+  }
+  const move = (e: PointerEvent) => {
+    if (!ptr || e.pointerId !== ptr.id) return
+    const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y
+    if (!ptr.locked && (Math.abs(dx) > DRAG_LOCK || Math.abs(dy) > DRAG_LOCK)) {
+      clearHold()
+      ptr.locked = Math.abs(dx) > Math.abs(dy) ? 'H' : 'V'
+    }
+    if (ptr.locked === 'H') {
+      const dir = dx < -DRAG_DEADZONE ? 1 : dx > DRAG_DEADZONE ? -1 : 0
+      if (dir !== dragDir) { dragDir = dir; if (dir) { nextSpinAt = 0; startLoop() } }
+    } else if (ptr.locked === 'V') cb.softDrop(dy > 0)
+  }
+  const up = (e: PointerEvent) => {
+    if (!ptr || e.pointerId !== ptr.id) return
+    const p = ptr
+    ptr = null
+    clearHold()
+    cb.softDrop(false)
+    dragDir = 0
+    const dt = performance.now() - p.t, dx = e.clientX - p.x, dy = e.clientY - p.y
+    if (p.consumed || !isActive()) return
+    if (!p.locked) {
+      if (dt >= tank.holdDelayMs) return // a hold that didn't finish isn't a tap
+      if (cb.tapCell(e.clientX, e.clientY)) return
+      const r = el.getBoundingClientRect()
+      cb.rotate(e.clientX - r.left < r.width / 2 ? -1 : 1)
+    } else if (dt < SWIPE_MS && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_PX) {
+      if (dy < 0) cb.console()
+      else { cb.softDrop(true); setTimeout(() => cb.softDrop(false), 150) } // quick swipe down = a short fast-drop
+    }
+  }
+  const cancel = (e: PointerEvent) => { if (ptr && e.pointerId === ptr.id) { ptr = null; clearHold(); cb.softDrop(false); dragDir = 0 } }
+
+  const keyDown = (e: KeyboardEvent) => {
+    if (!isActive() || e.repeat) return
+    const k = e.code
+    if (k === 'ArrowLeft' || k === 'KeyA' || k === 'ArrowRight' || k === 'KeyD') {
+      keys.add(k)
+      cb.spin(k === 'ArrowLeft' || k === 'KeyA' ? 1 : -1)
+      nextSpinAt = performance.now() + tank.spinFirstDelayMs
+      startLoop()
+    } else if (k === 'KeyQ') cb.rotate(-1)
+    else if (k === 'KeyE' || k === 'ArrowUp') cb.rotate(1)
+    else if (k === 'KeyS' || k === 'ArrowDown') { keys.add(k); cb.softDrop(true) }
+    else if (k === 'KeyR') cb.hold()
+    else if (k === 'KeyW' || k === 'Space') cb.console()
+    else return
+    e.preventDefault()
+  }
+  const keyUp = (e: KeyboardEvent) => {
+    keys.delete(e.code)
+    if (e.code === 'KeyS' || e.code === 'ArrowDown') cb.softDrop(false)
+  }
+
+  el.addEventListener('pointerdown', down)
+  el.addEventListener('pointermove', move)
+  el.addEventListener('pointerup', up)
+  el.addEventListener('pointercancel', cancel)
+  window.addEventListener('keydown', keyDown)
+  window.addEventListener('keyup', keyUp)
+  return () => {
+    el.removeEventListener('pointerdown', down)
+    el.removeEventListener('pointermove', move)
+    el.removeEventListener('pointerup', up)
+    el.removeEventListener('pointercancel', cancel)
+    window.removeEventListener('keydown', keyDown)
+    window.removeEventListener('keyup', keyUp)
+    if (raf) cancelAnimationFrame(raf)
+    clearHold()
+  }
+}
