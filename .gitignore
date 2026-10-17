@@ -48,3 +48,4 @@ nul
 e2e-shots
 *.tsbuildinfo
 .claude/worktrees/
+dist-preview

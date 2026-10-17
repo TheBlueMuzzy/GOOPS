@@ -32,6 +32,7 @@ flowchart LR
 
 ## 2b. Game-specific systems
 **Real-time / visual physics** — the engine's grid decides; Jelly and Particle goo read grid + events each frame and simulate in *view space* (tank columns placed around the current spin, so spinning the tank makes the goo slosh). Nothing visual is read back by the rules.
+- A frame can carry MANY events (a slow frame, tests fast-forwarding): renderers handle each event against its own piece, never by adding up offsets across pieces (Jelly bug fixed 2026-10-17). The falling piece and the ghost are placed by `state.spin`; the grid by the gliding camera, so the piece stays still while the tank slides under it.
 
 **Timers**
 | Timer | Length | Owned by | Starts when | On expiry |

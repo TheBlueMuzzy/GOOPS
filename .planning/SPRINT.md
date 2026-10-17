@@ -17,10 +17,12 @@ Check: Playwright drives a shift on 390×844 and 1280×800; screenshots.
 
 ## F15 🫠 Goo overlay: Jelly + Particle
 Done when: the goo from the lab sits on the real tank (spinning sloshes it), and Settings switches Jelly ↔ Particle live.
-- [ ] 🤖 1. Overlay interface + Jelly renderer from lab-L4-jelly.html — src/goo/jelly/
-- [ ] 🤖 2. Particle renderer from lab-L3-particles.html — src/goo/particle/
-- [ ] 🤖 3. Muzzy's picks as defaults — content/tuning/goo-*.json
-Check: 60 fps full tank both styles (headless GPU); screenshots of each; switching mid-shift keeps the game state.
+- [x] 🤖 1. Overlay interface + Jelly renderer from lab-L4-jelly.html — src/goo/jelly/
+- [x] 🤖 2. Particle renderer from lab-L3-particles.html — src/goo/particle/
+- [x] 🤖 3. Muzzy's picks as defaults — content/tuning/goo-*.json
+Check: 60 fps full tank both styles (headless GPU); screenshots of each; switching mid-shift keeps the game state. ✓ 60 fps both (worst frame 17 ms) at 390×844@3x and 1280×800 — `node e2e/perf.mjs`; switch keeps the grid (smoke)
+Notes: helper also built `goo-lab.html` (dev only: fake engine, Jelly/Particle toggle). Fixed after merge: Jelly added up hard-drop offsets when several locks landed in one frame (reset per lock).
+- [ ] 🙋 4. Muzzy plays a shift on PC + phone, both goo styles
 
 ## F16 🧪 Shift screens
 Done when: start a shift from a console-lite screen, see pressure/score/cracks while playing, get an end-of-shift report, open Settings.

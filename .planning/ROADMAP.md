@@ -64,12 +64,12 @@ flowchart LR
 
 ## M1 — Core shift (overnight build, 2026-10-17)
 Goal: one full shift plays on phone and PC with living goo; Jelly or Particle in Settings. Rules = v1 as shipped (code wins) wherever M0 is still open; each such call is a question in STATE.
-- 🔨 F13 Shift engine: v1 rules in a pure, seeded, tested engine — must:alpha
+- ✅ F13 Shift engine: v1 rules in a pure, seeded, tested engine — must:alpha
   what: tank wrap (30 around, 12 visible), pieces + lock feel, merge, fill, pop below the pressure line, pressure timer + refunds, cracks + sealing, score, shift end
-- 📐 F14 Tank view + controls (v1 controls) — must:alpha · needs: F13
-- 📐 F15 Goo overlay: Jelly + Particle, switchable in Settings — must:alpha · needs: F13, F14, F02
+- ✅ F14 Tank view + controls (v1 controls) — must:alpha · needs: F13
+- 🔨 F15 Goo overlay: Jelly + Particle, switchable in Settings — must:alpha · needs: F13, F14, F02
   why: Muzzy (2026-10-17): "make it so that In the settings I can change between particle goo or jelly goo since they are just 'overlaying' the grid below"
-- 📐 F16 Shift screens: console-lite start, HUD, end-of-shift report, Settings — must:alpha · needs: F13
+- ✅ F16 Shift screens: console-lite start, HUD, end-of-shift report, Settings — must:alpha · needs: F13
 
 ## Parking lot
 - 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
