@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Goo lab (dev)</title>
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #05070d; color: #cbd5e1;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+      canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+      #goo, #debug { pointer-events: none; }
+      #bar { position: fixed; top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+        padding: max(8px, env(safe-area-inset-top)) 12px 8px; z-index: 2; box-sizing: border-box; }
+      #bar button { min-height: 34px; padding: 0 10px; border-radius: 10px; border: 1px solid #1e293b;
+        background: #0b1224d9; color: #e2e8f0; font: 600 13px system-ui, sans-serif; touch-action: manipulation; }
+      #bar button.on { border-color: #a855f7; color: #e9d5ff; }
+      #fps { min-width: 56px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+      #msg { position: fixed; left: 12px; right: 12px; bottom: 10px; font-size: 11px; color: #64748b; text-align: center; z-index: 2; }
+    </style>
+  </head>
+  <body>
+    <canvas id="tank"></canvas>
+    <canvas id="goo"></canvas>
+    <canvas id="debug"></canvas>
+    <div id="bar">
+      <span id="fps">-- fps</span>
+      <button id="bStyle">Jelly</button>
+      <button id="bFill">Fill</button>
+      <button id="bReset">Reset</button>
+      <button id="bCells">Cells</button>
+      <button id="bPause">Pause</button>
+    </div>
+    <div id="msg">←/→ or drag = spin · ↑ = rotate · ↓ = fast drop · space = drop · tap a glowing group = pop</div>
+    <script type="module" src="/src/goo/lab/main.ts"></script>
+  </body>
+</html>

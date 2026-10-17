@@ -20,6 +20,11 @@ export interface GooRenderer {
   dispose(): void
 }
 
+// Options for createJellyRenderer / createParticleRenderer (added F15)
+export interface GooOptions {
+  colorNames?: string[] // shift.json "colors": Color c = colorNames[c - 1]. Defaults to the v1 order.
+}
+
 // Where a tank cell sits on screen for a fractional camera: wrap the column offset into [-width/2, width/2).
 export function screenColumn(x: number, camera: number, width: number): number {
   let d = x - camera
