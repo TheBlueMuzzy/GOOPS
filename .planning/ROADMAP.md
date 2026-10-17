@@ -6,10 +6,14 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F01 ❓ Feel targets — must:alpha
   what: all three feelings, one per time scale (GDD §2)
 - 🔍 F02 ❓ Goo technique: A shader vs Puyo vs v1-style — must:alpha · needs: F01
-  what: which way the goo is drawn and moves (research/goo-feel.md)
+  what: which way the goo is drawn and moves (research/goo-feel.md, research/goo-lab/)
+  note: Muzzy's feel note (2026-10-16): low gravity (env grav 2.0 m/s²) + much lower viscosity "kinda felt good"
   - [x] 🤖 Research goo techniques — research/goo-feel.md
   - [x] 🤖 Build the phone sketch — research/sketches/goo-sketch.html
-  - [ ] 🙋 Try the sketch on the phone: gooier than v1? A or Puyo? what's missing?
+  - [x] 🙋 Try the sketch on the phone. Muzzy: "that one wasn't super great", try more approaches
+  - [ ] 🤖 Round 2 research: videos, CodePens, techniques (metaballs, particles + blur, PBD/MPM, SDF, sticky absorb) → research/goo-lab/
+  - [ ] 🤖 Goo lab: several new sketches side by side
+  - [ ] 🙋 Try the goo lab, pick a direction
   - [ ] 🤖 Write the pick into GDD §6 + TDD
 - 📐 F03 ❓ Crack colours: must the goop match? What does a wrong colour do? — must:alpha
   what: covering + zapping seals a crack (settled by the story); colour rules still open

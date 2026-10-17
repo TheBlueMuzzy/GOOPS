@@ -1,0 +1,76 @@
+<!-- Reference Muzzy pasted 2026-10-16 ("this was kind of cool - where they absorb each other, and feel 'sticky'").
+     Technique: canvas circles with gravity/bounce, wrapper CSS filter blur(20px) contrast(30) = surface-tension snap.
+     Note: line `this.vy *= VISVISCOSITY = 0.99` is a typo (makes a stray global); harmless here. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viscous Jello Simulation</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; background-color: #0d0d11; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; width: 100vw; height: 100vh; }
+    .fluid-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #0d0d11; filter: blur(20px) contrast(30); }
+    canvas { display: block; width: 100%; height: 100%; }
+    .controls { position: absolute; top: 20px; left: 20px; background: rgba(255, 255, 255, 0.07); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 12px; max-width: 300px; z-index: 10; }
+    h1 { margin: 0 0 10px 0; font-size: 18px; font-weight: 600; letter-spacing: -0.5px; }
+    p { margin: 0 0 20px 0; font-size: 13px; color: #aaa; line-height: 1.4; }
+    .btn { background: #ff3366; color: white; border: none; padding: 10px 16px; font-size: 14px; font-weight: 500; border-radius: 6px; cursor: pointer; width: 100%; transition: background 0.2s; }
+    .btn:hover { background: #ff5588; }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h1>Viscous Jello Particles</h1>
+    <p>Click anywhere on the screen to blast the goop apart and watch them fuse back together via surface tension.</p>
+    <button class="btn" id="resetBtn">Regenerate Goop</button>
+  </div>
+  <div class="fluid-wrapper"><canvas id="jelloCanvas"></canvas></div>
+  <script>
+    const canvas = document.getElementById('jelloCanvas');
+    const ctx = canvas.getContext('2d');
+    const resetBtn = document.getElementById('resetBtn');
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    let particles = [];
+    const PARTICLE_COUNT = 45;
+    const GRAVITY = 0.15;
+    const VISCOSITY = 0.98;
+    class JelloParticle {
+      constructor(x, y) {
+        this.x = x || Math.random() * canvas.width;
+        this.y = y || Math.random() * (canvas.height * 0.5);
+        this.vx = (Math.random() - 0.5) * 6;
+        this.vy = (Math.random() - 0.5) * 6;
+        this.radius = Math.random() * 25 + 30;
+      }
+      update() {
+        this.vy += GRAVITY;
+        this.vx *= VISCOSITY;
+        this.vy *= VISVISCOSITY = 0.99;
+        this.vx *= VISCOSITY;
+        this.vy *= VISCOSITY;
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.y + this.radius > canvas.height) { this.y = canvas.height - this.radius; this.vy *= -0.6; this.vx *= 0.8; }
+        if (this.x - this.radius < 0) { this.x = this.radius; this.vx *= -0.6; }
+        else if (this.x + this.radius > canvas.width) { this.x = canvas.width - this.radius; this.vx *= -0.6; }
+      }
+      draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fillStyle = '#ff2a74'; ctx.fill(); }
+    }
+    function init() { particles = []; for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new JelloParticle()); }
+    window.addEventListener('click', (e) => {
+      if (e.target.closest('.controls')) return;
+      particles.forEach(p => {
+        const dx = p.x - e.clientX; const dy = p.y - e.clientY; const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 300) { const force = (300 - dist) / 12; p.vx += (dx / dist) * force; p.vy += (dy / dist) * force; }
+      });
+    });
+    resetBtn.addEventListener('click', init);
+    function loop() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(loop); }
+    init();
+    loop();
+  </script>
+</body>
+</html>
