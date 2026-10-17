@@ -7,20 +7,24 @@ Goal: every design question the remake needs is answered, so /define can write t
   what: all three feelings, one per time scale (GDD §2)
 - 🔍 F02 ❓ Goo technique: A shader vs Puyo vs v1-style — must:alpha · needs: F01
   what: which way the goo is drawn and moves (research/goo-feel.md, research/goo-lab/)
-  note: Muzzy's feel note (2026-10-16): low gravity (env grav 2.0 m/s²) + much lower viscosity "kinda felt good"
+  note: Muzzy's feel note (2026-10-16): low gravity (env grav 2.0 m/s²) + much lower viscosity "kinda felt good" (on research/goo-lab/refs/viscous-jello-muzzy.html, his version with sliders)
+  why: Muzzy's two endpoints (2026-10-16): A) "jello/jelly that has surface tension and sticks together, but can pull apart", or B) "a thick, heavy viscous liquid that doesn't really follow the grid underneath … not sure it's fun yet, so a sketch would need to prove it out"
   - [x] 🤖 Research goo techniques — research/goo-feel.md
   - [x] 🤖 Build the phone sketch — research/sketches/goo-sketch.html
   - [x] 🙋 Try the sketch on the phone. Muzzy: "that one wasn't super great", try more approaches
   - [x] 🤖 Round 2 research: videos, CodePens, techniques (metaballs, particles + blur, PBD/MPM, SDF, sticky absorb) → research/goo-lab/
   - [ ] 🤖 Goo lab: L1 Pillow · L2 Splat (metaballs) · L3 Particles · L4 Jelly → planner Sketches tabs (brief: research/goo-lab/LAB-BRIEF.md)
-  - [ ] 🙋 Try the goo lab, pick a direction
+  - [ ] 🤖 L5 Free goo: playable sketch where the goo IS the rules (direction B)
+  - [ ] 🙋 Try the goo lab, pick A (grid jelly) or B (free goo), and a look
   - [ ] 🤖 Write the pick into GDD §6 + TDD
+- 🔍 F02b ❓ Goop follows the grid (A), or free viscous goo that is the rules (B)? — must:alpha · needs: F02
+  what: B would change the core rules and the "goo never decides a rule" pillar; the L5 sketch proves whether it's fun first
 - 📐 F03 ❓ Crack colours: must the goop match? What does a wrong colour do? — must:alpha
   what: covering + zapping seals a crack (settled by the story); colour rules still open
 - 📐 F04 ❓ Pressure: a timer, or how full the tank is? — must:alpha
 - 📐 F05 ❓ Shift length: snack (75 s) or sit-down (up to 115 s)? — must:alpha · needs: F04
 - 📐 F06 ❓ Breakdowns as choices, not punishments; pause or slow at the console? — must:alpha · needs: F01
-- 📐 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F03, F04, F05, F06
+- 📐 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06
 - 📐 F08 ❓ Progression: XP from score or cracks sealed? How long is the climb to 50? — must:alpha · needs: F04, F05
 - 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover — must:alpha · needs: F08
 - 📐 F10 ❓ Phone gestures without conflicts — must:alpha
