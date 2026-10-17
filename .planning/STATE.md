@@ -12,6 +12,13 @@ Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `n
 - **Console-lite:** the start screen is a plain menu (Start shift · Settings) standing in for the real console-as-menu (pillar 1). The console's design is still open.
 - **Controls I changed from v1:** R swaps instantly (v1: hold R for 1.5 s); ↑ also rotates clockwise (v1: Q/E only). Swipe up / W / Space opens the Console (pause) menu.
 - **Rank:** every shift plays at rank 1 rules (no progression yet).
+- **Hard drop:** v1 had none in play (its HardDropCommand was never called). Added one (drops to the ghost and locks, 2 pts/row) for keyboard/tests; touch still uses drag-down fast drop. Want a hard-drop gesture?
+- **Off the centre line:** a wall kick moves the piece off the middle column for the rest of its fall (v1 did this too). That breaks "always falls down the middle" — keep or snap back?
+- **Crack vs pop line:** v1 spawns cracks up to one row ABOVE the pop line while the line is between rows, so a fresh crack can briefly be un-sealable. Kept as v1 — fix?
+- **Win burst:** after you meet the quota, v1 sprays extra cracks; here they count as bonus seals, and past 90% pressure all cracks clear. OK?
+- **Overflow** (no room to spawn) ends the shift — won if the quota is met, else lost. OK?
+- **Leftover penalty:** 50 points per goop cell left at the end (score can't go below 0), as v1.
+- **Rows are whole steps:** v1 moved the piece in fractions of a row; now it steps a row at a time and the goo glides between (smoother to look at, simpler rules).
 
 ## Key facts
 **Run/deploy (v1):** `npm run dev -- --host` · tests `npm run test:run` (210 tests, husky runs them on commit) · deploy `npm run deploy` → gh-pages
