@@ -1,6 +1,7 @@
 ## ▶ RESUME HERE
-Goo lab ready: L1 Pillow, L2 Splat, L3 Particles, L4 Jelly (direction A, grid jelly) and L5 Free goo (direction B, playable), all in the planner's Sketches tabs.
-Muzzy: play the lab on your phone, then pick A or B (F02b) and a look (F02); note which knobs you moved.
+F02b decided: A, the goo follows the grid (2026-10-17). Free goo (L5) kept for another game (ROADMAP parking lot).
+F02 look: Muzzy liked both L3 Particles and L4 Jelly. Every sketch now has 3 presets + "Copy values for Claude"; knobs dock beside the board.
+Muzzy: save the L3 and L4 presets you like, press Copy values for Claude, paste them here; then pick L3, L4 or a blend.
 Next question after that: F03, crack colours.
 
 ## Where we are

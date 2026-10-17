@@ -36,6 +36,16 @@
   body.sheet #panel { top: auto; bottom: 0; left: 0; right: 0; margin: 0; width: 100%; max-width: none; max-height: 40vh; overflow-y: auto;
     border-radius: 14px 14px 0 0; border-width: 1px 0 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
   body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  /* Presets: + Preset saves the current knobs (up to 3), tap one to load it */
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line, #1e293b); border-left: 0;
+    border-radius: 0 10px 10px 0; color: #64748b; font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
 </style>
 </head>
 <body>
@@ -374,7 +384,7 @@ const pieceArr = new Float32Array(16), dropArr = new Float32Array(128);
 let dpr = 1, cell = 30, ox = 0, oy = 0;
 const SIDE = 300;   // knobs panel width when docked beside the board
 function dockKnobs() {   // wide screen: panel at the side; phone: bottom sheet. Either way the board never sits under it
-  const p = document.getElementById('panel'), open = p.classList.contains('open'), wide = innerWidth >= 720;
+  const p = document.getElementById('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
   document.body.classList.toggle('side', open && wide);
   document.body.classList.toggle('sheet', open && !wide);
   document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
@@ -436,11 +446,50 @@ const $ = id => document.getElementById(id);
 $('bLeft').onclick = () => move(-1); $('bRight').onclick = () => move(1); $('bRot').onclick = rotate; $('bDrop').onclick = hardDrop;
 $('bFill').onclick = fillBoard; $('bReset').onclick = newGame;
 $('bPuyo').onclick = () => { GOO.puyo = !GOO.puyo; $('bPuyo').classList.toggle('on', GOO.puyo); $('bPuyo').textContent = GOO.puyo ? 'Puyo ✓' : 'Puyo'; };
-$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout(); }
-$('panel').innerHTML = KNOBS.map(([k, lo, hi, st]) =>
+$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout(); try { localStorage.setItem('goo-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {} }
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) =>
   `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`).join('')
   + '<p>Values live in the GOO object at the top of the file.</p>';
 for (const [k] of KNOBS) $('k_' + k).oninput = e => { GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k]; };
+// ---- Presets: + Preset saves the current knobs (up to 3); tap one to load it. Stored in this browser only.
+const PKEY = 'goo-presets:' + location.pathname.split('/').pop();
+const knobObj = r => r[4] || GOO;
+function readKnobs() { const v = {}; for (const r of KNOBS) if (r[1] !== undefined) v[r[0]] = knobObj(r)[r[0]]; return v; }
+function setKnobs(v) {
+  for (const r of KNOBS) if (r[1] !== undefined && r[0] in v) {
+    knobObj(r)[r[0]] = v[r[0]]; $('k_' + r[0]).value = v[r[0]]; $('v_' + r[0]).textContent = v[r[0]];
+  }
+}
+const DEFAULTS = readKnobs();
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('panel').insertAdjacentHTML('beforeend', '<button id="bCopy">Copy values for Claude</button>');
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ now: readKnobs(), presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+// Knobs open by default on a wide screen; remembers if you closed it
+try { if (innerWidth >= 700 && localStorage.getItem('goo-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); layout(); } } catch (e) {}
 addEventListener('resize', layout);
 
 // ================= Main loop =================

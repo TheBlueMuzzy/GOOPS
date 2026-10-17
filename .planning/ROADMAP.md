@@ -15,9 +15,13 @@ Goal: every design question the remake needs is answered, so /define can write t
   - [x] 🤖 Round 2 research: videos, CodePens, techniques (metaballs, particles + blur, PBD/MPM, SDF, sticky absorb) → research/goo-lab/
   - [x] 🤖 Goo lab: L1 Pillow · L2 Splat (metaballs) · L3 Particles · L4 Jelly → planner Sketches tabs (brief: research/goo-lab/LAB-BRIEF.md)
   - [x] 🤖 L5 Free goo: playable sketch where the goo IS the rules (direction B)
-  - [ ] 🙋 Try the goo lab, pick A (grid jelly) or B (free goo), and a look
+  - [x] 🙋 Try the goo lab, pick A or B. Muzzy (2026-10-17): "Particle Goo, Jelly feel great in different ways, and both look great in different ways" (after tweaking a lot) → A
+  - [x] 🤖 Knob presets (save 3, tap to load) + "Copy values for Claude" in every sketch; knobs dock beside the board
+  - [ ] 🙋 Save L3 + L4 presets you like, press Copy values for Claude, paste them in the chat
+  - [ ] 🙋 Pick L3 Particles, L4 Jelly, or a blend of both
   - [ ] 🤖 Write the pick into GDD §6 + TDD
-- 🔍 F02b ❓ Goop follows the grid (A), or free viscous goo that is the rules (B)? — must:alpha · needs: F02
+- ✅ F02b Goop follows the grid (A), or free viscous goo that is the rules (B)? — must:alpha · needs: F02
+  note: A (2026-10-17). Free goo was "REALLY interesting, but I don't think it's going to achieve the gameplay I'm after. If anything, that would be a different game. Let's keep the tech" (parking lot)
   what: B would change the core rules and the "goo never decides a rule" pillar; the L5 sketch proves whether it's fun first
 - 📐 F03 ❓ Crack colours: must the goop match? What does a wrong colour do? — must:alpha
   what: covering + zapping seals a crack (settled by the story); colour rules still open
@@ -51,4 +55,5 @@ flowchart LR
 ```
 
 ## Parking lot
+- 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
 - 💡 2026-10-16 — The goop is semi-sentient: maybe it acts a little on its own (creeps, reaches, hides a crack)? (Claude's suggestion)
