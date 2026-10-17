@@ -1,7 +1,7 @@
 ## ▶ RESUME HERE
-Defining the remake: answering the design questions in ROADMAP M0 one at a time (1 of 12 done).
-Muzzy: try the goo sketch on your phone (F02): gooier than v1? A or Puyo? What's missing?
-Next question: F03, crack colours.
+Goo lab ready: L1 Pillow, L2 Splat, L3 Particles, L4 Jelly (direction A, grid jelly) and L5 Free goo (direction B, playable), all in the planner's Sketches tabs.
+Muzzy: play the lab on your phone, then pick A or B (F02b) and a look (F02); note which knobs you moved.
+Next question after that: F03, crack colours.
 
 ## Where we are
 Stage: define · Milestone: — · Sprint: — · Branch: master (default) · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
@@ -14,5 +14,6 @@ Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `n
 **Remote:** github.com/TheBlueMuzzy/GOOPS
 
 ## Log
+- 2026-10-16 — Goo round 2: research (videos, CodePens, techniques) + goo lab L1–L5; planner gets Sketches tabs and /ppp
 - 2026-10-16 — Discovery: v1 review, goo research, GDD draft
 - 2026-10-16 — Started the BMUZ 2 remake: old code archived to `archive/goops-v1`, GSD planning archived, /discover begun

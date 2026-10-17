@@ -13,8 +13,8 @@ Goal: every design question the remake needs is answered, so /define can write t
   - [x] 🤖 Build the phone sketch — research/sketches/goo-sketch.html
   - [x] 🙋 Try the sketch on the phone. Muzzy: "that one wasn't super great", try more approaches
   - [x] 🤖 Round 2 research: videos, CodePens, techniques (metaballs, particles + blur, PBD/MPM, SDF, sticky absorb) → research/goo-lab/
-  - [ ] 🤖 Goo lab: L1 Pillow · L2 Splat (metaballs) · L3 Particles · L4 Jelly → planner Sketches tabs (brief: research/goo-lab/LAB-BRIEF.md)
-  - [ ] 🤖 L5 Free goo: playable sketch where the goo IS the rules (direction B)
+  - [x] 🤖 Goo lab: L1 Pillow · L2 Splat (metaballs) · L3 Particles · L4 Jelly → planner Sketches tabs (brief: research/goo-lab/LAB-BRIEF.md)
+  - [x] 🤖 L5 Free goo: playable sketch where the goo IS the rules (direction B)
   - [ ] 🙋 Try the goo lab, pick A (grid jelly) or B (free goo), and a look
   - [ ] 🤖 Write the pick into GDD §6 + TDD
 - 🔍 F02b ❓ Goop follows the grid (A), or free viscous goo that is the rules (B)? — must:alpha · needs: F02

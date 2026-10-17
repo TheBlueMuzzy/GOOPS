@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>L5: Free goo (playable)</title>
+<meta name="description" content="Playable rules sketch with no grid: the goop is a heavy viscous particle fluid (sticky springs + density relaxation, low gravity). Steer and drop blobs, let same colours pool, tap a glowing pool to zap it, seal cracks it covers, keep the pressure below the top. Does free-flowing goo make a fun puzzle?">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #fx { pointer-events: none; z-index: 1; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  #top button { flex: 0 0 auto; padding: 0 12px; }
+  #bottom button { min-height: 56px; font-size: 24px; }
+  #fps { flex: 0 0 auto; min-width: 46px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #hud { flex: 1; display: flex; gap: 18px; justify-content: center; align-items: center; font: 600 13px system-ui, sans-serif; color: var(--dim); white-space: nowrap; }
+  #hud b { color: var(--ink); font: 700 15px ui-monospace, monospace; }
+  #next { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-left: 4px; }
+  #press { top: calc(max(10px, env(safe-area-inset-top)) + 46px); padding-top: 0; padding-bottom: 0; }
+  #pbar { position: relative; flex: 1; min-width: 40px; height: 16px; border-radius: 6px; background: #0f172a; border: 1px solid var(--line); overflow: hidden; }
+  #pfill { height: 100%; width: 0; background: linear-gradient(90deg, #22d3ee, #facc15 70%, #ef4444); border-radius: 6px; }
+  #pbar::after { content: 'PRESSURE'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font: 700 9px system-ui, sans-serif; letter-spacing: .12em; color: #e2e8f0b0; }
+  #pval { flex: 0 0 34px; text-align: right; font: 700 12px ui-monospace, monospace; color: var(--ink); }
+  #panel { position: fixed; top: calc(max(10px, env(safe-area-inset-top)) + 80px); left: 0; right: 0; margin: 0 auto; width: calc(100% - 32px); max-width: 420px;
+    box-sizing: border-box; padding: 12px 16px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line);
+    z-index: 3; display: none; max-height: calc(100% - 170px); overflow-y: auto; }
+  #panel.open { display: block; }
+  #panel h4 { margin: 6px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 80px; }
+  #panel label b { flex: 0 0 44px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
+  #panel input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel p { margin: 8px 0 0; font-size: 11px; color: var(--dim); line-height: 1.4; }
+  #toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 2; padding: 8px 14px; border-radius: 12px;
+    background: #0b1224e6; border: 1px solid var(--line); color: var(--ink); font: 600 13px system-ui, sans-serif; white-space: nowrap;
+    opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+  #over { position: fixed; inset: 0; z-index: 4; display: none; align-items: center; justify-content: center; background: #05070dcc; }
+  #over.show { display: flex; }
+  #over div { width: calc(100% - 32px); max-width: 320px; box-sizing: border-box; padding: 20px; border-radius: 16px; background: var(--panel);
+    border: 1px solid #7f1d1d; text-align: center; }
+  #over h2 { margin: 0 0 8px; font-size: 20px; color: #fca5a5; }
+  #over p { margin: 0 0 16px; font-size: 14px; color: #cbd5e1; line-height: 1.5; }
+  #over button { width: 100%; min-height: 48px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="fx"></canvas>
+<div class="bar" id="top">
+  <div id="fps">--</div>
+  <div id="pbar" title="Pressure"><div id="pfill"></div></div><span id="pval">0%</span>
+  <button id="bReset">New</button><button id="bKnobs">Knobs</button>
+</div>
+<div class="bar" id="press"><div id="hud"><span>Score <b id="hScore">0</b></span><span>Cracks <b id="hCracks">0</b></span><span>Next<i id="next"></i></span></div></div>
+<div id="panel"></div>
+<div id="toast"></div>
+<div id="over"><div><h2>Shift failed</h2><p id="overText"></p><button id="bAgain">Start a new shift</button></div></div>
+<div class="bar" id="bottom">
+  <button id="bLeft">&#9664;</button><button id="bDrop">&#9660;</button><button id="bRight">&#9654;</button>
+</div>
+<script>
+'use strict';
+// ===================================================================================================
+// L5 FREE GOO: the goo IS the rules. No grid. Deterministic: fixed 1/120 s step, seeded random,
+// inputs are queued and applied at the start of the next step. Units: 1 "cell" = 5 cm, y points down.
+// ===================================================================================================
+
+// ===== Rules (each one a constant you can change) =====
+const RULES = {
+  seed: 1,            // shift seed: same seed + same inputs = same shift
+  colours: 4,         // colours in play (red, blue, green, yellow; purple is the 5th)
+  blobCells: 4,       // a blob's area, in cells (like a 4-cell piece)
+  autoDrop: 4.0,      // s a blob hangs before it drops on its own
+  nextDelay: 0.8,     // s after a drop before the next blob hangs
+  dropSpeed: 6,       // cells/s downward kick on drop
+  poolReady: 60,      // particles a same-colour pool needs before it can be zapped (one blob ≈ 36)
+  bigBonus: 0.5,      // zap score = n × (1 + bigBonus × (n / poolReady − 1)), so bigger pools pay more per particle
+  crackCount: 3,      // cracks per wave
+  coverN: 3,          // particles of the crack's colour within coverR = the crack is covered
+  coverR: 0.6,        // cells
+  crackRise: 2.2,     // each new wave of cracks sits this many cells higher
+  sealPoints: 100, wavePoints: 250,
+  dangerY: 3.0,       // the top line (cells below the tank top). The hanging blob lives above it
+  failHold: 1.5,      // s settled goop may touch the top line before the shift fails
+  settleAge: 1.5,     // s after a drop before goop counts as "settled" for the top line
+};
+const TANK_W = 10, TANK_H = 18;   // tank size in cells (fixed, so the sim is the same on every screen)
+
+// ===== Goo feel (sliders marked *) =====
+const GOO = {
+  gravity: 2.0,       // * m/s² (Earth 9.8). Muzzy liked 2.0
+  viscosity: 0.5,     // * honey-ness: neighbours share velocity (0 = water, 1 = tar)
+  stiffness: 0.05,    // * sticky springs between same-colour neighbours: holds shape (0 = pours, 0.3 = jelly)
+  tension: 1.0,       // * same-colour cohesion: pulls into round pools and merges them (0 = loose sand)
+  threshold: 0.55,    // * render: field level where goo starts (lower = fatter)
+  wetness: 1.0,       // * render: shine + rim
+  // fixed (not sliders)
+  creep: 3.0,         // how fast springs forget their shape (slow slump). /s
+  yieldR: 0.10,       // springs only creep when stretched/squashed more than this fraction
+  breakLen: 1.0,      // a spring snaps past this length (cells): strings
+  pressK: 0.12, nearK: 0.30, // density relaxation: push to even spacing / anti-clump
+  sep: 0.10,          // extra push between different colours (clean seam)
+  friction: 0.35,     // goo sticks to the walls and floor a little
+  splat: 0.5, blur: 2.0, bulge: 1.0, absorb: 1.0, fresnel: 0.7, translucency: 0.6, maxDpr: 1.5,
+};
+const KNOBS = [
+  ['Rules'], ['poolReady', 20, 150, 1, RULES], ['dropSpeed', 0, 20, 0.5, RULES],
+  ['Goo'], ['gravity', 0, 10, 0.1, GOO], ['viscosity', 0, 1, 0.01, GOO], ['stiffness', 0, 0.3, 0.005, GOO], ['tension', 0, 3, 0.05, GOO],
+  ['Look'], ['threshold', 0.15, 1.2, 0.01, GOO], ['wetness', 0, 2, 0.05, GOO]];
+const COLORS = [[0, 0, 0], [0.94, 0.25, 0.27], [0.22, 0.50, 0.97], [0.15, 0.78, 0.38], [0.97, 0.74, 0.08], [0.66, 0.33, 0.97]];
+const CSS_COL = c => `rgb(${COLORS[c].map(v => Math.round(v * 255)).join(',')})`;
+
+// ===== seeded random (mulberry32). The sim never calls Math.random =====
+let rngState = 1;
+function rand() { rngState |= 0; rngState = rngState + 0x6D2B79F5 | 0; let t = Math.imul(rngState ^ rngState >>> 15, 1 | rngState);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+
+// ================= PARTICLES =================
+const SIM_DT = 1 / 120, CELL_M = 0.05;
+const S = 0.36;              // particle spacing (cells): ~36 particles per blob, ~1500 fill the tank
+const HR = 2 * S;            // neighbour reach
+const RP = S * 0.5;          // wall radius
+const MAKE_Q = 0.8, LINK_Q = 0.85, VMAX = 25;
+const MAXP = 2400, MAXB = 24000, BS = 8, MAXPAIRS = MAXP * 20;
+const X = new Float32Array(MAXP), Y = new Float32Array(MAXP), PX = new Float32Array(MAXP), PY = new Float32Array(MAXP);
+const VX = new Float32Array(MAXP), VY = new Float32Array(MAXP), HOX = new Float32Array(MAXP), HOY = new Float32Array(MAXP);
+const RHO = new Float32Array(MAXP), RHON = new Float32Array(MAXP), PR = new Float32Array(MAXP), PRN = new Float32Array(MAXP);
+const ZT = new Float32Array(MAXP), ZX = new Float32Array(MAXP), ZY = new Float32Array(MAXP), PH = new Float32Array(MAXP);
+const COL = new Uint8Array(MAXP), ST = new Uint8Array(MAXP), READY = new Uint8Array(MAXP); // ST: 0 dead, 1 live, 2 held, 3 zapped
+const BORN = new Int32Array(MAXP), POOL = new Int32Array(MAXP), UF = new Int32Array(MAXP);
+const BA = new Int32Array(MAXB), BB = new Int32Array(MAXB), BR = new Float32Array(MAXB), BL = new Uint8Array(MAXB);
+const SP = new Int32Array(MAXP * BS), SB = new Int32Array(MAXP * BS);
+const PI_ = new Int32Array(MAXPAIRS), PJ_ = new Int32Array(MAXPAIRS), PQ = new Float32Array(MAXPAIRS);
+let nPairs = 0, hiP = 0, hiB = 0, freeP = [], freeB = [];
+const live = new Int32Array(MAXP); let nLive = 0;
+
+// rest density = what a particle feels inside a perfect hex packing at spacing S
+const RHO0 = (() => { let s = 0; for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) {
+  const x = (i + (j & 1) * 0.5) * S, y = j * S * 0.866, r = Math.hypot(x, y); if (r > 1e-6 && r < HR) s += (1 - r / HR) ** 2; } return s; })();
+const P_AREA = S * S * 0.866; // cells² per particle (for the pressure gauge)
+
+function resetParticles() {
+  ST.fill(0); BL.fill(0); SP.fill(-1); SB.fill(-1); hiP = 0; hiB = 0;
+  freeP = []; for (let i = MAXP - 1; i >= 0; i--) freeP.push(i);
+  freeB = []; for (let i = MAXB - 1; i >= 0; i--) freeB.push(i);
+}
+function newParticle(c, x, y, st) {
+  if (!freeP.length) return -1;
+  const i = freeP.pop();
+  X[i] = PX[i] = x; Y[i] = PY[i] = y; VX[i] = VY[i] = 0; COL[i] = c; ST[i] = st; ZT[i] = 0; READY[i] = 0; POOL[i] = -1;
+  PH[i] = rand() * 6.283; BORN[i] = W_.step;
+  if (i >= hiP) hiP = i + 1;
+  return i;
+}
+function killBond(b) {
+  for (const p of [BA[b], BB[b]]) for (let s = p * BS; s < p * BS + BS; s++) if (SB[s] === b) { SB[s] = -1; SP[s] = -1; }
+  BL[b] = 0; freeB.push(b);
+}
+function dropBonds(i) { for (let s = i * BS; s < i * BS + BS; s++) if (SB[s] >= 0) killBond(SB[s]); }
+function killParticle(i) { dropBonds(i); ST[i] = 0; freeP.push(i); }
+function tryBond(i, j, d) {
+  let si = -1, sj = -1;
+  for (let s = i * BS; s < i * BS + BS; s++) { if (SP[s] === j) return; if (SP[s] < 0 && si < 0) si = s; }
+  if (si < 0) return;
+  for (let s = j * BS; s < j * BS + BS; s++) if (SP[s] < 0) { sj = s; break; }
+  if (sj < 0 || !freeB.length) return;
+  const b = freeB.pop(); BA[b] = i; BB[b] = j; BR[b] = d; BL[b] = 1; if (b >= hiB) hiB = b + 1;
+  SP[si] = j; SB[si] = b; SP[sj] = i; SB[sj] = b;
+}
+
+// ---- spatial hash: counting sort into HR-sized buckets ----
+const HX0 = -1, HY0 = -5, NBX = Math.ceil((TANK_W + 2) / HR), NBY = Math.ceil((TANK_H + 7) / HR);
+const bStart = new Int32Array(NBX * NBY + 1), bCount = new Int32Array(NBX * NBY), BK = new Int32Array(MAXP), sorted = new Int32Array(MAXP);
+function buildPairs() {
+  bCount.fill(0);
+  for (let n = 0; n < nLive; n++) {
+    const i = live[n];
+    const bx = Math.min(NBX - 1, Math.max(0, Math.floor((X[i] - HX0) / HR))), by = Math.min(NBY - 1, Math.max(0, Math.floor((Y[i] - HY0) / HR)));
+    BK[i] = by * NBX + bx; bCount[BK[i]]++;
+  }
+  let acc = 0; for (let b = 0; b < NBX * NBY; b++) { bStart[b] = acc; acc += bCount[b]; } bStart[NBX * NBY] = acc;
+  bCount.fill(0);
+  for (let n = 0; n < nLive; n++) { const i = live[n], b = BK[i]; sorted[bStart[b] + bCount[b]++] = i; }
+  nPairs = 0;
+  const add = (i, j) => {
+    const dx = X[j] - X[i], dy = Y[j] - Y[i], d2 = dx * dx + dy * dy;
+    if (d2 >= HR * HR || nPairs >= MAXPAIRS) return;
+    PI_[nPairs] = i; PJ_[nPairs] = j; PQ[nPairs] = Math.sqrt(d2) / HR; nPairs++;
+  };
+  for (let by = 0; by < NBY; by++) for (let bx = 0; bx < NBX; bx++) {
+    const b = by * NBX + bx, s0 = bStart[b], e0 = bStart[b + 1];
+    for (let a = s0; a < e0; a++) {
+      const i = sorted[a];
+      for (let c = a + 1; c < e0; c++) add(i, sorted[c]);
+      if (bx + 1 < NBX) for (let c = bStart[b + 1]; c < bStart[b + 2]; c++) add(i, sorted[c]);
+      if (by + 1 < NBY) for (let ox = -1; ox <= 1; ox++) {
+        const nbx = bx + ox; if (nbx < 0 || nbx >= NBX) continue;
+        const nb = b + NBX + ox; for (let c = bStart[nb]; c < bStart[nb + 1]; c++) add(i, sorted[c]);
+      }
+    }
+  }
+}
+
+// ================= GAME STATE =================
+const W_ = { step: 0, score: 0, sealed: 0, wave: 0, cracks: [], failed: false, dangerT: 0, fillY: TANK_H, pressure: 0,
+  held: null, nextCol: 1, nextT: 0, dropped: 0, zaps: 0, pools: [], waveT: -1, nanFix: 0, maxV: 0 };
+const cmds = [];          // input queue: applied at the start of the next step
+const fxEvents = [];      // things the renderer/overlay should show (never read by the sim)
+
+function newShift(seed) {
+  RULES.seed = seed; rngState = seed * 2654435761 | 0;
+  resetParticles();
+  Object.assign(W_, { step: 0, score: 0, sealed: 0, wave: 0, cracks: [], failed: false, dangerT: 0, fillY: TANK_H, pressure: 0,
+    held: null, nextT: 0.3, dropped: 0, zaps: 0, pools: [], waveT: -1, nanFix: 0, maxV: 0 });
+  W_.nextCol = 1 + Math.floor(rand() * RULES.colours);
+  cmds.length = 0; fxEvents.push({ type: 'reset' });
+  makeCracks();
+}
+function spawnBlob() {
+  const c = W_.nextCol; W_.nextCol = 1 + Math.floor(rand() * RULES.colours);
+  const R = Math.sqrt(RULES.blobCells / Math.PI), cx = TANK_W / 2, cy = RULES.dangerY - R - 0.35;
+  const list = [];
+  const N = Math.round(RULES.blobCells / P_AREA);       // sunflower spiral: evenly packed and truly round
+  for (let k = 0; k < N; k++) {
+    const r = (R - RP * 0.6) * Math.sqrt((k + 0.5) / N), a = k * 2.39996;
+    const x = r * Math.cos(a), y = r * Math.sin(a);
+    const p = newParticle(c, cx + x, cy + y, 2); if (p < 0) continue;
+    HOX[p] = x + (rand() - 0.5) * 0.04; HOY[p] = y + (rand() - 0.5) * 0.04; list.push(p);
+  }
+  W_.held = { list, cx, cy, tx: cx, col: c, t: 0, R };
+}
+function dropBlob() {
+  const h = W_.held; if (!h) return;
+  for (const i of h.list) if (ST[i] === 2) { ST[i] = 1; BORN[i] = W_.step; VX[i] = 0; VY[i] = RULES.dropSpeed; }
+  W_.held = null; W_.nextT = RULES.nextDelay; W_.dropped++;
+  fxEvents.push({ type: 'drop' });
+}
+function makeCracks() {
+  const w = W_.wave, out = [];
+  let guard = 0;
+  while (out.length < RULES.crackCount && guard++ < 200) {
+    const sides = w === 0 ? ['floor', 'floor', 'left', 'right'] : ['left', 'right'];
+    const side = sides[Math.floor(rand() * sides.length)];
+    const lo = Math.max(RULES.dangerY + 2.5, TANK_H - 2.6 - RULES.crackRise * w), hi = Math.max(lo + 0.5, TANK_H - 0.7 - RULES.crackRise * w);
+    const k = { side, col: 1 + Math.floor(rand() * RULES.colours), sealed: false, cover: 0, x: 0, y: 0 };
+    if (side === 'floor') { k.x = 1 + rand() * (TANK_W - 2); k.y = TANK_H; }
+    else { k.x = side === 'left' ? 0 : TANK_W; k.y = lo + rand() * (hi - lo); }
+    if (out.some(o => Math.hypot(o.x - k.x, o.y - k.y) < 2.2)) continue;
+    out.push(k);
+  }
+  W_.cracks = out;
+}
+const crackPoint = k => k.side === 'floor' ? [k.x, TANK_H - 0.25] : [k.side === 'left' ? 0.25 : TANK_W - 0.25, k.y];
+
+// ---- pools: connected same-colour particles (union-find over neighbour pairs) ----
+function ufFind(a) { while (UF[a] !== a) { UF[a] = UF[UF[a]]; a = UF[a]; } return a; }
+function computePools() {
+  for (let n = 0; n < nLive; n++) UF[live[n]] = live[n];
+  for (let p = 0; p < nPairs; p++) {
+    const i = PI_[p], j = PJ_[p];
+    if (COL[i] !== COL[j] || ST[i] !== 1 || ST[j] !== 1) continue;
+    const dx = X[j] - X[i], dy = Y[j] - Y[i];
+    if (dx * dx + dy * dy > (LINK_Q * HR) ** 2) continue;
+    const a = ufFind(i), b = ufFind(j); if (a !== b) { if (a < b) UF[b] = a; else UF[a] = b; }
+  }
+  const map = new Map();
+  for (let n = 0; n < nLive; n++) {
+    const i = live[n]; if (ST[i] !== 1) continue;
+    const r = ufFind(i); POOL[i] = r;
+    let o = map.get(r); if (!o) { o = { id: r, col: COL[i], n: 0, sx: 0, sy: 0, minY: 1e9 }; map.set(r, o); }
+    o.n++; o.sx += X[i]; o.sy += Y[i]; if (Y[i] < o.minY) o.minY = Y[i];
+  }
+  const pools = [...map.values()];
+  for (const o of pools) { o.cx = o.sx / o.n; o.cy = o.sy / o.n; o.ready = o.n >= RULES.poolReady; }
+  for (let n = 0; n < nLive; n++) { const i = live[n]; if (ST[i] === 1) READY[i] = map.get(POOL[i]).ready ? 1 : 0; }
+  W_.pools = pools;
+  // which cracks are covered right now (and by which pool)
+  for (const k of W_.cracks) {
+    if (k.sealed) continue;
+    const [cx, cy] = crackPoint(k); let n = 0, pool = -1;
+    for (let m = 0; m < nLive; m++) { const i = live[m];
+      if (ST[i] === 1 && COL[i] === k.col && (X[i] - cx) ** 2 + (Y[i] - cy) ** 2 < RULES.coverR ** 2) { n++; pool = POOL[i]; } }
+    k.cover = n; k.pool = n >= RULES.coverN ? pool : -1;
+  }
+}
+
+function tap(x, y) {
+  collectLive(); buildPairs(); computePools();
+  let best = -1, bd = 0.7 * 0.7;
+  for (let n = 0; n < nLive; n++) { const i = live[n]; if (ST[i] !== 1) continue;
+    const d = (X[i] - x) ** 2 + (Y[i] - y) ** 2; if (d < bd) { bd = d; best = i; } }
+  if (best < 0) return false;
+  const pool = W_.pools.find(o => o.id === POOL[best]);
+  if (!pool.ready) { // poke: a wobble and a hint
+    for (let n = 0; n < nLive; n++) { const i = live[n]; if (POOL[i] === pool.id && ST[i] === 1) { VX[i] += (rand() - 0.5) * 3; VY[i] -= rand() * 2.5; } }
+    fxEvents.push({ type: 'poke', x, y, n: pool.n, need: RULES.poolReady, col: pool.col });
+    return true;
+  }
+  // ZAP: every particle of the pool turns white-hot, swells, then is sucked into the laser point and fades
+  const sealedNow = [];
+  for (const k of W_.cracks) if (!k.sealed && k.col === pool.col && k.pool === pool.id) { k.sealed = true; sealedNow.push(k); }
+  for (let n = 0; n < nLive; n++) { const i = live[n]; if (POOL[i] !== pool.id || ST[i] !== 1) continue;
+    ST[i] = 3; ZT[i] = 0; ZX[i] = x; ZY[i] = y; dropBonds(i); }
+  const pts = Math.round(pool.n * (1 + RULES.bigBonus * Math.max(0, pool.n / RULES.poolReady - 1)));
+  W_.score += pts + sealedNow.length * RULES.sealPoints; W_.sealed += sealedNow.length; W_.zaps++;
+  fxEvents.push({ type: 'zap', x, y, cx: pool.cx, cy: pool.cy, n: pool.n, pts, col: pool.col, sealed: sealedNow.length });
+  if (W_.cracks.every(k => k.sealed) && W_.waveT < 0) { W_.waveT = 1.2; W_.score += RULES.wavePoints; fxEvents.push({ type: 'wave', wave: W_.wave + 1 }); }
+  return true;
+}
+
+function collectLive() { nLive = 0; for (let i = 0; i < hiP; i++) if (ST[i] === 1) live[nLive++] = i; }
+
+// ================= ONE FIXED STEP =================
+function step() {
+  const h = SIM_DT;
+  W_.step++;
+  if (W_.failed) return;
+  // inputs
+  while (cmds.length) {
+    const c = cmds.shift();
+    if (c.type === 'steer' && W_.held) W_.held.tx = c.x;
+    else if (c.type === 'nudge' && W_.held) W_.held.tx += c.dx;
+    else if (c.type === 'drop') dropBlob();
+    else if (c.type === 'tap') { if (!tap(c.x, c.y) && c.dropIfMiss) dropBlob(); }
+  }
+  // the hanging blob
+  const hb = W_.held;
+  if (hb) {
+    hb.tx = Math.max(hb.R + 0.15, Math.min(TANK_W - hb.R - 0.15, hb.tx));
+    const prev = hb.cx; hb.cx += (hb.tx - hb.cx) * Math.min(1, 10 * h); hb.t += h;
+    const lean = (hb.cx - prev) / h; // it leans and sloshes as you steer
+    for (const i of hb.list) {
+      const wob = 0.03 * Math.sin(W_.step * h * 3.1 + PH[i]);
+      X[i] = PX[i] = hb.cx + HOX[i] - lean * 0.012 * (HOY[i] + hb.R); Y[i] = PY[i] = hb.cy + HOY[i] + wob;
+    }
+    if (hb.t >= RULES.autoDrop) dropBlob();
+  } else if ((W_.nextT -= h) <= 0) spawnBlob();
+  if (W_.waveT >= 0 && (W_.waveT -= h) < 0) { W_.wave++; makeCracks(); fxEvents.push({ type: 'cracks' }); }
+
+  // 1) gravity + predict positions
+  const g = GOO.gravity / CELL_M;
+  for (let i = 0; i < hiP; i++) {
+    if (ST[i] === 1) {
+      VY[i] += g * h;
+      PX[i] = X[i]; PY[i] = Y[i]; X[i] += VX[i] * h; Y[i] += VY[i] * h;
+    } else if (ST[i] === 3) { // zapped: flash, then sucked into the laser point, shrinking
+      const t = (ZT[i] += h);
+      if (t > 0.12) { VX[i] += (ZX[i] - X[i]) * 60 * h; VY[i] += (ZY[i] - Y[i]) * 60 * h; VX[i] *= 0.9; VY[i] *= 0.9; }
+      X[i] += VX[i] * h; Y[i] += VY[i] * h;
+      if (t > 0.85) killParticle(i);
+    }
+  }
+  collectLive();
+  buildPairs();
+
+  // 2) sticky springs between same-colour neighbours: pull back to rest, creep (slump), snap when stretched
+  if (W_.step % 2 === 0) for (let p = 0; p < nPairs; p++) {
+    const i = PI_[p], j = PJ_[p];
+    if (COL[i] === COL[j] && PQ[p] < MAKE_Q) tryBond(i, j, PQ[p] * HR);
+  }
+  const ks = GOO.stiffness, creep = GOO.creep * h, yl = GOO.yieldR;
+  for (let b = 0; b < hiB; b++) {
+    if (!BL[b]) continue;
+    const i = BA[b], j = BB[b];
+    if (ST[i] !== 1 || ST[j] !== 1) { killBond(b); continue; }
+    const dx = X[j] - X[i], dy = Y[j] - Y[i], d = Math.sqrt(dx * dx + dy * dy) || 1e-6;
+    if (d > GOO.breakLen) { killBond(b); continue; }
+    const L = BR[b], dev = d - L;
+    if (dev > yl * L) BR[b] += creep * (dev - yl * L); else if (dev < -yl * L) BR[b] += creep * (dev + yl * L);
+    const D = ks * dev * 0.5, nx = dx / d, ny = dy / d;
+    X[i] += D * nx; Y[i] += D * ny; X[j] -= D * nx; Y[j] -= D * ny;
+  }
+
+  // 3) double density relaxation (Clavet 2005): push to even spacing; same colours pull (cohesion), others only push
+  for (let n = 0; n < nLive; n++) { const i = live[n]; RHO[i] = 0; RHON[i] = 0; }
+  for (let p = 0; p < nPairs; p++) {
+    const i = PI_[p], j = PJ_[p], dx = X[j] - X[i], dy = Y[j] - Y[i], r = Math.sqrt(dx * dx + dy * dy) / HR;
+    if (r >= 1) { PQ[p] = 1; continue; }
+    PQ[p] = r; const a = 1 - r, a2 = a * a, a3 = a2 * a;
+    RHO[i] += a2; RHO[j] += a2; RHON[i] += a3; RHON[j] += a3;
+  }
+  const kp = GOO.pressK, kn = GOO.nearK, tens = GOO.tension, sep = GOO.sep;
+  for (let n = 0; n < nLive; n++) { const i = live[n]; PR[i] = kp * (RHO[i] - RHO0); PRN[i] = kn * RHON[i]; }
+  for (let p = 0; p < nPairs; p++) {
+    if (PQ[p] >= 1) continue;
+    const i = PI_[p], j = PJ_[p];
+    const dx = X[j] - X[i], dy = Y[j] - Y[i], r = Math.sqrt(dx * dx + dy * dy);
+    if (r < 1e-6 || r >= HR) continue;
+    const q = r / HR, a = 1 - q, same = COL[i] === COL[j];
+    let pi = PR[i], pj = PR[j];
+    if (same) { if (pi < 0) pi *= tens; if (pj < 0) pj *= tens; } else { pi = Math.max(pi, 0); pj = Math.max(pj, 0); }
+    let D = ((pi + pj) * 0.5 * a + ((PRN[i] + PRN[j]) * 0.5 + (same ? 0 : sep)) * a * a) * HR * 0.5;
+    if (D > 0.12 * HR) D = 0.12 * HR; else if (D < -0.03 * HR) D = -0.03 * HR;
+    const nx = dx / r, ny = dy / r;
+    X[i] -= D * nx; Y[i] -= D * ny; X[j] += D * nx; Y[j] += D * ny;
+  }
+
+  // 4) tank walls + floor (a little sticky), new velocity from the move, viscosity
+  const fr = GOO.friction;
+  let maxV = 0;
+  for (let n = 0; n < nLive; n++) {
+    const i = live[n];
+    if (!(X[i] === X[i]) || !(Y[i] === Y[i])) { X[i] = PX[i]; Y[i] = PY[i]; W_.nanFix++; }   // safety net (should never fire)
+    if (X[i] < RP) { X[i] = RP; Y[i] = PY[i] + (Y[i] - PY[i]) * (1 - fr); }
+    else if (X[i] > TANK_W - RP) { X[i] = TANK_W - RP; Y[i] = PY[i] + (Y[i] - PY[i]) * (1 - fr); }
+    if (Y[i] > TANK_H - RP) { Y[i] = TANK_H - RP; X[i] = PX[i] + (X[i] - PX[i]) * (1 - fr); }
+    if (Y[i] < HY0 + 0.5) Y[i] = HY0 + 0.5;
+    let vx = (X[i] - PX[i]) / h, vy = (Y[i] - PY[i]) / h; const v = Math.hypot(vx, vy);
+    if (v > VMAX) { vx *= VMAX / v; vy *= VMAX / v; }
+    if (v > maxV) maxV = v;
+    VX[i] = vx; VY[i] = vy;
+  }
+  W_.maxV = maxV;
+  const sig = Math.min(0.45, GOO.viscosity * 60 * h);
+  if (sig > 0) for (let p = 0; p < nPairs; p++) {
+    if (PQ[p] >= 1) continue;
+    const i = PI_[p], j = PJ_[p];
+    const f = sig * (1 - PQ[p]) * (COL[i] === COL[j] ? 0.5 : 0.12);
+    const dvx = (VX[i] - VX[j]) * f, dvy = (VY[i] - VY[j]) * f;
+    VX[i] -= dvx; VY[i] -= dvy; VX[j] += dvx; VY[j] += dvy;
+  }
+
+  // 5) rules: pools, cracks, pressure, top line
+  if (W_.step % 6 === 0) {
+    computePools();
+    W_.fillY = TANK_H - nLive * P_AREA / TANK_W;
+    W_.pressure = (TANK_H - W_.fillY) / (TANK_H - RULES.dangerY);
+    let over = false;
+    const age = Math.round(RULES.settleAge / h);
+    for (let n = 0; n < nLive; n++) { const i = live[n]; if (Y[i] < RULES.dangerY && W_.step - BORN[i] > age) { over = true; break; } }
+    W_.dangerT = over ? W_.dangerT + 6 * h : 0;
+    W_.over = over;
+    if (W_.pressure >= 1 || W_.dangerT >= RULES.failHold) {
+      W_.failed = true; fxEvents.push({ type: 'fail', why: W_.pressure >= 1 ? 'pressure' : 'top' });
+    }
+  }
+}
+
+// checksum of the whole sim (for the determinism test)
+function checksum() { let s = 0; for (let i = 0; i < hiP; i++) if (ST[i]) s = (s * 31 + Math.round(X[i] * 1000) * 7 + Math.round(Y[i] * 1000) + ST[i]) % 1e9; return s + W_.score; }
+
+// ================= WebGL2: splat particles + strings → blur → threshold + wet shading =================
+const canvas = document.getElementById('c'), fxc = document.getElementById('fx'), fx = fxc.getContext('2d');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
+if (!gl) document.body.innerHTML = '<p style="padding:16px">WebGL2 is not available on this device.</p>';
+const floatOK = !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+const IFMT = floatOK ? gl.RGBA16F : gl.RGBA8, FTYPE = floatOK ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE, WSCALE = floatOK ? 1 : 0.25;
+
+const FSQ = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const SPLAT_VS = `#version 300 es
+layout(location=0) in vec2 aCorner;
+layout(location=1) in vec4 aSeg;   // capsule ends (cells): a.xy, b.xy (a particle is a capsule with a == b)
+layout(location=2) in vec4 aInfo;  // reach (cells), weight, colour 1-5, extra (heat 0-1, +2 if its pool is ready)
+uniform vec2 uFieldRes, uOrigin; uniform float uCell;
+out vec2 vP; flat out vec4 vSeg; flat out vec4 vInfo;
+void main(){
+  vec2 lo = min(aSeg.xy, aSeg.zw) - aInfo.x, hi = max(aSeg.xy, aSeg.zw) + aInfo.x;
+  vec2 p = mix(lo, hi, aCorner * 0.5 + 0.5);
+  vP = p; vSeg = aSeg; vInfo = aInfo;
+  vec2 clip = (uOrigin + p * uCell) / uFieldRes * 2.0 - 1.0;
+  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+}`;
+const SPLAT_FS = `#version 300 es
+precision highp float;
+in vec2 vP; flat in vec4 vSeg; flat in vec4 vInfo;
+uniform float uWS;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
+void main(){
+  vec2 pa = vP - vSeg.xy, ba = vSeg.zw - vSeg.xy;
+  float t = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+  vec2 e = pa - ba * t; float d2 = dot(e, e) / (vInfo.x * vInfo.x);
+  if (d2 >= 1.0) discard;
+  float u = 1.0 - d2; float k = u * u * u * vInfo.y * uWS;     // Wyvill kernel
+  int c = int(vInfo.z + 0.5);
+  float ready = step(1.5, vInfo.w), heat = vInfo.w - 2.0 * ready;
+  o0 = vec4(float(c == 1), float(c == 2), float(c == 3), float(c == 4)) * k;
+  o1 = vec4(float(c == 5) * k, ready * k, heat * k, 0.0);
+}`;
+const BLUR_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uT0, uT1; uniform vec2 uStep; uniform float uSigma;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
+void main(){
+  vec2 uv = gl_FragCoord.xy / vec2(textureSize(uT0, 0));
+  vec4 a = vec4(0.0), b = vec4(0.0); float ws = 0.0;
+  for (int i = -4; i <= 4; i++) {
+    float x = float(i) * 0.5 * uSigma; float w = exp(-0.5 * x * x / (uSigma * uSigma));
+    vec2 o = uStep * x; a += texture(uT0, uv + o) * w; b += texture(uT1, uv + o) * w; ws += w;
+  }
+  o0 = a / ws; o1 = b / ws;
+}`;
+const SHADE_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uT0, uT1;
+uniform vec2 uRes, uOrigin; uniform float uCell, uScale, uTh, uWet, uBulge, uAbsorb, uFres, uTrans, uTime;
+uniform vec2 uTank; uniform vec3 uCols[6];
+out vec4 outColor;
+float field(vec2 uv, vec4 m0, float m1){ return (dot(texture(uT0, uv), m0) + texture(uT1, uv).r * m1) * uScale; }
+float hgt(float f){ return sqrt(clamp((f - uTh) / 0.9, 0.0, 1.0)); }
+void main(){
+  vec2 res = vec2(textureSize(uT0, 0)), tx = 1.0 / res;
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec4 a = texture(uT0, uv) * uScale; vec4 b4 = texture(uT1, uv) * uScale;
+  float f[5] = float[5](a.x, a.y, a.z, a.w, b4.r);
+  int ci = 0; float f1 = 0.0, f2 = 0.0;
+  for (int i = 0; i < 5; i++) { if (f[i] > f1) { f2 = f1; f1 = f[i]; ci = i; } else if (f[i] > f2) f2 = f[i]; }
+  // tank background
+  vec2 p = (vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) - uOrigin) / uCell;  // cell units, y down
+  float px = 1.0 / uCell;
+  vec3 bg = vec3(0.020, 0.027, 0.051);
+  if (p.x >= 0.0 && p.x <= uTank.x && p.y >= 0.0 && p.y <= uTank.y)
+    bg = mix(vec3(0.030, 0.042, 0.080), vec3(0.040, 0.055, 0.100), p.y / uTank.y);
+  float edge = (p.y >= -0.6 && p.y <= uTank.y) ? min(abs(p.x), abs(p.x - uTank.x)) : 1e3;
+  if (p.x >= 0.0 && p.x <= uTank.x) edge = min(edge, abs(p.y - uTank.y));
+  bg += vec3(0.08, 0.16, 0.3) * smoothstep(px * 3.0, 0.0, edge);
+  // soft contact shadow under the goo
+  vec4 sa = texture(uT0, uv + vec2(2.0, -3.0) * tx) * uScale;
+  float sh = sa.x + sa.y + sa.z + sa.w + texture(uT1, uv + vec2(2.0, -3.0) * tx).r * uScale;
+  bg *= 1.0 - 0.55 * smoothstep(0.05, uTh, sh);
+  float pulse = 0.5 + 0.5 * sin(uTime * 5.0);
+  // a ready pool glows outward a little (halo) before you even reach its surface
+  vec3 base = uCols[ci + 1];
+  float glowF = b4.g;
+  bg += base * 0.45 * (0.55 + 0.45 * pulse) * smoothstep(0.02, uTh, glowF) * (1.0 - smoothstep(uTh * 0.8, uTh * 1.4, f1));
+  if (f1 < uTh * 0.5) { outColor = vec4(bg, 1.0); return; }
+  float fe = f1 - 0.6 * f2;
+  float aa = fwidth(fe) * 0.9 + 1e-4;
+  float cov = smoothstep(uTh - aa, uTh + aa, fe);
+  vec4 m0 = vec4(float(ci == 0), float(ci == 1), float(ci == 2), float(ci == 3)); float m1 = float(ci == 4);
+  float hR = hgt(field(uv + vec2(tx.x, 0.0), m0, m1)), hL = hgt(field(uv - vec2(tx.x, 0.0), m0, m1));
+  float hU = hgt(field(uv + vec2(0.0, tx.y), m0, m1)), hD = hgt(field(uv - vec2(0.0, tx.y), m0, m1));
+  float tpc = uCell * 0.5;
+  vec2 grad = vec2(hR - hL, hU - hD) * 0.5 * tpc;
+  vec3 n = normalize(vec3(-grad * 0.22 * uBulge, 1.0));
+  vec3 L = normalize(vec3(-0.45, 0.65, 0.62)), V = vec3(0.0, 0.0, 1.0), Hh = normalize(L + V);
+  float ab = 1.0 - exp(-uAbsorb * f1 * 0.9);
+  vec3 body = mix(mix(base, vec3(1.0), 0.28), base * base * 0.85, ab);
+  float diff = max(dot(n, L), 0.0);
+  vec3 col = body * (0.5 + 0.62 * diff);
+  float fl = field(uv + normalize(L.xy) * 7.0 * tx, m0, m1);
+  col += base * uTrans * 0.5 * (1.0 - smoothstep(uTh, uTh + 1.0, fl)) * (1.0 - diff * 0.5);
+  // ready pool: lit from inside + a brighter pulsing rim
+  float rg = clamp(glowF / max(f1, 1e-3), 0.0, 1.0);
+  col += mix(base, vec3(1.0), 0.35) * rg * (0.10 + 0.22 * pulse) * (0.5 + 2.0 * pow(1.0 - n.z, 1.2));
+  float nh = max(dot(n, Hh), 0.0);
+  float spec = pow(nh, mix(30.0, 160.0, clamp(uWet, 0.0, 1.0))) * uWet * 0.95 + pow(nh, 10.0) * 0.07 * uWet;
+  float fr = pow(1.0 - n.z, 2.5) * uFres * uWet;
+  col += vec3(spec) + mix(base, vec3(1.0), 0.55) * fr * 0.5;
+  col *= 1.0 - 0.35 * smoothstep(0.55, 1.0, f2 / (f1 + 1e-4));
+  // zapped goo: white-hot
+  float rh = clamp(b4.b / max(f1, 1e-3), 0.0, 1.0);
+  col = mix(col, mix(base, vec3(1.0), 0.75) * 1.5, rh);
+  outColor = vec4(mix(bg, col, cov), 1.0);
+}`;
+function compile(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(vs, fs, names) {
+  const pr = gl.createProgram();
+  gl.attachShader(pr, compile(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, compile(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr));
+  const u = {}; for (const n of names) u[n] = gl.getUniformLocation(pr, n);
+  return { pr, u };
+}
+const splatP = program(SPLAT_VS, SPLAT_FS, ['uFieldRes', 'uOrigin', 'uCell', 'uWS']);
+const blurP = program(FSQ, BLUR_FS, ['uT0', 'uT1', 'uStep', 'uSigma']);
+const shadeP = program(FSQ, SHADE_FS, ['uT0', 'uT1', 'uRes', 'uOrigin', 'uCell', 'uScale', 'uTh', 'uWet', 'uBulge', 'uAbsorb', 'uFres', 'uTrans', 'uTime', 'uTank', 'uCols']);
+const emptyVAO = gl.createVertexArray();
+const splatVAO = gl.createVertexArray(); gl.bindVertexArray(splatVAO);
+const quadBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+const INST = 8, instData = new Float32Array((MAXP + MAXB) * INST), instBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, instBuf); gl.bufferData(gl.ARRAY_BUFFER, instData.byteLength, gl.DYNAMIC_DRAW);
+gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, INST * 4, 0); gl.vertexAttribDivisor(1, 1);
+gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 4, gl.FLOAT, false, INST * 4, 16); gl.vertexAttribDivisor(2, 1);
+gl.bindVertexArray(null);
+
+let fA = null, fB = null, fw = 1, fh = 1;
+function makeTarget(w, h) {
+  const t = [0, 1].map(() => {
+    const tx = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tx);
+    gl.texImage2D(gl.TEXTURE_2D, 0, IFMT, w, h, 0, gl.RGBA, FTYPE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return tx;
+  });
+  const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t[0], 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, t[1], 0);
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return { fb, t };
+}
+function freeTarget(T) { if (!T) return; gl.deleteFramebuffer(T.fb); T.t.forEach(t => gl.deleteTexture(t)); }
+
+let dpr = 1, cell = 30, ox = 0, oy = 0;
+const $ = id => document.getElementById(id);
+function layout() {
+  dpr = Math.min(window.devicePixelRatio || 1, GOO.maxDpr);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  const fdpr = window.devicePixelRatio || 1;
+  fxc.width = Math.round(innerWidth * fdpr); fxc.height = Math.round(innerHeight * fdpr); fx.setTransform(fdpr, 0, 0, fdpr, 0, 0);
+  const top = $('press').getBoundingClientRect().bottom + 8;
+  const bot = $('bottom').getBoundingClientRect().top - 8;
+  cell = Math.min((innerWidth - 32) / TANK_W, (bot - top) / (TANK_H + 0.5));
+  ox = (innerWidth - TANK_W * cell) / 2; oy = bot - TANK_H * cell;
+  fw = Math.max(1, Math.ceil(canvas.width / 2)); fh = Math.max(1, Math.ceil(canvas.height / 2));
+  freeTarget(fA); freeTarget(fB); fA = makeTarget(fw, fh); fB = makeTarget(fw, fh);
+}
+function fillInstances() {
+  let n = 0; const R = GOO.splat;
+  for (let i = 0; i < hiP; i++) {
+    if (!ST[i]) continue;
+    let r = R, w = 1, extra = READY[i] && ST[i] === 1 ? 2 : 0;
+    if (ST[i] === 3) { const t = ZT[i]; r = R * (t < 0.12 ? 1 + t * 2 : Math.max(0.2, 1.24 * (1 - (t - 0.12) / 0.73)));
+      w = t < 0.12 ? 1.1 : Math.max(0, 1.1 * (1 - (t - 0.12) / 0.73)); extra = Math.min(1, 0.4 + t * 3); }
+    const o = n * INST; instData[o] = X[i]; instData[o + 1] = Y[i]; instData[o + 2] = X[i]; instData[o + 3] = Y[i];
+    instData[o + 4] = r; instData[o + 5] = w; instData[o + 6] = COL[i]; instData[o + 7] = extra; n++;
+  }
+  const L0 = S * 1.15, span = GOO.breakLen - L0;
+  for (let b = 0; b < hiB; b++) { // stretched springs become strings that thin before they snap
+    if (!BL[b]) continue;
+    const i = BA[b], j = BB[b], d = Math.hypot(X[j] - X[i], Y[j] - Y[i]);
+    if (d <= L0) continue;
+    const s = Math.min(1, (d - L0) / span), w = Math.min(1, (d - L0) * 8) * 1.2 * Math.pow(1 - s, 0.6);
+    if (w < 0.02) continue;
+    const o = n * INST; instData[o] = X[i]; instData[o + 1] = Y[i]; instData[o + 2] = X[j]; instData[o + 3] = Y[j];
+    instData[o + 4] = R * 0.6 * (1 - 0.4 * s); instData[o + 5] = w; instData[o + 6] = COL[i]; instData[o + 7] = READY[i] && READY[j] ? 2 : 0; n++;
+  }
+  return n;
+}
+function draw(time) {
+  const n = fillInstances();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fA.fb); gl.viewport(0, 0, fw, fh);
+  gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  gl.useProgram(splatP.pr); gl.bindVertexArray(splatVAO);
+  gl.bindBuffer(gl.ARRAY_BUFFER, instBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, instData, 0, n * INST);
+  gl.uniform2f(splatP.u.uFieldRes, fw, fh); gl.uniform2f(splatP.u.uOrigin, ox * dpr / 2, oy * dpr / 2);
+  gl.uniform1f(splatP.u.uCell, cell * dpr / 2); gl.uniform1f(splatP.u.uWS, WSCALE);
+  if (n) gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, n);
+  gl.disable(gl.BLEND);
+  gl.bindVertexArray(emptyVAO);
+  if (GOO.blur > 0.05) {
+    gl.useProgram(blurP.pr); gl.uniform1i(blurP.u.uT0, 0); gl.uniform1i(blurP.u.uT1, 1); gl.uniform1f(blurP.u.uSigma, GOO.blur);
+    for (const [src, dst, sx, sy] of [[fA, fB, 1 / fw, 0], [fB, fA, 0, 1 / fh]]) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t[0]);
+      gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, src.t[1]);
+      gl.uniform2f(blurP.u.uStep, sx, sy); gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(shadeP.pr); const u = shadeP.u;
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fA.t[0]);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, fA.t[1]);
+  gl.uniform1i(u.uT0, 0); gl.uniform1i(u.uT1, 1);
+  gl.uniform2f(u.uRes, canvas.width, canvas.height); gl.uniform2f(u.uOrigin, ox * dpr, oy * dpr);
+  gl.uniform1f(u.uCell, cell * dpr); gl.uniform1f(u.uScale, 1 / WSCALE); gl.uniform1f(u.uTh, GOO.threshold);
+  gl.uniform1f(u.uWet, GOO.wetness); gl.uniform1f(u.uBulge, GOO.bulge); gl.uniform1f(u.uAbsorb, GOO.absorb);
+  gl.uniform1f(u.uFres, GOO.fresnel); gl.uniform1f(u.uTrans, GOO.translucency); gl.uniform1f(u.uTime, time);
+  gl.uniform2f(u.uTank, TANK_W, TANK_H); gl.uniform3fv(u.uCols, COLORS.flat());
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// ================= 2D overlay: top line, pressure line, cracks, laser, labels (never read by the sim) =================
+const floaters = []; let beam = null, shake = 0;
+const sx = x => ox + x * cell, sy = y => oy + y * cell;
+function crackPath(k, seedish) { // a fixed zigzag along the wall/floor
+  const pts = [], n = 6, len = 0.9;
+  for (let s = 0; s <= n; s++) {
+    const t = s / n - 0.5, j = (s % 2 ? 1 : -1) * 0.12 * (1 - Math.abs(t) * 1.6) * (0.6 + 0.4 * Math.sin(seedish + s));
+    if (k.side === 'floor') pts.push([k.x + t * len, TANK_H - 0.04 - Math.abs(j)]);
+    else pts.push([k.side === 'left' ? 0.04 + Math.abs(j) : TANK_W - 0.04 - Math.abs(j), k.y + t * len]);
+  }
+  return pts;
+}
+function drawOverlay(time, dt) {
+  const c = fx; c.clearRect(0, 0, innerWidth, innerHeight);
+  c.save();
+  // top line (fail line)
+  const dy = sy(RULES.dangerY), warn = W_.dangerT > 0;
+  c.strokeStyle = warn ? `rgba(248,113,113,${0.6 + 0.4 * Math.sin(time * 14)})` : 'rgba(248,113,113,0.45)';
+  c.lineWidth = warn ? 2.5 : 1.5; c.setLineDash([6, 6]);
+  c.beginPath(); c.moveTo(sx(0), dy); c.lineTo(sx(TANK_W), dy); c.stroke(); c.setLineDash([]);
+  // pressure (fill) line: where the goop would sit if it lay flat
+  const fy = sy(Math.max(RULES.dangerY, W_.fillY));
+  c.strokeStyle = 'rgba(34,211,238,0.55)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(sx(0) - 6, fy); c.lineTo(sx(0) + 8, fy); c.moveTo(sx(TANK_W) - 8, fy); c.lineTo(sx(TANK_W) + 6, fy); c.stroke();
+  c.setLineDash([2, 7]); c.strokeStyle = 'rgba(34,211,238,0.22)'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(sx(0) + 8, fy); c.lineTo(sx(TANK_W) - 8, fy); c.stroke(); c.setLineDash([]);
+  // drop guide under the hanging blob
+  if (W_.held) {
+    const h = W_.held, x = sx(h.cx);
+    c.strokeStyle = 'rgba(226,232,240,0.12)'; c.lineWidth = 2; c.setLineDash([3, 8]);
+    c.beginPath(); c.moveTo(x, sy(h.cy + h.R + 0.2)); c.lineTo(x, sy(TANK_H)); c.stroke(); c.setLineDash([]);
+    const left = Math.max(0, RULES.autoDrop - h.t) / RULES.autoDrop;   // auto-drop timer ring
+    c.strokeStyle = 'rgba(226,232,240,0.35)'; c.lineWidth = 2;
+    c.beginPath(); c.arc(x, sy(h.cy), (h.R + 0.3) * cell, -Math.PI / 2, -Math.PI / 2 + left * Math.PI * 2); c.stroke();
+  }
+  // cracks
+  W_.cracks.forEach((k, ki) => {
+    const pts = crackPath(k, ki * 2.3 + W_.wave);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    if (k.sealed) {
+      c.strokeStyle = 'rgba(148,163,184,0.75)'; c.lineWidth = 5;
+    } else {
+      c.strokeStyle = '#05070d'; c.lineWidth = 7; c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(sx(x), sy(y)) : c.moveTo(sx(x), sy(y))); c.stroke();
+      c.strokeStyle = CSS_COL(k.col); c.lineWidth = 3.5;
+    }
+    c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(sx(x), sy(y)) : c.moveTo(sx(x), sy(y))); c.stroke();
+    const [px, py] = crackPoint(k);
+    if (!k.sealed && k.pool >= 0) { // covered: a ring says "zap this pool to seal me"
+      const pool = W_.pools.find(o => o.id === k.pool), rdy = pool && pool.ready;
+      c.strokeStyle = rdy ? `rgba(255,255,255,${0.55 + 0.45 * Math.sin(time * 6)})` : 'rgba(255,255,255,0.35)';
+      c.lineWidth = 2; c.setLineDash(rdy ? [] : [3, 4]);
+      c.beginPath(); c.arc(sx(px), sy(py), RULES.coverR * cell, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+    }
+    if (k.sealed) { c.fillStyle = 'rgba(203,213,225,0.9)'; c.font = `700 ${Math.round(cell * 0.42)}px system-ui`; c.textAlign = 'center';
+      c.fillText('✓', sx(k.side === 'left' ? 0.35 : k.side === 'right' ? TANK_W - 0.35 : k.x), sy(k.side === 'floor' ? TANK_H - 0.35 : k.y + 0.15)); }
+  });
+  // ready pools: a small zap badge on top of the pool (tap target hint)
+  for (const o of W_.pools) if (o.ready) {
+    const x = sx(o.cx), y = sy(o.cy), r = cell * (0.26 + 0.03 * Math.sin(time * 5));
+    c.fillStyle = 'rgba(5,7,13,0.55)'; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.font = `700 ${Math.round(r * 1.2)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('⚡', x, y + 1);
+  }
+  // laser beam
+  if (beam && (beam.t += dt) < 0.3) {
+    const a = 1 - beam.t / 0.3, x = sx(beam.x), y = sy(beam.y);
+    c.strokeStyle = `rgba(255,255,255,${a})`; c.lineWidth = 3 + 6 * a;
+    c.shadowColor = beam.css; c.shadowBlur = 18;
+    c.beginPath(); c.moveTo(x, sy(-0.6)); c.lineTo(x, y); c.stroke();
+    c.fillStyle = `rgba(255,255,255,${a})`; c.beginPath(); c.arc(x, y, cell * 0.5 * a + 4, 0, Math.PI * 2); c.fill();
+    c.shadowBlur = 0;
+  }
+  // floating text
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i]; f.t += dt; if (f.t > 1.3) { floaters.splice(i, 1); continue; }
+    c.globalAlpha = Math.min(1, 2.6 - f.t * 2); c.fillStyle = f.css; c.font = `800 ${f.size}px system-ui`;
+    c.strokeStyle = '#05070d'; c.lineWidth = 4; c.strokeText(f.text, sx(f.x), sy(f.y) - f.t * 40); c.fillText(f.text, sx(f.x), sy(f.y) - f.t * 40);
+  }
+  c.globalAlpha = 1; c.restore();
+}
+
+// ================= HUD + events =================
+let toastT = null;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1600); }
+function handleFx(e) {
+  if (e.type === 'zap') {
+    beam = { x: e.x, y: e.y, t: 0, css: CSS_COL(e.col) };
+    floaters.push({ x: e.cx, y: e.cy, text: '+' + e.pts, css: '#fff', size: 22, t: 0 });
+    if (e.sealed) { floaters.push({ x: e.cx, y: e.cy + 1, text: e.sealed > 1 ? `${e.sealed} cracks sealed!` : 'Crack sealed!', css: '#a7f3d0', size: 16, t: 0 }); }
+  } else if (e.type === 'poke') toast(`Pool too small: ${e.n} / ${e.need}`);
+  else if (e.type === 'wave') toast(`All cracks sealed! +${RULES.wavePoints} · new cracks coming`);
+  else if (e.type === 'cracks') toast('New cracks, higher up');
+  else if (e.type === 'fail') {
+    $('overText').innerHTML = `${e.why === 'pressure' ? 'The pressure maxed out.' : 'Goop reached the top line.'}<br>Score <b>${W_.score}</b> · cracks sealed <b>${W_.sealed}</b> · blobs <b>${W_.dropped}</b>`;
+    $('over').classList.add('show');
+  } else if (e.type === 'reset') { $('over').classList.remove('show'); floaters.length = 0; beam = null; }
+}
+function updateHud() {
+  $('hScore').textContent = W_.score;
+  $('hCracks').textContent = `${W_.cracks.filter(k => k.sealed).length}/${W_.cracks.length}`;
+  $('next').style.background = CSS_COL(W_.nextCol);
+  const p = Math.max(0, Math.min(1, W_.pressure));
+  $('pfill').style.width = (p * 100).toFixed(1) + '%'; $('pval').textContent = Math.round(p * 100) + '%';
+}
+
+// ================= Input =================
+const toTank = (cx, cy) => [(cx - ox) / cell, (cy - oy) / cell];
+let down = null;
+canvas.addEventListener('pointerdown', e => {
+  down = { x: e.clientX, y: e.clientY, startTx: W_.held ? W_.held.tx : TANK_W / 2, drag: false };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!down) return;
+  const dx = e.clientX - down.x;
+  if (!down.drag && Math.abs(dx) > 12) down.drag = true;
+  if (down.drag) cmds.push({ type: 'steer', x: down.startTx + dx / cell });   // drag anywhere: the blob follows your finger
+});
+canvas.addEventListener('pointerup', e => {
+  if (!down) return; const d = down; down = null;
+  const dx = e.clientX - d.x, dy = e.clientY - d.y;
+  if (d.drag) return;
+  if (dy > 50 && dy > Math.abs(dx)) return cmds.push({ type: 'drop' });   // swipe down
+  const [x, y] = toTank(e.clientX, e.clientY);
+  cmds.push({ type: 'tap', x, y, dropIfMiss: true });                   // tap goop = zap it; tap empty space = drop
+});
+addEventListener('keydown', e => {
+  const k = { ArrowLeft: () => cmds.push({ type: 'nudge', dx: -0.5 }), ArrowRight: () => cmds.push({ type: 'nudge', dx: 0.5 }),
+    ArrowDown: () => cmds.push({ type: 'drop' }), ' ': () => cmds.push({ type: 'drop' }) }[e.key];
+  if (k) { k(); e.preventDefault(); }
+});
+function holdRepeat(btn, fn) { // press = one nudge, hold = keep sliding
+  let iv = null;
+  btn.addEventListener('pointerdown', () => { fn(); clearInterval(iv); iv = setInterval(fn, 90); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) btn.addEventListener(ev, () => clearInterval(iv));
+}
+holdRepeat($('bLeft'), () => cmds.push({ type: 'nudge', dx: -0.4 }));
+holdRepeat($('bRight'), () => cmds.push({ type: 'nudge', dx: 0.4 }));
+$('bDrop').onclick = () => cmds.push({ type: 'drop' });
+$('bReset').onclick = () => newShift(RULES.seed + 1);
+$('bAgain').onclick = () => newShift(RULES.seed + 1);
+$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); };
+$('panel').innerHTML = KNOBS.map(([k, lo, hi, st, obj]) => lo === undefined ? `<h4>${k}</h4>` :
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${obj[k]}"><b id="v_${k}">${obj[k]}</b></label>`).join('')
+  + '<p id="stats">--</p><p>Rules live in RULES, goo feel in GOO, both at the top of the file. Gravity is in m/s² (1 cell ≈ 5 cm). Seed changes with New.</p>';
+for (const [k, lo, , , obj] of KNOBS) if (lo !== undefined) $('k_' + k).oninput = e => { obj[k] = +e.target.value; $('v_' + k).textContent = obj[k]; };
+addEventListener('resize', layout);
+
+// ================= Main loop =================
+let last = performance.now(), frames = 0, fpsT = last, fps = 0, simAcc = 0, simMs = 0, drawMs = 0, paused = false;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  const t0 = performance.now();
+  if (!paused) { simAcc = Math.min(simAcc + dt, SIM_DT * 6); while (simAcc >= SIM_DT) { step(); simAcc -= SIM_DT; } }
+  const t1 = performance.now();
+  for (const e of fxEvents) handleFx(e); fxEvents.length = 0;
+  draw(now / 1000); drawOverlay(now / 1000, dt); updateHud();
+  simMs += (t1 - t0 - simMs) * 0.05; drawMs += (performance.now() - t1 - drawMs) * 0.05;
+  frames++;
+  if (now - fpsT >= 1000) {
+    fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; $('fps').textContent = fps.toFixed(0) + ' fps';
+    $('stats').textContent = `${nLive} particles · sim ${simMs.toFixed(2)} ms · draw (CPU) ${drawMs.toFixed(2)} ms per frame · seed ${RULES.seed}`;
+  }
+  requestAnimationFrame(frame);
+}
+layout(); newShift(RULES.seed);
+// test hooks (Playwright scripted runs)
+window.goo = {
+  W: W_, RULES, GOO, cmds, step, checksum, newShift, draw: t => { draw(t); drawOverlay(t, 0.016); },
+  pause: v => { paused = v; },
+  advance: sec => { const n = Math.round(sec / SIM_DT); const t = performance.now(); for (let i = 0; i < n; i++) step(); for (const e of fxEvents) handleFx(e); fxEvents.length = 0; return (performance.now() - t) / n; },
+  pools: () => W_.pools.map(o => ({ id: o.id, col: o.col, n: o.n, ready: o.ready, cx: +o.cx.toFixed(2), cy: +o.cy.toFixed(2), minY: +o.minY.toFixed(2) })),
+  stats: () => { let out = 0; for (let n = 0; n < nLive; n++) { const i = live[n]; if (X[i] < 0 || X[i] > TANK_W || Y[i] > TANK_H) out++; }
+    return { particles: nLive, simMs, drawMs, fps, floatOK, out, nan: W_.nanFix, maxV: +W_.maxV.toFixed(2), pairs: nPairs, bonds: freeB.length, rho0: RHO0 }; },
+  density: () => { let s = 0, mx = 0, n = 0; for (let m = 0; m < nLive; m++) { const i = live[m]; if (RHO[i] > RHO0 * 0.7) { s += RHO[i]; n++; mx = Math.max(mx, RHO[i]); } } return { avg: s / Math.max(1, n) / RHO0, max: mx / RHO0 }; },
+  toScreen: (x, y) => [sx(x), sy(y)],
+  held: () => W_.held && { cx: W_.held.cx, col: W_.held.col },
+  poolPoint: id => { const o = W_.pools.find(p => p.id === id); if (!o) return null; let best = -1, bd = 1e9;
+    for (let n = 0; n < nLive; n++) { const i = live[n]; if (POOL[i] !== id || ST[i] !== 1) continue; const d = (X[i] - o.cx) ** 2 + (Y[i] - o.cy) ** 2; if (d < bd) { bd = d; best = i; } }
+    return best < 0 ? null : [X[best], Y[best]]; },
+  surface: () => { const top = new Array(TANK_W).fill(TANK_H); for (let n = 0; n < nLive; n++) { const i = live[n], c = Math.min(TANK_W - 1, Math.floor(X[i])); top[c] = Math.min(top[c], Y[i]); } return top.map(v => +(TANK_H - v).toFixed(1)); },
+};
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
