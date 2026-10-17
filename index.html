@@ -1,87 +1,15 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#05070d" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
     <title>Goops</title>
-    <link rel="manifest" href="./manifest.json?v=2">
-    <meta name="theme-color" content="#052e16">
-    <!-- iOS PWA support -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Goops">
-    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chewy&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      @font-face {
-        font-family: 'Amazon Ember';
-        src: url('/fonts/AmazonEmber.ttf') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-      }
-      @font-face {
-        font-family: 'Amazon Ember';
-        src: url('/fonts/AmazonEmber-Bold.ttf') format('truetype');
-        font-weight: bold;
-        font-style: normal;
-      }
-      @font-face {
-        font-family: 'From Where You Are';
-        src: url('/fonts/FromWhereYouAre.ttf') format('truetype');
-        font-weight: normal;
-        font-style: normal;
-      }
-
-      body {
-        overscroll-behavior: none;
-        touch-action: none;
-        background-color: #020617; /* Very dark slate/green */
-        color: #e2e8f0;
-        user-select: none;
-        -webkit-user-select: none;
-        font-family: 'Amazon Ember', sans-serif;
-      }
-      /* Prevent pull-to-refresh on mobile */
-      html, body {
-        height: 100%;
-        overflow: hidden;
-      }
-
-      /* === Typography Scale === */
-      /* Dev/meta: small text for footers, version, dev tools, copyright */
-      .t-meta    { font-size: 10px !important; }
-      .t-caption { font-size: 12px !important; }
-
-      /* Standard UI text: 18px minimum for all player-facing content */
-      .t-body    { font-size: 18px !important; }
-      .t-heading { font-size: 24px !important; }
-      .t-title   { font-size: 28px !important; }
-
-      /* Display: big scores, hero text */
-      .t-display { font-size: 36px !important; }
-      .t-hero    { font-size: 48px !important; }
-    </style>
-<link rel="stylesheet" href="/index.css">
-</head>
+  </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js').then(reg => {
-            console.log('ServiceWorker registered');
-            // Check for updates on every page load
-            reg.update();
-          }).catch(err => {
-            console.log('ServiceWorker registration failed:', err);
-          });
-        });
-      }
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

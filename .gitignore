@@ -43,3 +43,7 @@ nul
 .playwright-mcp/
 .env
 .planning/ppp.html
+
+# Remake
+e2e-shots
+*.tsbuildinfo
