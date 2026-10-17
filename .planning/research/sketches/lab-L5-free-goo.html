@@ -52,6 +52,14 @@
   #over h2 { margin: 0 0 8px; font-size: 20px; color: #fca5a5; }
   #over p { margin: 0 0 16px; font-size: 14px; color: #cbd5e1; line-height: 1.5; }
   #over button { width: 100%; min-height: 48px; }
+  /* Knobs docked beside the board (wide) or as a bottom sheet (phone); the board shrinks to fit */
+  body.side #panel { top: 0; bottom: 0; right: 0; left: auto; margin: 0; width: 300px; max-width: none; max-height: none; overflow-y: auto;
+    border-radius: 0; border-width: 0 0 0 1px; padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.side #toast { left: calc(50% - 150px); }
+  body.sheet #panel { top: auto; bottom: 0; left: 0; right: 0; margin: 0; width: 100%; max-width: none; max-height: 40vh; overflow-y: auto;
+    border-radius: 14px 14px 0 0; border-width: 1px 0 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -610,15 +618,24 @@ function freeTarget(T) { if (!T) return; gl.deleteFramebuffer(T.fb); T.t.forEach
 
 let dpr = 1, cell = 30, ox = 0, oy = 0;
 const $ = id => document.getElementById(id);
+const SIDE = 300;   // knobs panel width when docked beside the board
+function dockKnobs() {   // wide screen: panel at the side; phone: bottom sheet. Either way the board never sits under it
+  const p = document.getElementById('panel'), open = p.classList.contains('open'), wide = innerWidth >= 720;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
 function layout() {
+  dockKnobs();
   dpr = Math.min(window.devicePixelRatio || 1, GOO.maxDpr);
   canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
   const fdpr = window.devicePixelRatio || 1;
   fxc.width = Math.round(innerWidth * fdpr); fxc.height = Math.round(innerHeight * fdpr); fx.setTransform(fdpr, 0, 0, fdpr, 0, 0);
   const top = $('press').getBoundingClientRect().bottom + 8;
   const bot = $('bottom').getBoundingClientRect().top - 8;
-  cell = Math.min((innerWidth - 32) / TANK_W, (bot - top) / (TANK_H + 0.5));
-  ox = (innerWidth - TANK_W * cell) / 2; oy = bot - TANK_H * cell;
+  cell = Math.min((playW() - 32) / TANK_W, (bot - top) / (TANK_H + 0.5));
+  ox = (playW() - TANK_W * cell) / 2; oy = bot - TANK_H * cell;
   fw = Math.max(1, Math.ceil(canvas.width / 2)); fh = Math.max(1, Math.ceil(canvas.height / 2));
   freeTarget(fA); freeTarget(fB); fA = makeTarget(fw, fh); fB = makeTarget(fw, fh);
 }
@@ -819,7 +836,7 @@ holdRepeat($('bRight'), () => cmds.push({ type: 'nudge', dx: 0.4 }));
 $('bDrop').onclick = () => cmds.push({ type: 'drop' });
 $('bReset').onclick = () => newShift(RULES.seed + 1);
 $('bAgain').onclick = () => newShift(RULES.seed + 1);
-$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); };
+$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout(); };
 $('panel').innerHTML = KNOBS.map(([k, lo, hi, st, obj]) => lo === undefined ? `<h4>${k}</h4>` :
   `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${obj[k]}"><b id="v_${k}">${obj[k]}</b></label>`).join('')
   + '<p id="stats">--</p><p>Rules live in RULES, goo feel in GOO, both at the top of the file. Gravity is in m/s² (1 cell ≈ 5 cm). Seed changes with New.</p>';

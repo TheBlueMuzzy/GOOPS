@@ -28,6 +28,14 @@
   #panel label b { flex: 0 0 44px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
   #panel input { flex: 1; min-width: 0; accent-color: #a855f7; }
   #panel p { margin: 8px 0 0; font-size: 11px; color: #64748b; }
+  /* Knobs docked beside the board (wide) or as a bottom sheet (phone); the board shrinks to fit */
+  body.side #panel { top: 0; bottom: 0; right: 0; left: auto; margin: 0; width: 300px; max-width: none; max-height: none; overflow-y: auto;
+    border-radius: 0; border-width: 0 0 0 1px; padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.side #toast { left: calc(50% - 150px); }
+  body.sheet #panel { top: auto; bottom: 0; left: 0; right: 0; margin: 0; width: 100%; max-width: none; max-height: 40vh; overflow-y: auto;
+    border-radius: 14px 14px 0 0; border-width: 1px 0 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -649,15 +657,24 @@ function freeTarget(T) { if (!T) return; gl.deleteTexture(T.t0); gl.deleteTextur
 let TM, TA, TS, TB, TQ;
 
 let dpr = 1, cell = 30, ox = 0, oy = 0, Wm = 1, Hm = 1;
+const SIDE = 300;   // knobs panel width when docked beside the board
+function dockKnobs() {   // wide screen: panel at the side; phone: bottom sheet. Either way the board never sits under it
+  const p = document.getElementById('panel'), open = p.classList.contains('open'), wide = innerWidth >= 720;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
 function layout() {
+  dockKnobs();
   dpr = Math.min(window.devicePixelRatio || 1, GOO.maxDpr);
   canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
   const top = document.getElementById('top').getBoundingClientRect().bottom + 6;
   const bot = document.getElementById('bottom').getBoundingClientRect().top - 6;
   const availH = bot - top;
-  cell = Math.min((innerWidth - 32) / W, availH / 14);
+  cell = Math.min((playW() - 32) / W, availH / 14);
   const rows = Math.max(14, Math.min(24, Math.floor(availH / cell))); // tall phones get extra rows, no dead band
-  ox = (innerWidth - W * cell) / 2; oy = bot - rows * cell;
+  ox = (playW() - W * cell) / 2; oy = bot - rows * cell;
   Wm = Math.ceil(canvas.width / 4) * 2; Hm = Math.ceil(canvas.height / 4) * 2; // half res; quarter = /2 (both cover the same 2*Wm px)
   [TM, TA, TS, TB, TQ].forEach(freeTarget);
   TM = makeTarget(Wm, Hm, false, true); TA = makeTarget(Wm, Hm, floatOK); TS = makeTarget(Wm, Hm, floatOK);
@@ -764,7 +781,7 @@ canvas.addEventListener('pointerup', e => {
   if (gx >= 0 && gx < W && gy >= 0 && gy < H && G.grid[idx(gx, gy)]) return pop(gx, gy); // tap goop
   const p = G.piece;
   if (p && p.cells.some(([x, y]) => Math.hypot(p.x + x + 0.5 - px, p.y + y + 0.5 - py) < 1.3)) return rotate(); // tap piece
-  move(e.clientX < innerWidth / 2 ? -1 : 1);                       // tap left / right half
+  move(e.clientX < playW() / 2 ? -1 : 1);                       // tap left / right half
 });
 addEventListener('keydown', e => {
   const k = { ArrowLeft: () => move(-1), ArrowRight: () => move(1), ArrowUp: rotate, ArrowDown: step, ' ': hardDrop }[e.key];
@@ -773,7 +790,7 @@ addEventListener('keydown', e => {
 const $ = id => document.getElementById(id);
 $('bLeft').onclick = () => move(-1); $('bRight').onclick = () => move(1); $('bRot').onclick = rotate; $('bDrop').onclick = hardDrop;
 $('bFill').onclick = fillBoard; $('bReset').onclick = newGame;
-$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); };
+$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout(); };
 $('panel').innerHTML = KNOBS.map(([k, lo, hi, st]) =>
   `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`).join('')
   + '<p>stiffness = shape-match pull · viscosity = damping · gravity in m/s². Values live in the GOO object at the top of the file.</p>';
