@@ -12,7 +12,8 @@
     "check:fast": "npm run test && npm run build && npm run lint && npm run check:ui",
     "deploy": "node scripts/deploy.js",
     "check:ui": "node src/ui/kit/check-ui.mjs src/ui --css src",
-    "e2e:smoke": "node e2e/shift-smoke.mjs"
+    "e2e:smoke": "node e2e/shift-smoke.mjs",
+    "e2e:controls": "node e2e/controls.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
