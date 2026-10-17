@@ -1,8 +1,8 @@
 ## ▶ RESUME HERE
-F02b decided: A, the goo follows the grid (2026-10-17). Free goo (L5) kept for another game (ROADMAP parking lot).
-F02 look: Muzzy liked both L3 Particles and L4 Jelly. Every sketch now has 3 presets + "Copy values for Claude"; knobs dock beside the board.
-Muzzy: save the L3 and L4 presets you like, press Copy values for Claude, paste them here; then pick L3, L4 or a blend.
-Next question after that: F03, crack colours.
+F02 picked: L4 Jelly (2026-10-17), Muzzy's values saved (research/goo-lab/picks.json) and now L4's defaults. F02b = A (goo follows the grid).
+Fixed the jelly's heavy lurch on the way down (it now glides); every L3/L4 knob has a one-line explanation.
+Muzzy: check the lurch is gone in L4. Zap look (explode/harden) noted for later.
+Next question: F03, crack colours.
 
 ## Where we are
 Stage: define · Milestone: — · Sprint: — · Branch: master (default) · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)

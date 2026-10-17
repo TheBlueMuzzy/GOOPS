@@ -46,6 +46,7 @@
   #presets .pw i:hover { color: #fca5a5; }
   #presets .add { border-style: dashed; color: #94a3b8; }
   #bCopy { display: block; margin-top: 10px; width: 100%; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: #64748b; }
 </style>
 </head>
 <body>
@@ -63,15 +64,15 @@
 'use strict';
 // ===== Tweakable goo values (the sketch's "content/goo.json") =====
 const GOO = {
-  stiffness: 420,     // shape matching: how hard the body springs back to its grid shape (1/s²). High = stiff, fast jiggle
-  viscosity: 4.5,     // damping (1/s). Low = wobbles longer (Muzzy liked low)
-  wobble: 1.0,        // size of the kicks on land / rotate / merge / zap / poke
-  gravity: 2.0,       // m/s² (1 m = 10 cells): falling goo after a zap, hard drops, zap droplets
+  stiffness: 700,     // shape matching: how hard the body springs back to its grid shape (1/s²). High = stiff, fast jiggle
+  viscosity: 6.5,     // damping (1/s). Low = wobbles longer (Muzzy 2026-10-17: 6.5)
+  wobble: 0.25,       // size of the kicks on land / rotate / merge / zap / poke
+  gravity: 3.9,       // m/s² (1 m = 10 cells): falling goo after a zap, hard drops, zap droplets
   translucency: 0.5,  // 0 = solid gummy, 1 = see-through jelly
   wetness: 0.9,       // highlight + glossy rim strength
   home: 0.3,          // home spring as a share of stiffness (keeps the body on its grid spot)
   corner: 0.32,       // corner rounding radius of the outline (cells)
-  tension: 0.7,       // surface tension: rounds the skin, same-colour bodies reach for and stick to each other, strands hold longer
+  tension: 0,         // surface tension: rounds the skin, same-colour bodies reach for and stick to each other, strands hold longer
   maxDpr: 1.5,        // pixel-ratio cap (performance)
   fallMs: 650,        // grid fall step
 };
@@ -253,14 +254,14 @@ function computeHomes(B) {
     const p = G.piece; if (!p) return;
     const [wx, wy] = pieceCentre(p), lcx = wx - p.x, lcy = wy - p.y, ca = Math.cos(pv.a), sa = Math.sin(pv.a);
     for (let i = 0; i < B.n; i++) { const rx = B.bx[i] - lcx, ry = B.by[i] - lcy;
-      B.hx[i] = wx + pv.x + ca * rx - sa * ry; B.hy[i] = wy + pv.y + sa * rx + ca * ry; }
+      B.hx[i] = wx + pv.x + ca * rx - sa * ry; B.hy[i] = wy + glideY + pv.y + sa * rx + ca * ry; }
   }
 }
 function highlightRest(B) { // highlight anchor in "home" space
   if (B.kind === 'piece') {
     const p = G.piece; if (!p) return [B.hlX, B.hlY];
     const [wx, wy] = pieceCentre(p), ca = Math.cos(pv.a), sa = Math.sin(pv.a), rx = B.hlX - (wx - p.x), ry = B.hlY - (wy - p.y);
-    return [wx + pv.x + ca * rx - sa * ry, wy + pv.y + sa * rx + ca * ry];
+    return [wx + pv.x + ca * rx - sa * ry, wy + glideY + pv.y + sa * rx + ca * ry];
   }
   if (B.kind === 'grid') return [B.hlX, B.hlY + cellOff[B.cellIdx[B.hlCell]]];
   return [B.hlRX, B.hlRY];
@@ -315,9 +316,9 @@ function handle(e) {
       bodies = []; pieceBody = null; retired = []; dying = []; drops = []; strands = []; kicks = []; fallFrom = new Map(); lockSet = new Set();
       cellOff = new Float32Array(W * H); cellVel = new Float32Array(W * H); cellDelay = new Float32Array(W * H); cellBody = new Int32Array(W * H).fill(-1);
       break;
-    case 'spawn': Object.assign(pv, { x: 0, vx: 0, y: -1.2, vy: 0, a: 0, va: 0 }); pieceBody = null; needPiece = true; break;
+    case 'spawn': lastGlide = 0; Object.assign(pv, { x: 0, vx: 0, y: -1.2, vy: 0, a: 0, va: 0 }); pieceBody = null; needPiece = true; break;
     case 'move': pv.x -= e.dx; if (pieceBody) kick(pieceBody, 'shear', 2.2 * e.dx); break;
-    case 'step': pv.y -= 1; break;
+    case 'step': lastGlide -= 1; break; // the glide already carried the jelly down this cell
     case 'drop': pv.y -= e.n; break;
     case 'rotate': // visual lags 90 degrees behind and springs over with overshoot; the body twists as it goes
       pv.a -= Math.PI / 2; pv.x -= e.dcx; pv.y -= e.dcy; needPiece = true;
@@ -505,6 +506,11 @@ function fanStrand(S) { // tapered neck: thick where it meets each body, thinnes
   for (let i = 1; i < side.length - 1; i++) { pushV(side[0][0], side[0][1], 0, 0); pushV(side[i][0], side[i][1], 0, 0); pushV(side[i + 1][0], side[i + 1][1], 0, 0); }
 }
 const DRAIN = 0.6;
+// The grid piece drops a whole cell every fallMs. The jelly glides down between steps instead of being yanked a
+// cell at a time (that yank was the "heavy lurch"). A jump in the glide (e.g. sliding over a ledge) is handed to
+// the piece's spring so the motion stays smooth.
+let glideY = 0, lastGlide = 0;
+function pieceGlide() { const p = G.piece; return p && fits(p.cells, p.x, p.y + 1) ? Math.min(G.fallT / GOO.fallMs, 1) : 0; }
 function updateVisuals(dt) {
   const g = GOO.gravity * 10; // cells / s²
   for (let i = 0; i < W * H; i++) { // grid-side falls (after a zap, hard drop): visual offset falls under gravity, lands with a squash
@@ -522,6 +528,7 @@ function updateVisuals(dt) {
     for (const [id, kind, amt] of best.values()) kick(bodyById(id), kind, amt);
     kicks = [];
   }
+  glideY = pieceGlide(); if (Math.abs(glideY - lastGlide) > 0.2) pv.y += lastGlide - glideY; lastGlide = glideY;
   for (const B of bodies) computeHomes(B);
   if (pieceBody) computeHomes(pieceBody);
   const ks = GOO.stiffness, kh = GOO.stiffness * GOO.home, c = GOO.viscosity;
@@ -805,6 +812,17 @@ $('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) 
   `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`).join('')
   + '<p>stiffness = shape-match pull · viscosity = damping · gravity in m/s². Values live in the GOO object at the top of the file.</p>';
 for (const [k] of KNOBS) $('k_' + k).oninput = e => { GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k]; };
+// ---- One line under each knob saying what it does in this sketch
+const KNOB_HELP = {
+ "stiffness": "How hard each jelly springs back to its grid shape. High = firm, fast jiggle; low = soft, slow sag.",
+ "viscosity": "Damping. Low = jiggles keep going; high = they die out fast.",
+ "wobble": "Size of the kicks when a jelly lands, rotates, merges, or gets zapped.",
+ "tension": "Skin pull: rounds the corners, makes same-colour jellies reach for each other and stick, and makes the neck hold longer when they tear apart.",
+ "gravity": "Falling speed after a zap, on a hard drop, and for droplets. (The piece itself falls on the grid timer.)",
+ "translucency": "0 = solid gummy, 1 = see-through jelly.",
+ "wetness": "Shine and the glossy rim."
+};
+for (const k in KNOB_HELP) { const el = $('k_' + k); if (el) el.parentElement.insertAdjacentHTML('afterend', '<div class="help">' + KNOB_HELP[k] + '</div>'); }
 // ---- Presets: + Preset saves the current knobs (up to 3); tap one to load it. Stored in this browser only.
 const PKEY = 'goo-presets:' + location.pathname.split('/').pop();
 const knobObj = r => r[4] || GOO;

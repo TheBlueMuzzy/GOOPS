@@ -5,7 +5,7 @@ Release target: not set (decided in F07)
 Goal: every design question the remake needs is answered, so /define can write the TDD and lay out the build milestones.
 - ✅ F01 ❓ Feel targets — must:alpha
   what: all three feelings, one per time scale (GDD §2)
-- 🔍 F02 ❓ Goo technique: A shader vs Puyo vs v1-style — must:alpha · needs: F01
+- 🔍 F02 Goo technique: L4 Jelly (one soft body per same-colour group) — must:alpha · needs: F01
   what: which way the goo is drawn and moves (research/goo-feel.md, research/goo-lab/)
   note: Muzzy's feel note (2026-10-16): low gravity (env grav 2.0 m/s²) + much lower viscosity "kinda felt good" (on research/goo-lab/refs/viscous-jello-muzzy.html, his version with sliders)
   why: Muzzy's two endpoints (2026-10-16): A) "jello/jelly that has surface tension and sticks together, but can pull apart", or B) "a thick, heavy viscous liquid that doesn't really follow the grid underneath … not sure it's fun yet, so a sketch would need to prove it out"
@@ -17,9 +17,13 @@ Goal: every design question the remake needs is answered, so /define can write t
   - [x] 🤖 L5 Free goo: playable sketch where the goo IS the rules (direction B)
   - [x] 🙋 Try the goo lab, pick A or B. Muzzy (2026-10-17): "Particle Goo, Jelly feel great in different ways, and both look great in different ways" (after tweaking a lot) → A
   - [x] 🤖 Knob presets (save 3, tap to load) + "Copy values for Claude" in every sketch; knobs dock beside the board
-  - [ ] 🙋 Save L3 + L4 presets you like, press Copy values for Claude, paste them in the chat
-  - [ ] 🙋 Pick L3 Particles, L4 Jelly, or a blend of both
-  - [ ] 🤖 Write the pick into GDD §6 + TDD
+  - [x] 🙋 Save L3 + L4 presets, paste the values → research/goo-lab/picks.json
+  - [x] 🙋 Pick: L4 Jelly. Muzzy (2026-10-17): "this feels just about right. might make small tweaks in the future"
+  - [x] 🤖 Fix the jelly's heavy lurch on the way down (it was yanked a cell per grid step; now glides) + one-line help under every L3/L4 knob
+  - [ ] 🙋 Check the lurch is gone in L4 (its Default is now your Preset 2)
+  - [x] 🤖 Write the pick into GDD §6
+  - [ ] 🤖 TDD: goo renderer + soft-body plan from lab-L4-jelly.html (when /define writes the TDD)
+  note: zap look is open (2026-10-17): "since I want the laser to explode/harden the goo, the current pop anim isn't right for my goals. Let's ignore that for a moment"
 - ✅ F02b Goop follows the grid (A), or free viscous goo that is the rules (B)? — must:alpha · needs: F02
   note: A (2026-10-17). Free goo was "REALLY interesting, but I don't think it's going to achieve the gameplay I'm after. If anything, that would be a different game. Let's keep the tech" (parking lot)
   what: B would change the core rules and the "goo never decides a rule" pillar; the L5 sketch proves whether it's fun first

@@ -39,6 +39,8 @@ Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities 
 
 ## 6. Look & sound
 Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of bright, wet, living goop. The intercom is mostly static, with key words coming through in green. v1 audio was placeholder synth beeps; the remake uses the framework audio module. Goo look directions: `research/goo-feel.md` §4.
+- **Goo (F02, 2026-10-17): L4 Jelly.** Each same-colour group is one glossy, translucent soft body that springs back to its grid shape and jiggles as one; the piece glides down smoothly (no per-cell lurch). The goo follows the grid (F02b = A): it's the costume, never the rules. Muzzy's values: `research/goo-lab/picks.json` (sketch: `research/sketches/lab-L4-jelly.html`).
+- **Zap (open):** the laser should explode/harden the goo, not pop it (Muzzy, 2026-10-17). To design later.
 
 ## 7. Scope
 *(Filled at /define. Starting rule: everything in v1 is a must; the story is new must work.)*

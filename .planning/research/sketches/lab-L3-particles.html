@@ -48,6 +48,7 @@
   #presets .pw i:hover { color: #fca5a5; }
   #presets .add { border-style: dashed; color: #94a3b8; }
   #bCopy { display: block; margin-top: 10px; width: 100%; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: #64748b; }
 </style>
 </head>
 <body>
@@ -728,6 +729,18 @@ $('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) 
   `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`).join('')
   + '<p id="stats">--</p><p>Values live in the GOO object at the top of the file. Gravity is in m/s² (1 cell ≈ 5 cm).</p>';
 for (const [k, lo] of KNOBS) if (lo !== undefined) $('k_' + k).oninput = e => { GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k]; };
+// ---- One line under each knob saying what it does in this sketch
+const KNOB_HELP = {
+ "gravity": "How hard loose goo falls (m/s²): goo catching up with a falling piece, and zapped goo draining.",
+ "viscosity": "Thickness. Neighbouring bits share their speed, so the goo moves as one and settles sooner. Low = sloshy.",
+ "stiffness": "How hard each bit is pulled to its grid spot. Low = floppy and lags behind; high = holds the block shape.",
+ "tension": "Surface tension: same-colour bits near each other pull into a rounder blob. Only shows while goo is loose (falling, landing, draining); on the grid, stiffness wins.",
+ "merge": "Stickiness: strings between same colours when they get pulled apart (a piece sliding past its colour, cells dropping after a zap). 0 = not sticky at all.",
+ "wobble": "Idle wiggle, plus the kick when goo lands or gets zapped.",
+ "threshold": "Where the edge is drawn. Lower = fatter, rounder goo; higher = thinner, beadier.",
+ "wetness": "Shine and the bright rim."
+};
+for (const k in KNOB_HELP) { const el = $('k_' + k); if (el) el.parentElement.insertAdjacentHTML('afterend', '<div class="help">' + KNOB_HELP[k] + '</div>'); }
 // ---- Presets: + Preset saves the current knobs (up to 3); tap one to load it. Stored in this browser only.
 const PKEY = 'goo-presets:' + location.pathname.split('/').pop();
 const knobObj = r => r[4] || GOO;
