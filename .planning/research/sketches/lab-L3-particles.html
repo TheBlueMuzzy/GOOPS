@@ -59,6 +59,7 @@ const GOO = {
   wetness: 1.0,     // sharp shine + fresnel rim
   // Fixed (not sliders)
   blur: 0.1,        // field blur (cells): fuses the dots into one hill; 0 = off
+  dome: 0.7,        // wide blur (cells) that shapes one pillow + one shine per group
   splat: 0.5,       // particle kernel reach (cells)
   bulge: 1.0, absorb: 1.0, fresnel: 0.7, translucency: 0.6,
   snap: 1.1,        // a sticky bond snaps past this length (cells)
@@ -460,20 +461,21 @@ void main(){
 }`;
 const BLUR_FS = `#version 300 es
 precision highp float;
-uniform sampler2D uT0, uT1; uniform vec2 uStep; uniform float uSigma;
+uniform sampler2D uT0, uT1; uniform vec2 uStep, uOut; uniform float uSigma; uniform int uTaps;
 layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
 void main(){
-  vec2 uv = gl_FragCoord.xy / vec2(textureSize(uT0, 0));
+  vec2 uv = gl_FragCoord.xy / uOut;
   vec4 a = vec4(0.0), b = vec4(0.0); float ws = 0.0;
-  for (int i = -4; i <= 4; i++) {
-    float x = float(i) * 0.5 * uSigma; float w = exp(-0.5 * x * x / (uSigma * uSigma));
+  for (int i = -12; i <= 12; i++) {
+    if (i < -uTaps || i > uTaps) continue;
+    float x = float(i) * 2.5 / float(uTaps) * uSigma; float w = exp(-0.5 * x * x / (uSigma * uSigma));
     vec2 o = uStep * x; a += texture(uT0, uv + o) * w; b += texture(uT1, uv + o) * w; ws += w;
   }
   o0 = a / ws; o1 = b / ws;
 }`;
 const SHADE_FS = `#version 300 es
 precision highp float;
-uniform sampler2D uT0, uT1;
+uniform sampler2D uT0, uT1, uW0, uW1;   // field (lightly blurred) + a wide-blurred copy for the group dome
 uniform vec2 uRes, uOrigin; uniform float uCell, uScale, uTh, uWet, uBulge, uAbsorb, uFres, uTrans, uTime;
 uniform ivec2 uGrid; uniform vec3 uCols[6];
 out vec4 outColor;
@@ -484,7 +486,14 @@ vec3 shade(vec2 uv, vec2 tx, float f1, float f2, vec4 m0, vec4 m1, vec3 base){
   float hR = hgt(field(uv + vec2(tx.x, 0.0), m0, m1)), hL = hgt(field(uv - vec2(tx.x, 0.0), m0, m1));
   float hU = hgt(field(uv + vec2(0.0, tx.y), m0, m1)), hD = hgt(field(uv - vec2(0.0, tx.y), m0, m1));
   vec2 grad = vec2(hR - hL, hU - hD) * 0.5 * uCell * 0.5;    // per cell (field is half-res), screen y up
-  vec3 n = normalize(vec3(-grad * 0.22 * uBulge, 1.0));
+  // group dome: the slope of a wide-blurred copy of this colour's field → one broad pillow (and one shine) per group
+  vec2 wo = tx * 3.0;
+  float wR = dot(texture(uW0, uv + vec2(wo.x, 0.0)), m0) + dot(texture(uW1, uv + vec2(wo.x, 0.0)), m1);
+  float wL = dot(texture(uW0, uv - vec2(wo.x, 0.0)), m0) + dot(texture(uW1, uv - vec2(wo.x, 0.0)), m1);
+  float wU = dot(texture(uW0, uv + vec2(0.0, wo.y)), m0) + dot(texture(uW1, uv + vec2(0.0, wo.y)), m1);
+  float wD = dot(texture(uW0, uv - vec2(0.0, wo.y)), m0) + dot(texture(uW1, uv - vec2(0.0, wo.y)), m1);
+  vec2 gw = vec2(wR - wL, wU - wD) / 6.0 * uCell * 0.5 * uScale;
+  vec3 n = normalize(vec3(-(grad * 0.22 + gw * 0.55) * uBulge, 1.0));
   vec3 L = normalize(vec3(-0.45, 0.65, 0.62)), Hh = normalize(L + vec3(0.0, 0.0, 1.0));
   float ab = 1.0 - exp(-uAbsorb * f1 * 0.9);                 // Beer–Lambert: thin = light + clear, thick = deep
   vec3 body = mix(mix(base, vec3(1.0), 0.28), base * base * 0.85, ab);
@@ -550,8 +559,8 @@ function program(vs, fs, names) {
   return { pr, u };
 }
 const splatP = program(SPLAT_VS, SPLAT_FS, ['uFieldRes', 'uOrigin', 'uCell', 'uWS']);
-const blurP = program(FSQ, BLUR_FS, ['uT0', 'uT1', 'uStep', 'uSigma']);
-const shadeP = program(FSQ, SHADE_FS, ['uT0', 'uT1', 'uRes', 'uOrigin', 'uCell', 'uScale', 'uTh', 'uWet', 'uBulge', 'uAbsorb', 'uFres', 'uTrans', 'uTime', 'uGrid', 'uCols']);
+const blurP = program(FSQ, BLUR_FS, ['uT0', 'uT1', 'uStep', 'uSigma', 'uOut', 'uTaps']);
+const shadeP = program(FSQ, SHADE_FS, ['uT0', 'uT1', 'uW0', 'uW1', 'uRes', 'uOrigin', 'uCell', 'uScale', 'uTh', 'uWet', 'uBulge', 'uAbsorb', 'uFres', 'uTrans', 'uTime', 'uGrid', 'uCols']);
 const emptyVAO = gl.createVertexArray();
 const splatVAO = gl.createVertexArray(); gl.bindVertexArray(splatVAO);
 const quadBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
@@ -563,7 +572,7 @@ gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, INS
 gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, INST * 4, 16); gl.vertexAttribDivisor(2, 1);
 gl.bindVertexArray(null);
 
-let fA = null, fB = null, fw = 1, fh = 1;
+let fA = null, fB = null, fC = null, fQ = null, fw = 1, fh = 1, qw = 1, qh = 1;
 function makeTarget(w, h) {
   const t = [0, 1].map(() => {
     const tx = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tx);
@@ -592,7 +601,9 @@ function layout() {
   const rows = Math.max(14, Math.min(24, Math.floor(availH / cell))); // tall phones get extra rows, no dead band
   ox = (innerWidth - W * cell) / 2; oy = bot - rows * cell;
   fw = Math.max(1, Math.ceil(canvas.width / 2)); fh = Math.max(1, Math.ceil(canvas.height / 2));
-  freeTarget(fA); freeTarget(fB); fA = makeTarget(fw, fh); fB = makeTarget(fw, fh);
+  qw = Math.max(1, Math.ceil(fw / 2)); qh = Math.max(1, Math.ceil(fh / 2));
+  for (const T of [fA, fB, fC, fQ]) freeTarget(T);
+  fA = makeTarget(fw, fh); fB = makeTarget(fw, fh); fC = makeTarget(qw, qh); fQ = makeTarget(qw, qh);
   if (rows !== H) { H = rows; newGame(); }
 }
 function fillInstances() {
@@ -632,6 +643,7 @@ function draw(time) {
   gl.bindVertexArray(emptyVAO);
   if (GOO.blur > 0.005) {
     gl.useProgram(blurP.pr); gl.uniform1i(blurP.u.uT0, 0); gl.uniform1i(blurP.u.uT1, 1); gl.uniform1f(blurP.u.uSigma, GOO.blur * cell * dpr / 2);
+    gl.uniform2f(blurP.u.uOut, fw, fh); gl.uniform1i(blurP.u.uTaps, 4);
     for (const [src, dst, sx, sy] of [[fA, fB, 1 / fw, 0], [fB, fA, 0, 1 / fh]]) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t[0]);
@@ -639,12 +651,23 @@ function draw(time) {
       gl.uniform2f(blurP.u.uStep, sx, sy); gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
   }
+  // 2b) wide blur (A → Q → C, quarter res) for the group-scale dome
+  gl.useProgram(blurP.pr); gl.uniform1i(blurP.u.uT0, 0); gl.uniform1i(blurP.u.uT1, 1); gl.uniform1f(blurP.u.uSigma, GOO.dome * cell * dpr / 2);
+  gl.uniform2f(blurP.u.uOut, qw, qh); gl.uniform1i(blurP.u.uTaps, 12); gl.viewport(0, 0, qw, qh);   // quarter res, 25 taps
+  for (const [src, dst, sx, sy] of [[fA, fQ, 1 / fw, 0], [fQ, fC, 0, 1 / fh]]) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t[0]);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, src.t[1]);
+    gl.uniform2f(blurP.u.uStep, sx, sy); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
   // 3) threshold + wet shading at full res
   gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height);
   gl.useProgram(shadeP.pr); const u = shadeP.u;
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fA.t[0]);
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, fA.t[1]);
-  gl.uniform1i(u.uT0, 0); gl.uniform1i(u.uT1, 1);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, fC.t[0]);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, fC.t[1]);
+  gl.uniform1i(u.uT0, 0); gl.uniform1i(u.uT1, 1); gl.uniform1i(u.uW0, 2); gl.uniform1i(u.uW1, 3);
   gl.uniform2f(u.uRes, canvas.width, canvas.height); gl.uniform2f(u.uOrigin, ox * dpr, oy * dpr);
   gl.uniform1f(u.uCell, cell * dpr); gl.uniform1f(u.uScale, 1 / WSCALE); gl.uniform1f(u.uTh, GOO.threshold);
   gl.uniform1f(u.uWet, GOO.wetness); gl.uniform1f(u.uBulge, GOO.bulge); gl.uniform1f(u.uAbsorb, GOO.absorb);
