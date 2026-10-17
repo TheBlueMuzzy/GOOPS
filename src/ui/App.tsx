@@ -69,7 +69,7 @@ export function App() {
       <ScreenStack overlay screens={screenMap}>
         {hud && (
           <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')}
-            vitals={<Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} width="m" />}
+            vitals={<Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} width="s" />}
             status={<HudText tone={quotaMet ? 'accent' : 'normal'}>{quotaMet ? text.hud.cracksDone : fill(text.hud.cracks, { n: hud.cracksSealed, total: hud.cracksNeeded })}</HudText>}
             currency={<Score value={hud.score} />}
             banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined} />

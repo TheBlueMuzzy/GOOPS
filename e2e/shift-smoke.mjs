@@ -39,10 +39,18 @@ try {
     // fast-forward most of the shift through the dev hook, dropping pieces as it goes
     await page.evaluate(async () => {
       const { engine } = window.__goops
-      for (let i = 0; i < 40; i++) { engine.act({ type: 'hardDrop' }); engine.act({ type: 'spin', dir: i % 3 ? 1 : -1 }); engine.tick(900) }
+      for (let i = 0; i < 30; i++) { for (let k = 0; k < (i * 7) % 11; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'hardDrop' }); engine.tick(900) }
     })
     await page.waitForTimeout(800)
-    await page.screenshot({ path: `${OUT}/${name}-3-busy.png` })
+    await page.screenshot({ path: `${OUT}/${name}-3-busy-jelly.png` })
+    // switch the goo style mid-shift: the game state must not change
+    const before = await page.evaluate(() => Array.from(window.__goops.engine.state.grid).join(''))
+    await page.evaluate(() => { const g = window.__goops; g.engine.tick(0); g.gooStyle.setFromSetting('Particle') })
+    await page.waitForTimeout(900)
+    const after = await page.evaluate(() => Array.from(window.__goops.engine.state.grid).join(''))
+    if (before !== after) { console.log(name, 'grid changed while only switching goo style?'); }
+    await page.screenshot({ path: `${OUT}/${name}-3-busy-particle.png` })
+    await page.evaluate(() => window.__goops.gooStyle.setFromSetting('Jelly'))
     const state = await page.evaluate(() => { const s = window.__goops.engine.state; return { pressure: s.pressure, score: s.score, status: s.status } })
     await page.evaluate(() => { window.__goops.engine.tick(120000) })
     await page.waitForTimeout(1200)

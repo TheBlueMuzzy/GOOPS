@@ -13,8 +13,8 @@ export function createFlatRenderer(canvas: HTMLCanvasElement, colorOf: (c: numbe
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h }
       ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0)
       ctx.clearRect(0, 0, v.width, v.height)
-      const cell = (x: number, y: number, c: number, alpha: number) => {
-        const sx = v.centreX + screenColumn(x, v.camera, s.width) * v.cellPx, sy = v.topY + (y - s.bufferRows + 0.5) * v.cellPx
+      const cell = (x: number, y: number, c: number, alpha: number, cam = v.camera) => {
+        const sx = v.centreX + screenColumn(x, cam, s.width) * v.cellPx, sy = v.topY + (y - s.bufferRows + 0.5) * v.cellPx
         if (sx < -v.cellPx || sx > v.width + v.cellPx) return
         const r = v.cellPx * 0.46
         ctx.globalAlpha = alpha
@@ -26,7 +26,7 @@ export function createFlatRenderer(canvas: HTMLCanvasElement, colorOf: (c: numbe
         const g = s.groups.get(s.groupOf[i])
         cell(i % s.width, Math.floor(i / s.width), s.grid[i], g ? (g.ready ? 1 : 0.45 + 0.4 * g.fill) : 1)
       }
-      if (s.piece) s.piece.cells.forEach(([x, y], k) => cell(x, y + s.piece!.fall, s.piece!.colors[k], 1))
+      if (s.piece) s.piece.cells.forEach(([x, y], k) => cell(x, y + s.piece!.fall, s.piece!.colors[k], 1, s.spin))
       ctx.globalAlpha = 1
     },
     setKnobs() {},

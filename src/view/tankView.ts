@@ -54,14 +54,15 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.id, timeSec)
   }
 
-  // ghost: where the piece will land
+  // ghost: where the piece will land. Placed by the spin, not the gliding camera, like the piece itself: the piece
+  // stays still on screen while the tank slides under it.
   if (s.piece && s.ghost.length) {
     ctx.globalAlpha = tank.ghostAlpha
     ctx.strokeStyle = colorOf(s.piece.colors[0])
     ctx.lineWidth = Math.max(1.5, cp * 0.06)
     ctx.setLineDash([cp * 0.18, cp * 0.12])
     for (const [x, y] of s.ghost) {
-      const sx = centreX + screenColumn(x, view.camera, s.width) * cp
+      const sx = centreX + screenColumn(x, s.spin, s.width) * cp
       const sy = topY + (y - s.bufferRows + 0.5) * cp
       const h = cp * 0.42
       ctx.strokeRect(sx - h, sy - h, h * 2, h * 2)

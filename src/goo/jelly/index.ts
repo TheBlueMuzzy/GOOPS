@@ -431,6 +431,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
                 if (j >= 0 && !lockSet.has(j)) queueKick(j, 'squash', 0.9)
               }
           pieceBody = null
+          pose.y = 0 // the drop offset belonged to this piece only (several drops in one frame must not add up)
           break
         }
         case 'pop':

@@ -93,7 +93,7 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onConsole
     }
     raf = requestAnimationFrame(frame)
     // dev + tests only: lets a Playwright check reach the engine (fast-forward a shift, read the grid)
-    if (import.meta.env.DEV) (window as unknown as { __goops?: unknown }).__goops = { engine, view }
+    if (import.meta.env.DEV) (window as unknown as { __goops?: unknown }).__goops = { engine, view, gooStyle }
 
     const detach = attachControls(el, {
       spin: (dir) => engine.act({ type: 'spin', dir }),
