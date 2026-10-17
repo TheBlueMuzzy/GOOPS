@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>L2: Splat goo</title>
+<meta name="description" content="Metaball splats: every cell adds a soft kernel (plus strands between same-colour neighbours) into a per-colour field, thresholded with strongest-colour-wins and shaded wet from the field slope. Look for: one continuous mass per group, one dome and one highlight, clean seams between colours, no cores.">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05070d; color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid #1e293b;
+    background: #0b1224d9; color: #e2e8f0; font: 600 14px system-ui, sans-serif; touch-action: manipulation; }
+  button:active { background: #1e293b; }
+  button.on { border-color: #a855f7; color: #e9d5ff; }
+  #bottom button { min-height: 56px; font-size: 24px; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #panel { position: fixed; top: 64px; left: 0; right: 0; margin: 0 auto; width: calc(100% - 32px); max-width: 420px;
+    box-sizing: border-box; padding: 12px 16px; border-radius: 14px; background: #0b1224f0; border: 1px solid #1e293b;
+    z-index: 3; display: none; }
+  #panel.open { display: block; }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 92px; }
+  #panel label b { flex: 0 0 40px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
+  #panel input { flex: 1; min-width: 0; accent-color: #a855f7; }
+  #panel p { margin: 8px 0 0; font-size: 11px; color: #64748b; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bFill">Fill</button><button id="bReset">Reset</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <button id="bLeft">&#9664;</button><button id="bRot">&#10227;</button>
+  <button id="bDrop">&#9660;</button><button id="bRight">&#9654;</button>
+</div>
+<script>
+'use strict';
+// ===== Tweakable goo values (the sketch's "content/goo.json") =====
+const GOO = {
+  // Look
+  merge: 0.5,         // 0 = beads with necks, 0.5 = one flat-joined mass, 1 = fat overlapping mass (+ strands)
+  threshold: 0.5,     // field cut-off: lower = fatter goo, higher = thinner
+  bulge: 1.0,         // height of the one dome each group gets
+  translucency: 0.5,  // how much tank light shines through thin goo (edges, strands, small blobs)
+  absorb: 0.55,       // Beer-Lambert: thin = clear + bright, thick = deep + saturated
+  wetness: 0.8,       // sharpness and strength of the wet highlight
+  fresnel: 0.55,      // bright glassy rim at the silhouette
+  // Motion
+  wobble: 0.6,        // how hard whole groups squash and jiggle on land / merge / zap
+  gravity: 2.0,       // m/s^2 for goo falling after a lock or zap (1 m = 4 cells). Muzzy liked low.
+  viscosity: 0.15,    // damping of every spring (low = sloshy, keeps wobbling)
+  stiffness: 110,     // spring stiffness of the group squash and cell springs
+  // Fixed (not on sliders)
+  seam: 0.16,         // how much a neighbouring colour pushes back = width of the gap between colours
+  domeReach: 3.2,     // cells: reach of the wide kernel that builds each group's dome
+  strandBreak: 2.4,   // cells: strands snap when stretched past this
+  fieldScale: 0.5,    // narrow field resolution (half res)
+  domeScale: 0.25,    // dome field resolution (quarter res)
+  maxDpr: 1.5,        // pixel-ratio cap (performance)
+  fallMs: 650,        // grid fall step
+};
+const KNOBS = [['merge', 0, 1, 0.01], ['threshold', 0.25, 0.8, 0.01], ['bulge', 0, 1.5, 0.01], ['translucency', 0, 1, 0.01],
+  ['absorb', 0, 1, 0.01], ['wetness', 0, 1, 0.01], ['fresnel', 0, 1, 0.01], ['wobble', 0, 1.5, 0.01]];
+const COLORS = [[0, 0, 0], [0.94, 0.22, 0.24], [0.2, 0.48, 0.98], [0.15, 0.78, 0.36], [0.97, 0.74, 0.08], [0.66, 0.3, 0.98]];
+const SHAPES = [[[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [2, 0], [1, 1]],
+  [[0, 0], [0, 1], [0, 2], [1, 2]], [[1, 0], [2, 0], [0, 1], [1, 1]]];
+const W = 10;
+const CELLS_PER_M = 4;
+let H = 0; // rows are picked by layout() to fill the screen (min 14)
+const rnd = n => Math.floor(Math.random() * n);
+
+// ================= GAME LOGIC: a plain grid (unchanged from sketch 1). Never reads the visuals. =================
+const G = { grid: null, piece: null, fallT: 0, gravityT: -1, ver: 0, events: [] };
+const idx = (x, y) => y * W + x;
+const emit = e => G.events.push(e);
+const cellAt = (x, y) => (x < 0 || x >= W || y >= H) ? 9 : (y < 0 ? 0 : G.grid[idx(x, y)]);
+const fits = (cells, px, py) => cells.every(([x, y]) => cellAt(px + x, py + y) === 0);
+
+function newGame() { G.grid = new Uint8Array(W * H); G.piece = null; G.gravityT = -1; G.ver++; emit({ type: 'reset' }); spawn(); }
+function spawn() {
+  const cells = SHAPES[rnd(SHAPES.length)].map(c => [...c]);
+  const p = { cells, x: 3, y: 0, color: 1 + rnd(5) };
+  if (!fits(cells, p.x, p.y)) return newGame(); // topped out: start over
+  G.piece = p; G.fallT = 0; emit({ type: 'spawn' });
+}
+function move(dx) { const p = G.piece; if (p && fits(p.cells, p.x + dx, p.y)) { p.x += dx; emit({ type: 'move', dx }); } }
+function rotate() {
+  const p = G.piece; if (!p) return;
+  const r = p.cells.map(([x, y]) => [-y, x]); // clockwise (y points down)
+  const mx = Math.min(...r.map(c => c[0])), my = Math.min(...r.map(c => c[1]));
+  const rc = r.map(([x, y]) => [x - mx, y - my]);
+  for (const k of [0, -1, 1, -2, 2]) if (fits(rc, p.x + k, p.y)) { p.cells = rc; p.x += k; emit({ type: 'rotate', kick: k }); return; }
+}
+function lock() {
+  const p = G.piece; const cells = p.cells.map(([x, y]) => [p.x + x, p.y + y]);
+  for (const [x, y] of cells) G.grid[idx(x, y)] = p.color;
+  G.piece = null; G.ver++; emit({ type: 'lock', cells, color: p.color }); spawn();
+}
+function step() { const p = G.piece; if (!p) return; if (fits(p.cells, p.x, p.y + 1)) { p.y++; emit({ type: 'step' }); } else lock(); }
+function hardDrop() { const p = G.piece; if (!p) return; let n = 0; while (fits(p.cells, p.x, p.y + 1)) { p.y++; n++; } emit({ type: 'drop', n }); lock(); }
+function groupAt(x, y) { // same-colour 4-way flood fill
+  const c = G.grid[idx(x, y)], out = [], seen = new Set([idx(x, y)]), stack = [[x, y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop(); out.push([cx, cy]);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy, i = idx(nx, ny);
+      if (nx >= 0 && nx < W && ny >= 0 && ny < H && !seen.has(i) && G.grid[i] === c) { seen.add(i); stack.push([nx, ny]); }
+    }
+  }
+  return out;
+}
+function pop(x, y) {
+  const c = G.grid[idx(x, y)]; if (!c) return;
+  const cells = groupAt(x, y);
+  if (cells.length < 4) return emit({ type: 'poke', cells });
+  for (const [cx, cy] of cells) G.grid[idx(cx, cy)] = 0;
+  G.ver++; emit({ type: 'pop', cells, color: c }); G.gravityT = 0.16; // short pause, then things fall
+}
+function applyGravity() { // per-cell column compaction
+  const moves = [];
+  for (let x = 0; x < W; x++) {
+    let to = H - 1;
+    for (let y = H - 1; y >= 0; y--) {
+      const c = G.grid[idx(x, y)]; if (!c) continue;
+      if (to !== y) { G.grid[idx(x, to)] = c; G.grid[idx(x, y)] = 0; moves.push({ fx: x, fy: y, tx: x, ty: to }); }
+      to--;
+    }
+  }
+  const p = G.piece; while (p && !fits(p.cells, p.x, p.y) && p.y > -3) p.y--; // nudge piece out of the way (rare)
+  G.ver++; if (moves.length) emit({ type: 'fall', moves });
+}
+function fillBoard() { // stress test: fill all but the top rows, with some same-colour clumping
+  const top = Math.floor(H * 0.45);
+  for (let y = H - 1; y >= top; y--) for (let x = 0; x < W; x++) {
+    if (G.piece && G.piece.cells.some(([px, py]) => G.piece.x + px === x && G.piece.y + py === y)) continue;
+    const left = x > 0 ? G.grid[idx(x - 1, y)] : 0, below = y < H - 1 ? G.grid[idx(x, y + 1)] : 0;
+    const r = Math.random();
+    G.grid[idx(x, y)] = r < 0.3 && left ? left : r < 0.55 && below ? below : 1 + rnd(5);
+  }
+  G.ver++;
+}
+function updateGame(dt) {
+  if (G.piece && (G.fallT += dt * 1000) >= GOO.fallMs) { G.fallT = 0; step(); }
+  if (G.gravityT >= 0 && (G.gravityT -= dt) < 0) applyGravity();
+}
+
+// ================= GOO LAYER: reads G + events, never writes G =================
+// A "blob" is the goo of one cell: a visual offset that springs home, plus a link to its group's squash state.
+let nextId = 1;
+const newBlob = (color, gi) => ({ id: nextId++, color, gi, offX: 0, offY: 0, vx: 0, vy: 0, falling: false, delay: 0,
+  grp: null, px: 0, py: 0, sx: 1, sy: 1, str: 1, dying: false, dead: false, t: 0 });
+let blobs = [], dying = [], drops = [], bonds = new Map(), seenVer = -1;
+const pv = { x: 0, vx: 0, y: 0, vy: 0, a: 0, va: 0, sq: 0, sqv: 0 }; // falling-piece pose springs
+let pieceVis = [];                                                     // piece cell centres as drawn
+const damp = k => 2 * Math.sqrt(k) * (0.06 + GOO.viscosity * 0.9);    // viscosity -> damping ratio
+function spring(o, key, vkey, target, k, c, dt) { o[vkey] += ((target - o[key]) * k - o[vkey] * c) * dt; o[key] += o[vkey] * dt; }
+
+function syncBlobs() { // keep blobs in step with the grid (e.g. after Fill)
+  for (let i = 0; i < W * H; i++) {
+    const c = G.grid[i];
+    if (c && !blobs[i]) { blobs[i] = newBlob(c, i); }
+    else if (!c && blobs[i]) { blobs[i].dead = true; blobs[i] = null; }
+  }
+}
+function regroup() { // one squash state per same-colour group; a new group inherits its cells' old wobble
+  syncBlobs();
+  const seen = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    if (!blobs[i] || seen[i]) continue;
+    const cells = groupAt(i % W, Math.floor(i / W));
+    let sq = 0, sqv = 0, n = 0, minx = 99, maxx = -1, miny = 99, maxy = -1;
+    for (const [x, y] of cells) {
+      const j = idx(x, y); seen[j] = 1; const g = blobs[j].grp;
+      if (g) { sq += g.sq; sqv += g.sqv; n++; }
+      minx = Math.min(minx, x); maxx = Math.max(maxx, x); miny = Math.min(miny, y); maxy = Math.max(maxy, y);
+    }
+    const st = { sq: n ? sq / n : 0, sqv: n ? sqv / n : 0, cx: (minx + maxx + 1) / 2, yb: maxy + 1, h: maxy - miny + 1, size: cells.length };
+    for (const [x, y] of cells) blobs[idx(x, y)].grp = st;
+  }
+  seenVer = G.ver;
+}
+function kick(cells, amt, r) { // squash the groups at / near these cells (each group once, by its nearest source)
+  const hit = new Map();
+  for (const [x, y] of cells) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    const nx = x + dx, ny = y + dy; if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+    const b = blobs[idx(nx, ny)]; if (!b || !b.grp) continue;
+    const k = amt / (1 + Math.abs(dx) + Math.abs(dy));
+    if (k > (hit.get(b.grp) || 0)) hit.set(b.grp, k);
+  }
+  for (const [g, k] of hit) g.sqv += k * GOO.wobble;
+}
+function handle(e) {
+  switch (e.type) {
+    case 'reset': for (const b of blobs) if (b) b.dead = true; blobs = new Array(W * H).fill(null); dying = []; drops = []; bonds.clear(); pieceVis = []; break;
+    case 'spawn': Object.assign(pv, { x: 0, vx: 0, y: -1.2, vy: 0, a: 0, va: 0, sq: 0, sqv: 0 }); break;
+    case 'move': pv.x -= e.dx; break;
+    case 'step': pv.y -= 1; break;
+    case 'drop': pv.y -= e.n; pv.vy = 14; break;  // hard drop: the goo follows with a head start, then low gravity
+    case 'rotate': pv.a -= Math.PI / 2; pv.x -= e.kick; break; // visual lags 90 degrees, springs over
+    case 'lock': {
+      const dropping = pv.y < -0.4;
+      e.cells.forEach(([x, y], k) => {
+        const i = idx(x, y); if (blobs[i]) blobs[i].dead = true;
+        const b = newBlob(e.color, i), v = pieceVis[k];
+        if (v) { b.offX = v.x - (x + 0.5); b.offY = v.y - (y + 0.5); }
+        if (dropping) { b.falling = true; b.vy = Math.max(pv.vy, 3); }
+        blobs[i] = b;
+      });
+      regroup();
+      if (!dropping) kick(e.cells, 1.6, 1); // gentle settle; dropped goo kicks when it lands
+      break;
+    }
+    case 'poke': kick(e.cells, 2.4, 0); break;
+    case 'pop': { // the zapped group drains as ONE mass toward its own bottom centre (keeps the inside flat: no lumps)
+      const zb = e.cells.map(([x, y]) => blobs[idx(x, y)]).filter(Boolean);
+      const gcx = zb.reduce((s, b) => s + b.px, 0) / zb.length, gyb = Math.max(...zb.map(b => b.py)) + 0.5;
+      zb.forEach((b, n) => {
+        b.dying = true; b.t = 0; b.bx = b.px; b.by = b.py; b.gcx = gcx; b.gyb = gyb; dying.push(b); blobs[b.gi] = null;
+        if (n % 2 === 0) { const life = 0.8 + Math.random() * 0.5; // a few fat droplets fly off and float down
+          drops.push({ x: b.px, y: b.py, vx: (Math.random() - 0.5) * 4, vy: -2 - Math.random() * 4, r0: 0.38 + Math.random() * 0.16, life, life0: life, color: e.color }); }
+      });
+      regroup(); kick(e.cells, 3.2, 2); break;
+    }
+    case 'fall':
+      for (const m of e.moves) { const b = blobs[idx(m.fx, m.fy)]; blobs[idx(m.fx, m.fy)] = null; m.b = b; }
+      for (const m of e.moves) { const b = m.b; if (!b) continue;
+        b.offY += m.fy - m.ty; b.falling = true; b.vy = 0; b.delay = 0.04; b.gi = idx(m.tx, m.ty); blobs[b.gi] = b; }
+      regroup(); break;
+  }
+}
+const adjacent = (a, b) => { const d = Math.abs(a.gi - b.gi); return d === W || (d === 1 && Math.floor(a.gi / W) === Math.floor(b.gi / W)); };
+function updateVisuals(dt) {
+  if (seenVer !== G.ver) regroup();
+  const K = GOO.stiffness, g = GOO.gravity * CELLS_PER_M;
+  for (let t = dt; t > 1e-6; t -= 1 / 120) { // fixed small substeps keep springs stable
+    const h = Math.min(t, 1 / 120), C = damp(K);
+    spring(pv, 'x', 'vx', 0, K * 2.5, 2 * Math.sqrt(K * 2.5), h);       // piece follows the grid snappily...
+    spring(pv, 'a', 'va', 0, K * 1.6, C * 1.3, h);                       // ...rotation overshoots a little
+    if (pv.y < -0.02 || pv.vy < 0) { pv.vy += (g * 1.5 + (-pv.y) * K * 0.6 - pv.vy * C * 0.3) * h; pv.y = Math.min(pv.y + pv.vy * h, 0); if (pv.y === 0) pv.vy = 0; }
+    spring(pv, 'sq', 'sqv', -Math.min(Math.max(pv.vy, 0) * 0.025, 0.35), K, C, h);
+    for (const b of blobs) {
+      if (!b) continue;
+      if (b.falling) {
+        if (b.delay > 0) b.delay -= h;
+        else { b.vy += g * h; b.offY += b.vy * h;
+          if (b.offY >= 0) { b.falling = false; b.vy *= 0.22; if (b.grp) b.grp.sqv += Math.min(b.vy, 4) * 0.55 * GOO.wobble / Math.sqrt(b.grp.size); } }
+      } else spring(b, 'offY', 'vy', 0, K * 1.4, damp(K * 1.4), h);
+      spring(b, 'offX', 'vx', 0, K * 1.4, damp(K * 1.4), h);
+    }
+  }
+  const C = damp(K); // group squash springs (exact-ish integration in the same substeps)
+  const groups = new Set(); for (const b of blobs) if (b && b.grp) groups.add(b.grp);
+  for (const st of groups) for (let t = dt; t > 1e-6; t -= 1 / 120) spring(st, 'sq', 'sqv', 0, K, C, Math.min(t, 1 / 120));
+  // where every live blob is drawn: grid spot + own offset + its group's squash (anchored at the group's bottom)
+  for (const b of blobs) {
+    if (!b) continue;
+    const x = b.gi % W + 0.5, y = Math.floor(b.gi / W) + 0.5, st = b.grp;
+    const s = st ? Math.max(-0.4, Math.min(0.4, st.sq)) / (1 + 0.35 * (st.h - 1)) : 0;
+    b.sx = 1 + 0.5 * s; b.sy = 1 - s;
+    b.px = (st ? st.cx + (x - st.cx) * b.sx : x) + b.offX;
+    b.py = (st ? st.yb + (y - st.yb) * b.sy : y) + b.offY;
+  }
+  // zapped goo: a quick swell, then it drains down and away as one mass (strands between its cells survive)
+  for (const d of dying) {
+    d.t += dt;
+    const k = Math.max(0, (d.t - 0.07) / 0.65), swell = d.t < 0.07 ? 1 + d.t / 0.07 * 0.06 : 1.06;
+    const e = k * k * (3 - 2 * k), sc = swell * (1 - 0.8 * e);
+    d.sx = sc * (1 + 0.35 * e); d.sy = sc * (1 - 0.35 * e); d.str = 1 - Math.max(0, (k - 0.6) / 0.4);
+    d.px = d.gcx + (d.bx - d.gcx) * d.sx; d.py = d.gyb + (d.by - d.gyb) * d.sy;
+    if (k >= 1) d.dead = true;
+  }
+  dying = dying.filter(d => !d.dead);
+  for (const d of drops) { d.vy += g * 1.6 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.vx *= 1 - dt; d.life -= dt; }
+  drops = drops.filter(d => d.life > 0 && d.y < H + 1);
+  updateBonds(dt);
+}
+function updateBonds(dt) { // strands between same-colour neighbours: made when grid-adjacent, fade once not, snap when stretched
+  for (let i = 0; i < W * H; i++) {
+    const a = blobs[i]; if (!a) continue;
+    const x = i % W, y = Math.floor(i / W);
+    for (const j of [x < W - 1 ? i + 1 : -1, y < H - 1 ? i + W : -1]) {
+      const b = j >= 0 && blobs[j]; if (!b || b.color !== a.color) continue;
+      const key = Math.min(a.id, b.id) * 1e6 + Math.max(a.id, b.id);
+      if (!bonds.has(key)) bonds.set(key, { a, b, life: 1 });
+    }
+  }
+  for (const [key, bd] of bonds) {
+    const { a, b } = bd;
+    if (a.dead || b.dead) { bonds.delete(key); continue; }
+    const together = (a.dying && b.dying) || (!a.dying && !b.dying && adjacent(a, b) && blobs[a.gi] === a && blobs[b.gi] === b);
+    bd.life = together ? 1 : bd.life - dt / 0.5;
+    bd.L = Math.hypot(b.px - a.px, b.py - a.py);
+    if (bd.life <= 0 || bd.L > GOO.strandBreak) bonds.delete(key);
+  }
+}
+function pose(sq) { const s = Math.max(-0.6, Math.min(0.6, sq)); return [1 + s * (s > 0 ? 0.5 : 0.25), 1 - s]; }
+
+// ---- splat instances: (ax, ay, bx, by) (colour, strength, angle, strandThin) (sx, sy) ----
+const MAXI = 2048, STRIDE = 10, inst = new Float32Array(MAXI * STRIDE);
+let nInst = 0;
+function addInst(ax, ay, bx, by, color, str, ang, thin, sx, sy) {
+  if (nInst >= MAXI || str <= 0.002) return;
+  inst.set([ax, ay, bx, by, color, str, ang, thin, sx, sy], nInst++ * STRIDE);
+}
+function buildInstances() {
+  nInst = 0;
+  for (const b of blobs) if (b) addInst(b.px, b.py, b.px, b.py, b.color, 1, 0, 1, b.sx, b.sy);
+  for (const d of dying) addInst(d.px, d.py, d.px, d.py, d.color, d.str, 0, 1, d.sx, d.sy);
+  const p = G.piece; pieceVis = [];
+  if (p) { // piece cells rotate around the piece centre by the lagging visual angle
+    const cs = p.cells.map(([x, y]) => [p.x + x + 0.5, p.y + y + 0.5]);
+    const cx = cs.reduce((s, c) => s + c[0], 0) / 4, cy = cs.reduce((s, c) => s + c[1], 0) / 4;
+    const ca = Math.cos(pv.a), sa = Math.sin(pv.a), [sx, sy] = pose(pv.sq);
+    for (const [x, y] of cs) {
+      const rx = (x - cx) * sx, ry = (y - cy) * sy;
+      const v = { x: cx + ca * rx - sa * ry + pv.x, y: cy + sa * rx + ca * ry + pv.y }; pieceVis.push(v);
+      addInst(v.x, v.y, v.x, v.y, p.color, 1, pv.a, 1, sx, sy);
+    }
+  }
+  for (const d of drops) { const s = d.r0 * Math.min(1, d.life / (d.life0 * 0.5)); addInst(d.x, d.y, d.x, d.y, d.color, 1, 0, 1, s, s); }
+  const bondStr = Math.min(1, GOO.merge * 2);
+  for (const bd of bonds.values()) {
+    const L = bd.L; if (!(L > 1.02)) continue; // at rest the cells' own kernels already join flat
+    const { a, b } = bd, brk = GOO.strandBreak;
+    const fade = Math.min(1, (brk - L) / (brk * 0.35));
+    const str = bondStr * bd.life * fade * Math.min(a.str, b.str);
+    addInst(a.px, a.py, b.px, b.py, a.color, str, 0, Math.max(0.3, Math.pow(L, -0.9)), 1, 1);
+  }
+}
+
+// ================= WebGL2 =================
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
+if (!gl) document.body.innerHTML = '<p style="padding:16px">WebGL2 is not available on this device.</p>';
+// Half-float targets need EXT_color_buffer_float (or the half-float one on some phones). Otherwise RGBA8 with scaled values.
+const forceRGBA8 = /rgba8/.test(location.search);
+const hasFloat = !forceRGBA8 && !!(gl.getExtension('EXT_color_buffer_float') || gl.getExtension('EXT_color_buffer_half_float'));
+let useFloat = hasFloat;
+
+const SPLAT_VS = `#version 300 es
+layout(location=0) in vec2 aQ;
+layout(location=1) in vec4 iA; layout(location=2) in vec4 iB; layout(location=3) in vec2 iC;
+uniform vec2 uRes, uOrigin; uniform float uCell, uR; uniform int uMode;
+out vec2 vP; flat out vec4 vA; flat out vec4 vB; flat out vec2 vC;
+void main(){
+  vA = iA; vB = iB; vC = iC;
+  float s = max(iC.x, iC.y);
+  float r = uMode == 0 ? uR * s * 1.42 : uR * s;              // 1.42 covers a rotated square kernel
+  vec2 m = (iA.xy + iA.zw) * 0.5, hx = abs(iA.zw - iA.xy) * 0.5 + r;
+  vec2 P = m + aQ * hx; vP = P;
+  vec2 px = P * uCell + uOrigin;                               // device px, y down
+  gl_Position = vec4(px.x / uRes.x * 2.0 - 1.0, 1.0 - px.y / uRes.y * 2.0, 0.0, 1.0);
+}`;
+const SPLAT_FS = `#version 300 es
+precision highp float; precision highp int;
+in vec2 vP; flat in vec4 vA; flat in vec4 vB; flat in vec2 vC;
+uniform float uR, uOut; uniform int uMode;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
+// cos^2 bump: copies spaced 1 apart add up to exactly 1, so a filled group is perfectly flat inside (no dimples, no cores)
+float s1(float t){ if (abs(t) >= 1.0) return 0.0; float c = cos(1.5707963 * t); return c * c; }
+float wy(float r2){ float t = max(1.0 - r2, 0.0); return t * t * t; }  // Wyvill soft-object kernel
+void main(){
+  vec2 a = vA.xy, b = vA.zw, d = b - a; float L = length(d), v;
+  if (L < 1e-4) {                                              // a cell (or drop): one kernel
+    vec2 q = vP - a;
+    if (uMode == 0) { float c = cos(vB.z), s = sin(vB.z); q = vec2(c * q.x + s * q.y, -s * q.x + c * q.y);
+      v = s1(q.x / (uR * vC.x)) * s1(q.y / (uR * vC.y)); }
+    else { q /= vC; v = wy(dot(q, q) / (uR * uR)); }
+  } else {                                                     // a strand between two same-colour cells
+    vec2 t = d / L, q = vP - a; float u = dot(q, t), pp = q.x * t.y - q.y * t.x;
+    if (uMode == 0) {                                          // fills exactly the gap the two end kernels leave
+      float al = (u <= 0.0 || u >= L) ? 0.0 : max(0.0, 1.0 - s1(u / uR) - s1((L - u) / uR));
+      float m = u / L, neck = mix(1.0, vB.w, 4.0 * m * (1.0 - m)); // full width at the ends, thinnest in the middle
+      v = al * s1(pp / (uR * neck));
+    } else { vec2 cp = q - t * clamp(u, 0.0, L); v = wy(dot(cp, cp) / (uR * uR)) * clamp(L - 1.0, 0.0, 1.0) * vB.w; }
+  }
+  v *= vB.y * uOut;
+  int c = int(vB.x + 0.5);
+  o0 = vec4(float(c == 1), float(c == 2), float(c == 3), float(c == 4)) * v;
+  o1 = vec4(float(c == 5) * v, 0.0, 0.0, 0.0);
+}`;
+const QUAD_VS = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const SHADE_FS = `#version 300 es
+precision highp float; precision highp int;
+uniform sampler2D uNA, uNB, uWA, uWB;       // narrow field (colours 1-4, 5) and wide "dome" field
+uniform vec2 uRes, uOrigin, uTexN, uTexW; uniform float uCell, uTime, uInN, uInW;
+uniform ivec2 uGrid; uniform vec3 uCols[6];
+uniform float uTh, uSeam, uBulge, uTrans, uAbsorb, uWet, uFres;
+out vec4 o;
+float pick(vec4 a, float b, int c){ return c == 5 ? b : a[c - 1]; }
+float rival(vec4 a, float b, int c){ if (c == 5) b = 0.0; else a[c - 1] = 0.0; return max(max(max(a.x, a.y), max(a.z, a.w)), b); }
+float fN(vec2 uv, int c){ vec4 a = texture(uNA, uv) * uInN; float b = texture(uNB, uv).r * uInN; return pick(a, b, c) - uSeam * rival(a, b, c); }
+float fW(vec2 uv, int c){ vec4 a = texture(uWA, uv) * uInW; float b = texture(uWB, uv).r * uInW; return max(pick(a, b, c) - 0.8 * rival(a, b, c), 0.0); }
+const float BEV = 0.42;                                       // edge bevel width, in field units
+float hEdge(float f){ float e = clamp((f - uTh) / BEV, 0.0, 1.0); float m = 1.0 - e; return 1.0 - m * m * m; }
+float hDome(float w){ return 1.0 - exp(-w * 0.35); }
+vec3 bgAt(vec2 p){                                            // the tank: dark, faint cell grid, glowing walls
+  vec2 gs = vec2(uGrid); float px = 1.0 / uCell;
+  vec3 bg = vec3(0.016, 0.024, 0.047);
+  if (p.x >= 0.0 && p.x <= gs.x && p.y <= gs.y) {
+    vec2 f = abs(fract(p) - 0.5);
+    bg = vec3(0.024, 0.036, 0.07) + 0.028 * smoothstep(0.5 - px * 1.5, 0.5, max(f.x, f.y));
+  }
+  float edge = p.y <= gs.y ? min(abs(p.x), abs(p.x - gs.x)) : 1e3;
+  if (p.x >= 0.0 && p.x <= gs.x) edge = min(edge, abs(p.y - gs.y));
+  return bg + vec3(0.08, 0.16, 0.3) * smoothstep(px * 3.0, 0.0, edge);
+}
+void main(){
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec2 p = (vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) - uOrigin) / uCell;   // cell units, y down
+  vec4 A = texture(uNA, uv) * uInN; float B = texture(uNB, uv).r * uInN;
+  float fv[5] = float[5](A.x, A.y, A.z, A.w, B);
+  int ci = 1; float f1 = fv[0], f2 = 0.0;
+  for (int i = 1; i < 5; i++) { if (fv[i] > f1) { f2 = f1; f1 = fv[i]; ci = i + 1; } else f2 = max(f2, fv[i]); }
+  float fe = f1 - uSeam * f2;                                  // the winning colour, pushed back by its rival = clean seam
+  float aa = max(fwidth(fe), 1e-4);
+  vec3 base = uCols[ci];
+  vec3 bg = bgAt(p);
+  float near = smoothstep(0.0, uTh, f1);
+  bg *= 1.0 - 0.45 * near;                                     // contact shadow around the goo
+  bg += base * 0.05 * uTrans * near;                           // light leaking out of the goo
+  if (fe < uTh - 3.0 * aa) { o = vec4(bg, 1.0); return; }
+  // ---- height = edge bevel x (base + one dome per group); its slope is the surface normal ----
+  vec2 eN = uTexN, eW = max(uTexW * 2.0, 0.2 * uCell / uRes); // dome slope over >= 0.2 cell: no facets, no half-float streaks
+  vec2 cN = eN * uRes / uCell, cW = eW * uRes / uCell;         // the sample steps, in cells
+  float e0 = hEdge(fe);
+  vec2 gE = vec2(hEdge(fN(uv + vec2(eN.x, 0.0), ci)) - hEdge(fN(uv - vec2(eN.x, 0.0), ci)),
+               -(hEdge(fN(uv + vec2(0.0, eN.y), ci)) - hEdge(fN(uv - vec2(0.0, eN.y), ci)))) / (2.0 * cN);
+  float w0 = fW(uv, ci), d0 = hDome(w0);
+  vec2 gD = vec2(hDome(fW(uv + vec2(eW.x, 0.0), ci)) - hDome(fW(uv - vec2(eW.x, 0.0), ci)),
+               -(hDome(fW(uv + vec2(0.0, eW.y), ci)) - hDome(fW(uv - vec2(0.0, eW.y), ci)))) / (2.0 * cW);
+  float baseH = 0.3, hs = 0.55;                                // hs = how tall a unit of height is, in cells
+  float h = e0 * (baseH + uBulge * d0);
+  vec2 gH = gE * (baseH + uBulge * d0) + e0 * uBulge * gD;
+  vec3 n = normalize(vec3(-gH * hs, 1.0));
+  vec3 nD = normalize(vec3(-(gE * 0.3 + uBulge * gD) * hs, 1.0)); // the group's dome alone: carries the one highlight
+  vec3 L = normalize(vec3(-0.5, -0.7, 0.75)), Hv = normalize(L + vec3(0.0, 0.0, 1.0));
+  // ---- body colour: Beer-Lambert from thickness (thin = clear/bright, thick = deep/saturated) ----
+  float T = e0 * (0.25 + d0);
+  float k = 1.0 - exp(-uAbsorb * 2.2 * T);
+  vec3 thinCol = mix(base, vec3(1.0), 0.18) * 1.05;
+  vec3 deepCol = base * base * 0.95;
+  vec3 body = mix(thinCol, deepCol, k);
+  float diff = max(dot(n, L), 0.0);
+  vec3 col = body * (0.55 + 0.55 * diff);
+  // ---- translucency: the tank (bent by the surface) shows through thin goo; light glows out of the far edge ----
+  vec3 seen = bgAt(p + n.xy * h * 0.35) * 2.2 * (base + 0.25) + base * 0.28;
+  col = mix(col, seen, uTrans * 0.75 * (1.0 - k) * (1.0 - 0.5 * e0));
+  vec2 nxy = n.xy / max(length(n.xy), 1e-4);
+  float sss = uTrans * (1.0 - e0) * max(dot(nxy, -normalize(L.xy)), 0.0);
+  col += base * sss * 0.65;
+  // ---- wet: one sharp highlight from the dome, a soft clearcoat, a fresnel rim ----
+  float nh = max(dot(nD, Hv), 0.0);
+  float spec = pow(nh, mix(30.0, 220.0, uWet)) * (0.25 + 1.3 * uWet) * smoothstep(0.15, 0.6, e0);
+  float sheen = pow(nh, 12.0) * 0.22 * uWet * smoothstep(0.3, 0.8, e0); // the same highlight's soft halo
+  float coat = pow(max(dot(n, Hv), 0.0), 14.0) * 0.12 * uWet;
+  float fr = pow(1.0 - n.z, 2.0) * uFres;
+  col = mix(col, vec3(0.72, 0.84, 1.0) * 0.85 + base * 0.35, fr * 0.55);
+  col += vec3(spec + coat) + mix(vec3(1.0), base, 0.3) * sheen;
+  float alpha = smoothstep(uTh - aa, uTh + aa, fe);
+  o = vec4(mix(bg, col, alpha), 1.0);
+}`;
+function compile(type, src) {
+  const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(vs, fs, names) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, vs)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const U = {}; for (const n of names) U[n] = gl.getUniformLocation(p, n);
+  return { p, U };
+}
+const SP = program(SPLAT_VS, SPLAT_FS, ['uRes', 'uOrigin', 'uCell', 'uR', 'uMode', 'uOut']);
+const SH = program(QUAD_VS, SHADE_FS, ['uNA', 'uNB', 'uWA', 'uWB', 'uRes', 'uOrigin', 'uTexN', 'uTexW', 'uCell', 'uTime', 'uInN', 'uInW',
+  'uGrid', 'uCols', 'uTh', 'uSeam', 'uBulge', 'uTrans', 'uAbsorb', 'uWet', 'uFres']);
+// splat geometry: one unit quad, instanced
+const splatVAO = gl.createVertexArray(); gl.bindVertexArray(splatVAO);
+gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+const instBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+gl.bufferData(gl.ARRAY_BUFFER, inst.byteLength, gl.DYNAMIC_DRAW);
+[[1, 4, 0], [2, 4, 16], [3, 2, 32]].forEach(([loc, n, off]) => {
+  gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, n, gl.FLOAT, false, STRIDE * 4, off); gl.vertexAttribDivisor(loc, 1); });
+const quadVAO = gl.createVertexArray();
+
+// two field targets (2 textures each, written together with drawBuffers): narrow at half res, wide dome at quarter res
+function makeTarget(w, h) {
+  const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  const tex = [0, 1].map(k => {
+    const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+    if (useFloat) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + k, gl.TEXTURE_2D, t, 0);
+    return t;
+  });
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+  const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+  return { fb, tex, w, h, ok };
+}
+let tN = null, tW = null;
+function makeTargets() {
+  for (const t of [tN, tW]) if (t) { gl.deleteFramebuffer(t.fb); t.tex.forEach(x => gl.deleteTexture(x)); }
+  const mk = () => { tN = makeTarget(Math.max(1, Math.round(canvas.width * GOO.fieldScale)), Math.max(1, Math.round(canvas.height * GOO.fieldScale)));
+    tW = makeTarget(Math.max(1, Math.round(canvas.width * GOO.domeScale)), Math.max(1, Math.round(canvas.height * GOO.domeScale))); };
+  mk();
+  if (useFloat && !(tN.ok && tW.ok)) { useFloat = false; for (const t of [tN, tW]) { gl.deleteFramebuffer(t.fb); t.tex.forEach(x => gl.deleteTexture(x)); } mk(); }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  const note = document.getElementById('mode'); if (note) note.textContent = useFloat ? 'half-float fields' : 'RGBA8 fallback fields';
+}
+// RGBA8 can only hold 0..1, so the fallback stores scaled-down values and the shade pass scales them back up
+const scaleN = () => useFloat ? 1 : 0.25, scaleW = () => useFloat ? 1 : 0.125;
+
+let dpr = 1, cell = 30, ox = 0, oy = 0;
+function layout() {
+  dpr = Math.min(window.devicePixelRatio || 1, GOO.maxDpr);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  const top = document.getElementById('top').getBoundingClientRect().bottom + 6;
+  const bot = document.getElementById('bottom').getBoundingClientRect().top - 6;
+  const availH = bot - top;
+  cell = Math.min((innerWidth - 32) / W, availH / 14);
+  const rows = Math.max(14, Math.min(24, Math.floor(availH / cell))); // tall phones get extra rows, no dead band
+  ox = (innerWidth - W * cell) / 2; oy = bot - rows * cell;
+  makeTargets();
+  if (rows !== H) { H = rows; newGame(); }
+}
+function splat(t, mode, reach, out) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb); gl.viewport(0, 0, t.w, t.h);
+  gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+  if (!nInst) return;
+  gl.uniform1f(SP.U.uR, reach); gl.uniform1i(SP.U.uMode, mode); gl.uniform1f(SP.U.uOut, out);
+  gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, nInst);
+}
+function draw(time) {
+  buildInstances();
+  // pass 1: splats, added up per colour channel
+  gl.useProgram(SP.p); gl.bindVertexArray(splatVAO);
+  gl.bindBuffer(gl.ARRAY_BUFFER, instBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, inst, 0, nInst * STRIDE);
+  gl.uniform2f(SP.U.uRes, canvas.width, canvas.height); gl.uniform2f(SP.U.uOrigin, ox * dpr, oy * dpr); gl.uniform1f(SP.U.uCell, cell * dpr);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  splat(tN, 0, 0.75 + 0.5 * GOO.merge, scaleN());
+  splat(tW, 1, GOO.domeReach, scaleW());
+  gl.disable(gl.BLEND);
+  // pass 2: full-res threshold + wet shading
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(SH.p); gl.bindVertexArray(quadVAO);
+  [tN.tex[0], tN.tex[1], tW.tex[0], tW.tex[1]].forEach((t, k) => { gl.activeTexture(gl.TEXTURE0 + k); gl.bindTexture(gl.TEXTURE_2D, t); });
+  const U = SH.U;
+  gl.uniform1i(U.uNA, 0); gl.uniform1i(U.uNB, 1); gl.uniform1i(U.uWA, 2); gl.uniform1i(U.uWB, 3);
+  gl.uniform2f(U.uRes, canvas.width, canvas.height); gl.uniform2f(U.uOrigin, ox * dpr, oy * dpr);
+  gl.uniform2f(U.uTexN, 1 / tN.w, 1 / tN.h); gl.uniform2f(U.uTexW, 1 / tW.w, 1 / tW.h);
+  gl.uniform1f(U.uCell, cell * dpr); gl.uniform1f(U.uTime, time);
+  gl.uniform1f(U.uInN, 1 / scaleN()); gl.uniform1f(U.uInW, 1 / scaleW());
+  gl.uniform2i(U.uGrid, W, H); gl.uniform3fv(U.uCols, COLORS.flat());
+  gl.uniform1f(U.uTh, GOO.threshold); gl.uniform1f(U.uSeam, GOO.seam); gl.uniform1f(U.uBulge, GOO.bulge);
+  gl.uniform1f(U.uTrans, GOO.translucency); gl.uniform1f(U.uAbsorb, GOO.absorb); gl.uniform1f(U.uWet, GOO.wetness); gl.uniform1f(U.uFres, GOO.fresnel);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+// ================= Input + UI (same controls as sketch 1) =================
+let down = null;
+canvas.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+canvas.addEventListener('pointerup', e => {
+  if (!down) return; const dx = e.clientX - down.x, dy = e.clientY - down.y; down = null;
+  if (dy > 50 && dy > Math.abs(dx)) return hardDrop();            // swipe down
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) return move(Math.sign(dx));
+  const px = (e.clientX - ox) / cell, py = (e.clientY - oy) / cell, gx = Math.floor(px), gy = Math.floor(py);
+  if (gx >= 0 && gx < W && gy >= 0 && gy < H && G.grid[idx(gx, gy)]) return pop(gx, gy); // tap goop
+  const p = G.piece;
+  if (p && p.cells.some(([x, y]) => Math.hypot(p.x + x + 0.5 - px, p.y + y + 0.5 - py) < 1.3)) return rotate(); // tap piece
+  move(e.clientX < innerWidth / 2 ? -1 : 1);                       // tap left / right half
+});
+addEventListener('keydown', e => {
+  const k = { ArrowLeft: () => move(-1), ArrowRight: () => move(1), ArrowUp: rotate, ArrowDown: step, ' ': hardDrop }[e.key];
+  if (k) { k(); e.preventDefault(); }
+});
+const $ = id => document.getElementById(id);
+$('bLeft').onclick = () => move(-1); $('bRight').onclick = () => move(1); $('bRot').onclick = rotate; $('bDrop').onclick = hardDrop;
+$('bFill').onclick = fillBoard; $('bReset').onclick = newGame;
+$('bKnobs').onclick = () => { $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); };
+$('panel').innerHTML = KNOBS.map(([k, lo, hi, st]) =>
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`).join('')
+  + '<p>Values live in the GOO object at the top of the file. Gravity ' + GOO.gravity + ' m/s², viscosity ' + GOO.viscosity + ' (low). <span id="mode"></span></p>';
+for (const [k] of KNOBS) $('k_' + k).oninput = e => { GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k]; };
+addEventListener('resize', layout);
+
+// ================= Main loop =================
+let last = performance.now(), frames = 0, fpsT = last, fps = 0;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.05); last = now;
+  updateGame(dt);                                  // rules first...
+  for (const e of G.events) handle(e);             // ...then the goo reacts to what happened
+  G.events.length = 0;
+  updateVisuals(dt); draw(now / 1000);
+  frames++;
+  if (now - fpsT >= 1000) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; $('fps').textContent = fps.toFixed(0) + ' fps'; }
+  requestAnimationFrame(frame);
+}
+layout();
+window.goo = { G, GOO, fps: () => fps, useFloat: () => useFloat, move, rotate, hardDrop, fillBoard, newGame, pop, groupAt, step }; // for testing
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
