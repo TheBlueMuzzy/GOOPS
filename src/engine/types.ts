@@ -42,6 +42,8 @@ export interface ShiftState {
   ghost: [number, number][] // where the piece would land
   next: Color[] | null // preview of the next piece's colours (shape preview later)
   held: Color[] | null
+  nextCells?: [number, number][] | null // the next piece's shape: [x, y] offsets, same order as `next` (added by F13)
+  heldCells?: [number, number][] | null // the held piece's shape (added by F13)
   pressure: number // 0..1 (v1: a timer — 1 means the shift is over)
   pressureRow: number // y of the pressure line (goop at or below it can pop)
   timeLeftMs: number
@@ -51,6 +53,7 @@ export interface ShiftState {
   score: number
   status: ShiftStatus
   rank: number
+  leftoverPenalty?: number // points taken off at the end for goop left in the tank (v1: 50 per cell) (added by F13)
 }
 
 // Everything that happens, in order, for the goo and the screens to react to.
@@ -69,6 +72,8 @@ export type ShiftEvent =
   | { type: 'crack'; crack: Crack } // a new crack appeared
   | { type: 'plug'; crackId: number; plugged: boolean }
   | { type: 'end'; status: ShiftStatus }
+  | { type: 'hold' } // the falling piece was swapped with the held one (added by F13)
+  | { type: 'reject'; action: ShiftAction['type'] } // an action couldn't happen (v1 played a "nope" sound) (added by F13)
 
 export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column

@@ -1,0 +1,86 @@
+// Piece shapes: picking one, mirroring, rotating, and testing where it fits.
+import type { Color } from './types'
+import type { ShiftConfig } from './config'
+import { shapeSet } from './config'
+import type { Rng } from './rng'
+import { wrapX } from './tank'
+
+export type Cell = [x: number, y: number]
+
+// A piece before it is placed: its base shape and colour (what "next" and "held" hold).
+export interface PieceDef {
+  name: string
+  cells: Cell[]
+  color: Color
+  corrupted: boolean
+  noRotate: boolean
+}
+
+// The falling piece. It lives in SCREEN columns: column `offset` from the centre (0 = straight down the
+// middle). Its tank column is spin + offset, so turning the tank moves it through the tank.
+export interface FallingPiece {
+  def: PieceDef
+  cells: Cell[] // current rotation, relative to the piece origin
+  center: Cell // fixed rotation point (rounded middle of the base shape, as v1)
+  rotation: number // 0..3
+  offset: number // screen columns from the centre; only wall kicks change it
+  y: number // origin row
+  fall: number // 0..1 progress towards the next row (for smooth drawing only — rules use `y`)
+}
+
+// v1 mirrors only shapes that change when flipped (flip = negate x).
+export function mirror(cells: Cell[]): Cell[] {
+  const symmetric = cells.every(([x, y]) => cells.some(([ox, oy]) => ox === -x && oy === y))
+  return symmetric ? cells : cells.map(([x, y]) => [0 - x, y] as Cell) // 0 - x so column 0 stays 0, not -0
+}
+
+// Pick a random piece from a size zone ('tetra' | 'penta' | 'hexa'), as v1 does.
+export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCount: number): PieceDef {
+  const corrupted = rng.chance(config.pieces.corruptChance)
+  const set = shapeSet(config, zone)
+  const shape = rng.pick(corrupted ? set.corrupted : set.normal)
+  let cells = shape.cells.map(([x, y]) => [x, y] as Cell)
+  if (rng.chance(config.pieces.mirrorChance)) cells = mirror(cells)
+  return { name: shape.name, cells, color: 1 + rng.int(colorCount), corrupted, noRotate: !!shape.noRotate }
+}
+
+export function rotationCenter(cells: Cell[]): Cell {
+  const sx = cells.reduce((sum, c) => sum + c[0], 0)
+  const sy = cells.reduce((sum, c) => sum + c[1], 0)
+  return [Math.round(sx / cells.length), Math.round(sy / cells.length)]
+}
+
+// Quarter turn around a fixed point. dir 1 = clockwise (on screen, y down).
+export function rotateCells(cells: Cell[], dir: 1 | -1, center: Cell): Cell[] {
+  const [cx, cy] = center
+  return cells.map(([x, y]) => {
+    const dx = x - cx
+    const dy = y - cy
+    return (dir === 1 ? [-dy + cx, dx + cy] : [dy + cx, -dx + cy]) as Cell
+  })
+}
+
+export function newFallingPiece(def: PieceDef, offset: number, y: number): FallingPiece {
+  return { def, cells: def.cells.map(([x, y]) => [x, y] as Cell), center: rotationCenter(def.cells), rotation: 0, offset, y, fall: 0 }
+}
+
+// Absolute tank cells for the piece at a given origin. Rows above 0 are allowed (spawn overhang).
+export function placeCells(cells: Cell[], originX: number, originY: number, width: number): Cell[] {
+  return cells.map(([x, y]) => [wrapX(originX + x, width), originY + y] as Cell)
+}
+
+// Blocked by the floor or by goop. Cells above the tank never collide (v1).
+export function collides(grid: Uint8Array, cells: Cell[], width: number, height: number): boolean {
+  for (const [x, y] of cells) {
+    if (y >= height) return true
+    if (y >= 0 && grid[y * width + x] !== 0) return true
+  }
+  return false
+}
+
+// How far the piece could drop from row y before it lands.
+export function landingRow(grid: Uint8Array, cells: Cell[], originX: number, y: number, width: number, height: number): number {
+  let row = y
+  while (!collides(grid, placeCells(cells, originX, row + 1, width), width, height)) row++
+  return row
+}
