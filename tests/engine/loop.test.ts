@@ -221,6 +221,7 @@ describe('rupture', () => {
     dropPiece(shift, config)
     const events = dropPiece(shift, config)
     expect(ofType(events, 'rupture')).toEqual([{ type: 'rupture', reason: 'overflow' }])
+    expect(shift.state.ruptureReason).toBe('overflow') // the end report says why
     expect(shift.state.phase).toBe('rupture')
     expect(shift.state.status).toBe('playing')
     expect(shift.state.piece).toBe(null)

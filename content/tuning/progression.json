@@ -1,0 +1,9 @@
+{
+  "_about": "Ranks + XP (v1 numbers, design/progression.md). A shift's final score becomes XP; rank comes from all the XP ever earned. xpToNext(rank) = xpBase + xpPerRank × rank. Every shift earns at least max(minXp, minXpPerRank × rank).",
+  "maxRank": 50,
+  "xpBase": 3500,
+  "xpPerRank": 250,
+  "minXp": 100,
+  "minXpPerRank": 100,
+  "scrapsPerRank": 1
+}

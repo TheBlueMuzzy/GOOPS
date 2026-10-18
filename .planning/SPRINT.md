@@ -5,10 +5,10 @@ Decided at planning: F03 crack colours = v1 (only the matching colour seals) · 
 
 ## F20 🧱 Progression + save
 Done when: a shift's score turns into XP (v1 formula), ranks and scraps go up, all of it survives a reload, and the next shift plays at the new rank.
-- [ ] 🤖 1. XP from score: v1 formula (3,500 + 250 × rank per rank, min 100 × rank per shift, 1 scrap per rank) — content/tuning/progression.json, src/progress/
-- [ ] 🤖 2. Saved in the browser, versioned — src/progress/save.ts
-- [ ] 🤖 3. Rank feeds the shift (colours, junk, crack quota by rank) — src/ui/App.tsx
-- [ ] 🤖 4. Tests: XP maths, multi-rank jumps, the minimum, an old/broken save
+- [x] 🤖 1. XP from score: v1 formula (3,500 + 250 × rank per rank, min 100 × rank per shift, 1 scrap per rank) — content/tuning/progression.json, src/progress/
+- [x] 🤖 2. Saved in the browser, versioned — src/progress/save.ts
+- [x] 🤖 3. Rank feeds the shift (colours, junk, crack quota by rank) — src/ui/App.tsx
+- [x] 🤖 4. Tests: XP maths, multi-rank jumps, the minimum, an old/broken save
 Check: unit tests; a reload keeps rank + XP.
 
 ## F21 🎮 The console as the menu
@@ -34,3 +34,5 @@ Check: unit tests for both test upgrades; no real upgrade shows in the game.
 
 ## Notes
 - Mid-shift console (swipe up / W / ↑) still pauses the shift — v1 kept it running; that's F06 (breakdowns).
+- F20: v1's XP = the final score (after the leftover penalty), floored. v1's code floored at 100 × rank (0 at rank 0); its PRD said at least 100 — both kept: max(minXp 100, 100 × rank). Only total XP + scraps spent are saved (`goops-progress`, v1); rank, XP-into-rank and scraps are worked out from them. New players start at rank 0 (4 colours, quota 4); every shift was rank 1 before. Dev/tests: `?rank=12`.
+- F20 fix on the way: the end handler did its work inside a React state update (React may run those twice → double XP); it now reads the engine from a ref.

@@ -1,11 +1,13 @@
 // The game's screens. Console-lite (a plain menu) stands in for the real console-as-menu until that's designed.
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Bar, GameOver, Hud, HudText, MainMenu, Pause, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type ShiftEngine, type ShiftStatus } from '../engine'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
+import { rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
+import { loadProgress, saveProgress } from '../progress/save'
 import { art } from './art'
 import shiftConfig from '../../content/tuning/shift.json'
 import settingsJson from '../../content/ui/settings.json'
@@ -16,10 +18,13 @@ const HUD_RESERVE = 128 // CSS px kept free above the tank for the HUD: its two 
 const fill = (s: string, vars: Record<string, number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.
-function newEngine(): ShiftEngine {
-  const fixed = Number(new URLSearchParams(location.search).get('seed'))
-  const seed = fixed || Math.floor(Math.random() * 1e9)
-  return createShift(shiftConfig, { seed, rank: 1, wallKick: wallKick.get() })
+// The shift plays at the player's saved rank (colours, starting junk, crack quota). Dev/tests: ?rank=12 forces one.
+function newEngine(progress: Progress): ShiftEngine {
+  const params = new URLSearchParams(location.search)
+  const seed = Number(params.get('seed')) || Math.floor(Math.random() * 1e9)
+  const forced = import.meta.env.DEV ? params.get('rank') : null
+  const rank = forced !== null ? Number(forced) : rankInfo(progress).rank
+  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get() })
 }
 
 const SettingsScreen = () => (
@@ -31,17 +36,26 @@ const onAlert = (kind: 'quotaMet' | 'rupture') =>
 export function App() {
   const [engine, setEngine] = useState<ShiftEngine | null>(null)
   const [hud, setHud] = useState<HudSnapshot | null>(null)
-  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow' } | null>(null)
+  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward } | null>(null)
   const open = useScreens()
+  const engineRef = useRef<ShiftEngine | null>(null)
+  const progressRef = useRef<Progress>(loadProgress())
 
-  const start = useCallback(() => { setResult(null); setHud(null); setEngine(newEngine()) }, [])
-  const toMenu = useCallback(() => { while (screens.current.length) screens.pop(); setEngine(null); setResult(null) }, [])
+  const start = useCallback(() => {
+    const e = newEngine(progressRef.current)
+    engineRef.current = e
+    setResult(null); setHud(null); setEngine(e)
+  }, [])
+  const toMenu = useCallback(() => { while (screens.current.length) screens.pop(); engineRef.current = null; setEngine(null); setResult(null) }, [])
   const onEnd = useCallback((status: ShiftStatus) => {
-    setEngine((e) => {
-      if (e) setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
-        cause: e.state.ruptureReason ?? 'integrity' })
-      return e
-    })
+    const e = engineRef.current
+    if (!e) return
+    // the final score (after the leftover penalty) becomes XP — saved right away
+    const reward = rewardShift(progressRef.current, e.state.score)
+    progressRef.current = reward.progress
+    saveProgress(reward.progress)
+    setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
+      cause: e.state.ruptureReason ?? 'integrity', reward })
     toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
     screens.push('end')
   }, [])

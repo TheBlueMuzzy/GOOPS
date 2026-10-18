@@ -59,6 +59,15 @@ try {
     await page.screenshot({ path: `${OUT}/${name}-4-end.png` })
     const endShown = await page.getByText(/Shift (complete|failed)/).count()
     console.log(name, JSON.stringify(state), 'end screen:', endShown ? 'yes' : 'NO', errors.length ? 'ERRORS: ' + errors.join(' | ') : 'no errors')
+    // F20: the shift's score became XP, saved; a reload keeps it; ?rank= reaches the engine (dev only)
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') || 'null'))
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=12`)
+    await page.getByRole('button', { name: 'Start shift' }).click()
+    await page.waitForTimeout(300)
+    const reloaded = await page.evaluate(() => ({ save: JSON.parse(localStorage.getItem('goops-progress') || 'null'), rank: window.__goops.engine.state.rank }))
+    const xpOk = saved?.v === 1 && saved.totalXp >= 100 && reloaded.save?.totalXp === saved.totalXp && reloaded.rank === 12
+    console.log(name, 'xp saved:', JSON.stringify(saved), 'after reload:', JSON.stringify(reloaded), xpOk ? 'ok' : 'XP PROBLEM')
+    if (!xpOk) failed++
     if (!endShown || errors.length) failed++
     await page.close()
   }
