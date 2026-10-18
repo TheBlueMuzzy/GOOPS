@@ -285,4 +285,6 @@ export class FakeEngine implements ShiftEngine {
   }
 
   setWallKick(): void {} // the fake engine has only one kick rule
+  snapshot(): never { throw new Error('The goo lab fake engine has no snapshots.') }
+  restore(): void { throw new Error('The goo lab fake engine has no snapshots.') }
 }

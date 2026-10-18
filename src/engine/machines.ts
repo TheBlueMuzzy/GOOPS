@@ -49,6 +49,17 @@ export class Machines {
     this.state = { laser: machine('laser'), visor: machine('visor'), controls: machine('controls') }
   }
 
+  // A snapshot (snapshot.ts): the meters plus the two inner timers
+  save() {
+    return { state: structuredClone(this.state), visorQuietMs: this.visorQuietMs, controlsIdleMs: this.controlsIdleMs, atConsole: this.atConsole }
+  }
+  load(saved: ReturnType<Machines['save']>): void {
+    for (const id of MACHINE_IDS) Object.assign(this.state[id], saved.state[id])
+    this.visorQuietMs = saved.visorQuietMs
+    this.controlsIdleMs = saved.controlsIdleMs
+    this.atConsole = saved.atConsole
+  }
+
   isBroken(id: MachineId): boolean {
     return this.state[id].broken
   }

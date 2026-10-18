@@ -5,6 +5,8 @@ export interface Rng {
   int(n: number): number // 0..n-1
   chance(p: number): boolean // true with probability p
   pick<T>(items: T[]): T
+  save(): number // where the sequence is (for a snapshot)
+  load(at: number): void // carry on from a saved place: the same numbers come next
 }
 
 export function createRng(seed: number): Rng {
@@ -22,5 +24,7 @@ export function createRng(seed: number): Rng {
     int,
     chance: (p) => next() < p,
     pick: (items) => items[int(items.length)],
+    save: () => a,
+    load: (at) => { a = at >>> 0 },
   }
 }

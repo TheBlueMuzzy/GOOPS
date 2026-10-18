@@ -1,5 +1,8 @@
 // One shift of Goops. Pure — time only moves through tick(ms), randomness only through the seeded rng.
 // The screen sends actions in, reads `state`, and takes events out.
+// LIVE TUNING: `config` (and options.breakdowns) are read at the moment each number is used, never copied — so the
+// game can hand in its live tuning import and the Dev Kit's sliders change the next tick. Fixed when the shift
+// starts (by design, like the rank): the tank's size, the colours in play and the crack quota.
 // The loop (GDD §4): pressure rises → cracks come faster → open cracks drain tank integrity → at 0 the tank
 // ruptures → pressure drains to 0 while you zap what you can → the shift ends (won if the crack quota was met).
 import type { AbilityState, Group, RejectReason, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, WallKickMode } from './types'
@@ -24,6 +27,7 @@ import { popPoints, popRefundMs } from './score'
 import { type Modifiers, clampModifiers } from './upgrades'
 import { ABILITY_EFFECTS, type AbilitySpec, type ActiveEffects } from './abilities'
 import { type BreakdownConfig, Machines } from './machines'
+import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
 
 export interface ShiftOptions {
   seed: number
@@ -47,7 +51,8 @@ class Shift implements ShiftEngine {
   readonly state: ShiftState
   private readonly config: ShiftConfig
   private readonly rng: Rng
-  private readonly colorCount: number
+  private colorCount: number
+  private readonly options: ShiftOptions
   private events: ShiftEvent[] = []
   private book: GroupBook = { fillMs: new Map(), nextId: 1 }
   private nextCrackId = 1
@@ -72,6 +77,7 @@ class Shift implements ShiftEngine {
 
   constructor(config: ShiftConfig, options: ShiftOptions) {
     this.config = config
+    this.options = options
     this.rng = createRng(options.seed)
     const { width, height, bufferRows, visibleWidth } = config.tank
     this.colorCount = paletteSize(config, options.rank)
@@ -136,6 +142,78 @@ class Shift implements ShiftEngine {
 
   setWallKick(mode: WallKickMode): void {
     this.wallKick = mode
+  }
+
+  // ---------------------------------------------------------------- snapshots (the Dev Kit; snapshot.ts)
+
+  snapshot(): ShiftSnapshot {
+    const s = this.state
+    const o = this.options
+    return structuredClone({
+      kind: SNAPSHOT_KIND,
+      version: SNAPSHOT_VERSION,
+      options: { seed: o.seed, rank: o.rank, wallKick: this.wallKick, modifiers: { ...this.mods }, abilities: o.abilities ?? [] },
+      width: s.width,
+      height: s.height,
+      rng: this.rng.save(),
+      state: {
+        grid: Array.from(s.grid), spin: s.spin, pressure: s.pressure, integrity: s.integrity, phase: s.phase,
+        ruptureReason: s.ruptureReason, cracks: s.cracks, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
+        quotaMet: s.quotaMet, score: s.score, status: s.status, leftoverPenalty: s.leftoverPenalty ?? null,
+        groups: [...s.groups.values()], abilities: this.abilities, effects: this.effects,
+      },
+      inner: {
+        fillMs: [...this.book.fillMs], nextGroupId: this.book.nextId, nextCrackId: this.nextCrackId, colorCount: this.colorCount,
+        piece: this.piece, nextDef: this.nextDef, heldDef: this.heldDef, softDrop: this.softDrop, lockMs: this.lockMs,
+        lockResets: this.lockResets, crackTimerMs: this.crackTimerMs, popStreak: this.popStreak, playedMs: this.playedMs,
+        primed: [...this.primed], machines: this.machines.save(),
+      },
+    })
+  }
+
+  restore(snapshot: ShiftSnapshot): void {
+    const s = this.state
+    if (snapshot.width !== s.width || snapshot.height !== s.height) {
+      throw new Error(`This snapshot's tank is ${snapshot.width}×${snapshot.height}; the game's is ${s.width}×${s.height} now.`)
+    }
+    const x = structuredClone(snapshot) // nothing shared with the saved copy
+    const st = x.state
+    this.rng.load(x.rng)
+    s.grid = Uint8Array.from(st.grid)
+    s.groupOf = new Int32Array(s.width * s.height).fill(-1)
+    s.groups = new Map(st.groups.map((g) => [g.id, g]))
+    for (const g of st.groups) for (const i of g.cells) s.groupOf[i] = g.id
+    Object.assign(s, {
+      spin: st.spin, integrity: st.integrity, phase: st.phase, ruptureReason: st.ruptureReason, cracks: st.cracks,
+      cracksSealed: st.cracksSealed, cracksNeeded: st.cracksNeeded, quotaMet: st.quotaMet, score: st.score,
+      status: st.status, rank: x.options.rank,
+    })
+    if (st.leftoverPenalty === null) delete s.leftoverPenalty
+    else s.leftoverPenalty = st.leftoverPenalty
+    this.setPressure(st.pressure)
+    this.abilities.splice(0, this.abilities.length, ...st.abilities)
+    for (const k of Object.keys(this.effects)) delete this.effects[k as keyof ActiveEffects]
+    Object.assign(this.effects, st.effects)
+    const inner = x.inner
+    this.book = { fillMs: new Map(inner.fillMs), nextId: inner.nextGroupId }
+    this.nextCrackId = inner.nextCrackId
+    this.colorCount = inner.colorCount
+    this.piece = inner.piece
+    this.nextDef = inner.nextDef
+    this.heldDef = inner.heldDef
+    this.softDrop = inner.softDrop
+    this.lockMs = inner.lockMs
+    this.lockResets = inner.lockResets
+    this.crackTimerMs = inner.crackTimerMs
+    this.popStreak = inner.popStreak
+    this.playedMs = inner.playedMs
+    this.wallKick = x.options.wallKick
+    this.primed.clear()
+    for (const [id, cells] of inner.primed) this.primed.set(id, cells)
+    s.primed = [...this.primed.keys()]
+    this.machines.load(inner.machines)
+    this.events = []
+    this.refreshView()
   }
 
   tick(ms: number): void {
