@@ -33,7 +33,7 @@ Goal: every design question the remake needs is answered, so /define can write t
   what: B would change the core rules and the "goo never decides a rule" pillar; the L5 sketch proves whether it's fun first
 - 📐 F03 ❓ Crack colours: must the goop match? What does a wrong colour do? — must:alpha
   what: covering + zapping seals a crack (settled by the story); colour rules still open
-- 📐 F04 ❓ Pressure: a timer, or how full the tank is? — must:alpha
+- ✅ F04 Pressure: rises over time, zaps vent it, cracks grow with it, integrity → rupture ends the shift (GDD §4) — must:alpha
 - 📐 F05 ❓ Shift length: snack (75 s) or sit-down (up to 115 s)? — must:alpha · needs: F04
 - 📐 F06 ❓ Breakdowns as choices, not punishments; pause or slow at the console? — must:alpha · needs: F01
 - 📐 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06
@@ -73,4 +73,6 @@ Goal: one full shift plays on phone and PC with living goo; Jelly or Particle in
 
 ## Parking lot
 - 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
+- 💡 2026-10-17 — Pixel look: the UI drawn as small pixels, and eventually the goop too ("pixellated goop would look cool") (Muzzy)
+- 💡 2026-10-17 — Repair bots: an upgrade — one or more small bots float around the tank sealing cracks for you (much later) (Muzzy)
 - 💡 2026-10-16 — The goop is semi-sentient: maybe it acts a little on its own (creeps, reaches, hides a crack)? (Claude's suggestion)

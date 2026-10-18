@@ -30,6 +30,22 @@
 
 ## 4. How it plays  (v1 as it shipped; /define confirms or tunes)
 - **Core loop:** spin the tank → drop the piece → merge same colours → wait for goop to fill → pop it below the pressure line → seal colour-matched cracks → finish the shift → rank up at the console.
+- **Shift loop — redesign (Muzzy, 2026-10-17, F04):** "pressure and cracks make sense" — the tank fails because of cracks, not a timer.
+  - **Pressure** rises slowly over time; the pop line rises with it (more goop you can zap). **Zapping goop lowers pressure** (goop is material in the tank; removing it vents — v1's refund maths). Caps at 100%.
+  - **Cracks** form anywhere below the pressure line where there's no goop, **faster the higher the pressure**; at 100% they come at a rate nobody can keep up with, so the shift ends.
+  - **Tank integrity** meter: every open crack drains a tiny amount per second; sealing a crack slows the drain. Muzzy worries about pacing — tune by playing; fallback = "X of 10 cracks open → rupture".
+  - **Rupture** (integrity 0, or a piece has no room to spawn): pressure drains fast; pieces keep coming; you zap what you can before it hits 0 (the pop line sinks with it) → shift over. Leftover goop costs points.
+  - **Success = the quota** (seal X cracks). A "Quota met" banner, then play on to the rupture; each crack sealed after it = bonus. **Score = how well you did** (big colonies, little left behind, fast-drop multipliers).
+  - Upgrades this opens: slower depressurising (more time at the end), tougher tank (more cracks before rupture), repair bots (Ideas).
+- **Wall kick** (a rotation blocked by goop): a Settings toggle to test both — **Rotate vat** (the tank turns a column, the piece stays centred) or **Shunt piece** (v1: the piece slides over). **No hard drop** (touch or keys), as v1.
+- **Controls (Muzzy, 2026-10-17): one set, same timing on every input, no duplicates.**
+  | Action | Touch | Left hand | Right hand |
+  |---|---|---|---|
+  | Move | drag sideways | A / D | ← / → |
+  | Rotate ccw / cw | tap left / right half | Q / E | Right Ctrl / Numpad 0 |
+  | Fast drop | drag down | S | ↓ |
+  | Swap | hold 1.5 s | hold R 1.5 s | hold Right Shift 1.5 s |
+  | Console | swipe up | W | ↑ |
 - Full v1 rules and systems: `research/v1-review.md` §1–2 and `research/v1/PRD.md`.
 
 ## 5. Systems
@@ -40,6 +56,7 @@ Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities 
 ## 6. Look & sound
 Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of bright, wet, living goop. The intercom is mostly static, with key words coming through in green. v1 audio was placeholder synth beeps; the remake uses the framework audio module. Goo look directions: `research/goo-feel.md` §4.
 - **Goo (F02, 2026-10-17): L4 Jelly.** Each same-colour group is one glossy, translucent soft body that springs back to its grid shape and jiggles as one; the piece glides down smoothly (no per-cell lurch). The goo follows the grid (F02b = A): it's the costume, never the rules. Muzzy's values: `research/goo-lab/picks.json` (sketch: `research/sketches/lab-L4-jelly.html`).
+- **Art (Muzzy):** use his console art in `art/` (background, title, buttons up/down, dial, lights, slider, periscope, rank meter, end-game screen). Kit Neon only for small bits with no art.
 - **Zap (open):** the laser should explode/harden the goo, not pop it (Muzzy, 2026-10-17). To design later.
 
 ## 7. Scope
