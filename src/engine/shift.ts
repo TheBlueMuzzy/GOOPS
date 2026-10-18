@@ -2,7 +2,7 @@
 // The screen sends actions in, reads `state`, and takes events out.
 // The loop (GDD §4): pressure rises → cracks come faster → open cracks drain tank integrity → at 0 the tank
 // ruptures → pressure drains to 0 while you zap what you can → the shift ends (won if the crack quota was met).
-import type { AbilityState, Group, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, WallKickMode } from './types'
+import type { AbilityState, Group, RejectReason, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, WallKickMode } from './types'
 import type { ShiftConfig } from './config'
 import { cracksNeededFor, junkCount, paletteSize } from './config'
 import { createRng, type Rng } from './rng'
@@ -60,6 +60,7 @@ class Shift implements ShiftEngine {
   private lockResets = 0 // spins/rotations that restarted the lock timer for this piece
   private crackTimerMs = 0
   private popStreak = 0 // pops since the last piece landed
+  private rejectReason: RejectReason | undefined // why the current action was refused (set by pop; F26)
   private playedMs = 0 // time since the shift started (picks the piece-size zone)
   private wallKick: WallKickMode
   private readonly mods: Modifiers // upgrade modifiers; all 1 (no change) without upgrades
@@ -150,6 +151,7 @@ class Shift implements ShiftEngine {
   act(action: ShiftAction): void {
     if (this.state.status !== 'playing') return
     let ok = true
+    this.rejectReason = undefined
     switch (action.type) {
       case 'spin':
         ok = this.spin(action.dir)
@@ -174,7 +176,7 @@ class Shift implements ShiftEngine {
         if (ok && action.machine === 'laser') this.clearPrimed()
         break
     }
-    if (!ok) this.events.push({ type: 'reject', action: action.type })
+    if (!ok) this.events.push(this.rejectReason ? { type: 'reject', action: action.type, reason: this.rejectReason } : { type: 'reject', action: action.type })
     this.refreshView()
   }
 
@@ -380,7 +382,13 @@ class Shift implements ShiftEngine {
     if (!Number.isInteger(x) || !Number.isInteger(y) || y < 0 || y >= s.height) return false
     const id = s.groupOf[y * s.width + wrapX(x, s.width)]
     const g = s.groups.get(id)
-    if (!g || !this.canPop(g)) return false
+    if (!g) return false
+    if (!this.canPop(g)) {
+      // say why (F26): the line is the reason that waiting won't fix, so it wins when both are true
+      const topRow = Math.floor(g.cells[0] / s.width)
+      this.rejectReason = topRow < popLine(s) ? 'aboveLine' : 'filling'
+      return false
+    }
 
     // Broken laser: the first zap only primes the group (no score, no seal); a second zap pops it.
     if (this.machines.isBroken('laser') && !this.primed.has(g.id)) {

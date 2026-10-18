@@ -181,10 +181,25 @@ describe('hold', () => {
 })
 
 describe('fill and pop', () => {
+  it('a group above the line AND still filling is refused as "above the line" (waiting alone can not fix it)', () => {
+    const rows = ['1', ...Array(13).fill('2')]
+    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(rows, 5) })
+    shift.takeEvents()
+    shift.act({ type: 'pop', x: 5, y: 10 }) // top group, not full yet, far above the line
+    expect(shift.takeEvents()).toEqual([{ type: 'reject', action: 'pop', reason: 'aboveLine' }])
+  })
+
+  it('other refusals carry no reason (a turn into goop, an empty cell)', () => {
+    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0 })
+    shift.takeEvents()
+    shift.act({ type: 'pop', x: 5, y: 20 }) // nothing there
+    expect(shift.takeEvents()).toEqual([{ type: 'reject', action: 'pop' }])
+  })
+
   it('a group fills (375 ms per cell) before it can pop', () => {
     const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(['11'], 5) })
     shift.act({ type: 'pop', x: 5, y: 23 })
-    expect(ofType(shift.takeEvents(), 'reject')).toHaveLength(1)
+    expect(ofType(shift.takeEvents(), 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'filling' }]) // F26: says why
     shift.tick(700)
     expect([...shift.state.groups.values()][0].ready).toBe(false)
     shift.tick(60)
@@ -205,7 +220,9 @@ describe('fill and pop', () => {
     expect(top.fill).toBe(1)
     expect(top.ready).toBe(false)
     shift.act({ type: 'pop', x: 5, y: 10 })
-    expect(ofType(shift.takeEvents(), 'pop')).toHaveLength(0)
+    const events = shift.takeEvents()
+    expect(ofType(events, 'pop')).toHaveLength(0)
+    expect(ofType(events, 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'aboveLine' }]) // F26: says why
     // The line rises with pressure: row 10 is reached at 65% (23 - 0.65 × 20 = 10).
     shift.tick(75000 * 0.65)
     expect(shift.state.pressureRow).toBeLessThanOrEqual(10)

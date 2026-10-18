@@ -110,13 +110,18 @@ export type ShiftEvent =
   | { type: 'rupture'; reason: 'integrity' | 'overflow' } // the tank broke: integrity hit 0, or a piece had no room
   | { type: 'end'; status: ShiftStatus }
   | { type: 'hold' } // the falling piece was swapped with the held one (added by F13)
-  | { type: 'reject'; action: ShiftAction['type'] } // an action couldn't happen (v1 played a "nope" sound) (added by F13)
+  | { type: 'reject'; action: ShiftAction['type']; reason?: RejectReason } // an action couldn't happen (v1 played a "nope" sound) (added by F13)
   | { type: 'abilityReady'; id: string } // an ability's charge just became full (F22)
   | { type: 'ability'; id: string } // an ability was fired (F22)
   | { type: 'abilityEnd'; id: string } // a fired ability's lasting effect ran out (F22)
   | { type: 'breakdown'; machine: MachineId } // a machine broke (F23)
   | { type: 'repaired'; machine: MachineId } // its repair was finished at the console (F23)
   | { type: 'prime'; groupId: number } // broken laser: a first zap primed this group; zap it again to pop (F23)
+
+// Why a zap on goop was refused (F26), so the screen can say it: 'aboveLine' = the group reaches above the pressure line
+// (it can't pop until pressure rises or it's lowered), 'filling' = it's below the line but hasn't finished filling.
+// Only pops on goop get a reason; other rejects (an empty cell, a blocked turn…) have none.
+export type RejectReason = 'aboveLine' | 'filling'
 
 export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column
