@@ -1,6 +1,7 @@
 {
   "_about": "Jelly goo (the F02 pick, ported from research/sketches/lab-L4-jelly.html). Muzzy's Preset 2, 2026-10-17, plus the sketch's fixed values. Numbers only; keys starting with _ are notes.",
   "_help": {
+    "spinCarry": "Locked goo when the tank turns: how much of the turn it rides along at once instead of sloshing behind (0 = full slosh, 0.5 = half, 1 = none). Muzzy 2026-10-18: 50% less.",
     "stiffness": "How hard each jelly springs back to its grid shape. High = firm, fast jiggle; low = soft, slow sag.",
     "viscosity": "Damping. Low = jiggles keep going; high = they die out fast.",
     "wobble": "Size of the kicks when a jelly lands, rotates, merges, or pops.",
@@ -35,5 +36,6 @@
   "unfilledDim": 0.35,
   "readyGlow": 0.5,
   "readyPulse": 0.8,
-  "popMs": 600
+  "popMs": 600,
+  "spinCarry": 0.5
 }

@@ -854,6 +854,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
         B.turns = t
       }
     }
+    // locked goo rides part of each turn at once (spinCarry), so it sloshes behind less (Muzzy 2026-10-18: "50% less")
+    if (dcam && K.spinCarry) for (const B of bodies) for (let i = 0; i < B.n; i++) B.x[i] -= dcam * K.spinCarry
     // loose goo (draining bodies, drips) rides with the tank as it spins
     const dc = dcam
     if (dc) {

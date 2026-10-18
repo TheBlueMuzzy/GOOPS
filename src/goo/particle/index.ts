@@ -694,14 +694,15 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     if (state.piece && (pose.swapped(state.piece, W) || !pieceParts)) spawnPiece(state, 0) // hold swap / missed spawn
     if (state.piece) pose.follow(state.piece, W, spin)
     syncCells(state)
-    // popped goo rides with the tank as it spins
+    // popped goo rides with the tank as it spins; locked goo rides part of each turn at once (spinCarry), so it sloshes
+    // behind less (Muzzy 2026-10-18: "50% less"). The falling piece's goo (OWN < 0) isn't on the tank: left alone.
     const dcam = wrapNear(camera - lastCamera, W)
     if (dcam)
       for (let i = 0; i < hiP; i++)
         if (ST[i] === 2) {
           X[i] -= dcam
           RX[i] -= dcam
-        }
+        } else if (ST[i] === 1 && OWN[i] >= 0) X[i] -= dcam * (K.spinCarry ?? 0)
     simAcc = Math.min(simAcc + dt, SIM_DT * 4)
     while (simAcc >= SIM_DT) {
       simStep(SIM_DT, state)
