@@ -89,10 +89,18 @@
   .kit-hud-text .kit-text { overflow-wrap: normal; }
   .kit-screen:has(> [data-slot] > .kit-hud-slot) > :is([data-slot="top"], [data-slot="bottom"]) { justify-self: center; }
   /* Phones: the corners share the first row and the top-centre piece gets its own row below,
-     so three things never squeeze into one narrow line. Same at the bottom. */
+     so three things never squeeze into one narrow line. Same at the bottom. A HUD on a narrow game box
+     (--kit-frame-w, 0.11.2) gets the same layout from its own width, whatever the window's width. */
   @media (max-width: 40rem) {
     .kit-screen:has(> [data-slot] > .kit-hud-slot) {
       grid-template-columns: minmax(0, 1fr) auto; /* the right corner (score + pause) sizes to its pieces; the left gives way */
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "top-left top-right" "top top" "center center" "bottom-left bottom-right" "bottom bottom";
+    }
+  }
+  @container (max-width: 40rem) {
+    .kit-screen:has(> [data-slot] > .kit-hud-slot) {
+      grid-template-columns: minmax(0, 1fr) auto;
       grid-template-rows: auto auto minmax(0, 1fr) auto auto;
       grid-template-areas: "top-left top-right" "top top" "center center" "bottom-left bottom-right" "bottom bottom";
     }

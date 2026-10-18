@@ -54,7 +54,7 @@ function checkCss(text) {
       const report = (message) => problems.push({ line: at, message, snippet: `${prop}: ${value}` })
       valueProblems(value).forEach(report)
       if (/^font(-family)?$/.test(prop) && !/^(var\(|inherit)/.test(value)) report('font name — use var(--font-body) or var(--font-display)')
-      if (prop === 'position' && /absolute|fixed/.test(value) && !/\.kit-(screen|overlay)\b/.test(selector)) report('position:absolute/fixed — only Screen slots (and the stack overlay) may do this')
+      if (prop === 'position' && /absolute|fixed/.test(value) && !/\.kit-(screen|overlay|layer)\b/.test(selector)) report('position:absolute/fixed — only Screen slots (and the stack\'s overlay / layers) may do this')
     }
   }
   return problems

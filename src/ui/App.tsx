@@ -12,7 +12,7 @@ import settingsJson from '../../content/ui/settings.json'
 import text from '../../content/text/en.json'
 
 const settings = settingsJson as SettingsSchema
-const HUD_RESERVE = 76 // CSS px kept free above the tank for the HUD
+const HUD_RESERVE = 128 // CSS px kept free above the tank for the HUD: its two rows (corners, then the crack count)
 const fill = (s: string, vars: Record<string, number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.

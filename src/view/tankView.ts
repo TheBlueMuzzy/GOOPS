@@ -81,6 +81,24 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
   ctx.fillRect(left, topY, right - left, bottom - topY)
   ctx.restore()
 
+  // cracks out of view: a small arrow in the crack's colour at its height, on the tank edge the short way round (v1)
+  const arrow = cp * tank.offscreenArrowSize
+  ctx.globalAlpha = tank.offscreenArrowAlpha
+  ctx.strokeStyle = 'white'
+  ctx.lineWidth = 1
+  for (const c of s.cracks) {
+    const sx = centreX + screenColumn(c.x, view.camera, s.width) * cp
+    if (sx >= left && sx <= right) continue // in view: the crack itself shows
+    const sy = topY + (c.y - s.bufferRows + 0.5) * cp
+    const toRight = sx > right
+    const tip = toRight ? right - 3 : left + 3
+    const base = toRight ? tip - arrow : tip + arrow
+    ctx.fillStyle = colorOf(c.color)
+    ctx.beginPath(); ctx.moveTo(base, sy - arrow); ctx.lineTo(tip, sy); ctx.lineTo(base, sy + arrow); ctx.closePath()
+    ctx.fill(); ctx.stroke()
+  }
+  ctx.globalAlpha = 1
+
   // the pressure line on top of the water
   if (lineY > topY && lineY < bottom) {
     ctx.strokeStyle = tank.pressureLine

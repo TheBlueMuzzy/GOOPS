@@ -12,6 +12,9 @@ import { wallKick } from './wallKick'
 import tank from '../../content/tuning/tank.json'
 import './game.css'
 
+const HUD_SIDE_ROOM = 16 // CSS px the HUD may reach past each side of the tank
+const HUD_MIN_WIDTH = 360 // the HUD needs a narrow phone's width even when the tank is smaller (a phone on its side)
+
 export interface HudSnapshot {
   pressure: number
   score: number
@@ -73,6 +76,8 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onAlert, 
       const L = layoutTank({ screenW: r.width, screenH: r.height, visibleWidth: s.visibleWidth, visibleRows: s.height - s.bufferRows,
         reserveTop: reserveTopRef.current, reserveBottom: 12, gutter: 16 })
       Object.assign(view, { cellPx: L.cellPx, centreX: L.centreX, topY: L.topY, width: r.width, height: r.height, dpr })
+      // the HUD's corners sit over the tank, not at the far window edges (kit --kit-hud-w; menus keep the whole window)
+      document.documentElement.style.setProperty('--kit-hud-w', `${Math.min(r.width, Math.max(HUD_MIN_WIDTH, L.widthPx + 2 * HUD_SIDE_ROOM))}px`)
       tc.width = Math.round(r.width * dpr); tc.height = Math.round(r.height * dpr)
     }
     const ro = new ResizeObserver(resize)
@@ -90,6 +95,9 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onAlert, 
       view.camera = camera
       drawTank(ctx, s, view, colorOf, now / 1000)
       gooRef.current?.frame(s, events, view, active ? dt : 0)
+      // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
+      const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
+      if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
       if (now - hudAt > 100) {
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
@@ -121,7 +129,7 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onAlert, 
       },
     }, () => !live.current.paused && s.status === 'playing')
 
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); detach() }
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); detach(); document.documentElement.style.removeProperty('--kit-hud-w') }
   }, [engine])
 
   return (

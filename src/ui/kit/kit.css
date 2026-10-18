@@ -99,6 +99,13 @@
      so overlay screens sit on the game picture, not in the black bars. The dim still covers the whole window.
      Unset = 100%: screens fill the window as before. */
   .kit-overlay .kit-screen { inline-size: var(--kit-frame-w, 100%); block-size: var(--kit-frame-h, 100%); margin: auto; }
+  /* …and the always-there layer under them (a HUD) sits on the game picture too, or on its own narrower column:
+     --kit-hud-w (0.11.2 — Goops: on a wide window the HUD's corners went to the window edges, far from the
+     phone-shaped tank; menus keep the whole game picture). The HUD then lays itself out by its own width. */
+  .kit-layer[data-framed] { display: block; position: fixed; pointer-events: none; container-type: size;
+    inset-inline: max(0rem, calc((100vw - var(--kit-hud-w, var(--kit-frame-w, 100vw))) / 2));
+    inset-block: max(0rem, calc((100dvh - var(--kit-frame-h, 100dvh)) / 2)); }
+  .kit-layer[data-framed] > :not(.kit-screen) { pointer-events: auto; } /* screens pass taps through their own empty space */
 
   .kit-panel, .kit-stack { display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0; }
   .kit-panel { padding: var(--gap-l); }

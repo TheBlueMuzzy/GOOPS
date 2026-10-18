@@ -13,5 +13,7 @@
   "spinRepeatMs": 100,
   "spinFirstDelayMs": 250,
   "holdToSwapMs": 1500,
-  "holdDelayMs": 250
+  "holdDelayMs": 250,
+  "offscreenArrowSize": 0.32,
+  "offscreenArrowAlpha": 0.7
 }
