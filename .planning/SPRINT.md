@@ -24,6 +24,8 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 16. At the console mid-shift, machines stop moving toward breaking (helper)
 - [x] 🤖 17. Dev Kit in Goops + Fonts tab (title / heading / body / numbers, side by side, from the game or the Downloads\Font library) (helper)
 - [ ] 🙋 18. Pick the fonts in the Fonts tab
+- [x] 🤖 19. The curved-TV look is always on in the vat; the glitch adds to it (visor-fx.json `always`: curve 1, vignette 0.5)
+- [x] 🤖 20. Locked goo sloshes 50% less when the tank turns (goo-jelly / goo-particle `spinCarry` 0.5)
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [ ] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain
