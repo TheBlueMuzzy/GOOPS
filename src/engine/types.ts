@@ -69,6 +69,18 @@ export interface ShiftState {
   leftoverPenalty?: number // points taken off at the end for goop left in the tank (v1: 50 per cell) (added by F13)
   abilities?: AbilityState[] // equipped active abilities; the engine always sets it (empty when none) (added by F22)
   effects?: ActiveEffects // abilities' effects still running; the engine always sets it (empty when none) (added by F22)
+  machines?: Record<MachineId, MachineState> // the three machines (F23); the engine always sets it
+  primed?: number[] // group ids primed by a first zap while the laser is broken (F23); a second zap pops them
+}
+
+// The console's three machines (F23, GDD §5 Breakdowns). Contract shared by the engine (F23) and the console (F24).
+export type MachineId = 'laser' | 'visor' | 'controls'
+export interface MachineState {
+  id: MachineId
+  unlocked: boolean // from its unlock rank (visor 2, laser 4, controls 6); locked machines never break
+  health: number // 0..1, 1 = fine. Laser = capacitor charge, visor = signal, controls = 1 − heat
+  broken: boolean // reached its threshold; stays broken until repaired at the console
+  cooldownMs: number // after a repair it can't break again until this runs out (0 = can break)
 }
 
 // An equipped active ability (F22). It charges 0 → 1 during play; at 1 it's ready to fire.
@@ -102,6 +114,9 @@ export type ShiftEvent =
   | { type: 'abilityReady'; id: string } // an ability's charge just became full (F22)
   | { type: 'ability'; id: string } // an ability was fired (F22)
   | { type: 'abilityEnd'; id: string } // a fired ability's lasting effect ran out (F22)
+  | { type: 'breakdown'; machine: MachineId } // a machine broke (F23)
+  | { type: 'repaired'; machine: MachineId } // its repair was finished at the console (F23)
+  | { type: 'prime'; groupId: number } // broken laser: a first zap primed this group; zap it again to pop (F23)
 
 export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column
@@ -110,6 +125,7 @@ export type ShiftAction =
   | { type: 'hold' } // swap with the held piece
   | { type: 'pop'; x: number; y: number } // tap a cell (tank space)
   | { type: 'ability'; id: string } // fire an equipped, ready ability (F22)
+  | { type: 'repair'; machine: MachineId } // the console's repair puzzle for this machine was solved (F23/F24)
 
 export interface ShiftEngine {
   readonly state: ShiftState
