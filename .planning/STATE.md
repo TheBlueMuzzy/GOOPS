@@ -1,11 +1,11 @@
 ## ▶ RESUME HERE
 🌙 Overnight build done (2026-10-17): M1 "Core shift" plays end to end — one full shift, v1 rules, Jelly or Particle goo (Settings → Gameplay → Goo style). Branch `dev/m1-core-shift` (not delivered).
 Play: https://claude.ai/artifact/6kKDMuj25K2fEMoVUj5rrg (private build) · or on this PC: http://localhost:5173 · phone: http://192.168.1.152:5173 (dev server left running)
-Sprint 04 done (2026-10-18, approved "for now") — machines break and are repaired at the console (F23 · F24 · F25 ✅). Its open questions (broken-laser refill, cooldown margin, visor button spacing, lamp blink, meters strip, glitch look, pixel filter) are in archive/sprints/sprint-04.md Notes — come back to them later. Next: /sprint to plan Sprint 05. Dev: ?rank=6, ?visor=0.6, ?pixel=on. Reviewed through: 4edca97.
+Sprint 05 running (2026-10-18) — read the shift where you're looking: F26 HUD + messages rethink (3 layouts in-game behind Settings "HUD layout (test)", Muzzy picks), then F27 balance talk. Sprint 04 open questions live in archive/sprints/sprint-04.md Notes. Dev: ?rank=6, ?visor=0.6, ?pixel=on.
 NOT built yet: upgrades (engine is ready for them), story, tutorial, sound, the HUD rethink.
 
 ## Where we are
-Stage: develop (overnight M1) · Milestone: M3 Breakdowns · Sprint: — (04 done) · Branch: dev/m1-core-shift · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
+Stage: develop (overnight M1) · Milestone: M3 Breakdowns · Sprint: 05 · Branch: dev/m1-core-shift · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
 Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `npm run deploy`; stays up until the remake replaces it)
 
 ## Answered 2026-10-17 (written into GDD §4/§6) → build next sprint
