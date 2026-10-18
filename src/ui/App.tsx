@@ -84,8 +84,8 @@ export function App() {
           <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')}
             vitals={(
               <Stack gap="s">
-                <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} width="s" />
-                <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} width="s" />
+                <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} width="s" showLabel />
+                <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} width="s" showLabel />
               </Stack>
             )}
             status={<HudText tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>}

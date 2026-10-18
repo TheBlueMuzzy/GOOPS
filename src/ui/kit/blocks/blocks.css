@@ -344,6 +344,8 @@
   /* Reduce motion (device or the kit's switch): no entrance, no breathing — the ring just stays lit */
   @media (prefers-reduced-motion: reduce) { :is(.kit-callout, .kit-callout-dim, .kit-callout-ring) { animation: none !important; } }
   :root[data-reduce-motion] :is(.kit-callout, .kit-callout-dim, .kit-callout-ring) { animation: none !important; }
+  /* Bar showLabel: the bar's name beside it, small and quiet (0.11.1) */
+  .kit-bar-label { font-size: 0.8em; color: var(--muted); white-space: nowrap; letter-spacing: 0.04em; }
 }
 @keyframes kit-callout-pulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }

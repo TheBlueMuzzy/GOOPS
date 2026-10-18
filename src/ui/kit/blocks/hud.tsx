@@ -76,14 +76,16 @@ export function Pips({ count, filled, label }: { count: number; filled: number; 
 
 // BAR — health, XP, energy… value out of max. pips: draw it as segments (hearts, lives) instead.
 // width: how long the bar is — 's' short, 'm' medium, 'l' long. Without it the bar fills the room it's given.
+// showLabel: print the label beside the bar (two bars with no icons look the same — Goops pressure + tank, 0.11.1).
 type BarProps = {
   label: string; value: number; max?: number; variant?: 'primary' | 'accent' | 'danger'; pips?: boolean; icon?: ReactNode
-  width?: 's' | 'm' | 'l'
+  width?: 's' | 'm' | 'l'; showLabel?: boolean
 }
-export function Bar({ label, value, max = 100, variant = 'primary', pips, icon, width }: BarProps) {
+export function Bar({ label, value, max = 100, variant = 'primary', pips, icon, width, showLabel }: BarProps) {
   return (
     <Chip data-width={width}>
       {icon && <span aria-hidden="true">{icon}</span>}
+      {showLabel && <span className="kit-bar-label" aria-hidden="true">{label}</span>}
       {pips ? <Pips count={max} filled={value} label={label} /> : <ProgressBar label={label} value={value / max} variant={variant} />}
     </Chip>
   )

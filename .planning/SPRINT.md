@@ -8,7 +8,7 @@ Done when: a shift plays the GDD §4 loop — pressure rises and vents, cracks g
 - [x] 🤖 2. Cracks come faster with pressure, only where sealable now (at/below the pop line, no goop); win burst removed — src/engine/cracks.ts
 - [x] 🤖 3. Integrity drain per open crack; rupture at 0 or overflow; drain phase (pieces keep coming, no new cracks); end at pressure 0, won if quota met; leftover penalty — src/engine/shift.ts, types.ts
 - [x] 🤖 4. Engine tests for the new loop — tests/engine/
-- [ ] 🤖 5. HUD: integrity meter, "Quota met" + "Rupture!" banners, end report — src/ui/App.tsx, content/text/en.json
+- [x] 🤖 5. HUD: integrity meter, "Quota met" + "Rupture!" banners, end report — src/ui/App.tsx, content/text/en.json
 - [x] 🤖 6. TDD timers + rules updated (GDD §4 ✅ done 2026-10-17)
 Check: unit tests for each rule; a seeded shift runs to a rupture and ends; smoke e2e reaches the end screen.
 
