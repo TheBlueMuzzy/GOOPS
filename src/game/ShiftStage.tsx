@@ -123,13 +123,17 @@ export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom =
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
       visorFx.current?.frame(s, view, now / 1000)
+      // count new breakdowns BEFORE the HUD snapshot: the console keys each repair panel by its break count, so a
+      // snapshot saying "broken" with the old count would re-light an already-solved panel (a free repair)
+      for (const e of events) if (e.type === 'breakdown') breaks[e.machine]++
+      // the console (or a menu) came up while fast drop was held: no key-up will reach the tank, so let go here
+      if (softHeld && !live.current.inputOn) { softHeld = false; engine.act({ type: 'softDrop', on: false }) }
       if (now - hudAt > 100) {
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
           integrity: s.integrity, phase: s.phase, holdProgress, machines: machinesNow(s.machines), breaks: { ...breaks } })
       }
       for (const e of events) {
-        if (e.type === 'breakdown') breaks[e.machine]++
         if (e.type === 'spawn' && softHeld) engine.act({ type: 'softDrop', on: true })
         if (e.type === 'quotaMet' || e.type === 'rupture') live.current.onAlert(e.type)
         if (e.type === 'end' && !ended) { ended = true; live.current.onEnd(e.status) }
