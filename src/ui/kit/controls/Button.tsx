@@ -10,11 +10,12 @@
 //   so a shorter "pushed in" picture sinks into its base). Pictures keep their own shape — never stretched.
 //   label: 'beside' (default: picture, then the words) · 'below' (words under the picture) · 'hidden' (picture only;
 //   the words are still read out). size: s / m / l = how wide the picture is (3 / 4 / 5.5rem; l also gets heading-size
-//   words). Still ≥ 44px to press.
+//   words). Still ≥ 44px to press. size 'fill' (0.13.0): the picture is as wide as the button's spot — a button drawn
+//   into an art scene (an ArtLayer's box); pair it with label 'hidden'. Still ≥ 44px, centred on its spot.
 import type { ButtonHTMLAttributes, CSSProperties, PointerEvent } from 'react'
 import { controlSound, type ControlSoundKind } from './controlSound'
 
-export type ButtonArt = { up: string; down?: string; label?: 'beside' | 'below' | 'hidden'; size?: 's' | 'm' | 'l' }
+export type ButtonArt = { up: string; down?: string; label?: 'beside' | 'below' | 'hidden'; size?: 's' | 'm' | 'l' | 'fill' }
 
 // Held down (finger, mouse or pen) → data-pressed, so the down picture shows on every phone (iOS skips :active)
 const press = (on: boolean) => (e: PointerEvent<HTMLButtonElement>) => {

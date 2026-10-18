@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 173.69 173.69">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        fill: #fff;
+      }
+
+      .cls-3 {
+        fill: #d36b28;
+      }
+
+      .cls-2, .cls-4 {
+        fill-rule: evenodd;
+      }
+
+      .cls-4 {
+        fill: none;
+        stroke: #fff;
+        stroke-miterlimit: 10;
+        stroke-width: 6px;
+      }
+    </style>
+    <symbol id="Arrow" viewBox="0 0 21.05 21.63">
+      <path id="Down" class="cls-1" d="M21.05,1.52v.45l-.14.45c-2.77,3.62-5.81,7.05-8.67,10.61-.73.94-1.94,1.07-2.8.21L.54,3.02C.27,2.71.1,2.38,0,1.98c.01-.15-.02-.31,0-.45C.1.77.79.08,1.55,0h17.84c.82.02,1.56.72,1.66,1.52ZM19.57,7.83c-.69.84-1.38,1.67-2.07,2.49-1.14,1.37-2.32,2.78-3.45,4.18-.81,1.04-2.03,1.66-3.31,1.66-1.1,0-2.15-.45-2.96-1.27l-.05-.05L1.62,7.81h-.07c-.76.08-1.45.77-1.54,1.52-.02.14.01.31,0,.45.09.41.26.74.54,1.05l8.9,10.22c.86.87,2.06.73,2.8-.21,2.86-3.56,5.91-6.99,8.67-10.61l.14-.45v-.45c-.09-.74-.74-1.39-1.48-1.5Z"/>
+    </symbol>
+  </defs>
+  <g id="MainMenu">
+    <g id="Reset_Controls" data-name="Reset Controls">
+      <g>
+        <circle class="cls-3" cx="86.84" cy="86.84" r="86.84"/>
+        <path class="cls-4" d="M131.5,129.77c-11.27,11.72-27.11,19.01-44.65,19.01s-32.11-6.72-43.27-17.62"/>
+        <use width="21.05" height="21.63" transform="translate(63.17 123.28) rotate(135) scale(1.74)" xlink:href="#Arrow"/>
+        <use width="21.05" height="21.63" transform="translate(111.61 123.28) rotate(45) scale(1.74 -1.74)" xlink:href="#Arrow"/>
+        <path class="cls-2" d="M62.03,24.65l20.43-20.43c1.99-1.99,5.23-1.99,7.22,0l20.43,20.43c3.22,3.22.94,8.72-3.61,8.72h-40.86c-4.55,0-6.83-5.5-3.61-8.72Z"/>
+      </g>
+    </g>
+  </g>
+</svg>

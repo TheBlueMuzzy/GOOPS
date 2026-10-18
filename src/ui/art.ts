@@ -8,7 +8,7 @@ const button = (b: ButtonArt): ButtonArt => ({ ...b, up: url(b.up), down: b.down
 const rect = (r: number[]) => r as ArtRect
 const words = (w: { at: number[]; text: number }) => ({ at: rect(w.at), text: w.text })
 
-const end = artJson.end, scene = artJson.console
+const end = artJson.end, scene = artJson.console, fix = scene.repairs
 const layer = (l: { file: string; at: number[] }) => ({ src: url(l.file), at: rect(l.at) })
 export const art = {
   end: {
@@ -37,6 +37,20 @@ export const art = {
     words: {
       hint: words(scene.words.hint), laser: words(scene.words.laser), controls: words(scene.words.controls),
       lights: words(scene.words.lights), version: words(scene.words.version), credit: words(scene.words.credit),
+    },
+  },
+  // the repair panels' moving parts (F24), drawn over the panels: lamps, slider knobs, the dial, the visor's buttons
+  repairs: {
+    viewShort: rect(fix.viewShort),
+    lampOn: url(fix.lampOn),
+    lampOff: url(fix.lampOff),
+    knob: url(fix.knob),
+    knobShare: fix.knobShare,
+    laser: { sliders: fix.laser.sliders.map(rect), lamps: fix.laser.lamps.map((pair) => pair.map(rect)) },
+    controls: { dial: url(fix.controls.dial.file), dialAt: rect(fix.controls.dial.at), lamps: fix.controls.lamps.map(rect), angles: fix.controls.angles },
+    visor: {
+      slider: rect(fix.visor.slider), topLamp: rect(fix.visor.topLamp), bottomLamp: rect(fix.visor.bottomLamp),
+      buttons: fix.visor.buttons.map((b) => ({ art: button({ up: b.up, down: b.down, label: 'hidden', size: 'fill' }), at: rect(b.at), lamp: rect(b.lamp) })),
     },
   },
 }

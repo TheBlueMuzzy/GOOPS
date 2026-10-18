@@ -60,10 +60,12 @@ type ArtLayerProps = {
   off?: boolean
   dim?: boolean
   label?: string // what a screen reader calls this layer (a picture with meaning, or an off part)
+  blink?: 'fast' | 'slow' // 0.13.0: a lamp asking for attention — on / off in steps (put its "off" picture under it)
+  shake?: number // 0.13.0: a count — each time it changes the layer gives one small "no" wobble (e.g. a wrong press)
   className?: string
   children?: ReactNode
 }
-export function ArtLayer({ at, src, text, tone, align, off, dim, label, className = '', children }: ArtLayerProps) {
+export function ArtLayer({ at, src, text, tone, align, off, dim, label, blink, shake, className = '', children }: ArtLayerProps) {
   const [x, y, w, h] = at
   const vars = {
     '--kit-at-x': n(x), '--kit-at-y': n(y), '--kit-at-w': n(w),
@@ -74,6 +76,7 @@ export function ArtLayer({ at, src, text, tone, align, off, dim, label, classNam
     <div className={`kit-art-layer ${className}`} style={{ ...vars }} data-sized={h ? '' : undefined}
       data-text={text ? '' : undefined} data-tone={tone && tone !== 'normal' ? tone : undefined} data-align={align}
       data-off={off || undefined} data-dim={(dim && !off) || undefined}
+      data-blink={(!off && blink) || undefined} data-shake={shake ? (shake % 2 ? 'a' : 'b') : undefined}
       aria-disabled={off || undefined}
       role={label ? 'img' : undefined} aria-label={label}>
       {src && <img className="kit-art-layer-picture" src={src} alt="" draggable={false} />}

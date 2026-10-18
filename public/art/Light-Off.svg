@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26.07 26.07">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #1f1f38;
+      }
+
+      .cls-2 {
+        fill: #231f20;
+        fill-rule: evenodd;
+      }
+    </style>
+  </defs>
+  <g id="MainMenu">
+    <g id="Reset_Laser" data-name="Reset Laser">
+      <g>
+        <path class="cls-2" d="M13.03,24.57c-6.36,0-11.53-5.17-11.53-11.53S6.67,1.5,13.03,1.5s11.54,5.17,11.54,11.53-5.17,11.53-11.53,11.53h0Z"/>
+        <path class="cls-1" d="M13.04,3c5.54,0,10.03,4.49,10.03,10.03s-4.49,10.03-10.03,10.03h0c-5.54,0-10.03-4.49-10.03-10.03S7.49,3,13.03,3h0M13.04,0h0C5.85,0,0,5.85,0,13.03s5.85,13.03,13.03,13.03,13.04-5.85,13.04-13.03S20.23,0,13.04,0h0Z"/>
+      </g>
+    </g>
+  </g>
+</svg>

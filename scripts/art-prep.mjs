@@ -18,7 +18,10 @@ import opentype from 'opentype.js'
 const OUT = 'public/art'
 mkdirSync(OUT, { recursive: true })
 
-for (const file of ['Background.svg', 'Btn_Green-Up.svg', 'Btn_Green-Down.svg', 'Btn_Blue-Up.svg', 'Btn_Blue-Down.svg', 'Btn_Settings.svg']) {
+// (F24: the repair panels' moving parts — lamps, the slider knob, the dial, the third arcade button — drawn by the game
+// over the panels, which art-prep strips of the same parts; see console.repairs in art.json)
+for (const file of ['Background.svg', 'Btn_Green-Up.svg', 'Btn_Green-Down.svg', 'Btn_Blue-Up.svg', 'Btn_Blue-Down.svg', 'Btn_Settings.svg',
+  'Btn_Purple-up.svg', 'Btn_Purple-Down.svg', 'Light-On.svg', 'Light-Off.svg', 'SliderHandle.svg', 'Dial.svg']) {
   copyFileSync(`art/${file}`, `${OUT}/${file}`)
 }
 
@@ -68,6 +71,8 @@ ${body}
   for (const [name, layer] of Object.entries(scene.layers)) {
     let body = layer.groups.map((id) => element(svg, id)).join('\n')
     for (const id of layer.strip ?? []) body = body.replace(element(body, id), '')
+    // stripClasses: single shapes of these colour classes (a repair panel's knobs, dial face and lamps: the game draws them)
+    for (const cls of layer.stripClasses ?? []) body = body.replace(new RegExp(`\\s*<\\w+ class="${cls}"[^>]*/>`, 'g'), '')
     body = body.replace(/<text[\s\S]*?<\/text>/g, '') // words: the game writes them
     out(layer.file, layer.at, body)
     console.log(`${layer.file}: ${name} (${layer.groups.join(' + ')})`)

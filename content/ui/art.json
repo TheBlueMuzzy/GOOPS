@@ -14,9 +14,9 @@
     "layers": {
       "body": { "file": "art/ConsoleBody.svg", "groups": ["Console_Base", "Console_Back"], "strip": ["Trashcan"], "at": [16.69, 1057.15, 614.13, 808.21] },
       "meter": { "file": "art/ConsoleMeter.svg", "groups": ["Operator_Rank_-_meter"], "strip": ["Meter_Fill"], "at": [81.41, 1138.58, 487.02, 66.4] },
-      "laser": { "file": "art/ConsoleLaser.svg", "groups": ["Reset_Laser"], "at": [67.86, 1239.78, 516.75, 141.42] },
-      "controls": { "file": "art/ConsoleControls.svg", "groups": ["Reset_Controls"], "at": [74.36, 1450.93, 243.08, 273.92] },
-      "lights": { "file": "art/ConsoleLights.svg", "groups": ["Reset_Lights"], "at": [341.17, 1452.22, 267.53, 267.9] },
+      "laser": { "file": "art/ConsoleLaser.svg", "groups": ["Reset_Laser"], "stripClasses": ["cls-25", "cls-22", "cls-10", "cls-11", "cls-51"], "at": [67.86, 1239.78, 516.75, 141.42] },
+      "controls": { "file": "art/ConsoleControls.svg", "groups": ["Reset_Controls"], "stripClasses": ["cls-25", "cls-22", "cls-10", "cls-11", "cls-51"], "at": [74.36, 1450.93, 243.08, 273.92] },
+      "lights": { "file": "art/ConsoleLights.svg", "groups": ["Reset_Lights"], "strip": ["Blue_Button", "Purple_Button", "Green_Button"], "stripClasses": ["cls-25", "cls-22", "cls-10", "cls-11", "cls-51"], "at": [341.17, 1452.22, 267.53, 267.9] },
       "periscope": { "file": "art/ConsolePeriscope.svg", "groups": ["Periscope"], "at": [22.36, 496.8, 603.66, 640.08], "travel": 0.566, "grip": 0.345 },
       "monitor": { "file": "art/ConsoleMonitor.svg", "groups": ["Monitor"], "at": [31.92, 0, 583.67, 909.59] }
     },
@@ -29,6 +29,38 @@
       "lights": { "at": [363, 1458, 180, 24], "text": 21 },
       "version": { "at": [70, 1841, 160, 20], "text": 15.7 },
       "credit": { "at": [370, 1841, 216, 20], "text": 15.7 }
+    },
+    "repairs": {
+      "_about": "F24: the repair panels' moving parts, drawn by the game over the panels (art-prep strips the same parts out of them: stripClasses = the knobs, the dial face and the lamps; strip = the three arcade buttons). Boxes are [x, y, width, height] in the mock-up's units, read off Example1.svg. viewShort = what a phone on its side shows mid-shift: just the three panels (the way back is then the Back to the tank button). knob = the slider knob's share of its track (50.23 / 175.86). Laser: sliders in the order row 1 left, row 1 right, row 2 left, row 2 right, each with its two lamps [left end, right end]. Controls: the dial, its four corner lamps (top-left, top-right, bottom-right, bottom-left) and the angle (degrees clockwise from up) the dial's arrow points at each. Visor (RESET LIGHTS): the up/down slider, its top lamp and a bottom lamp (in the track's bottom end: the knob covers it when it's down — there's no room under the track), and the three buttons top to bottom with their lamps.",
+      "viewShort": [0, 1232, 648, 497],
+      "lampOn": "art/Light-On.svg",
+      "lampOff": "art/Light-Off.svg",
+      "knob": "art/SliderHandle.svg",
+      "knobShare": 0.2856,
+      "laser": {
+        "sliders": [[102, 1239.79, 175.86, 50.51], [374.6, 1239.79, 175.86, 50.51], [102, 1330.67, 175.86, 50.51], [374.6, 1330.67, 175.86, 50.51]],
+        "lamps": [
+          [[67.85, 1252.02, 26.07, 26.07], [285.17, 1252.02, 26.07, 26.07]],
+          [[341.21, 1252.02, 26.07, 26.07], [558.53, 1252.02, 26.07, 26.07]],
+          [[67.85, 1342.9, 26.07, 26.07], [285.17, 1342.9, 26.07, 26.07]],
+          [[341.21, 1342.9, 26.07, 26.07], [558.53, 1342.9, 26.07, 26.07]]
+        ]
+      },
+      "controls": {
+        "dial": { "file": "art/Dial.svg", "at": [107.48, 1499.82, 173.68, 173.68] },
+        "lamps": [[90.91, 1495.12, 26.07, 26.07], [275.27, 1495.12, 26.07, 26.07], [275.27, 1683.6, 26.07, 26.07], [90.91, 1683.6, 26.07, 26.07]],
+        "angles": [311, 49, 139.5, 220.5]
+      },
+      "visor": {
+        "slider": [356.86, 1530.44, 50.51, 175.86],
+        "topLamp": [369.09, 1496.31, 26.07, 26.07],
+        "bottomLamp": [369.09, 1668.17, 26.07, 26.07],
+        "buttons": [
+          { "up": "art/Btn_Blue-Up.svg", "down": "art/Btn_Blue-Down.svg", "at": [431.19, 1482.48, 84.62, 73.62], "lamp": [533.16, 1507.64, 26.07, 26.07] },
+          { "up": "art/Btn_Green-Up.svg", "down": "art/Btn_Green-Down.svg", "at": [437.5, 1558.58, 84.62, 73.62], "lamp": [541.58, 1584.44, 26.07, 26.07] },
+          { "up": "art/Btn_Purple-up.svg", "down": "art/Btn_Purple-Down.svg", "at": [444.51, 1635.72, 84.62, 73.62], "lamp": [552.09, 1664.74, 26.07, 26.07] }
+        ]
+      }
     },
     "backdrop": "art/Background.svg",
     "title": "art/Title.svg",
