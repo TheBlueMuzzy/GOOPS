@@ -9,6 +9,7 @@ import { layoutTank, screenToCell, stepCamera } from '../view/geometry'
 import { attachControls } from '../input/controls'
 import { gooStyle } from './gooStyle'
 import { wallKick } from './wallKick'
+import { createVisorFx, type VisorFx } from '../view/visorFx'
 import tank from '../../content/tuning/tank.json'
 import './game.css'
 
@@ -60,6 +61,14 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onAlert, 
     return () => { g.dispose(); if (gooRef.current === g) gooRef.current = null }
   }, [style])
 
+  // F25: the visor glitch + pixel filter, a canvas over both (src/view/visorFx.ts); the frame loop feeds it
+  const visorFx = useRef<VisorFx | null>(null)
+  useEffect(() => {
+    const fx = createVisorFx(host.current!, tankCanvas.current!, () => gooCanvas.current)
+    visorFx.current = fx
+    return () => { fx.dispose(); visorFx.current = null }
+  }, [])
+
   // frame loop + controls
   useEffect(() => {
     const el = host.current!, tc = tankCanvas.current!, ctx = tc.getContext('2d')!
@@ -98,6 +107,7 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onAlert, 
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
+      visorFx.current?.frame(s, view, now / 1000)
       if (now - hudAt > 100) {
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
