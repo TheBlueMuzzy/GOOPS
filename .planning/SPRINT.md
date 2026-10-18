@@ -25,6 +25,8 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 17. Dev Kit in Goops + Fonts tab (title / heading / body / numbers, side by side, from the game or the Downloads\Font library) (helper)
 - [ ] 🙋 18. Pick the fonts in the Fonts tab
 - [x] 🤖 19. The curved-TV look is always on in the vat; the glitch adds to it (visor-fx.json `always`: curve 1, vignette 0.5)
+- [x] 🤖 22. Dev Kit 0.18.0: every tuning file live (sliders change the running game), ⏸ full / ◐ half pause, rules + looks clocks, Snapshots + Bug capture plugged in
+- [ ] 🙋 23. Half pause: should the goo keep jiggling? (default yes — content/tuning/pause.json halfPauseGooMoves)
 - [x] 🤖 21. Typing in the Dev Kit no longer reaches the game's hotkeys (Dev Kit 0.17.1 + the game ignores keys typed in text boxes)
 - [x] 🤖 20. Locked goo sloshes 50% less when the tank turns (goo-jelly / goo-particle `spinCarry` 0.5)
 
