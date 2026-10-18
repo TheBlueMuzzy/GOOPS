@@ -19,9 +19,9 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 11. Periscope acts at once on a full pull (kit 0.15.1)
 - [x] 🤖 12. Keys move the view (← looks left); drags still pull the goop with the finger
 - [x] 🤖 13. "Reset lights" → "Reset visor"
-- [ ] 🤖 14. Repairs ≈ 4 steps (controls 4 corners, laser 4 sliders) + upgrade hook for fewer steps (helper)
-- [ ] 🤖 15. Visor curved-TV look only over the tank (helper)
-- [ ] 🤖 16. At the console mid-shift, machines stop moving toward breaking (helper)
+- [x] 🤖 14. Repairs ≈ 4 steps (controls 4 corners, laser 4 sliders) + upgrade hook for fewer steps (helper)
+- [x] 🤖 15. Visor curved-TV look only over the tank (helper)
+- [x] 🤖 16. At the console mid-shift, machines stop moving toward breaking (helper)
 - [ ] 🤖 17. Dev Kit in Goops + Fonts tab (title / heading / body / numbers, side by side, from the game or the Downloads\Font library) (helper)
 - [ ] 🙋 18. Pick the fonts in the Fonts tab
 
