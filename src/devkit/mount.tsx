@@ -3,9 +3,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { DevKit } from './DevKit'
+import { installFreeze } from './pause/freeze'
 
 /** Adds the Dev Kit next to the game, outside #root (so colour-blind previews of the game don't filter it). */
 export function mountDevKit() {
+  installFreeze() // ⏸ Full pause can hold the game's frames from now on (pause/freeze.ts)
   const host = document.createElement('div')
   host.id = 'devkit-root'
   document.body.appendChild(host)

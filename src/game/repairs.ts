@@ -19,13 +19,14 @@ const pick = <T>(list: readonly T[], rand: Rand) => list[Math.floor(rand() * lis
 // How many steps a machine's repair takes: the tuning (laser sliders lit · visor button presses · dial corners) minus
 // `fewerSteps` (from upgrades: resolveUpgrades().fewerRepairSteps — 0 until "Quick Fix" style upgrades exist), never
 // below 1. (The visor's two slides are always there; the laser can't light more than its 4 sliders.)
-const BASE_STEPS: Record<MachineId, number> = {
+// (read from the live tuning each time — the Dev Kit's sliders reach the next puzzle)
+const baseSteps = (machine: MachineId): number => ({
   laser: breakdowns.laser.repairSliders,
   visor: breakdowns.visor.repairButtons,
   controls: breakdowns.controls.repairCorners,
-}
+})[machine]
 export function repairSteps(machine: MachineId, fewerSteps = 0): number {
-  return Math.max(1, BASE_STEPS[machine] - Math.max(0, Math.floor(fewerSteps)))
+  return Math.max(1, baseSteps(machine) - Math.max(0, Math.floor(fewerSteps)))
 }
 
 // ── Laser: sliders have 3 stops (0 = left, 1 = middle, 2 = right) and all start in the middle ──

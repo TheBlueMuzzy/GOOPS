@@ -1,10 +1,10 @@
 // Goo colours. content/tuning/goo-colors.json maps a colour NAME to a hex colour; the engine's shift.json lists the
 // names in order, so Color index c (1-based) = names[c - 1]. The tank view uses these helpers too (cracks, ghost).
-import paletteJson from '../../../content/tuning/goo-colors.json?raw'
+import paletteFile from '../../../content/tuning/goo-colors.json' // live: the Dev Kit's edits show at once
 
 export type Palette = Record<string, string>
 
-export const PALETTE: Palette = JSON.parse(paletteJson) as Palette
+export const PALETTE: Palette = paletteFile as Palette
 
 // v1 order (until the renderer is handed shift.json's list)
 export const DEFAULT_COLOR_NAMES = ['red', 'blue', 'green', 'yellow', 'purple', 'white', 'black']
@@ -31,8 +31,8 @@ export function hexToRgb(hex: string): [number, number, number] {
 
 // Shader colour table: slot 0 = empty, slots 1..MAX_GOO_COLORS = Color index. Unused slots are grey.
 export const MAX_GOO_COLORS = 7
-export function paletteTable(names: string[], palette: Palette = PALETTE): Float32Array {
-  const out = new Float32Array((MAX_GOO_COLORS + 1) * 3)
+// out: fill this table instead of making a new one (the renderers refill theirs every frame, so colour edits show live)
+export function paletteTable(names: string[], palette: Palette = PALETTE, out: Float32Array = new Float32Array((MAX_GOO_COLORS + 1) * 3)): Float32Array {
   for (let c = 1; c <= MAX_GOO_COLORS; c++) out.set(colorRgb(names, c, palette), c * 3)
   return out
 }

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_COLOR_NAMES, PALETTE, colorHex, colorRgb, hexToRgb, paletteTable } from '../../src/goo/shared/palette'
 import { parseKnobs, mergeKnobs } from '../../src/goo/shared/knobs'
-import { JELLY_DEFAULTS } from '../../src/goo/jelly'
-import { PARTICLE_DEFAULTS } from '../../src/goo/particle'
+import { jellyDefaults } from '../../src/goo/jelly'
+import { particleDefaults } from '../../src/goo/particle'
 import { quarterTurn, pieceShape } from '../../src/goo/shared/piecePose'
 
 describe('palette', () => {
@@ -38,10 +38,10 @@ describe('goo knobs', () => {
     expect(k).toEqual({ a: 2 })
   })
   it("Jelly defaults are Muzzy's pick (Preset 2)", () => {
-    expect(JELLY_DEFAULTS).toMatchObject({ stiffness: 700, viscosity: 6.5, wobble: 0.25, tension: 0.15, gravity: 3.9, translucency: 0.5, wetness: 0.9, magnetism: 1.4 })
+    expect(jellyDefaults()).toMatchObject({ stiffness: 700, viscosity: 6.5, wobble: 0.25, tension: 0.15, gravity: 3.9, translucency: 0.5, wetness: 0.9, magnetism: 1.4 })
   })
   it("Particle defaults are Muzzy's Preset 1 (new names)", () => {
-    expect(PARTICLE_DEFAULTS).toMatchObject({ gravity: 4.1, viscosity: 0.21, stiffness: 189, magnetism: 1.4, tension: 0.15, wobble: 0.15, threshold: 0.25, wetness: 1 })
+    expect(particleDefaults()).toMatchObject({ gravity: 4.1, viscosity: 0.21, stiffness: 189, magnetism: 1.4, tension: 0.15, wobble: 0.15, threshold: 0.25, wetness: 1 })
   })
 })
 

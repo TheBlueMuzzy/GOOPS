@@ -5,8 +5,8 @@
 // Reads the engine's state + events, never writes back. Simulates in view space around the camera (TDD D03).
 import type { ShiftEvent, ShiftState } from '../../engine/types'
 import type { GooOptions, GooRenderer, GooView } from '../types'
-import jellyJson from '../../../content/tuning/goo-jelly.json?raw'
-import { parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
+import jellyFile from '../../../content/tuning/goo-jelly.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
+import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
 import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
 import { groupFillLines, tankWindow, unwrapAround, unwrapCells, viewOrigin, wrapNear, wrapTurns, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
@@ -14,7 +14,8 @@ import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooCon
 import { buildPoints, traceLoops } from './outline'
 import { BLUR_FS, FINAL_FS, MASK_FS, MASK_VS } from './shaders'
 
-export const JELLY_DEFAULTS: Knobs = parseKnobs(jellyJson)
+// The knobs as the file has them right now (with the Dev Kit's latest edit)
+export const jellyDefaults = (): Knobs => parseKnobs(jellyFile)
 
 type Kind = 'grid' | 'piece' | 'dying'
 type KickKind = 'squash' | 'radial' | 'twist' | 'shear'
@@ -102,8 +103,10 @@ const N4: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]]
 
 
 export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions = {}): GooRenderer {
-  const K: Knobs = { ...JELLY_DEFAULTS }
-  const cols = paletteTable(opts.colorNames ?? DEFAULT_COLOR_NAMES)
+  const K: Knobs = jellyDefaults()
+  const seen: Knobs = { ...K } // the file's values as last followed (followFile)
+  const colorNames = opts.colorNames ?? DEFAULT_COLOR_NAMES
+  const cols = paletteTable(colorNames)
   const gl = gooContext(canvas)
   const floatOK = !!gl.getExtension('EXT_color_buffer_float')
 
@@ -1213,6 +1216,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       if (disposed) return
       const dt = Math.min(Math.max(dtSec, 0), 0.05)
       time += dt
+      followFile(K, jellyFile, seen) // Dev Kit edits to the knob file apply on this frame
+      paletteTable(colorNames, undefined, cols) // and to goo-colors.json
       update(state, events, view, dt)
       draw(state, view)
     },

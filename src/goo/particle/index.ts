@@ -5,15 +5,16 @@
 // a short shrink + fade (no burst). Simulates in view space, only near the screen (TDD D03).
 import type { ShiftEvent, ShiftState } from '../../engine/types'
 import { screenColumn, type GooOptions, type GooRenderer, type GooView } from '../types'
-import particleJson from '../../../content/tuning/goo-particle.json?raw'
-import { parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
+import particleFile from '../../../content/tuning/goo-particle.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
+import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
 import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
 import { groupFillLines, inWindow, tankWindow, viewOrigin, wrapNear, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
 import { BLUR_FS, SHADE_FS, SPLAT_FS, SPLAT_VS } from './shaders'
 
-export const PARTICLE_DEFAULTS: Knobs = parseKnobs(particleJson)
+// The knobs as the file has them right now (with the Dev Kit's latest edit)
+export const particleDefaults = (): Knobs => parseKnobs(particleFile)
 
 const CELL_M = 0.05 // metres per cell, so gravity can be set in m/s²
 const MAXP = 9000
@@ -30,8 +31,10 @@ const SIM_DT = 1 / 120
 const INST = 9
 
 export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptions = {}): GooRenderer {
-  const K: Knobs = { ...PARTICLE_DEFAULTS }
-  const cols = paletteTable(opts.colorNames ?? DEFAULT_COLOR_NAMES)
+  const K: Knobs = particleDefaults()
+  const seen: Knobs = { ...K } // the file's values as last followed (followFile)
+  const colorNames = opts.colorNames ?? DEFAULT_COLOR_NAMES
+  const cols = paletteTable(colorNames)
   const gl = gooContext(canvas)
 
   // ---------------- particles (struct of arrays) ----------------
@@ -895,6 +898,8 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
       if (disposed) return
       const dt = Math.min(Math.max(dtSec, 0), 0.05)
       time += dt
+      followFile(K, particleFile, seen) // Dev Kit edits to the knob file apply on this frame
+      paletteTable(colorNames, undefined, cols) // and to goo-colors.json
       update(state, events, view, dt)
       draw(state, view)
     },

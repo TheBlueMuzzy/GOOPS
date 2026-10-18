@@ -16,6 +16,7 @@
 //      says "reload": true (the Text tab: the game reads its words at load time, so Vite's reload shows them).
 //   4. The Fonts tab's font library, dev server only (fontLibrary.ts): GET /__devkit/font-library (list),
 //      GET /__devkit/font-library/file?path= (one font, for a preview), POST /__devkit/font-library/add (copy one into the game).
+//   5. Live tuning by default (0.18.0): content/tuning/*.json imports come back live (liveTuningName / liveJsonModule).
 //   3. The Sound tab's two endpoints, dev server only (audioSave.ts): POST /__devkit/save-audio (a dropped-in sound →
 //      MP3 in public/audio/<folder>/, nowhere else) and POST /__devkit/add-credit (appends to content/credits.json).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -68,6 +69,28 @@ export function keepHelp(existing: unknown, incoming: Record<string, unknown>): 
 
 // Same file, same key — whatever slashes or drive-letter case the path came with (Windows)
 const fileKey = (file: string) => resolve(file).toLowerCase()
+
+/** Where the game's copy of liveTuning.ts is (install-devkit puts kit/ in src/devkit/). */
+export const LIVE_TUNING_MODULE = 'src/devkit/tuning/liveTuning.ts'
+
+/** "<root>/content/tuning/tank.json" → "tank" (the name live edits travel under); anything else → null.
+ *  Only files directly in content/tuning/, with no query (?raw, ?devkit-file keep the plain file). */
+export function liveTuningName(id: string, root: string): string | null {
+  if (id.includes('?') || id.startsWith('\0')) return null
+  const slashes = (p: string) => p.replace(/\\/g, '/')
+  const base = `${slashes(root).replace(/\/$/, '')}/content/tuning/`
+  const path = slashes(id)
+  if (!path.toLowerCase().startsWith(base.toLowerCase())) return null // (Windows: the drive letter's case varies)
+  const rest = path.slice(base.length)
+  return /^[^/]+\.json$/.test(rest) ? rest.slice(0, -'.json'.length) : null
+}
+
+/** The module a live tuning file becomes: the file's data, handed back through liveFile. */
+export function liveJsonModule(name: string, jsonText: string, liveTuningPath: string): string {
+  JSON.parse(jsonText) // a broken file fails here, with the file named by Vite
+  const from = JSON.stringify(liveTuningPath.replace(/\\/g, '/'))
+  return `import { liveFile } from ${from}\nexport default liveFile(${JSON.stringify(name)}, JSON.parse(${JSON.stringify(jsonText)}))\n`
+}
 
 /** Both jobs in one plugin — see the top of this file. */
 export function devkit(): Plugin {
@@ -247,6 +270,23 @@ export function devkit(): Plugin {
           }
         })
       })
+    },
+    // 5. LIVE BY DEFAULT (0.18.0): `import tank from '…/content/tuning/tank.json'` hands the game liveFile('tank', …) — an
+    //    object that reads the Dev Kit's latest edit on every property access (src/devkit/tuning/liveTuning.ts), so a
+    //    game's tuning follows the sliders with no wrapping. In every build and in vitest (with nothing sending edits it
+    //    is just the file). Imports with a query (?raw, the Dev Kit's own ?devkit-file) are left alone. Runs after
+    //    Vite's own JSON step ('post'), replacing its output.
+    transform: {
+      order: 'post',
+      handler(_code, id) {
+        const name = liveTuningName(id, root)
+        const live = join(root, ...LIVE_TUNING_MODULE.split('/'))
+        if (!name || !existsSync(live)) return null
+        const file = id.replace(/[?#].*$/, '')
+        this.addWatchFile(file)
+        // (imported as /src/…: Vite reads a leading / as the game's folder, in dev, builds and vitest alike)
+        return { code: liveJsonModule(name, readFileSync(file, 'utf8'), `/${LIVE_TUNING_MODULE}`), map: null }
+      },
     },
     handleHotUpdate({ file }) {
       const wroteAt = justWrote.get(fileKey(file))

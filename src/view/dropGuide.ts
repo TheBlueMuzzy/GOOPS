@@ -14,11 +14,13 @@ export interface DropGuide {
   draw(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, dtSec: number, fast: boolean, still: boolean): void
 }
 
-export function createDropGuide(cfg = hud.chevrons): DropGuide {
+// cfg: tests pass their own; the game leaves it out and the guide reads hud.json each frame (live Dev Kit edits)
+export function createDropGuide(fixed?: typeof hud.chevrons): DropGuide {
   let phase = 0 // how many chevrons the wave has passed, ever (it loops over however many are showing)
 
   return {
     draw(ctx, s, view, dtSec, fast, still) {
+      const cfg = fixed ?? hud.chevrons
       const p = s.piece
       if (!p || !s.ghost.length || s.status !== 'playing') return
       const cp = view.cellPx

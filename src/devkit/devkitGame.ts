@@ -29,6 +29,16 @@ export interface DevKitGame {
   onEvent?: (send: (text: string, data?: unknown) => void) => () => void
   /** Optional: one line about a moment, e.g. "turn 12 · Blue to move" — shown next to snapshots and marks. */
   describe?: (state: unknown) => string
+  /**
+   * Optional (0.18.0): the Pause buttons. The Dev Kit already freezes any game for ⏸ Full pause (frames, animations,
+   * sound) and stops gameClock's rulesClock for both. pause() is for machinery the clocks don't reach (a physics
+   * engine, an AI worker, a server tick): 'full' = stop everything, 'half' = stop the rules only, null = go on.
+   */
+  pause?: (mode: 'full' | 'half' | null) => void
+  /** Optional: the pauses this game supports. ◐ Half pause shows when this lists 'half' or the game reads rulesClock. */
+  pauseModes?: ('full' | 'half')[]
+  /** Optional: may the Dev Kit pause right now? Left out = canRestore() (an online game can't stop for everyone). */
+  canPause?: () => boolean
 }
 
 let current: DevKitGame | null = null
