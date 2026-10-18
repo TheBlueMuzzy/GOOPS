@@ -14,10 +14,10 @@ Check: unit tests for each rule; a seeded shift runs to a rupture and ends; smok
 
 ## F18 🎮 One control set + wall-kick toggle
 Done when: keys match the GDD §4 table with the same timings as touch; no hard drop anywhere; Settings → Wall kick switches Rotate vat / Shunt piece.
-- [ ] 🤖 7. Keys per GDD table (Right Ctrl ccw, Numpad 0 cw, hold R / Right Shift 1.5 s swap, ↑ console; drop Space, ↑-rotate, instant R) — src/input/controls.ts
+- [x] 🤖 7. Keys per GDD table (Right Ctrl ccw, Numpad 0 cw, hold R / Right Shift 1.5 s swap, ↑ console; drop Space, ↑-rotate, instant R) — src/input/controls.ts
 - [ ] 🤖 8. Remove hard drop from engine, score config and tests
 - [ ] 🤖 9. Wall kick setting: Rotate vat (the tank turns a column, goo slides with it) / Shunt piece (v1) — engine option, content/ui/settings.json, src/game/
-- [ ] 🤖 10. e2e controls check updated — e2e/controls.mjs
+- [x] 🤖 10. e2e controls check updated — e2e/controls.mjs (every key + gesture; perf/smoke hardDrop uses follow the engine change)
 Check: e2e drives every key + gesture; both wall-kick modes tested in the engine.
 
 ## F19 🎨 Muzzy's art on the screens
@@ -33,3 +33,4 @@ Check: screenshots at 390×844, 844×390, 1440×900; check:ui passes.
 
 ## Notes
 - Starting numbers (Claude's guesses, all in content/tuning/shift.json): pressure 0→100% in ~75 s; cracks every 5 s at 0% → 1 s at 100%; rupture drain 5 s.
+- F18 controls e2e: a swap between two identical pieces looks like nothing happened, so the check counts swap actions; the drag check compares spins to the real drag time (headless drags are slow: 2 s → 14 columns is right).

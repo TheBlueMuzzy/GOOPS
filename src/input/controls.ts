@@ -2,7 +2,8 @@
 // Touch/mouse: drag sideways = spin the tank (joystick: hold past the dead zone to keep spinning) · drag down = fast drop
 // · tap goop = pop it · tap empty space = rotate (left half ↺, right half ↻) · quick swipe up = console/pause
 // · hold still 1.5 s = swap with the held piece.
-// Keys: ← → / A D spin · Q E rotate · S (hold) fast drop · R (hold) swap · W / Space console/pause.
+// Keys (GDD §4, one set, same timing as touch): A D / ← → spin · Q / Right Ctrl ↺, E / Numpad 0 ↻
+// · S / ↓ (hold) fast drop · hold R / Right Shift 1.5 s = swap · W / ↑ console/pause.
 import tank from '../../content/tuning/tank.json'
 
 export interface ControlCallbacks {
@@ -27,6 +28,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   let nextSpinAt = 0
   let holdTimer = 0
   let holdStart = 0
+  let holdKey: string | null = null // the swap key being held, if any
   let raf = 0
 
   // spinning repeats while a key or the drag is held
@@ -50,15 +52,21 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     if (holdTimer) { cancelAnimationFrame(holdTimer); holdTimer = 0; cb.holdProgress?.(null) }
   }
   const tickHold = () => {
-    if (!ptr) return
+    if (!ptr && !holdKey) return
     const held = performance.now() - holdStart
     if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (tank.holdToSwapMs - tank.holdDelayMs)))
-    if (held >= tank.holdToSwapMs) { holdTimer = 0; cb.holdProgress?.(null); ptr.consumed = true; if (isActive()) cb.hold(); return }
+    if (held >= tank.holdToSwapMs) {
+      holdTimer = 0; cb.holdProgress?.(null)
+      if (ptr) ptr.consumed = true
+      holdKey = null
+      if (isActive()) cb.hold()
+      return
+    }
     holdTimer = requestAnimationFrame(tickHold)
   }
 
   const down = (e: PointerEvent) => {
-    if (ptr || !isActive()) return
+    if (ptr || holdKey || !isActive()) return
     el.setPointerCapture(e.pointerId)
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), locked: null, consumed: false }
     holdStart = performance.now()
@@ -105,17 +113,20 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
       cb.spin(k === 'ArrowLeft' || k === 'KeyA' ? 1 : -1)
       nextSpinAt = performance.now() + tank.spinFirstDelayMs
       startLoop()
-    } else if (k === 'KeyQ') cb.rotate(-1)
-    else if (k === 'KeyE' || k === 'ArrowUp') cb.rotate(1)
+    } else if (k === 'KeyQ' || k === 'ControlRight') cb.rotate(-1)
+    else if (k === 'KeyE' || k === 'Numpad0') cb.rotate(1)
     else if (k === 'KeyS' || k === 'ArrowDown') { keys.add(k); cb.softDrop(true) }
-    else if (k === 'KeyR') cb.hold()
-    else if (k === 'KeyW' || k === 'Space') cb.console()
+    else if (k === 'KeyR' || k === 'ShiftRight') {
+      // same 1.5 s hold as touch, with the same charging ring
+      if (!holdKey && !ptr) { holdKey = k; holdStart = performance.now(); holdTimer = requestAnimationFrame(tickHold) }
+    } else if (k === 'KeyW' || k === 'ArrowUp') cb.console()
     else return
     e.preventDefault()
   }
   const keyUp = (e: KeyboardEvent) => {
     keys.delete(e.code)
     if (e.code === 'KeyS' || e.code === 'ArrowDown') cb.softDrop(false)
+    if (e.code === holdKey) { holdKey = null; clearHold() }
   }
 
   el.addEventListener('pointerdown', down)
