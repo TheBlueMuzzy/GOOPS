@@ -31,13 +31,13 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F02b Goop follows the grid (A), or free viscous goo that is the rules (B)? — must:alpha · needs: F02
   note: A (2026-10-17). Free goo was "REALLY interesting, but I don't think it's going to achieve the gameplay I'm after. If anything, that would be a different game. Let's keep the tech" (parking lot)
   what: B would change the core rules and the "goo never decides a rule" pillar; the L5 sketch proves whether it's fun first
-- 📐 F03 ❓ Crack colours: must the goop match? What does a wrong colour do? — must:alpha
+- ✅ F03 Crack colours: v1 — only the matching colour seals; wrong colour just covers it (2026-10-17) — must:alpha
   what: covering + zapping seals a crack (settled by the story); colour rules still open
 - ✅ F04 Pressure: rises over time, zaps vent it, cracks grow with it, integrity → rupture ends the shift (GDD §4) — must:alpha
-- 📐 F05 ❓ Shift length: snack (75 s) or sit-down (up to 115 s)? — must:alpha · needs: F04
+- ✅ F05 Shift length: no clock — the rupture loop decides it; tuned in the balance talk (2026-10-17) — must:alpha · needs: F04
 - 📐 F06 ❓ Breakdowns as choices, not punishments; pause or slow at the console? — must:alpha · needs: F01
 - 📐 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06
-- 📐 F08 ❓ Progression: XP from score or cracks sealed? How long is the climb to 50? — must:alpha · needs: F04, F05
+- ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
 - 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover — must:alpha · needs: F08
 - 📐 F10 ❓ Phone gestures without conflicts — must:alpha
 - 📐 F11 ❓ Look & sound: keep the v1 console art and palette, or refresh? — must:alpha
@@ -74,6 +74,12 @@ Goal: one full shift plays on phone and PC with living goo; Jelly or Particle in
 - ✅ F17 Pressure → integrity → rupture (GDD §4 loop) — must:alpha · needs: F13, F04
 - ✅ F18 One control set + wall-kick toggle — must:alpha · needs: F14
 - ✅ F19 Muzzy's art on the start + end screens — must:alpha · needs: F16
+
+## M2 — Working day
+Goal: a day at the console — periscope into a shift, back to the console, rank up, next shift. No upgrades yet, but the engine is ready for them.
+- 🔨 F20 Progression + save — must:alpha · needs: F08
+- 🔨 F21 The console as the menu (Example1) — must:alpha · needs: F20, F19
+- 🔨 F22 Upgrade-ready engine (modifiers + active hooks) — must:alpha · needs: F20
 
 ## Parking lot
 - 📌 2026-10-17 — **HUD + messages rethink** (Muzzy: "My focus is so heavily on the bottom of the tank, that the top UI is vanishing… the message it sends didn't show up in a place that matched my focus… good UI early helps me understand how to give you bug/balance feedback"). Big moments (quota met, rupture, why it ended) belong where the player is looking; the top HUD needs a rethink. Known: on a 360px phone a 5-digit score only just fits beside the bars.

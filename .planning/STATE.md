@@ -1,11 +1,11 @@
 ## ▶ RESUME HERE
 🌙 Overnight build done (2026-10-17): M1 "Core shift" plays end to end — one full shift, v1 rules, Jelly or Particle goo (Settings → Gameplay → Goo style). Branch `dev/m1-core-shift` (not delivered).
 Play: https://claude.ai/artifact/6kKDMuj25K2fEMoVUj5rrg (private build) · or on this PC: http://localhost:5173 · phone: http://192.168.1.152:5173 (dev server left running)
-Sprint 02 done 2026-10-17 (rupture loop, controls, wall kick, art, crack arrows, HUD over the tank). Next: /sprint → Sprint 03 (more of the vertical slice). Parked: HUD rethink + balance talk (ROADMAP).
+Sprint 03 building — a working day at the console (F20 progression · F21 console · F22 upgrade-ready engine). See SPRINT.md.
 NOT built (need your taste calls first): the real console menu, breakdowns, ranks/progression, story, tutorial, sound.
 
 ## Where we are
-Stage: develop (overnight M1) · Milestone: M1 Core shift · Sprint: 02 · Branch: master (default) · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
+Stage: develop (overnight M1) · Milestone: M2 Working day · Sprint: 03 · Branch: master (default) · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
 Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `npm run deploy`; stays up until the remake replaces it)
 
 ## Answered 2026-10-17 (written into GDD §4/§6) → build next sprint
