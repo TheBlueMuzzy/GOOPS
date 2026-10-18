@@ -2,7 +2,7 @@
 
 > How the game is built. Plain English first; code names in `backticks` only where they help.
 > Living document — /define writes it, /develop keeps it true, /tdd shows it.
-> Last updated: 2026-10-17 (first draft, written for the overnight M1 build; /define reviews it with Muzzy)
+> Last updated: 2026-10-17 (Sprint 02: rupture loop, controls, wall kick)
 
 ## 1. At a glance
 - **Platforms:** web (desktop + phone browsers), installable PWA later (like v1).
@@ -37,11 +37,14 @@ flowchart LR
 **Timers**
 | Timer | Length | Owned by | Starts when | On expiry |
 |---|---|---|---|---|
-| Shift / pressure | 75 s (v1) | engine | shift starts | pressure 100% → shift ends |
+| Pressure rise | 0→100% in `pressure.riseMsToFull` (75 s) | engine | shift starts | caps at 100% (cracks at the top rate) |
+| Crack spawn | 5 s at 0% → 1 s at 100% (`cracks.everyMsAtEmpty/AtFull`) | engine | shift starts | a crack in an empty cell at/below the pop line |
+| Integrity drain | `integrity.drainPerCrackPerSec` per open crack | engine | a crack opens | integrity 0 → rupture |
+| Rupture drain | 100%→0 in `rupture.drainMs` (5 s) | engine | integrity 0 or overflow | pressure 0 → shift ends (won if quota met) |
 | Piece fall step | v1 speed | engine | piece spawns / steps | piece moves down a row or starts lock delay |
 | Lock delay | 500 ms, max 10 resets (v1) | engine | piece touches down | piece locks |
 | Fill | 375 ms × group size (v1) | engine | group formed/changed | group ready to pop |
-| Pop refund | per v1 | engine | pop | time added back to the shift |
+| Pop / seal vent | v1 refund maths, ms ÷ riseMsToFull | engine | zap / seal | pressure drops |
 
 ## 3. Data the game reads
 | File | What's in it | Edited with |
@@ -68,6 +71,9 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D04 · 2026-10-17 · Shift loop = pressure → integrity → rupture (GDD §4)
+  Proposed by: Muzzy ("I can make pressure and cracks make sense")
+  Chose: no shift clock; open cracks drain tank integrity; rupture drains pressure, then the shift ends. Wall kick is a setting (Rotate vat / Shunt piece); no hard drop.
 D03 · 2026-10-17 · Goo simulates in view space around the spin
   Proposed by: Claude   Options: simulate in tank space and wrap at draw / view space
   Chose: view space — spinning the tank moves every home spot, so the goo sloshes for free; the wrap seam sits off-screen
