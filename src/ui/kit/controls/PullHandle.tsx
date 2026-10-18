@@ -30,18 +30,25 @@ const TAP_SLOP = 0.5 // rem a press may wander and still count as a tap
 export function PullHandle({ label, onPull, direction = 'down', travel = 0.5, threshold = 0.6, grip = 1, pulled = false, disabled, className = '', children }: PullHandleProps) {
   const [drag, setDrag] = useState<number | null>(null) // 0 → 1 while a finger holds it
   const [finishing, setFinishing] = useState(false) // let go past the threshold / tapped: gliding to the end
+  const [glideMs, setGlideMs] = useState<number | null>(null) // how long that glide takes (only the distance left)
   const self = useRef<HTMLDivElement>(null)
   const start = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null)
   const dragged = useRef(false) // the press was a drag, so the click that follows it isn't a tap
   const vertical = direction === 'down' || direction === 'up'
   const sign = direction === 'down' || direction === 'right' ? 1 : -1
 
-  const finish = () => {
+  // `from` = how far along it already is (0 = at rest, 1 = at the end)
+  const finish = (from = 0) => {
     if (disabled) return
+    // glide the rest of the way to the end, then act. The glide takes only the distance left: let go AT the end and it
+    // acts straight away (0.15.1 — Goops: a full glide's wait after a full pull felt like lag). No glide with reduce motion.
+    const ms = Math.round(motionTime('motion-normal') * (1 - Math.max(0, Math.min(1, from))))
+    setGlideMs(ms)
     setFinishing(true)
     controlSound('tap')
-    // glide to the end first (the style's normal time), then act — no glide with reduce motion
-    window.setTimeout(() => { setFinishing(false); onPull() }, motionTime('motion-normal'))
+    const done = () => { setFinishing(false); setGlideMs(null); onPull() }
+    if (ms > 0) window.setTimeout(done, ms)
+    else done()
   }
   const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
 
@@ -70,7 +77,7 @@ export function PullHandle({ label, onPull, direction = 'down', travel = 0.5, th
     dragged.current = true
     const share = drag ?? 0
     setDrag(null)
-    if (share >= threshold) finish()
+    if (share >= threshold) finish(share)
   }
   function onPointerCancel() { start.current = null; setDrag(null) }
   function onClick() {
@@ -87,7 +94,8 @@ export function PullHandle({ label, onPull, direction = 'down', travel = 0.5, th
   return (
     <div ref={self} className={`kit-pull ${className}`} data-direction={direction}
       data-dragging={drag !== null || undefined} data-pulled={pulled || finishing || undefined}
-      style={{ '--kit-pull': share, '--kit-pull-travel': travel, '--kit-pull-grip': grip } as CSSProperties}>
+      style={{ '--kit-pull': share, '--kit-pull-travel': travel, '--kit-pull-grip': grip,
+        ...(glideMs !== null && { '--kit-pull-glide': `${glideMs}ms` }) } as CSSProperties}>
       {children && <div className="kit-pull-look" aria-hidden="true">{children}</div>}
       <button type="button" className="kit-pull-grip" aria-label={label} disabled={disabled}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}

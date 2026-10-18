@@ -37,8 +37,10 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   // spinning repeats while a key or the drag is held
   const spinDir = (): -1 | 0 | 1 => {
     if (dragDir) return dragDir
-    if (keys.has('ArrowLeft') || keys.has('KeyA')) return 1
-    if (keys.has('ArrowRight') || keys.has('KeyD')) return -1
+    // keys move the VIEW: Left looks further left round the tank, so the goop slides right on screen (Muzzy 2026-10-18:
+    // v1's way — Left slid the goop left — "feels reversed"). A drag still pulls the goop along with the finger.
+    if (keys.has('ArrowLeft') || keys.has('KeyA')) return -1
+    if (keys.has('ArrowRight') || keys.has('KeyD')) return 1
     return 0
   }
   const loop = () => {
@@ -113,7 +115,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     const k = e.code
     if (k === 'ArrowLeft' || k === 'KeyA' || k === 'ArrowRight' || k === 'KeyD') {
       keys.add(k)
-      cb.spin(k === 'ArrowLeft' || k === 'KeyA' ? 1 : -1)
+      cb.spin(k === 'ArrowLeft' || k === 'KeyA' ? -1 : 1) // (the view moves left: see spinDir)
       nextSpinAt = performance.now() + tank.spinFirstDelayMs
       startLoop()
     } else if (k === 'KeyQ' || k === 'ControlRight') cb.rotate(-1)

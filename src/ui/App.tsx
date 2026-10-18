@@ -247,7 +247,7 @@ export function App() {
             midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined} />
         </ScreenStack>
       )}
-      <ToastStack place={layout.messages === 'stack' ? 'at' : 'center'} />
+      <ToastStack place={layout.messages === 'stack' ? 'at' : 'center'} variant="plain" /* words, not button-like plates (Muzzy 2026-10-18) */ />
     </>
   )
 }

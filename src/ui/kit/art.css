@@ -131,7 +131,7 @@
   /* off (does nothing yet) and dim (the rest of the machine while something else is in use): darkened, greyer */
   .kit-art-layer { transition: filter var(--motion-normal) var(--ease); }
   .kit-art-layer:is([data-off], [data-dim]) { filter: brightness(0.5) saturate(0.55); }
-  .kit-pull { transition: transform var(--motion-normal) var(--ease); }
+  .kit-pull { transition: transform var(--kit-pull-glide, var(--motion-normal)) var(--ease); } /* a finishing glide: only the distance left */
   .kit-pull[data-dragging] { transition: none; }
   .kit-pull-grip { background: none; }
   .kit-pull-grip:focus-visible { outline-offset: -0.25rem; }

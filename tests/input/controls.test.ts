@@ -73,7 +73,7 @@ describe('held spin with broken controls', () => {
       vi.advanceTimersByTime(300)
       pointer('pointerdown', 200); vi.advanceTimersByTime(30); pointer('pointermove', 140); vi.advanceTimersByTime(40); pointer('pointerup', 140)
       vi.advanceTimersByTime(300)
-      expect(spins).toEqual([-1, -1, 1])
+      expect(spins).toEqual([1, 1, 1]) // D = the view right (+1, 2026-10-18 flip); the swipe left pulls the goop left (+1)
       detach!(); detach = null
     }
   })

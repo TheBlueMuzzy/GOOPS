@@ -106,7 +106,9 @@ export function toast(text: string, { variant = 'neutral', seconds = 3, dismissi
 
 export const toastWords = { label: 'Messages', close: 'Close' }
 export type ToastPlace = 'top' | 'center' | 'bottom' | 'at'
-export function ToastStack({ label, place = 'top', words }: { label?: string; place?: ToastPlace; words?: Partial<typeof toastWords> }) {
+// variant="plain" (0.15.0): messages as glowing words on the game (HudText's look), no plate — a message isn't a button,
+// so it must not look like one (Muzzy's rule; Goops 2026-10-18). A dismissible toast keeps its plate: it IS tappable.
+export function ToastStack({ label, place = 'top', variant = 'panel', words }: { label?: string; place?: ToastPlace; variant?: 'panel' | 'plain'; words?: Partial<typeof toastWords> }) {
   const w = { ...toastWords, ...words }
   const list = useSyncExternalStore(toasts.subscribe, () => toasts.current, () => toasts.current)
   const box = useRef<HTMLDivElement>(null)
@@ -125,6 +127,11 @@ export function ToastStack({ label, place = 'top', words }: { label?: string; pl
           <span>{t.text}</span>
           <Button variant="ghost" icon sound="back" aria-label={w.close}>✕</Button>
         </Panel>
+      ) : variant === 'plain' ? (
+        // the same markup as HudText (hud.tsx imports this file, so it's written out here rather than imported)
+        <div key={t.id} className="kit-toast kit-hud-text" data-plain data-variant={t.variant}>
+          <Stack gap="xs"><Text kind="heading">{t.text}</Text></Stack>
+        </div>
       ) : (
         <Panel key={t.id} depth={2} gap="xs" className="kit-toast" data-variant={t.variant}>{t.text}</Panel>
       ))}

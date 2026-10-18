@@ -73,7 +73,9 @@
   /* HUD: its slots let taps through to the game; only buttons and inputs catch them */
   .kit-screen > [data-slot]:has(> .kit-hud-slot) { pointer-events: none; }
   .kit-hud-slot { display: contents; }
-  /* a corner's pieces stay on one line (a score + pause pair wrapped onto 2 rows on a 390px phone — Goops 2026-10-17) */
+  /* a corner's pieces stay on one line (a score + pause pair wrapped onto 2 rows on a 390px phone — Goops 2026-10-17).
+     No room for a wide score beside the other corner? Put it in the status row (`status`) instead — a corner that wraps
+     grows taller than the HUD's room and covers the game (tried in 0.15.0, taken out in 0.15.2). */
   .kit-screen > :is([data-slot="top-right"], [data-slot="bottom-right"]) > .kit-hud-slot > .kit-row { flex-wrap: nowrap; justify-content: flex-end; }
   .kit-hud-slot :is(button, input, [tabindex="0"]) { pointer-events: auto; }
   .kit-hud-chip { display: inline-flex; flex-wrap: nowrap; padding: var(--gap-xs) var(--gap-s); }
@@ -256,6 +258,7 @@
 /* ───────────── kit-style: paint ───────────── */
 @layer kit-style {
   .kit-toast[data-variant="danger"] { border-color: var(--danger); }
+  .kit-toast[data-plain][data-variant="danger"] { color: var(--danger); } /* plain words: danger is their colour, no edge */
   /* The idle bar drains from full to empty over the time left (linear: it IS the clock) */
   .kit-idle-bar .kit-progress-fill { inline-size: 100%; transition: none; animation: kit-idle-drain var(--kit-idle-ms, 30s) linear forwards; }
   .kit-spinner-big { color: var(--primary); }

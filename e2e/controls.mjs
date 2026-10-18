@@ -43,7 +43,7 @@ try {
   // keys — one job each (GDD §4 table)
   const st = () => get(() => { const s = window.__goops.engine.state; return { spin: s.spin, rot: s.piece?.rotation, held: JSON.stringify(s.held), next: JSON.stringify(s.next) } })
   const turn = (a, b) => ((b - a) % 30 + 30) % 30
-  for (const [key, want] of [['KeyA', 1], ['ArrowLeft', 1], ['KeyD', 29], ['ArrowRight', 29]]) {
+  for (const [key, want] of [['KeyA', 29], ['ArrowLeft', 29], ['KeyD', 1], ['ArrowRight', 1]] /* keys move the view (2026-10-18) */) {
     const a = await st(); await page.keyboard.press(key); await page.waitForTimeout(60); const b = await st()
     check(`${key} spins`, turn(a.spin, b.spin) === want, `spin ${a.spin} → ${b.spin}`)
   }

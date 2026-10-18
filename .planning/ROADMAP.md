@@ -90,6 +90,7 @@ Goal: machines break from your own play and you fix them at the console while th
 - 🔨 F27 ❓ Integrity / crack balance talk — must:alpha · needs: F26
 
 ## Parking lot
+- 💡 2026-10-18 — **Periscope zoom (polish):** pulling the periscope down zooms INTO its visor and the shift is playing in there; swiping up zooms back out. At the console the game stays small and visible through the visor (Muzzy: "like you're actually looking directly into the periscope visor… put this for polish later")
 - 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
 - 💡 2026-10-17 — Pixel look: the UI drawn as small pixels, and eventually the goop too ("pixellated goop would look cool") (Muzzy)
 - 💡 2026-10-17 — Repair bots: an upgrade — one or more small bots float around the tank sealing cracks for you (much later) (Muzzy)
