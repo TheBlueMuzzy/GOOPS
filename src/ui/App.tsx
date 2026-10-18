@@ -31,14 +31,15 @@ const onAlert = (kind: 'quotaMet' | 'rupture') =>
 export function App() {
   const [engine, setEngine] = useState<ShiftEngine | null>(null)
   const [hud, setHud] = useState<HudSnapshot | null>(null)
-  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number } | null>(null)
+  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow' } | null>(null)
   const open = useScreens()
 
   const start = useCallback(() => { setResult(null); setHud(null); setEngine(newEngine()) }, [])
   const toMenu = useCallback(() => { while (screens.current.length) screens.pop(); setEngine(null); setResult(null) }, [])
   const onEnd = useCallback((status: ShiftStatus) => {
     setEngine((e) => {
-      if (e) setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded })
+      if (e) setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
+        cause: e.state.ruptureReason ?? 'integrity' })
       return e
     })
     toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
@@ -51,11 +52,11 @@ export function App() {
       <Pause words={text.pause} onSettings={() => screens.push('settings')} onQuit={toMenu} />
     ),
     end: () => result && (result.status === 'won'
-      ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again }} message={text.end.wonMessage}
+      ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again }} message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
           frame={art.end.frame} art={{ continue: art.end.again }}
           stats={[{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]}
           onContinue={() => { screens.pop(); start() }} />
-      : <GameOver words={{ title: text.end.lostTitle, retry: text.end.again, quit: text.end.quit }} message={text.end.lostMessage}
+      : <GameOver words={{ title: text.end.lostTitle, retry: text.end.again, quit: text.end.quit }} message={result.cause === 'overflow' ? text.end.lostOverflow : text.end.lostCracks}
           frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }}
           stats={[{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]}
           onRetry={() => { screens.pop(); start() }} onQuit={toMenu} />),
@@ -85,8 +86,8 @@ export function App() {
           <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')}
             vitals={(
               <Stack gap="s">
-                <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} width="s" showLabel />
-                <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} width="s" showLabel />
+                <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} showLabel />
+                <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} showLabel />
               </Stack>
             )}
             status={<HudText tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>}

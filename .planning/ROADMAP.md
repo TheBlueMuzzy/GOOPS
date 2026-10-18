@@ -67,15 +67,17 @@ Goal: one full shift plays on phone and PC with living goo; Jelly or Particle in
 - ✅ F13 Shift engine: v1 rules in a pure, seeded, tested engine — must:alpha
   what: tank wrap (30 around, 12 visible), pieces + lock feel, merge, fill, pop below the pressure line, pressure timer + refunds, cracks + sealing, score, shift end
 - ✅ F14 Tank view + controls (v1 controls) — must:alpha · needs: F13
-- 🔨 F15 Goo overlay: Jelly + Particle, switchable in Settings — must:alpha · needs: F13, F14, F02
+- ✅ F15 Goo overlay: Jelly + Particle, switchable in Settings — must:alpha · needs: F13, F14, F02
   why: Muzzy (2026-10-17): "make it so that In the settings I can change between particle goo or jelly goo since they are just 'overlaying' the grid below"
 - ✅ F16 Shift screens: console-lite start, HUD, end-of-shift report, Settings — must:alpha · needs: F13
 
-- 🔨 F17 Pressure → integrity → rupture (GDD §4 loop) — must:alpha · needs: F13, F04
-- 🔨 F18 One control set + wall-kick toggle — must:alpha · needs: F14
-- 🔨 F19 Muzzy's art on the start + end screens — must:alpha · needs: F16
+- ✅ F17 Pressure → integrity → rupture (GDD §4 loop) — must:alpha · needs: F13, F04
+- ✅ F18 One control set + wall-kick toggle — must:alpha · needs: F14
+- ✅ F19 Muzzy's art on the start + end screens — must:alpha · needs: F16
 
 ## Parking lot
+- 📌 2026-10-17 — **HUD + messages rethink** (Muzzy: "My focus is so heavily on the bottom of the tank, that the top UI is vanishing… the message it sends didn't show up in a place that matched my focus… good UI early helps me understand how to give you bug/balance feedback"). Big moments (quota met, rupture, why it ended) belong where the player is looking; the top HUD needs a rethink. Known: on a 360px phone a 5-digit score only just fits beside the bars.
+- 📌 2026-10-17 — **Integrity / crack balance talk**: drain per open crack, crack rate vs pressure, and the chances to seal (where cracks appear vs how much goop falls). Muzzy's first shifts ruptured from cracks before pressure reached 100%. Needs the HUD rethink first so play feedback is readable.
 - 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
 - 💡 2026-10-17 — Pixel look: the UI drawn as small pixels, and eventually the goop too ("pixellated goop would look cool") (Muzzy)
 - 💡 2026-10-17 — Repair bots: an upgrade — one or more small bots float around the tank sealing cracks for you (much later) (Muzzy)

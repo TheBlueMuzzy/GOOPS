@@ -39,7 +39,7 @@ export class FakeEngine implements ShiftEngine {
     this.state = {
       width, height, bufferRows: 3, visibleWidth: 12,
       grid: new Uint8Array(width * height), groupOf: new Int32Array(width * height).fill(-1), groups: new Map(),
-      spin: 0, piece: null, ghost: [], next: null, held: null, pressure: 0, pressureRow: 0, integrity: 1, phase: 'playing',
+      spin: 0, piece: null, ghost: [], next: null, held: null, pressure: 0, pressureRow: 0, integrity: 1, phase: 'playing', ruptureReason: null,
       cracks: [], cracksSealed: 0, cracksNeeded: 0, quotaMet: false, score: 0, status: 'playing', rank: 1,
     }
     this.spawn()

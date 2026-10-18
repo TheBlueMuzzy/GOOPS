@@ -56,6 +56,7 @@ export interface ShiftState {
   pressureRow: number // y of the pressure line (goop at or below it can pop)
   integrity: number // 0..1 tank integrity: open cracks drain it, it never refills; 0 = rupture
   phase: ShiftPhase
+  ruptureReason: 'integrity' | 'overflow' | null // why the tank broke (null until it does)
   cracks: Crack[]
   cracksSealed: number
   cracksNeeded: number

@@ -78,6 +78,10 @@
   .kit-hud-slot :is(button, input, [tabindex="0"]) { pointer-events: auto; }
   .kit-hud-chip { display: inline-flex; flex-wrap: nowrap; padding: var(--gap-xs) var(--gap-s); }
   .kit-hud-chip .kit-text { white-space: nowrap; overflow-wrap: normal; } /* short HUD words never break letter by letter */
+  /* a bar in a HUD corner gives way when the other corner grows (a 5-digit score pushed the Score chip over the bars on
+     a 390px phone — Goops 2026-10-17): it shrinks to 2rem instead of holding its 6rem minimum. Bars with a width keep it. */
+  .kit-hud-chip:not([data-width]) { max-inline-size: 100%; min-inline-size: 0; }
+  .kit-hud-chip:not([data-width]) > .kit-progress { min-inline-size: 2rem; flex: 1 1 6rem; }
   /* A chip that starts with an avatar (or a player chip's icon): breathing room on EVERY side — nothing ever touches a
      card's edge (Muzzy, 2026-10-03: "there should always be breathing room around the edge of cards/containers so that
      nothing touches the edges"); the text side a little more. The tightest size (xs, rows close together) keeps less. */

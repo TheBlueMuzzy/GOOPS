@@ -80,6 +80,7 @@ class Shift implements ShiftEngine {
       pressureRow: height - 1,
       integrity: 1,
       phase: 'playing',
+      ruptureReason: null,
       cracks: [],
       cracksSealed: 0,
       cracksNeeded: cracksNeededFor(config, options.rank),
@@ -199,6 +200,7 @@ class Shift implements ShiftEngine {
     const s = this.state
     if (s.phase === 'rupture') return
     s.phase = 'rupture'
+    s.ruptureReason = reason
     this.events.push({ type: 'rupture', reason })
   }
 

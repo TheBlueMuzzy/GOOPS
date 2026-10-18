@@ -8,11 +8,11 @@
   "hud": {
     "pressure": "Pressure",
     "cracks": "Cracks {n} / {total}",
-    "cracksDone": "Quota met · {n} sealed",
+    "cracksDone": "Quota met · {n}",
     "pause": "Console",
     "swap": "Swapping piece",
     "integrity": "Tank",
-    "rupture": "Rupture! Zap what you can",
+    "rupture": "Rupture!",
     "quotaMetToast": "Quota met. Every crack now is a bonus.",
     "ruptureToast": "The tank ruptured. Pressure is draining."
   },
@@ -25,12 +25,14 @@
   },
   "end": {
     "wonTitle": "Shift complete",
-    "wonMessage": "Quota met before the tank gave out. Management has noted your adequate performance.",
     "lostTitle": "Shift failed",
-    "lostMessage": "The tank ruptured before you met the quota. This will go on your record.",
     "score": "Score",
     "cracks": "Cracks sealed",
     "again": "Next shift",
-    "quit": "Back to the console"
+    "quit": "Back to the console",
+    "wonCracks": "Quota met. Then too many open cracks broke the tank. Management has noted your adequate performance.",
+    "wonOverflow": "Quota met. Then the tank overfilled and burst. Management has noted your adequate performance.",
+    "lostCracks": "Too many open cracks broke the tank before you met the quota. This will go on your record.",
+    "lostOverflow": "The tank overfilled and burst before you met the quota. This will go on your record."
   }
 }

@@ -28,8 +28,8 @@ Done when: start and end screens use his art/ SVGs (title, background, end-game 
 Check: screenshots at 390×844, 844×390, 1440×900; check:ui passes.
 
 ## Tuning (last)
-- [ ] 🙋 14. Play a shift on PC + phone, both goo styles (from Sprint 01)
-- [ ] 🙋 15. (tuning) Pacing: integrity drain per crack, crack rate curve, rupture drain time
+- [x] 🙋 14. Play a shift on PC + phone, both goo styles (from Sprint 01) — Muzzy played on PC 2026-10-17
+- [ ] 🙋 15. (tuning, moved to ROADMAP "Integrity / crack balance talk") Pacing: integrity drain per crack, crack rate curve, rupture drain time
 
 ## Notes
 - Starting numbers (Claude's guesses, all in content/tuning/shift.json): pressure 0→100% in ~75 s; cracks every 5 s at 0% → 1 s at 100%; rupture drain 5 s.
@@ -48,3 +48,5 @@ Check: screenshots at 390×844, 844×390, 1440×900; check:ui passes.
 - Review (89c229e..HEAD): fixed — a blocked spawn during a rupture ended the shift at once (my brief's rule, not Muzzy's; cut the zap window short) → now it waits for room and ends only at pressure 0; holding a key while the window lost focus could fire a swap → let go of keys on blur.
 - Muzzy feedback 2026-10-17 (fixed): off-screen crack arrows (v1: a triangle in the crack's colour at its height, on the tank edge the short way round; `tank.offscreenArrow*`); on wide windows the HUD went to the window edges → kit 0.11.2 `--kit-hud-w` keeps it over the tank (min 360 px) and lays it out by its own width; HUD reserve = two rows (128 px); the spawn rows above the tank are hidden again (v1) so new pieces slide in from the tank top instead of over the HUD (fixes the P3 "piece over the crack count" bug).
 - Ask Muzzy: the small icon in the bottom-right corner of the wide screenshot doesn't show in my test browser (nothing is drawn there) — was that the hosted copy on claude.ai or localhost?
+- Muzzy played 2026-10-17: crack arrows ✓, HUD on screen ✓; the long rupture line overlapped the corners once his score hit 1241 (the HUD check only ever used score 0) → status "Rupture!", "Quota met · {n}", HUD check now runs every message state with a 5-digit score at 9 sizes; kit 0.11.3 bars give way. He couldn't tell WHY the tank drained → the end report now says it (too many open cracks / overfilled). Quota never drains the tank — only a rupture does.
+- Sprint 02 approved by moving on (Muzzy: "I want to continue to the next step… complete more of the vertical slice"). Pacing + HUD rethink parked in ROADMAP.

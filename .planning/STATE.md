@@ -1,7 +1,7 @@
 ## ▶ RESUME HERE
 🌙 Overnight build done (2026-10-17): M1 "Core shift" plays end to end — one full shift, v1 rules, Jelly or Particle goo (Settings → Gameplay → Goo style). Branch `dev/m1-core-shift` (not delivered).
 Play: https://claude.ai/artifact/6kKDMuj25K2fEMoVUj5rrg (private build) · or on this PC: http://localhost:5173 · phone: http://192.168.1.152:5173 (dev server left running)
-Sprint 02 built (F17 rupture loop · F18 controls + wall kick · F19 art) — waiting on Muzzy to play + approve. Reviewed through: 418b575.
+Sprint 02 done 2026-10-17 (rupture loop, controls, wall kick, art, crack arrows, HUD over the tank). Next: /sprint → Sprint 03 (more of the vertical slice). Parked: HUD rethink + balance talk (ROADMAP).
 NOT built (need your taste calls first): the real console menu, breakdowns, ranks/progression, story, tutorial, sound.
 
 ## Where we are
