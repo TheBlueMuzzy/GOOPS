@@ -81,6 +81,9 @@ export const kitScreens = { confirm: () => (pendingConfirm ? <Confirm {...pendin
 // dismissible: tapping the toast (or its ✕ Close button) hides it early.
 // <ToastStack place="bottom" />: where they show — 'top' (default), 'center' or 'bottom' of the screen
 // (of the game picture, in a letterboxed game that sets --kit-frame-w / --kit-frame-h).
+// place="at" (0.14.0): at a point the GAME picks, e.g. just above the action where the player is looking. The game sets
+// --kit-toasts-at (CSS px from the top of the game picture, e.g. '412px'); the stack's BOTTOM edge sits there (newest
+// at the bottom, nearest the point; older ones pushed up) and it glides when the point moves (never jumps).
 export type Toast = { id: number; text: string; variant: 'neutral' | 'danger'; dismissible: boolean }
 export const MAX_TOASTS = 3 // older ones make room for new ones
 let toastList: readonly Toast[] = []
@@ -102,7 +105,7 @@ export function toast(text: string, { variant = 'neutral', seconds = 3, dismissi
 }
 
 export const toastWords = { label: 'Messages', close: 'Close' }
-export type ToastPlace = 'top' | 'center' | 'bottom'
+export type ToastPlace = 'top' | 'center' | 'bottom' | 'at'
 export function ToastStack({ label, place = 'top', words }: { label?: string; place?: ToastPlace; words?: Partial<typeof toastWords> }) {
   const w = { ...toastWords, ...words }
   const list = useSyncExternalStore(toasts.subscribe, () => toasts.current, () => toasts.current)

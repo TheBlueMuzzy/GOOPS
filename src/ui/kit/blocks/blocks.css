@@ -219,6 +219,11 @@
     max-inline-size: calc(var(--kit-frame-w, 100vw) - var(--kit-toasts-start, 0%) - var(--kit-toasts-end, 0%) - 2 * var(--gap-m)); }
   .kit-toasts[data-place="center"] { inset-block: 0; margin: auto; }
   .kit-toasts[data-place="bottom"] { inset-block: auto 0; margin: 0 auto calc(var(--kit-letterbox-h) + max(var(--gap-m), env(safe-area-inset-bottom))); }
+  /* place="at": the stack's bottom edge on the game's point (--kit-toasts-at, px from the top of the game picture; the
+     middle of the picture until the game sets it). It glides there when the point moves; reduce motion = it just moves. */
+  .kit-toasts[data-place="at"] { inset-block: 0 auto; margin: 0 auto;
+    translate: 0 calc(var(--kit-letterbox-h) + var(--kit-toasts-at, calc(var(--kit-frame-h, 100dvh) / 2)) - 100%);
+    transition: translate var(--motion-normal) var(--ease); }
   .kit-toasts:popover-open { display: flex; }
   .kit-toast { padding: var(--gap-s) var(--gap-m); }
   .kit-toast[data-dismissible] { flex-direction: row; align-items: center; padding-block: var(--gap-xs); padding-inline-end: var(--gap-xs); cursor: pointer; }
