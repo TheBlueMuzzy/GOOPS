@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createShift } from '../../src/engine'
 import type { ShiftConfig, ShiftEngine, ShiftEvent } from '../../src/engine'
 import { crackEveryMs } from '../../src/engine/cracks'
-import { dropPiece, idx, ofType, oneShapeConfig, tank, tickUntil } from './helpers'
+import { dropPiece, idx, ofType, oneShapeConfig, sealACrack, tank, tickUntil } from './helpers'
 
 const FLOOR = '2'.repeat(30)
 
@@ -21,22 +21,6 @@ function run(shift: ShiftEngine, ms: number): ShiftEvent[] {
     shift.tick(10)
     events.push(...shift.takeEvents())
   }
-  return events
-}
-
-// Wait for a crack sitting right on top of goop (so a dropped piece lands on it), plug it, wait, pop it.
-function sealACrack(shift: ShiftEngine, config: ShiftConfig): ShiftEvent[] {
-  const s = shift.state
-  const onGoop = () => s.cracks.find((c) => c.y === s.height - 1 || s.grid[(c.y + 1) * s.width + c.x] !== 0)
-  tickUntil(shift, () => !!onGoop())
-  const crack = onGoop()!
-  while (s.spin !== crack.x) shift.act({ type: 'spin', dir: 1 })
-  const events = [...shift.takeEvents(), ...dropPiece(shift, config)]
-  expect(s.cracks.find((c) => c.id === crack.id)!.plugged).toBe(true)
-  tickUntil(shift, () => !!s.groups.get(s.groupOf[idx(crack.x, crack.y)])?.ready)
-  shift.act({ type: 'pop', x: crack.x, y: crack.y })
-  events.push(...shift.takeEvents())
-  expect(ofType(events, 'pop').at(-1)!.sealed).toEqual([crack.id])
   return events
 }
 

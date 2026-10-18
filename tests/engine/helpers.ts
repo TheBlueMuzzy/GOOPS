@@ -1,4 +1,5 @@
 // Shared test helpers: configs and hand-made tanks.
+import { expect } from 'vitest'
 import shiftJson from '../../content/tuning/shift.json'
 import type { ShiftConfig } from '../../src/engine/config'
 import type { ShiftEngine, ShiftEvent } from '../../src/engine/types'
@@ -59,4 +60,20 @@ export function dropPiece(shift: ShiftEngine, config: ShiftConfig): ShiftEvent[]
 // Tick in small steps until `done` or the time runs out.
 export function tickUntil(shift: ShiftEngine, done: () => boolean, maxMs = 60000, stepMs = 10): void {
   for (let t = 0; t < maxMs && !done(); t += stepMs) shift.tick(stepMs)
+}
+
+// Wait for a crack sitting right on top of goop (so a dropped piece lands on it), plug it, wait, pop it.
+export function sealACrack(shift: ShiftEngine, config: ShiftConfig): ShiftEvent[] {
+  const s = shift.state
+  const onGoop = () => s.cracks.find((c) => c.y === s.height - 1 || s.grid[(c.y + 1) * s.width + c.x] !== 0)
+  tickUntil(shift, () => !!onGoop())
+  const crack = onGoop()!
+  while (s.spin !== crack.x) shift.act({ type: 'spin', dir: 1 })
+  const events = [...shift.takeEvents(), ...dropPiece(shift, config)]
+  expect(s.cracks.find((c) => c.id === crack.id)!.plugged).toBe(true)
+  tickUntil(shift, () => !!s.groups.get(s.groupOf[idx(crack.x, crack.y)])?.ready)
+  shift.act({ type: 'pop', x: crack.x, y: crack.y })
+  events.push(...shift.takeEvents())
+  expect(ofType(events, 'pop').at(-1)!.sealed).toEqual([crack.id])
+  return events
 }
