@@ -2,14 +2,21 @@
 // Pull the periscope down (drag it, tap it, or ↓ / Enter) → the console dims and slides away to show the tank (the App
 // starts the shift under it). Coming back after shifts it slides up again and the Operator Rank meter fills with the
 // XP earned since it last showed, with a rank-up moment at the rank bar (the rank number pops).
-// The repair panels are drawn switched off: breakdowns (F06) come later. Words come from content/text/en.json.
+// MID-SHIFT (F23/F24): swipe up in a shift → this same console slides over the tank while the shift runs on slowly;
+// a broken machine's repair panel comes alive (RepairPanels.tsx), the gear opens the pause menu, and pulling the
+// periscope goes back to the same shift. On a phone on its side only the panels show, with a Back to the tank button.
+// Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
 import { useMemo } from 'react'
 import { ArtLayer, ArtStage, Button, LevelMeter, PullHandle, Screen, TitleArt, fill } from './kit'
+import type { MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
+import { ControlsPanel, LaserPanel, VisorPanel } from './RepairPanels'
 import { art } from './art'
+import { useShort } from './useShort'
 import text from '../../content/text/en.json'
 
 export type ConsolePhase = 'idle' | 'leaving' | 'arriving'
+export type ConsoleMachines = Record<MachineId, { broken: boolean }>
 
 type Props = {
   progress: Progress // now
@@ -17,26 +24,36 @@ type Props = {
   phase: ConsolePhase
   onPull(): void // periscope pulled all the way
   onSlideEnd(): void // finished sliding away / back in
-  onSettings(): void
+  onSettings(): void // the gear (mid-shift: the pause menu)
+  // mid-shift only: the machines now, how many times each has broken (a new puzzle each time), and a repair solved
+  midShift?: { machines: ConsoleMachines; breaks: Record<MachineId, number>; onRepair(machine: MachineId): void }
 }
 
 const t = text.console
 const a = art.console
 const format = (n: number) => n.toLocaleString('en')
+const MACHINES: MachineId[] = ['laser', 'visor', 'controls']
 
-export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings }: Props) {
+
+export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift }: Props) {
   const now = rankInfo(progress)
   const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, progress) : []), [shownFrom, progress])
-  const hint = t.hint // the monitor always says what to do (Muzzy); XP + rank-ups are on the report and the rank bar
+  const short = useShort()
   const leaving = phase === 'leaving'
-  const off = (name: string) => fill(t.unavailable, { name })
+  const broken = MACHINES.filter((id) => midShift?.machines[id].broken)
+  // the monitor always says what to do (Muzzy); XP + rank-ups are on the report and the rank bar
+  const hint = !midShift ? t.hint : broken.length ? fill(t.hintRepair, { name: t.machineNames[broken[0]] }) : t.hintBack
+  const live = (id: MachineId) => !!midShift?.machines[id].broken && !leaving
+  const repair = (id: MachineId) => () => midShift?.onRepair(id)
+  const key = (id: MachineId) => `${id}-${midShift?.breaks[id] ?? 0}`
 
   return (
     <Screen label={t.label} column backdrop={a.backdrop}
       slide={phase === 'idle' ? undefined : phase === 'leaving' ? 'out' : 'in'} slideEdge="bottom" onSlideEnd={onSlideEnd}
       bottom={<TitleArt src={a.title} alt={t.title} size="s" />}
+      bottomLeft={midShift && short ? <Button variant="secondary" onClick={onPull} disabled={phase !== 'idle'}>{t.backToTank}</Button> : undefined}
       bottomRight={<Button art={a.settings} onClick={onSettings}>{t.settings}</Button>}>
-      <ArtStage size={a.size} view={a.view} viewShort={a.viewShort} label={t.label} bleed align="end">
+      <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end">
         <ArtLayer {...a.body} dim={leaving} />
         <ArtLayer {...a.meter} dim={leaving} />
         <ArtLayer at={a.meter.at} text={a.meterText} dim={leaving}>
@@ -44,21 +61,19 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             words={{ label: t.rank, unit: t.xp, max: t.maxRank }} art={a.meterFill}
             steps={steps.length ? steps : undefined} play={phase === 'idle'} />
         </ArtLayer>
-        <ArtLayer {...a.laser} off label={off(t.laser)} />
-        <ArtLayer {...a.controls} off label={off(t.controls)} />
-        <ArtLayer {...a.lights} off label={off(t.lights)} />
-        <ArtLayer {...a.words.laser} tone="primary" off>{t.laser}</ArtLayer>
-        <ArtLayer {...a.words.controls} tone="primary" off>{t.controls}</ArtLayer>
-        <ArtLayer {...a.words.lights} tone="primary" off>{t.lights}</ArtLayer>
+        <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} />
+        <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} />
+        <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} />
         <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{fill(t.version, { v: import.meta.env.GOOPS_VERSION })}</ArtLayer>
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>
-          <PullHandle label={t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving} onPull={onPull} disabled={phase === 'arriving'}>
+          <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving} onPull={onPull}
+            disabled={phase === 'arriving' || (!!midShift && short) /* a phone on its side: Back to the tank does it (the periscope is mostly off screen) */}>
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor} />
-        <ArtLayer {...a.words.hint}>{hint}</ArtLayer>
+        <ArtLayer {...a.words.hint} tone={broken.length ? 'accent' : undefined}>{hint}</ArtLayer>
       </ArtStage>
     </Screen>
   )

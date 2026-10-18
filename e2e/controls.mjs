@@ -67,11 +67,19 @@ try {
     const c = await swaps()
     check(`${key} held 1.5 s swaps`, c === b + 1, `swaps ${b} → ${c}`)
   }
+  // W / ↑ = the real console slides over the tank mid-shift (F23/F24); the periscope (tapped) goes back to the shift
+  const toConsole = async (key) => {
+    await page.keyboard.press(key)
+    return page.waitForFunction(() => { const c = document.querySelector('.kit-screen[aria-label="Console"]'); return c && !c.hasAttribute('data-slide') }, null, { timeout: 3000 }).then(() => true, () => false)
+  }
+  const backToTank = async () => {
+    await page.getByRole('button', { name: 'Back to the tank' }).click()
+    await page.locator('.kit-art-stage').waitFor({ state: 'detached', timeout: 5000 })
+  }
   for (const key of ['KeyW', 'ArrowUp']) {
-    await page.keyboard.press(key); await page.waitForTimeout(300)
-    const shown = await page.getByRole('heading', { name: 'Console' }).count()
-    check(`${key} opens the console`, shown > 0)
-    await page.keyboard.press('Escape'); await page.waitForTimeout(300)
+    check(`${key} opens the console mid-shift`, await toConsole(key))
+    await backToTank()
+    check(`${key}: the periscope goes back to the shift`, await get(() => window.__goops.engine.state.status === 'playing'))
   }
 
   // build some goop, wait for a ready group at/below the line, then tap it on screen
@@ -121,8 +129,9 @@ try {
   // Settings → Gameplay → Wall kick reaches the game mid-shift, and a new shift starts with the saved choice
   const kick = () => get(() => window.__goops.engine.wallKick)
   check('wall kick starts as Rotate vat', (await kick()) === 'rotateVat')
-  await page.keyboard.press('KeyW'); await page.waitForTimeout(300)
-  await page.getByRole('button', { name: 'Settings' }).click(); await page.waitForTimeout(300)
+  await toConsole('KeyW')
+  await page.getByRole('button', { name: 'Settings' }).click(); await page.waitForTimeout(300) // the gear: the pause menu
+  await page.getByRole('dialog').getByRole('button', { name: 'Settings' }).click(); await page.waitForTimeout(300)
   await page.getByRole('tab', { name: 'Gameplay' }).click(); await page.waitForTimeout(200)
   await page.getByRole('button', { name: 'Next Wall kick' }).click(); await page.waitForTimeout(200)
   check('Settings switch → Shunt piece mid-shift', (await kick()) === 'shuntPiece', String(await kick()))
