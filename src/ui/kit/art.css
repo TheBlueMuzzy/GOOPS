@@ -38,7 +38,7 @@
 @layer kit-style {
   /* (data-variant in the selector: beats every variant's fill, outline, glow and shadow) */
   .kit-button[data-art][data-variant] { background: none; border-color: transparent; box-shadow: none; filter: none; color: inherit;
-    font-family: var(--font-display); }
+    font-family: var(--font-heading); }
   /* big pictures get big words (heading size); s / m keep a normal button's text size */
   .kit-button[data-art][data-art-size="l"] { font-size: var(--text-heading); }
   /* the picture presses itself (down art); no extra sink or shrink — without down art, the style's press stays */

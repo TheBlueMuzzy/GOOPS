@@ -49,3 +49,6 @@ e2e-shots
 *.tsbuildinfo
 .claude/worktrees/
 dist-preview
+
+# Dev Kit: each computer's own settings (e.g. where its font library is)
+devkit.local.json

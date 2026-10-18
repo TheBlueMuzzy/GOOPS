@@ -252,8 +252,9 @@
   [data-depth="1"] { box-shadow: var(--depth-1); }
   [data-depth="2"] { box-shadow: var(--depth-2); }
 
-  .kit-text[data-kind="display"], .kit-text[data-kind="title"], .kit-text[data-kind="heading"],
-  .kit-card-title, .kit-roomcode-box { font-family: var(--font-display); }
+  /* the three text roles (0.16.0): titles → font-title, headings → font-heading, the rest → font-body (above) */
+  .kit-text[data-kind="display"], .kit-text[data-kind="title"] { font-family: var(--font-title); }
+  .kit-text[data-kind="heading"], .kit-card-title, .kit-roomcode-box { font-family: var(--font-heading); }
   .kit-text[data-kind="caption"], .kit-listrow-detail { color: var(--muted); }
   .kit-text:is([data-kind="display"], [data-kind="title"], [data-kind="heading"]),
   .kit-card-title, .kit-button, .kit-tab, .kit-badge { text-transform: var(--text-case); }
