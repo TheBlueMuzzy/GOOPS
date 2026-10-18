@@ -71,7 +71,9 @@ try {
     await page.waitForTimeout(300)
     const L = await layers(page)
     console.log('amount 0 + pixel off:', JSON.stringify(L))
-    if (L.overlay || L.tankHidden || L.gooHidden) fail('overlay should be off and the canvases visible')
+    // the curved-TV look is on whenever you're in the vat (visor-fx.json 'always', Muzzy 2026-10-18), so even with no
+    // glitch the overlay is up, on the tank only
+    if (!L.overlay || !L.onTank || L.tankHidden || L.gooHidden) fail('with no glitch, the always-on curve should still show, on the tank only')
     // the real path: an unlocked visor whose signal fades → the overlay comes on; healthy again → off
     await page.evaluate(() => { window.__goopsVisor.set({ amount: null }); const v = window.__goops.engine.state.machines.visor; v.unlocked = true; v.health = 0.5 })
     await page.waitForTimeout(200)
@@ -81,7 +83,7 @@ try {
     const healthy = await layers(page)
     console.log('visor health 0.5:', JSON.stringify(fading), '→ health 1:', JSON.stringify(healthy))
     if (!fading.overlay || !fading.onTank || fading.tankHidden || fading.gooHidden) fail('a fading visor should show the overlay, on the tank only')
-    if (healthy.overlay || healthy.tankHidden) fail('a healthy visor (pixel off) should hide the overlay')
+    if (!healthy.overlay || healthy.tankHidden) fail('a healthy visor still shows the always-on curve')
     if (errors.length) fail('errors: ' + errors.join(' | '))
     await page.close()
   }

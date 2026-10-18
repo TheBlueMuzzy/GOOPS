@@ -27,6 +27,7 @@ void main() {
 export const FS_GLITCH = `#version 300 es
 precision highp float;
 uniform sampler2D uTex; uniform vec2 uRes; uniform float uTime, uAmt, uGrain, uDpr;
+uniform float uCurveAlways, uVigAlways; // the curved-TV look that's on whenever you're in the vat (visor-fx.json 'always')
 uniform float uScan, uRgb, uRoll, uNoise, uFlicker, uTear, uTearSize, uBlock, uBlockSize, uVig, uCurve, uDead, uDrop;
 out vec4 o;
 // integer hash (sin-based hashes repeat at big inputs and made dead lines show at amount 0)
@@ -40,7 +41,8 @@ void main() {
   float a = uAmt, aLate = a * a;        // late effects ramp in slowly (a squared)
   float slot = floor(uTime * 12.0);     // the glitch clock: tears/blocks re-roll 12x a second
   // visor curvature (barrel)
-  vec2 c = uv * 2.0 - 1.0; c *= 1.0 + uCurve * a * 0.10 * dot(c, c); uv = c * 0.5 + 0.5;
+  float curve = max(uCurveAlways, a) * uCurve; // always this curved; the glitch can only add
+  vec2 c = uv * 2.0 - 1.0; c *= 1.0 + curve * 0.10 * dot(c, c); uv = c * 0.5 + 0.5;
   float outside = step(1.0, max(abs(c.x), abs(c.y)));
   // vertical slip (roll): rare, short, a few rows
   float slip = lt(h1(floor(uTime * 3.0) + 11.0), uRoll * aLate * 0.25) * 0.035;
@@ -86,7 +88,7 @@ void main() {
   col = mix(col, vec3(n * 0.3), drop * 0.65);
   // vignette
   float v = dot(c, c);
-  col *= 1.0 - uVig * a * 0.7 * smoothstep(0.3, 2.0, v);
+  col *= 1.0 - uVig * max(uVigAlways, a) * 0.7 * smoothstep(0.3, 2.0, v);
   col *= 1.0 - outside;
   o = vec4(col, 1.0);
 }`

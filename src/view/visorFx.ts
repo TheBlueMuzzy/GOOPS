@@ -57,7 +57,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
   if (!gl) { canvas.remove(); return { frame() {}, dispose() {} } } // no WebGL2: the game just plays without the effect
 
   const PC = makeProgram(gl, FULLSCREEN_VS, FS_COMPOSITE, ['uTank', 'uGoo', 'uRes', 'uOffset', 'uFull', 'uPix', 'uClipTop', 'uBg'])
-  const PG = makeProgram(gl, FULLSCREEN_VS, FS_GLITCH, ['uTex', 'uRes', 'uTime', 'uAmt', 'uGrain', 'uDpr', ...LOOK_UNIFORMS.map(([u]) => u)])
+  const PG = makeProgram(gl, FULLSCREEN_VS, FS_GLITCH, ['uTex', 'uRes', 'uTime', 'uAmt', 'uGrain', 'uDpr', 'uCurveAlways', 'uVigAlways', ...LOOK_UNIFORMS.map(([u]) => u)])
   const PP = makeProgram(gl, FULLSCREEN_VS, FS_PIX, ['uTex', 'uRes', 'uPix'])
   const vao = gl.createVertexArray()
   const tex = () => {
@@ -103,7 +103,9 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
       const r = tankRect(view, state.visibleWidth, state.height - state.bufferRows)
       const x0 = Math.max(0, Math.round(r.left * dpr)), x1 = Math.min(fullW, Math.round((r.left + r.width) * dpr))
       const y0 = Math.max(0, Math.round(r.top * dpr)), y1 = Math.min(fullH, Math.round((r.top + r.height) * dpr))
-      if ((amount <= 0 && !pixOn) || x1 <= x0 || y1 <= y0) {
+      // the curved-TV look is on whenever you're in the vat (visor-fx.json 'always'), so the pass runs even with no glitch
+      const always = fx.always.curve > 0 || fx.always.vignette > 0
+      if ((amount <= 0 && !pixOn && !always) || x1 <= x0 || y1 <= y0) {
         if (shown) { shown = false; canvas.style.display = 'none' }
         return
       }
@@ -123,7 +125,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
       if (goo) upload(gooTex, goo)
 
       const pixPx = fx.pixel.pixSize * dpr, pixFirst = fx.pixel.pixFirst >= 0.5
-      const glitch = amount > 0
+      const glitch = amount > 0 || always
       const pixAfter = pixOn && glitch && !pixFirst // glitch -> pixels: its own pass at the end
       if (pixAfter && !B) B = makeTarget(gl, w, h, 1, false)
 
@@ -140,6 +142,8 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
       bind(PG, [[A.t[0], 'uTex']], pixAfter ? B : null)
       gl.uniform1f(PG.u.uTime, frozenAt ?? timeSec)
       gl.uniform1f(PG.u.uAmt, amount)
+      gl.uniform1f(PG.u.uCurveAlways, fx.always.curve)
+      gl.uniform1f(PG.u.uVigAlways, fx.always.vignette)
       gl.uniform1f(PG.u.uGrain, pixAfter ? pixPx : 1.5 * dpr)
       gl.uniform1f(PG.u.uDpr, dpr)
       for (const [u, k] of LOOK_UNIFORMS) gl.uniform1f(PG.u[u], fx.look[k])
