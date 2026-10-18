@@ -41,7 +41,7 @@ void main() {
   float a = uAmt, aLate = a * a;        // late effects ramp in slowly (a squared)
   float slot = floor(uTime * 12.0);     // the glitch clock: tears/blocks re-roll 12x a second
   // visor curvature (barrel)
-  float curve = max(uCurveAlways, a) * uCurve; // always this curved; the glitch can only add
+  float curve = max(uCurveAlways, uCurve * a); // always at least this curved (its own strength); the glitch can only add
   vec2 c = uv * 2.0 - 1.0; c *= 1.0 + curve * 0.10 * dot(c, c); uv = c * 0.5 + 0.5;
   float outside = step(1.0, max(abs(c.x), abs(c.y)));
   // vertical slip (roll): rare, short, a few rows
@@ -88,7 +88,7 @@ void main() {
   col = mix(col, vec3(n * 0.3), drop * 0.65);
   // vignette
   float v = dot(c, c);
-  col *= 1.0 - uVig * max(uVigAlways, a) * 0.7 * smoothstep(0.3, 2.0, v);
+  col *= 1.0 - max(uVigAlways, uVig * a) * 0.7 * smoothstep(0.3, 2.0, v);
   col *= 1.0 - outside;
   o = vec4(col, 1.0);
 }`

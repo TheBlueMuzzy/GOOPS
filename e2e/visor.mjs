@@ -8,7 +8,7 @@
 import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import fs, { mkdirSync } from 'node:fs'
 
 const PORT = 5265, OUT = 'e2e-shots/visor'
 mkdirSync(OUT, { recursive: true })
@@ -114,6 +114,26 @@ try {
     if (c.outN < 50 || c.outMax > 3) fail(`${w}x${h}: outside the tank the screen should be unchanged (max change ${c.outMax} over ${c.outN} points)`)
     if (c.inMean < 5) fail(`${w}x${h}: inside the tank the glitch should show (mean change ${c.inMean})`)
     if (errors.length) fail(`${w}x${h} errors: ` + errors.join(' | '))
+    await page.close()
+  }
+
+  // 1c. the Dev Kit's Tuning sliders reach the visor live (Muzzy 2026-10-18: moving always.curve did nothing): the same
+  // event the Tuning tab sends, with a much rounder always-on curve and look.curve 0 → the tank's picture changes
+  {
+    const { page, errors } = await open('?seed=7&visor=off&pixel=off', 390, 844)
+    await fillTank(page)
+    await page.evaluate(() => { window.__goops.engine.tick = () => {}; window.__goopsVisor.freeze(12.34) })
+    await page.waitForTimeout(1500)
+    const before = await page.screenshot()
+    const fx = JSON.parse(fs.readFileSync('content/tuning/visor-fx.json', 'utf8'))
+    await page.evaluate((data) => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'visor-fx', data } })),
+      { ...fx, always: { ...fx.always, curve: 3 }, look: { ...fx.look, curve: 0 } })
+    await page.waitForTimeout(200)
+    const after = await page.screenshot({ path: `${OUT}/live-curve-3.png` })
+    const c = await compare(page, before, after, 24)
+    console.log('live tuning always.curve 1 → 3:', JSON.stringify(c))
+    if (c.inMean < 3) fail(`a Tuning edit of always.curve should change the tank at once (mean change ${c.inMean})`)
+    if (errors.length) fail('live tuning errors: ' + errors.join(' | '))
     await page.close()
   }
 

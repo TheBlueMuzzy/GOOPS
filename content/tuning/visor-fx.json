@@ -2,7 +2,7 @@
   "_about": "The visor glitch (F25) + the pixel filter, drawn over the visible tank only (Muzzy 2026-10-18: not the whole screen; never over the HUD). Glitch 'amount' comes from the visor's signal (breakdowns.json visor health): 0 at health >= healthClean, rising to 1 at health <= healthBroken (= the visor's breakAt), and 0 while the visor is locked. 'look' = the strength of each glitch effect at amount 1 (names match the sketch's knobs, so its 'Copy values' paste straight in; meanings in .planning/research/sketches/visor-glitch.html). 'pixel' = the pixel filter, its own switch: pixelate 1 = on, pixSize = block size in CSS px, pixFirst 1 = pixelate before the glitch (glitch stays crisp), 0 = after (glitch gets chunky too). Muzzy's values from the sketch, 2026-10-18.",
   "healthClean": 0.95,
   "healthBroken": 0.1,
-  "_alwaysAbout": "'always' = the curved-TV look you see whenever you're in the vat, glitch or not (Muzzy 2026-10-18: \"the curved render effect should be on whenever you're inside the visor\"). curve / vignette 0..1 at their look strength; the glitch never makes them weaker than this. 0 = off.",
+  "_alwaysAbout": "'always' = the curved-TV look you see whenever you're in the vat, glitch or not (Muzzy 2026-10-18: \"the curved render effect should be on whenever you're inside the visor\"). curve / vignette: their own strength (same scale as look.curve / look.vignette; 1 = the sketch's full curve, higher = rounder); the glitch never makes them weaker than this. 0 = off.",
   "always": {
     "curve": 1,
     "vignette": 0.5

@@ -10,9 +10,13 @@ import type { GooView } from '../goo/types'
 import { tankRect } from './geometry'
 import { FULLSCREEN_VS, makeProgram, freeProgram, makeTarget, freeTarget, type Program, type Target } from '../goo/shared/gl'
 import { FS_COMPOSITE, FS_GLITCH, FS_PIX } from './visorShaders'
-import fx from '../../content/tuning/visor-fx.json'
+import fxFile from '../../content/tuning/visor-fx.json'
+import { liveTuning } from '../devkit/tuning/liveTuning'
 
-export type VisorFxConfig = typeof fx
+// the knobs, following the Dev Kit's Tuning sliders live (read .current each frame)
+const live = liveTuning('visor-fx', fxFile)
+
+export type VisorFxConfig = typeof fxFile
 
 const BG = [5 / 255, 7 / 255, 13 / 255] // the stage background (game.css .stage), under the tank canvas
 const LOOK_UNIFORMS: [string, keyof VisorFxConfig['look']][] = [['uScan', 'scan'], ['uRgb', 'rgb'], ['uRoll', 'roll'],
@@ -20,7 +24,7 @@ const LOOK_UNIFORMS: [string, keyof VisorFxConfig['look']][] = [['uScan', 'scan'
   ['uBlockSize', 'blockSize'], ['uVig', 'vignette'], ['uCurve', 'curve'], ['uDead', 'dead'], ['uDrop', 'dropout']]
 
 // Glitch amount from the visor's signal: 0 when fine (or locked), 1 when broken.
-export function visorAmount(visor: MachineState | undefined, cfg: Pick<VisorFxConfig, 'healthClean' | 'healthBroken'> = fx): number {
+export function visorAmount(visor: MachineState | undefined, cfg: Pick<VisorFxConfig, 'healthClean' | 'healthBroken'> = live.current): number {
   if (!visor || !visor.unlocked) return 0
   if (visor.broken) return 1
   const t = (cfg.healthClean - visor.health) / (cfg.healthClean - cfg.healthBroken)
@@ -96,6 +100,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
 
   return {
     frame(state, view, timeSec) {
+      const fx = live.current
       const amount = override.amount ?? visorAmount(state.machines?.visor)
       const pixOn = override.pixelate ?? fx.pixel.pixelate >= 0.5
       // the tank's rectangle in the full-window canvases, in whole device px (kept inside them)
