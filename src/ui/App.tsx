@@ -1,6 +1,6 @@
 // The game's screens. Console-lite (a plain menu) stands in for the real console-as-menu until that's designed.
 import { useCallback, useMemo, useState } from 'react'
-import { Bar, GameOver, Hud, HudText, MainMenu, Pause, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, useScreens } from './kit'
+import { Bar, GameOver, Hud, HudText, MainMenu, Pause, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type ShiftEngine, type ShiftStatus } from '../engine'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
@@ -41,6 +41,7 @@ export function App() {
       if (e) setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded })
       return e
     })
+    toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
     screens.push('end')
   }, [])
 
