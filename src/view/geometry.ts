@@ -36,6 +36,12 @@ export function layoutTank(i: LayoutInput): TankLayout {
   return { cellPx, left, topY, centreX: left + (pieceScreenColumn(i.visibleWidth) + 0.5) * cellPx, widthPx, heightPx }
 }
 
+// The visible tank's rectangle on screen (CSS px): the 12 columns × the visible rows, from the view.
+export function tankRect(view: GooView, visibleWidth: number, visibleRows: number) {
+  const left = view.centreX - (pieceScreenColumn(visibleWidth) + 0.5) * view.cellPx
+  return { left, top: view.topY, width: visibleWidth * view.cellPx, height: visibleRows * view.cellPx }
+}
+
 // Centre of tank cell (x, y) on screen for a fractional camera.
 export function cellToScreen(x: number, y: number, view: GooView, width: number, bufferRows: number): [number, number] {
   return [view.centreX + screenColumn(x, view.camera, width) * view.cellPx, view.topY + (y - bufferRows + 0.5) * view.cellPx]

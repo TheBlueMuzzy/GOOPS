@@ -1,10 +1,13 @@
-// The visor glitch (F25) + the pixel filter: a third canvas (WebGL2) over the tank and goo canvases. Each frame it uploads
-// both canvases as textures, composites them, runs the glitch, and/or pixelates, and draws the result. While it shows, the
-// two canvases under it are hidden (visibility, not unmounted). With no glitch and the pixel filter off it hides and does
+// The visor glitch (F25) + the pixel filter: a third canvas (WebGL2) over the tank and goo canvases, covering ONLY the
+// visible tank's rectangle (Muzzy, 2026-10-18: the curved-TV look over the viewing area, not the whole screen — so the
+// curve and vignette bend at the tank's edges, and everything outside it looks exactly as with no glitch). Each frame it
+// uploads both canvases as textures, cuts the tank's rectangle out of them, composites, runs the glitch, and/or
+// pixelates, and draws the result, opaque, over the tank. With no glitch and the pixel filter off it hides and does
 // nothing at all, so the game looks exactly as without it. The HUD is DOM above the stage, so it never glitches.
 // Knobs: content/tuning/visor-fx.json. Shaders: ./visorShaders.ts (the sketch's, unchanged).
 import type { MachineState, ShiftState } from '../engine/types'
 import type { GooView } from '../goo/types'
+import { tankRect } from './geometry'
 import { FULLSCREEN_VS, makeProgram, freeProgram, makeTarget, freeTarget, type Program, type Target } from '../goo/shared/gl'
 import { FS_COMPOSITE, FS_GLITCH, FS_PIX } from './visorShaders'
 import fx from '../../content/tuning/visor-fx.json'
@@ -47,12 +50,13 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
   canvas.dataset.visor = ''
   canvas.style.pointerEvents = 'none'
   canvas.style.zIndex = '1' // above the goo canvas even after a style switch re-adds it (React appends it last)
+  canvas.style.inset = 'auto' // not the whole stage like the other layers: frame() puts it on the tank's rectangle
   canvas.style.display = 'none'
   stage.appendChild(canvas)
   const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false })
   if (!gl) { canvas.remove(); return { frame() {}, dispose() {} } } // no WebGL2: the game just plays without the effect
 
-  const PC = makeProgram(gl, FULLSCREEN_VS, FS_COMPOSITE, ['uTank', 'uGoo', 'uRes', 'uPix', 'uClipTop', 'uBg'])
+  const PC = makeProgram(gl, FULLSCREEN_VS, FS_COMPOSITE, ['uTank', 'uGoo', 'uRes', 'uOffset', 'uFull', 'uPix', 'uClipTop', 'uBg'])
   const PG = makeProgram(gl, FULLSCREEN_VS, FS_GLITCH, ['uTex', 'uRes', 'uTime', 'uAmt', 'uGrain', 'uDpr', ...LOOK_UNIFORMS.map(([u]) => u)])
   const PP = makeProgram(gl, FULLSCREEN_VS, FS_PIX, ['uTex', 'uRes', 'uPix'])
   const vao = gl.createVertexArray()
@@ -79,10 +83,6 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
     }
   }
 
-  const hideUnder = (hide: boolean) => {
-    const v = hide ? 'hidden' : ''
-    for (const c of [tankCanvas, gooCanvas()]) if (c && c.style.visibility !== v) c.style.visibility = v
-  }
   const upload = (t: WebGLTexture, src: HTMLCanvasElement) => {
     gl.bindTexture(gl.TEXTURE_2D, t)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src)
@@ -98,17 +98,21 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
     frame(state, view, timeSec) {
       const amount = override.amount ?? visorAmount(state.machines?.visor)
       const pixOn = override.pixelate ?? fx.pixel.pixelate >= 0.5
-      if (amount <= 0 && !pixOn) {
-        if (shown) { shown = false; canvas.style.display = 'none'; hideUnder(false) }
+      // the tank's rectangle in the full-window canvases, in whole device px (kept inside them)
+      const dpr = view.dpr, fullW = tankCanvas.width, fullH = tankCanvas.height
+      const r = tankRect(view, state.visibleWidth, state.height - state.bufferRows)
+      const x0 = Math.max(0, Math.round(r.left * dpr)), x1 = Math.min(fullW, Math.round((r.left + r.width) * dpr))
+      const y0 = Math.max(0, Math.round(r.top * dpr)), y1 = Math.min(fullH, Math.round((r.top + r.height) * dpr))
+      if ((amount <= 0 && !pixOn) || x1 <= x0 || y1 <= y0) {
+        if (shown) { shown = false; canvas.style.display = 'none' }
         return
       }
       if (!shown) { shown = true; canvas.style.display = '' }
-      hideUnder(true) // every frame: a goo-style switch brings a fresh goo canvas
       const goo = gooCanvas()
-      if (canvas.width !== tankCanvas.width || canvas.height !== tankCanvas.height) {
-        canvas.width = tankCanvas.width; canvas.height = tankCanvas.height
-      }
-      const w = canvas.width, h = canvas.height
+      const w = x1 - x0, h = y1 - y0
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h }
+      const box = { left: `${x0 / dpr}px`, top: `${y0 / dpr}px`, width: `${w / dpr}px`, height: `${h / dpr}px` }
+      for (const k of ['left', 'top', 'width', 'height'] as const) if (canvas.style[k] !== box[k]) canvas.style[k] = box[k]
       if (!A || A.w !== w || A.h !== h) { freeTarget(gl, A); freeTarget(gl, B); A = makeTarget(gl, w, h, 1, false); B = null }
 
       gl.bindVertexArray(vao)
@@ -118,15 +122,17 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
       upload(tankTex, tankCanvas)
       if (goo) upload(gooTex, goo)
 
-      const dpr = view.dpr, pixPx = fx.pixel.pixSize * dpr, pixFirst = fx.pixel.pixFirst >= 0.5
+      const pixPx = fx.pixel.pixSize * dpr, pixFirst = fx.pixel.pixFirst >= 0.5
       const glitch = amount > 0
       const pixAfter = pixOn && glitch && !pixFirst // glitch -> pixels: its own pass at the end
       if (pixAfter && !B) B = makeTarget(gl, w, h, 1, false)
 
       // 1. scene (pixelated here when pixels come first, or when there's no glitch)
       bind(PC, [[tankTex, 'uTank'], [gooTex, 'uGoo']], glitch ? A : null)
+      gl.uniform2f(PC.u.uOffset, x0, fullH - y1) // the rectangle's bottom-left corner (GL counts y up from the bottom)
+      gl.uniform2f(PC.u.uFull, fullW, fullH)
       gl.uniform1f(PC.u.uPix, pixOn && !pixAfter ? pixPx : 0)
-      gl.uniform1f(PC.u.uClipTop, goo ? view.topY * dpr : h)
+      gl.uniform1f(PC.u.uClipTop, goo ? view.topY * dpr : fullH)
       gl.uniform3f(PC.u.uBg, BG[0], BG[1], BG[2])
       gl.drawArrays(gl.TRIANGLES, 0, 3)
       if (!glitch) return
@@ -146,7 +152,6 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
       }
     },
     dispose() {
-      hideUnder(false)
       freeTarget(gl, A); freeTarget(gl, B)
       for (const P of [PC, PG, PP]) freeProgram(gl, P)
       gl.deleteTexture(tankTex); gl.deleteTexture(gooTex); gl.deleteVertexArray(vao)

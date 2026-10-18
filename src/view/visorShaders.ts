@@ -1,20 +1,25 @@
-// Shaders for the visor glitch overlay (F25). Each is one fullscreen triangle (FULLSCREEN_VS in src/goo/shared/gl.ts).
+// Shaders for the visor glitch overlay (F25). Each is one triangle over the whole overlay (FULLSCREEN_VS in
+// src/goo/shared/gl.ts) — and the overlay is just the tank's rectangle, so uRes = the tank's size in device px.
 // FS_GLITCH and FS_PIX are the sketch's (.planning/research/sketches/visor-glitch.html), unchanged.
 
 // The scene: the tank canvas, then the goo canvas over it (both uploaded premultiplied), over the stage background.
+// The overlay only covers the TANK's rectangle (Muzzy, 2026-10-18: the curved-TV look over the viewing area, not the
+// whole screen), so this pass cuts that rectangle out of the two full-window canvases: uOffset = where the rectangle's
+// bottom-left corner is in them (device px, y up), uFull = their size.
 // uPix > 0 snaps every pixel to the pixel filter's grid (pixelate folded into this pass: no extra pass for pixels-first).
 // uClipTop = device px from the top where the goo starts (the spawn rows above the tank stay hidden, like the goo canvas's clip).
 export const FS_COMPOSITE = `#version 300 es
 precision highp float;
-uniform sampler2D uTank, uGoo; uniform vec2 uRes; uniform float uPix, uClipTop; uniform vec3 uBg;
+uniform sampler2D uTank, uGoo; uniform vec2 uRes, uOffset, uFull; uniform float uPix, uClipTop; uniform vec3 uBg;
 out vec4 o;
 void main() {
   vec2 p = gl_FragCoord.xy;
   if (uPix > 0.0) p = (floor(p / uPix) + 0.5) * uPix;
-  vec2 uv = p / uRes;
+  p += uOffset; // into the full-window canvases
+  vec2 uv = p / uFull;
   vec4 t = texture(uTank, uv);
   vec3 col = uBg * (1.0 - t.a) + t.rgb;
-  vec4 g = uRes.y - p.y < uClipTop ? vec4(0.0) : texture(uGoo, uv);
+  vec4 g = uFull.y - p.y < uClipTop ? vec4(0.0) : texture(uGoo, uv);
   o = vec4(col * (1.0 - g.a) + g.rgb, 1.0);
 }`
 
