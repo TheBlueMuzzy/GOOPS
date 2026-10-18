@@ -10,6 +10,7 @@ import { attachControls } from '../input/controls'
 import { gooStyle } from './gooStyle'
 import { wallKick } from './wallKick'
 import tank from '../../content/tuning/tank.json'
+import breakdowns from '../../content/tuning/breakdowns.json'
 import './game.css'
 
 const HUD_SIDE_ROOM = 16 // CSS px the HUD may reach past each side of the tank
@@ -120,6 +121,8 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onAlert, 
       hold: () => engine.act({ type: 'hold' }),
       console: () => live.current.onConsole(),
       holdProgress: (p) => { holdProgress = p },
+      // broken controls (F23/F24): a held turn repeats slower; single presses and quick swipes stay the same
+      spinSlowdown: () => (s.machines?.controls.broken ? breakdowns.controls.heldSpinSlowdown : 1),
       tapCell: (px, py) => {
         const r = el.getBoundingClientRect()
         const [x, y] = screenToCell(px - r.left, py - r.top, view, s.width, s.bufferRows)

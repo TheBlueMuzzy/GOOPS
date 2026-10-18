@@ -14,6 +14,9 @@ export interface ControlCallbacks {
   hold(): void
   console(): void
   holdProgress?(p: number | null): void // 0..1 while a hold-to-swap is charging, null when cancelled
+  // F24: how many times slower a HELD spin repeats right now (broken controls: 2; fine: 1). Single presses and quick
+  // swipes are never slowed — only the repeats while a key or a sideways drag is held.
+  spinSlowdown?(): number
 }
 
 const DRAG_LOCK = 10 // px before a touch counts as a drag
@@ -43,7 +46,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     const dir = spinDir()
     if (!dir) return
     const now = performance.now()
-    if (now >= nextSpinAt && isActive()) { cb.spin(dir); nextSpinAt = now + tank.spinRepeatMs }
+    if (now >= nextSpinAt && isActive()) { cb.spin(dir); nextSpinAt = now + tank.spinRepeatMs * (cb.spinSlowdown?.() ?? 1) }
     raf = requestAnimationFrame(loop)
   }
   const startLoop = () => { if (!raf) raf = requestAnimationFrame(loop) }

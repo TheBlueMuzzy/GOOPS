@@ -18,10 +18,11 @@
     "recoverPerSec": 4
   },
   "controls": {
-    "_about": "heat = 1 - health. Each tank turn adds heatPerSpin; after coolDelayMs with no turn it cools at coolPerSec. Breaks at heat 1 (the input layer slows held turns; the engine only reports it).",
+    "_about": "heat = 1 - health. Each tank turn adds heatPerSpin; after coolDelayMs with no turn it cools at coolPerSec. Breaks at heat 1 (the input layer slows held turns; the engine only reports it). heldSpinSlowdown = while broken, a held turn (key or sideways drag) repeats this many times slower (src/input; single presses and quick swipes stay the same).",
     "unlockRank": 6,
     "heatPerSpin": 0.05,
     "coolDelayMs": 200,
-    "coolPerSec": 0.5
+    "coolPerSec": 0.5,
+    "heldSpinSlowdown": 2
   }
 }
