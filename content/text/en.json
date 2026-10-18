@@ -13,7 +13,38 @@
     "unavailable": "{name} (unavailable)",
     "version": "Version {v}",
     "credit": "MuzzyMade © 2026",
-    "settings": "Settings"
+    "settings": "Settings",
+    "hintBack": "Pull the periscope to go back",
+    "hintRepair": "Repair the {name}!",
+    "backToTank": "Back to the tank",
+    "machineNames": {
+      "laser": "laser",
+      "visor": "visor",
+      "controls": "controls"
+    },
+    "laserSlider": "Laser slider {n}",
+    "positions": [
+      "left",
+      "middle",
+      "right"
+    ],
+    "visorSlider": "Lights slider",
+    "upDown": [
+      "up",
+      "down"
+    ],
+    "visorButtons": [
+      "Blue button",
+      "Yellow button",
+      "Pink button"
+    ],
+    "dial": "Controls dial",
+    "corners": [
+      "top left",
+      "top right",
+      "bottom right",
+      "bottom left"
+    ]
   },
   "hud": {
     "pressure": "Pressure",
@@ -24,7 +55,10 @@
     "integrity": "Tank",
     "rupture": "Rupture!",
     "quotaMetToast": "Quota met. Every crack now is a bonus.",
-    "ruptureToast": "The tank ruptured. Pressure is draining."
+    "ruptureToast": "The tank ruptured. Pressure is draining.",
+    "laser": "Laser",
+    "visor": "Signal",
+    "controls": "Heat"
   },
   "pause": {
     "title": "Console",
