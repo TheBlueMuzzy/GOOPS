@@ -1,32 +1,35 @@
-# Sprint 01 — play one full shift with living goo
-Started 2026-10-17 (overnight auto) · Milestone M1 Core shift · Features: F13, F14, F15, F16 (in this order)
+# Sprint 02 — a shift that ends in a rupture, with Muzzy's controls and art
+Started 2026-10-17 · Milestone M1 Core shift · Features: F17, F18, F19
+What changes for Muzzy: no shift clock — it ends in a rupture; the new key map; Wall kick setting; his art on start + end screens. Stays the same: the goo (both styles), the tank, touch controls, score (minus hard drop), Settings layout.
 
-## F13 ⚙️ Shift engine
-Done when: the v1 shift rules run in a pure, seeded engine with tests (tank wrap, pieces, lock feel, merge, fill, pop, pressure, cracks, score, shift end).
-- [x] 🤖 1. Branch `dev/m1-core-shift`, clear v1 code (it lives on `archive/goops-v1`), scaffold Vite + React + TS + Vitest + Playwright — package.json, src/
-- [x] 🤖 2. Port the v1 rules into `src/engine/` with v1 values in `content/tuning/shift.json`
-- [x] 🤖 3. Unit tests (ported from v1 `tests/` where the rule is the same) — tests/engine/
-Check: `npm run test` green; a seeded shift plays to its end in a test. ✓ 100 tests (helper, commit 8eb694d)
-Ask Muzzy: see STATE "Questions for Muzzy".   Notes: hard drop added (v1 had none in play); rows are whole numbers (v1 moved in fractions); loose goop lands instantly with a `fall` event.
+## F17 ⚙️ Pressure → integrity → rupture
+Done when: a shift plays the GDD §4 loop — pressure rises and vents, cracks grow with it, open cracks drain integrity, rupture (integrity 0 or overflow) drains pressure to 0 and ends the shift; quota = won.
+- [ ] 🤖 1. Pressure rises at a rate, zaps + seals vent it, caps at 100% (replaces shiftMs) — src/engine/shift.ts, content/tuning/shift.json
+- [ ] 🤖 2. Cracks come faster with pressure, only where sealable now (at/below the pop line, no goop); win burst removed — src/engine/cracks.ts
+- [ ] 🤖 3. Integrity drain per open crack; rupture at 0 or overflow; drain phase (pieces keep coming, no new cracks); end at pressure 0, won if quota met; leftover penalty — src/engine/shift.ts, types.ts
+- [ ] 🤖 4. Engine tests for the new loop — tests/engine/
+- [ ] 🤖 5. HUD: integrity meter, "Quota met" + "Rupture!" banners, end report — src/ui/App.tsx, content/text/en.json
+- [ ] 🤖 6. TDD timers + rules updated (GDD §4 ✅ done 2026-10-17)
+Check: unit tests for each rule; a seeded shift runs to a rupture and ends; smoke e2e reaches the end screen.
 
-## F14 🎮 Tank view + controls
-Done when: on PC and phone you can spin the tank, rotate, fast-drop, and pop ready blobs, with v1's controls.
-- [x] 🤖 1. Tank view: 12 visible columns of 30 around the spin, grid, pressure water, cracks, ghost, fill progress — src/view/
-- [x] 🤖 2. Input: drag = spin, tap halves = rotate, drag down = fast drop, tap ready blob = pop; keys — src/input/
-Check: Playwright drives a shift on 390×844 and 1280×800; screenshots.
+## F18 🎮 One control set + wall-kick toggle
+Done when: keys match the GDD §4 table with the same timings as touch; no hard drop anywhere; Settings → Wall kick switches Rotate vat / Shunt piece.
+- [ ] 🤖 7. Keys per GDD table (Right Ctrl ccw, Numpad 0 cw, hold R / Right Shift 1.5 s swap, ↑ console; drop Space, ↑-rotate, instant R) — src/input/controls.ts
+- [ ] 🤖 8. Remove hard drop from engine, score config and tests
+- [ ] 🤖 9. Wall kick setting: Rotate vat (the tank turns a column, goo slides with it) / Shunt piece (v1) — engine option, content/ui/settings.json, src/game/
+- [ ] 🤖 10. e2e controls check updated — e2e/controls.mjs
+Check: e2e drives every key + gesture; both wall-kick modes tested in the engine.
 
-## F15 🫠 Goo overlay: Jelly + Particle
-Done when: the goo from the lab sits on the real tank (spinning sloshes it), and Settings switches Jelly ↔ Particle live.
-- [x] 🤖 1. Overlay interface + Jelly renderer from lab-L4-jelly.html — src/goo/jelly/
-- [x] 🤖 2. Particle renderer from lab-L3-particles.html — src/goo/particle/
-- [x] 🤖 3. Muzzy's picks as defaults — content/tuning/goo-*.json
-Check: 60 fps full tank both styles (headless GPU); screenshots of each; switching mid-shift keeps the game state. ✓ 60 fps both (worst frame 17 ms) at 390×844@3x and 1280×800 — `node e2e/perf.mjs`; switch keeps the grid (smoke)
-Notes: helper also built `goo-lab.html` (dev only: fake engine, Jelly/Particle toggle). Fixed after merge: Jelly added up hard-drop offsets when several locks landed in one frame (reset per lock).
-- [ ] 🙋 4. Muzzy plays a shift on PC + phone, both goo styles
+## F19 🎨 Muzzy's art on the screens
+Done when: start and end screens use his art/ SVGs (title, background, end-game screen, coloured buttons); Neon only for bits with no art.
+- [ ] 🤖 11. Sort art/ by screen — a sheet of what goes where
+- [ ] 🤖 12. Title + background on start, end-game screen behind the report, coloured buttons (kit gets art-skinned buttons first if missing)
+- [ ] 🤖 13. Screenshots at phone, landscape, desktop
+Check: screenshots at 390×844, 844×390, 1440×900; check:ui passes.
 
-## F16 🧪 Shift screens
-Done when: start a shift from a console-lite screen, see pressure/score/cracks while playing, get an end-of-shift report, open Settings.
-- [x] 🤖 1. HUD (pressure, score, cracks) + end-of-shift report — src/ui/
-- [x] 🤖 2. Console-lite start (placeholder for the real console) + Settings (goo style) — src/ui/
-- [x] 🤖 3. Playwright smoke: start → play → end — e2e/
-Check: full flow on phone + desktop sizes.
+## Tuning (last)
+- [ ] 🙋 14. Play a shift on PC + phone, both goo styles (from Sprint 01)
+- [ ] 🙋 15. (tuning) Pacing: integrity drain per crack, crack rate curve, rupture drain time
+
+## Notes
+- Starting numbers (Claude's guesses, all in content/tuning/shift.json): pressure 0→100% in ~75 s; cracks every 5 s at 0% → 1 s at 100%; rupture drain 5 s.

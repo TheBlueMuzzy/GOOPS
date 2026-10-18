@@ -71,6 +71,10 @@ Goal: one full shift plays on phone and PC with living goo; Jelly or Particle in
   why: Muzzy (2026-10-17): "make it so that In the settings I can change between particle goo or jelly goo since they are just 'overlaying' the grid below"
 - ✅ F16 Shift screens: console-lite start, HUD, end-of-shift report, Settings — must:alpha · needs: F13
 
+- 🔨 F17 Pressure → integrity → rupture (GDD §4 loop) — must:alpha · needs: F13, F04
+- 🔨 F18 One control set + wall-kick toggle — must:alpha · needs: F14
+- 🔨 F19 Muzzy's art on the start + end screens — must:alpha · needs: F16
+
 ## Parking lot
 - 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
 - 💡 2026-10-17 — Pixel look: the UI drawn as small pixels, and eventually the goop too ("pixellated goop would look cool") (Muzzy)
