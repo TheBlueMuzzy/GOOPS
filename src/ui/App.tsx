@@ -70,6 +70,11 @@ export function App() {
     meterShown.current = progressRef.current
     setMode('arriving')
   }, [])
+  // The report closed some other way (Esc, phone Back) after the shift ended: that means "back to the console" too,
+  // never a frozen, finished tank
+  useEffect(() => {
+    if (mode === 'shift' && result && !open.includes('end')) toConsole()
+  }, [mode, result, open, toConsole])
   // (the last shift's engine stays in state on the console, unmounted; the next pull replaces it)
   const consoleSlid = useCallback(() => setMode((m) => (m === 'leaving' ? 'shift' : m === 'arriving' ? 'console' : m)), [])
   const onEnd = useCallback((status: ShiftStatus) => {

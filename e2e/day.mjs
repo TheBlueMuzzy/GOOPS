@@ -100,6 +100,14 @@ try {
   for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: tx, y: ty - 40 * i }] })
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   check('a finger swipe up on the report goes back to the console', await page.locator('.kit-art-stage').waitFor({ timeout: 3000 }).then(() => true, () => false))
+  // 8. Esc / phone Back on the report also means "back to the console" — never a frozen, finished tank
+  await page.waitForTimeout(800)
+  await grip.click()
+  check('a tap on the periscope starts a third shift', await stageGone())
+  await page.evaluate(() => { const e = window.__goops.engine; for (let i = 0; i < 60 && e.state.status === 'playing'; i++) e.tick(600000) })
+  await page.getByText(/Shift (complete|failed)/).waitFor({ timeout: 5000 })
+  await page.keyboard.press('Escape')
+  check('Esc on the report goes back to the console', await page.locator('.kit-art-stage').waitFor({ timeout: 3000 }).then(() => true, () => false))
   check('no console errors', errors.length === 0, errors.join(' | '))
 } finally {
   await browser.close()
