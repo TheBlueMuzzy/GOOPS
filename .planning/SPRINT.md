@@ -41,3 +41,7 @@ Check: screenshots at 390×844, 844×390, 1440×900; check:ui passes.
   - Piece size steps up every 25 s of play (`pieces.zoneEveryMs`; was every third of the 75 s timer).
   - Cracks pick any empty cell at/below the pop line (can be mid-air).
 - Wall kick engine: `setWallKick('rotateVat' | 'shuntPiece')`, default rotateVat; a vat kick sends the same `spin` event as a player spin.
+- F19 (helper): kit 0.11.0 art skins (Button art up/down, Screen backdrop, Panel frame nine-way cut); `scripts/art-prep.mjs` → `public/art/`; which art goes where in `content/ui/art.json`; map in `research/art-map.md`. Muzzy's buttons are wordless arcade buttons, so labels sit beside them.
+- Kit 0.11.1: Bar `showLabel` (the Pressure and Tank bars looked the same).
+- Ask Muzzy: fonts inside your art — Title's words are outlined (no font ships). Amazon Ember is Amazon's font; "From Where You Are" has an unknown licence. Check both before either ships in the game.
+- Bugs seen (P3, logged, not fixed): Settings tab names "ACCESSIBILITY" and "ABOUT" run together on a 390 phone; a new piece is drawn over the "Cracks 0 / 5" line while it's in the rows above the tank.
