@@ -50,6 +50,7 @@ flowchart LR
 | `content/tuning/goo-jelly.json` | Muzzy's Jelly pick (`research/goo-lab/picks.json`) | Obsidian / in-game Settings later |
 | `content/tuning/goo-particle.json` | Muzzy's Particle pick | same |
 | `content/text/en.json` | player-facing words | Obsidian |
+| `content/ui/art.json` | which of Muzzy's pictures goes where (menu backdrop, title, buttons, end-report frame + its cut lines) | Obsidian |
 
 ## 4. Standards
 - **Folders:** `src/engine` rules · `src/goo` renderers · `src/view` tank drawing · `src/input` controls · `src/ui` screens · `content/` data · `tests/` unit tests · `e2e/` Playwright checks.
@@ -68,6 +69,11 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D04 · 2026-10-17 · Muzzy's art served from public/art/, made by scripts/art-prep.mjs (F19)
+  Proposed by: Claude   Options: import from art/ via Vite / copy into public/art/ with a prep script
+  Chose: prep script → public/art/ (committed) — two files need changing anyway (Title's words outlined so no font
+  ships; EndGameScreen cut to its frame), art.json picks them by path, art/ stays Muzzy's source. Kit 0.11.0 got
+  generic art skins (Button art up/down, Screen backdrop, Panel frame nine-way cut) — corners never stretch
 D03 · 2026-10-17 · Goo simulates in view space around the spin
   Proposed by: Claude   Options: simulate in tank space and wrap at draw / view space
   Chose: view space — spinning the tank moves every home spot, so the goo sloshes for free; the wrap seam sits off-screen
@@ -83,6 +89,7 @@ D01 · 2026-10-17 · Plain WebGL2 + React, no R3F / no game engine
 | What | Used for | License | OK for commercial? |
 |---|---|---|---|
 | React, Vite, Vitest, Playwright | app, build, tests | MIT / Apache-2.0 | yes |
+| opentype.js (dev only) | outlines the title's words in scripts/art-prep.mjs | MIT | yes |
 
 ## 10. Risks & open questions
 - Goo across the wrap seam (a group spanning column 29 → 0): handled by view space; check a group sitting on the seam while spinning.
