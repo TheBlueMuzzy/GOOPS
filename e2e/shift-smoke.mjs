@@ -1,7 +1,8 @@
-// Smoke check: menu → start a shift → play with real inputs → switch goo style → fast-forward to the end screen.
+// Smoke check: console → pull the periscope (a tap) → start a shift → play with real inputs → switch goo style → fast-forward to the end screen.
 // Screenshots at phone + desktop sizes into e2e-shots/smoke/. Uses Playwright's own Chromium (never the user's Chrome).
 // Run: node e2e/shift-smoke.mjs  (starts its own dev server on port 5250 and stops it)
 import { chromium } from 'playwright-core'
+import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 
@@ -25,9 +26,9 @@ try {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
     await page.goto(`http://localhost:${PORT}/?seed=7`)
     await page.waitForTimeout(600)
-    await page.screenshot({ path: `${OUT}/${name}-1-menu.png` })
-    await page.getByRole('button', { name: 'Start shift' }).click()
-    await page.waitForTimeout(800)
+    await page.screenshot({ path: `${OUT}/${name}-1-console.png` })
+    await startShift(page)
+    await page.waitForTimeout(300)
     // play: spin both ways, rotate, fast drop, a few pieces
     for (let i = 0; i < 6; i++) {
       await page.keyboard.press(i % 2 ? 'ArrowLeft' : 'ArrowRight')
@@ -62,8 +63,7 @@ try {
     // F20: the shift's score became XP, saved; a reload keeps it; ?rank= reaches the engine (dev only)
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') || 'null'))
     await page.goto(`http://localhost:${PORT}/?seed=7&rank=12`)
-    await page.getByRole('button', { name: 'Start shift' }).click()
-    await page.waitForTimeout(300)
+    await startShift(page)
     const reloaded = await page.evaluate(() => ({ save: JSON.parse(localStorage.getItem('goops-progress') || 'null'), rank: window.__goops.engine.state.rank }))
     const xpOk = saved?.v === 1 && saved.totalXp >= 100 && reloaded.save?.totalXp === saved.totalXp && reloaded.rank === 12
     console.log(name, 'xp saved:', JSON.stringify(saved), 'after reload:', JSON.stringify(reloaded), xpOk ? 'ok' : 'XP PROBLEM')

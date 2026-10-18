@@ -2,6 +2,7 @@
 // and every key in the GDD §4 table does its one job (hold-to-swap uses the same 1.5 s as touch).
 // Run: node e2e/controls.mjs  (own dev server on port 5251)
 import { chromium } from 'playwright-core'
+import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 
 const PORT = 5251
@@ -18,8 +19,8 @@ try {
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto(`http://localhost:${PORT}/?seed=11`)
-  await page.getByRole('button', { name: 'Start shift' }).click()
-  await page.waitForTimeout(500)
+  await startShift(page)
+  await page.waitForTimeout(200)
   const get = (f, arg) => page.evaluate(f, arg)
 
   // drag left 80 px and hold: the tank keeps spinning (+1 per 100 ms, v1 sign: drag left = +1)
@@ -125,7 +126,7 @@ try {
   await page.getByRole('tab', { name: 'Gameplay' }).click(); await page.waitForTimeout(200)
   await page.getByRole('button', { name: 'Next Wall kick' }).click(); await page.waitForTimeout(200)
   check('Settings switch → Shunt piece mid-shift', (await kick()) === 'shuntPiece', String(await kick()))
-  await page.reload(); await page.getByRole('button', { name: 'Start shift' }).click(); await page.waitForTimeout(400)
+  await page.reload(); await startShift(page)
   check('a new shift keeps Shunt piece', (await kick()) === 'shuntPiece', String(await kick()))
   await page.evaluate(() => localStorage.clear())
   check('no page errors', errors.length === 0, errors.join(' | '))
