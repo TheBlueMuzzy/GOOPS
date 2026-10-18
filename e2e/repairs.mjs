@@ -156,10 +156,11 @@ try {
     }
     const litLamps = () => page.evaluate(() => [...document.querySelectorAll('.kit-art-layer > img[src*="Light-On"]')].map((i) => { const r = i.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2] }))
 
-    // ── 3. LASER: read the 2 lit lamps; slider 1 with the mouse, slider 2 with a finger (drag on even sizes, tap on odd) ──
+    // ── 3. LASER: read the 4 lit lamps (all sliders, breakdowns.json laser.repairSliders); mouse and finger take turns
+    //    (drag on even sizes, tap on odd) ──
     await broken('laser', 3)
     const lamps = await litLamps()
-    check(name, 'laser: 2 lamps lit', lamps.length === 2, String(lamps.length))
+    check(name, 'laser: 4 lamps lit (all sliders)', lamps.length === 4, String(lamps.length))
     const sliders = await Promise.all([1, 2, 3, 4].map((n) => boxOf(page.getByRole('slider', { name: `Laser slider ${n}` }))))
     const tapStyle = index % 2 === 1
     for (const [k, [lx, ly]] of lamps.entries()) {
@@ -167,12 +168,12 @@ try {
       const [cx, cy] = centre(s), leftEnd = lx < cx
       const end = leftEnd ? s.x + s.width * 0.1 : s.x + s.width * 0.9
       // a drag starts on the knob (in the middle) and goes past the end; a tap goes on the end
-      await gesture(k === 1, tapStyle ? [[end, cy]] : line(cx, cy, leftEnd ? s.x - 20 : s.x + s.width + 20, cy))
+      await gesture(k % 2 === 1, tapStyle ? [[end, cy]] : line(cx, cy, leftEnd ? s.x - 20 : s.x + s.width + 20, cy))
       await page.waitForTimeout(250)
       if (k === 0) await page.screenshot({ path: `${OUT}/${name}-4-laser-half.png` })
     }
     await page.waitForTimeout(250)
-    check(name, `laser: fixed (${tapStyle ? 'mouse tap + finger tap' : 'mouse drag + finger drag'}) → act repair`, await repaired('laser'))
+    check(name, `laser: fixed (${tapStyle ? 'mouse + finger taps' : 'mouse + finger drags'}) → act repair`, await repaired('laser'))
 
     // ── 4. VISOR: top lamp → slide up (mouse) → 3 lit buttons (mouse, finger, mouse; a wrong one first) → slide down (finger) ──
     await broken('visor', 5)
@@ -202,17 +203,20 @@ try {
     check(name, 'visor: fixed (mouse drag, mouse + finger taps, finger drag) → act repair', await repaired('visor'),
       await page.evaluate(() => `slider ${document.querySelector('[aria-label="Visor slider"]')?.getAttribute('aria-valuenow')}, lit lamps ${document.querySelectorAll('img[src*="Light-On"]').length}`))
 
-    // ── 5. CONTROLS: the lit corner → turn the dial there (1 mouse drag, 2 finger drag, 3 taps) ──
+    // ── 5. CONTROLS: the lit corner → turn the dial there, 4 times (1 mouse drag, 2 finger drag, 3–4 taps); the lit
+    //    corner is never the one the dial is already on ──
     await broken('controls', 7)
     const dialHit = page.getByRole('slider', { name: 'Controls dial' })
     const d = await boxOf(dialHit)
     const [dx, dy] = centre(d), R = d.width * 0.4
     const angles = [311, 49, 139.5, 220.5]
     const at = (deg) => [dx + R * Math.sin((deg * Math.PI) / 180), dy - R * Math.cos((deg * Math.PI) / 180)]
-    for (let i = 0; i < 3; i++) {
+    let notAlreadyThere = true
+    for (let i = 0; i < 4; i++) {
       const [[lx, ly]] = await litLamps()
       const corner = lx < dx ? (ly < dy ? 0 : 3) : (ly < dy ? 1 : 2)
       const from = Number(await dialHit.getAttribute('aria-valuenow'))
+      if (corner === from) notAlreadyThere = false
       if (i < 2) {
         let a0 = angles[from], a1 = angles[corner]
         const turn = ((a1 - a0 + 540) % 360) - 180 // the short way round
@@ -225,7 +229,7 @@ try {
       if (i === 0) await page.screenshot({ path: `${OUT}/${name}-8-controls-half.png` })
     }
     await page.waitForTimeout(200)
-    check(name, 'controls: fixed (mouse drag, finger drag, taps) → act repair', await repaired('controls'))
+    check(name, 'controls: 4 corners, never the one the dial is on; fixed (mouse drag, finger drag, taps) → act repair', notAlreadyThere && await repaired('controls'))
     await page.screenshot({ path: `${OUT}/${name}-9-all-fixed.png` })
     const after = await page.evaluate(consoleProblems)
     check(name, 'console layout after the repairs', !after.length, after.join(' | '))

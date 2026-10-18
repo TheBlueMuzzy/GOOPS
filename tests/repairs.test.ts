@@ -1,5 +1,6 @@
 // F24: the console's repair puzzles (src/game/repairs.ts) — Muzzy's rules, 2026-10-18.
 import { describe, expect, it } from 'vitest'
+import breakdowns from '../content/tuning/breakdowns.json'
 import { controlsDone, controlsTurn, laserSolved, newControls, newLaser, newVisor, visorDone, visorLitButton, visorPress, visorSlide } from '../src/game/repairs'
 
 // a seeded random (mulberry32), so every run is the same
@@ -11,15 +12,20 @@ const seeded = (seed: number) => () => {
 }
 
 describe('laser', () => {
-  it('lights exactly 2 of the 4 sliders, each needing left or right', () => {
+  it('lights all 4 sliders (the tuning), each needing left or right — and both ends come up', () => {
+    const ends = new Set<number | null>()
     for (let s = 1; s < 200; s++) {
-      const want = newLaser(seeded(s))
+      const want = newLaser(seeded(s), breakdowns.laser.repairSliders)
       expect(want).toHaveLength(4)
-      expect(want.filter((w) => w !== null)).toHaveLength(2)
-      for (const w of want) expect([null, 0, 2]).toContain(w)
+      for (const w of want) expect([0, 2]).toContain(w)
+      want.forEach((w) => ends.add(w))
     }
+    expect(ends).toEqual(new Set([0, 2]))
   })
-  it('is solved when both lit sliders are at their end; the unlit ones need nothing', () => {
+  it('a smaller tuning lights only that many; the rest need nothing', () => {
+    for (let s = 1; s < 50; s++) expect(newLaser(seeded(s), 2).filter((w) => w !== null)).toHaveLength(2)
+  })
+  it('is solved when every lit slider is at its end; unlit ones need nothing (a 2-lit puzzle)', () => {
     const want = [0, null, 2, null] as const
     expect(laserSolved([...want], [1, 1, 1, 1])).toBe(false)
     expect(laserSolved([...want], [0, 1, 1, 1])).toBe(false)
@@ -61,22 +67,24 @@ describe('visor (reset lights)', () => {
 })
 
 describe('controls (the dial)', () => {
-  it('3 corners, each different from the one before and from where the dial starts', () => {
+  it('4 corners (the tuning), each different from the corner the dial is on at that moment', () => {
+    let repeats = 0
     for (let s = 1; s < 200; s++) {
-      const c = newControls(seeded(s), s % 4)
-      expect(c.targets).toHaveLength(3)
+      const c = newControls(seeded(s), breakdowns.controls.repairCorners, s % 4)
+      expect(c.targets).toHaveLength(4)
       expect(c.targets[0]).not.toBe(s % 4)
-      expect(c.targets[1]).not.toBe(c.targets[0])
-      expect(c.targets[2]).not.toBe(c.targets[1])
+      for (let i = 1; i < 4; i++) expect(c.targets[i]).not.toBe(c.targets[i - 1])
+      if (new Set(c.targets).size < 4) repeats++
     }
+    expect(repeats).toBeGreaterThan(0) // an earlier corner may come back (just never the current one)
   })
   it('turning to the lit corner locks it by itself; other corners just move the dial', () => {
-    let c = newControls(seeded(9), 0)
+    let c = newControls(seeded(9), 4, 0)
     const other = [0, 1, 2, 3].find((k) => k !== c.targets[0])!
     c = controlsTurn(c, other)
     expect(c.step).toBe(0)
     expect(c.dial).toBe(other)
-    for (let i = 0; i < 3; i++) c = controlsTurn(c, c.targets[i])
+    for (let i = 0; i < 4; i++) c = controlsTurn(c, c.targets[i])
     expect(controlsDone(c)).toBe(true)
   })
 })

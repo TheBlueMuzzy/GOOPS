@@ -6,7 +6,9 @@
     "_about": "health = capacitor charge. Drains per zapped goop cell, refills per landed piece (not while broken). Breaks at 0: a first zap only primes a group, a second zap pops it.",
     "unlockRank": 4,
     "drainPerCell": 0.04,
-    "refillPerPiece": 0.1
+    "refillPerPiece": 0.1,
+    "repairSliders": 4,
+    "_repairSliders": "the console repair (src/game/repairs.ts): how many of the 4 sliders light up, each needing left or right at random. Muzzy 2026-10-18: every repair about 4 clicks, so all 4."
   },
   "visor": {
     "_about": "health = signal (was v1's lights). Holds for graceMs after you last fast-dropped, then fades from 1 to breakAt over fadeMs; fast-dropping recovers it at recoverPerSec. At breakAt it breaks and drops to brokenHealth. The game draws a glitch from health (lower = glitchier).",
@@ -23,6 +25,8 @@
     "heatPerSpin": 0.05,
     "coolDelayMs": 200,
     "coolPerSec": 0.5,
-    "heldSpinSlowdown": 2
+    "heldSpinSlowdown": 2,
+    "repairCorners": 4,
+    "_repairCorners": "the console repair: how many lit corners in a row the dial must be turned to (each one random, never the corner the dial is on). Muzzy 2026-10-18: 4."
   }
 }

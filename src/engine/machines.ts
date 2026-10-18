@@ -10,9 +10,9 @@ import type { Modifiers } from './upgrades'
 export interface BreakdownConfig {
   consoleTimeScale?: number // read by the game, not the engine
   cooldown: { maxSeconds: number; minSeconds: number; margin: number }
-  laser: { unlockRank: number; drainPerCell: number; refillPerPiece: number }
+  laser: { unlockRank: number; drainPerCell: number; refillPerPiece: number; repairSliders?: number } // repairSliders: the console's, not the engine's
   visor: { unlockRank: number; graceMs: number; fadeMs: number; breakAt: number; brokenHealth: number; recoverPerSec: number }
-  controls: { unlockRank: number; heatPerSpin: number; coolDelayMs: number; coolPerSec: number }
+  controls: { unlockRank: number; heatPerSpin: number; coolDelayMs: number; coolPerSec: number; repairCorners?: number } // repairCorners: the console's
 }
 
 export const MACHINE_IDS: readonly MachineId[] = ['laser', 'visor', 'controls']

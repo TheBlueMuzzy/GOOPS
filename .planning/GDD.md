@@ -53,9 +53,10 @@ Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities 
 - **Breakdowns (Muzzy, 2026-10-18, F06):** three machines, v1's meters, softer effects, simpler repairs. The tank SLOWS (25%) while you're at the console mid-shift; the pause menu (gear) fully pauses.
   | Machine | Meter (v1) | Broken | Repair at the console | Unlock |
   |---|---|---|---|---|
-  | Laser | drains per zapped cell, refills per landed piece | two taps to zap (prime, then pop) | 2 random sliders of 4 light up → flick each left/right | rank 4 |
+  | Laser | drains per zapped cell, refills per landed piece | two taps to zap (prime, then pop) | all 4 sliders light up, each randomly wanting left or right → flick each there | rank 4 |
   | Visor (was "lights") | holds for a grace, fades unless you fast-drop | the periscope view glitches more and more (shader; a pixel filter stacks on top later) | top light → slide up → 3 button flashes in order (never the same twice running) → bottom light → slide down | rank 2 |
-  | Controls | heat per tank turn, cools when idle | held spin at half speed; single presses/swipes normal | turn the dial to the blinking corner (locks by itself), 3 times | rank 6 |
+  | Controls | heat per tank turn, cools when idle | held spin at half speed; single presses/swipes normal | turn the dial to the blinking corner (locks by itself), 4 times; each corner random, never the one the dial is on (an earlier one can come back) | rank 6 |
+  Every repair is about 4 clicks (Muzzy, 2026-10-18); the counts are `repairSliders` / `repairCorners` in `content/tuning/breakdowns.json`.
   Muzzy chose v1's meters knowing they respond to your own moves; the softer effects keep play going. Cooldown after a repair as v1: max(8, 20 − (rank − unlock rank)) s.
   Built (F23): several machines can be broken at once; a rupture freezes the meters (repairs still work); a primed group does not refill (v1 restarted its fill); during a cooldown a meter stays a little (0.05) above its break point, so it can't break the instant the cooldown ends. Numbers: `content/tuning/breakdowns.json`.
 - **Story:** `design/story.md`: the Employer (intercom, always "policy"), the Veteran (radio hijacks, smuggled upgrades, a brain in a jar), fines, rank titles, beats per rank band, the takeover at 50. Designed in v1 but never built; the remake builds it.

@@ -9,6 +9,7 @@ import { ArtLayer, Button, SnapControl, fill } from './kit'
 import { controlsTurn, controlsDone, laserSolved, newControls, newLaser, newVisor, visorDone, visorLitButton, visorPress, visorSlide } from '../game/repairs'
 import { art } from './art'
 import text from '../../content/text/en.json'
+import breakdowns from '../../content/tuning/breakdowns.json'
 
 const t = text.console
 const a = art.console
@@ -34,9 +35,9 @@ function Lamp({ at, lit, blink, live }: { at: [number, number, number, number]; 
   )
 }
 
-// LASER: 2 of the 4 sliders light up, each wanting left or right (its lamp at that end blinks until the knob is there)
+// LASER: the sliders light up (all 4: breakdowns.json laser.repairSliders), each wanting left or right (its lamp at that end blinks until the knob is there)
 export function LaserPanel({ live, onRepair }: PanelProps) {
-  const [want] = useState(() => newLaser(Math.random))
+  const [want] = useState(() => newLaser(Math.random, breakdowns.laser.repairSliders))
   const [pos, setPos] = useState([1, 1, 1, 1]) // every knob starts in the middle
   useSolved(live && laserSolved(want, pos), onRepair)
   return (
@@ -106,9 +107,9 @@ export function VisorPanel({ live, onRepair }: PanelProps) {
   )
 }
 
-// CONTROLS: one corner lamp blinks; turn the dial's arrow to it and it locks by itself; then the next; 3 in all
+// CONTROLS: one corner lamp blinks; turn the dial's arrow to it and it locks by itself; then the next; 4 in all (breakdowns.json controls.repairCorners)
 export function ControlsPanel({ live, onRepair }: PanelProps) {
-  const [c, setC] = useState(() => newControls(Math.random))
+  const [c, setC] = useState(() => newControls(Math.random, breakdowns.controls.repairCorners))
   useSolved(live && controlsDone(c), onRepair)
   const target = live && !controlsDone(c) ? c.targets[c.step] : null
   return (
