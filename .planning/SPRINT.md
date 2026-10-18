@@ -13,12 +13,12 @@ Check: unit tests; a reload keeps rank + XP.
 
 ## F21 🎮 The console as the menu
 Done when: the game opens on Muzzy's console (Example1), the periscope starts a shift, swipe up from the report returns, and the rank meter fills with the shift's XP.
-- [ ] 🤖 5. Read v1's ConsoleView.tsx for behaviour; map Example1 to parts
-- [ ] 🤖 6. Console screen from his art: base, top, Operator Rank meter (real XP), periscope, gear = settings; repair panels drawn switched off; no upgrades bar / "?" yet; plain start screen retired
-- [ ] 🤖 7. Pull the periscope down (drag or tap) → slide into the tank (like Example3)
-- [ ] 🤖 8. Swipe up from the end report → console; XP fills the meter, rank-up moment
-- [ ] 🤖 9. Kit additions framework-first (e.g. a drag handle)
-- [ ] 🤖 10. Screenshots at every size (360 → 2560) + e2e of the whole day
+- [x] 🤖 5. Read v1's ConsoleView.tsx for behaviour; map Example1 to parts
+- [x] 🤖 6. Console screen from his art: base, top, Operator Rank meter (real XP), periscope, gear = settings; repair panels drawn switched off; no upgrades bar / "?" yet; plain start screen retired
+- [x] 🤖 7. Pull the periscope down (drag or tap) → slide into the tank (like Example3)
+- [x] 🤖 8. Swipe up from the end report → console; XP fills the meter, rank-up moment
+- [x] 🤖 9. Kit additions framework-first (e.g. a drag handle)
+- [x] 🤖 10. Screenshots at every size (360 → 2560) + e2e of the whole day
 Check: e2e console → periscope → shift → report → swipe up → XP → next shift, no errors, at 9 sizes.
 
 ## F22 🧱 Upgrade-ready engine
@@ -39,3 +39,5 @@ Check: unit tests for both test upgrades; no real upgrade shows in the game.
 - F22 (helper, 171 tests): `design/upgrades-map.md` covers all 20 upgrades + actives (v1's real behaviour, what the new loop changes, a proposal each). Engine: `resolveUpgrades(book, owned, equipped)` → modifiers (integrityDrainMult = Muzzy's "tougher tank", ruptureDrainTimeMult = his "slower depressurise", pressureRiseTimeMult, crackEveryMult, fallSpeedMult, leftoverPenaltyMult) + ability hooks (`act({ type: 'ability', id })`, charge from time/seals). No upgrades owned = byte-identical shifts (tested). Only two testOnly upgrades exist; nothing in the game shows them.
 - v1 surprises: Sealing Bonus made breakdowns come back SOONER (backwards); Auto-Popper jumped from nothing to ~84% at level 1.
 - Ask Muzzy when upgrades get built (not now): Auto-Popper → slower depressurise or smaller leftover penalty? · Pressure Control → slower pressure rise or tougher tank? · abilities charge during a rupture? · Crack Down ignores the pop line (v1)? · Dense Goop stays risk/reward?
+- F21 (helper; kit 0.12.0: ArtStage/ArtLayer, PullHandle, LevelMeter, Screen column/swipe/slide): the console is cut from Example1.svg by art-prep (named groups, each placed at its own box → lines up as drawn); words written by the game (no fonts ship). Periscope: drag past a threshold or it springs back (v1), or tap / key. Swipe up from the report (mouse + finger) → the console slides back, the meter plays the XP since it last showed, rank-up pops. "End shift" in the pause menu also slides back to the console. Short windows: the console's top half, GOOPS on the left. e2e: day.mjs + console-shots.mjs (9 sizes), all green with real exit codes.
+- Ask Muzzy (F21): the meter's words use Neon's cyan + Orbitron (slashed zero "Ø") — fine, or your Amazon Ember look (needs a licence)? · WIPE SAVE DATA left off the footer (it'd do nothing) — add later as a real wipe with a confirm? · after a shift the monitor says "+N XP" / "Rank up!" instead of "Pull down the periscope" — OK?

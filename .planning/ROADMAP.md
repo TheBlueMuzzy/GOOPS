@@ -77,8 +77,8 @@ Goal: one full shift plays on phone and PC with living goo; Jelly or Particle in
 
 ## M2 — Working day
 Goal: a day at the console — periscope into a shift, back to the console, rank up, next shift. No upgrades yet, but the engine is ready for them.
-- 🔨 F20 Progression + save — must:alpha · needs: F08
-- 🔨 F21 The console as the menu (Example1) — must:alpha · needs: F20, F19
+- ✅ F20 Progression + save — must:alpha · needs: F08
+- 🎛️ F21 The console as the menu (Example1) — must:alpha · needs: F20, F19
 - ✅ F22 Upgrade-ready engine (modifiers + active hooks) — must:alpha · needs: F20
 
 ## Parking lot
