@@ -2,7 +2,7 @@
 
 > How the game is built. Plain English first; code names in `backticks` only where they help.
 > Living document — /define writes it, /develop keeps it true, /tdd shows it.
-> Last updated: 2026-10-17 (Sprint 03 F22: upgrade-ready engine)
+> Last updated: 2026-10-18 (Sprint 04 F23: breakdowns in the engine)
 
 ## 1. At a glance
 - **Platforms:** web (desktop + phone browsers), installable PWA later (like v1).
@@ -45,6 +45,11 @@ flowchart LR
 | Lock delay | 500 ms, max 10 resets (v1) | engine | piece touches down | piece locks |
 | Fill | 375 ms × group size (v1) | engine | group formed/changed | group ready to pop |
 | Pop / seal vent | v1 refund maths, ms ÷ riseMsToFull | engine | zap / seal | pressure drops |
+| Visor grace | `visor.graceMs` (5 s) × `visorGraceMult` | engine (F23) | fast drop released (and shift start, repair) | the signal starts fading |
+| Visor fade | 1 → `visor.breakAt` (0.10) in `visor.fadeMs` (5 s), from wherever it is | engine | grace over | breaks at 0.10 (snaps to 0.05) |
+| Controls cool delay | `controls.coolDelayMs` (200 ms) | engine | each tank turn | heat cools at `coolPerSec` × `controlsCoolMult` |
+| Breakdown cooldown | max(8, 20 − (rank − unlock)) s × `breakdownCooldownMult` | engine | a repair | the machine can break again (its meter was kept `cooldown.margin` above the break point) |
+| Console time scale | the game ticks the engine at `consoleTimeScale` (0.25) | game | at the console mid-shift | — (the engine is purely dt-driven) |
 
 ## 2c. Upgrades & abilities  (F22 — plumbing only; no real upgrade is in the game yet)
 Every v1 upgrade has a home: `design/upgrades-map.md`. Three kinds, three plugs — the engine stays pure and seeded, and with no upgrades it plays **exactly** as before (tested: same events, score and tank on seeded shifts).
@@ -55,16 +60,17 @@ flowchart LR
   Resolve -- modifiers + abilities --> Engine["createShift(config, { modifiers, abilities })"]
   Resolve -- features --> Screens[HUD / console]
 ```
-- **Passive → modifiers.** `Modifiers` (src/engine/upgrades.ts) is a set of named multipliers, 1 = no change, each read at the exact line that uses its tuning value: `integrityDrainMult` (× integrity drain per crack), `ruptureDrainTimeMult` (× rupture drain time), `pressureRiseTimeMult` (× pressure rise time; vents use the same total, they are "ms of rise"), `crackEveryMult` (× time between cracks), `fallSpeedMult` (× fall speed, fast drop too), `leftoverPenaltyMult` (× leftover penalty). Several upgrades on one modifier combine as (1 + sum of `add` values) × product of `mul` values, so JSON order never matters. `clampModifiers` drops unknown names, turns broken numbers back to 1 and clamps to safety rails (never 0 where the engine divides). New passives that need a new hook (Junk Uniformer, Crack Matcher) add a modifier whose neutral value takes **no extra random rolls**, so seeded shifts stay the same.
+- **Passive → modifiers.** `Modifiers` (src/engine/upgrades.ts) is a set of named multipliers, 1 = no change, each read at the exact line that uses its tuning value: `integrityDrainMult` (× integrity drain per crack), `ruptureDrainTimeMult` (× rupture drain time), `pressureRiseTimeMult` (× pressure rise time; vents use the same total, they are "ms of rise"), `crackEveryMult` (× time between cracks), `fallSpeedMult` (× fall speed, fast drop too), `leftoverPenaltyMult` (× leftover penalty); breakdowns (F23): `laserDrainMult` (× laser drain per zapped cell — Capacitor Efficiency), `visorGraceMult` (× visor grace — Circuit Stabilizer), `controlsCoolMult` (× controls cooling — Gear Lubrication), `breakdownCooldownMult` (× the cooldown after a repair). Several upgrades on one modifier combine as (1 + sum of `add` values) × product of `mul` values, so JSON order never matters. `clampModifiers` drops unknown names, turns broken numbers back to 1 and clamps to safety rails (never 0 where the engine divides). New passives that need a new hook (Junk Uniformer, Crack Matcher) add a modifier whose neutral value takes **no extra random rolls**, so seeded shifts stay the same.
 - **Active → ability hooks.** `createShift({ abilities: AbilitySpec[] })`; `state.abilities = [{ id, effect, charge 0..1, ready }]`. Charge comes from play time (`chargePerSecond`) and seals (`chargePerSeal`), only while the phase is `playing` (not during a rupture). `act({ type: 'ability', id })` fires a ready one: the effect's fire function (src/engine/abilities.ts `ABILITY_EFFECTS`) starts it or says no (→ `reject`, charge kept). Lasting effects live in `state.effects` (e.g. `lowCracks: { id, left, rows }`) and the engine reads them where they bite (crack spawn). Events: `abilityReady`, `ability`, `abilityEnd`.
 - **Feature → flags.** `resolveUpgrades(...).features` = flag → level (e.g. next-piece window, hold viewer, ability slots). Screens read them; the engine already exposes next/held pieces.
-- **Not the engine's:** hold-to-swap time (input), breakdown upgrades (F06), console time scale (Focus Mode → the screen's `tick`).
+- **Not the engine's:** hold-to-swap time (input), the broken-controls slow held spin (input), the visor glitch (drawn from `machines.visor.health`), console time scale (Focus Mode → the screen's `tick`).
 - **Proof:** two `testOnly` upgrades in upgrades.json — *Sturdy tank (test)* (integrity drain × 0.5) and *Low cracks (test)* (2 seals to charge; the next 3 cracks form in the bottom 4 rows). `playableUpgrades()` never returns test-only ones; nothing in the game reads upgrades.json yet.
 
 ## 3. Data the game reads
 | File | What's in it | Edited with |
 |---|---|---|
 | `content/tuning/shift.json` | tank size, shift length, fall speed, lock delay, fill time, refunds, crack rules | Obsidian (Dev Kit later) |
+| `content/tuning/breakdowns.json` | the three machines' meters (v1 numbers), unlock ranks, repair cooldown, `consoleTimeScale` (F23) | Obsidian |
 | `content/tuning/upgrades.json` | upgrade definitions: type, rank, max level, per-level effects / ability charge + numbers (only the two test-only ones so far) | Obsidian |
 | `content/tuning/goo-jelly.json` | Muzzy's Jelly pick (`research/goo-lab/picks.json`) | Obsidian / in-game Settings later |
 | `content/tuning/goo-particle.json` | Muzzy's Particle pick | same |
@@ -88,6 +94,16 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D08 · 2026-10-18 · Breakdowns live in the engine as three meters (F23)
+  Proposed by: Claude (shape) from Muzzy's F06 calls   Options: the game tracks the meters / the engine does
+  Chose: the engine (src/engine/machines.ts) — the meters respond to engine actions (zap, land, spin, fast drop), so
+  they stay pure, seeded and testable. createShift({ breakdowns: breakdowns.json }) switches them on; without it every
+  machine stays locked (old shifts unchanged). state.machines[id] = { unlocked, health 0..1, broken, cooldownMs };
+  events breakdown / repaired / prime; act({ type: 'repair', machine }) (not broken → reject). Only the laser's effect
+  is a rule (first zap primes, second pops; no fill restart, unlike v1 — softer); the visor glitch is drawn by the
+  game from health; the slow held spin is the input layer's. A rupture freezes the meters (repairs still work). During
+  a cooldown a meter stays `cooldown.margin` (0.05) above its break point, so it can't break the instant the cooldown
+  ends (v1 could). The visor fades from wherever it is (v1 recomputed from 100% and could jump up).
 D07 · 2026-10-18 · The console = the main menu, cut from Muzzy's mock-up (F21)
   Proposed by: Claude   Options: rebuild it from the separate part files (ConsoleBase, Periscope…) / cut it from Example1.svg
   Chose: cut named groups out of Example1.svg (art-prep), each cropped to its box in art.json and placed at that same box
