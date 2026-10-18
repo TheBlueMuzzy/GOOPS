@@ -166,6 +166,10 @@
     .kit-main-menu-buttons > .kit-button[data-variant="primary"], .kit-main-menu-extra > * { grid-column: 1 / -1; }
   }
   .kit-end-title { display: inline-block; }
+  /* Victory / Game over on a short, wide screen (a phone on its side): the report on the left, its buttons on the right (0.11.0) */
+  @media (max-height: 30rem) and (min-width: 40rem) {
+    .kit-end { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; column-gap: var(--gap-l); }
+  }
   .kit-dot { inline-size: 0.75rem; block-size: 0.75rem; border-radius: 50%; }
 
   /* Player chip: a HUD plate for one player, placed by the game (never catches taps) */

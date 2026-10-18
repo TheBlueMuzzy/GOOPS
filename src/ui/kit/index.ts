@@ -3,6 +3,7 @@
 // Needs React 18 or newer (tested on 18.3 and 19).
 import './fonts/fonts.css'
 import './kit.css'
+import './art.css'
 
 export * from './layout'
 export * from './controls'
