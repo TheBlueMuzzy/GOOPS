@@ -1,11 +1,11 @@
 ## ▶ RESUME HERE
 🌙 Overnight build done (2026-10-17): M1 "Core shift" plays end to end — one full shift, v1 rules, Jelly or Particle goo (Settings → Gameplay → Goo style). Branch `dev/m1-core-shift` (not delivered).
 Play: https://claude.ai/artifact/6kKDMuj25K2fEMoVUj5rrg (private build) · or on this PC: http://localhost:5173 · phone: http://192.168.1.152:5173 (dev server left running)
-Sprint 04 built — machines break, repaired at the console (F23 engine · F24 repairs + mid-shift console · F25 visor glitch in the game). Muzzy: play from rank 2+ (laser 4, controls 6), answer SPRINT Notes questions. Dev: ?rank=6, ?visor=0.6, ?pixel=on, window.__goops.breakMachine(id). Reviewed through: 4edca97.
+Sprint 04 done (2026-10-18, approved "for now") — machines break and are repaired at the console (F23 · F24 · F25 ✅). Its open questions (broken-laser refill, cooldown margin, visor button spacing, lamp blink, meters strip, glitch look, pixel filter) are in archive/sprints/sprint-04.md Notes — come back to them later. Next: /sprint to plan Sprint 05. Dev: ?rank=6, ?visor=0.6, ?pixel=on. Reviewed through: 4edca97.
 NOT built (need your taste calls first): the real console menu, breakdowns, ranks/progression, story, tutorial, sound.
 
 ## Where we are
-Stage: develop (overnight M1) · Milestone: M3 Breakdowns · Sprint: 04 · Branch: master (default) · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
+Stage: develop (overnight M1) · Milestone: M3 Breakdowns · Sprint: — (04 done) · Branch: dev/m1-core-shift · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
 Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `npm run deploy`; stays up until the remake replaces it)
 
 ## Answered 2026-10-17 (written into GDD §4/§6) → build next sprint

@@ -83,9 +83,9 @@ Goal: a day at the console — periscope into a shift, back to the console, rank
 
 ## M3 — Breakdowns
 Goal: machines break from your own play and you fix them at the console while the tank crawls.
-- 🔨 F23 Breakdowns in the engine — must:alpha · needs: F06
-- 🔨 F24 Repairs at the console — must:alpha · needs: F23, F21
-- 🔨 F25 Visor glitch (sketch first) — must:alpha · needs: F23
+- ✅ F23 Breakdowns in the engine — must:alpha · needs: F06
+- ✅ F24 Repairs at the console — must:alpha · needs: F23, F21
+- ✅ F25 Visor glitch (sketch first) — must:alpha · needs: F23
 
 ## Parking lot
 - 📌 2026-10-17 — **HUD + messages rethink** (Muzzy: "My focus is so heavily on the bottom of the tank, that the top UI is vanishing… the message it sends didn't show up in a place that matched my focus… good UI early helps me understand how to give you bug/balance feedback"). Big moments (quota met, rupture, why it ended) belong where the player is looking; the top HUD needs a rethink. Known: on a 360px phone a 5-digit score only just fits beside the bars.

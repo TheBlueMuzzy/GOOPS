@@ -1,4 +1,5 @@
 # Sprint 04 — machines that break, fixed at the console
+- 2026-10-18: approved "for now" by Muzzy — "we'll come back to this later" (open Notes questions stay open).
 Started 2026-10-18 · Milestone M3 Breakdowns · Features: F23, F24, F25
 What changes for Muzzy: from rank 2 machines break (visor at 2, laser at 4, controls at 6); you repair them at your console while the tank crawls at 25%. Stays the same: the shift loop, the goo, ranks.
 Decided at planning (Muzzy, 2026-10-18): triggers = v1's meters · softer effects · the tank SLOWS at the console mid-shift · repairs simplified, walked through one by one (below).
