@@ -20,6 +20,10 @@ import tank from '../../content/tuning/tank.json'
 import hud from '../../content/tuning/hud.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import messageTuning from '../../content/tuning/messages.json'
+import pauseTuning from '../../content/tuning/pause.json'
+import { clockPause, looksClock, rulesClock } from '../devkit/gameClock'
+import { onTuning } from '../devkit/tuning/liveTuning'
+import { session } from './session'
 import './game.css'
 
 const HUD_SIDE_ROOM = 16 // CSS px the HUD may reach past each side of the tank (the kit's screen edge gap)
@@ -63,8 +67,11 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
   const gooCanvas = useRef<HTMLCanvasElement>(null)
   const readoutCanvas = useRef<HTMLCanvasElement>(null)
   const readoutEl = useRef<HTMLDivElement>(null)
-  const live = useRef({ speed, inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
-  useEffect(() => { live.current = { speed, inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
+  const live = useRef({ inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
+  useEffect(() => { live.current = { inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
+  // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
+  // of this (rulesClock.rate = 0); the frame loop ticks the engine by rate.
+  useEffect(() => { rulesClock.scale = speed }, [speed])
 
   // the Settings "Wall kick" row: applied now and whenever it changes
   useEffect(() => {
@@ -98,9 +105,11 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
     const el = host.current!, tc = tankCanvas.current!, ctx = tc.getContext('2d')!
     const rc = readoutCanvas.current!, rctx = rc.getContext('2d')!
     const s = engine.state
-    let camera = s.spin, last = performance.now(), hudAt = 0, raf = 0, ended = false
+    // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
+    // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
+    let camera = s.spin, last = looksClock.now(), hudAt = 0, raf = 0, ended = false
     let toastsAt = 0, toastsAtPx = '', toastsStart = '', toastsEnd = '' // the messages' point + sides, as last set
-    const messages = createMessages(messageTuning as MessageTuning)
+    const messages = createMessages(messageTuning as MessageTuning) // (reads the live tuning each time it decides)
     const guide = createDropGuide()
     let still = reduceMotion() // reduce motion: the drop guide's chevrons don't light up in a wave
     const root = document.documentElement
@@ -134,26 +143,31 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       readoutDrawn = ''
     }
     relayout.current = resize
+    const stopHudEdits = onTuning('hud', resize) // a Dev Kit edit of hud.json's sizes re-fits the tank at once
     const ro = new ResizeObserver(resize)
     ro.observe(el)
     resize()
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame)
-      const dt = Math.min((now - last) / 1000, 0.1)
-      last = now
-      const speed = live.current.speed
-      const active = speed > 0 && s.status === 'playing'
-      if (active) engine.tick(dt * 1000 * speed)
+      const looksMs = looksClock.now()
+      const dt = Math.min((looksMs - last) / 1000, 0.1)
+      last = looksMs
+      const rate = rulesClock.rate
+      const active = rate > 0 && s.status === 'playing'
+      // ◐ the Dev Kit's half pause: the rules stand still, the looks (wave, pulses, glide, goo) keep moving
+      const half = clockPause() === 'half' && s.status === 'playing'
+      if (active) engine.tick(dt * 1000 * rate)
       const events: ShiftEvent[] = engine.takeEvents()
+      if (events.length) session.emit(events)
       camera = stepCamera(camera, s.spin, s.width, dt, tank.cameraSpeed)
       view.camera = camera
-      drawTank(ctx, s, view, colorOf, now / 1000, () => guide.draw(ctx, s, view, active ? dt : 0, softHeld, still))
-      gooRef.current?.frame(s, events, view, active ? dt * speed : 0)
+      drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still))
+      gooRef.current?.frame(s, events, view, active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
-      visorFx.current?.frame(s, view, now / 1000)
+      visorFx.current?.frame(s, view, looksMs / 1000)
       readoutDrawn = placeReadout(readoutEl.current, rctx, s, view, live.current.readoutAt, readoutSize, readoutDrawn)
       // count new breakdowns BEFORE the HUD snapshot: the console keys each repair panel by its break count, so a
       // snapshot saying "broken" with the old count would re-light an already-solved panel (a free repair)
@@ -183,7 +197,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
         if (start !== toastsStart) { toastsStart = start; root.style.setProperty('--kit-toasts-start', start) }
         if (end !== toastsEnd) { toastsEnd = end; root.style.setProperty('--kit-toasts-end', end) }
       }
-      for (const m of messages.step(s, events, now)) live.current.onMessage(m)
+      for (const m of messages.step(s, events, looksMs)) live.current.onMessage(m)
       for (const e of events) {
         if (e.type === 'spawn' && softHeld) engine.act({ type: 'softDrop', on: true })
         if (e.type === 'end' && !ended) { ended = true; live.current.onEnd(e.status) }
@@ -216,10 +230,10 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
         engine.act({ type: 'pop', x, y })
         return true
       },
-    }, () => live.current.inputOn && live.current.speed > 0 && s.status === 'playing')
+    }, () => live.current.inputOn && rulesClock.rate > 0 && s.status === 'playing')
 
     return () => {
-      cancelAnimationFrame(raf); ro.disconnect(); detach()
+      cancelAnimationFrame(raf); ro.disconnect(); detach(); stopHudEdits()
       for (const v of ['--kit-hud-w', '--kit-hud-dock-size', '--kit-toasts-at', '--kit-toasts-start', '--kit-toasts-end']) root.style.removeProperty(v)
     }
   }, [engine])
@@ -279,9 +293,9 @@ function placeReadout(el: HTMLDivElement | null, ctx: CanvasRenderingContext2D, 
   const g = readoutGeometry(s, view, at, text)
   const t = `${Math.round(g.text[0])}px ${Math.round(g.text[1])}px`
   if (el && el.style.translate !== t) el.style.translate = t
-  const key = `${g.foot.map(Math.round)} ${g.end.map(Math.round)}`
-  if (key === drawn) return drawn
   const R = hud.readout
+  const key = `${g.foot.map(Math.round)} ${g.end.map(Math.round)} ${R.color} ${R.lineWidthPx} ${R.footPx}` // (+ its look: Dev Kit edits redraw it)
+  if (key === drawn) return drawn
   ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0)
   ctx.clearRect(0, 0, view.width, view.height)
   ctx.strokeStyle = R.color

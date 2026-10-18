@@ -5,6 +5,12 @@
 // Keys (GDD §4, one set, same timing as touch): A D / ← → spin · Q / Right Ctrl ↺, E / Numpad 0 ↻
 // · S / ↓ (hold) fast drop · hold R / Right Shift 1.5 s = swap · W / ↑ console/pause.
 import tank from '../../content/tuning/tank.json'
+import { rulesClock } from '../devkit/gameClock'
+
+// Every timing here (hold-to-swap, spin repeat, a quick swipe's short fast drop) changes the game, so it runs on the
+// RULES clock (src/devkit/gameClock.ts): it stands still under the pause menu and the Dev Kit's pauses, and a hold
+// that started before a pause doesn't finish the moment it ends.
+const clock = () => rulesClock.now()
 
 export interface ControlCallbacks {
   spin(dir: 1 | -1): void
@@ -28,11 +34,12 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   let ptr: { id: number; x: number; y: number; t: number; locked: 'H' | 'V' | null; consumed: boolean } | null = null
   let dragDir: -1 | 0 | 1 = 0
   const keys = new Set<string>()
-  let nextSpinAt = 0
+  let nextSpinAt = -Infinity
   let holdTimer = 0
   let holdStart = 0
   let holdKey: string | null = null // the swap key being held, if any
   let raf = 0
+  let stopShortDrop = () => {} // a quick swipe down's fast drop, ending on the rules clock
 
   // spinning repeats while a key or the drag is held
   const spinDir = (): -1 | 0 | 1 => {
@@ -47,7 +54,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     raf = 0
     const dir = spinDir()
     if (!dir) return
-    const now = performance.now()
+    const now = clock()
     if (now >= nextSpinAt && isActive()) { cb.spin(dir); nextSpinAt = now + tank.spinRepeatMs * (cb.spinSlowdown?.() ?? 1) }
     raf = requestAnimationFrame(loop)
   }
@@ -58,7 +65,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   }
   const tickHold = () => {
     if (!ptr && !holdKey) return
-    const held = performance.now() - holdStart
+    const held = clock() - holdStart
     if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (tank.holdToSwapMs - tank.holdDelayMs)))
     if (held >= tank.holdToSwapMs) {
       holdTimer = 0; cb.holdProgress?.(null)
@@ -73,8 +80,8 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   const down = (e: PointerEvent) => {
     if (ptr || holdKey || !isActive()) return
     el.setPointerCapture(e.pointerId)
-    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), locked: null, consumed: false }
-    holdStart = performance.now()
+    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: clock(), locked: null, consumed: false }
+    holdStart = clock()
     holdTimer = requestAnimationFrame(tickHold)
   }
   const move = (e: PointerEvent) => {
@@ -86,7 +93,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     }
     if (ptr.locked === 'H') {
       const dir = dx < -DRAG_DEADZONE ? 1 : dx > DRAG_DEADZONE ? -1 : 0
-      if (dir !== dragDir) { dragDir = dir; if (dir) { nextSpinAt = 0; startLoop() } }
+      if (dir !== dragDir) { dragDir = dir; if (dir) { nextSpinAt = -Infinity; startLoop() } }
     } else if (ptr.locked === 'V') cb.softDrop(dy > 0)
   }
   const up = (e: PointerEvent) => {
@@ -96,7 +103,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     clearHold()
     cb.softDrop(false)
     dragDir = 0
-    const dt = performance.now() - p.t, dx = e.clientX - p.x, dy = e.clientY - p.y
+    const dt = clock() - p.t, dx = e.clientX - p.x, dy = e.clientY - p.y
     if (p.consumed || !isActive()) return
     if (!p.locked) {
       if (dt >= tank.holdDelayMs) return // a hold that didn't finish isn't a tap
@@ -105,7 +112,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
       cb.rotate(e.clientX - r.left < r.width / 2 ? -1 : 1)
     } else if (dt < SWIPE_MS && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_PX) {
       if (dy < 0) cb.console()
-      else { cb.softDrop(true); setTimeout(() => cb.softDrop(false), 150) } // quick swipe down = a short fast-drop
+      else { cb.softDrop(true); stopShortDrop(); stopShortDrop = rulesClock.after(150, () => cb.softDrop(false)) } // quick swipe down = a short fast-drop
     }
   }
   const cancel = (e: PointerEvent) => { if (ptr && e.pointerId === ptr.id) { ptr = null; clearHold(); cb.softDrop(false); dragDir = 0 } }
@@ -116,14 +123,14 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     if (k === 'ArrowLeft' || k === 'KeyA' || k === 'ArrowRight' || k === 'KeyD') {
       keys.add(k)
       cb.spin(k === 'ArrowLeft' || k === 'KeyA' ? -1 : 1) // (the view moves left: see spinDir)
-      nextSpinAt = performance.now() + tank.spinFirstDelayMs
+      nextSpinAt = clock() + tank.spinFirstDelayMs
       startLoop()
     } else if (k === 'KeyQ' || k === 'ControlRight') cb.rotate(-1)
     else if (k === 'KeyE' || k === 'Numpad0') cb.rotate(1)
     else if (k === 'KeyS' || k === 'ArrowDown') { keys.add(k); cb.softDrop(true) }
     else if (k === 'KeyR' || k === 'ShiftRight') {
       // same 1.5 s hold as touch, with the same charging ring
-      if (!holdKey && !ptr) { holdKey = k; holdStart = performance.now(); holdTimer = requestAnimationFrame(tickHold) }
+      if (!holdKey && !ptr) { holdKey = k; holdStart = clock(); holdTimer = requestAnimationFrame(tickHold) }
     } else if (k === 'KeyW' || k === 'ArrowUp') cb.console()
     else return
     e.preventDefault()
@@ -157,6 +164,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     window.removeEventListener('keyup', keyUp)
     window.removeEventListener('blur', blur)
     if (raf) cancelAnimationFrame(raf)
+    stopShortDrop()
     clearHold()
   }
 }

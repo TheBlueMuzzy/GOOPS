@@ -17,5 +17,10 @@
 //   import { myGameAdapter } from './myGameAdapter'
 //   registerDevKitGame(myGameAdapter)
 import type { ComponentType } from 'react'
+import { registerDevKitGame } from '../devkit/devkitGame'
+import { goopsAdapter } from './goopsAdapter'
+
+// Snapshots, Bug capture and the Pause buttons reach the running shift through this (goopsAdapter.ts)
+registerDevKitGame(goopsAdapter)
 
 export const gameTabs: { id: string; label: string; Panel: ComponentType }[] = []

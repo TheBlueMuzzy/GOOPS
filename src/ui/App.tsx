@@ -8,6 +8,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Bar, GameOver, Hud, HudText, kitScreens, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
+import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
+import { session } from '../game/session'
+import { looksClock } from '../devkit/gameClock'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { readoutSetting } from '../game/readoutSetting'
 import type { Message } from '../game/messages'
@@ -44,8 +47,13 @@ const SettingsScreen = () => (
     gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick); readoutSetting.setFromSettings(values)
   }} />
 )
-// in-shift messages (F26, src/game/messages.ts decides which): kit toasts just above the goop
-const onMessage = (m: Message) => toast(text.messages[m.key], { variant: m.danger ? 'danger' : 'neutral', seconds: m.seconds })
+// in-shift messages (F26, src/game/messages.ts decides which): kit toasts just above the goop. How long one stays is
+// LOOKS time (src/devkit/gameClock.ts): the Dev Kit's full pause holds it on screen, so the frozen picture stays whole.
+const ONE_DAY_S = 86_400 // (the kit's own timer, never reached: the looks clock takes it away)
+const onMessage = (m: Message) => {
+  const id = toast(text.messages[m.key], { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
+  looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
+}
 
 // console = on the console · leaving = sliding away to the tank · shift = in the tank (report included) · arriving = sliding back
 // peekIn / peek / peekOut = mid-shift: the console sliding over the running tank / on it / sliding away back to the shift
@@ -106,6 +114,20 @@ export function App() {
     setMode('console')
   }, [])
   const repair = useCallback((machine: MachineId) => engineRef.current?.act({ type: 'repair', machine }), [])
+  // The Dev Kit's Snapshots (src/devkit-game/goopsAdapter.ts): a saved moment → a new engine carrying on from it, on
+  // the tank straight away (menus closed); null → back to the console. Junk throws (restoreShift says why).
+  const restoreSnapshot = useCallback((snapshot: ShiftSnapshot | null) => {
+    const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns)
+    while (screens.current.length) screens.pop()
+    toasts.current.forEach((t) => toasts.dismiss(t.id))
+    endPending.current = false
+    setMeterFrom(null)
+    if (!e) { setMode('console'); return }
+    engineRef.current = e
+    setResult(null); setHud(null); setEngine(e); setMode('shift')
+  }, [])
+  useEffect(() => { session.restore = restoreSnapshot; return () => { session.restore = null } }, [restoreSnapshot])
+  useEffect(() => { session.engine = engine; session.inShift = !!engine && mode !== 'console' }, [engine, mode])
   // at the console mid-shift the machines' break-progress pauses (Muzzy, 2026-10-18; src/engine/machines.ts)
   useEffect(() => { engine?.act({ type: 'console', on: PEEK.includes(mode) }) }, [engine, mode])
   const onEnd = useCallback((status: ShiftStatus) => {
