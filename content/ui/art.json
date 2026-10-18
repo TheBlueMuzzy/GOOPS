@@ -1,0 +1,14 @@
+{
+  "_about": "Muzzy's art on the screens (F19). Files are served from public/art/ — made from art/ by `node scripts/art-prep.mjs` (re-run it after changing a file in art/). Button size: s / m / l = picture 3 / 4 / 5.5rem wide. Frame: slice = where its corners end, in the picture's own units (top, right, bottom, left); scale = rem per picture unit (0.0375 ≈ the picture at 60%); ink = the words' colour on the frame's screen. Which art file is what: .planning/research/art-map.md",
+  "menu": {
+    "backdrop": "art/Background.svg",
+    "title": "art/Title.svg",
+    "start": { "up": "art/Btn_Green-Up.svg", "down": "art/Btn_Green-Down.svg", "size": "l" },
+    "settings": { "up": "art/Btn_Blue-Up.svg", "down": "art/Btn_Blue-Down.svg", "size": "l" }
+  },
+  "end": {
+    "frame": { "src": "art/EndGameFrame.svg", "slice": [102, 64, 64, 64], "scale": 0.0375, "ink": "on-surface" },
+    "again": { "up": "art/Btn_Green-Up.svg", "down": "art/Btn_Green-Down.svg", "size": "m" },
+    "quit": { "up": "art/Btn_Blue-Up.svg", "down": "art/Btn_Blue-Down.svg", "size": "m" }
+  }
+}

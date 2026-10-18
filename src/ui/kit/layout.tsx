@@ -1,6 +1,6 @@
 // LAYOUT BOXES — Screen, Panel, Stack, Row, Grid.
 // They only arrange things. Spacing is always a gap name (xs, s, m, l, xl) — never a size.
-import { useLayoutEffect, useRef, type HTMLAttributes, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, type CSSProperties, type HTMLAttributes, type ReactNode } from 'react'
 
 export type Gap = 'xs' | 's' | 'm' | 'l' | 'xl'
 type BoxProps = HTMLAttributes<HTMLDivElement> & { gap?: Gap }
@@ -23,15 +23,21 @@ type ScreenProps = {
   // middle, then its top stays put and it only grows or shrinks DOWNWARD (same rule as scroll above). It never runs
   // off the bottom: there it stops, and the card's ScrollArea body scrolls inside instead.
   grow?: 'down'
+  // backdrop (0.11.0): a picture behind the whole screen (the game's own background art). It keeps its shape:
+  // 'cover' (default) fills the screen and crops what spills over; 'contain' shows all of it on the style's background.
+  backdrop?: string
+  backdropFit?: 'cover' | 'contain'
 }
-export function Screen({ children, label, dialog, scroll, grow, ...slots }: ScreenProps) {
+export function Screen({ children, label, dialog, scroll, grow, backdrop, backdropFit = 'cover', ...slots }: ScreenProps) {
   const slotNames = { topLeft: 'top-left', top: 'top', topRight: 'top-right', bottomLeft: 'bottom-left', bottom: 'bottom', bottomRight: 'bottom-right' }
   const centre = useRef<HTMLDivElement>(null)
   const keepTop = scroll ? 'margin' : grow === 'down' ? 'variable' : null // (scroll wins if both are given)
   useLayoutEffect(() => (keepTop && centre.current ? keepCentredOnOpen(centre.current, keepTop) : undefined), [keepTop])
   return (
     <section className="kit-screen" aria-label={label} data-dialog={dialog || undefined} data-scroll={scroll || undefined}
-      data-grow={!scroll && grow ? grow : undefined} role={dialog ? 'dialog' : undefined} aria-modal={dialog || undefined}>
+      data-grow={!scroll && grow ? grow : undefined} role={dialog ? 'dialog' : undefined} aria-modal={dialog || undefined}
+      data-backdrop={backdrop ? backdropFit : undefined}
+      style={{ '--kit-backdrop': backdrop ? `url("${encodeURI(backdrop)}")` : undefined } as CSSProperties}>
       {Object.entries(slotNames).map(([prop, slot]) => {
         const content = slots[prop as keyof typeof slots]
         return content ? <div key={slot} data-slot={slot}>{content}</div> : null
@@ -79,8 +85,32 @@ function keepCentredOnOpen(box: HTMLDivElement, keep: 'margin' | 'variable') {
 }
 
 // A raised surface that groups things (menu box, settings card, dialog body).
-export function Panel({ gap = 'm', depth = 1, className = '', ...rest }: BoxProps & { depth?: 0 | 1 | 2 }) {
-  return <div className={`kit-panel ${className}`} data-gap={gap} data-depth={depth} {...rest} />
+// frame (0.11.0): the game's own frame picture around it instead of the style's box — see PanelFrame.
+export function Panel({ gap = 'm', depth = 1, frame, className = '', style, ...rest }: BoxProps & { depth?: 0 | 1 | 2; frame?: PanelFrame }) {
+  return <div className={`kit-panel ${className}`} data-gap={gap} data-depth={depth} data-frame={frame ? '' : undefined}
+    style={{ ...style, ...(frame && frameVariables(frame)) }} {...rest} />
+}
+
+// A FRAME PICTURE (0.11.0) — a panel drawn inside the game's own frame art (a monitor, a scroll, a wooden sign).
+// The picture is cut nine ways (CSS border-image): its four corners are drawn at their own shape, never stretched;
+// only the plain strips between them (and the middle) grow with the panel's contents, so any frame with plain edges
+// fits any amount of words. src = the picture (an SVG needs width + height on its <svg>, or the cut lines are guessed);
+// slice = [top, right, bottom, left] — how far in from each edge the corners reach, in the picture's own units
+// (an SVG's viewBox units); scale = how many rem one picture unit takes on screen (default 0.0625: 16 units = 1rem;
+// on a short window, 30rem tall or less, the frame is drawn at 60% of that so the contents keep their room).
+// The panel's contents sit inside the cut lines, so they never touch the frame.
+// ink = which style colour the words inside take, to read on the frame's own window: 'on-surface' (default, like any
+// panel), 'on-bg' or 'on-game' (light words over a dark game in most styles).
+export type PanelFrame = { src: string; slice: [number, number, number, number]; scale?: number; ink?: 'on-surface' | 'on-bg' | 'on-game' }
+export function frameVariables({ src, slice, scale = 0.0625, ink = 'on-surface' }: PanelFrame): CSSProperties {
+  return {
+    '--kit-art-frame-ink': `var(--${ink})`,
+    '--kit-art-frame': `url("${encodeURI(src)}")`,
+    '--kit-art-frame-slice': slice.join(' '),
+    '--kit-art-frame-width': slice.map((n) => `${+(n * scale).toFixed(4)}rem`).join(' '),
+    // short windows (a phone on its side): the frame drawn at 60%, so the report keeps the room
+    '--kit-art-frame-width-short': slice.map((n) => `${+(n * scale * 0.6).toFixed(4)}rem`).join(' '),
+  } as CSSProperties
 }
 
 // Things top to bottom.

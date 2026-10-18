@@ -1,0 +1,55 @@
+/* ART SKINS (0.11.0) — a game's own pictures in place of the style's look: art buttons (Button art),
+   a backdrop behind a screen (Screen backdrop) and a frame picture around a panel (Panel frame).
+   The pictures are the look, so the style paints nothing over them; words beside them still use the style.
+   Pictures always keep their own shape (no stretching): sized by ONE side, the other follows. */
+
+/* ───────────── kit-base: layout only ───────────── */
+@layer kit-base {
+  /* Art button: picture, then words (or words under it); the whole thing is the target, ≥ target-min */
+  .kit-button[data-art] { justify-content: flex-start; padding: var(--gap-xs) var(--gap-s); gap: var(--gap-m); text-align: start; }
+  .kit-button[data-art="below"] { flex-direction: column; justify-content: center; gap: var(--gap-xs); text-align: center; }
+  .kit-art-face { display: grid; flex: none; inline-size: var(--kit-art-size, 4rem); max-inline-size: 100%; }
+  .kit-button[data-art-size="s"] { --kit-art-size: 3rem; }
+  .kit-button[data-art-size="l"] { --kit-art-size: 5.5rem; }
+  /* both pictures in one cell, bottom-aligned: a shorter "pushed in" picture sinks into the same base */
+  .kit-art-face > img { grid-area: 1 / 1; display: block; inline-size: 100%; block-size: auto; align-self: end; pointer-events: none; user-select: none; }
+  .kit-art-down { visibility: hidden; }
+  .kit-button[data-art]:is(:active, [data-pressed]):not(:disabled) .kit-art-down { visibility: visible; }
+  .kit-button[data-art]:is(:active, [data-pressed]):not(:disabled) .kit-art-up:has(+ .kit-art-down) { visibility: hidden; }
+  /* short windows (a phone on its side): pictures at 75%, so a row of them and their words still fit */
+  @media (max-height: 30rem) { .kit-art-face { inline-size: calc(var(--kit-art-size, 4rem) * 0.75); } }
+  .kit-art-label { display: inline-flex; align-items: center; gap: var(--gap-s); min-inline-size: 0; }
+  /* label hidden: read out, never shown */
+  .kit-button[data-art="hidden"] { padding: var(--gap-xs); }
+  .kit-button[data-art="hidden"] .kit-art-label { inline-size: 0.0625rem; block-size: 0.0625rem; margin: -0.0625rem; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* Frame picture: the border is the picture's nine-way cut; contents sit inside the cut lines */
+  .kit-panel[data-frame] { padding: var(--gap-xs); }
+  /* Art buttons in a main menu: the column is as wide as its widest button and centred, pictures lined up */
+  .kit-main-menu-buttons:has(> .kit-button[data-art]) { align-self: center; max-inline-size: 100%; }
+
+  /* A title picture (MainMenu titleArt): as tall as it may be, as wide as its shape says, never wider than its box */
+  .kit-title-art { display: block; block-size: var(--kit-title-art-h, 7rem); inline-size: auto; max-inline-size: 100%;
+    object-fit: contain; align-self: center; user-select: none; pointer-events: none; }
+  @media (max-height: 30rem) { .kit-title-art { block-size: var(--kit-title-art-h-short, 4.5rem); } }
+}
+
+/* ───────────── kit-style: the pictures replace the paint ───────────── */
+@layer kit-style {
+  /* (data-variant in the selector: beats every variant's fill, outline, glow and shadow) */
+  .kit-button[data-art][data-variant] { background: none; border-color: transparent; box-shadow: none; filter: none; color: inherit;
+    font-family: var(--font-display); }
+  /* big pictures get big words (heading size); s / m keep a normal button's text size */
+  .kit-button[data-art][data-art-size="l"] { font-size: var(--text-heading); }
+  /* the picture presses itself (down art); no extra sink or shrink — without down art, the style's press stays */
+  .kit-button[data-art]:has(.kit-art-down):active:not(:disabled) { transform: none; }
+  /* (:is(… .kit-layer > …): also beats the dim a screen gets over another — a backdrop covers what's under it anyway) */
+  :is(.kit-screen, .kit-layer > .kit-screen)[data-backdrop] { background: var(--kit-backdrop) center / cover no-repeat, var(--bg); }
+  :is(.kit-screen, .kit-layer > .kit-screen)[data-backdrop="contain"] { background: var(--kit-backdrop) center / contain no-repeat, var(--bg); }
+  .kit-panel[data-frame][data-depth] { background: none; border-style: solid; border-color: transparent; border-width: var(--kit-art-frame-width);
+    border-radius: 0; box-shadow: none; filter: none; color: var(--kit-art-frame-ink, var(--on-surface));
+    border-image: var(--kit-art-frame) var(--kit-art-frame-slice) fill / var(--kit-art-frame-width) stretch; }
+  @media (max-height: 30rem) {
+    .kit-panel[data-frame][data-depth] { border-width: var(--kit-art-frame-width-short); border-image-width: var(--kit-art-frame-width-short); }
+  }
+}

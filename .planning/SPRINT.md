@@ -22,9 +22,9 @@ Check: e2e drives every key + gesture; both wall-kick modes tested in the engine
 
 ## F19 🎨 Muzzy's art on the screens
 Done when: start and end screens use his art/ SVGs (title, background, end-game screen, coloured buttons); Neon only for bits with no art.
-- [ ] 🤖 11. Sort art/ by screen — a sheet of what goes where
-- [ ] 🤖 12. Title + background on start, end-game screen behind the report, coloured buttons (kit gets art-skinned buttons first if missing)
-- [ ] 🤖 13. Screenshots at phone, landscape, desktop
+- [x] 🤖 11. Sort art/ by screen — a sheet of what goes where
+- [x] 🤖 12. Title + background on start, end-game screen behind the report, coloured buttons (kit gets art-skinned buttons first if missing)
+- [x] 🤖 13. Screenshots at phone, landscape, desktop
 Check: screenshots at 390×844, 844×390, 1440×900; check:ui passes.
 
 ## Tuning (last)

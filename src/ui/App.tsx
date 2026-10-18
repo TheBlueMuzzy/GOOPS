@@ -6,6 +6,7 @@ import { createShift, type ShiftEngine, type ShiftStatus } from '../engine'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
+import { art } from './art'
 import shiftConfig from '../../content/tuning/shift.json'
 import settingsJson from '../../content/ui/settings.json'
 import text from '../../content/text/en.json'
@@ -50,9 +51,11 @@ export function App() {
     ),
     end: () => result && (result.status === 'won'
       ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again }} message={text.end.wonMessage}
+          frame={art.end.frame} art={{ continue: art.end.again }}
           stats={[{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]}
           onContinue={() => { screens.pop(); start() }} />
       : <GameOver words={{ title: text.end.lostTitle, retry: text.end.again, quit: text.end.quit }} message={text.end.lostMessage}
+          frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }}
           stats={[{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]}
           onRetry={() => { screens.pop(); start() }} onQuit={toMenu} />),
   }), [result, start, toMenu])
@@ -60,8 +63,9 @@ export function App() {
   if (!engine) {
     return (
       <ScreenStack screens={{ settings: SettingsScreen }}>
-        <MainMenu title={text.menu.title} subtitle={text.menu.subtitle}
-          items={[{ label: text.menu.start, onClick: start, primary: true }, { label: text.menu.settings, onClick: () => screens.push('settings') }]} />
+        <MainMenu title={text.menu.title} subtitle={text.menu.subtitle} titleArt={art.menu.title} backdrop={art.menu.backdrop}
+          items={[{ label: text.menu.start, onClick: start, primary: true, art: art.menu.start },
+            { label: text.menu.settings, onClick: () => screens.push('settings'), art: art.menu.settings }]} />
       </ScreenStack>
     )
   }
