@@ -270,6 +270,15 @@ try {
       await page.waitForTimeout(400)
       await page.screenshot({ path: `${OUT}/${name}-12-primed.png` })
       check(name, 'broken laser: a first zap primes the group (glow shown)', primed === 'primed', primed)
+      // End shift from the console mid-shift: asks first, then the run is thrown away — the console stays, no XP
+      const xp = await page.evaluate(() => localStorage.getItem('goops-progress'))
+      await toConsole('key')
+      await page.getByRole('button', { name: 'Settings' }).click()
+      await page.getByRole('button', { name: 'End shift' }).click()
+      await page.getByRole('dialog').getByRole('button', { name: 'End shift' }).click()
+      await page.getByRole('button', { name: 'Start shift' }).waitFor({ timeout: 3000 }).catch(() => {})
+      const ended = await page.evaluate(() => ({ idle: !!document.querySelector('[aria-label="Start shift"]'), screens: document.querySelectorAll('[role="dialog"]').length }))
+      check(name, 'End shift at the console: asks, then the console stays (idle), no XP', ended.idle && !ended.screens && xp === await page.evaluate(() => localStorage.getItem('goops-progress')), JSON.stringify(ended))
     }
     check(name, 'no console errors', !errors.length, errors.join(' | '))
     await page.close()
