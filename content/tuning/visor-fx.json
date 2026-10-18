@@ -18,7 +18,7 @@
     "dropout": 0.05
   },
   "pixel": {
-    "pixelate": 1,
+    "pixelate": 0,
     "pixSize": 4,
     "pixFirst": 1
   }
