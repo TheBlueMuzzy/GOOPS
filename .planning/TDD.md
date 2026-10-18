@@ -2,7 +2,7 @@
 
 > How the game is built. Plain English first; code names in `backticks` only where they help.
 > Living document — /define writes it, /develop keeps it true, /tdd shows it.
-> Last updated: 2026-10-17 (Sprint 02: rupture loop, controls, wall kick)
+> Last updated: 2026-10-17 (Sprint 03 F22: upgrade-ready engine)
 
 ## 1. At a glance
 - **Platforms:** web (desktop + phone browsers), installable PWA later (like v1).
@@ -46,10 +46,26 @@ flowchart LR
 | Fill | 375 ms × group size (v1) | engine | group formed/changed | group ready to pop |
 | Pop / seal vent | v1 refund maths, ms ÷ riseMsToFull | engine | zap / seal | pressure drops |
 
+## 2c. Upgrades & abilities  (F22 — plumbing only; no real upgrade is in the game yet)
+Every v1 upgrade has a home: `design/upgrades-map.md`. Three kinds, three plugs — the engine stays pure and seeded, and with no upgrades it plays **exactly** as before (tested: same events, score and tank on seeded shifts).
+```mermaid
+flowchart LR
+  Book[(content/tuning/upgrades.json)] --> Resolve["resolveUpgrades(book, owned, equipped)"]
+  Save[(save: owned levels + equipped)] --> Resolve
+  Resolve -- modifiers + abilities --> Engine["createShift(config, { modifiers, abilities })"]
+  Resolve -- features --> Screens[HUD / console]
+```
+- **Passive → modifiers.** `Modifiers` (src/engine/upgrades.ts) is a set of named multipliers, 1 = no change, each read at the exact line that uses its tuning value: `integrityDrainMult` (× integrity drain per crack), `ruptureDrainTimeMult` (× rupture drain time), `pressureRiseTimeMult` (× pressure rise time; vents use the same total, they are "ms of rise"), `crackEveryMult` (× time between cracks), `fallSpeedMult` (× fall speed, fast drop too), `leftoverPenaltyMult` (× leftover penalty). `clampModifiers` drops unknown names, turns broken numbers back to 1 and clamps to safety rails (never 0 where the engine divides). New passives that need a new hook (Junk Uniformer, Crack Matcher) add a modifier whose neutral value takes **no extra random rolls**, so seeded shifts stay the same.
+- **Active → ability hooks.** `createShift({ abilities: AbilitySpec[] })`; `state.abilities = [{ id, effect, charge 0..1, ready }]`. Charge comes from play time (`chargePerSecond`) and seals (`chargePerSeal`), only while the phase is `playing` (not during a rupture). `act({ type: 'ability', id })` fires a ready one: the effect's fire function (src/engine/abilities.ts `ABILITY_EFFECTS`) starts it or says no (→ `reject`, charge kept). Lasting effects live in `state.effects` (e.g. `lowCracks: { id, left, rows }`) and the engine reads them where they bite (crack spawn). Events: `abilityReady`, `ability`, `abilityEnd`.
+- **Feature → flags.** `resolveUpgrades(...).features` = flag → level (e.g. next-piece window, hold viewer, ability slots). Screens read them; the engine already exposes next/held pieces.
+- **Not the engine's:** hold-to-swap time (input), breakdown upgrades (F06), console time scale (Focus Mode → the screen's `tick`).
+- **Proof:** two `testOnly` upgrades in upgrades.json — *Sturdy tank (test)* (integrity drain × 0.5) and *Low cracks (test)* (2 seals to charge; the next 3 cracks form in the bottom 4 rows). `playableUpgrades()` never returns test-only ones; nothing in the game reads upgrades.json yet.
+
 ## 3. Data the game reads
 | File | What's in it | Edited with |
 |---|---|---|
 | `content/tuning/shift.json` | tank size, shift length, fall speed, lock delay, fill time, refunds, crack rules | Obsidian (Dev Kit later) |
+| `content/tuning/upgrades.json` | upgrade definitions: type, rank, max level, per-level effects / ability charge + numbers (only the two test-only ones so far) | Obsidian |
 | `content/tuning/goo-jelly.json` | Muzzy's Jelly pick (`research/goo-lab/picks.json`) | Obsidian / in-game Settings later |
 | `content/tuning/goo-particle.json` | Muzzy's Particle pick | same |
 | `content/text/en.json` | player-facing words | Obsidian |
@@ -72,6 +88,13 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D06 · 2026-10-17 · Upgrades plug in as modifiers, ability hooks and feature flags (F22)
+  Proposed by: Muzzy ("be coding with their interactions in mind") + Claude (shape)
+  Options: v1-style upgrade-id checks scattered through the engine / named modifiers + ability registry
+  Chose: one pure resolveUpgrades() turns owned levels into (a) clamped multipliers the engine reads at each tuning
+  value, (b) ability specs (charge from time/seals, fire via act, effects in a registry, lasting state in
+  state.effects), (c) feature flags for screens. The engine never sees an upgrade id or level; all numbers live in
+  upgrades.json; no upgrades = identical shift (tested). Charging pauses during a rupture.
 D05 · 2026-10-17 · Muzzy's art served from public/art/, made by scripts/art-prep.mjs (F19)
   Proposed by: Claude   Options: import from art/ via Vite / copy into public/art/ with a prep script
   Chose: prep script → public/art/ (committed) — two files need changing anyway (Title's words outlined so no font

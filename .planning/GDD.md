@@ -52,6 +52,7 @@
 Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities · three breakdowns (laser, lights, controls) with console repair puzzles · colour and piece unlocks by rank · the garbled intercom · Operator Journal · save.
 - **Story:** `design/story.md`: the Employer (intercom, always "policy"), the Veteran (radio hijacks, smuggled upgrades, a brain in a jar), fines, rank titles, beats per rank band, the takeover at 50. Designed in v1 but never built; the remake builds it.
 - **Progression:** `design/progression.md`: ranks and XP, scraps, colour schedule, starting junk, 20 upgrades in 4 bands, active abilities, the rank philosophy.
+- **Upgrades (F22):** `design/upgrades-map.md`: every v1 upgrade and active ability, what v1 really did, what the new loop changes (Pressure Control and Slow Cracks are obsolete as written; Auto-Popper and Sealing Bonus need rethinking) and a proposed new version of each. Upgrades go in after the game mostly works; the engine is already built to take them (passives = tuning multipliers, actives = charge-and-fire abilities, features = screen flags; TDD §2c).
 
 ## 6. Look & sound
 Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of bright, wet, living goop. The intercom is mostly static, with key words coming through in green. v1 audio was placeholder synth beeps; the remake uses the framework audio module. Goo look directions: `research/goo-feel.md` §4.
