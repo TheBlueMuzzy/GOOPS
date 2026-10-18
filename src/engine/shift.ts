@@ -374,12 +374,11 @@ class Shift implements ShiftEngine {
     return randomPiece(this.rng, this.config, zones[zone], this.colorCount)
   }
 
-  // The next piece after one lands. No room at the top: the tank ruptures (overflow) —
-  // or, if it has already ruptured, the shift ends right away.
+  // The next piece after one lands. No room at the top: the tank ruptures (overflow).
+  // Already rupturing: no piece until zapping makes room (step keeps trying) — the shift still ends at pressure 0.
   private spawnNext(): void {
     if (this.trySpawn()) return
     if (this.state.phase === 'playing') this.rupture('overflow')
-    else this.end()
   }
 
   // Bring in the next piece if there's room for it. v1: always the centre column, top row of the hidden buffer.

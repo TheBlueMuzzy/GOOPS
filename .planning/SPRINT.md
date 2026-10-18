@@ -45,3 +45,4 @@ Check: screenshots at 390×844, 844×390, 1440×900; check:ui passes.
 - Kit 0.11.1: Bar `showLabel` (the Pressure and Tank bars looked the same).
 - Ask Muzzy: fonts inside your art — Title's words are outlined (no font ships). Amazon Ember is Amazon's font; "From Where You Are" has an unknown licence. Check both before either ships in the game.
 - Bugs seen (P3, logged, not fixed): Settings tab names "ACCESSIBILITY" and "ABOUT" run together on a 390 phone; a new piece is drawn over the "Cracks 0 / 5" line while it's in the rows above the tank.
+- Review (89c229e..HEAD): fixed — a blocked spawn during a rupture ended the shift at once (my brief's rule, not Muzzy's; cut the zap window short) → now it waits for room and ends only at pressure 0; holding a key while the window lost focus could fire a swap → let go of keys on blur.

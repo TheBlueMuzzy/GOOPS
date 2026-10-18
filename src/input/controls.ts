@@ -129,12 +129,20 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     if (e.code === holdKey) { holdKey = null; clearHold() }
   }
 
+  // the window lost focus (alt-tab): no keyup will come, so let go of every held key
+  const blur = () => {
+    if (holdKey) { holdKey = null; clearHold() }
+    if (keys.has('KeyS') || keys.has('ArrowDown')) cb.softDrop(false)
+    keys.clear()
+  }
+
   el.addEventListener('pointerdown', down)
   el.addEventListener('pointermove', move)
   el.addEventListener('pointerup', up)
   el.addEventListener('pointercancel', cancel)
   window.addEventListener('keydown', keyDown)
   window.addEventListener('keyup', keyUp)
+  window.addEventListener('blur', blur)
   return () => {
     el.removeEventListener('pointerdown', down)
     el.removeEventListener('pointermove', move)
@@ -142,6 +150,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     el.removeEventListener('pointercancel', cancel)
     window.removeEventListener('keydown', keyDown)
     window.removeEventListener('keyup', keyUp)
+    window.removeEventListener('blur', blur)
     if (raf) cancelAnimationFrame(raf)
     clearHold()
   }

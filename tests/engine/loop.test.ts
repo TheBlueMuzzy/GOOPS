@@ -228,7 +228,7 @@ describe('rupture', () => {
     expect(shift.state.status).toBe('lost')
   })
 
-  it('a piece with no room to spawn DURING a rupture ends the shift at once', () => {
+  it('a piece with no room to spawn DURING a rupture waits for room; the shift still ends only at pressure 0', () => {
     // Column 0 full from row 3 down: three pieces fit on top, the fourth has no room.
     const grid = new Uint8Array(30 * 24)
     for (let y = 3; y < 24; y++) grid[idx(0, y)] = 2
@@ -239,8 +239,12 @@ describe('rupture', () => {
     dropPiece(shift, config)
     dropPiece(shift, config)
     const events = dropPiece(shift, config)
-    expect(ofType(events, 'end')).toEqual([{ type: 'end', status: 'lost' }])
-    expect(shift.state.pressure).toBeGreaterThan(0) // ended before the drain finished
+    expect(ofType(events, 'end')).toHaveLength(0) // still zapping time
+    expect(shift.state.status).toBe('playing')
+    expect(shift.state.piece).toBe(null)
+    const rest = run(shift, 10000)
+    expect(shift.state.pressure).toBe(0)
+    expect(ofType(rest, 'end')).toEqual([{ type: 'end', status: 'lost' }])
   })
 })
 
