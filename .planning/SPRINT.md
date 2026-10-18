@@ -21,9 +21,9 @@ Done when: a broken machine's panel lights up on the console and its repair (bel
 
 ## F25 ✨ Visor glitch — sketch first
 Done when: Muzzy picked a glitch look in a sketch, and it's in the game, driven by the visor signal, built so a pixel filter can stack on top later.
-- [ ] 🤖 11. Research glitch-shader references (VHS, signal loss, scanlines, chromatic split, block tearing…) → `/sketch` with knobs + presets
+- [x] 🤖 11. Research glitch-shader references (VHS, signal loss, scanlines, chromatic split, block tearing…) → `/sketch` with knobs + presets
 - [ ] 🙋 12. Pick a look (send your own references too)
-- [ ] 🤖 13. Into the game as the visor effect (stand-in flicker until then); post-process chain ready for a pixel filter
+- [x] 🤖 13. Into the game as the visor effect (stand-in flicker until then); post-process chain ready for a pixel filter
 
 ## Tuning (last)
 - [ ] 🙋 14. Play: breakdowns feel like a fair interruption, not a punishment? Repairs tactile?
@@ -32,3 +32,6 @@ Done when: Muzzy picked a glitch look in a sketch, and it's in the game, driven 
 - Engine ↔ screens contract written first (src/engine/types.ts: MachineId, MachineState, state.machines, repair action, breakdown/repaired/prime events) so F23 and F24 build in parallel.
 - F23 (helper, 208 tests): machines live in `src/engine/machines.ts`, switched on by `createShift(…, { breakdowns })` (content/tuning/breakdowns.json) — off without it, so old shifts are unchanged. Differences from v1 (GDD §5, D08): priming does NOT restart the fill (softer); during a cooldown a meter stays 0.05 above its break point (needs one more push to break); the visor fades from where it is; flicker/overflare = game-side visuals. New modifiers laserDrainMult, visorGraceMult, controlsCoolMult, breakdownCooldownMult.
 - Ask Muzzy (F23): broken laser — should a primed group refill before the second zap (v1) or pop right away (built)? · cooldown margin 0.05 OK, or v1's "breaks the moment the cooldown ends" (margin 0)?
+- F25 sketch (helper): 4 looks (Cheap LCD visor = default, VHS tape, Digital datamosh, Analog CRT static), 13 knobs that scale with amount, Degrade/Repair, pixel filter toggle + order swap. Colour is never changed (colour is the rule); no white flashes (WCAG). Glitch pass 0.08 ms on the PC GPU; real phone check needed once it's in. Research: research/visor-glitch.md. Ask Muzzy: which look/mix · faint glass frame at amount 0? · HUD stays clean on top (planned)? · CRT at 0.95 too much?
+- Muzzy's sketch values 2026-10-18 ("this is fun"): his 'now' = Preset 2 (scan/rgb/roll/tear/tearSize/block/vignette/curve 1, noise 0.55, flicker 0.5, blockSize 27, dead 0.65, dropout 0.05, pixelate on 4 px, pixels BEFORE glitch). His doubt: fake goo in the sketch + can't play through it → judge it in the real game (task 13 helper; dev ?visor=0.6 to lock a level).
+- F25 in the game (helper): src/view/visorFx.ts overlay (tank + goo → glitch → pixels), Muzzy's look in content/tuning/visor-fx.json; amount from visor health (0 at ≥0.95, 1 at the break point); the HUD stays clean on top. Pixel filter turned OFF by default (it was on all the time with the sketch values — a whole-game look Muzzy called 'eventually'); his size/order kept. Dev: ?visor=0.6 / ?visor=off, ?pixel=on/off (dev builds only). 60 fps both goo styles at 390x844@3x on the PC; phone check pending. From a full visor: 0→1 glitch in ~4.7 s without fast-dropping.

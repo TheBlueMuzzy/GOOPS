@@ -1,0 +1,25 @@
+{
+  "_about": "The visor glitch (F25) + the whole-game pixel filter, drawn over the tank and goo (never over the HUD). Glitch 'amount' comes from the visor's signal (breakdowns.json visor health): 0 at health >= healthClean, rising to 1 at health <= healthBroken (= the visor's breakAt), and 0 while the visor is locked. 'look' = the strength of each glitch effect at amount 1 (names match the sketch's knobs, so its 'Copy values' paste straight in; meanings in .planning/research/sketches/visor-glitch.html). 'pixel' = the pixel filter, its own switch: pixelate 1 = on, pixSize = block size in CSS px, pixFirst 1 = pixelate before the glitch (glitch stays crisp), 0 = after (glitch gets chunky too). Muzzy's values from the sketch, 2026-10-18.",
+  "healthClean": 0.95,
+  "healthBroken": 0.1,
+  "look": {
+    "scan": 1,
+    "rgb": 1,
+    "roll": 1,
+    "noise": 0.55,
+    "flicker": 0.5,
+    "tear": 1,
+    "tearSize": 1,
+    "block": 1,
+    "blockSize": 27,
+    "vignette": 1,
+    "curve": 1,
+    "dead": 0.65,
+    "dropout": 0.05
+  },
+  "pixel": {
+    "pixelate": 0,
+    "pixSize": 4,
+    "pixFirst": 1
+  }
+}
