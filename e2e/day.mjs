@@ -59,6 +59,7 @@ try {
   check('the report says "Swipe up to end the day"', await page.getByText('Swipe up to end the day').count() === 1)
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') || 'null'))
   check('the shift\'s XP is saved', saved?.totalXp >= 100, JSON.stringify(saved))
+  check('the report shows the XP earned', await page.getByText(`+${saved.totalXp.toLocaleString('en')}`).count() >= 1)
 
   // 4. swipe up on the report (a real drag, starting on the report's words) → the console comes back up
   const words = await page.getByText(/Swipe up to end the day/).boundingBox()
@@ -71,7 +72,7 @@ try {
   await page.waitForTimeout(2200) // slide in + the meter filling
   const want = `Operator rank 0 · ${saved.totalXp.toLocaleString('en')} / 3,500 XP`
   check('back on the console, the meter shows the new XP', (await meterText()) === want, `${await meterText()} (want ${want})`)
-  check('the monitor says what was earned', await page.getByText(`+${saved.totalXp.toLocaleString('en')} XP`).count() === 1)
+  check('the monitor still says what to do (Muzzy: the report does the XP)', await page.getByText('Pull down the periscope').count() === 1)
   await page.screenshot({ path: `${OUT}/day-2-xp.png` })
 
   // 5. the gear opens Settings over the console; Esc closes it

@@ -1,9 +1,9 @@
 // THE CONSOLE — the game's main menu (F21), drawn from Muzzy's mock-up (art/Example1.svg) with the kit's ArtStage.
 // Pull the periscope down (drag it, tap it, or ↓ / Enter) → the console dims and slides away to show the tank (the App
 // starts the shift under it). Coming back after shifts it slides up again and the Operator Rank meter fills with the
-// XP earned since it last showed, with a rank-up moment (the rank number pops, the monitor says so).
+// XP earned since it last showed, with a rank-up moment at the rank bar (the rank number pops).
 // The repair panels are drawn switched off: breakdowns (F06) come later. Words come from content/text/en.json.
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { ArtLayer, ArtStage, Button, LevelMeter, PullHandle, Screen, TitleArt, fill } from './kit'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
 import { art } from './art'
@@ -27,9 +27,7 @@ const format = (n: number) => n.toLocaleString('en')
 export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings }: Props) {
   const now = rankInfo(progress)
   const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, progress) : []), [shownFrom, progress])
-  const earned = shownFrom ? progress.totalXp - shownFrom.totalXp : 0
-  const [rankedUp, setRankedUp] = useState<number | null>(null)
-  const hint = rankedUp !== null ? fill(t.rankUp, { rank: rankedUp }) : earned > 0 ? fill(t.earned, { xp: format(earned) }) : t.hint
+  const hint = t.hint // the monitor always says what to do (Muzzy); XP + rank-ups are on the report and the rank bar
   const leaving = phase === 'leaving'
   const off = (name: string) => fill(t.unavailable, { name })
 
@@ -44,7 +42,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <ArtLayer at={a.meter.at} text={a.meterText} dim={leaving}>
           <LevelMeter level={now.rank} xp={now.xpIntoRank} xpToNext={now.xpToNext} format={format}
             words={{ label: t.rank, unit: t.xp, max: t.maxRank }} art={a.meterFill}
-            steps={steps.length ? steps : undefined} play={phase === 'idle'} onLevelUp={setRankedUp} />
+            steps={steps.length ? steps : undefined} play={phase === 'idle'} />
         </ArtLayer>
         <ArtLayer {...a.laser} off label={off(t.laser)} />
         <ArtLayer {...a.controls} off label={off(t.controls)} />
@@ -60,7 +58,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor} />
-        <ArtLayer {...a.words.hint} tone={rankedUp !== null ? 'accent' : 'normal'}>{hint}</ArtLayer>
+        <ArtLayer {...a.words.hint}>{hint}</ArtLayer>
       </ArtStage>
     </Screen>
   )

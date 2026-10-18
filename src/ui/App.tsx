@@ -18,7 +18,7 @@ import text from '../../content/text/en.json'
 
 const settings = settingsJson as SettingsSchema
 const HUD_RESERVE = 128 // CSS px kept free above the tank for the HUD: its two rows (corners, then the crack count)
-const fill = (s: string, vars: Record<string, number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
+const fill = (s: string, vars: Record<string, number | string>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.
 // The shift plays at the player's saved rank (colours, starting junk, crack quota). Dev/tests: ?rank=12 forces one.
@@ -98,7 +98,11 @@ export function App() {
     ),
     end: () => {
       if (!result) return null
-      const stats = [{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]
+      const stats = [{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` },
+        // what the shift earned, and a rank-up if it crossed one
+        { label: text.end.xp, value: result.reward.rankUps > 0
+          ? fill(text.end.xpRankUp, { xp: result.reward.xp.toLocaleString('en'), rank: result.reward.after.rank })
+          : fill(text.end.xpValue, { xp: result.reward.xp.toLocaleString('en') }) }]
       const again = () => { screens.pop(); start() }
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
