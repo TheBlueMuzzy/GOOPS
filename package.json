@@ -17,7 +17,8 @@
     "e2e:day": "node e2e/day.mjs",
     "e2e:console": "node e2e/console-shots.mjs",
     "e2e:fonts": "node e2e/fonts-shots.mjs",
-    "check:devkit": "node src/devkit/check-devkit.mjs"
+    "check:devkit": "node src/devkit/check-devkit.mjs",
+    "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

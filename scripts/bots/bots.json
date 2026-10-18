@@ -1,0 +1,53 @@
+{
+  "_about": "F27 balance bots (scripts/bots). Measuring tools, not opponents. apm = discrete actions a minute (rotate, hold, zap, start a fast drop); a held spin repeats at tank.json spinRepeatMs like a held key (slower while the controls are broken). reactionMs = how long before the bot notices a new piece, a ready group or a crack. reach = how many columns either way it will turn the tank to place a piece. minZapSize = smallest group it zaps on purpose (sealing a crack always counts). ventAt = above this pressure it zaps anything ready to vent. keepLowRows = above this stack height it zaps the highest ready group. weights = how it scores a landing spot.",
+  "frameMs": 20,
+  "maxShiftMs": 1200000,
+  "bots": {
+    "idle": { "label": "Idle", "acts": false },
+    "casual": {
+      "label": "Casual",
+      "acts": true,
+      "apm": 90,
+      "reactionMs": 700,
+      "reach": 6,
+      "zap": true,
+      "minZapSize": 1,
+      "steerCracks": false,
+      "detourToSeal": false,
+      "useHold": false,
+      "ventAt": null,
+      "keepLowRows": null,
+      "weights": { "height": 1, "maxHeight": 0.5, "holes": 3, "sameColour": 1.5, "otherColour": 0.3, "crackMatch": 0, "crackCover": 0, "underCrack": 0, "abovePopLine": 0, "distance": 0.3 }
+    },
+    "focused": {
+      "label": "Focused",
+      "acts": true,
+      "apm": 130,
+      "reactionMs": 450,
+      "reach": 15,
+      "zap": true,
+      "minZapSize": 1,
+      "steerCracks": true,
+      "detourToSeal": true,
+      "useHold": true,
+      "ventAt": null,
+      "keepLowRows": null,
+      "weights": { "height": 1, "maxHeight": 0.5, "holes": 3, "sameColour": 1.5, "otherColour": 0.3, "crackMatch": 25, "crackCover": 10, "underCrack": 4, "abovePopLine": 0, "distance": 0.15 }
+    },
+    "sharp": {
+      "label": "Sharp",
+      "acts": true,
+      "apm": 180,
+      "reactionMs": 250,
+      "reach": 15,
+      "zap": true,
+      "minZapSize": 8,
+      "steerCracks": true,
+      "detourToSeal": true,
+      "useHold": true,
+      "ventAt": 0.55,
+      "keepLowRows": 7,
+      "weights": { "height": 1.6, "maxHeight": 1, "holes": 4, "sameColour": 2.5, "otherColour": 0.5, "crackMatch": 30, "crackCover": 12, "underCrack": 5, "abovePopLine": 1.5, "distance": 0.12 }
+    }
+  }
+}
