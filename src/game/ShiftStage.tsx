@@ -207,12 +207,13 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
     // dev + tests only: lets a Playwright check reach the engine (fast-forward a shift, read the grid)
     // (say: show an in-shift message now, e.g. say('brokeLaser') — e2e/hud-shots.mjs checks where it sits;
     // readout(): where the pressure readout's line and words are; setReadout({ readoutPosition, readoutDirection }): as if
-    // the Settings rows changed; fastDrop(on): as if fast drop were held)
+    // the Settings rows changed; fastDrop(on): as if fast drop were held; clocks(): the rules + looks clocks, ms)
     if (import.meta.env.DEV) (window as unknown as { __goops?: unknown }).__goops = { engine, view, gooStyle, breakMachine: devBreakMachine(engine, breaks),
       say: (key: Message['key'], seconds = 30) => live.current.onMessage({ key, danger: false, seconds }),
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
-      fastDrop: (on: boolean) => { softHeld = on; engine.act({ type: 'softDrop', on }) } }
+      fastDrop: (on: boolean) => { softHeld = on; engine.act({ type: 'softDrop', on }) },
+      clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }) }
 
     const detach = attachControls(el, {
       spin: (dir) => engine.act({ type: 'spin', dir }),

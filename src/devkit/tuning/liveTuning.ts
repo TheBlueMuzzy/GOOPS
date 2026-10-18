@@ -25,6 +25,14 @@ type TuningDetail = { file: string; data: unknown }
 // The Dev Kit's latest edit of each file — so code that starts later (a die made next round) gets it too
 const latest = new Map<string, unknown>()
 const latestOr = <T>(file: string, initial: T) => (latest.has(file) ? (latest.get(file) as T) : initial)
+// The event itself is the edit, whoever sends it (sendTuning, a test, an e2e script): remember it first, so live files
+// (liveFile) and every listener after this one see the same values
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener(TUNING_EVENT, (e) => {
+    const detail = (e as CustomEvent<TuningDetail>).detail
+    if (typeof detail?.file === 'string') latest.set(detail.file, detail.data)
+  })
+}
 
 /** Call `onChange` with the new data every time the Dev Kit edits this file. Returns a function that stops listening. */
 export function onTuning<T>(file: string, onChange: (data: T) => void): () => void {
