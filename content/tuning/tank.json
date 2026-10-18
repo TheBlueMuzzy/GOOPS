@@ -15,5 +15,8 @@
   "holdToSwapMs": 1500,
   "holdDelayMs": 250,
   "offscreenArrowSize": 0.32,
-  "offscreenArrowAlpha": 0.7
+  "offscreenArrowAlpha": 0.7,
+  "primedColor": "#fff2b3",
+  "primedAlpha": 0.7,
+  "primedPulseHz": 3
 }

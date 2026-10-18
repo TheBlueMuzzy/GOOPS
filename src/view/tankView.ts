@@ -79,6 +79,22 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
   shade.addColorStop(1, `rgba(0,0,0,${tank.wallShade})`)
   ctx.fillStyle = shade
   ctx.fillRect(left, topY, right - left, bottom - topY)
+
+  // broken laser (F23/F24): a group primed by a first zap glows under its goo with a quick pulse, so it reads as
+  // "armed — zap again". (Drawn here, under the goo, so the goo renderers stay untouched; the jelly is see-through.)
+  if (s.primed?.length) {
+    const pulse = 0.5 + 0.5 * Math.sin(timeSec * Math.PI * 2 * tank.primedPulseHz)
+    ctx.globalAlpha = tank.primedAlpha * (0.45 + 0.55 * pulse)
+    ctx.fillStyle = tank.primedColor
+    for (const id of s.primed) {
+      for (const i of s.groups.get(id)?.cells ?? []) {
+        const sx = centreX + screenColumn(i % s.width, view.camera, s.width) * cp
+        const sy = topY + (Math.floor(i / s.width) - s.bufferRows) * cp
+        if (sx > left - cp && sx < right + cp) ctx.fillRect(sx - cp / 2, sy, cp, cp)
+      }
+    }
+    ctx.globalAlpha = 1
+  }
   ctx.restore()
 
   // cracks out of view: a small arrow in the crack's colour at its height, on the tank edge the short way round (v1)
