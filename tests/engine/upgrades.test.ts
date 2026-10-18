@@ -106,7 +106,7 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
       ],
     }
     const r = resolveUpgrades(test, { a: 2, b: 2, c: 1, w: 1 })
-    expect(r.modifiers.fallSpeedMult).toBeCloseTo(1.2 + 0.5, 9) // b's short list keeps its last value at level 2
+    expect(r.modifiers.fallSpeedMult).toBeCloseTo((1 + 0.5) * 1.2, 9) // (1 + adds) × muls; b's short list keeps its last value at level 2
     expect(r.modifiers.crackEveryMult).toBe(0.1) // never negative: clamped to the safety floor
     expect(r.features).toEqual({ nextWindow: 1 })
   })
@@ -296,5 +296,28 @@ describe('Low cracks (test): an active ability', () => {
     const shift = createShift(calmConfig(), { seed: 1, rank: 0, abilities: [{ ...abilities[0], chargePerSecond: -1, chargePerSeal: NaN }] })
     run(shift, 3000)
     expect(shift.state.abilities![0].charge).toBe(0)
+  })
+})
+
+describe('resolveUpgrades — review fixes', () => {
+  const passive = (id: string, op: 'add' | 'mul', v: number) =>
+    ({ id, name: id, type: 'passive', rank: 0, maxLevel: 1, effects: [{ modifier: 'integrityDrainMult', op, byLevel: [v] }] })
+
+  it('mixing add and mul gives the same answer whatever the JSON order: (1 + adds) × muls', () => {
+    const a = { upgrades: [passive('A', 'add', 0.2), passive('B', 'mul', 0.5)] } as unknown as UpgradeBook
+    const b = { upgrades: [passive('B', 'mul', 0.5), passive('A', 'add', 0.2)] } as unknown as UpgradeBook
+    const owned = { A: 1, B: 1 }
+    expect(resolveUpgrades(a, owned).modifiers.integrityDrainMult).toBeCloseTo(0.6)
+    expect(resolveUpgrades(b, owned).modifiers.integrityDrainMult).toBeCloseTo(0.6)
+  })
+
+  it('a typo in the file (no maxLevel, no byLevel) is survived, never NaN or a crash', () => {
+    const book = { upgrades: [
+      { id: 'noMax', name: 'x', type: 'feature', rank: 0 },
+      { id: 'noLevels', name: 'y', type: 'passive', rank: 0, maxLevel: 2, effects: [{ modifier: 'integrityDrainMult', op: 'mul' }] },
+    ] } as unknown as UpgradeBook
+    const r = resolveUpgrades(book, { noMax: 3, noLevels: 1 })
+    expect(r.features.noMax).toBe(1)
+    expect(r.modifiers.integrityDrainMult).toBe(1)
   })
 })

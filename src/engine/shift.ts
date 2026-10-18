@@ -174,8 +174,8 @@ class Shift implements ShiftEngine {
     if (s.phase === 'playing') {
       this.setPressure(s.pressure + dt / this.riseMsToFull())
       this.growCracks(dt)
+      this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
       this.drainIntegrity(dt)
-      this.chargeAbilities(dt / 1000, 0)
     } else {
       // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
       this.setPressure(s.pressure - dt / (this.config.rupture.drainMs * this.mods.ruptureDrainTimeMult))

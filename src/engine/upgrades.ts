@@ -100,7 +100,10 @@ export interface ResolvedUpgrades {
 // What a player's upgrades add up to. `owned` = level per upgrade id (missing or 0 = not owned);
 // `equipped` = ids of the actives they took into the shift.
 export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>, equipped: string[] = []): ResolvedUpgrades {
-  const mods: Record<ModifierName, number> = { ...NEUTRAL_MODIFIERS }
+  // 'add' effects are summed and 'mul' effects multiplied, then combined as (1 + sum) × product,
+  // so the result never depends on the order of upgrades in the JSON.
+  const adds: Record<string, number> = {}
+  const muls: Record<string, number> = {}
   const features: Record<string, number> = {}
   const byId = new Map(book.upgrades.map((u) => [u.id, u]))
 
@@ -112,8 +115,8 @@ export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>
         if (!isModifierName(effect.modifier)) continue // a typo in the JSON: ignored (a test checks the file)
         const value = atLevel(effect.byLevel, level)
         if (value === undefined) continue
-        if (effect.op === 'add') mods[effect.modifier] += value
-        else mods[effect.modifier] *= value
+        if (effect.op === 'add') adds[effect.modifier] = (adds[effect.modifier] ?? 0) + value
+        else muls[effect.modifier] = (muls[effect.modifier] ?? 1) * value
       }
     } else if (def.type === 'feature') {
       features[def.feature ?? def.id] = level
@@ -130,15 +133,20 @@ export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>
     abilities.push({ id, effect: a.effect, chargePerSecond: a.chargePerSecond, chargePerSeal: a.chargePerSeal, params: { ...(atLevel(a.byLevel, level) ?? {}) } })
   }
 
+  const mods: Record<ModifierName, number> = { ...NEUTRAL_MODIFIERS }
+  for (const name of Object.keys(mods) as ModifierName[]) mods[name] = (1 + (adds[name] ?? 0)) * (muls[name] ?? 1)
   return { modifiers: clampModifiers(mods), abilities, features }
 }
 
+// A typo in the JSON (no maxLevel, a non-number) counts as max level 1 rather than poisoning the result.
 function levelOf(def: UpgradeDef, owned: Record<string, number>): number {
   const level = Math.floor(Number(owned[def.id] ?? 0))
-  return Number.isFinite(level) ? Math.max(0, Math.min(def.maxLevel, level)) : 0
+  const max = Number.isFinite(def.maxLevel) && def.maxLevel > 0 ? def.maxLevel : 1
+  return Number.isFinite(level) ? Math.max(0, Math.min(max, level)) : 0
 }
 
-// The value at `level`; a short list keeps its last value for higher levels.
-function atLevel<T>(byLevel: T[], level: number): T | undefined {
+// The value at `level`; a short list keeps its last value for higher levels. A missing list = no value.
+function atLevel<T>(byLevel: T[] | undefined, level: number): T | undefined {
+  if (!byLevel?.length) return undefined
   return byLevel[Math.min(level, byLevel.length) - 1]
 }
