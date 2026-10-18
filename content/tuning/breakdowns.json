@@ -1,0 +1,27 @@
+{
+  "_about": "Breakdowns (F23, GDD §5). Every machine's health is 0..1 (1 = fine). Numbers are v1's (complicationConfig.ts), as fractions instead of %. unlockRank = the starting rank from which the machine can break. consoleTimeScale = how fast the shift runs while you're at the console mid-shift (the game multiplies tick time by it; the engine never reads it). cooldown: after a repair a machine can't break for max(minSeconds, maxSeconds - (rank - unlockRank)) seconds; meanwhile its meter still moves but stays at least `margin` above its break point.",
+  "consoleTimeScale": 0.25,
+  "cooldown": { "maxSeconds": 20, "minSeconds": 8, "margin": 0.05 },
+  "laser": {
+    "_about": "health = capacitor charge. Drains per zapped goop cell, refills per landed piece (not while broken). Breaks at 0: a first zap only primes a group, a second zap pops it.",
+    "unlockRank": 4,
+    "drainPerCell": 0.04,
+    "refillPerPiece": 0.1
+  },
+  "visor": {
+    "_about": "health = signal (was v1's lights). Holds for graceMs after you last fast-dropped, then fades from 1 to breakAt over fadeMs; fast-dropping recovers it at recoverPerSec. At breakAt it breaks and drops to brokenHealth. The game draws a glitch from health (lower = glitchier).",
+    "unlockRank": 2,
+    "graceMs": 5000,
+    "fadeMs": 5000,
+    "breakAt": 0.1,
+    "brokenHealth": 0.05,
+    "recoverPerSec": 4
+  },
+  "controls": {
+    "_about": "heat = 1 - health. Each tank turn adds heatPerSpin; after coolDelayMs with no turn it cools at coolPerSec. Breaks at heat 1 (the input layer slows held turns; the engine only reports it).",
+    "unlockRank": 6,
+    "heatPerSpin": 0.05,
+    "coolDelayMs": 200,
+    "coolPerSec": 0.5
+  }
+}

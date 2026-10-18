@@ -23,6 +23,7 @@ import { crackEveryMs, firstPoppableRow, popLine, spawnCrack, updatePlugs } from
 import { popPoints, popRefundMs } from './score'
 import { type Modifiers, clampModifiers } from './upgrades'
 import { ABILITY_EFFECTS, type AbilitySpec, type ActiveEffects } from './abilities'
+import { type BreakdownConfig, Machines } from './machines'
 
 export interface ShiftOptions {
   seed: number
@@ -32,6 +33,8 @@ export interface ShiftOptions {
   // F22 upgrades (both optional; leave them out and the shift plays exactly as without upgrades):
   modifiers?: Partial<Modifiers> // from resolveUpgrades(); clamped to safe ranges here
   abilities?: AbilitySpec[] // equipped active abilities, from resolveUpgrades()
+  // F23 breakdowns: content/tuning/breakdowns.json. Leave it out and every machine stays locked (never breaks).
+  breakdowns?: BreakdownConfig
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -63,6 +66,8 @@ class Shift implements ShiftEngine {
   private readonly abilitySpecs = new Map<string, AbilitySpec>()
   private readonly abilities: AbilityState[] // the same arrays/objects as state.abilities / state.effects
   private readonly effects: ActiveEffects = {}
+  private readonly machines: Machines // the three machines (F23); their states are state.machines
+  private readonly primed = new Map<number, string>() // broken laser: primed group id → its cells when primed
 
   constructor(config: ShiftConfig, options: ShiftOptions) {
     this.config = config
@@ -77,6 +82,7 @@ class Shift implements ShiftEngine {
       this.abilitySpecs.set(a.id, { ...a, chargePerSecond: rate(a.chargePerSecond), chargePerSeal: rate(a.chargePerSeal) })
     }
     this.abilities = [...this.abilitySpecs.values()].map((a) => ({ id: a.id, effect: a.effect, charge: 0, ready: false }))
+    this.machines = new Machines(options.breakdowns, options.rank, this.mods, (e) => this.events.push(e))
     this.state = {
       width,
       height,
@@ -106,6 +112,8 @@ class Shift implements ShiftEngine {
       rank: options.rank,
       abilities: this.abilities,
       effects: this.effects,
+      machines: this.machines.state,
+      primed: [],
     }
 
     if (options.startGrid) {
@@ -161,6 +169,10 @@ class Shift implements ShiftEngine {
       case 'ability':
         ok = this.fireAbility(action.id)
         break
+      case 'repair':
+        ok = this.machines.repair(action.machine)
+        if (ok && action.machine === 'laser') this.clearPrimed()
+        break
     }
     if (!ok) this.events.push({ type: 'reject', action: action.type })
     this.refreshView()
@@ -176,6 +188,7 @@ class Shift implements ShiftEngine {
       this.growCracks(dt)
       this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
       this.drainIntegrity(dt)
+      if (s.phase === 'playing') this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
     } else {
       // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
       this.setPressure(s.pressure - dt / (this.config.rupture.drainMs * this.mods.ruptureDrainTimeMult))
@@ -303,6 +316,7 @@ class Shift implements ShiftEngine {
     }
     s.spin = newSpin
     this.events.push({ type: 'spin', dx: dir })
+    if (s.phase === 'playing') this.machines.spun()
     this.moveReset()
     return true
   }
@@ -368,6 +382,14 @@ class Shift implements ShiftEngine {
     const g = s.groups.get(id)
     if (!g || !this.canPop(g)) return false
 
+    // Broken laser: the first zap only primes the group (no score, no seal); a second zap pops it.
+    if (this.machines.isBroken('laser') && !this.primed.has(g.id)) {
+      this.primed.set(g.id, g.cells.join(','))
+      s.primed = [...this.primed.keys()]
+      this.events.push({ type: 'prime', groupId: g.id })
+      return true
+    }
+
     // Score (worked out before the goop leaves the grid, as v1).
     const combo = this.popStreak + 1
     s.score += popPoints(s, this.config, g.cells, combo)
@@ -394,6 +416,7 @@ class Shift implements ShiftEngine {
     s.groups.delete(g.id)
     this.book.fillMs.delete(g.id)
     this.events.push({ type: 'pop', cells: g.cells, color: g.color, sealed })
+    if (s.phase === 'playing') this.machines.zapped(g.cells.length)
 
     this.settle()
     if (!s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
@@ -477,6 +500,7 @@ class Shift implements ShiftEngine {
     for (const id of regroup(s, this.book)) this.events.push({ type: 'merge', groupId: id })
     this.settle() // corrupted pieces break apart here; loose parts fall
     this.popStreak = 0
+    if (s.phase === 'playing') this.machines.landed()
     this.softDrop = false // v1: fast drop stops when a piece lands
     this.spawnNext()
   }
@@ -493,6 +517,22 @@ class Shift implements ShiftEngine {
       for (const id of regroup(s, this.book)) this.events.push({ type: 'merge', groupId: id })
     }
     updatePlugs(s, this.events)
+    this.prunePrimed()
+  }
+
+  // A primed group that changed (merged, fell, popped) is no longer primed.
+  private prunePrimed(): void {
+    if (this.primed.size === 0) return
+    for (const [id, cells] of this.primed) {
+      const g = this.state.groups.get(id)
+      if (!g || g.cells.join(',') !== cells) this.primed.delete(id)
+    }
+    this.state.primed = [...this.primed.keys()]
+  }
+
+  private clearPrimed(): void {
+    this.primed.clear()
+    this.state.primed = []
   }
 
   private moveReset(): void {
