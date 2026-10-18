@@ -22,25 +22,32 @@ export interface ShiftConfig {
   colors: string[] // colour names; Color 1 = colors[0]
   colorsByRank: RankStep[] // how many colours are in play from each rank
   junkByRank: RankStep[] // single goop cells on the floor at shift start
-  shiftMs: number
+  pressure: { riseMsToFull: number } // pressure goes 0 → 1 in this long (if nothing vents it)
+  integrity: { drainPerCrackPerSec: number } // tank integrity lost per open crack per second (1 = full tank)
+  rupture: { drainMs: number } // after a rupture, pressure falls by 1 (100%) in this long
   fall: { msPerRow: number; softDropFactor: number }
   lock: { delayMs: number; softDropDelayMs: number; maxResets: number }
   fill: { msPerCell: number }
   pop: { refundMsPerCell: number; refundTierFromSize: number; refundTierStep: number; refundTierMs: number }
-  cracks: { spawnEveryMs: number; spawnTries: number; sealRefundMs: number; burstBelowPressure: number }
+  cracks: {
+    everyMsAtEmpty: number // time between cracks at 0% pressure…
+    everyMsAtFull: number // …and at 100% (straight line in between)
+    sealRefundMs: number // pressure vented per seal, in "ms of rise"
+    onePerColour: boolean // v1: at most one open crack per colour
+  }
   score: {
     perCell: number
     heightPerRow: number
     offscreenPerCell: number
     comboStep: number
     adjacentPerSide: number
-    hardDropPerRow: number
     leftoverPerCell: number
   }
   pieces: {
     corruptChance: number
     mirrorChance: number
-    zones: string[] // piece sizes by equal slices of the shift, e.g. tetra → penta → hexa
+    zones: string[] // piece sizes as the shift goes on, e.g. tetra → penta → hexa
+    zoneEveryMs: number // play time spent in each zone before the next (the last zone stays)
     kicks: number[][] // [dx, dy] tried in order when a rotation is blocked
     [zone: string]: unknown // tetra / penta / hexa: ShapeSet
   }

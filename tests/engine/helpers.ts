@@ -1,7 +1,7 @@
 // Shared test helpers: configs and hand-made tanks.
 import shiftJson from '../../content/tuning/shift.json'
 import type { ShiftConfig } from '../../src/engine/config'
-import type { ShiftEvent } from '../../src/engine/types'
+import type { ShiftEngine, ShiftEvent } from '../../src/engine/types'
 
 export function realConfig(): ShiftConfig {
   return structuredClone(shiftJson) as ShiftConfig
@@ -39,3 +39,24 @@ export function ofType<T extends ShiftEvent['type']>(events: ShiftEvent[], type:
 }
 
 export const idx = (x: number, y: number, width = 30) => y * width + x
+
+// Drop the falling piece straight down and let it lock (Goops has no hard drop, so tests fast-forward a fall).
+// The engine reads its config every step, so for the drop we briefly make the fall near-instant, then restore it.
+// Returns the events from the drop (incl. the lock and the next spawn).
+export function dropPiece(shift: ShiftEngine, config: ShiftConfig): ShiftEvent[] {
+  const msPerRow = config.fall.msPerRow
+  config.fall.msPerRow = 1
+  shift.act({ type: 'softDrop', on: true })
+  const events: ShiftEvent[] = []
+  for (let t = 0; t < 5000 && !events.some((e) => e.type === 'lock'); t++) {
+    shift.tick(1)
+    events.push(...shift.takeEvents())
+  }
+  config.fall.msPerRow = msPerRow
+  return events
+}
+
+// Tick in small steps until `done` or the time runs out.
+export function tickUntil(shift: ShiftEngine, done: () => boolean, maxMs = 60000, stepMs = 10): void {
+  for (let t = 0; t < maxMs && !done(); t += stepMs) shift.tick(stepMs)
+}

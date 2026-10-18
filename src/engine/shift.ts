@@ -1,6 +1,8 @@
-// One shift of Goops: the rules, v1 as shipped. Pure — time only moves through tick(ms), randomness only
-// through the seeded rng. The screen sends actions in, reads `state`, and takes events out.
-import type { Group, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus } from './types'
+// One shift of Goops. Pure — time only moves through tick(ms), randomness only through the seeded rng.
+// The screen sends actions in, reads `state`, and takes events out.
+// The loop (GDD §4): pressure rises → cracks come faster → open cracks drain tank integrity → at 0 the tank
+// ruptures → pressure drains to 0 while you zap what you can → the shift ends (won if the crack quota was met).
+import type { Group, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, WallKickMode } from './types'
 import type { ShiftConfig } from './config'
 import { cracksNeededFor, junkCount, paletteSize } from './config'
 import { createRng, type Rng } from './rng'
@@ -17,13 +19,14 @@ import {
   rotateCells,
 } from './pieces'
 import { type GroupBook, dropLoose, regroup } from './groups'
-import { burstCracks, popLine, spawnCrack, updatePlugs } from './cracks'
+import { crackEveryMs, firstPoppableRow, popLine, spawnCrack, updatePlugs } from './cracks'
 import { popPoints, popRefundMs } from './score'
 
 export interface ShiftOptions {
   seed: number
   rank: number
   startGrid?: ArrayLike<number> // a set-up tank (Color per cell, y * width + x) instead of the rank's junk — for tests and level setups
+  wallKick?: WallKickMode // default 'rotateVat'; can be changed later with setWallKick
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -49,12 +52,15 @@ class Shift implements ShiftEngine {
   private lockResets = 0 // spins/rotations that restarted the lock timer for this piece
   private crackTimerMs = 0
   private popStreak = 0 // pops since the last piece landed
+  private playedMs = 0 // time since the shift started (picks the piece-size zone)
+  private wallKick: WallKickMode
 
   constructor(config: ShiftConfig, options: ShiftOptions) {
     this.config = config
     this.rng = createRng(options.seed)
     const { width, height, bufferRows, visibleWidth } = config.tank
     this.colorCount = paletteSize(config, options.rank)
+    this.wallKick = options.wallKick ?? 'rotateVat'
     this.state = {
       width,
       height,
@@ -72,10 +78,12 @@ class Shift implements ShiftEngine {
       heldCells: null,
       pressure: 0,
       pressureRow: height - 1,
-      timeLeftMs: config.shiftMs,
+      integrity: 1,
+      phase: 'playing',
       cracks: [],
       cracksSealed: 0,
       cracksNeeded: cracksNeededFor(config, options.rank),
+      quotaMet: false,
       score: 0,
       status: 'playing',
       rank: options.rank,
@@ -96,6 +104,10 @@ class Shift implements ShiftEngine {
     const out = this.events
     this.events = []
     return out
+  }
+
+  setWallKick(mode: WallKickMode): void {
+    this.wallKick = mode
   }
 
   tick(ms: number): void {
@@ -121,9 +133,6 @@ class Shift implements ShiftEngine {
       case 'softDrop':
         this.softDrop = action.on
         break
-      case 'hardDrop':
-        ok = this.hardDrop()
-        break
       case 'hold':
         ok = this.hold()
         break
@@ -139,38 +148,58 @@ class Shift implements ShiftEngine {
 
   private step(dt: number): void {
     const s = this.state
-    s.timeLeftMs -= dt
-    if (s.timeLeftMs <= 0) {
-      s.timeLeftMs = 0
-      this.updatePressure()
-      this.end()
-      return
-    }
-    this.updatePressure()
-
-    // A new crack every few seconds until the goal is met (v1).
-    if (s.cracksSealed < s.cracksNeeded) {
-      this.crackTimerMs += dt
-      if (this.crackTimerMs > this.config.cracks.spawnEveryMs) {
-        this.crackTimerMs = 0
-        const crack = spawnCrack(s, this.rng, this.colorCount, this.config.cracks.spawnTries, this.nextCrackId)
-        if (crack) {
-          this.nextCrackId++
-          s.cracks.push(crack)
-          this.events.push({ type: 'crack', crack: { ...crack } })
-        }
+    this.playedMs += dt
+    if (s.phase === 'playing') {
+      this.setPressure(s.pressure + dt / this.config.pressure.riseMsToFull)
+      this.growCracks(dt)
+      this.drainIntegrity(dt)
+    } else {
+      // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
+      this.setPressure(s.pressure - dt / this.config.rupture.drainMs)
+      if (s.pressure <= 0) {
+        this.end()
+        return
       }
+      // After an overflow there's no piece: a new one comes as soon as zapping makes room at the top.
+      if (!this.piece) this.trySpawn()
     }
-
     this.settle() // goop that was resting on the falling piece drops once the piece moves away
     this.fallPiece(dt)
     this.fillGroups(dt)
   }
 
-  private updatePressure(): void {
+  private setPressure(value: number): void {
     const s = this.state
-    s.pressure = 1 - s.timeLeftMs / this.config.shiftMs
-    s.pressureRow = Math.ceil(popLine(s) - 1e-9)
+    s.pressure = Math.max(0, Math.min(1, value))
+    s.pressureRow = firstPoppableRow(s)
+  }
+
+  // A new crack every so often — sooner the higher the pressure. Cracks keep coming after the quota is met.
+  private growCracks(dt: number): void {
+    const s = this.state
+    this.crackTimerMs += dt
+    if (this.crackTimerMs < crackEveryMs(this.config, s.pressure)) return
+    this.crackTimerMs = 0
+    const crack = spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId)
+    if (!crack) return // nowhere sealable right now: try again next time
+    this.nextCrackId++
+    s.cracks.push(crack)
+    this.events.push({ type: 'crack', crack: { ...crack } })
+  }
+
+  // Every open (unsealed) crack wears the tank down a little each second. Integrity never comes back.
+  private drainIntegrity(dt: number): void {
+    const s = this.state
+    const drain = s.cracks.length * this.config.integrity.drainPerCrackPerSec * (dt / 1000)
+    s.integrity = Math.max(0, s.integrity - drain)
+    if (s.integrity <= 0) this.rupture('integrity')
+  }
+
+  private rupture(reason: 'integrity' | 'overflow'): void {
+    const s = this.state
+    if (s.phase === 'rupture') return
+    s.phase = 'rupture'
+    this.events.push({ type: 'rupture', reason })
   }
 
   private fallPiece(dt: number): void {
@@ -250,33 +279,28 @@ class Shift implements ShiftEngine {
       this.events.push({ type: 'rotate', dir })
       return true
     }
+    const s = this.state
     const turned = rotateCells(p.cells, dir, p.center)
     for (const [kx, ky] of this.config.pieces.kicks) {
-      if (this.blockedAt(turned, this.state.spin + p.offset + kx, p.y + ky)) continue
+      if (this.blockedAt(turned, s.spin + p.offset + kx, p.y + ky)) continue
       p.cells = turned
       p.rotation = (p.rotation + dir + 4) % 4
-      p.offset += kx // v1: a sideways kick moves the piece off the centre line for the rest of its fall
       p.y += ky
       this.events.push({ type: 'rotate', dir })
-      if (kx !== 0) this.events.push({ type: 'move', dx: kx })
+      if (kx !== 0) {
+        // Both modes put the piece in the same tank cells (origin = spin + offset + kx); they differ in what moves.
+        if (this.wallKick === 'rotateVat') {
+          s.spin = wrapX(s.spin + kx, s.width) // the tank turns; the piece stays on the centre line of the screen
+          this.events.push({ type: 'spin', dx: kx })
+        } else {
+          p.offset += kx // v1: the piece leaves the centre line for the rest of its fall
+          this.events.push({ type: 'move', dx: kx })
+        }
+      }
       this.moveReset()
       return true
     }
     return false
-  }
-
-  // v1 never shipped a hard drop; this drops to the ghost and locks at once.
-  private hardDrop(): boolean {
-    const p = this.piece
-    if (!p) return false
-    const s = this.state
-    const rows = landingRow(s.grid, p.cells, s.spin + p.offset, p.y, s.width, s.height) - p.y
-    p.y += rows
-    p.fall = 0
-    s.score += rows * this.config.score.hardDropPerRow
-    this.events.push({ type: 'drop', rows })
-    this.lockPiece()
-    return true
   }
 
   // Swap the falling piece with the held one. The held piece appears where the falling one was.
@@ -318,10 +342,12 @@ class Shift implements ShiftEngine {
     s.cracks = s.cracks.filter((c) => !sealed.includes(c.id))
     s.cracksSealed += sealed.length
 
-    // Popping gives time back (pressure drops), sealing gives more.
-    const refund = popRefundMs(this.config, g.cells.length) + sealed.length * this.config.cracks.sealRefundMs
-    s.timeLeftMs = Math.min(this.config.shiftMs, s.timeLeftMs + refund)
-    this.updatePressure()
+    // Zapping vents pressure, sealing vents more (v1's time refunds, turned into pressure: ms of rise).
+    // Not during a rupture: there pressure drains on its own, and venting would only shorten the time to zap.
+    if (s.phase === 'playing') {
+      const ventMs = popRefundMs(this.config, g.cells.length) + sealed.length * this.config.cracks.sealRefundMs
+      this.setPressure(s.pressure - ventMs / this.config.pressure.riseMsToFull)
+    }
 
     for (const i of g.cells) {
       s.grid[i] = 0
@@ -332,50 +358,41 @@ class Shift implements ShiftEngine {
     this.events.push({ type: 'pop', cells: g.cells, color: g.color, sealed })
 
     this.settle()
-    if (sealed.length > 0 && s.cracksSealed >= s.cracksNeeded) this.afterGoalSeal()
+    if (!s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
+      s.quotaMet = true // play goes on: every seal from here is bonus
+      this.events.push({ type: 'quotaMet' })
+    }
     this.updateReady()
     return true
-  }
-
-  // v1 win burst: after the goal, each seal brings a crack of every colour above the line —
-  // unless the shift is nearly over (90% pressure), then all cracks are cleared.
-  private afterGoalSeal(): void {
-    const s = this.state
-    if (s.pressure < this.config.cracks.burstBelowPressure) {
-      const burst = burstCracks(s, this.rng, this.colorCount, this.config.cracks.spawnTries, () => this.nextCrackId++)
-      for (const crack of burst) {
-        s.cracks.push(crack)
-        this.events.push({ type: 'crack', crack: { ...crack } })
-      }
-      updatePlugs(s, this.events)
-    } else {
-      s.cracks = []
-    }
   }
 
   // ---------------------------------------------------------------- pieces
 
   private randomDef(): PieceDef {
     const zones = this.config.pieces.zones
-    const elapsed = this.config.shiftMs - this.state.timeLeftMs
-    const zone = Math.min(zones.length - 1, Math.floor(elapsed / (this.config.shiftMs / zones.length)))
+    const zone = Math.min(zones.length - 1, Math.floor(this.playedMs / this.config.pieces.zoneEveryMs))
     return randomPiece(this.rng, this.config, zones[zone], this.colorCount)
   }
 
+  // The next piece after one lands. No room at the top: the tank ruptures (overflow) —
+  // or, if it has already ruptured, the shift ends right away.
   private spawnNext(): void {
-    const def = this.nextDef
+    if (this.trySpawn()) return
+    if (this.state.phase === 'playing') this.rupture('overflow')
+    else this.end()
+  }
+
+  // Bring in the next piece if there's room for it. v1: always the centre column, top row of the hidden buffer.
+  private trySpawn(): boolean {
+    const piece = newFallingPiece(this.nextDef, 0, 0)
+    this.piece = null
+    if (this.blockedAt(piece.cells, this.state.spin, 0)) return false
     this.nextDef = this.randomDef()
-    // v1: always the centre column, top row of the hidden buffer.
-    const piece = newFallingPiece(def, 0, 0)
     this.lockMs = null
     this.lockResets = 0
-    if (this.blockedAt(piece.cells, this.state.spin, 0)) {
-      this.piece = null
-      this.end() // the tank is full to the top: the shift ends (v1)
-      return
-    }
     this.piece = piece
     this.events.push({ type: 'spawn' })
+    return true
   }
 
   private lockPiece(): void {

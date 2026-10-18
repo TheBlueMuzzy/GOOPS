@@ -45,7 +45,7 @@ function checkInvariants(s: ShiftState): void {
   // A crack is plugged exactly when goop of its colour covers it.
   for (const c of s.cracks) if (c.plugged !== (grid[c.y * width + c.x] === c.color)) fail(`crack ${c.id} plug state wrong`)
   if (s.pressure < 0 || s.pressure > 1) fail(`pressure ${s.pressure}`)
-}
+  if (s.integrity < 0 || s.integrity > 1) fail(`integrity ${s.integrity}`)}
 
 // A dumb but busy player: spins, turns, drops, and pops anything ready. Returns the event log.
 function playShift(seed: number, rank: number, check: boolean): { shift: ShiftEngine; log: ShiftEvent[]; ms: number } {
@@ -58,9 +58,8 @@ function playShift(seed: number, rank: number, check: boolean): { shift: ShiftEn
     const roll = bot.next()
     if (roll < 0.25) shift.act({ type: 'spin', dir: bot.chance(0.5) ? 1 : -1 })
     else if (roll < 0.3) shift.act({ type: 'rotate', dir: bot.chance(0.5) ? 1 : -1 })
-    else if (roll < 0.33) shift.act({ type: 'softDrop', on: bot.chance(0.5) })
-    else if (roll < 0.35) shift.act({ type: 'hardDrop' })
-    else if (roll < 0.36) shift.act({ type: 'hold' })
+    else if (roll < 0.33) shift.act({ type: 'softDrop', on: bot.chance(0.8) }) // mostly fast-drops (no hard drop)
+    else if (roll < 0.34) shift.act({ type: 'hold' })
     for (const g of shift.state.groups.values()) {
       if (g.ready) {
         const i = g.cells[0]
@@ -72,10 +71,13 @@ function playShift(seed: number, rank: number, check: boolean): { shift: ShiftEn
     ms += 50
     const events = shift.takeEvents()
     log.push(...events)
+    // Like a player holding fast drop: most new pieces get dropped quickly (there's no hard drop).
+    if (events.some((e) => e.type === 'spawn') && bot.chance(0.7)) shift.act({ type: 'softDrop', on: true })
     if (check) {
       checkInvariants(shift.state)
-      // Pressure only ever goes down when something popped.
-      if (shift.state.pressure < lastPressure - 1e-12 && !events.some((e) => e.type === 'pop')) throw new Error('pressure fell without a pop')
+      // Before a rupture, pressure only ever goes down when something popped.
+      const falling = shift.state.pressure < lastPressure - 1e-12
+      if (falling && shift.state.phase === 'playing' && !events.some((e) => e.type === 'pop')) throw new Error('pressure fell without a pop')
       lastPressure = shift.state.pressure
     }
   }
@@ -91,6 +93,14 @@ describe('a whole shift', () => {
       expect(log.filter((e) => e.type === 'pop').length).toBeGreaterThan(0)
       expect(log.filter((e) => e.type === 'crack').length).toBeGreaterThan(0)
       expect(log.at(-1)).toEqual({ type: 'end', status: shift.state.status })
+      // The shift ended through the loop: exactly one rupture, before the end.
+      const ruptures = log.filter((e) => e.type === 'rupture')
+      expect(ruptures).toHaveLength(1)
+      expect(log.indexOf(ruptures[0])).toBeLessThan(log.length - 1)
+      expect(shift.state.phase).toBe('rupture')
+      expect(shift.state.status).toBe(shift.state.cracksSealed >= shift.state.cracksNeeded ? 'won' : 'lost')
+      const quota = log.filter((e) => e.type === 'quotaMet').length
+      expect(quota).toBe(shift.state.quotaMet ? 1 : 0)
     }, 60000)
   }
 

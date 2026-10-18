@@ -29,6 +29,14 @@ export interface Crack {
 
 export type ShiftStatus = 'playing' | 'won' | 'lost'
 
+// 'playing' = the normal shift. 'rupture' = the tank broke: pressure drains to 0, pieces still come, no new cracks.
+export type ShiftPhase = 'playing' | 'rupture'
+
+// What happens when a turn is blocked and a sideways kick is needed:
+// 'rotateVat' = the TANK turns under the piece (the piece stays on the centre line);
+// 'shuntPiece' = the piece slides over in the tank (v1).
+export type WallKickMode = 'rotateVat' | 'shuntPiece'
+
 export interface ShiftState {
   width: number // 30 columns around
   height: number // 24 rows incl. buffer
@@ -44,12 +52,14 @@ export interface ShiftState {
   held: Color[] | null
   nextCells?: [number, number][] | null // the next piece's shape: [x, y] offsets, same order as `next` (added by F13)
   heldCells?: [number, number][] | null // the held piece's shape (added by F13)
-  pressure: number // 0..1 (v1: a timer — 1 means the shift is over)
+  pressure: number // 0..1: rises over time, zaps and seals vent it; drains to 0 during a rupture
   pressureRow: number // y of the pressure line (goop at or below it can pop)
-  timeLeftMs: number
+  integrity: number // 0..1 tank integrity: open cracks drain it, it never refills; 0 = rupture
+  phase: ShiftPhase
   cracks: Crack[]
   cracksSealed: number
   cracksNeeded: number
+  quotaMet: boolean // cracksSealed has reached cracksNeeded (seals after this are bonus)
   score: number
   status: ShiftStatus
   rank: number
@@ -63,7 +73,7 @@ export type ShiftEvent =
   | { type: 'spin'; dx: number } // the tank turned by dx columns (+1 = the tank moved left under the piece)
   | { type: 'rotate'; dir: 1 | -1 }
   | { type: 'step' } // piece moved down one row
-  | { type: 'drop'; rows: number } // hard/fast drop moved the piece down `rows` rows at once
+  | { type: 'drop'; rows: number } // no longer sent (hard drop was removed); kept so the renderers' handlers compile
   | { type: 'lock'; cells: number[]; color: Color } // piece became part of the grid (grid indexes)
   | { type: 'merge'; groupId: number } // a group grew by joining others
   | { type: 'ready'; groupId: number } // a group finished filling and can pop
@@ -71,6 +81,8 @@ export type ShiftEvent =
   | { type: 'fall'; moves: [from: number, to: number][] } // unsupported goop fell (grid indexes)
   | { type: 'crack'; crack: Crack } // a new crack appeared
   | { type: 'plug'; crackId: number; plugged: boolean }
+  | { type: 'quotaMet' } // the last needed crack was sealed (once per shift); play goes on
+  | { type: 'rupture'; reason: 'integrity' | 'overflow' } // the tank broke: integrity hit 0, or a piece had no room
   | { type: 'end'; status: ShiftStatus }
   | { type: 'hold' } // the falling piece was swapped with the held one (added by F13)
   | { type: 'reject'; action: ShiftAction['type'] } // an action couldn't happen (v1 played a "nope" sound) (added by F13)
@@ -79,7 +91,6 @@ export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column
   | { type: 'rotate'; dir: 1 | -1 }
   | { type: 'softDrop'; on: boolean } // hold to fall fast
-  | { type: 'hardDrop' }
   | { type: 'hold' } // swap with the held piece
   | { type: 'pop'; x: number; y: number } // tap a cell (tank space)
 
@@ -88,4 +99,5 @@ export interface ShiftEngine {
   act(action: ShiftAction): void
   tick(ms: number): void // advance time; the screen calls this every frame with the real frame time
   takeEvents(): ShiftEvent[] // events since the last call, oldest first
+  setWallKick(mode: WallKickMode): void // switch how blocked turns kick (allowed mid-shift)
 }

@@ -1,4 +1,4 @@
-// What a pop is worth (v1 rules): points, and time given back to the shift.
+// What a pop is worth (v1 rules): points, and how much pressure it vents.
 import type { ShiftConfig } from './config'
 import type { ShiftState } from './types'
 import { isOnScreen, neighbours } from './tank'
@@ -28,7 +28,8 @@ export function popPoints(state: ShiftState, config: ShiftConfig, cells: number[
   return Math.floor(total)
 }
 
-// Time (ms) a pop gives back: 0.1 s per cell, plus 0.25 s per "tier" for big groups (15+, then every 10 more).
+// Pressure a pop vents, in ms of pressure rise (v1 gave this back as shift time): 0.1 s per cell,
+// plus 0.25 s per "tier" for big groups (15+, then every 10 more).
 export function popRefundMs(config: ShiftConfig, size: number): number {
   const p = config.pop
   let ms = size * p.refundMsPerCell

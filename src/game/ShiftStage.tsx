@@ -16,7 +16,7 @@ export interface HudSnapshot {
   score: number
   cracksSealed: number
   cracksNeeded: number
-  timeLeftMs: number
+  integrity: number
   holdProgress: number | null
 }
 
@@ -84,7 +84,7 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onConsole
       if (now - hudAt > 100) {
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
-          timeLeftMs: s.timeLeftMs, holdProgress })
+          integrity: s.integrity, holdProgress })
       }
       for (const e of events) {
         if (e.type === 'spawn' && softHeld) engine.act({ type: 'softDrop', on: true })

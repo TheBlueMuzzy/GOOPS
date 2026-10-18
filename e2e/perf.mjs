@@ -13,7 +13,7 @@ try {
     await p.getByRole('button', { name: 'Start shift' }).click()
     await p.waitForTimeout(400)
     await p.evaluate(() => { const { engine } = window.__goops
-      for (let i = 0; i < 34; i++) { for (let k = 0; k < (i * 7) % 11; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'hardDrop' }); engine.tick(700) } })
+      for (let i = 0; i < 34; i++) { for (let k = 0; k < (i * 7) % 11; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'softDrop', on: true }); engine.tick(2500) } })
     for (const style of ['Jelly', 'Particle']) {
       await p.evaluate((s) => window.__goops.gooStyle.setFromSetting(s), style)
       await p.waitForTimeout(1500)

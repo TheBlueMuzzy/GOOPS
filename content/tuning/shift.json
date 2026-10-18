@@ -13,25 +13,27 @@
     { "rank": 6, "count": 8 },
     { "rank": 9, "count": 11 }
   ],
-  "shiftMs": 75000,
+  "pressure": { "riseMsToFull": 75000 },
+  "integrity": { "drainPerCrackPerSec": 0.004 },
+  "rupture": { "drainMs": 5000 },
   "fall": { "msPerRow": 780, "softDropFactor": 8 },
   "lock": { "delayMs": 500, "softDropDelayMs": 50, "maxResets": 10 },
   "fill": { "msPerCell": 375 },
   "pop": { "refundMsPerCell": 100, "refundTierFromSize": 15, "refundTierStep": 10, "refundTierMs": 250 },
-  "cracks": { "spawnEveryMs": 5000, "spawnTries": 20, "sealRefundMs": 3000, "burstBelowPressure": 0.9 },
+  "cracks": { "everyMsAtEmpty": 5000, "everyMsAtFull": 1000, "sealRefundMs": 3000, "onePerColour": false },
   "score": {
     "perCell": 10,
     "heightPerRow": 10,
     "offscreenPerCell": 50,
     "comboStep": 0.1,
     "adjacentPerSide": 5,
-    "hardDropPerRow": 2,
     "leftoverPerCell": 50
   },
   "pieces": {
     "corruptChance": 0.15,
     "mirrorChance": 0.5,
     "zones": ["tetra", "penta", "hexa"],
+    "zoneEveryMs": 25000,
     "kicks": [[0, 0], [1, 0], [-1, 0], [0, -1], [1, -1], [-1, -1], [0, -2], [1, -2], [-1, -2], [2, 0], [-2, 0]],
     "tetra": {
       "normal": [
