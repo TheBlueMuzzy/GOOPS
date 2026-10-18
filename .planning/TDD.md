@@ -53,7 +53,7 @@ flowchart LR
 | `content/tuning/goo-jelly.json` | Muzzy's Jelly pick (`research/goo-lab/picks.json`) | Obsidian / in-game Settings later |
 | `content/tuning/goo-particle.json` | Muzzy's Particle pick | same |
 | `content/text/en.json` | player-facing words | Obsidian |
-| `content/ui/art.json` | which of Muzzy's pictures goes where (menu backdrop, title, buttons, end-report frame + its cut lines) | Obsidian |
+| `content/ui/art.json` | which of Muzzy's pictures goes where: the console (layers cut from art/Example1.svg, each at its box in the mock-up's units; the views; periscope travel + grip; where the game writes words), end-report frame + its cut lines, buttons | Obsidian |
 
 ## 4. Standards
 - **Folders:** `src/engine` rules · `src/goo` renderers · `src/view` tank drawing · `src/input` controls · `src/ui` screens · `content/` data · `tests/` unit tests · `e2e/` Playwright checks.
@@ -72,6 +72,13 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D06 · 2026-10-18 · The console = the main menu, cut from Muzzy's mock-up (F21)
+  Proposed by: Claude   Options: rebuild it from the separate part files (ConsoleBase, Periscope…) / cut it from Example1.svg
+  Chose: cut named groups out of Example1.svg (art-prep), each cropped to its box in art.json and placed at that same box
+  (kit 0.12.0 ArtStage — picture units, never stretched), so it lines up exactly as he drew it. Words stripped and written
+  by the game (fonts can't ship). Periscope pulled → the shift is made (paused) under the console, which slides away;
+  back = the console slides up over the tank and the meter plays the XP since it last showed (meterSteps), so several
+  "Next shift"s in a row all show. Kit also got PullHandle (drag or tap), LevelMeter, Screen column / swipe / slide
 D05 · 2026-10-17 · Muzzy's art served from public/art/, made by scripts/art-prep.mjs (F19)
   Proposed by: Claude   Options: import from art/ via Vite / copy into public/art/ with a prep script
   Chose: prep script → public/art/ (committed) — two files need changing anyway (Title's words outlined so no font

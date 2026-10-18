@@ -1,14 +1,37 @@
 {
   "_about": "Muzzy's art on the screens (F19). Files are served from public/art/ — made from art/ by `node scripts/art-prep.mjs` (re-run it after changing a file in art/). Button size: s / m / l = picture 3 / 4 / 5.5rem wide. Frame: slice = where its corners end, in the picture's own units (top, right, bottom, left); scale = rem per picture unit (0.0375 ≈ the picture at 60%); ink = the words' colour on the frame's screen. Which art file is what: .planning/research/art-map.md",
-  "menu": {
-    "backdrop": "art/Background.svg",
-    "title": "art/Title.svg",
-    "start": { "up": "art/Btn_Green-Up.svg", "down": "art/Btn_Green-Down.svg", "size": "l" },
-    "settings": { "up": "art/Btn_Blue-Up.svg", "down": "art/Btn_Blue-Down.svg", "size": "l" }
-  },
   "end": {
     "frame": { "src": "art/EndGameFrame.svg", "slice": [102, 64, 64, 64], "scale": 0.0375, "ink": "on-surface" },
     "again": { "up": "art/Btn_Green-Up.svg", "down": "art/Btn_Green-Down.svg", "size": "m" },
     "quit": { "up": "art/Btn_Blue-Up.svg", "down": "art/Btn_Blue-Down.svg", "size": "m" }
+  },
+  "console": {
+    "_about": "The console = the main menu (F21), drawn from Muzzy's mock-up art/Example1.svg. Every number is in that file's own units (its viewBox: 648 wide). size = the whole mock-up; view = the part that shows (the phone-shaped page, from the monitor's bottom edge down to the footer — the GOOPS title and the gear sit under it, written by the game); viewShort = the part shown on a phone on its side (down to the bottom of the laser panel). layers = groups cut out of the mock-up by art-prep, each at its box `at` [x, y, width, height]; strip = bits taken out (they'd show fake numbers or do nothing). periscope.travel = how far it pulls down, as a share of its own height (Example3 has it 362 units lower); grip = the share of it (from the bottom: goggles + bar + arrow) you can grab — its long stem hides behind the monitor. words = where the game writes words over the art: `at` + `text` (letter size in mock-up units).",
+    "source": "art/Example1.svg",
+    "size": [648, 1983.22],
+    "view": [0, 831, 648, 1046],
+    "viewShort": [0, 831, 648, 622],
+    "layers": {
+      "body": { "file": "art/ConsoleBody.svg", "groups": ["Console_Base", "Console_Back"], "strip": ["Trashcan"], "at": [16.69, 1057.15, 614.13, 808.21] },
+      "meter": { "file": "art/ConsoleMeter.svg", "groups": ["Operator_Rank_-_meter"], "strip": ["Meter_Fill"], "at": [81.41, 1138.58, 487.02, 66.4] },
+      "laser": { "file": "art/ConsoleLaser.svg", "groups": ["Reset_Laser"], "at": [67.86, 1239.78, 516.75, 141.42] },
+      "controls": { "file": "art/ConsoleControls.svg", "groups": ["Reset_Controls"], "at": [74.36, 1450.93, 243.08, 273.92] },
+      "lights": { "file": "art/ConsoleLights.svg", "groups": ["Reset_Lights"], "at": [341.17, 1452.22, 267.53, 267.9] },
+      "periscope": { "file": "art/ConsolePeriscope.svg", "groups": ["Periscope"], "at": [22.36, 496.8, 603.66, 640.08], "travel": 0.566, "grip": 0.345 },
+      "monitor": { "file": "art/ConsoleMonitor.svg", "groups": ["Monitor"], "at": [31.92, 0, 583.67, 909.59] }
+    },
+    "meterFill": { "file": "art/ConsoleMeterFill.svg", "colourOf": "cls-59", "at": [81.91, 1184.71, 486.02, 19.76] },
+    "meterText": 21,
+    "words": {
+      "hint": { "at": [56, 838, 536, 42], "text": 26 },
+      "laser": { "at": [226, 1298, 200, 24], "text": 21 },
+      "controls": { "at": [94, 1460, 200, 24], "text": 21 },
+      "lights": { "at": [363, 1458, 180, 24], "text": 21 },
+      "version": { "at": [70, 1841, 160, 20], "text": 15.7 },
+      "credit": { "at": [370, 1841, 216, 20], "text": 15.7 }
+    },
+    "backdrop": "art/Background.svg",
+    "title": "art/Title.svg",
+    "settings": { "up": "art/Btn_Settings.svg", "label": "hidden", "size": "s" }
   }
 }

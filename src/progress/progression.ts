@@ -39,6 +39,26 @@ export interface ShiftReward {
   progress: Progress // the new progress to save
 }
 
+// The rank meter's steps from one progress to another (F21): one per rank the XP passes through, each
+// { level: rank, from, to, max: XP that rank needs } — what the console's meter plays when you come back to it.
+// Ending exactly on a rank-up adds the new rank's empty bar, so the rank-up still shows. No XP gained: no steps.
+export function meterSteps(before: Progress, after: Progress, t: ProgressionTuning = tuning) {
+  const steps: { level: number; from: number; to: number; max: number }[] = []
+  let at = before.totalXp
+  while (at < after.totalXp) {
+    const { rank, xpIntoRank, xpToNext: need } = rankInfo({ ...after, totalXp: at }, t)
+    if (need === 0) break // top rank: nothing more to fill
+    const end = Math.min(need, xpIntoRank + (after.totalXp - at))
+    steps.push({ level: rank, from: xpIntoRank, to: end, max: need })
+    at += end - xpIntoRank
+    if (end === need && at >= after.totalXp) {
+      const next = rankInfo({ ...after, totalXp: at }, t)
+      steps.push({ level: next.rank, from: 0, to: 0, max: next.xpToNext })
+    }
+  }
+  return steps
+}
+
 // A finished shift's final score (after the leftover penalty) becomes XP, never less than the floor.
 export function rewardShift(p: Progress, finalScore: number, t: ProgressionTuning = tuning): ShiftReward {
   const before = rankInfo(p, t)

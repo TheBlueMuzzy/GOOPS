@@ -1,8 +1,20 @@
 {
-  "menu": {
+  "console": {
+    "label": "Console",
     "title": "GOOPS",
-    "subtitle": "Tank maintenance · day one",
-    "start": "Start shift",
+    "periscope": "Start shift",
+    "hint": "Pull down the periscope",
+    "earned": "+{xp} XP",
+    "rankUp": "Rank up! Rank {rank}",
+    "rank": "Operator rank",
+    "xp": "XP",
+    "maxRank": "Top rank",
+    "laser": "Reset laser",
+    "controls": "Reset controls",
+    "lights": "Reset lights",
+    "unavailable": "{name} (unavailable)",
+    "version": "Version {v}",
+    "credit": "MuzzyMade © 2026",
     "settings": "Settings"
   },
   "hud": {
@@ -30,6 +42,7 @@
     "cracks": "Cracks sealed",
     "again": "Next shift",
     "quit": "Back to the console",
+    "swipe": "⇧ Swipe up to end the day",
     "wonCracks": "Quota met. Then too many open cracks broke the tank. Management has noted your adequate performance.",
     "wonOverflow": "Quota met. Then the tank overfilled and burst. Management has noted your adequate performance.",
     "lostCracks": "Too many open cracks broke the tank before you met the quota. This will go on your record.",
