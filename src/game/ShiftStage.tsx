@@ -1,21 +1,33 @@
 // The playing field: the tank canvas (2D, under), the goo canvas (WebGL, over), the controls, and the frame loop that
 // ticks the engine and hands its state + events to both. React only renders this once; per-frame work uses refs.
-import { useEffect, useRef, useSyncExternalStore } from 'react'
-import type { MachineId, ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase } from '../engine'
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
+import type { MachineId, ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase, ShiftState } from '../engine'
 import type { GooRenderer, GooView } from '../goo/types'
 import { colorOf, makeGoo } from './gooFactory'
 import { drawTank } from '../view/tankView'
-import { layoutTank, screenToCell, stepCamera } from '../view/geometry'
+import { layoutTank, pieceScreenColumn, screenToCell, stepCamera } from '../view/geometry'
 import { attachControls } from '../input/controls'
 import { gooStyle } from './gooStyle'
 import { wallKick } from './wallKick'
+import { createMessages, type Message, type MessageTuning } from './messages'
 import { createVisorFx, type VisorFx } from '../view/visorFx'
+import { PinnedBox } from '../ui/kit'
 import tank from '../../content/tuning/tank.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
+import messageTuning from '../../content/tuning/messages.json'
 import './game.css'
 
 const HUD_SIDE_ROOM = 16 // CSS px the HUD may reach past each side of the tank
 const HUD_MIN_WIDTH = 360 // the HUD needs a narrow phone's width even when the tank is smaller (a phone on its side)
+const PIN_GAP = 8 // CSS px between a tag and the tank edge / line it hangs on
+const PIN_HALF = 14 // CSS px: about half a tag's height (a small kit label), so a tag sits beside a line, not on it
+const PIN_STEP = 30 // CSS px between tags stacked in a column (a phone on its side)
+
+// The "Hug the tank" tags (F26): kit text pinned to the tank, moved by the frame loop (never by React).
+// pressure = "NN%" at the right end of the pressure line; tank, cracks, score = a row under the tank (cracks
+// left, tank in the middle, score right), or a column beside its bottom-right corner on a phone on its side.
+export type PinId = 'pressure' | 'tank' | 'cracks' | 'score'
+const PINS: PinId[] = ['pressure', 'cracks', 'tank', 'score']
 
 export interface HudSnapshot {
   pressure: number
@@ -38,19 +50,31 @@ interface Props {
   reserveTop: number // CSS px the HUD needs above the tank
   reserveBottom?: number // CSS px kept free under the tank (the machines' meters); default 12
   hudSideRoom?: number // CSS px the HUD may reach past each side of the tank (default 16; more for meters beside it)
+  // F26 test layouts ("Meters (test)" = Hug the tank): the tank's walls glow with its integrity, and these tags hang on
+  // the tank ('column' = beside it, for a phone on its side). Leave out for the other layouts.
+  rim?: boolean
+  pins?: Partial<Record<PinId, ReactNode>>
+  pinLayout?: 'row' | 'column'
+  // F26 "Messages (test)" = At the stack: messages sit just above the highest goop, as wide as the tank (never over the
+  // meters beside it); never higher than messagesClearTop CSS px from the top of the screen plus their own height (the
+  // HUD's top row lives there)
+  messagesAtStack?: boolean
+  messagesClearTop: number
   onHud(h: HudSnapshot): void
   onEnd(status: ShiftStatus): void
-  onAlert(kind: 'quotaMet' | 'rupture'): void // one-off moments the HUD announces
+  onMessage(m: Message): void // a short in-shift message to show (src/game/messages.ts decides which)
   onConsole(): void
 }
 
-export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom = 12, hudSideRoom = HUD_SIDE_ROOM, onHud, onEnd, onAlert, onConsole }: Props) {
+export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom = 12, hudSideRoom = HUD_SIDE_ROOM, rim = false, pins,
+  pinLayout = 'row', messagesAtStack = false, messagesClearTop, onHud, onEnd, onMessage, onConsole }: Props) {
   const style = useSyncExternalStore(gooStyle.subscribe, gooStyle.get)
   const host = useRef<HTMLDivElement>(null)
   const tankCanvas = useRef<HTMLCanvasElement>(null)
   const gooCanvas = useRef<HTMLCanvasElement>(null)
-  const live = useRef({ speed, inputOn, onHud, onEnd, onAlert, onConsole })
-  useEffect(() => { live.current = { speed, inputOn, onHud, onEnd, onAlert, onConsole } })
+  const pinEls = useRef<Partial<Record<PinId, HTMLDivElement | null>>>({})
+  const live = useRef({ speed, inputOn, rim, pinLayout, messagesAtStack, messagesClearTop, onHud, onEnd, onMessage, onConsole })
+  useEffect(() => { live.current = { speed, inputOn, rim, pinLayout, messagesAtStack, messagesClearTop, onHud, onEnd, onMessage, onConsole } })
 
   // the Settings "Wall kick" row: applied now and whenever it changes
   useEffect(() => {
@@ -59,11 +83,13 @@ export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom =
   }, [engine])
   const viewRef = useRef<GooView | null>(null)
   const reserveTopRef = useRef(reserveTop)
-  useEffect(() => { reserveTopRef.current = reserveTop }, [reserveTop])
   const reserveBottomRef = useRef(reserveBottom)
   const sideRoomRef = useRef(hudSideRoom)
   const relayout = useRef<() => void>(() => {})
-  useEffect(() => { reserveBottomRef.current = reserveBottom; sideRoomRef.current = hudSideRoom; relayout.current() }, [reserveBottom, hudSideRoom])
+  // (all three move with the Settings row "Meters (test)", mid-shift too: the tank re-fits straight away)
+  useEffect(() => {
+    reserveTopRef.current = reserveTop; reserveBottomRef.current = reserveBottom; sideRoomRef.current = hudSideRoom; relayout.current()
+  }, [reserveTop, reserveBottom, hudSideRoom])
 
   // the goo renderer: rebuilt when the style changes (a fresh canvas each time — see key below)
   const gooRef = useRef<GooRenderer | null>(null)
@@ -86,6 +112,9 @@ export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom =
     const el = host.current!, tc = tankCanvas.current!, ctx = tc.getContext('2d')!
     const s = engine.state
     let camera = s.spin, last = performance.now(), hudAt = 0, raf = 0, ended = false
+    let toastsAt = 0, toastsAtPx = '', toastsStart = '', toastsEnd = '' // the messages' point + sides, as last set
+    const messages = createMessages(messageTuning as MessageTuning)
+    const root = document.documentElement
     let holdProgress: number | null = null
     const breaks: Record<MachineId, number> = { laser: 0, visor: 0, controls: 0 }
     let softHeld = false // the engine turns fast-drop off at every lock; a held drag keeps it on for the next piece
@@ -117,7 +146,8 @@ export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom =
       const events: ShiftEvent[] = engine.takeEvents()
       camera = stepCamera(camera, s.spin, s.width, dt, tank.cameraSpeed)
       view.camera = camera
-      drawTank(ctx, s, view, colorOf, now / 1000)
+      drawTank(ctx, s, view, colorOf, now / 1000, live.current.rim)
+      placePins(pinEls.current, s, view, live.current.pinLayout)
       gooRef.current?.frame(s, events, view, active ? dt * speed : 0)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
@@ -133,15 +163,29 @@ export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom =
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
           integrity: s.integrity, phase: s.phase, holdProgress, machines: machinesNow(s.machines), breaks: { ...breaks } })
       }
+      // "At the stack" messages: where the kit's toasts sit (--kit-toasts-at), a few times a second (they glide there)
+      if (now - toastsAt > messageTuning.stack.updateMs) {
+        toastsAt = now
+        const px = `${Math.round(messagesPoint(s, view, live.current.messagesClearTop))}px`
+        if (px !== toastsAtPx) { toastsAtPx = px; root.style.setProperty('--kit-toasts-at', px) }
+        // and only as wide as the tank (+ the HUD's 16 px), so they never reach the meters beside it (kit
+        // --kit-toasts-start / -end = room kept clear at the screen's left / right edge)
+        const sides = live.current.messagesAtStack ? tankSides(s, view) : null
+        const start = sides ? `${Math.max(0, Math.round(sides[0] - HUD_SIDE_ROOM))}px` : '', end = sides ? `${Math.max(0, Math.round(view.width - sides[1] - HUD_SIDE_ROOM))}px` : ''
+        if (start !== toastsStart) { toastsStart = start; if (start) root.style.setProperty('--kit-toasts-start', start); else root.style.removeProperty('--kit-toasts-start') }
+        if (end !== toastsEnd) { toastsEnd = end; if (end) root.style.setProperty('--kit-toasts-end', end); else root.style.removeProperty('--kit-toasts-end') }
+      }
+      for (const m of messages.step(s, events, now)) live.current.onMessage(m)
       for (const e of events) {
         if (e.type === 'spawn' && softHeld) engine.act({ type: 'softDrop', on: true })
-        if (e.type === 'quotaMet' || e.type === 'rupture') live.current.onAlert(e.type)
         if (e.type === 'end' && !ended) { ended = true; live.current.onEnd(e.status) }
       }
     }
     raf = requestAnimationFrame(frame)
     // dev + tests only: lets a Playwright check reach the engine (fast-forward a shift, read the grid)
-    if (import.meta.env.DEV) (window as unknown as { __goops?: unknown }).__goops = { engine, view, gooStyle, breakMachine: devBreakMachine(engine, breaks) }
+    // (say: show an in-shift message now, e.g. say('brokeLaser') — e2e/hud-shots.mjs checks where it sits)
+    if (import.meta.env.DEV) (window as unknown as { __goops?: unknown }).__goops = { engine, view, gooStyle, breakMachine: devBreakMachine(engine, breaks),
+      say: (key: Message['key'], seconds = 30) => live.current.onMessage({ key, danger: false, seconds }) }
 
     const detach = attachControls(el, {
       spin: (dir) => engine.act({ type: 'spin', dir }),
@@ -161,15 +205,80 @@ export function ShiftStage({ engine, speed, inputOn, reserveTop, reserveBottom =
       },
     }, () => live.current.inputOn && live.current.speed > 0 && s.status === 'playing')
 
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); detach(); document.documentElement.style.removeProperty('--kit-hud-w') }
+    return () => {
+      cancelAnimationFrame(raf); ro.disconnect(); detach()
+      for (const v of ['--kit-hud-w', '--kit-toasts-at', '--kit-toasts-start', '--kit-toasts-end']) root.style.removeProperty(v)
+    }
   }, [engine])
 
   return (
     <div className="stage" ref={host} data-testid="stage">
       <canvas className="stage-layer" ref={tankCanvas} />
       <canvas className="stage-layer" ref={gooCanvas} key={style} data-goo={style} />
+      {/* the tags never catch taps (PinnedBox), so zaps and drags reach the tank under them */}
+      {pins && PINS.map((id) => pins[id] !== undefined && (
+        <div key={id} className="stage-pin" data-tag={id} ref={(el) => { pinEls.current[id] = el }}>
+          <PinnedBox pixelsPerUnit={1} rem={16} anchor={pinAnchor(id, pinLayout)} name={id}>{pins[id]}</PinnedBox>
+        </div>
+      ))}
     </div>
   )
+}
+
+// Which side of a tag sits on its point. PinnedBox's units here are CSS px (pixelsPerUnit 1, 16 per rem): the tags
+// stay at the kit's text size.
+function pinAnchor(id: PinId, layout: 'row' | 'column'): 'left' | 'center' | 'right' {
+  if (id === 'pressure') return 'right'
+  if (layout === 'column') return 'left'
+  return id === 'cracks' ? 'left' : id === 'score' ? 'right' : 'center'
+}
+
+// The visible tank's left and right edges on screen (CSS px)
+function tankSides(s: ShiftState, view: GooView): [number, number] {
+  const left = view.centreX - (pieceScreenColumn(s.visibleWidth) + 0.5) * view.cellPx
+  return [left, left + s.visibleWidth * view.cellPx]
+}
+
+// Move each tag to its point on the tank (CSS translate; only written when it changes).
+function placePins(els: Partial<Record<PinId, HTMLDivElement | null>>, s: ShiftState, view: GooView, layout: 'row' | 'column') {
+  if (!els.pressure && !els.tank && !els.cracks && !els.score) return
+  const cp = view.cellPx, visRows = s.height - s.bufferRows
+  const [left, right] = tankSides(s, view)
+  const top = view.topY, bottom = top + visRows * cp
+  const lineY = top + (s.pressureRow - s.bufferRows) * cp
+  const at: Record<PinId, [number, number]> = {
+    // just above the line's right end, kept inside the tank when the line is at the floor or the top
+    pressure: [right - PIN_GAP, Math.min(bottom - PIN_HALF, Math.max(top + PIN_HALF, lineY - PIN_HALF))],
+    ...(layout === 'row'
+      ? { cracks: [left, bottom + PIN_GAP + PIN_HALF], tank: [(left + right) / 2, bottom + PIN_GAP + PIN_HALF], score: [right, bottom + PIN_GAP + PIN_HALF] }
+      : { cracks: [right + PIN_GAP * 2, bottom - PIN_HALF - 2 * PIN_STEP], tank: [right + PIN_GAP * 2, bottom - PIN_HALF - PIN_STEP], score: [right + PIN_GAP * 2, bottom - PIN_HALF] }),
+  }
+  for (const id of PINS) {
+    const el = els[id]
+    if (!el) continue
+    const t = `${Math.round(at[id][0])}px ${Math.round(at[id][1])}px`
+    if (el.style.translate !== t) el.style.translate = t
+  }
+}
+
+// "At the stack": the screen y (CSS px) where the messages' bottom edge sits — just above the highest goop in the
+// visible columns, kept in the tank's lower part, above its floor, and with the messages' own height below the HUD.
+function messagesPoint(s: ShiftState, view: GooView, clearTop: number) {
+  const st = messageTuning.stack
+  const cp = view.cellPx, visRows = s.height - s.bufferRows
+  const top = view.topY, bottom = top + visRows * cp
+  let highest = s.height // the floor when the visible part is empty
+  for (let y = s.bufferRows; y < s.height && highest === s.height; y++) {
+    for (let k = 0; k < s.visibleWidth; k++) {
+      const x = (((s.spin - pieceScreenColumn(s.visibleWidth) + k) % s.width) + s.width) % s.width
+      if (s.grid[y * s.width + x]) { highest = y; break }
+    }
+  }
+  const want = top + (highest - s.bufferRows - st.gapRows) * cp
+  const stackH = document.querySelector('.kit-toasts')?.getBoundingClientRect().height ?? 0
+  const lo = Math.max(top + st.topShare * visRows * cp, clearTop + stackH + PIN_GAP)
+  const hi = bottom - st.floorGapRows * cp
+  return Math.max(lo, Math.min(hi, want)) // staying clear of the HUD wins on a tiny screen
 }
 
 const MACHINES: MachineId[] = ['laser', 'visor', 'controls']

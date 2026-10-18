@@ -152,12 +152,16 @@ export function TimerRing({ seconds, total, label = 'Time left', warnAt = 5 }: T
 // pops in again whenever the text changes.  size: s | m (default) | l.  tone: accent = highlighted.
 // pop: when the text changes, a quick grow-and-settle instead of the soft entrance — to call attention
 // to a change ("Round 2"). Off with reduce motion, like every animation.
-type HudTextProps = { children: string; detail?: string; size?: 's' | 'm' | 'l'; tone?: 'normal' | 'accent'; pop?: boolean }
-export function HudText({ children, detail, size = 'm', tone = 'normal', pop }: HudTextProps) {
+// live (0.14.1): a reading that changes all the time ("72%", a score tag): it comes in once, then its numbers just
+// change — no entrance on every change (a pressure % re-entering 10 times a second looked faded and flickered — Goops
+// F26), and it isn't read out on every change either.
+type HudTextProps = { children: string; detail?: string; size?: 's' | 'm' | 'l'; tone?: 'normal' | 'accent'; pop?: boolean; live?: boolean }
+export function HudText({ children, detail, size = 'm', tone = 'normal', pop, live }: HudTextProps) {
   const kind = size === 's' ? 'label' : size === 'm' ? 'heading' : 'title'
   return (
-    <div className="kit-hud-text" data-size={size} data-tone={tone === 'accent' ? tone : undefined} data-pop={pop || undefined} aria-live="polite">
-      <Stack key={children} gap="xs">
+    <div className="kit-hud-text" data-size={size} data-tone={tone === 'accent' ? tone : undefined} data-pop={pop || undefined}
+      aria-live={live ? 'off' : 'polite'}>
+      <Stack key={live ? 'live' : children} gap="xs">
         <Text kind={kind}>{children}</Text>
         {detail && <Text kind="label">{detail}</Text>}
       </Stack>

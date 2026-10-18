@@ -4,11 +4,13 @@
 // Mid-shift (F23/F24): swipe up / W / ↑ → the same console slides over the tank while the shift runs on at
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Bar, GameOver, Hud, HudText, kitScreens, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
+import { hudLayout } from '../game/hudLayout'
+import type { Message } from '../game/messages'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
@@ -26,6 +28,17 @@ const HUD_RESERVE = 128 // CSS px kept free above the tank for the HUD: its two 
 const METERS_RESERVE = 60 // CSS px kept free under the tank for the machines' stand-in meters (once one is unlocked; a
 // phone on its side keeps its tank and shows them in a column beside it instead, the HUD reaching this far past it)
 const METERS_SIDE_ROOM = 150
+// F26 test layouts ("Meters (test)", src/game/hudLayout.ts). Hug the tank / Bottom strip keep only ONE row on top (the
+// Console button; + the score in the strip), so the tank grows into the room the top bars and crack line had.
+const TOP_ROW_RESERVE = 68
+const TAGS_RESERVE = 40 // Hug the tank: the row of tags (cracks · tank · score) hanging under the tank
+const STRIP_RESERVE = 76 // Bottom strip: one row (pressure · tank · cracks) at the bottom …
+const STRIP_ROW = 48 // … and a second row when machine meters are unlocked
+const STRIP_SIDE_ROOM = 200 // … a column beside the tank on a phone on its side (the crack line is wider than the meters)
+// A phone on its side, hugging: the Console button sits BESIDE the tank's top-right corner (not above it), so the tank
+// takes the whole height; the HUD column reaches this far past each side of the tank to give the button room
+const HUG_SHORT_TOP = 12
+const HUG_SHORT_SIDE_ROOM = 72
 const MACHINES: MachineId[] = ['laser', 'visor', 'controls']
 const fill = (s: string, vars: Record<string, number | string>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 
@@ -40,10 +53,12 @@ function newEngine(progress: Progress): ShiftEngine {
 }
 
 const SettingsScreen = () => (
-  <Settings schema={settings} onChange={(values) => { gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick) }} />
+  <Settings schema={settings} onChange={(values) => {
+    gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick); hudLayout.setFromSettings(values)
+  }} />
 )
-const onAlert = (kind: 'quotaMet' | 'rupture') =>
-  kind === 'quotaMet' ? toast(text.hud.quotaMetToast) : toast(text.hud.ruptureToast, { variant: 'danger', seconds: 4 })
+// in-shift messages (F26, src/game/messages.ts decides which): kit toasts, where "Messages (test)" puts them
+const onMessage = (m: Message) => toast(text.messages[m.key], { variant: m.danger ? 'danger' : 'neutral', seconds: m.seconds })
 
 // console = on the console · leaving = sliding away to the tank · shift = in the tank (report included) · arriving = sliding back
 // peekIn / peek / peekOut = mid-shift: the console sliding over the running tank / on it / sliding away back to the shift
@@ -57,6 +72,7 @@ export function App() {
   const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward } | null>(null)
   const open = useScreens()
   const short = useShort()
+  const layout = useSyncExternalStore(hudLayout.subscribe, hudLayout.get)
   const engineRef = useRef<ShiftEngine | null>(null)
   const [saved] = useState(loadProgress)
   const [progress, setProgress] = useState(saved) // for the console; progressRef for the handlers
@@ -172,28 +188,54 @@ export function App() {
   const statusText = !hud ? '' : ruptured ? text.hud.rupture
     : quotaMet ? fill(text.hud.cracksDone, { n: hud.cracksSealed, total: hud.cracksNeeded })
     : fill(text.hud.cracks, { n: hud.cracksSealed, total: hud.cracksNeeded })
+  const pressureBar = hud && <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} showLabel />
+  const tankBar = hud && <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} showLabel />
+  const status = <HudText tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>
+
+  // F26 "Meters (test)": where the tank sits and what the HUD shows around it
+  //   top   = today: bars top-left, crack line top-centre, score top-right; machine meters under / beside the tank
+  //   hug   = no top bars: tags on the tank (pressure % on its line, cracks · tank % · score under it — beside it on a
+  //           phone on its side) + the tank's walls glowing with its integrity; machine meters stay where they are
+  //   strip = pressure, tank, cracks + machine meters in one strip under the tank (a column beside it on a phone on its
+  //           side); the score stays top-right beside the Console button
+  const m = layout.meters
+  const reserveTop = m === 'top' ? HUD_RESERVE : m === 'hug' && short ? HUG_SHORT_TOP : TOP_ROW_RESERVE
+  const reserveBottom = m === 'top' ? (meters.length && !short ? METERS_RESERVE : undefined)
+    : m === 'hug' ? (short ? undefined : TAGS_RESERVE + (meters.length ? METERS_RESERVE : 0))
+    : short ? undefined : STRIP_RESERVE + (meters.length ? STRIP_ROW : 0)
+  const sideRoom = !short ? undefined : m === 'strip' ? STRIP_SIDE_ROOM : meters.length ? METERS_SIDE_ROOM : m === 'hug' ? HUG_SHORT_SIDE_ROOM : undefined
+  const tags = m === 'hug' && hud ? {
+    pressure: <HudText size="s" live tone={hud.pressure > 0.8 ? 'accent' : 'normal'}>{fill(text.hud.pressureTag, { n: Math.round(hud.pressure * 100) })}</HudText>,
+    cracks: <HudText size="s" tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>,
+    tank: <HudText size="s" live tone={hud.integrity < 0.3 || ruptured ? 'accent' : 'normal'}>{fill(text.hud.tankTag, { n: Math.round(hud.integrity * 100) })}</HudText>,
+    score: <HudText size="s" live>{fill(text.hud.scoreTag, { n: hud.score })}</HudText>,
+  } : undefined
+  // the strip: the shift's meters in a row, then the machines' row; a column on a phone on its side. Its crack line is
+  // small text (the bars' label size), so pressure · tank · cracks stay on ONE row even on a 360 px phone
+  const stripStatus = <HudText size="s" tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>
+  const strip = m === 'strip' && hud ? (short
+    ? <Stack gap="xs">{pressureBar}{tankBar}{stripStatus}{meterBars}</Stack>
+    : <Stack gap="s"><Row gap="s">{pressureBar}{tankBar}{stripStatus}</Row>{meters.length > 0 && <Row gap="s">{meterBars}</Row>}</Stack>) : undefined
+  const machinesRow = meters.length && !short ? <Row gap="s">{meterBars}</Row> : undefined
+  const machinesColumn = meters.length && short ? <Stack gap="xs">{meterBars}</Stack> : undefined
   return (
     <>
       {engine && mode !== 'console' && (
-        <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length} reserveTop={HUD_RESERVE}
-          reserveBottom={meters.length && !short ? METERS_RESERVE : undefined}
-          hudSideRoom={meters.length && short ? METERS_SIDE_ROOM : undefined} onHud={setHud} onEnd={onEnd} onAlert={onAlert} onConsole={peekIn} />
+        <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length} reserveTop={reserveTop}
+          reserveBottom={reserveBottom} hudSideRoom={sideRoom} rim={m === 'hug'} pins={tags} pinLayout={short ? 'column' : 'row'}
+          messagesAtStack={layout.messages === 'stack'} messagesClearTop={m === 'top' ? HUD_RESERVE : TOP_ROW_RESERVE}
+          onHud={setHud} onEnd={onEnd} onMessage={onMessage} onConsole={peekIn} />
       )}
       {mode === 'shift' && (
         <ScreenStack overlay screens={screenMap}>
           {hud && (
             <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')}
-              vitals={(
-                <Stack gap="s">
-                  <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} showLabel />
-                  <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} showLabel />
-                </Stack>
-              )}
-              status={<HudText tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>}
-              currency={<Score value={hud.score} />}
+              vitals={m === 'top' ? <Stack gap="s">{pressureBar}{tankBar}</Stack> : undefined}
+              status={m === 'top' ? status : undefined}
+              currency={m === 'hug' ? undefined : <Score value={hud.score} />}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
-              actions={meters.length && !short ? <Row gap="s">{meterBars}</Row> : undefined}
-              bottomLeft={meters.length && short ? <Stack gap="xs">{meterBars}</Stack> : undefined} />
+              actions={m === 'strip' && !short ? strip : machinesRow}
+              bottomLeft={m === 'strip' && short ? strip : machinesColumn} />
           )}
         </ScreenStack>
       )}
@@ -205,7 +247,7 @@ export function App() {
             midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined} />
         </ScreenStack>
       )}
-      <ToastStack place="center" />
+      <ToastStack place={layout.messages === 'stack' ? 'at' : 'center'} />
     </>
   )
 }

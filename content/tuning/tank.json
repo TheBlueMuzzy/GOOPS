@@ -18,5 +18,12 @@
   "offscreenArrowAlpha": 0.7,
   "primedColor": "#fff2b3",
   "primedAlpha": 0.7,
-  "primedPulseHz": 3
+  "primedPulseHz": 3,
+  "_rim": "F26 'Hug the tank' layout: the tank's side walls and floor glow with its integrity — rimHealthy at full, blending to rimDanger as it falls; below rimFlickerBelow it flickers rimFlickerHz times a second. rimWidth / rimGlow are shares of a cell.",
+  "rimHealthy": "#3ef2ff",
+  "rimDanger": "#ff3b5c",
+  "rimWidth": 0.12,
+  "rimGlow": 0.6,
+  "rimFlickerBelow": 0.3,
+  "rimFlickerHz": 7
 }

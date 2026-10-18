@@ -1,0 +1,21 @@
+{
+  "_about": "In-shift messages (F26). Words are in content/text/en.json → messages. seconds = how long each kind stays on screen. refusedCooldownSeconds = a refused zap says why at most once per this many seconds (spam-tapping never floods). integrityLowAt = 'Tank weak' shows once when integrity falls below this (0..1), again only after it climbs back above it. pressureHighAt = 'Pressure near max' shows once when pressure reaches this (0..1); it can show again only after pressure drops below pressureHighResetAt. stack = the 'At the stack' layout: the messages' bottom edge sits gapRows rows above the highest goop in view, never higher than topShare of the tank's height down from its top (so it stays in the lower part) and never lower than floorGapRows above the tank floor; the point is updated every updateMs.",
+  "seconds": {
+    "refused": 1.5,
+    "broke": 4,
+    "integrityLow": 3,
+    "pressureHigh": 3,
+    "quotaMet": 3,
+    "rupture": 4
+  },
+  "refusedCooldownSeconds": 2.5,
+  "integrityLowAt": 0.3,
+  "pressureHighAt": 0.85,
+  "pressureHighResetAt": 0.75,
+  "stack": {
+    "gapRows": 0.5,
+    "topShare": 0.33,
+    "floorGapRows": 0.5,
+    "updateMs": 150
+  }
+}

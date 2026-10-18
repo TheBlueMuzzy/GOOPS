@@ -54,11 +54,24 @@
     "swap": "Swapping piece",
     "integrity": "Tank",
     "rupture": "Rupture!",
-    "quotaMetToast": "Quota met. Every crack now is a bonus.",
-    "ruptureToast": "The tank ruptured. Pressure is draining.",
     "laser": "Laser",
     "visor": "Signal",
-    "controls": "Heat"
+    "controls": "Heat",
+    "pressureTag": "{n}%",
+    "tankTag": "Tank {n}%",
+    "scoreTag": "Score {n}"
+  },
+  "messages": {
+    "refusedAboveLine": "Above the pressure line",
+    "refusedFilling": "Still filling",
+    "brokeLaser": "Laser broken — swipe up to fix",
+    "brokeVisor": "Visor broken — swipe up to fix",
+    "brokeControls": "Controls broken — swipe up to fix",
+    "integrityLow": "Tank weak — seal the cracks!",
+    "pressureHigh": "Pressure near max — zap goop!",
+    "quotaMet": "Quota met! Every crack now is a bonus.",
+    "ruptureCracks": "Rupture! Too many open cracks",
+    "ruptureOverflow": "Rupture! The tank overflowed"
   },
   "pause": {
     "title": "Console",

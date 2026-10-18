@@ -188,6 +188,29 @@
           "default": "Rotate vat"
         },
         {
+          "id": "metersTest",
+          "type": "selector",
+          "label": "Meters (test)",
+          "detail": "Where pressure, tank and cracks show: at the top, on the tank itself, or in a strip under it.",
+          "options": [
+            "Top",
+            "Hug the tank",
+            "Bottom strip"
+          ],
+          "default": "Top"
+        },
+        {
+          "id": "messagesTest",
+          "type": "selector",
+          "label": "Messages (test)",
+          "detail": "Where messages pop up: the middle of the screen, or just above the goop.",
+          "options": [
+            "Centre",
+            "At the stack"
+          ],
+          "default": "Centre"
+        },
+        {
           "id": "difficulty",
           "type": "selector",
           "label": "Difficulty",
