@@ -353,3 +353,36 @@
 @keyframes kit-attention { 0% { transform: scale(1); } 35% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @keyframes kit-blink { 0%, 24%, 50%, 74% { opacity: 0; } 25%, 49%, 75%, 100% { opacity: 1; } }
 @keyframes kit-flicker { 0% { opacity: 0; } 10% { opacity: 0.8; } 20% { opacity: 0.1; } 35% { opacity: 1; } 45% { opacity: 0.3; } 60%, 100% { opacity: 1; } }
+
+/* ───────────── Screen column · swipe · slide (0.12.0) ───────────── */
+@layer kit-base {
+  /* <Screen column>: a phone-shaped game on a wide window — the slots sit in a centred column a phone's width
+     (9:16 of the window's height, at least 22.5rem; or --kit-column-w), while the backdrop covers the whole window */
+  .kit-screen[data-column] {
+    padding-inline-start: max(var(--gap-m), env(safe-area-inset-left), calc((100% - var(--kit-column-w, max(22.5rem, 100dvh * 9 / 16))) / 2 + var(--gap-m)));
+    padding-inline-end: max(var(--gap-m), env(safe-area-inset-right), calc((100% - var(--kit-column-w, max(22.5rem, 100dvh * 9 / 16))) / 2 + var(--gap-m)));
+  }
+  /* Short windows (a phone on its side): the whole width; the bottom-centre slot (a title) moves left of the centre,
+     so the centre keeps the window's height */
+  @media (max-height: 30rem) {
+    .kit-screen[data-column] {
+      padding-inline-start: max(var(--gap-m), env(safe-area-inset-left)); padding-inline-end: max(var(--gap-m), env(safe-area-inset-right));
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+      grid-template-areas: "top-left center top-right" "bottom center ." "bottom-left center bottom-right";
+    }
+    .kit-screen[data-column] > [data-slot="bottom"] { place-self: center; }
+  }
+  /* <Screen swipe>: the whole screen catches the swipe, not just its slots */
+  .kit-screen[data-swipe] { pointer-events: auto; }
+  .kit-screen[data-slide-edge="bottom"] { --kit-slide-off: translateY(100%); }
+  .kit-screen[data-slide-edge="top"] { --kit-slide-off: translateY(-100%); }
+  .kit-screen[data-slide-edge="left"] { --kit-slide-off: translateX(-100%); }
+  .kit-screen[data-slide-edge="right"] { --kit-slide-off: translateX(100%); }
+}
+@layer kit-style {
+  /* <Screen slide>: in from its edge / out to it, at the style's normal pace (out stays out until the game removes it) */
+  .kit-screen[data-slide="in"] { animation: kit-slide-in var(--motion-normal) var(--ease) both; }
+  .kit-screen[data-slide="out"] { animation: kit-slide-out var(--motion-normal) var(--ease) both; }
+}
+@keyframes kit-slide-in { from { transform: var(--kit-slide-off); } }
+@keyframes kit-slide-out { to { transform: var(--kit-slide-off); } }

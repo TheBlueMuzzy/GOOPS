@@ -1,7 +1,7 @@
 // Ranks + XP (F20) and the save.
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
-import { freshProgress, rankInfo, rewardShift, xpToNext } from '../src/progress/progression'
+import { freshProgress, meterSteps, rankInfo, rewardShift, xpToNext } from '../src/progress/progression'
 import { loadProgress, saveProgress } from '../src/progress/save'
 
 // sum of every rank's XP up to (not including) rank n
@@ -66,5 +66,30 @@ describe('save', () => {
       expect(loadProgress(s)).toEqual(freshProgress())
     }
     expect(loadProgress(null)).toEqual(freshProgress())
+  })
+})
+
+describe('rank meter steps (F21: the console meter fills with the XP since it last showed)', () => {
+  const p = (totalXp: number) => ({ totalXp, scrapsSpent: 0 })
+  it('inside one rank: one step', () => {
+    expect(meterSteps(p(100), p(1100))).toEqual([{ level: 0, from: 100, to: 1100, max: 3500 }])
+  })
+  it('across ranks (several shifts or a big one): one step per rank, ending where the progress is', () => {
+    const steps = meterSteps(p(3000), p(3500 + 3750 + 200))
+    expect(steps).toEqual([
+      { level: 0, from: 3000, to: 3500, max: 3500 },
+      { level: 1, from: 0, to: 3750, max: 3750 },
+      { level: 2, from: 0, to: 200, max: 4000 },
+    ])
+    const last = steps[steps.length - 1], now = rankInfo(p(3500 + 3750 + 200))
+    expect([last.level, last.to, last.max]).toEqual([now.rank, now.xpIntoRank, now.xpToNext])
+  })
+  it('ending exactly on a rank-up still shows the new rank (an empty bar)', () => {
+    expect(meterSteps(p(3000), p(3500))).toEqual([{ level: 0, from: 3000, to: 3500, max: 3500 }, { level: 1, from: 0, to: 0, max: 3750 }])
+  })
+  it('no XP gained: no steps; the top rank: stops', () => {
+    expect(meterSteps(p(500), p(500))).toEqual([])
+    const top = 481250
+    expect(meterSteps(p(top), p(top + 5000))).toEqual([])
   })
 })

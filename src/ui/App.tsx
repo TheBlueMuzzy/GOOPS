@@ -1,6 +1,8 @@
-// The game's screens. Console-lite (a plain menu) stands in for the real console-as-menu until that's designed.
-import { useCallback, useMemo, useRef, useState } from 'react'
-import { Bar, GameOver, Hud, HudText, MainMenu, Pause, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, toasts, useScreens } from './kit'
+// The game's screens. A working day (F21): the game opens on the console (Muzzy's art) → pull the periscope down → the
+// console slides away to the tank and the shift starts → the end report → swipe up (or "Back to the console") → the
+// console slides back up and its rank meter fills with the XP. "Next shift" on the report starts the next one straight away.
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Bar, GameOver, Hud, HudText, Pause, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type ShiftEngine, type ShiftStatus } from '../engine'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
@@ -8,6 +10,7 @@ import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
+import { Console } from './Console'
 import { art } from './art'
 import shiftConfig from '../../content/tuning/shift.json'
 import settingsJson from '../../content/ui/settings.json'
@@ -33,26 +36,49 @@ const SettingsScreen = () => (
 const onAlert = (kind: 'quotaMet' | 'rupture') =>
   kind === 'quotaMet' ? toast(text.hud.quotaMetToast) : toast(text.hud.ruptureToast, { variant: 'danger', seconds: 4 })
 
+// console = on the console · leaving = sliding away to the tank · shift = in the tank (report included) · arriving = sliding back
+type Mode = 'console' | 'leaving' | 'shift' | 'arriving'
+
 export function App() {
+  const [mode, setMode] = useState<Mode>('console')
   const [engine, setEngine] = useState<ShiftEngine | null>(null)
   const [hud, setHud] = useState<HudSnapshot | null>(null)
   const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward } | null>(null)
   const open = useScreens()
   const engineRef = useRef<ShiftEngine | null>(null)
-  const progressRef = useRef<Progress>(loadProgress())
+  const [saved] = useState(loadProgress)
+  const [progress, setProgress] = useState(saved) // for the console; progressRef for the handlers
+  const progressRef = useRef<Progress>(saved)
+  // the console's meter: the progress it showed when it was last on screen, so coming back it fills from there
+  const meterShown = useRef<Progress>(saved)
+  const [meterFrom, setMeterFrom] = useState<Progress | null>(null)
+  const modeRef = useRef(mode)
+  useEffect(() => { modeRef.current = mode }, [mode])
 
   const start = useCallback(() => {
     const e = newEngine(progressRef.current)
     engineRef.current = e
     setResult(null); setHud(null); setEngine(e)
   }, [])
-  const toMenu = useCallback(() => { while (screens.current.length) screens.pop(); engineRef.current = null; setEngine(null); setResult(null) }, [])
+  // the periscope is down: the shift is made (paused) under the console, which slides away to show it
+  const leaveConsole = useCallback(() => { start(); setMeterFrom(null); setMode('leaving') }, [start])
+  // back to the console (swipe up / "Back to the console" / End shift): it slides up over the tank, the meter fills
+  const toConsole = useCallback(() => {
+    while (screens.current.length) screens.pop()
+    toasts.current.forEach((t) => toasts.dismiss(t.id))
+    setMeterFrom(meterShown.current)
+    meterShown.current = progressRef.current
+    setMode('arriving')
+  }, [])
+  // (the last shift's engine stays in state on the console, unmounted; the next pull replaces it)
+  const consoleSlid = useCallback(() => setMode((m) => (m === 'leaving' ? 'shift' : m === 'arriving' ? 'console' : m)), [])
   const onEnd = useCallback((status: ShiftStatus) => {
     const e = engineRef.current
     if (!e) return
     // the final score (after the leftover penalty) becomes XP — saved right away
     const reward = rewardShift(progressRef.current, e.state.score)
     progressRef.current = reward.progress
+    setProgress(reward.progress)
     saveProgress(reward.progress)
     setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
       cause: e.state.ruptureReason ?? 'integrity', reward })
@@ -63,28 +89,23 @@ export function App() {
   const screenMap = useMemo(() => ({
     settings: SettingsScreen,
     pause: () => (
-      <Pause words={text.pause} onSettings={() => screens.push('settings')} onQuit={toMenu} />
+      <Pause words={text.pause} onSettings={() => screens.push('settings')} onQuit={toConsole} />
     ),
-    end: () => result && (result.status === 'won'
-      ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again }} message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
-          frame={art.end.frame} art={{ continue: art.end.again }}
-          stats={[{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]}
-          onContinue={() => { screens.pop(); start() }} />
-      : <GameOver words={{ title: text.end.lostTitle, retry: text.end.again, quit: text.end.quit }} message={result.cause === 'overflow' ? text.end.lostOverflow : text.end.lostCracks}
-          frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }}
-          stats={[{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]}
-          onRetry={() => { screens.pop(); start() }} onQuit={toMenu} />),
-  }), [result, start, toMenu])
-
-  if (!engine) {
-    return (
-      <ScreenStack screens={{ settings: SettingsScreen }}>
-        <MainMenu title={text.menu.title} subtitle={text.menu.subtitle} titleArt={art.menu.title} backdrop={art.menu.backdrop}
-          items={[{ label: text.menu.start, onClick: start, primary: true, art: art.menu.start },
-            { label: text.menu.settings, onClick: () => screens.push('settings'), art: art.menu.settings }]} />
-      </ScreenStack>
-    )
-  }
+    end: () => {
+      if (!result) return null
+      const stats = [{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }]
+      const again = () => { screens.pop(); start() }
+      return result.status === 'won'
+        ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
+            message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
+            frame={art.end.frame} art={{ continue: art.end.again, quit: art.end.quit }} stats={stats}
+            onContinue={again} onQuit={toConsole} onSwipeUp={toConsole} />
+        : <GameOver words={{ title: text.end.lostTitle, retry: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
+            message={result.cause === 'overflow' ? text.end.lostOverflow : text.end.lostCracks}
+            frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={stats}
+            onRetry={again} onQuit={toConsole} onSwipeUp={toConsole} />
+    },
+  }), [result, start, toConsole])
 
   const quotaMet = hud && hud.cracksSealed >= hud.cracksNeeded
   const ruptured = hud?.phase === 'rupture'
@@ -93,22 +114,32 @@ export function App() {
     : fill(text.hud.cracks, { n: hud.cracksSealed, total: hud.cracksNeeded })
   return (
     <>
-      <ShiftStage engine={engine} paused={open.length > 0} reserveTop={HUD_RESERVE} onHud={setHud} onEnd={onEnd} onAlert={onAlert}
-        onConsole={() => { if (!screens.current.length) screens.push('pause') }} />
-      <ScreenStack overlay screens={screenMap}>
-        {hud && (
-          <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')}
-            vitals={(
-              <Stack gap="s">
-                <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} showLabel />
-                <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} showLabel />
-              </Stack>
-            )}
-            status={<HudText tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>}
-            currency={<Score value={hud.score} />}
-            banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined} />
-        )}
-      </ScreenStack>
+      {engine && mode !== 'console' && (
+        <ShiftStage engine={engine} paused={mode !== 'shift' || open.length > 0} reserveTop={HUD_RESERVE} onHud={setHud} onEnd={onEnd} onAlert={onAlert}
+          onConsole={() => { if (modeRef.current === 'shift' && !screens.current.length) screens.push('pause') }} />
+      )}
+      {mode === 'shift' && (
+        <ScreenStack overlay screens={screenMap}>
+          {hud && (
+            <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')}
+              vitals={(
+                <Stack gap="s">
+                  <Bar label={text.hud.pressure} value={Math.round(hud.pressure * 100)} variant={hud.pressure > 0.8 ? 'danger' : 'primary'} showLabel />
+                  <Bar label={text.hud.integrity} value={Math.round(hud.integrity * 100)} variant={hud.integrity < 0.3 || ruptured ? 'danger' : 'accent'} showLabel />
+                </Stack>
+              )}
+              status={<HudText tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>}
+              currency={<Score value={hud.score} />}
+              banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined} />
+          )}
+        </ScreenStack>
+      )}
+      {mode !== 'shift' && (
+        <ScreenStack screens={{ settings: SettingsScreen }}>
+          <Console progress={progress} shownFrom={meterFrom} phase={mode === 'console' ? 'idle' : mode}
+            onPull={leaveConsole} onSlideEnd={consoleSlid} onSettings={() => screens.push('settings')} />
+        </ScreenStack>
+      )}
       <ToastStack place="center" />
     </>
   )

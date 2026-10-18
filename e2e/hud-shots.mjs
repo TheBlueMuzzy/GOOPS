@@ -1,6 +1,7 @@
 // HUD screenshots: pressure + tank bars, quota met, a real rupture (its toast + status). Port 5254.
 // Run: node e2e/hud-shots.mjs → e2e-shots/hud/
 import { chromium } from 'playwright-core'
+import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 
@@ -20,8 +21,7 @@ try {
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
     await page.goto(`http://localhost:${PORT}/?seed=7`)
-    await page.getByRole('button', { name: 'Start shift' }).click()
-    await page.waitForTimeout(400)
+    await startShift(page)
     // a few pieces + some cracks open (nobody seals) → integrity falling
     await page.evaluate(() => { const { engine } = window.__goops
       for (let i = 0; i < 10; i++) { for (let k = 0; k < (i * 5) % 7; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'softDrop', on: true }); engine.tick(2500) } })

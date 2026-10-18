@@ -1,9 +1,11 @@
-// F19 screenshots: Muzzy's art on the start screen and the end-of-shift report, at every screen size.
+// F19 screenshots: Muzzy's art on the console (the main menu since F21) and the end-of-shift report, at every screen size.
 // Uses Playwright's own Chromium (never the user's Chrome). Starts its own dev server on port 5262 and stops it.
-// Run: node e2e/art-shots.mjs → e2e-shots/art/<size>-1-menu.png, -1b-settings.png + -2-pressed.png (390 wide), -3-end.png
+// Run: node e2e/art-shots.mjs → e2e-shots/art/<size>-1-menu.png, -1b-settings.png (390 wide), -3-end.png
+// (the console itself is checked closely by e2e/console-shots.mjs)
 // Checks per shot: no sideways overflow, every art picture drawn at its own shape (not stretched),
 // the end report not scrolling inside its frame, and no console errors.
 import { chromium } from 'playwright-core'
+import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
 
@@ -51,27 +53,15 @@ try {
     await page.waitForTimeout(700)
     await page.screenshot({ path: `${OUT}/${name}-1-menu.png` })
     const menuProblems = await page.evaluate(problems)
-    if (w === 390) { // Settings over the art menu still opens on top, then Back
+    if (w === 390) { // Settings over the console still opens on top, then Back
       await page.getByRole('button', { name: 'Settings' }).click()
       await page.waitForTimeout(600)
       await page.screenshot({ path: `${OUT}/${name}-1b-settings.png` })
       await page.keyboard.press('Escape')
       await page.waitForTimeout(400)
     }
-    const startButton = page.getByRole('button', { name: 'Start shift' })
-    if (w === 390) { // hold Start: the pushed-in picture shows
-      const box = await startButton.boundingBox()
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-      await page.mouse.down()
-      await page.waitForTimeout(150)
-      await page.screenshot({ path: `${OUT}/${name}-2-pressed.png` })
-      const downShows = await page.evaluate(() => getComputedStyle(document.querySelector('.kit-art-down')).visibility === 'visible')
-      if (!downShows) menuProblems.push('Start held, but its down picture is not showing')
-      await page.mouse.up()
-    } else {
-      await startButton.click()
-    }
-    await page.waitForTimeout(600)
+    await startShift(page)
+    await page.waitForTimeout(300)
     // fast-forward to the end of the shift through the dev hook (the engine is changing in parallel, so keep ticking)
     let ticks = 0
     for (; ticks < 60; ticks++) {
@@ -82,6 +72,17 @@ try {
     await page.waitForTimeout(900) // entrance animation
     await page.screenshot({ path: `${OUT}/${name}-3-end.png` })
     const endShown = await page.getByText(/Shift (complete|failed)/).count()
+    if (w === 390) { // hold Next shift on the report: its pushed-in picture shows
+      const box = await page.getByRole('button', { name: 'Next shift' }).boundingBox()
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await page.mouse.down()
+      await page.waitForTimeout(150)
+      await page.screenshot({ path: `${OUT}/${name}-2-pressed.png` })
+      const downShows = await page.evaluate(() => getComputedStyle(document.querySelector('.kit-art-down')).visibility === 'visible')
+      if (!downShows) menuProblems.push('Next shift held, but its down picture is not showing')
+      await page.mouse.move(w - 2, box.y + box.height / 2) // slide off sideways: no press (and not a swipe up)
+      await page.mouse.up()
+    }
     const endProblems = await page.evaluate(problems)
     const all = [...menuProblems.map((p) => `menu: ${p}`), ...endProblems.map((p) => `end: ${p}`), ...errors.map((e) => `error: ${e}`)]
     if (!endShown) all.push(`end screen did not show after ${ticks} ticks`)
