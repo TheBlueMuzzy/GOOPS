@@ -39,7 +39,7 @@ try {
     // fast-forward most of the shift through the dev hook, dropping pieces as it goes
     await page.evaluate(async () => {
       const { engine } = window.__goops
-      for (let i = 0; i < 30; i++) { for (let k = 0; k < (i * 7) % 11; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'hardDrop' }); engine.tick(900) }
+      for (let i = 0; i < 30; i++) { for (let k = 0; k < (i * 7) % 11; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'softDrop', on: true }); engine.tick(2500) }
     })
     await page.waitForTimeout(800)
     await page.screenshot({ path: `${OUT}/${name}-3-busy-jelly.png` })
@@ -52,7 +52,7 @@ try {
     await page.screenshot({ path: `${OUT}/${name}-3-busy-particle.png` })
     await page.evaluate(() => window.__goops.gooStyle.setFromSetting('Jelly'))
     const state = await page.evaluate(() => { const s = window.__goops.engine.state; return { pressure: s.pressure, score: s.score, status: s.status } })
-    await page.evaluate(() => { window.__goops.engine.tick(120000) })
+    await page.evaluate(() => { const e = window.__goops.engine; for (let t = 0; t < 600000 && e.state.status === 'playing'; t += 1000) e.tick(1000) }) // to the rupture and the end
     await page.waitForTimeout(1200)
     await page.screenshot({ path: `${OUT}/${name}-4-end.png` })
     const endShown = await page.getByText(/Shift (complete|failed)/).count()

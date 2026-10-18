@@ -1,15 +1,10 @@
 // The shift's rules, one at a time.
 import { describe, expect, it } from 'vitest'
 import { createShift } from '../../src/engine'
-import type { ShiftEngine } from '../../src/engine'
-import { idx, ofType, oneShapeConfig, realConfig, tank } from './helpers'
+import type { ShiftAction, ShiftEngine } from '../../src/engine'
+import { dropPiece, idx, ofType, oneShapeConfig, realConfig, tank, tickUntil } from './helpers'
 
 const SQUARE = [[0, 0], [0, 1], [1, 0], [1, 1]]
-
-// Tick in small steps until `done` or the time runs out.
-function tickUntil(shift: ShiftEngine, done: () => boolean, maxMs = 60000, stepMs = 10): void {
-  for (let t = 0; t < maxMs && !done(); t += stepMs) shift.tick(stepMs)
-}
 
 const lowestRow = (shift: ShiftEngine) => Math.max(...shift.state.piece!.cells.map(([, y]) => y))
 
@@ -44,7 +39,7 @@ describe('spawn and spin', () => {
   })
 })
 
-describe('falling, soft drop, hard drop', () => {
+describe('falling and soft drop (no hard drop)', () => {
   it('falls one row per 780 ms, 8x faster with soft drop', () => {
     const config = realConfig()
     const slow = createShift(oneShapeConfig([[0, 0]], { msPerRow: config.fall.msPerRow }), { seed: 1, rank: 0 })
@@ -56,13 +51,22 @@ describe('falling, soft drop, hard drop', () => {
     expect(lowestRow(fast)).toBeGreaterThanOrEqual(15) // 97.5 ms per row → ~16 rows in 1.56 s
   })
 
-  it('hard drop lands on the ghost at once', () => {
-    const shift = createShift(oneShapeConfig(SQUARE), { seed: 1, rank: 0, startGrid: tank(['2'], 1) })
+  it('the piece lands on its ghost', () => {
+    const config = oneShapeConfig(SQUARE)
+    const shift = createShift(config, { seed: 1, rank: 0, startGrid: tank(['2'], 1) })
     const ghost = shift.state.ghost
     expect(Math.max(...ghost.map(([, y]) => y))).toBe(22)
-    shift.act({ type: 'hardDrop' })
+    dropPiece(shift, config)
     for (const [x, y] of ghost) expect(shift.state.grid[idx(x, y)]).toBe(1)
-    expect(ofType(shift.takeEvents(), 'drop')[0].rows).toBe(21)
+  })
+
+  it('there is no hard drop: the action does nothing and the config has no hard-drop score', () => {
+    const shift = createShift(oneShapeConfig(SQUARE), { seed: 1, rank: 0 })
+    const before = shift.state.piece!.cells
+    shift.act({ type: 'hardDrop' } as unknown as ShiftAction)
+    expect(shift.state.piece!.cells).toEqual(before)
+    expect(ofType(shift.takeEvents(), 'lock')).toHaveLength(0)
+    expect('hardDropPerRow' in realConfig().score).toBe(false)
   })
 })
 
@@ -111,18 +115,54 @@ describe('rotation', () => {
     expect(shift.state.piece!.rotation).toBe(0)
   })
 
-  it('kicks sideways when the turn is blocked (and that moves the piece in the tank)', () => {
-    // An upright bar at column 0 next to a wall in column 29 (the left neighbour across the seam).
+})
+
+describe('wall kick modes', () => {
+  // An upright bar at column 0 next to a wall in column 29 (the left neighbour across the seam):
+  // turning it flat is blocked, so it needs a sideways kick.
+  const blockedTurn = (wallKick?: 'rotateVat' | 'shuntPiece') => {
+    const grid = new Uint8Array(30 * 24)
+    for (let y = 0; y < 24; y++) grid[idx(29, y)] = 2
+    const shift = createShift(oneShapeConfig([[0, -1], [0, 0], [0, 1], [0, 2]]), { seed: 1, rank: 0, startGrid: grid, wallKick })
+    shift.tick(1)
+    shift.takeEvents()
+    shift.act({ type: 'rotate', dir: 1 })
+    return { shift, events: shift.takeEvents() }
+  }
+
+  it('shuntPiece (v1): the piece slides over in the tank; the tank does not turn', () => {
+    const { shift, events } = blockedTurn('shuntPiece')
+    expect(ofType(events, 'rotate')).toHaveLength(1)
+    expect(ofType(events, 'move')).toHaveLength(1)
+    expect(ofType(events, 'spin')).toHaveLength(0)
+    expect(shift.state.spin).toBe(0)
+    for (const [x, y] of shift.state.piece!.cells) if (y >= 0) expect(shift.state.grid[idx(x, y)]).toBe(0)
+  })
+
+  it('rotateVat (default): the tank turns by the kick instead, and the piece lands in the same tank cells', () => {
+    const shunt = blockedTurn('shuntPiece')
+    const kick = ofType(shunt.events, 'move')[0].dx
+    const { shift, events } = blockedTurn() // default mode
+    expect(ofType(events, 'rotate')).toHaveLength(1)
+    expect(ofType(events, 'move')).toHaveLength(0)
+    expect(ofType(events, 'spin')).toEqual([{ type: 'spin', dx: kick }]) // same event as a player spin
+    expect(shift.state.spin).toBe((kick + 30) % 30)
+    expect(shift.state.piece!.cells).toEqual(shunt.shift.state.piece!.cells)
+    // The piece is still on the centre line, so the next player spin moves it through the tank like any centred piece.
+    shift.act({ type: 'spin', dir: 1 })
+    expect(shift.state.piece!.cells.map(([x]) => x)).toEqual(shunt.shift.state.piece!.cells.map(([x]) => (x + 1) % 30))
+  })
+
+  it('can be switched mid-shift with setWallKick', () => {
     const grid = new Uint8Array(30 * 24)
     for (let y = 0; y < 24; y++) grid[idx(29, y)] = 2
     const shift = createShift(oneShapeConfig([[0, -1], [0, 0], [0, 1], [0, 2]]), { seed: 1, rank: 0, startGrid: grid })
     shift.tick(1)
+    shift.setWallKick('shuntPiece')
     shift.takeEvents()
     shift.act({ type: 'rotate', dir: 1 })
-    const events = shift.takeEvents()
-    expect(ofType(events, 'rotate')).toHaveLength(1)
-    expect(ofType(events, 'move')).toHaveLength(1)
-    for (const [x, y] of shift.state.piece!.cells) if (y >= 0) expect(shift.state.grid[idx(x, y)]).toBe(0)
+    expect(ofType(shift.takeEvents(), 'move')).toHaveLength(1)
+    expect(shift.state.spin).toBe(0)
   })
 })
 
@@ -157,7 +197,9 @@ describe('fill and pop', () => {
   it('only goop at or below the pressure line can pop', () => {
     // Colour 1 on top of a colour-2 column: its top row (10) is far above the line at the start.
     const rows = ['1', ...Array(13).fill('2')]
-    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(rows, 5) })
+    const config = oneShapeConfig([[0, 0]])
+    config.integrity.drainPerCrackPerSec = 0 // no rupture while we wait for the line
+    const shift = createShift(config, { seed: 1, rank: 0, startGrid: tank(rows, 5) })
     shift.tick(1000)
     const top = shift.state.groups.get(shift.state.groupOf[idx(5, 10)])!
     expect(top.fill).toBe(1)
@@ -171,14 +213,12 @@ describe('fill and pop', () => {
     expect(ofType(shift.takeEvents(), 'pop')).toHaveLength(1)
   })
 
-  it('popping gives time back (0.1 s per cell) and scores like v1', () => {
+  it('popping vents pressure (v1 refund: 0.1 s of rise per cell) and scores like v1', () => {
     const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(['11.......11'], 3) })
     shift.tick(2000)
-    const timeBefore = shift.state.timeLeftMs
     const pressureBefore = shift.state.pressure
     shift.act({ type: 'pop', x: 3, y: 23 }) // on screen: (10 + 1×10) × 1.1 combo = 22 per cell
-    expect(shift.state.timeLeftMs).toBe(timeBefore + 200)
-    expect(shift.state.pressure).toBeLessThan(pressureBefore)
+    expect(shift.state.pressure).toBeCloseTo(pressureBefore - 200 / 75000, 10)
     expect(shift.state.score).toBe(44)
     shift.act({ type: 'pop', x: 12, y: 23 }) // columns 12-13 are off screen (+50) and it's the 2nd pop (×1.2)
     expect(shift.state.score).toBe(44 + Math.floor(2 * (10 + 10 + 50) * 1.2))
@@ -195,78 +235,28 @@ describe('fill and pop', () => {
   })
 })
 
-describe('cracks', () => {
-  // One colour, so the crack, the pieces and the goop all match. A colour-2 floor two rows deep.
-  const setup = () => {
+describe('plugging and sealing', () => {
+  it('matching goop plugs a crack; popping it seals the crack and vents 0.1 s + 3 s of rise', () => {
+    // One colour, so the crack, the pieces and the goop all match. A colour-2 floor two rows deep.
     const floor = '2'.repeat(30)
-    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 4, rank: 0, startGrid: tank([floor, floor]) })
-    tickUntil(shift, () => shift.state.cracks.length > 0, 6000)
-    return shift
-  }
-
-  it('a crack appears every 5 s on the pressure row, one per colour', () => {
-    const shift = setup()
-    expect(shift.state.cracks).toHaveLength(1)
+    const config = oneShapeConfig([[0, 0]])
+    const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([floor, floor]) })
+    tickUntil(shift, () => shift.state.cracks.length > 0)
     const crack = shift.state.cracks[0]
-    expect(crack.y).toBe(21) // 23 - 5 s/75 s × 20 = 21.67 → row 21
-    expect(crack.color).toBe(1)
-    shift.tick(6000)
-    expect(shift.state.cracks).toHaveLength(1) // no free colour left
-  })
-
-  it('matching goop plugs a crack; popping it seals the crack and gives 3 s back', () => {
-    const shift = setup()
-    const crack = shift.state.cracks[0]
+    expect(crack.y).toBe(21) // right on the floor (the only empty row at/below the line)
     while (shift.state.spin !== crack.x) shift.act({ type: 'spin', dir: 1 })
     shift.takeEvents()
-    shift.act({ type: 'hardDrop' })
-    expect(ofType(shift.takeEvents(), 'plug')).toEqual([{ type: 'plug', crackId: crack.id, plugged: true }])
+    expect(ofType(dropPiece(shift, config), 'plug')).toEqual([{ type: 'plug', crackId: crack.id, plugged: true }])
     expect(shift.state.cracks[0].plugged).toBe(true)
 
-    // Wait for the line to reach row 21 (pressure 10% = 7.5 s), then pop.
     tickUntil(shift, () => shift.state.groups.get(shift.state.groupOf[idx(crack.x, 21)])!.ready)
-    const before = shift.state.timeLeftMs
+    const before = shift.state.pressure
     shift.act({ type: 'pop', x: crack.x, y: 21 })
     const pop = ofType(shift.takeEvents(), 'pop')[0]
     expect(pop.sealed).toEqual([crack.id])
     expect(shift.state.cracksSealed).toBe(1)
-    expect(shift.state.timeLeftMs).toBe(before + 100 + 3000)
-  })
-
-  it('reaching the goal does not end the shift; it ends at 100% pressure as a win (with a win burst)', () => {
-    const shift = setup()
-    expect(shift.state.cracksNeeded).toBe(1)
-    const crack = shift.state.cracks[0]
-    while (shift.state.spin !== crack.x) shift.act({ type: 'spin', dir: 1 })
-    shift.act({ type: 'hardDrop' })
-    tickUntil(shift, () => shift.state.groups.get(shift.state.groupOf[idx(crack.x, 21)])!.ready)
-    shift.takeEvents()
-    shift.act({ type: 'pop', x: crack.x, y: 21 })
-    expect(shift.state.status).toBe('playing')
-    expect(ofType(shift.takeEvents(), 'crack').length).toBeGreaterThan(0) // the burst, above the line
-    for (const c of shift.state.cracks) expect(c.y).toBeLessThan(21)
-    tickUntil(shift, () => shift.state.status !== 'playing', 200000, 100)
-    expect(shift.state.status).toBe('won')
-    expect(shift.state.pressure).toBe(1)
+    expect(shift.state.cracks).toHaveLength(0)
+    expect(shift.state.pressure).toBeCloseTo(before - (100 + 3000) / 75000, 10)
   })
 })
 
-describe('shift end', () => {
-  it('ends lost at 100% pressure without enough seals, minus 50 per leftover cell', () => {
-    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(['1'], 5) })
-    shift.tick(75000)
-    expect(shift.state.status).toBe('lost')
-    expect(shift.state.leftoverPenalty).toBe(50)
-    expect(ofType(shift.takeEvents(), 'end')).toEqual([{ type: 'end', status: 'lost' }])
-    shift.act({ type: 'spin', dir: 1 }) // nothing happens after the end
-    expect(shift.state.spin).toBe(0)
-  })
-
-  it('ends at once when a new piece cannot spawn (tank full to the top)', () => {
-    const grid = new Uint8Array(30 * 24)
-    for (let y = 0; y < 24; y++) grid[idx(0, y)] = 2
-    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: grid })
-    expect(shift.state.status).toBe('lost')
-    expect(shift.state.piece).toBe(null)
-  })
-})

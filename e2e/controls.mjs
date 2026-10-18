@@ -39,7 +39,7 @@ try {
   // build some goop, wait for a ready group at/below the line, then tap it on screen
   const target = await get(() => {
     const { engine } = window.__goops
-    for (let i = 0; i < 6; i++) { engine.act({ type: 'hardDrop' }); engine.tick(50) }
+    for (let i = 0; i < 6; i++) { engine.act({ type: 'softDrop', on: true }); engine.tick(2500) } // fast-drop each piece to the floor
     for (let t = 0; t < 400; t++) {
       engine.tick(50)
       const s = engine.state

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { type Cell, collides, landingRow, mirror, placeCells, rotateCells, rotationCenter } from '../../src/engine/pieces'
 import { shapeSet } from '../../src/engine/config'
 import { createShift } from '../../src/engine'
-import { oneShapeConfig, realConfig, tank } from './helpers'
+import { dropPiece, oneShapeConfig, realConfig, tank } from './helpers'
 
 const W = 30
 const H = 24
@@ -80,10 +80,11 @@ describe('every v1 shape, every rotation, across the seam', () => {
   for (const shape of shapes) {
     it(`${shape.name} lands inside the tank at column 29 in all 4 rotations`, () => {
       for (let turns = 0; turns < 4; turns++) {
-        const shift = createShift(oneShapeConfig(shape.cells, { noRotate: shape.noRotate }), { seed: 1, rank: 0 })
+        const config = oneShapeConfig(shape.cells, { noRotate: shape.noRotate })
+        const shift = createShift(config, { seed: 1, rank: 0 })
         shift.act({ type: 'spin', dir: -1 }) // piece origin on column 29, so its cells straddle the 29 → 0 seam
         for (let t = 0; t < turns; t++) shift.act({ type: 'rotate', dir: 1 })
-        shift.act({ type: 'hardDrop' })
+        dropPiece(shift, config)
         const s = shift.state
         let count = 0
         for (const c of s.grid) if (c !== 0) count++

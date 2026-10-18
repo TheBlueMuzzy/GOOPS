@@ -1,5 +1,6 @@
-// The pressure line and cracks: where they appear, plugging, the win burst.
+// The pressure line and cracks: where they appear, how often, and plugging.
 import type { Color, Crack, ShiftEvent, ShiftState } from './types'
+import type { ShiftConfig } from './config'
 import type { Rng } from './rng'
 
 // v1's pop line: goop whose TOP row is at or below this (fractional) row can pop.
@@ -9,50 +10,41 @@ export function popLine(state: ShiftState): number {
   return state.height - 1 - state.pressure * (visibleRows - 1)
 }
 
-// v1 spawns cracks on the row the pressure "water" has reached (rounded up the tank, so it can sit
-// one row above the pop line while the line is between rows).
-export function crackRow(state: ShiftState): number {
-  const row = Math.floor(popLine(state))
-  return Math.max(state.bufferRows, Math.min(state.height - 1, row))
+// The highest whole row that can pop right now (the pop line rounded DOWN the tank).
+// The tiny epsilon stops float noise turning an exact row into the next one down.
+export function firstPoppableRow(state: ShiftState): number {
+  return Math.ceil(popLine(state) - 1e-9)
 }
 
-function isFree(state: ShiftState, x: number, y: number, extra: Crack[] = []): boolean {
-  const taken = (c: Crack) => c.x === x && c.y === y
-  return state.grid[y * state.width + x] === 0 && !state.cracks.some(taken) && !extra.some(taken)
+// Time between cracks: everyMsAtEmpty at 0% pressure, straight down to everyMsAtFull at 100%.
+export function crackEveryMs(config: ShiftConfig, pressure: number): number {
+  const { everyMsAtEmpty, everyMsAtFull } = config.cracks
+  return everyMsAtEmpty + (everyMsAtFull - everyMsAtEmpty) * pressure
 }
 
-// One new crack on the pressure row, in a colour that has no crack yet (v1: one crack per colour).
-// v1 tries 20 random columns and gives up until next time if they are all taken.
-export function spawnCrack(state: ShiftState, rng: Rng, colorCount: number, tries: number, id: number): Crack | null {
-  const free: Color[] = []
-  for (let c = 1; c <= colorCount; c++) if (!state.cracks.some((k) => k.color === c)) free.push(c)
-  if (free.length === 0) return null
-  const color = rng.pick(free)
-  const y = crackRow(state)
-  for (let t = 0; t < tries; t++) {
-    const x = rng.int(state.width)
-    if (isFree(state, x, y)) return { id, x, y, color, plugged: false }
+// One new crack where it can be sealed right now: an empty cell (no goop, no crack) at or below the pop line.
+// Returns null if there is nowhere to put it (or, with onePerColour, every colour already has an open crack).
+export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, colorCount: number, id: number): Crack | null {
+  const colors: Color[] = []
+  for (let c = 1; c <= colorCount; c++) {
+    if (config.cracks.onePerColour && state.cracks.some((k) => k.color === c)) continue
+    colors.push(c)
   }
-  return null
-}
+  if (colors.length === 0) return null
 
-// Win burst (v1): after the goal is met, every seal spawns one crack of every colour somewhere ABOVE the
-// pressure line, so there's bonus work for the rest of the shift.
-export function burstCracks(state: ShiftState, rng: Rng, colorCount: number, tries: number, nextId: () => number): Crack[] {
-  const top = state.bufferRows
-  const bottom = Math.max(top, crackRow(state) - 1)
-  const made: Crack[] = []
-  for (let color = 1; color <= colorCount; color++) {
-    for (let t = 0; t < tries; t++) {
-      const x = rng.int(state.width)
-      const y = top + rng.int(bottom - top + 1)
-      if (isFree(state, x, y, made)) {
-        made.push({ id: nextId(), x, y, color, plugged: false })
-        break
-      }
+  const cracked = new Set(state.cracks.map((c) => c.y * state.width + c.x))
+  const spots: number[] = []
+  for (let y = firstPoppableRow(state); y < state.height; y++) {
+    for (let x = 0; x < state.width; x++) {
+      const i = y * state.width + x
+      if (state.grid[i] === 0 && !cracked.has(i)) spots.push(i)
     }
   }
-  return made
+  if (spots.length === 0) return null
+
+  const color = rng.pick(colors)
+  const spot = rng.pick(spots)
+  return { id, x: spot % state.width, y: Math.floor(spot / state.width), color, plugged: false }
 }
 
 // A crack is plugged while goop of its own colour sits on it. Wrong-colour goop just covers it.

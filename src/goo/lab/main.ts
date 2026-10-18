@@ -129,7 +129,7 @@ addEventListener('keydown', (e) => {
     ArrowUp: () => engine.act({ type: 'rotate', dir: 1 }),
     z: () => engine.act({ type: 'rotate', dir: -1 }),
     ArrowDown: () => engine.act({ type: 'softDrop', on: true }),
-    ' ': () => engine.act({ type: 'hardDrop' }),
+    ' ': () => engine.act({ type: 'softDrop', on: true }), // no hard drop in Goops: space = fast drop too
   }
   if (k[e.key]) {
     k[e.key]()
@@ -137,7 +137,7 @@ addEventListener('keydown', (e) => {
   }
 })
 addEventListener('keyup', (e) => {
-  if (e.key === 'ArrowDown') engine.act({ type: 'softDrop', on: false })
+  if (e.key === 'ArrowDown' || e.key === ' ') engine.act({ type: 'softDrop', on: false })
 })
 let drag: { x: number; y: number; acc: number; moved: boolean } | null = null
 tank.addEventListener('pointerdown', (e) => {
@@ -156,12 +156,13 @@ tank.addEventListener('pointermove', (e) => {
     drag.moved = true
   }
   if (Math.abs(e.clientY - drag.y) > view.cellPx * 2 && !drag.moved) {
-    engine.act({ type: 'hardDrop' })
+    engine.act({ type: 'softDrop', on: true }) // fast drop until the finger lifts
     drag.moved = true
   }
 })
 tank.addEventListener('pointerup', (e) => {
   if (drag && !drag.moved) tap(e.clientX, e.clientY)
+  engine.act({ type: 'softDrop', on: false })
   drag = null
 })
 function tap(px: number, py: number) {
