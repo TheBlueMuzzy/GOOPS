@@ -176,7 +176,7 @@ try {
 
     // ── 4. VISOR: top lamp → slide up (mouse) → 3 lit buttons (mouse, finger, mouse; a wrong one first) → slide down (finger) ──
     await broken('visor', 5)
-    const vs = await boxOf(page.getByRole('slider', { name: 'Lights slider' }))
+    const vs = await boxOf(page.getByRole('slider', { name: 'Visor slider' }))
     await mouse(line(vs.x + vs.width / 2, vs.y + vs.height * 0.85, vs.x + vs.width / 2, vs.y - 20))
     await page.waitForTimeout(250)
     const buttons = await Promise.all(['Blue button', 'Yellow button', 'Pink button'].map((n) => boxOf(page.getByRole('button', { name: n }))))
@@ -200,7 +200,7 @@ try {
     await finger(line(vs.x + vs.width / 2, vs.y + vs.height * 0.15, vs.x + vs.width / 2, vs.y + vs.height + 20))
     await page.waitForTimeout(300)
     check(name, 'visor: fixed (mouse drag, mouse + finger taps, finger drag) → act repair', await repaired('visor'),
-      await page.evaluate(() => `slider ${document.querySelector('[aria-label="Lights slider"]')?.getAttribute('aria-valuenow')}, lit lamps ${document.querySelectorAll('img[src*="Light-On"]').length}`))
+      await page.evaluate(() => `slider ${document.querySelector('[aria-label="Visor slider"]')?.getAttribute('aria-valuenow')}, lit lamps ${document.querySelectorAll('img[src*="Light-On"]').length}`))
 
     // ── 5. CONTROLS: the lit corner → turn the dial there (1 mouse drag, 2 finger drag, 3 taps) ──
     await broken('controls', 7)

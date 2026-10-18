@@ -9,7 +9,7 @@
     "maxRank": "Top rank",
     "laser": "Reset laser",
     "controls": "Reset controls",
-    "lights": "Reset lights",
+    "lights": "Reset visor",
     "unavailable": "{name} (unavailable)",
     "version": "Version {v}",
     "credit": "MuzzyMade © 2026",
@@ -28,7 +28,7 @@
       "middle",
       "right"
     ],
-    "visorSlider": "Lights slider",
+    "visorSlider": "Visor slider",
     "upDown": [
       "up",
       "down"
