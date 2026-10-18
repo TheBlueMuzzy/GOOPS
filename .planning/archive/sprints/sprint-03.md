@@ -30,7 +30,7 @@ Done when: the engine takes modifiers worked out from owned upgrades plus active
 Check: unit tests for both test upgrades; no real upgrade shows in the game.
 
 ## Tuning (last)
-- [ ] 🙋 15. Play a working day: shift → console → rank up → next shift. Does it pull you into "one more shift"?
+- [x] 🙋 15. Play a working day: shift → console → rank up → next shift. Does it pull you into "one more shift"?
 
 ## Notes
 - Mid-shift console (swipe up / W / ↑) still pauses the shift — v1 kept it running; that's F06 (breakdowns).
@@ -42,3 +42,4 @@ Check: unit tests for both test upgrades; no real upgrade shows in the game.
 - F21 (helper; kit 0.12.0: ArtStage/ArtLayer, PullHandle, LevelMeter, Screen column/swipe/slide): the console is cut from Example1.svg by art-prep (named groups, each placed at its own box → lines up as drawn); words written by the game (no fonts ship). Periscope: drag past a threshold or it springs back (v1), or tap / key. Swipe up from the report (mouse + finger) → the console slides back, the meter plays the XP since it last showed, rank-up pops. "End shift" in the pause menu also slides back to the console. Short windows: the console's top half, GOOPS on the left. e2e: day.mjs + console-shots.mjs (9 sizes), all green with real exit codes.
 - Muzzy answered (F21, 2026-10-18): Neon cyan + Orbitron on the meter = fine · WIPE SAVE DATA: keep off, hook up later · the monitor ALWAYS tells the player what to do ("Pull down the periscope"); XP + rank-up live on the end report (new XP row), and any console moment happens AT the Operator Rank bar (the fill + rank pop), never on the monitor · End shift early = the run is thrown away (no XP) — as built.
 - Report messages trimmed to one sentence (the XP row made it scroll on short screens; the flavour line comes back with the story).
+- Sprint 03 approved 2026-10-18 (Muzzy: "approved for now, we'll come back to this stuff later").

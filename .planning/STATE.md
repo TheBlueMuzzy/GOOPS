@@ -1,7 +1,7 @@
 ## ▶ RESUME HERE
 🌙 Overnight build done (2026-10-17): M1 "Core shift" plays end to end — one full shift, v1 rules, Jelly or Particle goo (Settings → Gameplay → Goo style). Branch `dev/m1-core-shift` (not delivered).
 Play: https://claude.ai/artifact/6kKDMuj25K2fEMoVUj5rrg (private build) · or on this PC: http://localhost:5173 · phone: http://192.168.1.152:5173 (dev server left running)
-Sprint 03 built — a working day at the console (F20 ✅ progression · F21 console · F22 ✅ upgrade-ready engine). Muzzy: play a day (shift → console → rank up → next shift) and answer the F21 questions in SPRINT Notes. Reviewed through: b3835ad.
+Sprint 03 done 2026-10-18 (M2 working day: progression, console, upgrade-ready engine — approved "for now"). Next: /sprint → Sprint 04. Parked: HUD rethink, balance talk, WIPE SAVE DATA hook-up.
 NOT built (need your taste calls first): the real console menu, breakdowns, ranks/progression, story, tutorial, sound.
 
 ## Where we are
