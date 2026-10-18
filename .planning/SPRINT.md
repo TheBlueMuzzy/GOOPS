@@ -5,11 +5,11 @@ Decided at planning (Muzzy, 2026-10-18): triggers = v1's meters · softer effect
 
 ## F23 🧱 Breakdowns in the engine
 Done when: three meters fill/drain by v1's rules, break at their threshold (from their unlock rank), apply their effect, and repair via an action; cooldowns as v1; upgrade hooks ready; tests.
-- [ ] 🤖 1. Meters (content/tuning/breakdowns.json): laser drains per zapped cell, refills per landed piece · visor signal holds for a grace, then fades unless fast-dropping · controls heat per tank turn, cools when idle
-- [ ] 🤖 2. Effects: broken laser = two taps to zap (prime, then pop) · visor glitch grows as its signal falls (the game draws it) · broken controls = held spin at half speed, single presses/swipes normal
-- [ ] 🤖 3. Unlock ranks (visor 2, laser 4, controls 6), cooldown after repair max(8, 20 − (rank − unlock)) s, several can be broken at once; upgrade modifier hooks
+- [x] 🤖 1. Meters (content/tuning/breakdowns.json): laser drains per zapped cell, refills per landed piece · visor signal holds for a grace, then fades unless fast-dropping · controls heat per tank turn, cools when idle
+- [x] 🤖 2. Effects: broken laser = two taps to zap (prime, then pop) · visor glitch grows as its signal falls (the game draws it) · broken controls = held spin at half speed, single presses/swipes normal
+- [x] 🤖 3. Unlock ranks (visor 2, laser 4, controls 6), cooldown after repair max(8, 20 − (rank − unlock)) s, several can be broken at once; upgrade modifier hooks
 - [ ] 🤖 4. Mid-shift console: swipe up / W / ↑ → the real console, the tank runs at 25% (`consoleTimeScale`); the gear opens the pause menu (Settings, End shift) which fully pauses; pull the periscope to return
-- [ ] 🤖 5. Tests + GDD §4/§5 + TDD
+- [x] 🤖 5. Tests + GDD §4/§5 + TDD
 
 ## F24 🎮 Repairs at the console
 Done when: a broken machine's panel lights up on the console and its repair (below) fixes it, with mouse and finger, at every size; the shift shows stand-in meters.
@@ -30,3 +30,5 @@ Done when: Muzzy picked a glitch look in a sketch, and it's in the game, driven 
 
 ## Notes
 - Engine ↔ screens contract written first (src/engine/types.ts: MachineId, MachineState, state.machines, repair action, breakdown/repaired/prime events) so F23 and F24 build in parallel.
+- F23 (helper, 208 tests): machines live in `src/engine/machines.ts`, switched on by `createShift(…, { breakdowns })` (content/tuning/breakdowns.json) — off without it, so old shifts are unchanged. Differences from v1 (GDD §5, D08): priming does NOT restart the fill (softer); during a cooldown a meter stays 0.05 above its break point (needs one more push to break); the visor fades from where it is; flicker/overflare = game-side visuals. New modifiers laserDrainMult, visorGraceMult, controlsCoolMult, breakdownCooldownMult.
+- Ask Muzzy (F23): broken laser — should a primed group refill before the second zap (v1) or pop right away (built)? · cooldown margin 0.05 OK, or v1's "breaks the moment the cooldown ends" (margin 0)?
