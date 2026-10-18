@@ -3,6 +3,7 @@
 // Passive upgrades become MODIFIERS: named numbers the engine reads at the exact spot it uses each tuning value.
 // Active upgrades become ABILITY specs (see abilities.ts). Feature upgrades become flags the screens read.
 import type { AbilitySpec } from './abilities'
+import type { MachineId } from './types'
 
 // Every modifier is a multiplier; 1 = no change. Each one names the tuning value it multiplies.
 export interface Modifiers {
@@ -20,6 +21,19 @@ export interface Modifiers {
 }
 
 export type ModifierName = keyof Modifiers
+
+// REPAIR SHORTCUTS (hook for later "Quick Fix" style upgrades — Muzzy, 2026-10-18: "upgrades that reduce it by 1, then
+// by 2"): whole steps taken OFF a console repair puzzle. Not multipliers — a step count is a whole-number minus — so
+// upgrades.json names them like modifiers (op 'add', e.g. byLevel [1, 2]) and they're summed, rounded down, never
+// negative. The console's panels use them (src/game/repairs.ts repairSteps); the engine never reads them.
+export type FewerRepairSteps = Record<MachineId, number>
+export const NO_FEWER_REPAIR_STEPS: Readonly<FewerRepairSteps> = Object.freeze({ laser: 0, visor: 0, controls: 0 })
+const FEWER_STEPS_NAMES: Record<string, MachineId> = {
+  laserRepairFewerSteps: 'laser',
+  visorRepairFewerSteps: 'visor',
+  controlsRepairFewerSteps: 'controls',
+}
+export const isFewerStepsName = (name: string) => Object.hasOwn(FEWER_STEPS_NAMES, name)
 
 export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   integrityDrainMult: 1,
@@ -108,6 +122,7 @@ export interface ResolvedUpgrades {
   modifiers: Modifiers // → createShift({ modifiers })
   abilities: AbilitySpec[] // → createShift({ abilities }); only owned AND equipped actives, in equipped order
   features: Record<string, number> // flag → level, for the screens (e.g. a next-piece window)
+  fewerRepairSteps: FewerRepairSteps // → the console's repair panels; all 0 without upgrades
 }
 
 // What a player's upgrades add up to. `owned` = level per upgrade id (missing or 0 = not owned);
@@ -118,6 +133,7 @@ export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>
   const adds: Record<string, number> = {}
   const muls: Record<string, number> = {}
   const features: Record<string, number> = {}
+  const fewerRepairSteps: FewerRepairSteps = { ...NO_FEWER_REPAIR_STEPS }
   const byId = new Map(book.upgrades.map((u) => [u.id, u]))
 
   for (const def of book.upgrades) {
@@ -125,6 +141,12 @@ export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>
     if (level === 0) continue
     if (def.type === 'passive') {
       for (const effect of def.effects ?? []) {
+        if (isFewerStepsName(effect.modifier)) { // whole repair steps off (summed, whatever the op)
+          const value = atLevel(effect.byLevel, level)
+          const machine = FEWER_STEPS_NAMES[effect.modifier]
+          if (typeof value === 'number' && Number.isFinite(value)) fewerRepairSteps[machine] += value
+          continue
+        }
         if (!isModifierName(effect.modifier)) continue // a typo in the JSON: ignored (a test checks the file)
         const value = atLevel(effect.byLevel, level)
         if (value === undefined) continue
@@ -148,7 +170,8 @@ export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>
 
   const mods: Record<ModifierName, number> = { ...NEUTRAL_MODIFIERS }
   for (const name of Object.keys(mods) as ModifierName[]) mods[name] = (1 + (adds[name] ?? 0)) * (muls[name] ?? 1)
-  return { modifiers: clampModifiers(mods), abilities, features }
+  for (const id of Object.keys(fewerRepairSteps) as MachineId[]) fewerRepairSteps[id] = Math.max(0, Math.floor(fewerRepairSteps[id]))
+  return { modifiers: clampModifiers(mods), abilities, features, fewerRepairSteps }
 }
 
 // A typo in the JSON (no maxLevel, a non-number) counts as max level 1 rather than poisoning the result.

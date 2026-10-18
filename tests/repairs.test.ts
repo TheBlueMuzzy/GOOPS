@@ -1,7 +1,7 @@
 // F24: the console's repair puzzles (src/game/repairs.ts) — Muzzy's rules, 2026-10-18.
 import { describe, expect, it } from 'vitest'
 import breakdowns from '../content/tuning/breakdowns.json'
-import { controlsDone, controlsTurn, laserSolved, newControls, newLaser, newVisor, visorDone, visorLitButton, visorPress, visorSlide } from '../src/game/repairs'
+import { controlsDone, controlsTurn, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide } from '../src/game/repairs'
 
 // a seeded random (mulberry32), so every run is the same
 const seeded = (seed: number) => () => {
@@ -10,6 +10,33 @@ const seeded = (seed: number) => () => {
   t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296
 }
+
+describe('repairSteps: how many steps each repair takes (the tuning, minus upgrades later)', () => {
+  it('today: laser 4 sliders, visor 3 buttons, controls 4 corners', () => {
+    expect(repairSteps('laser')).toBe(4)
+    expect(repairSteps('visor')).toBe(3)
+    expect(repairSteps('controls')).toBe(4)
+  })
+  it('a "Quick Fix" upgrade: −1 → 3 steps, −2 → 2 steps; never below 1, never more than the tuning', () => {
+    expect(repairSteps('laser', 1)).toBe(3)
+    expect(repairSteps('laser', 2)).toBe(2)
+    expect(repairSteps('controls', 1)).toBe(3)
+    expect(repairSteps('controls', 2)).toBe(2)
+    expect(repairSteps('visor', 2)).toBe(1)
+    expect(repairSteps('visor', 9)).toBe(1)
+    expect(repairSteps('laser', -3)).toBe(4)
+  })
+  it('the puzzles take those counts: 2 sliders lit, 2 corners, a 1-button visor that still slides up and down', () => {
+    expect(newLaser(seeded(1), repairSteps('laser', 2)).filter((w) => w !== null)).toHaveLength(2)
+    expect(newControls(seeded(1), repairSteps('controls', 2)).targets).toHaveLength(2)
+    let v = newVisor(seeded(1), repairSteps('visor', 2))
+    v = visorSlide(v, 0)!
+    v = visorPress(v, visorLitButton(v)!).visor
+    expect(visorLitButton(v)).toBeNull()
+    expect(visorDone(v)).toBe(false)
+    expect(visorDone(visorSlide(v, 1)!)).toBe(true)
+  })
+})
 
 describe('laser', () => {
   it('lights all 4 sliders (the tuning), each needing left or right — and both ends come up', () => {
@@ -36,7 +63,7 @@ describe('laser', () => {
 describe('visor (reset lights)', () => {
   it('3 buttons, never the same twice running', () => {
     for (let s = 1; s < 200; s++) {
-      const { order, step, slider } = newVisor(seeded(s))
+      const { order, step, slider } = newVisor(seeded(s), repairSteps('visor'))
       expect(order).toHaveLength(3)
       expect(order[0]).not.toBe(order[1])
       expect(order[1]).not.toBe(order[2])
@@ -45,7 +72,7 @@ describe('visor (reset lights)', () => {
     }
   })
   it('slide up → the lit buttons in turn → slide down; the slider is refused out of turn; a wrong button only shakes', () => {
-    let v = newVisor(seeded(3))
+    let v = newVisor(seeded(3), 3)
     expect(visorSlide(v, 1)).toBeNull() // already down: nothing asked
     expect(visorPress(v, v.order[0]).wrong).toBe(true) // buttons before the slide: wrong, nothing changes
     v = visorSlide(v, 0)!

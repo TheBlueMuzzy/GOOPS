@@ -2,10 +2,10 @@
 // proven by the two test-only upgrades in content/tuning/upgrades.json.
 import { describe, expect, it } from 'vitest'
 import upgradesJson from '../../content/tuning/upgrades.json'
-import { NEUTRAL_MODIFIERS, clampModifiers, createShift, playableUpgrades, resolveUpgrades } from '../../src/engine'
+import { NEUTRAL_MODIFIERS, NO_FEWER_REPAIR_STEPS, clampModifiers, createShift, playableUpgrades, resolveUpgrades } from '../../src/engine'
 import type { AbilitySpec, ShiftConfig, ShiftEngine, ShiftEvent, ShiftOptions, UpgradeBook } from '../../src/engine'
 import { ABILITY_EFFECTS } from '../../src/engine/abilities'
-import { isModifierName } from '../../src/engine/upgrades'
+import { isFewerStepsName, isModifierName } from '../../src/engine/upgrades'
 import { createRng } from '../../src/engine/rng'
 import { ofType, oneShapeConfig, realConfig, sealACrack, tank, tickUntil } from './helpers'
 
@@ -79,7 +79,7 @@ describe('no upgrades = the shift plays exactly as before', () => {
 
 describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', () => {
   it('owning nothing = neutral modifiers, no abilities, no features', () => {
-    expect(resolveUpgrades(book, {})).toEqual({ modifiers: NEUTRAL_MODIFIERS, abilities: [], features: {} })
+    expect(resolveUpgrades(book, {})).toEqual({ modifiers: NEUTRAL_MODIFIERS, abilities: [], features: {}, fewerRepairSteps: NO_FEWER_REPAIR_STEPS })
   })
 
   it('Sturdy tank halves the integrity drain modifier; levels above max are capped', () => {
@@ -111,11 +111,24 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
     expect(r.features).toEqual({ nextWindow: 1 })
   })
 
+  it('repair shortcuts ("Quick Fix" hook): whole steps off a repair, summed per machine, rounded down, never negative', () => {
+    const test: UpgradeBook = {
+      upgrades: [
+        { id: 'q', name: 'q', type: 'passive', rank: 0, maxLevel: 2, effects: [{ modifier: 'laserRepairFewerSteps', op: 'add', byLevel: [1, 2] }] },
+        { id: 'v', name: 'v', type: 'passive', rank: 0, maxLevel: 1, effects: [{ modifier: 'visorRepairFewerSteps', op: 'add', byLevel: [1.7] }] },
+        { id: 'x', name: 'x', type: 'passive', rank: 0, maxLevel: 1, effects: [{ modifier: 'controlsRepairFewerSteps', op: 'add', byLevel: [-3] }] },
+      ],
+    }
+    expect(resolveUpgrades(test, { q: 1 }).fewerRepairSteps).toEqual({ laser: 1, visor: 0, controls: 0 })
+    expect(resolveUpgrades(test, { q: 2, v: 1, x: 1 }).fewerRepairSteps).toEqual({ laser: 2, visor: 1, controls: 0 })
+    expect(resolveUpgrades(test, { q: 2 }).modifiers).toEqual(NEUTRAL_MODIFIERS) // not a multiplier: no modifier changes
+  })
+
   it('upgrades.json is valid: known modifiers and effects, and the game never lists test-only upgrades', () => {
     for (const u of book.upgrades) {
       expect(['passive', 'active', 'feature']).toContain(u.type)
       for (const e of u.effects ?? []) {
-        expect(isModifierName(e.modifier), `${u.id}: ${e.modifier}`).toBe(true)
+        expect(isModifierName(e.modifier) || isFewerStepsName(e.modifier), `${u.id}: ${e.modifier}`).toBe(true)
         expect(['mul', 'add']).toContain(e.op)
         expect(e.byLevel.length).toBeGreaterThan(0)
       }

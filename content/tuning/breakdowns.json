@@ -8,7 +8,7 @@
     "drainPerCell": 0.04,
     "refillPerPiece": 0.1,
     "repairSliders": 4,
-    "_repairSliders": "the console repair (src/game/repairs.ts): how many of the 4 sliders light up, each needing left or right at random. Muzzy 2026-10-18: every repair about 4 clicks, so all 4."
+    "_repairSliders": "the console repair (src/game/repairs.ts): how many of the 4 sliders light up, each needing left or right at random. Muzzy 2026-10-18: every repair about 4 clicks, so all 4. Later upgrades can take steps off any repair (src/game/repairs.ts repairSteps)."
   },
   "visor": {
     "_about": "health = signal (was v1's lights). Holds for graceMs after you last fast-dropped, then fades from 1 to breakAt over fadeMs; fast-dropping recovers it at recoverPerSec. At breakAt it breaks and drops to brokenHealth. The game draws a glitch from health (lower = glitchier).",
@@ -17,7 +17,9 @@
     "fadeMs": 5000,
     "breakAt": 0.1,
     "brokenHealth": 0.05,
-    "recoverPerSec": 4
+    "recoverPerSec": 4,
+    "repairButtons": 3,
+    "_repairButtons": "the console repair: slide up, then this many lit buttons in turn, then slide down (about 4 clicks with the slides, Muzzy 2026-10-18: 'reset visor is good')."
   },
   "controls": {
     "_about": "heat = 1 - health. Each tank turn adds heatPerSpin; after coolDelayMs with no turn it cools at coolPerSec. Breaks at heat 1 (the input layer slows held turns; the engine only reports it). heldSpinSlowdown = while broken, a held turn (key or sideways drag) repeats this many times slower (src/input; single presses and quick swipes stay the same).",

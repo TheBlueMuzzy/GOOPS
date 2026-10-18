@@ -8,7 +8,7 @@
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
 import { useMemo } from 'react'
 import { ArtLayer, ArtStage, Button, LevelMeter, PullHandle, Screen, TitleArt, fill } from './kit'
-import type { MachineId } from '../engine'
+import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
 import { ControlsPanel, LaserPanel, VisorPanel } from './RepairPanels'
 import { art } from './art'
@@ -25,8 +25,9 @@ type Props = {
   onPull(): void // periscope pulled all the way
   onSlideEnd(): void // finished sliding away / back in
   onSettings(): void // the gear (mid-shift: the pause menu)
-  // mid-shift only: the machines now, how many times each has broken (a new puzzle each time), and a repair solved
-  midShift?: { machines: ConsoleMachines; breaks: Record<MachineId, number>; onRepair(machine: MachineId): void }
+  // mid-shift only: the machines now, how many times each has broken (a new puzzle each time), and a repair solved.
+  // fewerRepairSteps: upgrades that shorten the repairs (resolveUpgrades; none yet, so left out = 0)
+  midShift?: { machines: ConsoleMachines; breaks: Record<MachineId, number>; onRepair(machine: MachineId): void; fewerRepairSteps?: FewerRepairSteps }
 }
 
 const t = text.console
@@ -46,6 +47,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const live = (id: MachineId) => !!midShift?.machines[id].broken && !leaving
   const repair = (id: MachineId) => () => midShift?.onRepair(id)
   const key = (id: MachineId) => `${id}-${midShift?.breaks[id] ?? 0}`
+  const fewer = (id: MachineId) => midShift?.fewerRepairSteps?.[id] ?? 0
 
   return (
     <Screen label={t.label} column backdrop={a.backdrop}
@@ -61,9 +63,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             words={{ label: t.rank, unit: t.xp, max: t.maxRank }} art={a.meterFill}
             steps={steps.length ? steps : undefined} play={phase === 'idle'} />
         </ArtLayer>
-        <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} />
-        <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} />
-        <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} />
+        <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} />
+        <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} />
+        <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} />
         <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{fill(t.version, { v: import.meta.env.GOOPS_VERSION })}</ArtLayer>
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>

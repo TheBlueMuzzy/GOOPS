@@ -6,17 +6,16 @@
 // Sliders and the dial are the kit's SnapControl (drag or tap); the visor's buttons are kit picture Buttons.
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { ArtLayer, Button, SnapControl, fill } from './kit'
-import { controlsTurn, controlsDone, laserSolved, newControls, newLaser, newVisor, visorDone, visorLitButton, visorPress, visorSlide } from '../game/repairs'
+import { controlsTurn, controlsDone, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide, visorWantsDown } from '../game/repairs'
 import { art } from './art'
 import text from '../../content/text/en.json'
-import breakdowns from '../../content/tuning/breakdowns.json'
 
 const t = text.console
 const a = art.console
 const r = art.repairs
 const offLabel = (name: string) => fill(t.unavailable, { name })
 
-type PanelProps = { live: boolean; onRepair(): void }
+type PanelProps = { live: boolean; onRepair(): void; fewerSteps?: number } // fewerSteps: from upgrades (later); 0 today
 
 // calls onRepair once, the moment the puzzle is solved
 function useSolved(solved: boolean, onRepair: () => void) {
@@ -35,9 +34,9 @@ function Lamp({ at, lit, blink, live }: { at: [number, number, number, number]; 
   )
 }
 
-// LASER: the sliders light up (all 4: breakdowns.json laser.repairSliders), each wanting left or right (its lamp at that end blinks until the knob is there)
-export function LaserPanel({ live, onRepair }: PanelProps) {
-  const [want] = useState(() => newLaser(Math.random, breakdowns.laser.repairSliders))
+// LASER: the sliders light up (all 4: repairSteps('laser')), each wanting left or right (its lamp at that end blinks until the knob is there)
+export function LaserPanel({ live, onRepair, fewerSteps }: PanelProps) {
+  const [want] = useState(() => newLaser(Math.random, repairSteps('laser', fewerSteps)))
   const [pos, setPos] = useState([1, 1, 1, 1]) // every knob starts in the middle
   useSolved(live && laserSolved(want, pos), onRepair)
   return (
@@ -71,10 +70,10 @@ function SliderRow({ at, lamps, live, want, value, label, onChange }: {
   )
 }
 
-// VISOR (the RESET LIGHTS panel): top lamp blinks → slide up → the lit button, three times → bottom lamp → slide down.
+// VISOR (the RESET VISOR panel): top lamp blinks → slide up → the lit button, three times (repairSteps('visor')) → bottom lamp → slide down.
 // The slider only moves when it's asked for (otherwise it springs back); a wrong button shakes the panel, nothing resets.
-export function VisorPanel({ live, onRepair }: PanelProps) {
-  const [v, setV] = useState(() => newVisor(Math.random))
+export function VisorPanel({ live, onRepair, fewerSteps }: PanelProps) {
+  const [v, setV] = useState(() => newVisor(Math.random, repairSteps('visor', fewerSteps)))
   const [shake, setShake] = useState(0)
   useSolved(live && visorDone(v), onRepair)
   const lit = live ? visorLitButton(v) : null
@@ -88,7 +87,7 @@ export function VisorPanel({ live, onRepair }: PanelProps) {
       <ArtLayer {...a.lights} off={!live} shake={shake} label={live ? undefined : offLabel(t.lights)} />
       <ArtLayer {...a.words.lights} tone="primary" off={!live} shake={shake}>{t.lights}</ArtLayer>
       <Lamp at={r.visor.topLamp} live={live} lit={v.step === 0} blink="fast" />
-      <Lamp at={r.visor.bottomLamp} live={live} lit={v.step === 4} blink="fast" />
+      <Lamp at={r.visor.bottomLamp} live={live} lit={visorWantsDown(v)} blink="fast" />
       <ArtLayer at={r.visor.slider} off={!live} shake={shake}>
         <SnapControl label={t.visorSlider} axis="y" stops={2} knob={r.knobShare} value={v.slider} disabled={!live}
           onChange={(to) => { const next = visorSlide(v, to as 0 | 1); if (next) setV(next) }} valueText={(k) => t.upDown[k]}>
@@ -107,9 +106,9 @@ export function VisorPanel({ live, onRepair }: PanelProps) {
   )
 }
 
-// CONTROLS: one corner lamp blinks; turn the dial's arrow to it and it locks by itself; then the next; 4 in all (breakdowns.json controls.repairCorners)
-export function ControlsPanel({ live, onRepair }: PanelProps) {
-  const [c, setC] = useState(() => newControls(Math.random, breakdowns.controls.repairCorners))
+// CONTROLS: one corner lamp blinks; turn the dial's arrow to it and it locks by itself; then the next; 4 in all (repairSteps('controls'))
+export function ControlsPanel({ live, onRepair, fewerSteps }: PanelProps) {
+  const [c, setC] = useState(() => newControls(Math.random, repairSteps('controls', fewerSteps)))
   useSolved(live && controlsDone(c), onRepair)
   const target = live && !controlsDone(c) ? c.targets[c.step] : null
   return (
