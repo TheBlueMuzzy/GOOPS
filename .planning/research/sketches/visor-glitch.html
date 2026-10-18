@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch (BMUZ) F25 task 11, 2026-10-18. Throwaway: picks a visor-glitch look; never becomes game code as is. -->
+<title>Visor glitch</title>
+<meta name="description" content="F25 (2026-10-18): the periscope visor breaking down. One Signal amount (0 = clean, 1 = broken) drives a one-pass glitch shader over a stand-in tank, with 4 looks (Cheap LCD visor, VHS tape, Digital datamosh, Analog CRT static) and an optional pixel filter stacked after it. Press Degrade, watch it fall apart over 10 s, and ask: at 1.0 can I still read the goo colours and play?">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  #bottom button { min-height: 52px; font-size: 15px; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #amt { flex: 0 0 70px; font: 700 13px ui-monospace, monospace; color: #fbbf24; text-align: right; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 10px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 84px; }
+  #panel label b { flex: 0 0 44px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
+  #panel input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets, #styles { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #styles button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bKnobs">Knobs</button>
+  <div id="amt">0.00</div>
+</div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <button id="bDegrade">Degrade</button><button id="bRepair">Repair</button><button id="bPix">Pixels</button><button id="bOrder">Glitch&rarr;Pix</button>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+// Effect strengths are 0..1 and are all multiplied by `amount` (the visor signal loss), so 0 is always a clean view.
+const GOO = {
+  amount: 0,        // signal loss: 0 = clean visor, 1 = broken
+  rampSec: 10,      // Degrade button: seconds from 0 to 1
+  scan: 0.15,       // scanlines
+  rgb: 0.25,        // RGB split (chromatic aberration)
+  roll: 0.2,        // rolling bright bar + rare vertical slips
+  noise: 0.3,       // static / snow
+  flicker: 0.6,     // backlight brightness wobble
+  tear: 0.4,        // how many horizontal bands tear sideways
+  tearSize: 0.25,   // how tall + how far a tear band moves
+  block: 0.35,      // digital block damage (blocks sample from the wrong place)
+  blockSize: 12,    // block size in screen px
+  vignette: 0.5,    // dark visor edges
+  curve: 0.15,      // visor bulge (barrel curvature)
+  dead: 0.7,        // dead LCD lines that pile up as it breaks
+  dropout: 0.6,     // short signal-lost moments (darker + static), late damage only
+  pixelate: 0,      // 1 = pixel filter on
+  pixSize: 4,       // pixel filter size in screen px
+  pixFirst: 0,      // 0 = scene -> glitch -> pixels (the plan); 1 = scene -> pixels -> glitch (to compare)
+};
+// [name, min, max, step] rows; a one-item row is a group heading.
+const KNOBS = [['Signal'], ['amount', 0, 1, 0.01], ['rampSec', 2, 30, 1],
+  ['Analog'], ['scan', 0, 1, 0.05], ['rgb', 0, 1, 0.05], ['roll', 0, 1, 0.05], ['noise', 0, 1, 0.05], ['flicker', 0, 1, 0.05],
+  ['Tearing'], ['tear', 0, 1, 0.05], ['tearSize', 0, 1, 0.05],
+  ['Digital'], ['block', 0, 1, 0.05], ['blockSize', 4, 48, 1],
+  ['Visor'], ['vignette', 0, 1, 0.05], ['curve', 0, 1, 0.05], ['dead', 0, 1, 0.05], ['dropout', 0, 1, 0.05],
+  ['Pixel filter (later, stacked on top)'], ['pixelate', 0, 1, 1], ['pixSize', 2, 12, 1], ['pixFirst', 0, 1, 1]];
+const KNOB_HELP = {
+  amount: 'The visor signal loss the game will drive. 0 = clean, 1 = broken. Everything below scales with it.',
+  rampSec: 'How long the Degrade button takes to go from 0 to 1.',
+  scan: 'Dark horizontal lines across the view. With the pixel filter on, they snap to its pixel rows.',
+  rgb: 'Red and blue pull apart sideways at goo edges (up to ~6 px; doubles for a moment during tear bursts).',
+  roll: 'A bright band crawls up the screen; at high signal loss the picture sometimes slips down a few rows for a beat.',
+  noise: 'TV snow mixed over the picture (up to ~45%). The biggest hit on reading colours.',
+  flicker: 'Backlight wobble: the whole view dims a little, unevenly, 8 times a second. Kept dark-only (no white flashes).',
+  tear: 'How many horizontal bands jump sideways at once. Each band re-rolls 12 times a second.',
+  tearSize: 'How tall a tear band is (4 to 40 px) and how far it shifts (up to ~1.5 goo cells).',
+  block: 'Blocks of the picture show the wrong part of the screen for a moment, like broken video. Colours are never changed.',
+  blockSize: 'Block size in screen px. Small = fizzy; big = chunky obvious breakage.',
+  vignette: 'Edges of the visor go dark (up to 70% at the corners).',
+  curve: 'The view bulges like curved glass; edges get pulled in.',
+  dead: 'Stuck coloured LCD lines appear one by one as it degrades and stay put (they don\'t flicker).',
+  dropout: 'Above ~0.4 signal loss: the signal drops for a quarter second (darker + snow), at most about once a second. Never fully black.',
+  pixelate: '1 = the later full-screen pixel filter is on (same as the Pixels button).',
+  pixSize: 'Pixel filter block size in screen px.',
+  pixFirst: '0 = glitch then pixels (glitch gets chunky too, the plan). 1 = pixels then glitch (glitch stays crisp), to compare.',
+};
+// Four looks from the research (.planning/research/visor-glitch.md). Each only sets the effect mix; amount and pixels stay.
+const STYLES = {
+  'Cheap LCD visor': { scan: 0.15, rgb: 0.25, roll: 0.2, noise: 0.3, flicker: 0.6, tear: 0.4, tearSize: 0.25, block: 0.35, blockSize: 12, vignette: 0.5, curve: 0.15, dead: 0.7, dropout: 0.6 },
+  'VHS tape': { scan: 0.35, rgb: 0.7, roll: 0.8, noise: 0.35, flicker: 0.3, tear: 0.7, tearSize: 0.6, block: 0, blockSize: 24, vignette: 0.4, curve: 0.2, dead: 0, dropout: 0.3 },
+  'Digital datamosh': { scan: 0, rgb: 0.35, roll: 0, noise: 0.15, flicker: 0.15, tear: 0.25, tearSize: 0.3, block: 0.8, blockSize: 28, vignette: 0.2, curve: 0, dead: 0, dropout: 0.4 },
+  'Analog CRT static': { scan: 0.8, rgb: 0.3, roll: 0.6, noise: 0.85, flicker: 0.4, tear: 0.35, tearSize: 0.2, block: 0, blockSize: 24, vignette: 0.8, curve: 0.7, dead: 0, dropout: 0.5 },
+};
+
+// ===== Stand-in tank scene (drawn with 2D canvas, like the game's tank canvas) =====
+const COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7'];
+const W = 10;
+let ROWS = 16, cell = 30, ox = 0, oy = 0, dpr = 1, viewW = 0, viewH = 0;
+let board = [];               // settled goo: board[y][x] = colour index or -1
+const scene = document.createElement('canvas'), sctx = scene.getContext('2d');
+const still = document.createElement('canvas'), stx = still.getContext('2d'); // tank + settled goo, redrawn on resize only
+function seeded(s) { return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+function makeBoard() {
+  const r = seeded(7); board = [];
+  const top = ROWS - 8;
+  for (let y = 0; y < ROWS; y++) { board.push([]); for (let x = 0; x < W; x++) {
+    if (y < top || (y === top && r() < 0.5)) { board[y].push(-1); continue; }
+    const left = x > 0 ? board[y][x - 1] : -1, below = y > 0 ? board[y - 1][x] : -1, q = r();
+    board[y].push(q < 0.35 && left >= 0 ? left : q < 0.6 && below >= 0 ? below : Math.floor(r() * 5));
+  } }
+}
+function rr(c, x, y, w, h, rad) { c.beginPath(); c.roundRect(x, y, w, h, rad); }
+function gooCell(c, x, y, col, nb) { // one cell of goo, bridged to same-colour neighbours so groups read as blobs
+  const s = cell, px = ox + x * s, py = oy + y * s, ins = s * 0.06;
+  c.fillStyle = col;
+  rr(c, px + ins, py + ins, s - 2 * ins, s - 2 * ins, s * 0.3); c.fill();
+  if (nb.r) c.fillRect(px + s * 0.5, py + ins, s, s - 2 * ins);
+  if (nb.d) c.fillRect(px + ins, py + s * 0.5, s - 2 * ins, s);
+}
+function gooGloss(c, x, y) {
+  const s = cell, px = ox + x * s, py = oy + y * s;
+  const g = c.createLinearGradient(0, py, 0, py + s); g.addColorStop(0, 'rgba(255,255,255,0.10)'); g.addColorStop(1, 'rgba(0,0,0,0.28)');
+  c.fillStyle = g; rr(c, px + s * 0.06, py + s * 0.06, s * 0.88, s * 0.88, s * 0.3); c.fill();
+  c.fillStyle = 'rgba(255,255,255,0.45)'; c.beginPath(); c.ellipse(px + s * 0.34, py + s * 0.28, s * 0.16, s * 0.08, -0.5, 0, 6.283); c.fill();
+}
+function drawStill() {
+  still.width = scene.width; still.height = scene.height;
+  const c = stx; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.fillStyle = '#05070d'; c.fillRect(0, 0, viewW, viewH);
+  const tw = W * cell, th = ROWS * cell;
+  // tank body
+  const bg = c.createLinearGradient(0, oy, 0, oy + th); bg.addColorStop(0, '#0d1630'); bg.addColorStop(1, '#070b18');
+  c.fillStyle = bg; rr(c, ox - 6, oy - 6, tw + 12, th + 12, 10); c.fill();
+  c.strokeStyle = '#334155'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = 'rgba(148,163,184,0.10)'; c.lineWidth = 1; c.beginPath();
+  for (let x = 1; x < W; x++) { c.moveTo(ox + x * cell, oy); c.lineTo(ox + x * cell, oy + th); }
+  for (let y = 1; y < ROWS; y++) { c.moveTo(ox, oy + y * cell); c.lineTo(ox + tw, oy + y * cell); }
+  c.stroke();
+  // pressure line
+  const py = oy + 4 * cell;
+  c.strokeStyle = '#f43f5e'; c.lineWidth = 2; c.setLineDash([8, 6]); c.beginPath(); c.moveTo(ox, py); c.lineTo(ox + tw, py); c.stroke(); c.setLineDash([]);
+  c.fillStyle = '#fda4af'; c.font = `700 ${Math.round(cell * 0.38)}px system-ui, sans-serif`; c.textAlign = 'right';
+  c.fillText('PRESSURE 62%', ox + tw - 6, py - 6);
+  c.textAlign = 'left'; c.fillStyle = '#e2e8f0'; c.fillText('SCORE 1240', ox + 6, oy + cell * 0.6);
+  // a crack in the tank wall
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1.5; c.beginPath();
+  c.moveTo(ox + tw, oy + 9 * cell); c.lineTo(ox + tw - cell * 0.3, oy + 9.4 * cell); c.lineTo(ox + tw - cell * 0.1, oy + 9.8 * cell); c.lineTo(ox + tw - cell * 0.5, oy + 10.3 * cell); c.stroke();
+  // settled goo
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < W; x++) { const k = board[y][x]; if (k < 0) continue;
+    gooCell(c, x, y, COLORS[k], { r: x < W - 1 && board[y][x + 1] === k, d: y < ROWS - 1 && board[y + 1][x] === k }); }
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < W; x++) if (board[y][x] >= 0) gooGloss(c, x, y);
+}
+const PIECE = [[0, 0], [1, 0], [2, 0], [1, 1]];
+let pieceT = 0;
+function drawScene(t) {
+  const c = sctx; c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(still, 0, 0);
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // falling piece: glides from the top to just above the stack, then starts again
+  const fall = ROWS - 10, y0 = (pieceT % 6) / 6 * fall - 1, x0 = 3, col = COLORS[(Math.floor(pieceT / 6) + 1) % 5];
+  c.save(); c.beginPath(); c.rect(ox, oy, W * cell, ROWS * cell); c.clip();
+  c.translate(0, y0 * cell);
+  for (const [x, y] of PIECE) gooCell(c, x0 + x, y, col, { r: PIECE.some(p => p[0] === x + 1 && p[1] === y), d: PIECE.some(p => p[0] === x && p[1] === y + 1) });
+  for (const [x, y] of PIECE) gooGloss(c, x0 + x, y);
+  c.restore();
+}
+
+// ===== WebGL2: scene texture -> glitch pass -> pixel pass (each pass = one fullscreen triangle) =====
+const canvas = $('c'), gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
+const VS = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+// The glitch: one pass, 3 texture reads (R, G, B for the RGB split). Everything else is maths on the coordinates.
+const FS_GLITCH = `#version 300 es
+precision highp float;
+uniform sampler2D uTex; uniform vec2 uRes; uniform float uTime, uAmt, uGrain, uDpr;
+uniform float uScan, uRgb, uRoll, uNoise, uFlicker, uTear, uTearSize, uBlock, uBlockSize, uVig, uCurve, uDead, uDrop;
+out vec4 o;
+// integer hash (sin-based hashes repeat at big inputs and made dead lines show at amount 0)
+uint hu(uint x) { x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; }
+float h1(float n) { return float(hu(floatBitsToUint(n)) >> 8) / 16777216.0; }
+float h2(vec2 p) { return float(hu(floatBitsToUint(p.x) ^ hu(floatBitsToUint(p.y) + 0x9e3779b9u)) >> 8) / 16777216.0; }
+float lt(float h, float t) { return h < t ? 1.0 : 0.0; } // 'happens' when the roll is under the chance; chance 0 = never
+void main() {
+  vec2 fc = gl_FragCoord.xy;            // device px, y up
+  vec2 uv = fc / uRes;
+  float a = uAmt, aLate = a * a;        // late effects ramp in slowly (a squared)
+  float slot = floor(uTime * 12.0);     // the glitch clock: tears/blocks re-roll 12x a second
+  // visor curvature (barrel)
+  vec2 c = uv * 2.0 - 1.0; c *= 1.0 + uCurve * a * 0.10 * dot(c, c); uv = c * 0.5 + 0.5;
+  float outside = step(1.0, max(abs(c.x), abs(c.y)));
+  // vertical slip (roll): rare, short, a few rows
+  float slip = lt(h1(floor(uTime * 3.0) + 11.0), uRoll * aLate * 0.25) * 0.035;
+  uv.y = fract(uv.y + slip);
+  // tear bands: some bands shift sideways this slot; plus a tiny constant jitter on every line
+  float bandH = (4.0 + 36.0 * uTearSize) * uDpr;
+  float band = floor(fc.y / bandH);
+  float tearOn = lt(h2(vec2(band, slot)), uTear * a * 0.22);
+  float burst = lt(h1(slot + 3.0), 0.15 + 0.35 * a) * a; // some slots are 'bursts': split + tears louder
+  uv.x += tearOn * (h2(vec2(band + 7.0, slot)) - 0.5) * 2.0 * (0.02 + 0.13 * uTearSize) * (0.4 + 0.6 * a);
+  uv.x += (h2(vec2(floor(fc.y / uDpr), slot)) - 0.5) * uTear * a * 1.5 * uDpr / uRes.x;
+  // digital blocks: some blocks read from a nearby wrong spot this slot
+  float bs = uBlockSize * uDpr;
+  vec2 blk = floor(fc / bs);
+  float bslot = floor(uTime * 6.0 + h2(blk) * 6.0);  // each block keeps its own clock so they don't all switch together
+  float bOn = lt(h2(blk + bslot * 1.37), uBlock * pow(a, 1.5) * 0.18);
+  uv += bOn * (vec2(h2(blk + bslot), h2(blk - bslot)) - 0.5) * 4.0 * bs / uRes;
+  // RGB split: red one way, blue the other (3 reads total)
+  vec2 d = vec2((uRgb * a * 3.0 + burst * uRgb * 3.0) * uDpr / uRes.x, 0.0);
+  vec3 col = vec3(texture(uTex, uv + d).r, texture(uTex, uv).g, texture(uTex, uv - d).b);
+  // blocks that moved get a little ringing (brighter edge), never a colour swap: colour is the rule in Goops
+  vec2 bf = fract(fc / bs);
+  col += bOn * 0.08 * step(min(min(bf.x, bf.y), min(1.0 - bf.x, 1.0 - bf.y)), 0.12);
+  // scanlines (snap to the pixel-filter grain when it comes after)
+  float s = 0.5 + 0.5 * cos(6.2832 * fc.y / (2.0 * uGrain));
+  col *= 1.0 - uScan * a * 0.55 * (1.0 - s);
+  // rolling bright bar
+  float ry = fract(uv.y - uTime * 0.12);
+  col *= 1.0 + uRoll * a * 0.25 * smoothstep(0.0, 0.08, ry) * smoothstep(0.2, 0.08, ry);
+  // static / snow (per grain cell, new every frame)
+  vec2 g = floor(fc / uGrain);
+  float n = h2(g + fract(uTime * 7.31) * 913.0);
+  float streak = lt(h2(vec2(floor(fc.y / uGrain), floor(uTime * 20.0))), (0.015 + 0.05 * uNoise) * a); // VHS-ish white streak rows
+  col = mix(col, vec3(n), clamp(uNoise * a * 0.45 + streak * uNoise * a * 0.35, 0.0, 1.0));
+  // dead LCD lines: a column/row goes dead once 'amount' passes its own threshold, and stays
+  float colId = floor(fc.x / (2.0 * uDpr)), rowId = floor(fc.y / (2.0 * uDpr));
+  float deadC = lt(h1(colId + 5000.0), uDead * a * 0.025), deadR = lt(h1(rowId + 9000.0), uDead * a * 0.012);
+  vec3 deadCol = mix(vec3(0.9, 0.2, 0.9), vec3(0.2, 0.95, 0.5), step(0.5, h1(colId + rowId * 0.01)));
+  col = mix(col, deadCol, 0.75 * max(deadC, deadR));
+  // flicker (dims only) + dropout (dark + snow, at most ~1/s, never full black)
+  col *= 1.0 - uFlicker * a * 0.22 * h1(floor(uTime * 8.0));
+  float drop = lt(h1(floor(uTime * 4.0) + 21.0), uDrop * smoothstep(0.4, 1.0, a) * 0.25);
+  col = mix(col, vec3(n * 0.3), drop * 0.65);
+  // vignette
+  float v = dot(c, c);
+  col *= 1.0 - uVig * a * 0.7 * smoothstep(0.3, 2.0, v);
+  col *= 1.0 - outside;
+  o = vec4(col, 1.0);
+}`;
+const FS_PIX = `#version 300 es
+precision highp float;
+uniform sampler2D uTex; uniform vec2 uRes; uniform float uPix;
+out vec4 o;
+void main() { vec2 p = (floor(gl_FragCoord.xy / uPix) + 0.5) * uPix; o = texture(uTex, p / uRes); } // one read per pixel`;
+function prog(fs) {
+  const p = gl.createProgram();
+  for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+    gl.attachShader(p, s);
+  }
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) { const nm = gl.getActiveUniform(p, i).name; u[nm] = gl.getUniformLocation(p, nm); }
+  return { p, u };
+}
+const PG = prog(FS_GLITCH), PP = prog(FS_PIX);
+gl.bindVertexArray(gl.createVertexArray());
+function tex() { const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE); return t; }
+const sceneTex = tex();
+let mid = null; // the in-between target when both passes run
+function makeMid(w, h) {
+  if (mid) { gl.deleteTexture(mid.t); gl.deleteFramebuffer(mid.fb); }
+  const t = tex(); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, w, h);
+  const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0); gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  mid = { t, fb };
+}
+// One step of the chain: read `src`, write to `dst` (null = the screen).
+function runGlitch(src, dst, time, grain) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dst); gl.useProgram(PG.p); gl.bindTexture(gl.TEXTURE_2D, src);
+  const u = PG.u; gl.uniform1i(u.uTex, 0); gl.uniform2f(u.uRes, canvas.width, canvas.height);
+  gl.uniform1f(u.uTime, time); gl.uniform1f(u.uAmt, GOO.amount); gl.uniform1f(u.uGrain, grain); gl.uniform1f(u.uDpr, dpr);
+  for (const k of ['Scan', 'Rgb', 'Roll', 'Noise', 'Flicker', 'Tear', 'TearSize', 'Block', 'BlockSize', 'Curve', 'Dead'])
+    gl.uniform1f(u['u' + k], GOO[k[0].toLowerCase() + k.slice(1)]);
+  gl.uniform1f(u.uVig, GOO.vignette); gl.uniform1f(u.uDrop, GOO.dropout);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function runPix(src, dst) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dst); gl.useProgram(PP.p); gl.bindTexture(gl.TEXTURE_2D, src);
+  gl.uniform1i(PP.u.uTex, 0); gl.uniform2f(PP.u.uRes, canvas.width, canvas.height); gl.uniform1f(PP.u.uPix, GOO.pixSize * dpr);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+let simTime = 0;
+function draw() {
+  drawScene(simTime);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, sceneTex);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, scene); // in the game: the tank + goo already on the GPU
+  const pixOn = GOO.pixelate >= 0.5, pixPx = GOO.pixSize * dpr;
+  if (!pixOn) runGlitch(sceneTex, null, simTime, 1.5 * dpr);
+  else if (GOO.pixFirst < 0.5) { runGlitch(sceneTex, mid.fb, simTime, pixPx); runPix(mid.t, null); } // scene -> glitch -> pixels
+  else { runPix(sceneTex, mid.fb); runGlitch(mid.t, null, simTime, 1.5 * dpr); }                 // scene -> pixels -> glitch
+}
+
+// ===== Degrade ramp + buttons =====
+let ramp = 0; // +1 while degrading
+function update(dt) {
+  simTime += dt; pieceT += dt;
+  if (ramp) { GOO.amount = Math.min(1, GOO.amount + dt / GOO.rampSec); if (GOO.amount >= 1) { ramp = 0; $('bDegrade').classList.remove('on'); } showKnob('amount'); }
+}
+function showKnob(k) { const v = Math.round(GOO[k] * 100) / 100; $('k_' + k).value = v; $('v_' + k).textContent = v; if (k === 'amount') $('amt').textContent = v.toFixed(2); }
+$('bDegrade').onclick = () => { if (GOO.amount >= 1) GOO.amount = 0; ramp = 1; $('bDegrade').classList.add('on'); };
+$('bRepair').onclick = () => { ramp = 0; $('bDegrade').classList.remove('on'); GOO.amount = 0; showKnob('amount'); };
+function syncToggles() { $('bPix').classList.toggle('on', GOO.pixelate >= 0.5); $('bOrder').innerHTML = GOO.pixFirst >= 0.5 ? 'Pix&rarr;Glitch' : 'Glitch&rarr;Pix'; }
+$('bPix').onclick = () => { GOO.pixelate = GOO.pixelate >= 0.5 ? 0 : 1; showKnob('pixelate'); syncToggles(); };
+$('bOrder').onclick = () => { GOO.pixFirst = GOO.pixFirst >= 0.5 ? 0 : 1; showKnob('pixFirst'); syncToggles(); };
+
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, 3);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  scene.width = canvas.width; scene.height = canvas.height;
+  viewW = playW(); viewH = innerHeight;
+  const top = $('top').getBoundingClientRect().bottom + 12, bot = $('bottom').getBoundingClientRect().top - 12;
+  cell = Math.min((viewW - 44) / W, (bot - top) / 14);
+  ROWS = Math.max(14, Math.min(22, Math.floor((bot - top) / cell)));
+  ox = (viewW - W * cell) / 2; oy = bot - ROWS * cell;
+  makeBoard(); drawStill(); makeMid(canvas.width, canvas.height);
+}
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+$('panel').innerHTML = '<h4>Looks</h4><div id="styles">' + Object.keys(STYLES).map(n => `<button data-s="${n}">${n}</button>`).join('') + '</div>'
+  + '<h4>Your presets</h4><div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) => lo === undefined ? `<h4>${k}</h4>` :
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : '')).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+for (const [k, lo] of KNOBS) if (lo !== undefined) $('k_' + k).oninput = e => {
+  GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k];
+  if (k === 'amount') { ramp = 0; $('bDegrade').classList.remove('on'); $('amt').textContent = GOO.amount.toFixed(2); }
+  syncToggles(); markStyle(null);
+};
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+let activeStyle = 'Cheap LCD visor';
+function markStyle(n) { activeStyle = n; for (const b of $('styles').children) b.classList.toggle('on', b.dataset.s === n); }
+function setStyle(n) { setKnobs(STYLES[n]); markStyle(n); }
+$('styles').onclick = e => { const n = e.target.dataset.s; if (n) { setStyle(n); activePreset = null; drawPresets(); } };
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; $('k_' + k).value = v[k]; $('v_' + k).textContent = v[k]; }
+  $('amt').textContent = GOO.amount.toFixed(2); syncToggles(); }
+const DEFAULTS = readKnobs();
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; markStyle('Cheap LCD visor'); }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; markStyle(null); }
+  drawPresets();
+};
+drawPresets(); markStyle('Cheap LCD visor');
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ look: activeStyle, now: readKnobs(), presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+layout(); syncToggles();
+// fixed-step loop + fps (one-second average)
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0, frozen = false;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (!frozen) { acc += dt; while (acc >= STEP) { update(STEP); acc -= STEP; } }
+  draw();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; window.sketchFps = frames / fpsT; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// for Playwright checks: set a look/amount and freeze time so screenshots are repeatable
+window.sketch = { GOO, readKnobs, setKnobs, setStyle, STYLES, freeze(t) { frozen = t !== undefined; if (frozen) { simTime = t; pieceT = t; } } };
+</script>
+</body>
+</html>
