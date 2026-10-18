@@ -1,0 +1,32 @@
+# Sprint 04 — machines that break, fixed at the console
+Started 2026-10-18 · Milestone M3 Breakdowns · Features: F23, F24, F25
+What changes for Muzzy: from rank 2 machines break (visor at 2, laser at 4, controls at 6); you repair them at your console while the tank crawls at 25%. Stays the same: the shift loop, the goo, ranks.
+Decided at planning (Muzzy, 2026-10-18): triggers = v1's meters · softer effects · the tank SLOWS at the console mid-shift · repairs simplified, walked through one by one (below).
+
+## F23 🧱 Breakdowns in the engine
+Done when: three meters fill/drain by v1's rules, break at their threshold (from their unlock rank), apply their effect, and repair via an action; cooldowns as v1; upgrade hooks ready; tests.
+- [ ] 🤖 1. Meters (content/tuning/breakdowns.json): laser drains per zapped cell, refills per landed piece · visor signal holds for a grace, then fades unless fast-dropping · controls heat per tank turn, cools when idle
+- [ ] 🤖 2. Effects: broken laser = two taps to zap (prime, then pop) · visor glitch grows as its signal falls (the game draws it) · broken controls = held spin at half speed, single presses/swipes normal
+- [ ] 🤖 3. Unlock ranks (visor 2, laser 4, controls 6), cooldown after repair max(8, 20 − (rank − unlock)) s, several can be broken at once; upgrade modifier hooks
+- [ ] 🤖 4. Mid-shift console: swipe up / W / ↑ → the real console, the tank runs at 25% (`consoleTimeScale`); the gear opens the pause menu (Settings, End shift) which fully pauses; pull the periscope to return
+- [ ] 🤖 5. Tests + GDD §4/§5 + TDD
+
+## F24 🎮 Repairs at the console
+Done when: a broken machine's panel lights up on the console and its repair (below) fixes it, with mouse and finger, at every size; the shift shows stand-in meters.
+- [ ] 🤖 6. Laser: 2 random sliders of 4 light up, each needing left or right; the others stay unlit
+- [ ] 🤖 7. Lights (visor): top slider light blinks fast → slide up (it turns off) → a colour button blinks until pressed, then another (never the same twice in a row), then a third → bottom light blinks fast → slide down → fixed
+- [ ] 🤖 8. Controls: the dial — turn it to the blinking corner and it locks by itself; 3 corners
+- [ ] 🤖 9. One shared drag/tap part, framework-first (kit) · stand-in meters in the shift (like v1's beside the tank; real home = the parked HUD rethink)
+- [ ] 🤖 10. e2e: each break + repair (mouse + finger), 9 sizes
+
+## F25 ✨ Visor glitch — sketch first
+Done when: Muzzy picked a glitch look in a sketch, and it's in the game, driven by the visor signal, built so a pixel filter can stack on top later.
+- [ ] 🤖 11. Research glitch-shader references (VHS, signal loss, scanlines, chromatic split, block tearing…) → `/sketch` with knobs + presets
+- [ ] 🙋 12. Pick a look (send your own references too)
+- [ ] 🤖 13. Into the game as the visor effect (stand-in flicker until then); post-process chain ready for a pixel filter
+
+## Tuning (last)
+- [ ] 🙋 14. Play: breakdowns feel like a fair interruption, not a punishment? Repairs tactile?
+
+## Notes
+- Engine ↔ screens contract written first (src/engine/types.ts: MachineId, MachineState, state.machines, repair action, breakdown/repaired/prime events) so F23 and F24 build in parallel.

@@ -35,12 +35,12 @@ Goal: every design question the remake needs is answered, so /define can write t
   what: covering + zapping seals a crack (settled by the story); colour rules still open
 - ✅ F04 Pressure: rises over time, zaps vent it, cracks grow with it, integrity → rupture ends the shift (GDD §4) — must:alpha
 - ✅ F05 Shift length: no clock — the rupture loop decides it; tuned in the balance talk (2026-10-17) — must:alpha · needs: F04
-- 📐 F06 ❓ Breakdowns as choices, not punishments; pause or slow at the console? — must:alpha · needs: F01
+- ✅ F06 Breakdowns: v1 meters, softer effects, the tank slows at the console, simplified repairs (GDD §5, 2026-10-18) — must:alpha · needs: F01
 - 📐 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
 - 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover — must:alpha · needs: F08
 - 📐 F10 ❓ Phone gestures without conflicts — must:alpha
-- 📐 F11 ❓ Look & sound: keep the v1 console art and palette, or refresh? — must:alpha
+- ✅ F11 Look: Muzzy's art; kit Neon only where there's no art; pixel look later (Ideas) — sound still open — must:alpha
 - 📐 F12 ❓ Tutorial: "your first day", taught at the moment of action — must:alpha · needs: F03, F04, F06, F10
   what: last on purpose: it teaches the settled rules
 ```mermaid
@@ -80,6 +80,12 @@ Goal: a day at the console — periscope into a shift, back to the console, rank
 - ✅ F20 Progression + save — must:alpha · needs: F08
 - ✅ F21 The console as the menu (Example1) — must:alpha · needs: F20, F19
 - ✅ F22 Upgrade-ready engine (modifiers + active hooks) — must:alpha · needs: F20
+
+## M3 — Breakdowns
+Goal: machines break from your own play and you fix them at the console while the tank crawls.
+- 🔨 F23 Breakdowns in the engine — must:alpha · needs: F06
+- 🔨 F24 Repairs at the console — must:alpha · needs: F23, F21
+- 🔨 F25 Visor glitch (sketch first) — must:alpha · needs: F23
 
 ## Parking lot
 - 📌 2026-10-17 — **HUD + messages rethink** (Muzzy: "My focus is so heavily on the bottom of the tank, that the top UI is vanishing… the message it sends didn't show up in a place that matched my focus… good UI early helps me understand how to give you bug/balance feedback"). Big moments (quota met, rupture, why it ended) belong where the player is looking; the top HUD needs a rethink. Known: on a 360px phone a 5-digit score only just fits beside the bars.
