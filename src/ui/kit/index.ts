@@ -6,6 +6,7 @@ import './kit.css'
 import './art.css'
 
 export * from './layout'
+export * from './artStage'
 export * from './controls'
 export { screens } from './screens'
 export { ScreenStack, useScreens } from './ScreenStack'

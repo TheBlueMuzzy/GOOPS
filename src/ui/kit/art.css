@@ -53,3 +53,65 @@
     .kit-panel[data-frame][data-depth] { border-width: var(--kit-art-frame-width-short); border-image-width: var(--kit-art-frame-width-short); }
   }
 }
+
+/* ───────────── Art stage, pull handle, small title (0.12.0) ───────────── */
+@layer kit-base {
+  .kit-title-art[data-size="s"] { block-size: var(--kit-title-art-h-s, 3.5rem); }
+  @media (max-height: 30rem) { .kit-title-art[data-size="s"] { block-size: var(--kit-title-art-h-s-short, 2.75rem); } }
+
+  /* ArtStage: fills its box (in a Screen's centre: the whole centre), the scene fitted inside it, centred, never stretched.
+     view = the part of the scene that shows; the scene is moved and sized so that part fills the view box exactly.
+     (Margins in % are shares of the box's WIDTH, top ones too — so every number below is "picture units / width".) */
+  .kit-screen > [data-slot="center"]:has(> .kit-art-stage) { place-self: stretch; }
+  .kit-art-stage { inline-size: 100%; block-size: 100%; min-block-size: 0; container-type: size; display: grid; place-items: center; }
+  .kit-art-view { display: flow-root; overflow: clip; aspect-ratio: var(--kit-view-ratio);
+    inline-size: min(100cqw, calc(100cqh * var(--kit-view-ratio))); }
+  .kit-art-scene { display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); min-block-size: 0; aspect-ratio: var(--kit-scene-ratio);
+    inline-size: calc(var(--kit-scene-w) / var(--kit-view-w) * 100%);
+    margin-inline-start: calc(var(--kit-view-x) / var(--kit-view-w) * -100%);
+    margin-block-start: calc(var(--kit-view-y) / var(--kit-view-w) * -100%);
+    container-type: inline-size; }
+  @media (max-height: 30rem) {
+    .kit-art-view { aspect-ratio: var(--kit-view-short-ratio); inline-size: min(100cqw, calc(100cqh * var(--kit-view-short-ratio))); }
+    .kit-art-scene { inline-size: calc(var(--kit-scene-w) / var(--kit-view-short-w) * 100%);
+      margin-inline-start: calc(var(--kit-view-short-x) / var(--kit-view-short-w) * -100%);
+      margin-block-start: calc(var(--kit-view-short-y) / var(--kit-view-short-w) * -100%); }
+  }
+  /* each layer at its own spot, all in the scene's one grid cell (later ones on top) */
+  .kit-art-layer { grid-area: 1 / 1; align-self: start; justify-self: start; display: grid; min-inline-size: 0;
+    inline-size: calc(var(--kit-at-w) / var(--kit-scene-w) * 100%);
+    margin-inline-start: calc(var(--kit-at-x) / var(--kit-scene-w) * 100%);
+    margin-block-start: calc(var(--kit-at-y) / var(--kit-scene-w) * 100%); }
+  .kit-art-layer[data-sized] { aspect-ratio: var(--kit-at-ratio); }
+  .kit-art-layer > * { grid-area: 1 / 1; min-inline-size: 0; min-block-size: 0; }
+  .kit-art-layer-picture { display: block; inline-size: 100%; block-size: auto; pointer-events: none; user-select: none; }
+  .kit-art-layer[data-sized] > .kit-art-layer-picture { block-size: 100%; object-fit: contain; }
+  /* words on the art: sized in the picture's units (so they grow with it), never below 0.625rem; one line */
+  .kit-art-layer[data-text] { font-size: max(0.625rem, calc(var(--kit-art-text) * 100cqw / var(--kit-scene-w)));
+    line-height: 1.1; place-items: center; text-align: center; white-space: nowrap; }
+  .kit-art-layer[data-text][data-align="start"] { justify-items: start; text-align: start; }
+  .kit-art-layer[data-text][data-align="end"] { justify-items: end; text-align: end; }
+  .kit-art-layer[data-off] { pointer-events: none; }
+
+  /* PullHandle: the whole picture is the handle; it moves along its direction by --kit-pull × travel of its own length */
+  .kit-pull { display: block; inline-size: 100%; block-size: 100%; min-inline-size: var(--target-min); min-block-size: var(--target-min);
+    padding: 0; border: 0; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+  .kit-pull[data-dragging] { cursor: grabbing; }
+  .kit-pull > img { display: block; inline-size: 100%; block-size: 100%; object-fit: contain; pointer-events: none; }
+  .kit-pull[data-direction="down"] { transform: translateY(calc(var(--kit-pull, 0) * var(--kit-pull-travel, 0.5) * 100%)); }
+  .kit-pull[data-direction="up"] { transform: translateY(calc(var(--kit-pull, 0) * var(--kit-pull-travel, 0.5) * -100%)); }
+  .kit-pull[data-direction="right"] { transform: translateX(calc(var(--kit-pull, 0) * var(--kit-pull-travel, 0.5) * 100%)); }
+  .kit-pull[data-direction="left"] { transform: translateX(calc(var(--kit-pull, 0) * var(--kit-pull-travel, 0.5) * -100%)); }
+}
+@layer kit-style {
+  .kit-art-layer[data-text] { font-family: var(--font-body); font-weight: 600; text-transform: var(--text-case); color: var(--on-game); }
+  .kit-art-layer[data-tone="primary"] { color: var(--primary); }
+  .kit-art-layer[data-tone="accent"] { color: var(--accent); }
+  .kit-art-layer[data-tone="muted"] { color: var(--muted); }
+  /* off (does nothing yet) and dim (the rest of the machine while something else is in use): darkened, greyer */
+  .kit-art-layer { transition: filter var(--motion-normal) var(--ease); }
+  .kit-art-layer:is([data-off], [data-dim]) { filter: brightness(0.42) saturate(0.55); }
+  .kit-pull { background: none; transition: transform var(--motion-normal) var(--ease); }
+  .kit-pull[data-dragging] { transition: none; }
+  .kit-pull:focus-visible { outline-offset: -0.25rem; }
+}

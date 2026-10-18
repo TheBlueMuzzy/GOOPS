@@ -178,6 +178,7 @@
     .kit-main-menu-buttons > .kit-button[data-variant="primary"], .kit-main-menu-extra > * { grid-column: 1 / -1; }
   }
   .kit-end-title { display: inline-block; }
+  .kit-end-swipe { display: block; text-align: center; padding-block-start: var(--gap-xs); } /* "⇧ Swipe up…": words, not a button */
   /* Victory / Game over on a short, wide screen (a phone on its side): the report on the left, its buttons on the right (0.11.0) */
   @media (max-height: 30rem) and (min-width: 40rem) {
     .kit-end { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; column-gap: var(--gap-l); }
@@ -362,4 +363,31 @@
 @keyframes kit-callout-pulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
   60% { box-shadow: 0 0 0 0.75rem color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+
+/* ───────────── Level meter (meter.tsx, 0.12.0): "RANK 2 · 10,347 / 12,500 XP" over a bar ─────────────
+   Sized in em, so it follows the text size around it (inside an ArtLayer `text`: it grows with the art). */
+@layer kit-base {
+  .kit-level-meter { display: flex; flex-direction: column; justify-content: space-between; gap: 0.3em;
+    inline-size: 100%; min-inline-size: 0; white-space: nowrap; text-align: start; }
+  .kit-level-meter[data-art] { block-size: 100%; gap: 0; }
+  .kit-level-meter-words { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75em; min-inline-size: 0; }
+  .kit-level-meter-level { transform-origin: 50% 70%; }
+  .kit-level-meter-level { display: inline-block; font-size: 1.6em; line-height: 0.9; }
+  .kit-level-meter-value { font-size: 0.85em; flex-shrink: 0; }
+  .kit-level-meter-bar { display: grid; block-size: 0.6em; border-radius: 1em; overflow: hidden; }
+  /* with the game's art: the bar picture keeps its shape (never stretched); the track is the art's own */
+  .kit-level-meter[data-art] .kit-level-meter-bar { block-size: auto; aspect-ratio: var(--kit-meter-art-ratio); border-radius: 0; }
+  .kit-level-meter-fill { inline-size: 100%; block-size: 100%;
+    clip-path: inset(0 calc((1 - var(--kit-meter-share, 0)) * 100%) 0 0); }
+}
+@layer kit-style {
+  .kit-level-meter-label { font-weight: 600; text-transform: var(--text-case); color: var(--primary); }
+  .kit-level-meter-level { font-family: var(--font-numbers); font-weight: 800; }
+  .kit-level-meter-level[data-pop] { animation: kit-attention calc(var(--motion-normal) * 1.5) var(--ease); }
+  .kit-level-meter-value { font-family: var(--font-numbers); color: var(--muted); }
+  .kit-level-meter-bar { background: var(--border); }
+  .kit-level-meter-fill { background: var(--primary); }
+  .kit-level-meter[data-art] .kit-level-meter-bar { background: none; }
+  .kit-level-meter[data-art] .kit-level-meter-fill { background: var(--kit-meter-art) left / 100% 100% no-repeat; }
 }
