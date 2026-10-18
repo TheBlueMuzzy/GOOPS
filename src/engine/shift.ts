@@ -2,7 +2,7 @@
 // The screen sends actions in, reads `state`, and takes events out.
 // The loop (GDD §4): pressure rises → cracks come faster → open cracks drain tank integrity → at 0 the tank
 // ruptures → pressure drains to 0 while you zap what you can → the shift ends (won if the crack quota was met).
-import type { Group, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, WallKickMode } from './types'
+import type { AbilityState, Group, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, WallKickMode } from './types'
 import type { ShiftConfig } from './config'
 import { cracksNeededFor, junkCount, paletteSize } from './config'
 import { createRng, type Rng } from './rng'
@@ -21,12 +21,17 @@ import {
 import { type GroupBook, dropLoose, regroup } from './groups'
 import { crackEveryMs, firstPoppableRow, popLine, spawnCrack, updatePlugs } from './cracks'
 import { popPoints, popRefundMs } from './score'
+import { type Modifiers, clampModifiers } from './upgrades'
+import { ABILITY_EFFECTS, type AbilitySpec, type ActiveEffects } from './abilities'
 
 export interface ShiftOptions {
   seed: number
   rank: number
   startGrid?: ArrayLike<number> // a set-up tank (Color per cell, y * width + x) instead of the rank's junk — for tests and level setups
   wallKick?: WallKickMode // default 'rotateVat'; can be changed later with setWallKick
+  // F22 upgrades (both optional; leave them out and the shift plays exactly as without upgrades):
+  modifiers?: Partial<Modifiers> // from resolveUpgrades(); clamped to safe ranges here
+  abilities?: AbilitySpec[] // equipped active abilities, from resolveUpgrades()
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -54,6 +59,10 @@ class Shift implements ShiftEngine {
   private popStreak = 0 // pops since the last piece landed
   private playedMs = 0 // time since the shift started (picks the piece-size zone)
   private wallKick: WallKickMode
+  private readonly mods: Modifiers // upgrade modifiers; all 1 (no change) without upgrades
+  private readonly abilitySpecs = new Map<string, AbilitySpec>()
+  private readonly abilities: AbilityState[] // the same arrays/objects as state.abilities / state.effects
+  private readonly effects: ActiveEffects = {}
 
   constructor(config: ShiftConfig, options: ShiftOptions) {
     this.config = config
@@ -61,6 +70,13 @@ class Shift implements ShiftEngine {
     const { width, height, bufferRows, visibleWidth } = config.tank
     this.colorCount = paletteSize(config, options.rank)
     this.wallKick = options.wallKick ?? 'rotateVat'
+    this.mods = clampModifiers(options.modifiers)
+    for (const a of options.abilities ?? []) {
+      if (this.abilitySpecs.has(a.id)) continue // equipped twice: once is enough
+      const rate = (n: number) => (Number.isFinite(n) && n > 0 ? n : 0) // no negative or broken charge rates
+      this.abilitySpecs.set(a.id, { ...a, chargePerSecond: rate(a.chargePerSecond), chargePerSeal: rate(a.chargePerSeal) })
+    }
+    this.abilities = [...this.abilitySpecs.values()].map((a) => ({ id: a.id, effect: a.effect, charge: 0, ready: false }))
     this.state = {
       width,
       height,
@@ -88,6 +104,8 @@ class Shift implements ShiftEngine {
       score: 0,
       status: 'playing',
       rank: options.rank,
+      abilities: this.abilities,
+      effects: this.effects,
     }
 
     if (options.startGrid) {
@@ -140,6 +158,9 @@ class Shift implements ShiftEngine {
       case 'pop':
         ok = this.pop(action.x, action.y)
         break
+      case 'ability':
+        ok = this.fireAbility(action.id)
+        break
     }
     if (!ok) this.events.push({ type: 'reject', action: action.type })
     this.refreshView()
@@ -151,12 +172,13 @@ class Shift implements ShiftEngine {
     const s = this.state
     this.playedMs += dt
     if (s.phase === 'playing') {
-      this.setPressure(s.pressure + dt / this.config.pressure.riseMsToFull)
+      this.setPressure(s.pressure + dt / this.riseMsToFull())
       this.growCracks(dt)
       this.drainIntegrity(dt)
+      this.chargeAbilities(dt / 1000, 0)
     } else {
       // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
-      this.setPressure(s.pressure - dt / this.config.rupture.drainMs)
+      this.setPressure(s.pressure - dt / (this.config.rupture.drainMs * this.mods.ruptureDrainTimeMult))
       if (s.pressure <= 0) {
         this.end()
         return
@@ -169,6 +191,11 @@ class Shift implements ShiftEngine {
     this.fillGroups(dt)
   }
 
+  // How long pressure takes to rise 0 → 100% (tuning × upgrades). Vents are "ms of rise", so they use it too.
+  private riseMsToFull(): number {
+    return this.config.pressure.riseMsToFull * this.mods.pressureRiseTimeMult
+  }
+
   private setPressure(value: number): void {
     const s = this.state
     s.pressure = Math.max(0, Math.min(1, value))
@@ -179,19 +206,27 @@ class Shift implements ShiftEngine {
   private growCracks(dt: number): void {
     const s = this.state
     this.crackTimerMs += dt
-    if (this.crackTimerMs < crackEveryMs(this.config, s.pressure)) return
+    if (this.crackTimerMs < crackEveryMs(this.config, s.pressure) * this.mods.crackEveryMult) return
     this.crackTimerMs = 0
-    const crack = spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId)
+    // The low-cracks ability: this crack goes in the bottom rows (if there's no room there, a normal crack instead).
+    const low = this.effects.lowCracks
+    let crack = low ? spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId, low.rows) : null
+    const wasLow = !!crack
+    crack ??= spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId)
     if (!crack) return // nowhere sealable right now: try again next time
     this.nextCrackId++
     s.cracks.push(crack)
     this.events.push({ type: 'crack', crack: { ...crack } })
+    if (low && wasLow && --low.left <= 0) {
+      delete this.effects.lowCracks
+      this.events.push({ type: 'abilityEnd', id: low.id })
+    }
   }
 
   // Every open (unsealed) crack wears the tank down a little each second. Integrity never comes back.
   private drainIntegrity(dt: number): void {
     const s = this.state
-    const drain = s.cracks.length * this.config.integrity.drainPerCrackPerSec * (dt / 1000)
+    const drain = s.cracks.length * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
     s.integrity = Math.max(0, s.integrity - drain)
     if (s.integrity <= 0) this.rupture('integrity')
   }
@@ -216,7 +251,7 @@ class Shift implements ShiftEngine {
       return
     }
     this.lockMs = null
-    const msPerRow = this.config.fall.msPerRow / (this.softDrop ? this.config.fall.softDropFactor : 1)
+    const msPerRow = this.config.fall.msPerRow / this.mods.fallSpeedMult / (this.softDrop ? this.config.fall.softDropFactor : 1)
     p.fall += dt / msPerRow
     while (p.fall >= 1 && !this.grounded()) {
       p.y++
@@ -348,7 +383,8 @@ class Shift implements ShiftEngine {
     // Not during a rupture: there pressure drains on its own, and venting would only shorten the time to zap.
     if (s.phase === 'playing') {
       const ventMs = popRefundMs(this.config, g.cells.length) + sealed.length * this.config.cracks.sealRefundMs
-      this.setPressure(s.pressure - ventMs / this.config.pressure.riseMsToFull)
+      this.setPressure(s.pressure - ventMs / this.riseMsToFull())
+      this.chargeAbilities(0, sealed.length)
     }
 
     for (const i of g.cells) {
@@ -365,6 +401,35 @@ class Shift implements ShiftEngine {
       this.events.push({ type: 'quotaMet' })
     }
     this.updateReady()
+    return true
+  }
+
+  // ---------------------------------------------------------------- abilities (F22)
+
+  // Add charge from play time and seals. Only while the shift is playing — not during a rupture.
+  private chargeAbilities(seconds: number, seals: number): void {
+    for (const a of this.abilities) {
+      if (a.ready) continue
+      const spec = this.abilitySpecs.get(a.id)!
+      a.charge = Math.min(1, a.charge + seconds * spec.chargePerSecond + seals * spec.chargePerSeal)
+      if (a.charge >= 1 - 1e-9) {
+        a.charge = 1
+        a.ready = true
+        this.events.push({ type: 'abilityReady', id: a.id })
+      }
+    }
+  }
+
+  // Fire a ready ability: its effect starts and the charge goes back to 0. Not ready, unknown, or the effect
+  // can't do anything right now → rejected, and the charge is kept.
+  private fireAbility(id: string): boolean {
+    const a = this.abilities.find((x) => x.id === id)
+    if (!a || !a.ready) return false
+    const fire = ABILITY_EFFECTS[a.effect]
+    if (!fire || !fire({ phase: this.state.phase, effects: this.effects }, this.abilitySpecs.get(id)!.params, id)) return false
+    a.charge = 0
+    a.ready = false
+    this.events.push({ type: 'ability', id })
     return true
   }
 
@@ -468,7 +533,7 @@ class Shift implements ShiftEngine {
     if (s.status !== 'playing') return
     let left = 0
     for (const c of s.grid) if (c !== 0) left++
-    s.leftoverPenalty = left * this.config.score.leftoverPerCell
+    s.leftoverPenalty = Math.floor(left * this.config.score.leftoverPerCell * this.mods.leftoverPenaltyMult)
     s.score = Math.max(0, s.score - s.leftoverPenalty)
     const status: ShiftStatus = s.cracksSealed >= s.cracksNeeded ? 'won' : 'lost'
     s.status = status

@@ -23,8 +23,9 @@ export function crackEveryMs(config: ShiftConfig, pressure: number): number {
 }
 
 // One new crack where it can be sealed right now: an empty cell (no goop, no crack) at or below the pop line.
+// `lowRows` (the low-cracks ability, F22): only in the bottom lowRows rows instead, pop line or not (v1 Crack Down).
 // Returns null if there is nowhere to put it (or, with onePerColour, every colour already has an open crack).
-export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, colorCount: number, id: number): Crack | null {
+export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, colorCount: number, id: number, lowRows?: number): Crack | null {
   const colors: Color[] = []
   for (let c = 1; c <= colorCount; c++) {
     if (config.cracks.onePerColour && state.cracks.some((k) => k.color === c)) continue
@@ -34,7 +35,8 @@ export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, col
 
   const cracked = new Set(state.cracks.map((c) => c.y * state.width + c.x))
   const spots: number[] = []
-  for (let y = firstPoppableRow(state); y < state.height; y++) {
+  const top = lowRows ? Math.max(state.bufferRows, state.height - lowRows) : firstPoppableRow(state)
+  for (let y = top; y < state.height; y++) {
     for (let x = 0; x < state.width; x++) {
       const i = y * state.width + x
       if (state.grid[i] === 0 && !cracked.has(i)) spots.push(i)

@@ -2,6 +2,8 @@
 // Coordinates are TANK space: x = column around the cylinder (0..width-1, wraps), y = row (0 = top, grows downward).
 // Rows 0..bufferRows-1 are the hidden spawn buffer above the visible tank.
 
+import type { ActiveEffects } from './abilities'
+
 export type Color = number // 0 = empty; 1.. = index into content/tuning/shift.json "colors"
 
 export interface Piece {
@@ -65,6 +67,16 @@ export interface ShiftState {
   status: ShiftStatus
   rank: number
   leftoverPenalty?: number // points taken off at the end for goop left in the tank (v1: 50 per cell) (added by F13)
+  abilities?: AbilityState[] // equipped active abilities; the engine always sets it (empty when none) (added by F22)
+  effects?: ActiveEffects // abilities' effects still running; the engine always sets it (empty when none) (added by F22)
+}
+
+// An equipped active ability (F22). It charges 0 → 1 during play; at 1 it's ready to fire.
+export interface AbilityState {
+  id: string // the upgrade id
+  effect: string // what it does when fired (abilities.ts)
+  charge: number // 0..1
+  ready: boolean // charge is full: act({ type: 'ability', id }) fires it
 }
 
 // Everything that happens, in order, for the goo and the screens to react to.
@@ -87,6 +99,9 @@ export type ShiftEvent =
   | { type: 'end'; status: ShiftStatus }
   | { type: 'hold' } // the falling piece was swapped with the held one (added by F13)
   | { type: 'reject'; action: ShiftAction['type'] } // an action couldn't happen (v1 played a "nope" sound) (added by F13)
+  | { type: 'abilityReady'; id: string } // an ability's charge just became full (F22)
+  | { type: 'ability'; id: string } // an ability was fired (F22)
+  | { type: 'abilityEnd'; id: string } // a fired ability's lasting effect ran out (F22)
 
 export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column
@@ -94,6 +109,7 @@ export type ShiftAction =
   | { type: 'softDrop'; on: boolean } // hold to fall fast
   | { type: 'hold' } // swap with the held piece
   | { type: 'pop'; x: number; y: number } // tap a cell (tank space)
+  | { type: 'ability'; id: string } // fire an equipped, ready ability (F22)
 
 export interface ShiftEngine {
   readonly state: ShiftState
