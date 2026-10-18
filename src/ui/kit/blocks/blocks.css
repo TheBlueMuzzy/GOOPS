@@ -117,6 +117,59 @@
   .kit-hud-chip[data-width="s"] { --kit-bar-w: 4rem; }
   .kit-hud-chip[data-width="m"] { --kit-bar-w: 8rem; }
   .kit-hud-chip[data-width="l"] { --kit-bar-w: 14rem; }
+  /* Bar 0.17.0. A share of its row (width={0.24}): that much of the row, never narrower than its label above */
+  :is(.kit-hud-chip, .kit-bar)[data-width="share"] { flex: none; inline-size: calc(var(--kit-bar-share) * 100%); min-inline-size: max-content; max-inline-size: 100%; }
+  .kit-hud-chip[data-width="share"] > .kit-progress { flex: 1 1 auto; inline-size: auto; }
+  /* plain (no plate): the same row of icon · label · bar, on whatever it sits on */
+  .kit-bar { display: flex; align-items: center; gap: var(--gap-s); min-inline-size: 0; }
+  .kit-bar > :is(.kit-progress, .kit-bar-inside) { flex: 1 1 6rem; min-inline-size: 2rem; }
+  /* label above: the bar's name, big and centred, then the bar across the whole width */
+  :is(.kit-bar, .kit-hud-chip)[data-label-at="above"] { flex-direction: column; align-items: stretch; gap: var(--gap-xs); }
+  :is(.kit-bar, .kit-hud-chip)[data-label-at="above"] > :is(.kit-progress, .kit-bar-inside) { flex: none; inline-size: auto; }
+  .kit-bar-label-above { text-align: center; white-space: nowrap; font-weight: 600; line-height: 1.2; }
+  /* label inside: the bar and its name in one grid cell, the name centred on top */
+  .kit-bar-inside { display: grid; min-inline-size: 0; }
+  .kit-bar-inside > * { grid-area: 1 / 1; }
+  .kit-bar-inside > .kit-progress { min-inline-size: 0; }
+  .kit-bar-label-inside { place-self: center; z-index: 1; /* over the fill (its glow filter paints it on a layer of its own) */
+    white-space: nowrap; font-size: 0.8em; font-weight: 700; letter-spacing: 0.08em; line-height: 1; pointer-events: none; }
+  /* thickness: s = the usual 0.75rem · m · l */
+  :is(.kit-bar, .kit-hud-chip)[data-thickness="m"] .kit-progress { block-size: 1rem; }
+  :is(.kit-bar, .kit-hud-chip)[data-thickness="l"] .kit-progress { block-size: 1.5rem; }
+
+  /* HUD oneRow (0.17.0): on a phone the status stays between the corners (one top row) instead of taking a row of
+     its own; it gets the room left between them (HudText fit shrinks to it). Wider HUDs already work this way. */
+  .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) { column-gap: var(--gap-s); }
+  .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) > [data-slot="top"] { justify-self: stretch; align-self: center; }
+  @media (max-width: 40rem) {
+    .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "top-left top top-right" "center center center" "bottom-left . bottom-right" "bottom bottom bottom";
+    }
+  }
+  @container (max-width: 40rem) {
+    .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "top-left top top-right" "center center center" "bottom-left . bottom-right" "bottom bottom bottom";
+    }
+  }
+  /* HudText fit: fills its box and stays one line; too wide → the size that fits, never under body text */
+  .kit-hud-text[data-fit] { inline-size: 100%; min-inline-size: 0; }
+  .kit-hud-text[data-fit] .kit-text { white-space: nowrap; }
+  .kit-hud-text[data-fitted] .kit-text { font-size: max(var(--text-body), var(--kit-fit-size)); line-height: var(--kit-fit-line, normal); }
+
+  /* HUD dock (0.17.0): a panel on the HUD column's bottom edge, edge to edge, --kit-hud-dock-size tall (more only if
+     its contents need it). The HUD's own bottom slots sit above it. It shows meters, so taps go through it to the game.
+     (Positioned against the HUD's layer — the ScreenStack's — like the Screen itself.) */
+  .kit-hud-dock { position: absolute; display: grid; pointer-events: none; }
+  .kit-layer[data-framed] > .kit-hud-dock { pointer-events: none; }
+  .kit-hud-dock[data-side="bottom"] { inset-inline: 0; inset-block-end: 0; min-block-size: var(--kit-hud-dock-size, 6rem); }
+  /* right: a column in the bottom-right corner, as tall as its contents (a phone on its side) */
+  .kit-hud-dock[data-side="right"] { inset-inline-end: var(--gap-m); inset-block-end: var(--gap-m); inline-size: var(--kit-hud-dock-size, 12rem); }
+  .kit-hud-dock > .kit-panel { padding: var(--gap-s) var(--gap-m); justify-content: center; min-block-size: 0; }
+  .kit-screen:has(+ .kit-hud-dock[data-side="bottom"]) { padding-block-end: calc(var(--kit-hud-dock-size, 6rem) + var(--gap-m)); }
   .kit-banner { align-items: center; text-align: center; }
   /* +N float-up: stacked on top of its number (same grid cell), so no positioning needed */
   .kit-float-anchor { display: inline-grid; }
@@ -298,6 +351,21 @@
   .kit-dot[data-status="good"] { background: var(--primary); }
   .kit-dot[data-status="weak"] { box-shadow: inset 0 0 0 0.1875rem var(--danger); } /* a hollow red dot: half there */
   .kit-dot[data-status="lost"] { background: var(--danger); }
+  /* Bar 0.17.0: a name inside the bar reads over the fill and the empty part alike (the HUD text halo) */
+  .kit-bar-label-above, .kit-bar-label-inside { text-transform: var(--text-case); }
+  .kit-bar-label-inside { color: var(--on-game);
+    text-shadow: 0 0.0625rem 0.125rem var(--game-shade), 0 0 0.375rem var(--game-shade), 0 0 0.75rem var(--game-shade); }
+  /* Bar alert: a ring in the bar's colour with a glow breathing out of it — the teaching callout's pulse (same
+     intention, same motion) — and for 'flash' the fill blinks too. Reduce motion: the ring stays lit, the fill on. */
+  :is(.kit-bar, .kit-hud-chip)[data-alert] .kit-progress { --kit-pulse: var(--primary); outline: 0.125rem solid var(--kit-pulse); outline-offset: 0.125rem;
+    animation: kit-callout-pulse calc(var(--motion-normal) * 5) ease-in-out infinite; }
+  :is(.kit-bar, .kit-hud-chip)[data-alert] .kit-progress[data-variant="accent"] { --kit-pulse: var(--accent); }
+  :is(.kit-bar, .kit-hud-chip)[data-alert] .kit-progress[data-variant="danger"] { --kit-pulse: var(--danger); }
+  :is(.kit-bar, .kit-hud-chip)[data-alert="flash"] .kit-progress-fill { animation: kit-blink calc(var(--motion-normal) * 3) linear infinite; }
+  @media (prefers-reduced-motion: reduce) { :is(.kit-bar, .kit-hud-chip)[data-alert] :is(.kit-progress, .kit-progress-fill) { animation: none !important; } }
+  :root[data-reduce-motion] :is(.kit-bar, .kit-hud-chip)[data-alert] :is(.kit-progress, .kit-progress-fill) { animation: none !important; }
+  /* HudText numbers: a readout in the style's number font */
+  .kit-hud-text[data-numbers] .kit-text { font-family: var(--font-numbers); }
 }
 
 /* The idle warning's bar: full → empty */
@@ -368,9 +436,10 @@
   /* Bar showLabel: the bar's name beside it, small and quiet (0.11.1) */
   .kit-bar-label { font-size: 0.8em; color: var(--muted); white-space: nowrap; letter-spacing: 0.04em; }
 }
+/* (--kit-pulse: the glow's colour — the accent for a callout, the bar's own colour for a Bar alert, 0.17.0) */
 @keyframes kit-callout-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
-  60% { box-shadow: 0 0 0 0.75rem color-mix(in srgb, var(--accent) 0%, transparent); }
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--kit-pulse, var(--accent)) 60%, transparent); }
+  60% { box-shadow: 0 0 0 0.75rem color-mix(in srgb, var(--kit-pulse, var(--accent)) 0%, transparent); }
 }
 
 /* ───────────── Level meter (meter.tsx, 0.12.0): "RANK 2 · 10,347 / 12,500 XP" over a bar ─────────────

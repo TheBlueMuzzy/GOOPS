@@ -2,6 +2,7 @@
 .stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; background: #05070d; }
 .stage-layer { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .stage-layer[data-goo] { pointer-events: none; }
-/* F26 "Hug the tank" tags: a point on the tank (the frame loop sets translate); the kit's PinnedBox hangs the text on
-   it. Above the visor glitch (z-index 1), so the meters stay readable while the view breaks up. */
+/* F26 the pressure readout: its line (a canvas of its own) and its words (kit text, placed each frame by the frame loop
+   with a CSS translate), above the visor glitch (z-index 1), so the reading stays clear while the view breaks up. */
+.stage-readout { z-index: 2; pointer-events: none; }
 .stage-pin { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; }

@@ -188,27 +188,22 @@
           "default": "Rotate vat"
         },
         {
-          "id": "metersTest",
-          "type": "selector",
-          "label": "Meters (test)",
-          "detail": "Where pressure, tank and cracks show: at the top, on the tank itself, or in a strip under it.",
-          "options": [
-            "Top",
-            "Hug the tank",
-            "Bottom strip"
-          ],
-          "default": "Top"
+          "id": "readoutPosition",
+          "type": "slider",
+          "label": "Pressure readout position",
+          "detail": "Where the pressure % sits along the pressure line, from the tank's left wall to its right.",
+          "default": 65
         },
         {
-          "id": "messagesTest",
+          "id": "readoutDirection",
           "type": "selector",
-          "label": "Messages (test)",
-          "detail": "Where messages pop up: the middle of the screen, or just above the goop.",
+          "label": "Pressure readout direction",
+          "detail": "A line rising from the pressure line to the %, or the % first and a line down to it.",
           "options": [
-            "Centre",
-            "At the stack"
+            "Line, then text",
+            "Text, then line"
           ],
-          "default": "Centre"
+          "default": "Line, then text"
         },
         {
           "id": "difficulty",

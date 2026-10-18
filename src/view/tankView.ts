@@ -8,8 +8,9 @@ import tank from '../../content/tuning/tank.json'
 
 export type ColorOf = (c: number) => string
 
-// rim: F26 "Hug the tank" layout — draw the tank's walls glowing with its integrity (off in the other layouts)
-export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, colorOf: ColorOf, timeSec: number, rim = false) {
+// guide: drawn in the tank right after the landing shadow, under everything else that's in the tank (the drop guide's
+// chevrons, src/view/dropGuide.ts)
+export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, colorOf: ColorOf, timeSec: number, guide?: () => void) {
   const { cellPx: cp, centreX, topY, width: W, height: H, dpr } = view
   const visRows = s.height - s.bufferRows
   const left = centreX - (pieceScreenColumn(s.visibleWidth) + 0.5) * cp
@@ -71,6 +72,7 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     ctx.setLineDash([])
     ctx.globalAlpha = 1
   }
+  guide?.()
 
   // the tank is a cylinder: shade toward the side walls
   const shade = ctx.createLinearGradient(left, 0, right, 0)
@@ -124,37 +126,6 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     ctx.beginPath(); ctx.moveTo(left, lineY); ctx.lineTo(right, lineY); ctx.stroke()
     ctx.setLineDash([])
   }
-
-  if (rim) drawRim(ctx, left, right, topY, bottom, cp, s.integrity, timeSec)
-}
-
-// The tank's walls + floor as its integrity meter (F26 "Hug the tank"): cyan when healthy, blending to red as it
-// falls, flickering when low. Drawn just outside the tank so it never covers goop or the off-screen crack arrows.
-function drawRim(ctx: CanvasRenderingContext2D, left: number, right: number, top: number, bottom: number, cp: number, integrity: number, t: number) {
-  const k = Math.max(0, Math.min(1, integrity))
-  const color = mixHex(tank.rimDanger, tank.rimHealthy, k)
-  const low = k < tank.rimFlickerBelow
-  // a flicker: mostly on, with quick dips (a square-ish wave), harder the lower it gets
-  const flicker = low ? 0.35 + 0.65 * (Math.sin(t * Math.PI * 2 * tank.rimFlickerHz) > -0.3 ? 1 : 0.2) : 1
-  const w = Math.max(2, cp * tank.rimWidth), half = w / 2
-  ctx.save()
-  ctx.globalAlpha = flicker
-  ctx.strokeStyle = color
-  ctx.shadowColor = color
-  ctx.shadowBlur = cp * tank.rimGlow
-  ctx.lineWidth = w
-  ctx.lineJoin = 'round'
-  ctx.beginPath()
-  ctx.moveTo(left - half, top); ctx.lineTo(left - half, bottom + half); ctx.lineTo(right + half, bottom + half); ctx.lineTo(right + half, top)
-  ctx.stroke()
-  ctx.restore()
-}
-
-// a blend of two "#rrggbb" colours: k = 0 → a, k = 1 → b
-function mixHex(a: string, b: string, k: number) {
-  const ch = (hex: string, i: number) => parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16)
-  const c = [0, 1, 2].map((i) => Math.round(ch(a, i) + (ch(b, i) - ch(a, i)) * k))
-  return `rgb(${c[0]},${c[1]},${c[2]})`
 }
 
 // A jagged crack, the same shape every frame for the same crack id, with a soft pulse so it reads as "fix me".

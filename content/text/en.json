@@ -47,19 +47,16 @@
     ]
   },
   "hud": {
-    "pressure": "Pressure",
-    "cracks": "Cracks {n} / {total}",
-    "cracksDone": "Quota met · {n}",
+    "cracks": "CRACKS {n} / {total}",
+    "cracksDone": "QUOTA MET · {n}",
     "pause": "Console",
     "swap": "Swapping piece",
-    "integrity": "Tank",
-    "rupture": "Rupture!",
-    "laser": "Laser",
-    "visor": "Signal",
-    "controls": "Heat",
-    "pressureTag": "{n}%",
-    "tankTag": "Tank {n}%",
-    "scoreTag": "Score {n}"
+    "integrity": "INTEGRITY",
+    "rupture": "RUPTURE!",
+    "laser": "LASER",
+    "visor": "VISOR",
+    "controls": "CONTROLS",
+    "pressureReadout": "{n}% PRESS"
   },
   "messages": {
     "refusedAboveLine": "Above the pressure line",

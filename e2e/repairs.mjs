@@ -1,5 +1,5 @@
 // REPAIRS AT THE CONSOLE (F24 + F23 task 4), at 9 screen sizes, with a real mouse AND a real finger (CDP touch):
-//   a shift at rank 6 (all three machines unlocked) → the stand-in meters under the tank (HUD check: every part over
+//   a shift at rank 6 (all three machines unlocked) → the machine bars in the panel under the tank (HUD check: every part over
 //   the tank, nothing overlapping, the meters clear of the tank) → swipe up / W → the console slides over the tank,
 //   which keeps running SLOWLY (engine ticks > 0, about consoleTimeScale of real time) → break each machine (DEV hook
 //   window.__goops.breakMachine) → its panel lights up → solve it by reading its lamps like a player, half with the
@@ -62,15 +62,15 @@ function hudProblems() {
   const left = view.centreX - (Math.ceil(s.visibleWidth / 2) - 1 + 0.5) * view.cellPx, right = left + s.visibleWidth * view.cellPx
   const bottom = view.topY + (s.height - s.bufferRows) * view.cellPx
   const parts = [...document.querySelectorAll('.kit-hud-slot > *')].map((e) => e.getBoundingClientRect())
-  // (a phone on its side shows the meters in a column beside the tank: the HUD may reach 150 px past it there)
-  const short = innerHeight <= 480
-  const mid = (left + right) / 2, half = Math.max((right - left) / 2 + (short ? 151 : 17), 181)
+  // the HUD's column (--kit-hud-w): on a phone on its side it reaches past the tank far enough for the panel beside it
+  const hudW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kit-hud-w')) || innerWidth
+  const mid = (left + right) / 2, half = Math.max(hudW / 2 + 1, (right - left) / 2 + 17)
   const out = parts.filter((r) => r.width && (r.left < mid - half || r.right > mid + half)).length
   const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1
   const overlaps = parts.flatMap((a, i) => parts.slice(i + 1).filter((b) => hit(a, b))).length
-  const spills = [...document.querySelectorAll('.kit-hud-slot *')].filter((e) => e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0).length
-  // the meters: a row under the tank, or a column beside it on a phone on its side — never over the tank
-  const meters = [...document.querySelectorAll(':is([data-slot="bottom"], [data-slot="bottom-left"]) .kit-hud-chip')].map((e) => e.getBoundingClientRect())
+  const spills = [...document.querySelectorAll('.kit-hud-slot *, .kit-hud-dock *')].filter((e) => e.scrollWidth > e.clientWidth + 1 && e.clientWidth > 0).length
+  // the machine bars: in the bottom panel under the tank, or the column beside it on a phone on its side — never over the tank
+  const meters = [...document.querySelectorAll('.kit-hud-dock .kit-bar[data-label-at="above"]')].map((e) => e.getBoundingClientRect())
   const onTank = meters.filter((r) => r.top < bottom - 1 && r.bottom > view.topY + 1 && r.right > left + 1 && r.left < right - 1).length
   const offScreen = meters.filter((r) => r.bottom > innerHeight || r.left < 0 || r.right > innerWidth).length
   return { parts: parts.length, meters: meters.length, out, overlaps, spills, onTank, offScreen }
@@ -109,7 +109,7 @@ try {
     const centre = (r) => [r.x + r.width / 2, r.y + r.height / 2]
     const boxOf = (locator) => locator.boundingBox()
 
-    // ── 1. the shift with the stand-in meters ──
+    // ── 1. the shift with the machine bars ──
     await page.evaluate(() => { window.__goops.engine.state.score = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kit-hud-w')) < 380 ? 9999 : 99999 })
     await page.waitForTimeout(250)
     await page.screenshot({ path: `${OUT}/${name}-1-shift-meters.png` })
