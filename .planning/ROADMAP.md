@@ -79,7 +79,7 @@ Goal: one full shift plays on phone and PC with living goo; Jelly or Particle in
 Goal: a day at the console — periscope into a shift, back to the console, rank up, next shift. No upgrades yet, but the engine is ready for them.
 - 🔨 F20 Progression + save — must:alpha · needs: F08
 - 🔨 F21 The console as the menu (Example1) — must:alpha · needs: F20, F19
-- 🔨 F22 Upgrade-ready engine (modifiers + active hooks) — must:alpha · needs: F20
+- ✅ F22 Upgrade-ready engine (modifiers + active hooks) — must:alpha · needs: F20
 
 ## Parking lot
 - 📌 2026-10-17 — **HUD + messages rethink** (Muzzy: "My focus is so heavily on the bottom of the tank, that the top UI is vanishing… the message it sends didn't show up in a place that matched my focus… good UI early helps me understand how to give you bug/balance feedback"). Big moments (quota met, rupture, why it ended) belong where the player is looking; the top HUD needs a rethink. Known: on a 360px phone a 5-digit score only just fits beside the bars.

@@ -23,10 +23,10 @@ Check: e2e console → periscope → shift → report → swipe up → XP → ne
 
 ## F22 🧱 Upgrade-ready engine
 Done when: the engine takes modifiers worked out from owned upgrades plus active-ability hooks, proven by two test-only upgrades; every v1 upgrade has a home in the plan.
-- [ ] 🤖 11. Read all 20 upgrades + actives (design/progression.md + v1 code); sort by what they touch; note what the new loop changes
-- [ ] 🤖 12. Design: modifiers + active hooks — TDD
-- [ ] 🤖 13. Build the plumbing; two test-only upgrades (passive: tank wears 50% slower; active: next 3 cracks spawn low)
-- [ ] 🤖 14. Tests + GDD §5 update
+- [x] 🤖 11. Read all 20 upgrades + actives (design/progression.md + v1 code); sort by what they touch; note what the new loop changes
+- [x] 🤖 12. Design: modifiers + active hooks — TDD
+- [x] 🤖 13. Build the plumbing; two test-only upgrades (passive: tank wears 50% slower; active: next 3 cracks spawn low)
+- [x] 🤖 14. Tests + GDD §5 update
 Check: unit tests for both test upgrades; no real upgrade shows in the game.
 
 ## Tuning (last)
@@ -36,3 +36,6 @@ Check: unit tests for both test upgrades; no real upgrade shows in the game.
 - Mid-shift console (swipe up / W / ↑) still pauses the shift — v1 kept it running; that's F06 (breakdowns).
 - F20: v1's XP = the final score (after the leftover penalty), floored. v1's code floored at 100 × rank (0 at rank 0); its PRD said at least 100 — both kept: max(minXp 100, 100 × rank). Only total XP + scraps spent are saved (`goops-progress`, v1); rank, XP-into-rank and scraps are worked out from them. New players start at rank 0 (4 colours, quota 4); every shift was rank 1 before. Dev/tests: `?rank=12`.
 - F20 fix on the way: the end handler did its work inside a React state update (React may run those twice → double XP); it now reads the engine from a ref.
+- F22 (helper, 171 tests): `design/upgrades-map.md` covers all 20 upgrades + actives (v1's real behaviour, what the new loop changes, a proposal each). Engine: `resolveUpgrades(book, owned, equipped)` → modifiers (integrityDrainMult = Muzzy's "tougher tank", ruptureDrainTimeMult = his "slower depressurise", pressureRiseTimeMult, crackEveryMult, fallSpeedMult, leftoverPenaltyMult) + ability hooks (`act({ type: 'ability', id })`, charge from time/seals). No upgrades owned = byte-identical shifts (tested). Only two testOnly upgrades exist; nothing in the game shows them.
+- v1 surprises: Sealing Bonus made breakdowns come back SOONER (backwards); Auto-Popper jumped from nothing to ~84% at level 1.
+- Ask Muzzy when upgrades get built (not now): Auto-Popper → slower depressurise or smaller leftover penalty? · Pressure Control → slower pressure rise or tougher tank? · abilities charge during a rupture? · Crack Down ignores the pop line (v1)? · Dense Goop stays risk/reward?
