@@ -21,7 +21,7 @@ Done when: a broken machine's panel lights up on the console and its repair (bel
 
 ## F25 ✨ Visor glitch — sketch first
 Done when: Muzzy picked a glitch look in a sketch, and it's in the game, driven by the visor signal, built so a pixel filter can stack on top later.
-- [ ] 🤖 11. Research glitch-shader references (VHS, signal loss, scanlines, chromatic split, block tearing…) → `/sketch` with knobs + presets
+- [x] 🤖 11. Research glitch-shader references (VHS, signal loss, scanlines, chromatic split, block tearing…) → `/sketch` with knobs + presets
 - [ ] 🙋 12. Pick a look (send your own references too)
 - [ ] 🤖 13. Into the game as the visor effect (stand-in flicker until then); post-process chain ready for a pixel filter
 
@@ -32,3 +32,4 @@ Done when: Muzzy picked a glitch look in a sketch, and it's in the game, driven 
 - Engine ↔ screens contract written first (src/engine/types.ts: MachineId, MachineState, state.machines, repair action, breakdown/repaired/prime events) so F23 and F24 build in parallel.
 - F23 (helper, 208 tests): machines live in `src/engine/machines.ts`, switched on by `createShift(…, { breakdowns })` (content/tuning/breakdowns.json) — off without it, so old shifts are unchanged. Differences from v1 (GDD §5, D08): priming does NOT restart the fill (softer); during a cooldown a meter stays 0.05 above its break point (needs one more push to break); the visor fades from where it is; flicker/overflare = game-side visuals. New modifiers laserDrainMult, visorGraceMult, controlsCoolMult, breakdownCooldownMult.
 - Ask Muzzy (F23): broken laser — should a primed group refill before the second zap (v1) or pop right away (built)? · cooldown margin 0.05 OK, or v1's "breaks the moment the cooldown ends" (margin 0)?
+- F25 sketch (helper): 4 looks (Cheap LCD visor = default, VHS tape, Digital datamosh, Analog CRT static), 13 knobs that scale with amount, Degrade/Repair, pixel filter toggle + order swap. Colour is never changed (colour is the rule); no white flashes (WCAG). Glitch pass 0.08 ms on the PC GPU; real phone check needed once it's in. Research: research/visor-glitch.md. Ask Muzzy: which look/mix · faint glass frame at amount 0? · HUD stays clean on top (planned)? · CRT at 0.95 too much?
