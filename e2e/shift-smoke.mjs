@@ -39,7 +39,8 @@ try {
     // fast-forward most of the shift through the dev hook, dropping pieces as it goes
     await page.evaluate(async () => {
       const { engine } = window.__goops
-      for (let i = 0; i < 30; i++) { for (let k = 0; k < (i * 7) % 11; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'softDrop', on: true }); engine.tick(2500) }
+      // stop while the shift is still running (no sealing → the tank ruptures ~47 s in)
+      for (let i = 0; i < 30 && engine.state.phase === 'playing' && engine.state.integrity > 0.3; i++) { for (let k = 0; k < (i * 7) % 11; k++) engine.act({ type: 'spin', dir: 1 }); engine.act({ type: 'softDrop', on: true }); engine.tick(2500) }
     })
     await page.waitForTimeout(800)
     await page.screenshot({ path: `${OUT}/${name}-3-busy-jelly.png` })
@@ -51,7 +52,8 @@ try {
     if (before !== after) { console.log(name, 'grid changed while only switching goo style?'); }
     await page.screenshot({ path: `${OUT}/${name}-3-busy-particle.png` })
     await page.evaluate(() => window.__goops.gooStyle.setFromSetting('Jelly'))
-    const state = await page.evaluate(() => { const s = window.__goops.engine.state; return { pressure: s.pressure, score: s.score, status: s.status } })
+    const state = await page.evaluate(() => { const s = window.__goops.engine.state; return { pressure: +s.pressure.toFixed(2), integrity: +s.integrity.toFixed(2), score: s.score, status: s.status } })
+    if (state.status !== 'playing') { console.log(name, 'shift ended before the goo-style switch'); failed++ }
     await page.evaluate(() => { const e = window.__goops.engine; for (let t = 0; t < 600000 && e.state.status === 'playing'; t += 1000) e.tick(1000) }) // to the rupture and the end
     await page.waitForTimeout(1200)
     await page.screenshot({ path: `${OUT}/${name}-4-end.png` })
