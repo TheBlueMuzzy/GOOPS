@@ -111,7 +111,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   const cancel = (e: PointerEvent) => { if (ptr && e.pointerId === ptr.id) { ptr = null; clearHold(); cb.softDrop(false); dragDir = 0 } }
 
   const keyDown = (e: KeyboardEvent) => {
-    if (!isActive() || e.repeat) return
+    if (!isActive() || e.repeat || typingIn(e.target)) return // letters typed into a text box are words, not hotkeys
     const k = e.code
     if (k === 'ArrowLeft' || k === 'KeyA' || k === 'ArrowRight' || k === 'KeyD') {
       keys.add(k)
@@ -159,4 +159,10 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     if (raf) cancelAnimationFrame(raf)
     clearHold()
   }
+}
+
+// A text box, a dropdown or an editable area has the keys (e.g. the Dev Kit's search): the game leaves them alone.
+function typingIn(target: EventTarget | null): boolean {
+  const el = target as { tagName?: string; isContentEditable?: boolean } | null // (no HTMLElement in the node tests)
+  return !!el && (!!el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')
 }

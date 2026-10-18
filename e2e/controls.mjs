@@ -126,6 +126,21 @@ try {
     const after = await get(() => window.__goops.engine.state.score)
     check('tap a ready blob pops it', after > target.score, `score ${target.score} → ${after} (group of ${target.size})`)
   }
+  // typing in the Dev Kit never reaches the game's hotkeys (Muzzy 2026-10-18: "curve" in Search came out "cuv" — R and E
+  // went to the game). Dev Kit 0.17.1 keeps its keys inside; the game also ignores keys typed into any text box.
+  {
+    await page.keyboard.press('Backquote'); await page.waitForTimeout(300)
+    const search = page.locator('#devkit-root input[type="search"], #devkit-root input[aria-label^="Search"]').first()
+    await search.click()
+    const before = await get(() => { const s = window.__goops.engine.state; return { spin: s.spin, rot: s.piece?.rotation } })
+    await page.keyboard.type('curve wasd qe', { delay: 30 })
+    const typed = await search.inputValue()
+    const after = await get(() => { const s = window.__goops.engine.state; return { spin: s.spin, rot: s.piece?.rotation } })
+    check('typing in the Dev Kit search stays in the box', typed === 'curve wasd qe', JSON.stringify(typed))
+    check('…and never turns, rotates or opens the console', after.spin === before.spin && after.rot === before.rot && !(await page.locator('[data-testid="console"]').count()),
+      `${JSON.stringify(before)} → ${JSON.stringify(after)}`)
+    await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.waitForTimeout(300)
+  }
   // Settings → Gameplay → Wall kick reaches the game mid-shift, and a new shift starts with the saved choice
   const kick = () => get(() => window.__goops.engine.wallKick)
   check('wall kick starts as Rotate vat', (await kick()) === 'rotateVat')
