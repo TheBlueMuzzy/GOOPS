@@ -12,7 +12,7 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 3b. Messages as plain glowing words, no plates (kit 0.15.0)
 - [x] 🙋 3c. Send the layout mock-up (2026-10-18)
 - [x] 🤖 4. Build the mock-up for real (new parts kit-first), drop the test layouts · includes: pressure meter → a leader line off the pressure line + white digital % on top of everything, with settings to slide it along the line and mirror it · machines nearing failure + integrity made easy to notice
-- [ ] 🤖 5. HUD checks at 9 sizes + "big moments show near the stack" check · update GDD
+- [x] 🤖 5. HUD checks at 9 sizes + "big moments show near the stack" check · update GDD
 - [ ] 🤖 6. (tuning) message timing and loudness
 
 ## Play-test fixes (Muzzy's notes, 2026-10-18)
