@@ -1,13 +1,14 @@
 // The playing field: the tank canvas (2D, under), the goo canvas (WebGL, over), the controls, and the frame loop that
 // ticks the engine and hands its state + events to both. React only renders this once; per-frame work uses refs.
 import { useEffect, useRef, useSyncExternalStore } from 'react'
-import type { ShiftEngine, ShiftEvent, ShiftStatus } from '../engine'
+import type { ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase } from '../engine'
 import type { GooRenderer, GooView } from '../goo/types'
 import { colorOf, makeGoo } from './gooFactory'
 import { drawTank } from '../view/tankView'
 import { layoutTank, screenToCell, stepCamera } from '../view/geometry'
 import { attachControls } from '../input/controls'
 import { gooStyle } from './gooStyle'
+import { wallKick } from './wallKick'
 import tank from '../../content/tuning/tank.json'
 import './game.css'
 
@@ -17,6 +18,7 @@ export interface HudSnapshot {
   cracksSealed: number
   cracksNeeded: number
   integrity: number
+  phase: ShiftPhase
   holdProgress: number | null
 }
 
@@ -26,16 +28,23 @@ interface Props {
   reserveTop: number // CSS px the HUD needs above the tank
   onHud(h: HudSnapshot): void
   onEnd(status: ShiftStatus): void
+  onAlert(kind: 'quotaMet' | 'rupture'): void // one-off moments the HUD announces
   onConsole(): void
 }
 
-export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onConsole }: Props) {
+export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onAlert, onConsole }: Props) {
   const style = useSyncExternalStore(gooStyle.subscribe, gooStyle.get)
   const host = useRef<HTMLDivElement>(null)
   const tankCanvas = useRef<HTMLCanvasElement>(null)
   const gooCanvas = useRef<HTMLCanvasElement>(null)
-  const live = useRef({ paused, onHud, onEnd, onConsole })
-  useEffect(() => { live.current = { paused, onHud, onEnd, onConsole } })
+  const live = useRef({ paused, onHud, onEnd, onAlert, onConsole })
+  useEffect(() => { live.current = { paused, onHud, onEnd, onAlert, onConsole } })
+
+  // the Settings "Wall kick" row: applied now and whenever it changes
+  useEffect(() => {
+    engine.setWallKick(wallKick.get())
+    return wallKick.subscribe(() => engine.setWallKick(wallKick.get()))
+  }, [engine])
   const viewRef = useRef<GooView | null>(null)
   const reserveTopRef = useRef(reserveTop)
   useEffect(() => { reserveTopRef.current = reserveTop }, [reserveTop])
@@ -84,10 +93,11 @@ export function ShiftStage({ engine, paused, reserveTop, onHud, onEnd, onConsole
       if (now - hudAt > 100) {
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
-          integrity: s.integrity, holdProgress })
+          integrity: s.integrity, phase: s.phase, holdProgress })
       }
       for (const e of events) {
         if (e.type === 'spawn' && softHeld) engine.act({ type: 'softDrop', on: true })
+        if (e.type === 'quotaMet' || e.type === 'rupture') live.current.onAlert(e.type)
         if (e.type === 'end' && !ended) { ended = true; live.current.onEnd(e.status) }
       }
     }

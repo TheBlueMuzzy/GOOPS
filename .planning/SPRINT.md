@@ -16,7 +16,7 @@ Check: unit tests for each rule; a seeded shift runs to a rupture and ends; smok
 Done when: keys match the GDD §4 table with the same timings as touch; no hard drop anywhere; Settings → Wall kick switches Rotate vat / Shunt piece.
 - [x] 🤖 7. Keys per GDD table (Right Ctrl ccw, Numpad 0 cw, hold R / Right Shift 1.5 s swap, ↑ console; drop Space, ↑-rotate, instant R) — src/input/controls.ts
 - [x] 🤖 8. Remove hard drop from engine, score config and tests
-- [ ] 🤖 9. Wall kick setting: Rotate vat (the tank turns a column, goo slides with it) / Shunt piece (v1) — engine option, content/ui/settings.json, src/game/
+- [x] 🤖 9. Wall kick setting: Rotate vat (the tank turns a column, goo slides with it) / Shunt piece (v1) — engine option, content/ui/settings.json, src/game/
 - [x] 🤖 10. e2e controls check updated — e2e/controls.mjs (every key + gesture; perf/smoke hardDrop uses follow the engine change)
 Check: e2e drives every key + gesture; both wall-kick modes tested in the engine.
 

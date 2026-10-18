@@ -117,6 +117,17 @@ try {
     const after = await get(() => window.__goops.engine.state.score)
     check('tap a ready blob pops it', after > target.score, `score ${target.score} → ${after} (group of ${target.size})`)
   }
+  // Settings → Gameplay → Wall kick reaches the game mid-shift, and a new shift starts with the saved choice
+  const kick = () => get(() => window.__goops.engine.wallKick)
+  check('wall kick starts as Rotate vat', (await kick()) === 'rotateVat')
+  await page.keyboard.press('KeyW'); await page.waitForTimeout(300)
+  await page.getByRole('button', { name: 'Settings' }).click(); await page.waitForTimeout(300)
+  await page.getByRole('tab', { name: 'Gameplay' }).click(); await page.waitForTimeout(200)
+  await page.getByRole('button', { name: 'Next Wall kick' }).click(); await page.waitForTimeout(200)
+  check('Settings switch → Shunt piece mid-shift', (await kick()) === 'shuntPiece', String(await kick()))
+  await page.reload(); await page.getByRole('button', { name: 'Start shift' }).click(); await page.waitForTimeout(400)
+  check('a new shift keeps Shunt piece', (await kick()) === 'shuntPiece', String(await kick()))
+  await page.evaluate(() => localStorage.clear())
   check('no page errors', errors.length === 0, errors.join(' | '))
 } finally {
   await browser.close()

@@ -177,6 +177,17 @@
           "default": "Jelly"
         },
         {
+          "id": "wallKick",
+          "type": "selector",
+          "label": "Wall kick",
+          "detail": "When a turn is blocked by goop, what moves: the tank or the piece.",
+          "options": [
+            "Rotate vat",
+            "Shunt piece"
+          ],
+          "default": "Rotate vat"
+        },
+        {
           "id": "difficulty",
           "type": "selector",
           "label": "Difficulty",
