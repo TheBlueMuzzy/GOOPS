@@ -26,10 +26,15 @@ type ArtStageProps = {
   view?: ArtRect
   viewShort?: ArtRect
   label?: string
+  // bleed: the scene past the view still shows (to the edge of the stage's box and the screen's padding round it) — e.g. a
+  // tall monitor running off the top of the window, as the artist drew it. Without it the view is a clean cut-out.
+  bleed?: boolean
+  // align: where the view sits in a box that's taller / wider than it (center by default; end = at the bottom)
+  align?: 'start' | 'center' | 'end'
   className?: string
   children?: ReactNode
 }
-export function ArtStage({ size: [w, h], view = [0, 0, w, h], viewShort = view, label, className = '', children }: ArtStageProps) {
+export function ArtStage({ size: [w, h], view = [0, 0, w, h], viewShort = view, label, bleed, align, className = '', children }: ArtStageProps) {
   const vars = {
     '--kit-scene-w': n(w), '--kit-scene-ratio': `${n(w)} / ${n(h)}`,
     '--kit-view-x': n(view[0]), '--kit-view-y': n(view[1]), '--kit-view-w': n(view[2]), '--kit-view-ratio': n(view[2] / view[3]),
@@ -37,7 +42,8 @@ export function ArtStage({ size: [w, h], view = [0, 0, w, h], viewShort = view, 
     '--kit-view-short-ratio': n(viewShort[2] / viewShort[3]),
   } as CSSProperties
   return (
-    <div className={`kit-art-stage ${className}`} style={{ ...vars }} role={label ? 'group' : undefined} aria-label={label}>
+    <div className={`kit-art-stage ${className}`} style={{ ...vars }} role={label ? 'group' : undefined} aria-label={label}
+      data-bleed={bleed || undefined} data-align={align && align !== 'center' ? align : undefined}>
       <div className="kit-art-view">
         <div className="kit-art-scene">{children}</div>
       </div>
@@ -68,10 +74,10 @@ export function ArtLayer({ at, src, text, tone, align, off, dim, label, classNam
     <div className={`kit-art-layer ${className}`} style={{ ...vars }} data-sized={h ? '' : undefined}
       data-text={text ? '' : undefined} data-tone={tone && tone !== 'normal' ? tone : undefined} data-align={align}
       data-off={off || undefined} data-dim={(dim && !off) || undefined}
-      inert={off || undefined} aria-disabled={off || undefined}
+      aria-disabled={off || undefined}
       role={label ? 'img' : undefined} aria-label={label}>
       {src && <img className="kit-art-layer-picture" src={src} alt="" draggable={false} />}
-      {children}
+      {off && children ? <div className="kit-art-layer-off" inert>{children}</div> : children}
     </div>
   )
 }

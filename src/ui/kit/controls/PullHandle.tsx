@@ -1,10 +1,13 @@
 // PULL HANDLE (0.12.0) — a lever, periscope or cord the player drags to make something happen (Goops: pull the
-// periscope down to start a shift). It's a real button: a TAP (or Enter / Space) pulls it all the way by itself, so
-// nobody has to drag. Dragging moves it along `direction` up to `travel` (a share of its own length, e.g. 0.5 = half
-// its height); let go past `threshold` (share of the travel) and it finishes the pull, short of it and it springs back.
-// children = what it looks like (usually the game's picture). label = its name, read out and found by tests.
+// periscope down to start a shift). Its grip is a real button: a TAP (or Enter / Space, or its own arrow key) pulls it
+// all the way by itself, so nobody has to drag. Dragging moves it along `direction` up to `travel` (a share of its own
+// length, e.g. 0.5 = half its height); let go past `threshold` (share of the travel) and it finishes the pull, short of
+// it and it springs back.
+// children = what it looks like (usually the game's picture, filling the handle's box). label = the grip's name, read
+// out and found by tests. grip = the share of its length you can grab, at the end it's pulled by (down: the bottom) —
+// e.g. a periscope whose long stem hides behind something: only its goggles are the grip (default 1 = all of it).
 // pulled: keep it at the end (e.g. while the screen changes); it springs back when this goes false again.
-// The drag share is on the element as --kit-pull (0 → 1), so a game's art can follow it.
+// The drag share is on the handle as --kit-pull (0 → 1), so a game's art can follow it.
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { controlSound } from './controlSound'
 import { motionTime } from '../blocks/motion'
@@ -15,6 +18,7 @@ type PullHandleProps = {
   direction?: 'down' | 'up' | 'left' | 'right'
   travel?: number
   threshold?: number
+  grip?: number
   pulled?: boolean
   disabled?: boolean
   className?: string
@@ -23,9 +27,10 @@ type PullHandleProps = {
 
 const TAP_SLOP = 0.5 // rem a press may wander and still count as a tap
 
-export function PullHandle({ label, onPull, direction = 'down', travel = 0.5, threshold = 0.6, pulled = false, disabled, className = '', children }: PullHandleProps) {
+export function PullHandle({ label, onPull, direction = 'down', travel = 0.5, threshold = 0.6, grip = 1, pulled = false, disabled, className = '', children }: PullHandleProps) {
   const [drag, setDrag] = useState<number | null>(null) // 0 → 1 while a finger holds it
   const [finishing, setFinishing] = useState(false) // let go past the threshold / tapped: gliding to the end
+  const self = useRef<HTMLDivElement>(null)
   const start = useRef<{ id: number; x: number; y: number; moved: boolean } | null>(null)
   const dragged = useRef(false) // the press was a drag, so the click that follows it isn't a tap
   const vertical = direction === 'down' || direction === 'up'
@@ -48,12 +53,12 @@ export function PullHandle({ label, onPull, direction = 'down', travel = 0.5, th
   }
   function onPointerMove(e: PointerEvent<HTMLButtonElement>) {
     const s = start.current
-    if (!s || s.id !== e.pointerId) return
+    if (!s || s.id !== e.pointerId || !self.current) return
     const along = (vertical ? e.clientY - s.y : e.clientX - s.x) * sign
     const across = vertical ? e.clientX - s.x : e.clientY - s.y
     if (!s.moved && Math.hypot(along, across) < TAP_SLOP * remPx()) return
     s.moved = true
-    const box = e.currentTarget.getBoundingClientRect()
+    const box = self.current.getBoundingClientRect()
     const length = (vertical ? box.height : box.width) * travel
     setDrag(Math.max(0, Math.min(1, along / Math.max(1, length))))
   }
@@ -80,12 +85,13 @@ export function PullHandle({ label, onPull, direction = 'down', travel = 0.5, th
 
   const share = pulled || finishing ? 1 : drag ?? 0
   return (
-    <button type="button" className={`kit-pull ${className}`} aria-label={label} disabled={disabled}
-      data-direction={direction} data-dragging={drag !== null || undefined} data-pulled={pulled || finishing || undefined}
-      style={{ '--kit-pull': share, '--kit-pull-travel': travel } as CSSProperties}
-      onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}
-      onClick={onClick} onKeyDown={onKeyDown}>
-      {children}
-    </button>
+    <div ref={self} className={`kit-pull ${className}`} data-direction={direction}
+      data-dragging={drag !== null || undefined} data-pulled={pulled || finishing || undefined}
+      style={{ '--kit-pull': share, '--kit-pull-travel': travel, '--kit-pull-grip': grip } as CSSProperties}>
+      {children && <div className="kit-pull-look" aria-hidden="true">{children}</div>}
+      <button type="button" className="kit-pull-grip" aria-label={label} disabled={disabled}
+        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel}
+        onClick={onClick} onKeyDown={onKeyDown} />
+    </div>
   )
 }
