@@ -8,10 +8,22 @@ why: Muzzy (2026-10-17): "My focus is so heavily on the bottom of the tank, that
 Done when: Muzzy picked a layout after playing it with the real goo; it's in the game at all 9 sizes; big moments (quota met, rupture, why it ended) show where the player is looking.
 - [x] 🤖 1. Inventory: every meter and message the shift shows now + v1's (what, when, where) → research/hud-inventory.md
 - [x] 🤖 2. The layouts in the real game behind two Settings rows — "Meters (test)" Top / Hug the tank / Bottom strip and "Messages (test)" Centre / At the stack (A/B/C split so Muzzy can mix) — playable with the real Jelly/Particle goo (Muzzy's F25 note: a sketch with fake goo can't be judged)
-- [ ] 🙋 3. Play A / B / C and pick (or mix)
-- [ ] 🤖 4. Build the pick for real (new parts kit-first), drop the others
+- [x] 🙋 3. Play A / B / C → Muzzy is redesigning the in-tank layout himself (Photoshop mock-up of a screenshot, loose, for placement)
+- [x] 🤖 3b. Messages as plain glowing words, no plates (kit 0.15.0)
+- [ ] 🙋 3c. Send the layout mock-up
+- [ ] 🤖 4. Build the mock-up for real (new parts kit-first), drop the test layouts · includes: pressure meter → a leader line off the pressure line + white digital % on top of everything, with settings to slide it along the line and mirror it · machines nearing failure + integrity made easy to notice
 - [ ] 🤖 5. HUD checks at 9 sizes + "big moments show near the stack" check · update GDD
 - [ ] 🤖 6. (tuning) message timing and loudness
+
+## Play-test fixes (Muzzy's notes, 2026-10-18)
+- [x] 🤖 11. Periscope acts at once on a full pull (kit 0.15.1)
+- [x] 🤖 12. Keys move the view (← looks left); drags still pull the goop with the finger
+- [x] 🤖 13. "Reset lights" → "Reset visor"
+- [ ] 🤖 14. Repairs ≈ 4 steps (controls 4 corners, laser 4 sliders) + upgrade hook for fewer steps (helper)
+- [ ] 🤖 15. Visor curved-TV look only over the tank (helper)
+- [ ] 🤖 16. At the console mid-shift, machines stop moving toward breaking (helper)
+- [ ] 🤖 17. Dev Kit in Goops + Fonts tab (title / heading / body / numbers, side by side, from the game or the Downloads\Font library) (helper)
+- [ ] 🙋 18. Pick the fonts in the Fonts tab
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [ ] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain
