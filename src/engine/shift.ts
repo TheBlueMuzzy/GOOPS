@@ -175,6 +175,9 @@ class Shift implements ShiftEngine {
         ok = this.machines.repair(action.machine)
         if (ok && action.machine === 'laser') this.clearPrimed()
         break
+      case 'console':
+        this.machines.atConsole = action.on
+        break
     }
     if (!ok) this.events.push(this.rejectReason ? { type: 'reject', action: action.type, reason: this.rejectReason } : { type: 'reject', action: action.type })
     this.refreshView()

@@ -120,6 +120,8 @@ export function App() {
     setMode('console')
   }, [])
   const repair = useCallback((machine: MachineId) => engineRef.current?.act({ type: 'repair', machine }), [])
+  // at the console mid-shift the machines' break-progress pauses (Muzzy, 2026-10-18; src/engine/machines.ts)
+  useEffect(() => { engine?.act({ type: 'console', on: PEEK.includes(mode) }) }, [engine, mode])
   const onEnd = useCallback((status: ShiftStatus) => {
     const e = engineRef.current
     if (!e) return

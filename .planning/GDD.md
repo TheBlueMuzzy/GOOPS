@@ -50,7 +50,7 @@
 
 ## 5. Systems
 Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities · three breakdowns (laser, lights, controls) with console repair puzzles · colour and piece unlocks by rank · the garbled intercom · Operator Journal · save.
-- **Breakdowns (Muzzy, 2026-10-18, F06):** three machines, v1's meters, softer effects, simpler repairs. The tank SLOWS (25%) while you're at the console mid-shift; the pause menu (gear) fully pauses.
+- **Breakdowns (Muzzy, 2026-10-18, F06):** three machines, v1's meters, softer effects, simpler repairs. The tank SLOWS (25%) while you're at the console mid-shift; the pause menu (gear) fully pauses. At the console nothing moves toward breaking (Muzzy, 2026-10-18: "something could break while i'm fixing something and that's not a good feeling"): no visor fade, no heat, no drain, repair cooldowns stand still; cooling and refills keep going.
   | Machine | Meter (v1) | Broken | Repair at the console | Unlock |
   |---|---|---|---|---|
   | Laser | drains per zapped cell, refills per landed piece | two taps to zap (prime, then pop) | all 4 sliders light up, each randomly wanting left or right → flick each there | rank 4 |

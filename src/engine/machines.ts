@@ -3,6 +3,11 @@
 // so it stays pure and dt-driven. Locked machines (rank below their unlock rank) never change.
 // The shift engine calls in: tick (time), zapped (cells popped), landed (a piece locked), spun (a tank turn), repair.
 // It only calls the meter functions while the shift is 'playing' — during a rupture the meters freeze.
+// AT THE CONSOLE mid-shift (atConsole, from act({ type: 'console' })) nothing moves toward breaking — Muzzy, 2026-10-18:
+// "something could break while i'm fixing something and that's not a good feeling". The visor doesn't fade (its grace
+// stands still too), zaps don't drain and turns don't heat, and repair cooldowns don't run down (a repaired machine's
+// safe time isn't spent at the console). Getting better keeps going: the controls still cool, a landed piece still
+// refills the laser, so being at the console is never worse than before.
 import type { MachineId, MachineState, ShiftEvent } from './types'
 import type { Modifiers } from './upgrades'
 
@@ -27,6 +32,7 @@ export class Machines {
   private readonly emit: (event: ShiftEvent) => void
   private visorQuietMs = 0 // time since fast drop was last on (the visor's grace)
   private controlsIdleMs = 0 // time since the last tank turn
+  atConsole = false // the player is at the console mid-shift: break-progress pauses (see the top)
 
   constructor(config: BreakdownConfig | undefined, rank: number, mods: Modifiers, emit: (event: ShiftEvent) => void) {
     this.config = config
@@ -52,17 +58,20 @@ export class Machines {
   tick(dt: number, fastDropping: boolean): void {
     const cfg = this.config
     if (!cfg) return
-    for (const id of MACHINE_IDS) {
-      const m = this.state[id]
-      if (m.unlocked) m.cooldownMs = Math.max(0, m.cooldownMs - dt)
+    if (!this.atConsole) {
+      for (const id of MACHINE_IDS) {
+        const m = this.state[id]
+        if (m.unlocked) m.cooldownMs = Math.max(0, m.cooldownMs - dt)
+      }
     }
 
     // Visor: fast-dropping recovers it and restarts the grace; otherwise after the grace it fades to breakAt over fadeMs.
+    // (At the console: no fading, and the grace stands still.)
     const visor = this.state.visor
     if (fastDropping) {
       this.visorQuietMs = 0
       this.setHealth(visor, visor.health + (cfg.visor.recoverPerSec * dt) / 1000)
-    } else {
+    } else if (!this.atConsole) {
       this.visorQuietMs += dt
       const fadingMs = Math.min(dt, this.visorQuietMs - cfg.visor.graceMs * this.mods.visorGraceMult)
       if (fadingMs > 0) this.setHealth(visor, visor.health - ((1 - cfg.visor.breakAt) * fadingMs) / cfg.visor.fadeMs)
@@ -77,7 +86,7 @@ export class Machines {
 
   // Goop cells zapped by the laser drain its capacitor.
   zapped(cells: number): void {
-    if (!this.config) return
+    if (!this.config || this.atConsole) return
     const laser = this.state.laser
     this.setHealth(laser, laser.health - cells * this.config.laser.drainPerCell * this.mods.laserDrainMult)
   }
@@ -91,7 +100,7 @@ export class Machines {
 
   // Every tank turn heats the controls.
   spun(): void {
-    if (!this.config) return
+    if (!this.config || this.atConsole) return
     this.controlsIdleMs = 0
     const controls = this.state.controls
     this.setHealth(controls, controls.health - this.config.controls.heatPerSpin)

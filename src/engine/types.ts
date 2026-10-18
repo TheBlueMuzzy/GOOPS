@@ -131,6 +131,7 @@ export type ShiftAction =
   | { type: 'pop'; x: number; y: number } // tap a cell (tank space)
   | { type: 'ability'; id: string } // fire an equipped, ready ability (F22)
   | { type: 'repair'; machine: MachineId } // the console's repair puzzle for this machine was solved (F23/F24)
+  | { type: 'console'; on: boolean } // the player went to the console mid-shift (on) / back to the tank (off): the machines' break-progress pauses
 
 export interface ShiftEngine {
   readonly state: ShiftState

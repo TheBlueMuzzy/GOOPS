@@ -315,6 +315,65 @@ describe('repair and cooldown', () => {
   })
 })
 
+describe('at the console mid-shift: break-progress pauses (Muzzy, 2026-10-18)', () => {
+  it('the visor does not fade over a long stay, and fades again as normal once back', () => {
+    const { shift, m } = machineShift(6)
+    run(shift, 4000) // 4 s of its 5 s grace used
+    shift.act({ type: 'console', on: true })
+    run(shift, 60000)
+    expect(m.visor).toMatchObject({ health: 1, broken: false })
+    shift.act({ type: 'console', on: false })
+    run(shift, 1000 + 2500) // the last 1 s of grace (it stood still), then half the fade
+    expect(m.visor.health).toBeCloseTo(1 - 0.9 / 2, 5)
+  })
+
+  it('heat does not build at the console; the controls still cool', () => {
+    const { shift, m } = machineShift(6)
+    spins(shift, 10) // heat 0.5
+    shift.act({ type: 'console', on: true })
+    spins(shift, 30) // (input is off there anyway — but even if a turn got through, no heat)
+    expect(m.controls.health).toBeCloseTo(0.5)
+    run(shift, 400) // 200 ms delay, then 0.5/s for 200 ms: cooling keeps going
+    expect(m.controls.health).toBeCloseTo(0.6)
+    shift.act({ type: 'console', on: false })
+    spins(shift, 2)
+    expect(m.controls.health).toBeCloseTo(0.5)
+  })
+
+  it('zaps do not drain the laser at the console; back at the tank they do', () => {
+    const { shift, m } = machineShift(6)
+    run(shift, 400)
+    shift.act({ type: 'console', on: true })
+    zapFloor(shift, 3)
+    expect(m.laser.health).toBe(1)
+    shift.act({ type: 'console', on: false })
+    zapFloor(shift, 3, 3)
+    expect(m.laser.health).toBeCloseTo(1 - 3 * 0.04)
+  })
+
+  it('repair cooldowns do not run down at the console', () => {
+    const { shift, m } = machineShift(6)
+    spins(shift, 20)
+    shift.act({ type: 'console', on: true })
+    shift.act({ type: 'repair', machine: 'controls' }) // the repair itself still works there
+    expect(m.controls.cooldownMs).toBe(20000)
+    run(shift, 10000)
+    expect(m.controls.cooldownMs).toBe(20000)
+    shift.act({ type: 'console', on: false })
+    run(shift, 5000)
+    expect(m.controls.cooldownMs).toBe(15000)
+  })
+
+  it('pressure, cracks and falling still run at the console (only the machines pause)', () => {
+    const a = machineShift(6), b = machineShift(6)
+    b.shift.act({ type: 'console', on: true })
+    run(a.shift, 8000); run(b.shift, 8000)
+    expect(b.shift.state.pressure).toBe(a.shift.state.pressure)
+    expect([...b.shift.state.grid]).toEqual([...a.shift.state.grid])
+    expect(b.shift.state.cracks).toEqual(a.shift.state.cracks)
+  })
+})
+
 describe('several machines', () => {
   it('can be broken at once', () => {
     const { shift, m } = machineShift(6)

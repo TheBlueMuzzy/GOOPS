@@ -143,6 +143,8 @@ try {
     const ratio = slow.game / slow.real
     check(name, `${how}: console mid-shift, the tank still running slowly`, ratio > 0.15 && ratio < 0.35 && await page.evaluate(() => window.__goops.engine.state.status === 'playing'),
       `${Math.round(slow.game)} ms game time in ${Math.round(slow.real)} ms (${ratio.toFixed(2)})`)
+    check(name, 'at the console the engine is told (act console on): the machines\' break-progress pauses',
+      await page.evaluate(() => window.__acts.some((a) => a.type === 'console' && a.on)))
     check(name, 'the tank takes no input under the console', await page.evaluate(() => { const before = window.__acts.length; window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA' })); return window.__acts.length === before }))
     await page.screenshot({ path: `${OUT}/${name}-2-console-mid-shift.png` })
 
@@ -256,6 +258,7 @@ try {
     }
     await page.locator('.kit-art-stage').waitFor({ state: 'detached', timeout: 5000 })
     const back = await page.evaluate(async () => { const t0 = window.__ticked, r0 = performance.now(); await new Promise((r) => setTimeout(r, 500)); return { same: window.__goops.engine === window.__first, playing: window.__goops.engine.state.status === 'playing', ratio: (window.__ticked - t0) / (performance.now() - r0) } })
+    check(name, 'back at the tank: act console off', await page.evaluate(() => { const c = window.__acts.filter((a) => a.type === 'console'); return c.length > 0 && c[c.length - 1].on === false }))
     check(name, `${short ? 'Back to the tank' : 'periscope'} → the same shift, full speed`, back.same && back.playing && back.ratio > 0.8, JSON.stringify(back))
     await page.screenshot({ path: `${OUT}/${name}-11-back-in-the-tank.png` })
 
