@@ -129,7 +129,7 @@ The "before" rows reproduce the first run exactly (same seeds), so the band code
 | Half drain, bias 3 | 139 → 136 s | 100/100/83/53/3% | 100/97/80/40/0% | 3% | 6.4 | 15% |
 
 - **Half drain alone makes it easier and changes nothing about where cracks are** (gap 3.5 → 3.9; rank 10 quota 40 → 83%): more time, same drop-and-pop. It only works together with the bias.
-- **The bias is what breaks drop-wait-pop:** Casual (ignores cracks, keeps low) meets no quota at bias 2 (27% at rank 0 before). Cracks float ~6 rows above the goop instead of ~3.5.
+- **The bias is what breaks drop-wait-pop:** Casual (ignores cracks, keeps low) meets no quota at bias 2 (27% at rank 0 before). ~~Cracks float ~6 rows above the goop~~ — wrong framing (Muzzy caught it): "rows above the goop" = empty rows under the crack, and ~9 in 10 cracks form in columns with NO goop, so it's mostly height above the floor. Split out (rank 4, Focused + Sharp, 30 seeds): cracks in empty columns — floor 15% → 3%, bottom 3 rows 41% → 13%, average row 3.7 → 6; under 30% pressure still ~row 1 (the band is tiny then). Cracks over existing goop (~1 in 10): not measured.
 - Every shift now reaches 100% pressure and ends by integrity (Idle by overflow). Shifts ~140 s.
 - Bots plan one piece at a time and only build toward a crack weakly (`underCrack` 4), so they are the drop-and-pop player: their falling quota is the point. A player who builds up should do better than Sharp here.
 - Finding 3 above (seals during the rupture drain count): **answered by Muzzy — yes, they count** (2026-10-18, again 2026-10-19). Not a question any more.
