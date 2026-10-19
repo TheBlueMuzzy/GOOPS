@@ -4,7 +4,7 @@ What changes for Muzzy: a written step-by-step plan for "your first day" to appr
 Decided at planning (Muzzy, 2026-10-19): the tutorial is **v1 style, fully scripted** (a staged day, every step set up, you can't fail, ends in free play — v1 Tutorial v3) · teach on PC first: F12 no longer waits for F10 (phone gesture wording slots in after the phone check) · the lesson runner is built in Goops now and noted for the framework session to lift into a module later (that session is busy).
 
 ## F12 ❓ Tutorial: "your first day", taught as a scripted day
-- [ ] 🤖 1. The step list for the new loop: v1 Tutorial v3's 15 steps rewritten for pressure → cracks → integrity → rupture (no hard drop, console start, plain how-to-play, no story voice), plus the three first-breakdown lessons; GDD tutorial section updated — .planning/research/tutorial.md, .planning/GDD.md
+- [x] 🤖 1. The step list for the new loop: v1 Tutorial v3's 15 steps rewritten for pressure → cracks → integrity → rupture (no hard drop, console start, plain how-to-play, no story voice), plus the three first-breakdown lessons; GDD tutorial section updated — .planning/research/tutorial.md, .planning/GDD.md
 - [ ] 🙋 2. Read the step list: approve, or say what to change
 
 ## F30 🧱 Lesson runner
