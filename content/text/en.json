@@ -56,7 +56,7 @@
     "laser": "LASER",
     "visor": "VISOR",
     "controls": "CONTROLS",
-    "pressureReadout": "{n}% PRESS"
+    "pressureReadout": "{n}% PSI"
   },
   "messages": {
     "refusedAboveLine": "Above the pressure line",

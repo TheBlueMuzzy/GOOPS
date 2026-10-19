@@ -31,6 +31,20 @@ export function visorAmount(visor: MachineState | undefined, cfg: Pick<VisorFxCo
   return Math.min(1, Math.max(0, t))
 }
 
+// The curved-TV look moves things on screen: a point drawn at height y on the flat tank shows up somewhere else.
+// For a screen column x, this gives the screen y where flat height y appears (CSS px) — so things drawn ON TOP of
+// the curve (the pressure readout's dot) can sit on the bent line. Same barrel as the shader (visorShaders.ts:
+// c *= 1 + curve * 0.10 * |c|², c = -1..1 across the tank's rectangle), solved backwards with a few Newton steps.
+export function curvedY(x: number, y: number, rect: { left: number; top: number; width: number; height: number }, curve: number): number {
+  if (curve <= 0 || rect.width <= 0 || rect.height <= 0) return y
+  const k = curve * 0.1
+  const cx = ((x - rect.left) / rect.width) * 2 - 1
+  const want = ((y - rect.top) / rect.height) * 2 - 1
+  let cy = want
+  for (let i = 0; i < 6; i++) cy -= (cy * (1 + k * (cx * cx + cy * cy)) - want) / (1 + k * (cx * cx + 3 * cy * cy))
+  return rect.top + ((cy + 1) / 2) * rect.height
+}
+
 // Dev-only URL overrides: ?visor=0.6 locks the glitch amount, ?visor=off forces 0; ?pixel=on|off forces the pixel filter.
 export interface VisorOverride { amount: number | null; pixelate: boolean | null }
 export function parseVisorOverride(search: string): VisorOverride {
@@ -45,6 +59,7 @@ export function parseVisorOverride(search: string): VisorOverride {
 
 export interface VisorFx {
   frame(state: ShiftState, view: GooView, timeSec: number): void
+  curve(): number // how curved the tank looked on the last frame (the shader's strength; 0 = flat) — for curvedY
   dispose(): void
 }
 
@@ -58,7 +73,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
   canvas.style.display = 'none'
   stage.appendChild(canvas)
   const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false })
-  if (!gl) { canvas.remove(); return { frame() {}, dispose() {} } } // no WebGL2: the game just plays without the effect
+  if (!gl) { canvas.remove(); return { frame() {}, curve: () => 0, dispose() {} } } // no WebGL2: the game just plays without the effect
 
   const PC = makeProgram(gl, FULLSCREEN_VS, FS_COMPOSITE, ['uTank', 'uGoo', 'uRes', 'uOffset', 'uFull', 'uPix', 'uClipTop', 'uBg'])
   const PG = makeProgram(gl, FULLSCREEN_VS, FS_GLITCH, ['uTex', 'uRes', 'uTime', 'uAmt', 'uGrain', 'uDpr', 'uCurveAlways', 'uVigAlways', ...LOOK_UNIFORMS.map(([u]) => u)])
@@ -78,6 +93,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
 
   const override = import.meta.env.DEV ? parseVisorOverride(location.search) : { amount: null, pixelate: null }
   let frozenAt: number | null = null, shown = false
+  let curveNow = 0
   if (import.meta.env.DEV) {
     // dev + tests only: change the override live and freeze the glitch clock for repeatable screenshots
     (window as unknown as { __goopsVisor?: unknown }).__goopsVisor = {
@@ -110,6 +126,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
       const y0 = Math.max(0, Math.round(r.top * dpr)), y1 = Math.min(fullH, Math.round((r.top + r.height) * dpr))
       // the curved-TV look is on whenever you're in the vat (visor-fx.json 'always'), so the pass runs even with no glitch
       const always = fx.always.curve > 0 || fx.always.vignette > 0
+      curveNow = 0
       if ((amount <= 0 && !pixOn && !always) || x1 <= x0 || y1 <= y0) {
         if (shown) { shown = false; canvas.style.display = 'none' }
         return
@@ -131,6 +148,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
 
       const pixPx = fx.pixel.pixSize * dpr, pixFirst = fx.pixel.pixFirst >= 0.5
       const glitch = amount > 0 || always
+      if (glitch) curveNow = Math.max(fx.always.curve, fx.look.curve * amount) // as the shader: max(uCurveAlways, uCurve * a)
       const pixAfter = pixOn && glitch && !pixFirst // glitch -> pixels: its own pass at the end
       if (pixAfter && !B) B = makeTarget(gl, w, h, 1, false)
 
@@ -160,6 +178,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
         gl.drawArrays(gl.TRIANGLES, 0, 3)
       }
     },
+    curve: () => curveNow,
     dispose() {
       freeTarget(gl, A); freeTarget(gl, B)
       for (const P of [PC, PG, PP]) freeProgram(gl, P)
