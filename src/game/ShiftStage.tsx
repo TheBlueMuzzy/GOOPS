@@ -262,6 +262,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       hold: () => engine.act({ type: 'hold' }),
       console: () => live.current.onConsole(),
       holdProgress: (p) => { holdProgress = p },
+      canSwap: () => engine.allows('hold'), // F59: off before its rank (and in lessons) — no charging ring then
       // broken controls (F23/F24): a held turn repeats slower; single presses and quick swipes stay the same
       spinSlowdown: () => (s.machines?.controls.broken ? breakdowns.controls.heldSpinSlowdown : 1),
       tapCell: (px, py) => {

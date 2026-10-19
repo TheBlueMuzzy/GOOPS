@@ -21,7 +21,7 @@ import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
+import { isUnlocked, rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { Console } from './Console'
 import { art } from './art'
@@ -39,15 +39,21 @@ const settings = settingsJson as SettingsSchema
 const MACHINES: MachineId[] = ['laser', 'controls', 'visor']
 const fill = (s: string, vars: Record<string, number | string>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 
+// The rank the player plays at: their saved rank. Dev/tests: ?rank=12 forces one. The shift (colours, starting junk,
+// crack quota) and everything a rank unlocks (F59: isUnlocked — the next-piece window, swap, the Upgrades button) use it.
+function playerRank(progress: Progress): number {
+  const forced = import.meta.env.DEV ? new URLSearchParams(location.search).get('rank') : null
+  return forced !== null ? Number(forced) : rankInfo(progress).rank
+}
+
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.
-// The shift plays at the player's saved rank (colours, starting junk, crack quota). Dev/tests: ?rank=12 forces one.
 // training = a lesson's shift (F30, src/engine/training.ts): empty, held still, the lesson sets it up step by step.
+// Swap works only from its rank, and never in a lesson's shift (F59).
 function newEngine(progress: Progress, training = false): ShiftEngine {
-  const params = new URLSearchParams(location.search)
-  const seed = Number(params.get('seed')) || Math.floor(Math.random() * 1e9)
-  const forced = import.meta.env.DEV ? params.get('rank') : null
-  const rank = forced !== null ? Number(forced) : rankInfo(progress).rank
-  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, ...(training ? { training: {} } : {}) })
+  const seed = Number(new URLSearchParams(location.search).get('seed')) || Math.floor(Math.random() * 1e9)
+  const rank = playerRank(progress)
+  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, swap: !training && isUnlocked('swap', rank),
+    ...(training ? { training: {} } : {}) })
 }
 type LessonStart = { id: string; step: number | string }
 

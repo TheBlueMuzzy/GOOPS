@@ -21,6 +21,9 @@ export interface ControlCallbacks {
   hold(): void
   console(): void
   holdProgress?(p: number | null): void // 0..1 while a hold-to-swap is charging, null when cancelled
+  // F59: does swap work right now? (false before its rank, in a lesson shift, or in a lesson step that blocks it) —
+  // then a hold never starts charging: no ring, no swap. Left out = always.
+  canSwap?(): boolean
   // F24: how many times slower a HELD spin repeats right now (broken controls: 2; fine: 1). Single presses and quick
   // swipes are never slowed — only the repeats while a key or a sideways drag is held.
   spinSlowdown?(): number
@@ -63,6 +66,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   }
   const startLoop = () => { if (!raf) raf = requestAnimationFrame(loop) }
 
+  const swapOn = () => cb.canSwap?.() ?? true
   const clearHold = () => {
     if (holdTimer) { cancelAnimationFrame(holdTimer); holdTimer = 0; cb.holdProgress?.(null) }
   }
@@ -86,7 +90,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     el.setPointerCapture(e.pointerId)
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: clock(), locked: null, consumed: false }
     holdStart = clock()
-    if (full) holdTimer = requestAnimationFrame(tickHold) // (console only: no hold-to-swap)
+    if (full && swapOn()) holdTimer = requestAnimationFrame(tickHold) // (console only, or swap still locked: no hold-to-swap)
   }
   const move = (e: PointerEvent) => {
     if (!ptr || e.pointerId !== ptr.id) return
@@ -146,7 +150,8 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     else if (k === 'KeyS' || k === 'ArrowDown') { keys.add(k); cb.softDrop(true) }
     else if (k === 'KeyR' || k === 'ShiftRight') {
       // same 1.5 s hold as touch, with the same charging ring
-      if (!holdKey && !ptr) { holdKey = k; holdStart = clock(); holdTimer = requestAnimationFrame(tickHold) }
+      // (swap still locked: the key does nothing)
+      if (!holdKey && !ptr && swapOn()) { holdKey = k; holdStart = clock(); holdTimer = requestAnimationFrame(tickHold) }
     } else if (k === 'KeyW' || k === 'ArrowUp') cb.console()
     else return
     e.preventDefault()
