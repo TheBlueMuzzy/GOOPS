@@ -29,7 +29,8 @@ import { isOnScreen } from '../../engine/tank'
 import { liveTuning } from '../../devkit/tuning/liveTuning'
 import { rulesClock } from '../../devkit/gameClock'
 import { fill, tipsMemory } from '../../ui/kit'
-import { cellToScreen } from '../../view/geometry'
+import { cellToScreen, tankRect } from '../../view/geometry'
+import { flatPoint } from '../../view/visorFx'
 import type { GooView } from '../../goo/types'
 import { session } from '../session'
 import { createLessonRunner } from './runner'
@@ -201,21 +202,39 @@ export function lessonFromUrl(): { id: string; step: number | string } | null {
 
 // ---- the pointer: where the message points (CSS px in the stage), placed by ShiftStage's frame loop on its
 // invisible .lesson-mark box; the kit's Callout points at that box and its pulse ring outlines it.
+// Tags whose visible part is inside the tagged element (the readout's words sit in a kit PinnedBox hung on its point)
+const TAG_TARGETS: Record<string, string> = { readout: '[data-tag="readout"] .kit-pinned' }
+
 /** A CSS selector for the Callout's target, from the message's pointer. */
 export function lessonTarget(pointer: unknown): string {
   const p = (pointer ?? {}) as { tag?: string; selector?: string }
-  if (p.tag) return `[data-tag="${p.tag}"]`
+  if (p.tag) return TAG_TARGETS[p.tag] ?? `[data-tag="${p.tag}"]`
   if (p.selector) return p.selector
   return '.lesson-mark'
 }
 
-/** Place the mark box over what the pointer points at (or hide it). Called every frame. */
-export function placeLessonMark(el: HTMLElement | null, s: ShiftState, view: GooView) {
+// Where a flat tank point shows on screen under the visor's curved-TV look (the other way round from flatPoint: a few
+// steps of "move by how far off it lands" — the bend is gentle, so it settles quickly).
+function bentPoint(fx: number, fy: number, rect: ReturnType<typeof tankRect>, curve: number): [number, number] {
+  let x = fx, y = fy
+  for (let i = 0; i < 6; i++) {
+    const [lx, ly] = flatPoint(x, y, rect, curve)
+    x -= lx - fx
+    y -= ly - fy
+  }
+  return [x, y]
+}
+
+/** Place the mark box over what the pointer points at (or hide it). Called every frame.
+ *  curve = the visor's curved-TV strength now: the box goes where the cell is SEEN. */
+export function placeLessonMark(el: HTMLElement | null, s: ShiftState, view: GooView, curve: number) {
   if (!el) return
   const p = (runner.view().message?.pointer ?? {}) as { piece?: boolean; cell?: [number, number]; tag?: string; selector?: string }
   let box: [number, number, number, number] | null = null // left, top, right, bottom
+  const rect = tankRect(view, s.visibleWidth, s.height - s.bufferRows)
   const cellBox = (x: number, y: number): [number, number, number, number] => {
-    const [cx, cy] = cellToScreen(x, y, view, s.width, s.bufferRows)
+    const [fx, fy] = cellToScreen(x, y, view, s.width, s.bufferRows)
+    const [cx, cy] = bentPoint(fx, fy, rect, curve)
     const h = view.cellPx / 2
     return [cx - h, cy - h, cx + h, cy + h]
   }

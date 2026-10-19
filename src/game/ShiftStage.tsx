@@ -181,7 +181,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
       visorFx.current?.frame(s, view, looksMs / 1000)
-      placeLessonMark(lessonMark.current, s, view) // what a lesson message points at (F30)
+      placeLessonMark(lessonMark.current, s, view, visorFx.current?.curve() ?? 0) // what a lesson message points at (F30)
       readoutDrawn = placeReadout(readoutEl.current, rctx, s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0, readoutDrawn)
       // count new breakdowns BEFORE the HUD snapshot: the console keys each repair panel by its break count, so a
       // snapshot saying "broken" with the old count would re-light an already-solved panel (a free repair)
