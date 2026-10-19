@@ -31,7 +31,10 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 20. Locked goo sloshes 50% less when the tank turns (goo-jelly / goo-particle `spinCarry` 0.5)
 - [x] 🤖 24. Curve sliders step by 0.25 (crack curve + visor curves, `_ranges`)
 - [x] 🤖 25. Pressure readout says "% PSI"; its dot sits on the BENT pressure line (follows the visor's curve — visorFx `curvedY`)
-- [ ] 🤖 26. At ~95% pressure the readout's words slide under "CRACKS 0 / 6" — waiting on Muzzy: fix now or later
+- [x] 🤖 26. At ~95% pressure the readout's words slid under "CRACKS 0 / 6" (the top row hangs over the tank since topRowPx 19) → the words stay below any top-row part over them, flipping under the line near the top; hud-shots checks it at 97% and now allows the top row over the tank's top edge
+- [ ] 🤖 27. Phone on its side + short window: a message ("PRESSURE NEAR MAX") lands on the pressure readout, and in the short window runs past the screen edge (hud-shots, 8 fails — older than task 26)
+- [ ] 🤖 28. Left click over a 1-cell locked goop rotates the piece instead of popping it (Muzzy 2026-10-18)
+- [ ] 🤖 29. "Reset laser / controls / visor" labels 10% smaller (too big for their spot on the console art)
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [x] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain

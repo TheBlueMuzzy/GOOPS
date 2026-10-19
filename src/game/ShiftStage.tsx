@@ -119,6 +119,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
     const view: GooView = { cellPx: 0, centreX: 0, topY: 0, camera, width: 0, height: 0, dpr: 1 }
     viewRef.current = view
     const readoutSize = { w: 0, h: 0 } // the readout's words, measured a few times a second
+    const topRow: Box[] = [] // the HUD's top row (score · cracks · Console button), measured with it: the readout stays clear
     let readoutDrawn = '' // the leader line as last drawn (only redrawn when it moves)
 
     const resize = () => {
@@ -168,7 +169,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
       visorFx.current?.frame(s, view, looksMs / 1000)
-      readoutDrawn = placeReadout(readoutEl.current, rctx, s, view, live.current.readoutAt, readoutSize, visorFx.current?.curve() ?? 0, readoutDrawn)
+      readoutDrawn = placeReadout(readoutEl.current, rctx, s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0, readoutDrawn)
       // count new breakdowns BEFORE the HUD snapshot: the console keys each repair panel by its break count, so a
       // snapshot saying "broken" with the old count would re-light an already-solved panel (a free repair)
       for (const e of events) if (e.type === 'breakdown') breaks[e.machine]++
@@ -181,12 +182,17 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
         still = reduceMotion()
         const box = readoutEl.current?.querySelector('.kit-pinned')?.getBoundingClientRect()
         if (box?.width) { readoutSize.w = box.width; readoutSize.h = box.height }
+        topRow.length = 0
+        for (const e of document.querySelectorAll('.kit-hud-slot > *')) {
+          const b = e.getBoundingClientRect()
+          if (b.width) topRow.push({ left: b.left, right: b.right, bottom: b.bottom })
+        }
       }
       // the messages sit just above the goop (where the eyes are): the kit's toasts' point (--kit-toasts-at), a few
       // times a second (they glide there)
       if (now - toastsAt > messageTuning.stack.updateMs) {
         toastsAt = now
-        const g = readoutGeometry(s, view, live.current.readoutAt, readoutSize, visorFx.current?.curve() ?? 0)
+        const g = readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0)
         const clearTop = layoutRef.current.side ? hud.sideTopPx : hud.topRowPx
         const px = `${Math.round(messagesPoint(s, view, clearTop, Math.min(g.text[1] - readoutSize.h / 2, g.end[1])))}px`
         if (px !== toastsAtPx) { toastsAtPx = px; root.style.setProperty('--kit-toasts-at', px) }
@@ -210,7 +216,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
     // the Settings rows changed; fastDrop(on): as if fast drop were held; clocks(): the rules + looks clocks, ms)
     if (import.meta.env.DEV) (window as unknown as { __goops?: unknown }).__goops = { engine, view, gooStyle, breakMachine: devBreakMachine(engine, breaks),
       say: (key: Message['key'], seconds = 30) => live.current.onMessage({ key, danger: false, seconds }),
-      readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, visorFx.current?.curve() ?? 0),
+      readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: (on: boolean) => { softHeld = on; engine.act({ type: 'softDrop', on }) },
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }) }
@@ -269,7 +275,10 @@ function tankSides(s: ShiftState, view: GooView): [number, number] {
 // the line goes down instead.
 // curve = the visor's curved-TV strength right now (visorFx.curve()): the pressure line bends with it, so the dot goes
 // where the bent line really is at its column, and the line + words move with it (Muzzy 2026-10-18).
-function readoutGeometry(s: ShiftState, view: GooView, at: ReadoutSetting, text: { w: number; h: number }, curve: number) {
+// topRow = the HUD's top-row items: on a wide screen the big CRACKS count hangs over the tank's top, so the words never
+// go above the bottom of any item over them — near the top they take the line down instead (Muzzy 2026-10-18: 95%
+// slid under "CRACKS 0 / 6").
+function readoutGeometry(s: ShiftState, view: GooView, at: ReadoutSetting, text: { w: number; h: number }, topRow: Box[], curve: number) {
   const R = hud.readout, cp = view.cellPx
   const [left, right] = tankSides(s, view)
   const top = view.topY, bottom = top + (s.height - s.bufferRows) * cp
@@ -282,21 +291,24 @@ function readoutGeometry(s: ShiftState, view: GooView, at: ReadoutSetting, text:
   const flatY = top + (s.pressureRow - s.bufferRows) * cp
   const bentY = curvedY(footX, flatY, tankRect(view, s.visibleWidth, s.height - s.bufferRows), curve)
   const footY = Math.min(bottom, Math.max(top, bentY))
-  const up = footY - rise - text.h / 2 >= top + edge
-  const textY = Math.min(bottom - edge - text.h / 2, Math.max(top + edge + text.h / 2, up ? footY - rise : footY + rise))
-  if (at.direction === 'lineFirst') {
-    return { foot: [footX, footY], end: [start + run, textY], text: [start + run + gap, textY], textBox: [start + run + gap, start + run + gap + text.w] }
-  }
-  return { foot: [footX, footY], end: [textRight + gap, textY], text: [textRight, textY], textBox: [start, textRight] }
+  const textBox: [number, number] = at.direction === 'lineFirst' ? [start + run + gap, start + run + gap + text.w] : [start, textRight]
+  let ceiling = top // the highest the words may reach: the tank's top, or below a top-row item over them
+  for (const b of topRow) if (b.right > textBox[0] && b.left < textBox[1]) ceiling = Math.max(ceiling, b.bottom)
+  const up = footY - rise - text.h / 2 >= ceiling + edge
+  const textY = Math.min(bottom - edge - text.h / 2, Math.max(ceiling + edge + text.h / 2, up ? footY - rise : footY + rise))
+  if (at.direction === 'lineFirst') return { foot: [footX, footY], end: [start + run, textY], text: [textBox[0], textY], textBox }
+  return { foot: [footX, footY], end: [textRight + gap, textY], text: [textRight, textY], textBox }
 }
+
+type Box = { left: number; right: number; bottom: number }
 
 // (dev + tests) the readout setting back as Settings values, so a test can change one row and keep the other
 const readoutSettingValues = (r: ReadoutSetting) => ({ readoutPosition: r.position * 100, readoutDirection: r.direction === 'textFirst' ? 'Text, then line' : 'Line, then text' })
 
 // Hang the readout's words on their point (CSS translate) and draw its line — only when something moved.
 function placeReadout(el: HTMLDivElement | null, ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, at: ReadoutSetting,
-  text: { w: number; h: number }, curve: number, drawn: string) {
-  const g = readoutGeometry(s, view, at, text, curve)
+  text: { w: number; h: number }, topRow: Box[], curve: number, drawn: string) {
+  const g = readoutGeometry(s, view, at, text, topRow, curve)
   const t = `${Math.round(g.text[0])}px ${Math.round(g.text[1])}px`
   if (el && el.style.translate !== t) el.style.translate = t
   const R = hud.readout

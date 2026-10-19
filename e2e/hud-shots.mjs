@@ -85,12 +85,17 @@ function hudProblems(m, bars) {
   // one top row: the score, the cracks and the Console button share a line (their boxes overlap top to bottom)
   // (a phone on its side: the score and the Console button beside the tank, the crack count heading the panel column)
   const sideways = m.dock?.side === 'right'
-  const top = m.hud.filter((r) => sideways ? r.top < m.tank.top + 60 : r.bottom < m.tank.top + 1)
+  // (Muzzy's hud.json topRowPx 19, 2026-10-18: the top row may hang over the tank's top edge, so a top-row part is one
+  // that STARTS at or above the tank's top)
+  const top = m.hud.filter((r) => sideways ? r.top < m.tank.top + 60 : r.top < m.tank.top + 8)
   if (top.length !== (sideways ? 2 : 3)) problems.push(`${top.length} of ${sideways ? 2 : 3} parts in the top row`)
   if (sideways && !m.dockStatus) problems.push('no crack count in the panel column')
   if (top.some((a) => top.some((b) => a.bottom < b.top || b.bottom < a.top))) problems.push('the top row is not one row')
   for (const r of m.hud) if (offScreen(r, m.W, m.H)) problems.push(`past the screen edge ${fmt(r)}`)
-  for (const r of m.hud) if (hit(r, m.tank)) problems.push(`covers the tank ${fmt(r)} tank ${fmt(m.tank)}`)
+  // only the top row may overlap the tank, and only its top edge (no deeper than topRowPx + one row of HUD text)
+  for (const r of m.hud) if (hit(r, m.tank) && (!top.includes(r) || r.bottom > m.tank.top + 60)) problems.push(`covers the tank ${fmt(r)} tank ${fmt(m.tank)}`)
+  // the pressure readout's words never go under a top-row part (95% slid under "CRACKS 0 / 6", 2026-10-18)
+  if (m.readout) for (const r of m.hud) if (hit(r, m.readout)) problems.push(`the readout is under a HUD part ${fmt(m.readout)} × ${fmt(r)}`)
   // the panel
   const d = m.dock
   if (!d) problems.push('no panel')
@@ -167,6 +172,13 @@ try {
         const [ex] = m.line.end
         if (m.readout && direction === 'Line, then text' && m.readout.left < ex - 1) p.push('words not after the line')
         if (m.readout && direction === 'Text, then line' && m.readout.right > ex + 1) p.push('words not before the line')
+        // near the top (pressure 97%) the words stay clear of the top row, which hangs over the tank's top
+        const pressureWas = await page.evaluate(() => { const g = window.__goops, was = g.engine.state.pressure; g.engine.setPressure(0.97); return was })
+        await page.waitForTimeout(150)
+        const high = await page.evaluate(measure)
+        await page.evaluate((was) => window.__goops.engine.setPressure(was), pressureWas)
+        for (const r of high.hud) if (high.readout && hit(r, high.readout)) p.push(`at 97% the words are under a HUD part ${fmt(high.readout)} × ${fmt(r)}`)
+        if (high.readout && !inside(high.readout, high.tank)) p.push(`at 97% the words are outside the tank ${fmt(high.readout)}`)
         if (p.length) fail(name, where, p.join('; '))
         if (rank === '6' && ['phone', 'landscape', 'desktop'].includes(name)) await page.screenshot({ path: `${dir}/${name}-1r-${direction[0] === 'L' ? 'line' : 'text'}-${position}.png` })
       }
