@@ -22,3 +22,5 @@ Decided at planning (Muzzy, 2026-10-19): the tutorial is **v1 style, fully scrip
 - [ ] 🙋 5. (tuning) Try them: wording, timing, pointers
 
 ## Notes
+- F30 (helper, 2026-10-19): engine training mode (src/engine/training.ts, `createShift({ training })` + `engine.train(...)`), a Goops-free step machine (src/game/lessons/runner.ts, patterns.ts, lessonTypes.ts) + Goops adapter (goopsLessons.ts, LessonView.tsx on the kit Callout), Dev Kit Lessons tab, `?lesson=<id>&step=<n>`, shared timings content/tuning/lessons.json, sample lesson content/lessons/sample.json. Tutorial §6 checklist: most done; stubbed = remember on device, screen events (only shiftStarted), checkpoints; not done = queue refill rule, zap filter by group, freeze the tank at the console, Replay lessons (F32), finishing day one (F31), pointers at console parts.
+- Look nits (screenshots): on a phone the bubble pointing at floor goop covers the "0% PSI" readout; the welcome ring round the spawning piece overlaps "CRACKS". The kit Callout has no "keep clear of" list → ask the framework session (Callout avoid boxes); log, not fixing in-game.
