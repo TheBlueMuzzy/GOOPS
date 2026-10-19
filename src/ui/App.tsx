@@ -5,7 +5,7 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, GameOver, Hud, HudText, kitScreens, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens } from './kit'
+import { Bar, GameOver, Hud, HudText, kitScreens, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
@@ -21,7 +21,7 @@ import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { isUnlocked, rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
+import { isUnlocked, rankInfo, rewardShift, scrapsAt, unlockRank, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
@@ -235,6 +235,22 @@ export function App() {
     },
   }), [result, start, toConsole])
 
+  // the console between shifts: Settings, and the Upgrades screen (F59, from its rank: the scraps in hand — alpha has no
+  // upgrades to buy yet, so it says when they come)
+  const rank = playerRank(progress)
+  const scraps = Math.max(0, scrapsAt(rank, progress))
+  const idleScreens = useMemo(() => ({
+    ...kitScreens, // (Settings' buttons ask first: Replay lessons)
+    settings: SettingsScreen,
+    upgrades: () => (
+      <Modal title={text.upgrades.title} onBack={() => screens.pop()} backLabel={text.upgrades.back}>
+        <Text kind="heading">{fill(text.upgrades.scraps, { n: scraps.toLocaleString('en') })}</Text>
+        <Text>{text.upgrades.soon}</Text>
+      </Modal>
+    ),
+  }), [scraps])
+  const openUpgrades = useCallback(() => { screens.push('upgrades'); lessonPlay.screen('upgradesOpened') }, [])
+
   // the console mid-shift: Settings and the pause menu (End shift throws the run away)
   const consoleScreens = useMemo(() => ({
     ...kitScreens,
@@ -320,11 +336,12 @@ export function App() {
         </ScreenStack>
       )}
       {mode !== 'shift' && (
-        <ScreenStack screens={peeking ? consoleScreens : { ...kitScreens, settings: SettingsScreen }}>{/* (Settings' buttons ask first: Replay lessons) */}
+        <ScreenStack screens={peeking ? consoleScreens : idleScreens}>
           <Console progress={progress} shownFrom={peeking ? null : meterFrom} onSlideEnd={consoleSlid}
             phase={mode === 'console' || mode === 'peek' ? 'idle' : mode === 'leaving' || mode === 'peekOut' ? 'leaving' : 'arriving'}
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
-            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined} />
+            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined}
+            upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }} />
         </ScreenStack>
       )}
       <ToastStack place="at" variant="plain" /* just above the goop; words, not button-like plates (Muzzy 2026-10-18) */ />

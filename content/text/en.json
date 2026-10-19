@@ -17,6 +17,9 @@
     "hintBack": "Pull the periscope to go back",
     "hintRepair": "Repair the {name}!",
     "backToTank": "Back to the tank",
+    "upgrades": "Upgrades",
+    "upgradesLocked": "Upgrades: {n} scraps saved. Upgrading opens at rank {rank}.",
+    "upgradesOpen": "Upgrades: {n} scraps to spend",
     "machineNames": {
       "laser": "laser",
       "visor": "visor",
@@ -45,6 +48,12 @@
       "bottom right",
       "bottom left"
     ]
+  },
+  "upgrades": {
+    "title": "Upgrades",
+    "scraps": "Scraps: {n}",
+    "soon": "The first upgrades arrive in the next update.",
+    "back": "Back"
   },
   "hud": {
     "cracks": "CRACKS {n} / {total}",

@@ -28,7 +28,12 @@ export function rankInfo(p: Progress, t: ProgressionTuning = tuning): RankInfo {
   let rank = 0, left = p.totalXp
   while (rank < t.maxRank && left >= xpToNext(rank, t)) { left -= xpToNext(rank, t); rank++ }
   const atMax = rank >= t.maxRank
-  return { rank, xpIntoRank: atMax ? 0 : left, xpToNext: atMax ? 0 : xpToNext(rank, t), scraps: rank * t.scrapsPerRank - p.scrapsSpent }
+  return { rank, xpIntoRank: atMax ? 0 : left, xpToNext: atMax ? 0 : xpToNext(rank, t), scraps: scrapsAt(rank, p, t) }
+}
+
+// Scraps in hand at a rank: earned by ranking up to it, minus those spent (F59: the console's Upgrades button shows it).
+export function scrapsAt(rank: number, p: Progress, t: ProgressionTuning = tuning): number {
+  return rank * t.scrapsPerRank - p.scrapsSpent
 }
 
 // UNLOCKS (F59): what a rank opens up — content/tuning/progression.json → unlocks (the rank each one needs). The HUD,
@@ -39,6 +44,11 @@ export const UNLOCKS: Unlock[] = ['nextPiece', 'swap', 'upgrades'] // (in the or
 /** Is this part of the game unlocked at this rank? */
 export function isUnlocked(what: Unlock, rank: number, t: ProgressionTuning = tuning): boolean {
   return rank >= t.unlocks[what]
+}
+
+/** The rank this unlocks at (words like "opens at rank 5"). */
+export function unlockRank(what: Unlock, t: ProgressionTuning = tuning): number {
+  return t.unlocks[what]
 }
 
 /** What ranking up from `from` to `to` unlocked (the end report names it), in the order they come. */

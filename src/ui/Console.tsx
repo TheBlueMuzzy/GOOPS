@@ -8,7 +8,7 @@
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useCrtLesson, useSpotlitTags } from '../game/lessons/lessonLine'
-import { ArtLayer, ArtStage, Button, LevelMeter, PullHandle, Screen, TitleArt, fill } from './kit'
+import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Screen, Stack, TitleArt, fill } from './kit'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
 import { ControlsPanel, LaserPanel, LessonTag, VisorPanel } from './RepairPanels'
@@ -33,6 +33,9 @@ type Props = {
   // mid-shift only: the machines now, how many times each has broken (a new puzzle each time), and a repair solved.
   // fewerRepairSteps: upgrades that shorten the repairs (resolveUpgrades; none yet, so left out = 0)
   midShift?: { machines: ConsoleMachines; breaks: Record<MachineId, number>; onRepair(machine: MachineId): void; fewerRepairSteps?: FewerRepairSteps }
+  // F59: the Upgrades button (between shifts only): the scraps in hand, and whether upgrading is unlocked yet (before
+  // its rank the button is greyed out, showing the scraps saved so far); onOpen opens the Upgrades screen.
+  upgrades?: { scraps: number; open: boolean; opensAt: number; onOpen(): void }
 }
 
 const t = text.console
@@ -94,7 +97,19 @@ function Crt({ hint, lesson }: { hint: string; lesson: CrtLine | null }) {
   )
 }
 
-export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift }: Props) {
+// F59: the console's Upgrades button, over the GOOPS title — the scraps count on it; grey (and asleep) until upgrading
+// unlocks, then it opens the Upgrades screen. data-tag: the unlock lesson outlines it (content/lessons/unlock-upgrades.json).
+function UpgradesButton({ scraps, open, opensAt, onOpen }: NonNullable<Props['upgrades']>) {
+  const n = format(Math.max(0, scraps))
+  return (
+    <Button variant="secondary" compact disabled={!open} onClick={onOpen} data-tag="upgrades" data-placement="top"
+      aria-label={open ? fill(t.upgradesOpen, { n }) : fill(t.upgradesLocked, { n, rank: opensAt })}>
+      {t.upgrades} <Badge variant={open ? 'primary' : 'neutral'}>{n}</Badge>
+    </Button>
+  )
+}
+
+export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades }: Props) {
   const now = rankInfo(progress)
   const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, progress) : []), [shownFrom, progress])
   const short = useShort()
@@ -116,7 +131,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   return (
     <Screen label={t.label} column backdrop={a.backdrop}
       slide={phase === 'idle' ? undefined : phase === 'leaving' ? 'out' : 'in'} slideEdge="bottom" onSlideEnd={onSlideEnd}
-      bottom={<TitleArt src={a.title} alt={t.title} size="s" />}
+      // (F59: between shifts the Upgrades button sits over the title — the corners beside it are too narrow on a phone)
+      bottom={upgrades ? <Stack gap="s"><UpgradesButton {...upgrades} /><TitleArt src={a.title} alt={t.title} size="s" /></Stack>
+        : <TitleArt src={a.title} alt={t.title} size="s" />}
       bottomLeft={midShift && short ? <Button variant="secondary" onClick={onPull} disabled={phase !== 'idle'}>{t.backToTank}</Button> : undefined}
       bottomRight={<Button art={a.settings} onClick={onSettings}>{t.settings}</Button>}>
       <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end">
