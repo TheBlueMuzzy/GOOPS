@@ -73,7 +73,7 @@ try {
   await page.waitForTimeout(2200) // slide in + the meter filling
   const want = `Operator rank 0 · ${saved.totalXp.toLocaleString('en')} / 3,500 XP`
   check('back on the console, the meter shows the new XP', (await meterText()) === want, `${await meterText()} (want ${want})`)
-  check('the monitor still says what to do (Muzzy: the report does the XP)', await page.getByText('Pull down the periscope').count() === 1)
+  check('the monitor still says what to do (Muzzy: the report does the XP)', await page.locator('.crt-read', { hasText: 'Pull down the periscope' }).count() === 1) // (the monitor's whole words; the typed copy is aria-hidden)
   await page.screenshot({ path: `${OUT}/day-2-xp.png` })
 
   // 5. the gear opens Settings over the console; Esc closes it
