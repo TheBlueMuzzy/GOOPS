@@ -9,6 +9,7 @@ Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · al
 - [x] 🤖 3. Placeholder sounds made in code (ZzFX → files), logged in credits — public/audio/, content/credits.json
 - [x] 🤖 4. Play them from the game's events, on the rules clock (both Dev Kit pauses silence them) — src/game/ShiftStage.tsx
 - [x] 🤖 5. Tests + an e2e that reads the audio log for each moment — tests/, e2e/sound.mjs
+- [x] 🤖 3b. Recorded CC0 sounds instead of code-made (Kenney / OpenGameArt; Muzzy called code-made "horrible") — public/audio/, content/audio.json, content/credits.json
 - [ ] 🙋 6. (tuning) Listen: loudness and feel of each sound (Dev Kit Sound tab)
 
 ## F36 ✨ Readable cracks
@@ -24,3 +25,9 @@ Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · al
 - [x] 🤖 3. e2e: a desktop click beside the tank does nothing — e2e/controls.mjs
 
 ## Notes
+- F58 (2026-10-19): only the visible tank takes clicks (`geometry.ts screenToVisibleCell`); a click beside/above the tank is a plain tap (rotate). Unit test + e2e/controls.mjs.
+- F36 calls (helper, auto): x-ray box + bubbles drawn on the tank canvas UNDER the goo, the goo inside the box thinned to 40% so the box shows through (under the visor glitch for free, no extra canvas on phones) · "covered" = any colour on the crack (a plugged one gets the box too) · bubbles 5/s, gust 0.7, size 0.09, alpha 0.7; box white 0.9 breathing 30%; scar #3a3f4b + 3 stitches #6b7385 — all in content/tuning/cracks-look.json, live · snapshots stay format 1 (sealed spots optional). Bots (20 seeds) with "no crack on a sealed spot": Sharp 100/95/85/55/0% vs 100/95/95/50/0% without — noise, pacing unchanged (~142 s).
+- F29 calls (helper, auto): Settings rows on: Master, Sound effects, Menus & buttons, Sound, Mute in background, Mono (Music/Ambience off — none yet) · 26 ids in content/audio.json; one sound per id per frame; pop size → pitch/volume (content/tuning/sound.json); goop.ready climbs a pitch ladder; each machine has its own break sound, one shared "fixed" · silent for now: goop falling after a pop, plugging, the broken-laser prime, abilities · a "console" mix: the tank 6 dB quieter at the console mid-shift · menu/console sounds never vary (Muzzy 2026-10-10) · full Dev Kit pause also mutes (module gap below).
+- **Mistake caught (Claude):** my sprint task said "placeholder sounds made in code (ZzFX)" — but Muzzy called code-made sounds "horrible" twice and the audio-setup skill says recorded CC0 for anything he hears. Swapping to recorded Kenney / OpenGameArt CC0 sounds before he hears them (task 3b). Lesson for the BMUZ session: /sprint planning should read the specialist skill's lessons before wording a task.
+- Framework (audio module) issues for the framework session, not fixed here (kit copy): the module ignores `devkit:pause` — a tap resumes an AudioContext the full pause suspended (game-side mute is the workaround) · `src/audio/react.ts:16` exhaustive-deps lint warning · the first click of a visit is always silent (files load on unlock — by design).
+- e2e/controls.mjs: with 4 Settings tabs (Audio joined) a phone shows the ◀ Audio ▶ picker, not tabs — the test steps to Gameplay now.
