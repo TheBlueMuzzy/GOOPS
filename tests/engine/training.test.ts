@@ -144,6 +144,61 @@ describe('placed goop and cracks, pressure, rules', () => {
     expect(s.grid.every((c) => c === 0) && s.groups.size === 0 && s.cracks.length === 0 && s.piece === null).toBe(true)
   })
 
+  it('pressure stops at its cap', () => {
+    const { shift, config } = training({ pressureRise: 1, pressureCap: 0.9 })
+    shift.tick(config.pressure.riseMsToFull * 2)
+    expect(shift.state.pressure).toBeCloseTo(0.9)
+  })
+
+  it('integrity drains to its floor, and without rupture allowed the tank holds', () => {
+    const { shift, config } = training({ integrity: true, integrityFloor: 0.2 })
+    config.integrity.drainPerCrackPerSec = 0.01 // (fast, so the test is short)
+    shift.train({ type: 'crack', x: 0, y: 23, color: 1 })
+    shift.tick(600_000)
+    expect(shift.state.integrity).toBeCloseTo(0.2)
+    expect(shift.state.phase).toBe('playing')
+  })
+
+  it('the overflow rail clears the top instead of a rupture', () => {
+    const { shift } = training({ autoSpawn: false })
+    const s = shift.state
+    const column: [number, number, number][] = []
+    for (let y = 0; y < s.height; y++) column.push([0, y, 1 + (y % 2)]) // a full column, spawn rows too
+    shift.train({ type: 'goop', cells: column })
+    expect(shift.train({ type: 'spawn' })).toBe(true)
+    expect(s.phase).toBe('playing')
+    expect(s.grid[idx(0, 6)]).toBe(0) // the top rows were cleared
+    expect(s.grid[idx(0, 7)]).not.toBe(0) // and only those
+  })
+
+  it('zap filter: only the allowed colour pops', () => {
+    const { shift } = training({ zapColors: [2] })
+    shift.train({ type: 'goop', cells: [[0, 23, 1], [2, 23, 2]] })
+    shift.act({ type: 'pop', x: 0, y: 23 })
+    expect(shift.state.grid[idx(0, 23)]).toBe(1)
+    shift.act({ type: 'pop', x: 2, y: 23 })
+    expect(shift.state.grid[idx(2, 23)]).toBe(0)
+  })
+
+  it('a chosen piece can come in turned; random pieces stay 4 cells however long it runs', () => {
+    const { shift, config } = training()
+    shift.train({ type: 'queue', pieces: [{ shape: 'T_I', color: 1, turns: 1 }] })
+    shift.train({ type: 'spawn' })
+    expect(new Set(shift.state.piece!.cells.map(([, y]) => y)).size).toBe(1) // lying flat: one row
+    shift.tick(200_000) // past every size zone of a normal shift
+    for (let i = 0; i < 5; i++) dropPiece(shift, config)
+    expect(shift.state.piece!.cells).toHaveLength(4)
+  })
+
+  it('a crack can be removed, and none can be placed on a sealed spot', () => {
+    const { shift } = training()
+    shift.train({ type: 'crack', x: 4, y: 23, color: 1 })
+    expect(shift.train({ type: 'removeCrack', x: 4, y: 23 })).toBe(true)
+    expect(shift.state.cracks).toHaveLength(0)
+    shift.state.sealedCracks!.push({ id: 99, x: 5, y: 23 })
+    expect(shift.train({ type: 'crack', x: 5, y: 23, color: 1 })).toBe(false)
+  })
+
   it('the same commands with the same seed give the same shift (still pure + seeded)', () => {
     const run = () => {
       const { shift } = training({ cracks: true, pressureRise: 1 }, 42)

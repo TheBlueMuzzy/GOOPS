@@ -28,7 +28,7 @@ import { type Modifiers, clampModifiers } from './upgrades'
 import { ABILITY_EFFECTS, type AbilitySpec, type ActiveEffects } from './abilities'
 import { type BreakdownConfig, Machines } from './machines'
 import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
-import { type PieceChoice, type TrainingCommand, type TrainingRules, TRAINING_START, pieceFromChoice } from './training'
+import { type PieceChoice, type TrainingCommand, type TrainingRules, OVERFLOW_RAIL_ROWS, TRAINING_START, pieceFromChoice } from './training'
 
 export interface ShiftOptions {
   seed: number
@@ -296,14 +296,17 @@ class Shift implements ShiftEngine {
     if (s.phase === 'playing') {
       // (a lesson's training shift: each of these only while its rule is on — training.ts)
       const t = this.training
-      this.setPressure(s.pressure + (dt * (t ? t.pressureRise : 1)) / this.riseMsToFull())
+      let pressure = s.pressure + (dt * (t ? t.pressureRise : 1)) / this.riseMsToFull()
+      if (t && pressure > t.pressureCap) pressure = Math.max(s.pressure, t.pressureCap) // stops at the cap (never pulled down)
+      this.setPressure(pressure)
       if (!t || t.cracks) this.growCracks(dt)
       this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
       if (!t || t.integrity) this.drainIntegrity(dt)
       if (s.phase === 'playing' && this.breakdownsOn()) this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
     } else {
       // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
-      this.setPressure(s.pressure - dt / (this.config.rupture.drainMs * this.mods.ruptureDrainTimeMult))
+      const speed = this.training ? Math.max(0.01, this.training.ruptureDrainSpeed) : 1 // (a lesson may slow the drain)
+      this.setPressure(s.pressure - (dt * speed) / (this.config.rupture.drainMs * this.mods.ruptureDrainTimeMult))
       if (s.pressure <= 0) {
         this.end()
         return
@@ -359,13 +362,14 @@ class Shift implements ShiftEngine {
     const s = this.state
     const open = s.cracks.reduce((sum, c) => sum + (c.drain ?? 1), 0) // a high hill crack counts for less (cracks.ts)
     const drain = open * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
-    s.integrity = Math.max(0, s.integrity - drain)
+    s.integrity = Math.max(this.training?.integrityFloor ?? 0, s.integrity - drain)
     if (s.integrity <= 0) this.rupture('integrity')
   }
 
   private rupture(reason: 'integrity' | 'overflow'): void {
     const s = this.state
     if (s.phase === 'rupture') return
+    if (this.training && !this.training.rupture) return // a lesson that doesn't allow it: the tank holds
     s.phase = 'rupture'
     s.ruptureReason = reason
     this.events.push({ type: 'rupture', reason })
@@ -500,6 +504,8 @@ class Shift implements ShiftEngine {
     const id = s.groupOf[y * s.width + wrapX(x, s.width)]
     const g = s.groups.get(id)
     if (!g) return false
+    const zapColors = this.training?.zapColors
+    if (zapColors && !zapColors.includes(g.color)) return false // a lesson that only lets one colour be zapped
     if (!this.canPop(g)) {
       // say why (F26): the line is the reason that waiting won't fix, so it wins when both are true
       const topRow = Math.floor(g.cells[0] / s.width)
@@ -591,7 +597,8 @@ class Shift implements ShiftEngine {
   private randomDef(): PieceDef {
     const zones = this.config.pieces.zones
     const zone = Math.min(zones.length - 1, Math.floor(this.playedMs / this.config.pieces.zoneEveryMs))
-    return randomPiece(this.rng, this.config, zones[zone], this.colorCount)
+    // (a lesson can hold the size: e.g. 'tetra' keeps every piece 4 cells however long it runs)
+    return randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount)
   }
 
   // The piece after the one coming in: a lesson's chosen piece first (F30), otherwise a random one.
@@ -620,14 +627,23 @@ class Shift implements ShiftEngine {
         break
       }
       case 'spawn':
-        if (this.piece || !this.trySpawn()) return false
+        if (this.piece) return false
+        this.spawnNext() // (no room: the overflow rail, or a rupture if the lesson allows one)
+        if (!this.piece) return false
         break
       case 'crack': {
         const x = wrapX(cmd.x, s.width), i = cmd.y * s.width + x
-        if (!inTank(cmd.x, cmd.y) || !goodColor(cmd.color) || s.grid[i] !== 0 || s.cracks.some((c) => c.x === x && c.y === cmd.y)) return false
+        const taken = (c: { x: number; y: number }) => c.x === x && c.y === cmd.y
+        if (!inTank(cmd.x, cmd.y) || !goodColor(cmd.color) || s.grid[i] !== 0 || s.cracks.some(taken) || (s.sealedCracks ?? []).some(taken)) return false
         const crack = { id: this.nextCrackId++, x, y: cmd.y, color: cmd.color, plugged: false }
         s.cracks.push(crack)
         this.events.push({ type: 'crack', crack: { ...crack } })
+        break
+      }
+      case 'removeCrack': {
+        const x = wrapX(cmd.x, s.width)
+        if (!s.cracks.some((c) => c.x === x && c.y === cmd.y)) return false
+        s.cracks = s.cracks.filter((c) => !(c.x === x && c.y === cmd.y))
         break
       }
       case 'goop': {
@@ -666,7 +682,23 @@ class Shift implements ShiftEngine {
   // Already rupturing: no piece until zapping makes room (step keeps trying) — the shift still ends at pressure 0.
   private spawnNext(): void {
     if (this.trySpawn()) return
+    // a lesson's overflow rail (F30): clear the goop at the top and try once more, instead of a rupture
+    if (this.training?.overflowRail && this.state.phase === 'playing') {
+      this.clearTopRows()
+      if (this.trySpawn()) return
+    }
     if (this.state.phase === 'playing') this.rupture('overflow')
+  }
+
+  // The overflow rail: every goop cell in the hidden spawn rows and the top OVERFLOW_RAIL_ROWS visible rows goes.
+  private clearTopRows(): void {
+    const s = this.state
+    const cells: number[] = []
+    for (let i = 0; i < (s.bufferRows + OVERFLOW_RAIL_ROWS) * s.width; i++) if (s.grid[i]) cells.push(i)
+    if (cells.length === 0) return
+    for (const i of cells) s.grid[i] = 0
+    regroup(s, this.book)
+    this.settle()
   }
 
   // Bring in the next piece if there's room for it. v1: always the centre column, top row of the hidden buffer.
