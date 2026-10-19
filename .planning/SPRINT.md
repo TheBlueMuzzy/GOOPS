@@ -34,7 +34,10 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 26. At ~95% pressure the readout's words slid under "CRACKS 0 / 6" (the top row hangs over the tank since topRowPx 19) → the words stay below any top-row part over them, flipping under the line near the top; hud-shots checks it at 97% and now allows the top row over the tank's top edge
 - [ ] 🤖 27. Phone on its side + short window: a message ("PRESSURE NEAR MAX") lands on the pressure readout, and in the short window runs past the screen edge (hud-shots, 8 fails — older than task 26)
 - [x] 🤖 28. Left click over a 1-cell locked goop rotated the piece instead of popping it — the curved-TV look moves what you see (16 of 252 cells at curve 0.5, 72 at curve 1 were picked as a NEIGHBOUR when clicked dead centre); clicks now go through the same bend (visorFx `flatPoint`), checked in e2e/controls.mjs
-- [x] 🤖 29. "Reset laser / controls / visor" labels 10% smaller (too big for their spot on the console art)
+- [x] 🤖 29. "Reset laser / controls / visor" labels 10% smaller (too big for their spot on the console art), then 10% more (21 → 18.9 → 17, art.json)
+- [x] 🤖 30. Visor glitch waits for the meter to run out, then builds up over rampMs 4 s (was: from 95% signal down); machines count brokenMs on the rules clock (stands still at the console); visorFx test + engine test + e2e/visor.mjs check it
+- [ ] ❓ 31. The falling piece isn't centred: 12 visible columns has no middle column, so the piece column sits half a cell left of the screen's centre — Ask Muzzy: 11 or 13 visible columns, or keep 12
+- [ ] 🤖 32. Poking goop that isn't ready jiggles it (a ripple through the jelly, both goo styles) — Muzzy 2026-10-18
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [x] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain

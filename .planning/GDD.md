@@ -60,7 +60,7 @@ Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities 
   | Machine | Meter (v1) | Broken | Repair at the console | Unlock |
   |---|---|---|---|---|
   | Laser | drains per zapped cell, refills per landed piece | two taps to zap (prime, then pop) | all 4 sliders light up, each randomly wanting left or right → flick each there | rank 4 |
-  | Visor (was "lights") | holds for a grace, fades unless you fast-drop | the periscope view glitches more and more (shader; a pixel filter stacks on top later) | top light → slide up → 3 button flashes in order (never the same twice running) → bottom light → slide down | rank 2 |
+  | Visor (was "lights") | holds for a grace, fades unless you fast-drop | the periscope view glitches — nothing until the meter runs out, then it builds up over `rampMs` (4 s, visor-fx.json) and stays at full until repaired (Muzzy 2026-10-18: only the visor ramps — "visibility is sooo key"; the laser and controls switch straight to their broken effect) | top light → slide up → 3 button flashes in order (never the same twice running) → bottom light → slide down | rank 2 |
   | Controls | heat per tank turn, cools when idle | held spin at half speed; single presses/swipes normal | turn the dial to the blinking corner (locks by itself), 4 times; each corner random, never the one the dial is on (an earlier one can come back) | rank 6 |
   Every repair is about 4 clicks (Muzzy, 2026-10-18); the counts are `repairSliders` / `repairCorners` in `content/tuning/breakdowns.json`.
   Muzzy chose v1's meters knowing they respond to your own moves; the softer effects keep play going. Cooldown after a repair as v1: max(8, 20 − (rank − unlock rank)) s.

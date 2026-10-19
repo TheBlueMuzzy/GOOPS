@@ -4,22 +4,23 @@ import { visorAmount, parseVisorOverride, curvedY } from '../../src/view/visorFx
 import fx from '../../content/tuning/visor-fx.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
 
-const visor = (health: number, unlocked = true, broken = false) => ({ id: 'visor' as const, unlocked, health, broken, cooldownMs: 0 })
+const visor = (health: number, unlocked = true, broken = false, brokenMs = 0) => ({ id: 'visor' as const, unlocked, health, broken, cooldownMs: 0, brokenMs })
 
+// Muzzy 2026-10-18: "the screen [doesn't start] its glitch cycle until the meter reaches 0" — then it builds up.
 describe('visorAmount', () => {
-  it('is 0 while fine, locked, or missing', () => {
+  it('is 0 while the meter still has signal — however low — or the visor is locked or missing', () => {
     expect(visorAmount(visor(1))).toBe(0)
-    expect(visorAmount(visor(fx.healthClean))).toBe(0)
-    expect(visorAmount(visor(0.05, false))).toBe(0)
+    expect(visorAmount(visor(0.3))).toBe(0)
+    expect(visorAmount(visor(breakdowns.visor.breakAt + 0.01))).toBe(0)
+    expect(visorAmount(visor(0.05, false, true, 99999))).toBe(0)
     expect(visorAmount(undefined)).toBe(0)
   })
-  it('rises as the signal fades and is 1 when broken', () => {
-    expect(visorAmount(visor((fx.healthClean + fx.healthBroken) / 2))).toBeCloseTo(0.5)
-    expect(visorAmount(visor(fx.healthBroken))).toBe(1)
-    expect(visorAmount(visor(breakdowns.visor.brokenHealth, true, true))).toBe(1)
-  })
-  it('reaches 1 at the visor break point', () => {
-    expect(fx.healthBroken).toBe(breakdowns.visor.breakAt)
+  it('builds from 0 to 1 over rampMs once broken, then stays at 1', () => {
+    const b = breakdowns.visor.brokenHealth
+    expect(visorAmount(visor(b, true, true, 0))).toBe(0)
+    expect(visorAmount(visor(b, true, true, fx.rampMs / 2))).toBeCloseTo(0.5)
+    expect(visorAmount(visor(b, true, true, fx.rampMs))).toBe(1)
+    expect(visorAmount(visor(b, true, true, fx.rampMs * 3))).toBe(1)
   })
 })
 

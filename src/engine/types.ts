@@ -81,6 +81,7 @@ export interface MachineState {
   health: number // 0..1, 1 = fine. Laser = capacitor charge, visor = signal, controls = 1 − heat
   broken: boolean // reached its threshold; stays broken until repaired at the console
   cooldownMs: number // after a repair it can't break again until this runs out (0 = can break)
+  brokenMs: number // how long it has been broken (rules time; stands still at the console) — the visor glitch builds up over it
 }
 
 // An equipped active ability (F22). It charges 0 → 1 during play; at 1 it's ready to fire.

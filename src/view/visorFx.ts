@@ -23,12 +23,10 @@ const LOOK_UNIFORMS: [string, keyof VisorFxConfig['look']][] = [['uScan', 'scan'
   ['uNoise', 'noise'], ['uFlicker', 'flicker'], ['uTear', 'tear'], ['uTearSize', 'tearSize'], ['uBlock', 'block'],
   ['uBlockSize', 'blockSize'], ['uVig', 'vignette'], ['uCurve', 'curve'], ['uDead', 'dead'], ['uDrop', 'dropout']]
 
-// Glitch amount from the visor's signal: 0 when fine (or locked), 1 when broken.
-export function visorAmount(visor: MachineState | undefined, cfg: Pick<VisorFxConfig, 'healthClean' | 'healthBroken'> = live.current): number {
-  if (!visor || !visor.unlocked) return 0
-  if (visor.broken) return 1
-  const t = (cfg.healthClean - visor.health) / (cfg.healthClean - cfg.healthBroken)
-  return Math.min(1, Math.max(0, t))
+// Glitch amount (0..1): nothing until the visor breaks (Muzzy 2026-10-18), then it builds up over rampMs of play.
+export function visorAmount(visor: MachineState | undefined, cfg: Pick<VisorFxConfig, 'rampMs'> = live.current): number {
+  if (!visor || !visor.unlocked || !visor.broken) return 0
+  return cfg.rampMs > 0 ? Math.min(1, (visor.brokenMs ?? 0) / cfg.rampMs) : 1
 }
 
 // The curved-TV look moves things on screen: a point drawn at height y on the flat tank shows up somewhere else.
@@ -103,13 +101,14 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
 
   const override = import.meta.env.DEV ? parseVisorOverride(location.search) : { amount: null, pixelate: null }
   let frozenAt: number | null = null, shown = false
-  let curveNow = 0
+  let curveNow = 0, amountNow = 0 // amountNow: the glitch amount on the last frame (dev hook, e2e/visor.mjs)
   if (import.meta.env.DEV) {
     // dev + tests only: change the override live and freeze the glitch clock for repeatable screenshots
     (window as unknown as { __goopsVisor?: unknown }).__goopsVisor = {
       set(o: Partial<VisorOverride>) { Object.assign(override, o) },
       freeze(t?: number) { frozenAt = t ?? null },
       get shown() { return shown },
+      get amount() { return amountNow },
     }
   }
 
@@ -128,6 +127,7 @@ export function createVisorFx(stage: HTMLElement, tankCanvas: HTMLCanvasElement,
     frame(state, view, timeSec) {
       const fx = live.current
       const amount = override.amount ?? visorAmount(state.machines?.visor)
+      amountNow = amount
       const pixOn = override.pixelate ?? fx.pixel.pixelate >= 0.5
       // the tank's rectangle in the full-window canvases, in whole device px (kept inside them)
       const dpr = view.dpr, fullW = tankCanvas.width, fullH = tankCanvas.height

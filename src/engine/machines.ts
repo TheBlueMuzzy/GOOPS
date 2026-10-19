@@ -45,6 +45,7 @@ export class Machines {
       health: 1,
       broken: false,
       cooldownMs: 0,
+      brokenMs: 0,
     })
     this.state = { laser: machine('laser'), visor: machine('visor'), controls: machine('controls') }
   }
@@ -73,6 +74,7 @@ export class Machines {
       for (const id of MACHINE_IDS) {
         const m = this.state[id]
         if (m.unlocked) m.cooldownMs = Math.max(0, m.cooldownMs - dt)
+        if (m.broken) m.brokenMs = (m.brokenMs ?? 0) + dt // (?? 0: a snapshot from before brokenMs)
       }
     }
 
@@ -125,6 +127,7 @@ export class Machines {
     const cfg = this.config
     if (!cfg || !m.broken) return false
     m.broken = false
+    m.brokenMs = 0
     m.health = 1
     const seconds = Math.max(cfg.cooldown.minSeconds, cfg.cooldown.maxSeconds - (this.rank - cfg[id].unlockRank))
     m.cooldownMs = seconds * 1000 * this.mods.breakdownCooldownMult
@@ -149,6 +152,7 @@ export class Machines {
     m.health = Math.max(floor, Math.min(1, value))
     if (m.cooldownMs <= 0 && m.health <= breakAt + EPSILON) {
       m.broken = true
+      m.brokenMs = 0
       m.health = m.id === 'visor' ? this.config!.visor.brokenHealth : 0
       this.emit({ type: 'breakdown', machine: m.id })
     }

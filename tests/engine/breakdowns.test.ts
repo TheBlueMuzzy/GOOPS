@@ -65,7 +65,7 @@ describe('unlock ranks', () => {
   it('every machine starts fine: health 1, not broken, no cooldown', () => {
     const { m } = machineShift(6)
     for (const id of ['laser', 'visor', 'controls'] as MachineId[]) {
-      expect(m[id]).toEqual({ id, unlocked: true, health: 1, broken: false, cooldownMs: 0 })
+      expect(m[id]).toEqual({ id, unlocked: true, health: 1, broken: false, cooldownMs: 0, brokenMs: 0 })
     }
     expect(machineShift(6).shift.state.primed).toEqual([])
   })
@@ -185,6 +185,24 @@ describe('visor (signal)', () => {
     expect(m.visor).toMatchObject({ health: 0.05, broken: true })
     run(shift, 5000)
     expect(m.visor.health).toBe(0.05) // a broken meter stays put until repaired
+  })
+
+  // the glitch builds up over the time since the break (Muzzy 2026-10-18: nothing while the meter is still draining)
+  it('counts how long it has been broken: from the break, not at the console, back to 0 on repair', () => {
+    const { shift, m } = machineShift(2)
+    run(shift, 9000)
+    expect(m.visor).toMatchObject({ broken: false, brokenMs: 0 }) // draining, not broken yet
+    run(shift, 1100) // breaks at ~10 s
+    expect(m.visor.broken).toBe(true)
+    const at = m.visor.brokenMs
+    expect(at).toBeLessThan(200)
+    run(shift, 1000)
+    expect(m.visor.brokenMs).toBeCloseTo(at + 1000, -1)
+    shift.act({ type: 'console', on: true })
+    run(shift, 1000)
+    expect(m.visor.brokenMs).toBeCloseTo(at + 1000, -1) // stands still at the console
+    shift.act({ type: 'repair', machine: 'visor' })
+    expect(m.visor).toMatchObject({ broken: false, brokenMs: 0 })
   })
 
   it('fast-dropping recovers it at 4/s and restarts the grace', () => {

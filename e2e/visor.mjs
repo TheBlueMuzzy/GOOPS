@@ -74,16 +74,24 @@ try {
     // the curved-TV look is on whenever you're in the vat (visor-fx.json 'always', Muzzy 2026-10-18), so even with no
     // glitch the overlay is up, on the tank only
     if (!L.overlay || !L.onTank || L.tankHidden || L.gooHidden) fail('with no glitch, the always-on curve should still show, on the tank only')
-    // the real path: an unlocked visor whose signal fades → the overlay comes on; healthy again → off
-    await page.evaluate(() => { window.__goopsVisor.set({ amount: null }); const v = window.__goops.engine.state.machines.visor; v.unlocked = true; v.health = 0.5 })
-    await page.waitForTimeout(200)
+    // the real path (Muzzy 2026-10-18): no glitch while the signal is still draining — however low — then, once the
+    // visor breaks, it builds up over rampMs of play; repaired → gone
+    const amountAfter = async (ms) => { await page.waitForTimeout(ms); return page.evaluate(() => window.__goopsVisor.amount) }
+    await page.evaluate(() => { window.__goopsVisor.set({ amount: null }); const v = window.__goops.engine.state.machines.visor; v.unlocked = true; v.health = 0.2 })
+    const draining = await amountAfter(200)
     const fading = await layers(page)
-    await page.evaluate(() => { window.__goops.engine.state.machines.visor.health = 1 })
-    await page.waitForTimeout(200)
-    const healthy = await layers(page)
-    console.log('visor health 0.5:', JSON.stringify(fading), '→ health 1:', JSON.stringify(healthy))
-    if (!fading.overlay || !fading.onTank || fading.tankHidden || fading.gooHidden) fail('a fading visor should show the overlay, on the tank only')
-    if (!healthy.overlay || healthy.tankHidden) fail('a healthy visor still shows the always-on curve')
+    const { rampMs } = JSON.parse(fs.readFileSync('content/tuning/visor-fx.json', 'utf8'))
+    await page.evaluate(() => { const v = window.__goops.engine.state.machines.visor; v.broken = true; v.brokenMs = 0; v.health = 0.05 })
+    const early = await amountAfter(300)
+    const later = await amountAfter(rampMs / 2)
+    const full = await amountAfter(rampMs)
+    await page.evaluate(() => window.__goops.engine.act({ type: 'repair', machine: 'visor' }))
+    const repaired = await amountAfter(200)
+    console.log('visor glitch — draining (health 0.2):', draining, '· broken +0.3 s:', early.toFixed(2), '· +2.3 s:', later.toFixed(2), '· +6.3 s:', full, '· repaired:', repaired)
+    if (draining !== 0) fail('the visor glitches before its meter runs out')
+    if (!fading.overlay || !fading.onTank || fading.tankHidden || fading.gooHidden) fail('the always-on curve should show, on the tank only')
+    if (!(early > 0 && early < 0.25 && later > early && later < 0.85 && full === 1)) fail(`the glitch should build up from the break: ${early} → ${later} → ${full}`)
+    if (repaired !== 0) fail('a repaired visor still glitches')
     if (errors.length) fail('errors: ' + errors.join(' | '))
     await page.close()
   }
