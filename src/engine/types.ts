@@ -150,6 +150,9 @@ export interface ShiftEngine {
   tick(ms: number): void // advance time; the screen calls this every frame with the real frame time
   takeEvents(): ShiftEvent[] // events since the last call, oldest first
   setWallKick(mode: WallKickMode): void // switch how blocked turns kick (allowed mid-shift)
+  // F30 lessons: a command for a TRAINING shift (createShift with options.training; src/engine/training.ts) — choose
+  // the next pieces, bring one in, place goop / cracks, set pressure, switch rules. false = refused (or not training).
+  train(command: import('./training').TrainingCommand): boolean
   // The Dev Kit's Snapshots (src/engine/snapshot.ts): this exact moment as plain JSON, and putting one back.
   // restore() needs an engine made with the snapshot's own options (restoreShift does both).
   snapshot(): import('./snapshot').ShiftSnapshot

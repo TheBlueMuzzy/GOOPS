@@ -28,6 +28,7 @@ import { type Modifiers, clampModifiers } from './upgrades'
 import { ABILITY_EFFECTS, type AbilitySpec, type ActiveEffects } from './abilities'
 import { type BreakdownConfig, Machines } from './machines'
 import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
+import { type PieceChoice, type TrainingCommand, type TrainingRules, TRAINING_START, pieceFromChoice } from './training'
 
 export interface ShiftOptions {
   seed: number
@@ -39,6 +40,9 @@ export interface ShiftOptions {
   abilities?: AbilitySpec[] // equipped active abilities, from resolveUpgrades()
   // F23 breakdowns: content/tuning/breakdowns.json. Leave it out and every machine stays locked (never breaks).
   breakdowns?: BreakdownConfig
+  // F30 lessons: a TRAINING shift (training.ts) — empty tank, no piece until the lesson brings one, everything held
+  // still and off except what these rules (or later train({ type: 'rules' }) commands) turn on.
+  training?: Partial<TrainingRules>
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -74,10 +78,13 @@ class Shift implements ShiftEngine {
   private readonly effects: ActiveEffects = {}
   private readonly machines: Machines // the three machines (F23); their states are state.machines
   private readonly primed = new Map<number, string>() // broken laser: primed group id → its cells when primed
+  private training: TrainingRules | null // F30: a lesson's training shift (null = a normal shift)
+  private queue: PieceChoice[] = [] // F30: pieces a lesson chose to come next, after nextDef
 
   constructor(config: ShiftConfig, options: ShiftOptions) {
     this.config = config
     this.options = options
+    this.training = options.training ? { ...TRAINING_START, ...options.training } : null
     this.rng = createRng(options.seed)
     const { width, height, bufferRows, visibleWidth } = config.tank
     this.colorCount = paletteSize(config, options.rank)
@@ -127,11 +134,17 @@ class Shift implements ShiftEngine {
     if (options.startGrid) {
       this.state.grid.set(options.startGrid)
       regroup(this.state, this.book)
-    } else this.placeJunk(junkCount(config, options.rank))
-    // v1 starts every shift with a piece already in the hold.
-    this.heldDef = this.randomDef()
-    this.nextDef = this.randomDef()
-    this.spawnNext()
+    } else if (!this.training) this.placeJunk(junkCount(config, options.rank))
+    if (this.training) {
+      // a lesson's shift: nothing in the hold, and no piece until the lesson brings one in (train({ type: 'spawn' }))
+      this.heldDef = null
+      this.nextDef = this.randomDef()
+    } else {
+      // v1 starts every shift with a piece already in the hold.
+      this.heldDef = this.randomDef()
+      this.nextDef = this.randomDef()
+      this.spawnNext()
+    }
     this.refreshView()
   }
 
@@ -153,7 +166,8 @@ class Shift implements ShiftEngine {
     return structuredClone({
       kind: SNAPSHOT_KIND,
       version: SNAPSHOT_VERSION,
-      options: { seed: o.seed, rank: o.rank, wallKick: this.wallKick, modifiers: { ...this.mods }, abilities: o.abilities ?? [] },
+      options: { seed: o.seed, rank: o.rank, wallKick: this.wallKick, modifiers: { ...this.mods }, abilities: o.abilities ?? [],
+        ...(this.training ? { training: { ...this.training } } : {}) },
       width: s.width,
       height: s.height,
       rng: this.rng.save(),
@@ -168,6 +182,7 @@ class Shift implements ShiftEngine {
         piece: this.piece, nextDef: this.nextDef, heldDef: this.heldDef, softDrop: this.softDrop, lockMs: this.lockMs,
         lockResets: this.lockResets, crackTimerMs: this.crackTimerMs, popStreak: this.popStreak, playedMs: this.playedMs,
         primed: [...this.primed], machines: this.machines.save(),
+        ...(this.training ? { training: { rules: this.training, queue: this.queue } } : {}),
       },
     })
   }
@@ -214,6 +229,9 @@ class Shift implements ShiftEngine {
     for (const [id, cells] of inner.primed) this.primed.set(id, cells)
     s.primed = [...this.primed.keys()]
     this.machines.load(inner.machines)
+    // a lesson's training shift (F30): its rules and chosen pieces as they were
+    this.training = inner.training ? inner.training.rules : null
+    this.queue = inner.training ? inner.training.queue : []
     this.events = []
     this.refreshView()
   }
@@ -230,6 +248,10 @@ class Shift implements ShiftEngine {
 
   act(action: ShiftAction): void {
     if (this.state.status !== 'playing') return
+    // a lesson step that only allows some controls: the others do nothing (no "nope" — the lesson says what to do)
+    // (going to the console is never blocked: the game sends it on its own when the console slides over the tank)
+    const allow = this.training?.allow
+    if (allow && action.type !== 'console' && !allow.includes(action.type)) return
     let ok = true
     this.rejectReason = undefined
     switch (action.type) {
@@ -272,11 +294,13 @@ class Shift implements ShiftEngine {
     const s = this.state
     this.playedMs += dt
     if (s.phase === 'playing') {
-      this.setPressure(s.pressure + dt / this.riseMsToFull())
-      this.growCracks(dt)
+      // (a lesson's training shift: each of these only while its rule is on — training.ts)
+      const t = this.training
+      this.setPressure(s.pressure + (dt * (t ? t.pressureRise : 1)) / this.riseMsToFull())
+      if (!t || t.cracks) this.growCracks(dt)
       this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
-      this.drainIntegrity(dt)
-      if (s.phase === 'playing') this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
+      if (!t || t.integrity) this.drainIntegrity(dt)
+      if (s.phase === 'playing' && this.breakdownsOn()) this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
     } else {
       // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
       this.setPressure(s.pressure - dt / (this.config.rupture.drainMs * this.mods.ruptureDrainTimeMult))
@@ -288,8 +312,13 @@ class Shift implements ShiftEngine {
       if (!this.piece) this.trySpawn()
     }
     this.settle() // goop that was resting on the falling piece drops once the piece moves away
-    this.fallPiece(dt)
+    if (!this.training || this.training.falling) this.fallPiece(dt)
     this.fillGroups(dt)
+  }
+
+  // Do the machines wear down? Always in a normal shift; in a lesson's training shift only when a step turns it on.
+  private breakdownsOn(): boolean {
+    return !this.training || this.training.breakdowns
   }
 
   // How long pressure takes to rise 0 → 100% (tuning × upgrades). Vents are "ms of rise", so they use it too.
@@ -406,7 +435,7 @@ class Shift implements ShiftEngine {
     }
     s.spin = newSpin
     this.events.push({ type: 'spin', dx: dir })
-    if (s.phase === 'playing') this.machines.spun()
+    if (s.phase === 'playing' && this.breakdownsOn()) this.machines.spun()
     this.moveReset()
     return true
   }
@@ -517,7 +546,7 @@ class Shift implements ShiftEngine {
     s.groups.delete(g.id)
     this.book.fillMs.delete(g.id)
     this.events.push({ type: 'pop', cells: g.cells, color: g.color, sealed })
-    if (s.phase === 'playing') this.machines.zapped(g.cells.length)
+    if (s.phase === 'playing' && this.breakdownsOn()) this.machines.zapped(g.cells.length)
 
     this.settle()
     if (!s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
@@ -565,6 +594,74 @@ class Shift implements ShiftEngine {
     return randomPiece(this.rng, this.config, zones[zone], this.colorCount)
   }
 
+  // The piece after the one coming in: a lesson's chosen piece first (F30), otherwise a random one.
+  private takeNextDef(): PieceDef {
+    const choice = this.queue.shift()
+    return (choice && pieceFromChoice(this.config, choice)) || this.randomDef()
+  }
+
+  // ---------------------------------------------------------------- training (F30 lessons; training.ts)
+
+  // A lesson's command. false = refused (not a training shift, or the command can't happen) — nothing changed then.
+  train(cmd: TrainingCommand): boolean {
+    const s = this.state
+    if (!this.training || s.status !== 'playing') return false
+    const inTank = (x: number, y: number) => Number.isInteger(x) && Number.isInteger(y) && y >= 0 && y < s.height
+    const goodColor = (c: number) => Number.isInteger(c) && c >= 1 && c <= this.config.colors.length
+    switch (cmd.type) {
+      case 'rules':
+        Object.assign(this.training, cmd.rules)
+        break
+      case 'queue': {
+        // every piece must be a real shape, or none are queued (a typo in a lesson file shouldn't half-work)
+        if (!cmd.pieces.every((p) => pieceFromChoice(this.config, p))) return false
+        this.queue = cmd.pieces.map((p) => ({ ...p }))
+        this.nextDef = this.takeNextDef() // the first chosen piece is the very next one
+        break
+      }
+      case 'spawn':
+        if (this.piece || !this.trySpawn()) return false
+        break
+      case 'crack': {
+        const x = wrapX(cmd.x, s.width), i = cmd.y * s.width + x
+        if (!inTank(cmd.x, cmd.y) || !goodColor(cmd.color) || s.grid[i] !== 0 || s.cracks.some((c) => c.x === x && c.y === cmd.y)) return false
+        const crack = { id: this.nextCrackId++, x, y: cmd.y, color: cmd.color, plugged: false }
+        s.cracks.push(crack)
+        this.events.push({ type: 'crack', crack: { ...crack } })
+        break
+      }
+      case 'goop': {
+        if (!cmd.cells.every(([x, y, c]) => inTank(x, y) && goodColor(c) && s.grid[y * s.width + wrapX(x, s.width)] === 0)) return false
+        for (const [x, y, c] of cmd.cells) s.grid[y * s.width + wrapX(x, s.width)] = c
+        regroup(s, this.book)
+        this.settle() // goop placed in mid-air falls, as any loose goop does
+        // as if it had landed long ago: already full (so it can pop as soon as it's at or below the pressure line).
+        // The groups it made or joined are the ones regroup just restarted at 0.
+        for (const [id, ms] of this.book.fillMs) if (ms === 0) this.book.fillMs.set(id, Number.MAX_SAFE_INTEGER)
+        this.fillGroups(0)
+        break
+      }
+      case 'pressure':
+        if (!Number.isFinite(cmd.value)) return false
+        this.setPressure(cmd.value)
+        this.updateReady()
+        break
+      case 'clear':
+        s.grid.fill(0)
+        s.groupOf.fill(-1)
+        s.groups.clear()
+        this.book.fillMs.clear()
+        s.cracks = []
+        s.sealedCracks = []
+        this.piece = null
+        this.softDrop = false
+        this.clearPrimed()
+        break
+    }
+    this.refreshView()
+    return true
+  }
+
   // The next piece after one lands. No room at the top: the tank ruptures (overflow).
   // Already rupturing: no piece until zapping makes room (step keeps trying) — the shift still ends at pressure 0.
   private spawnNext(): void {
@@ -577,7 +674,7 @@ class Shift implements ShiftEngine {
     const piece = newFallingPiece(this.nextDef, 0, 0)
     this.piece = null
     if (this.blockedAt(piece.cells, this.state.spin, 0)) return false
-    this.nextDef = this.randomDef()
+    this.nextDef = this.takeNextDef()
     this.lockMs = null
     this.lockResets = 0
     this.piece = piece
@@ -601,9 +698,9 @@ class Shift implements ShiftEngine {
     for (const id of regroup(s, this.book)) this.events.push({ type: 'merge', groupId: id })
     this.settle() // corrupted pieces break apart here; loose parts fall
     this.popStreak = 0
-    if (s.phase === 'playing') this.machines.landed()
+    if (s.phase === 'playing' && this.breakdownsOn()) this.machines.landed()
     this.softDrop = false // v1: fast drop stops when a piece lands
-    this.spawnNext()
+    if (!this.training || this.training.autoSpawn) this.spawnNext() // (a lesson may bring the next one in itself)
   }
 
   // Let every loose group fall until nothing moves, regrouping as it lands.

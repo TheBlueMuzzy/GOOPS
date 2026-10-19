@@ -9,6 +9,7 @@ import type { FallingPiece, PieceDef } from './pieces'
 import type { AbilitySpec, ActiveEffects } from './abilities'
 import type { Modifiers } from './upgrades'
 import type { AbilityState, Crack, Group, SealedSpot, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode } from './types'
+import type { PieceChoice, TrainingRules } from './training'
 import { createShift } from './shift'
 
 export const SNAPSHOT_KIND = 'goops-shift'
@@ -17,7 +18,8 @@ export const SNAPSHOT_VERSION = 1
 export interface ShiftSnapshot {
   kind: typeof SNAPSHOT_KIND
   version: number
-  options: { seed: number; rank: number; wallKick: WallKickMode; modifiers: Modifiers; abilities: AbilitySpec[] }
+  // training: only in a lesson's training shift (F30) — older snapshots have none
+  options: { seed: number; rank: number; wallKick: WallKickMode; modifiers: Modifiers; abilities: AbilitySpec[]; training?: Partial<TrainingRules> }
   width: number
   height: number
   rng: number
@@ -56,6 +58,7 @@ export interface ShiftSnapshot {
     playedMs: number
     primed: [number, string][]
     machines: ReturnType<Machines['save']>
+    training?: { rules: TrainingRules; queue: PieceChoice[] } // (F30: a lesson's training shift only)
   }
 }
 

@@ -8,7 +8,7 @@ Decided at planning (Muzzy, 2026-10-19): the tutorial is **v1 style, fully scrip
 - [ ] 🙋 2. Read the step list: approve, or say what to change
 
 ## F30 🧱 Lesson runner
-- [ ] 🤖 1. Training hooks in the engine: chosen next pieces, placed cracks, pressure held or set, cracks/breakdowns off unless a step asks — src/engine/
+- [x] 🤖 1. Training hooks in the engine: chosen next pieces, placed cracks, pressure held or set, cracks/breakdowns off unless a step asks — src/engine/
 - [ ] 🤖 2. The runner: steps from data files, v1's patterns (pause-show-dismiss, act-to-advance, wait-then-hint, position / pressure gates), on the rules clock — src/game/lessons/, content/lessons/
 - [ ] 🤖 3. The lesson look: kit message box + a pointer at a tank cell or HUD item (game-ui) — src/game/lessons/
 - [ ] 🤖 4. Dev Kit: jump to / replay any step; every lesson timing live — content/lessons/, content/devkit.json
