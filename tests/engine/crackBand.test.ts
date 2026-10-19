@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createShift } from '../../src/engine'
 import type { ShiftConfig, ShiftEngine, ShiftEvent } from '../../src/engine'
-import { crackBandTop, goopTopRow, spawnCrack } from '../../src/engine/cracks'
+import { crackBandTop, goopTopRow, hillBases, spawnCrack } from '../../src/engine/cracks'
 import { createRng } from '../../src/engine/rng'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, straightLineCracks, tank, tickUntil } from './helpers'
 
@@ -149,7 +149,7 @@ describe('integrity: lower drain and the seal refund', () => {
     expect(config.integrity.drainPerCrackPerSec).toBeGreaterThan(0)
     expect(config.integrity.sealRefund).toBeGreaterThan(0)
     expect(config.integrity.sealRefund).toBeLessThan(1)
-    expect(['none', 'halfway', 'halfwayPerColumn']).toContain(config.cracks.band)
+    expect(['none', 'halfway', 'halfwayPerColumn', 'hill']).toContain(config.cracks.band)
   })
 
   it('with the real drain, one open crack wears drainPerCrackPerSec a second', () => {
@@ -253,5 +253,72 @@ describe('top bias', () => {
       if (crack.x === 5) onTop++ // the only free cell in column 5 is row 16, right on its goop
     }
     expect(onTop).toBeLessThan(6) // weight 1 against the empty columns' 17² at row 16
+  })
+})
+
+// The hill (Muzzy, 2026-10-19): "the 50% is just a biased row, but things can spawn above it, but never above the
+// pressure line". No ceiling, so no visible band; most cracks halfway from the column's goop to the line.
+describe('hill', () => {
+  function hillConfig(set: Partial<ShiftConfig['cracks']> = {}): ShiftConfig {
+    const config = calmConfig('hill')
+    Object.assign(config.cracks, { reach: 0.5, spread: 0.2, neighbourCols: 0, highFrom: 0.75, highDrainMult: 0.5 }, set)
+    return config
+  }
+  // 1000 cracks; the line at row 16 (pressure 0.8). Rows counted from the floor.
+  function hillCracks(config: ShiftConfig, grid: Uint8Array = new Uint8Array(30 * H)) {
+    const shift = createShift(config, { seed: 1, rank: 0, startGrid: grid })
+    shift.state.pressure = 0.8
+    const out: { x: number; row: number; drain: number }[] = []
+    for (let seed = 1; seed <= 1000; seed++) {
+      const crack = spawnCrack(shift.state, createRng(seed), config, 1, seed)!
+      expect(shift.state.grid[idx(crack.x, crack.y)]).toBe(0)
+      out.push({ x: crack.x, row: H - 1 - crack.y, drain: crack.drain ?? 1 })
+    }
+    return out
+  }
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+
+  it('empty tank: most cracks around row 8 (halfway to line 16), some above it, none above the line', () => {
+    const rows = hillCracks(hillConfig()).map((c) => c.row)
+    expect(Math.max(...rows)).toBeLessThanOrEqual(16)
+    expect(Math.abs(mean(rows) - 8)).toBeLessThan(0.5)
+    expect(rows.filter((r) => r > 10).length).toBeGreaterThan(50) // the old band stopped at 8: no hard ceiling now
+    expect(rows.filter((r) => r >= 6 && r <= 10).length).toBeGreaterThan(500) // but most sit near the middle (bell, width 3.2 rows: ~57%)
+  })
+
+  it('a column with goop centres its cracks halfway from ITS goop to the line', () => {
+    const config = hillConfig()
+    const rows = hillCracks(config, oneColumn(7)).filter((c) => c.x === 5).map((c) => c.row) // base 8 → peak 12
+    expect(rows.length).toBeGreaterThan(10)
+    expect(Math.abs(mean(rows) - 12)).toBeLessThan(1.2)
+  })
+
+  it('neighbours: empty columns next to a stack borrow its height (fading), far ones do not', () => {
+    const grid = oneColumn(11) // column 5 up to row 11 → base 12
+    const bases = hillBases(createShift(hillConfig(), { seed: 1, rank: 0, startGrid: grid }).state, 3)
+    expect(bases[5]).toBe(12)
+    expect(bases[6]).toBe(9) // 12 × 3/4
+    expect(bases[4]).toBe(9)
+    expect(bases[7]).toBe(6) // 12 × 2/4
+    expect(bases[8]).toBe(3)
+    expect(bases[9]).toBe(0)
+    expect(bases[20]).toBe(0)
+  })
+
+  it('cracks above 75% of the way to the line drain at half (unseen); the rest at full', () => {
+    const cracks = hillCracks(hillConfig({ spread: 0.4 }))
+    for (const c of cracks) expect(c.drain).toBe(c.row / 16 >= 0.75 ? 0.5 : 1)
+    expect(cracks.some((c) => c.drain === 0.5)).toBe(true)
+  })
+
+  it('the integrity drain counts a half-drain crack as half', () => {
+    const config = hillConfig()
+    config.integrity.drainPerCrackPerSec = 0.01
+    const shift = createShift(config, { seed: 1, rank: 0, startGrid: new Uint8Array(30 * H) })
+    shift.state.cracks = [{ id: 1, x: 0, y: 5, color: 1, plugged: false, drain: 0.5 }, { id: 2, x: 1, y: 5, color: 1, plugged: false }]
+    config.cracks.everyMsAtEmpty = config.cracks.everyMsAtFull = 1e9 // no new cracks
+    const before = shift.state.integrity
+    shift.tick(1000)
+    expect(before - shift.state.integrity).toBeCloseTo(0.015, 5) // (0.5 + 1) × 0.01
   })
 })

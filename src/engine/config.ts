@@ -40,11 +40,20 @@ export interface ShiftConfig {
     onePerColour: boolean // v1: at most one open crack per colour
     // How high cracks may form (F27, cracks.ts crackBandTop): 'none' = anywhere up to the pop line;
     // 'halfway' = up to halfway between the top of the goop (whole tank) and the pop line;
-    // 'halfwayPerColumn' = the same, worked out for each column from that column's own goop. Anything else = 'none'.
+    // 'halfwayPerColumn' = the same, worked out for each column from that column's own goop; 'hill' = no ceiling but the
+    // pop line, most cracks around halfway (see below). Anything else = 'none'.
     band: string
     // Where in that band (cracks.ts pickHighSpot): 0 = any empty spot equally; higher = more often high above the goop
     // in its column (bias 2: a spot 4 rows up is 16× as likely as one right on the goop). Unset = 0.
     topBias?: number
+    // band 'hill' (cracks.ts pickHillSpot): no ceiling but the pop line; the most likely row is `reach` of the way
+    // from the column's goop to the line, thinning out by `spread`; `neighbourCols` lets a column borrow height
+    // from stacks that close; cracks above `highFrom` of the way drain × `highDrainMult`.
+    reach?: number
+    spread?: number
+    neighbourCols?: number
+    highFrom?: number
+    highDrainMult?: number
   }
   score: {
     perCell: number

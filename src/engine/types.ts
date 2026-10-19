@@ -27,6 +27,7 @@ export interface Crack {
   y: number
   color: Color
   plugged: boolean // matching goop covers it (pop that goop to seal)
+  drain?: number // × the integrity drain while open (the hill's high cracks drain less, unseen); unset = 1
 }
 
 export type ShiftStatus = 'playing' | 'won' | 'lost'

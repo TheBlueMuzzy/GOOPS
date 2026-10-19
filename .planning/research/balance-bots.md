@@ -133,3 +133,20 @@ The "before" rows reproduce the first run exactly (same seeds), so the band code
 - Every shift now reaches 100% pressure and ends by integrity (Idle by overflow). Shifts ~140 s.
 - Bots plan one piece at a time and only build toward a crack weakly (`underCrack` 4), so they are the drop-and-pop player: their falling quota is the point. A player who builds up should do better than Sharp here.
 - Finding 3 above (seals during the rupture drain count): **answered by Muzzy — yes, they count** (2026-10-18, again 2026-10-19). Not a question any more.
+
+# The crack hill (F27, 2026-10-19, later)
+**Why:** Muzzy played the top bias: "already felt better, like it was guiding me to build higher", but "an actual obvious band with zero cracks above feels aesthetically incorrect". The flat line came from the empty columns: each measures from the floor, so all ~25 share one ceiling (half the way to the line). **Hill** (`cracks.band` "hill"): no ceiling but the pop line; the most likely row is halfway from each column's goop (`reach` 0.5, Muzzy's pick), a bell curve `spread` wide; empty columns borrow height from nearby stacks (`neighbourCols` 4); cracks above 75% of the way drain at half, unseen.
+**Runs:** 30 seeds, rank 0/2/4/6/10, Focused + Sharp shown.
+
+| Tuning | Sharp quota | Focused quota | Shift (Sharp) |
+|---|---|---|---|
+| Played 10-19 (halfwayPerColumn + top bias 2) | 100/100/90/63/0% | 100/100/77/53/3% | ~142 s |
+| Hill, spread 0.15 | 100/83/43/7/0% | 97/67/27/3/0% | ~135 s |
+| Hill, spread 0.2 | 100/80/57/17/0% | 100/87/43/13/0% | ~137 s |
+| **Hill, spread 0.3 (the file)** | 100/97/90/47/0% | 100/97/87/47/0% | ~142 s |
+| Hill, spread 0.4 | 100/97/83/63/0% | 97/97/87/57/7% | ~144 s |
+| Hill 0.3, no neighbours | 100/100/87/43/0% | 100/93/83/53/0% | ~143 s |
+
+- A tight hill is harder than the old band: the band + top bias averaged BELOW halfway (packed under a ceiling at halfway); a hill centred AT halfway sits higher. A wider hill puts more cracks low enough to reach and the high ones drain at half, so 0.3 lands where Muzzy liked the pacing.
+- Neighbour borrowing barely moves the numbers (it changes where cracks sit relative to your stacks, not how many you can reach).
+- Shots (same tank, pressure 100%, 30 cracks): halfwayPerColumn rows 2–11, one above row 10; hill rows 1–19, 15 above row 10, none above the line.

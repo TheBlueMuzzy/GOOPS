@@ -326,7 +326,8 @@ class Shift implements ShiftEngine {
   // Every open (unsealed) crack wears the tank down a little each second. Sealing one gives a little back (pop).
   private drainIntegrity(dt: number): void {
     const s = this.state
-    const drain = s.cracks.length * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
+    const open = s.cracks.reduce((sum, c) => sum + (c.drain ?? 1), 0) // a high hill crack counts for less (cracks.ts)
+    const drain = open * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
     s.integrity = Math.max(0, s.integrity - drain)
     if (s.integrity <= 0) this.rupture('integrity')
   }

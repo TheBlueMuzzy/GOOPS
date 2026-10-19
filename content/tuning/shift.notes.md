@@ -29,7 +29,13 @@ All values are v1's as shipped (from the v1 code, which wins over the v1 docs) u
 **cracks**
 - `everyMsAtEmpty` 6000 / `everyMsAtFull` 1333 / `curve` 3 — a crack every 6 s at 0% pressure, every 1.3 s at 100%; the RATE between follows pressure³ (Muzzy: "hockey stick style … but still always rising slightly"). Without `curve` it's v1's straight line in time. They keep coming after the quota is met.
 - Cracks only appear where they can be sealed right now: an empty cell (no goop) at or below the pop line.
-- `band` "halfwayPerColumn" — how high cracks may form (Muzzy, 2026-10-18; the bots found 3 in 4 cracks formed in mid-air, out of reach). Rows counted from the floor up (floor = 0):
+- `band` **"hill"** (the default since 2026-10-19) — Muzzy: "the 50% is just a biased row, but things can spawn above it, but never above the pressure line". No ceiling below the pop line, so no visible band (the old rule left a flat line of cracks across the empty columns with nothing above it):
+  - `reach` 0.5 — the most likely row: halfway from the column's base (the first empty row above its goop; the floor if empty) up to the pop line.
+  - `spread` 0.3 — how fast cracks thin out above and below that row (a bell curve 0.3 × the room wide; never under 1 row). Bots: 0.3 plays like the halfway band + top bias Muzzy liked (Sharp quota 100/97/90/47% at ranks 0/2/4/6 vs 100/100/90/63%, shifts ~142 s both); 0.2 was clearly harder (rank 6: 17%).
+  - `neighbourCols` 4 — a column borrows height from stacks up to 4 columns away, fading (next door 4/5 of it, 4 away 1/5; the tank wraps), so cracks follow what you build. 0 = off.
+  - `highFrom` 0.75 / `highDrainMult` 0.5 — a crack formed more than 75% of the way up drains at half speed. Not shown to the player (Muzzy: "they have enough to worry about"); later, repair bots (upgrades) deal with the high stragglers.
+  - Shots: `node e2e/crack-spread.mjs` → e2e-shots/crack-spread/ (before = halfwayPerColumn, after = hill, same tank).
+- Older band settings (kept to compare) — how high cracks may form (Muzzy, 2026-10-18; the bots found 3 in 4 cracks formed in mid-air, out of reach). Rows counted from the floor up (floor = 0):
   - `"halfway"` (Muzzy's rule, tank-wide): cracks only from the floor up to row X, halfway between the highest goop anywhere in the tank and the pop line, rounded down. Example: top goop at row 12, line at 16 → (16 − 12) ÷ 2 = 2 → cracks up to row 14, in any column. Goop at or above the line → X = the line. Empty tank → the floor counts as the top goop.
   - `"halfwayPerColumn"` (the default since 2026-10-18 — Muzzy's rule applied column by column; it did better in every bot measure): the same, but each column uses its own goop (the floor if it's empty). Stops one tall column letting cracks float high over the low columns next to it.
   - `"none"`: the old rule, anywhere up to the pop line. Kept for comparison.

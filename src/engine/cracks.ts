@@ -91,9 +91,66 @@ export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, col
   if (spots.length === 0) return null
 
   const color = rng.pick(colors)
+  if (config.cracks.band === 'hill' && !lowRows) {
+    const { spot, drain } = pickHillSpot(state, rng, config, spots)
+    const crack: Crack = { id, x: spot % state.width, y: Math.floor(spot / state.width), color, plugged: false }
+    if (drain !== 1) crack.drain = drain
+    return crack
+  }
   const bias = lowRows ? 0 : (config.cracks.topBias ?? 0)
   const spot = bias > 0 ? pickHighSpot(state, rng, spots, bias) : rng.pick(spots)
   return { id, x: spot % state.width, y: Math.floor(spot / state.width), color, plugged: false }
+}
+
+// ---------------------------------------------------------------- the hill (Muzzy, F27, 2026-10-19)
+// "the 50% is just a biased row, but things can spawn above it, but never above the pressure line"
+// Each column has a BASE: the first empty row above its goop (0 = the floor). With `neighbourCols` set, a column
+// also borrows height from stacks near it (fading with distance; the tank wraps), so cracks follow what you build.
+// The most likely row is `reach` of the way from the base up to the pop line (0.5 = halfway). Cracks thin out
+// above and below it like a hill (a bell curve, width = `spread` × the room between base and line); any empty spot
+// up to the pop line can still get one. A crack formed above `highFrom` of that room quietly drains × `highDrainMult`
+// (Muzzy: "we don't tell the player that though, they have enough to worry about").
+export function hillBases(state: ShiftState, neighbourCols: number): number[] {
+  const own: number[] = []
+  for (let x = 0; x < state.width; x++) own.push(columnHasGoop(state, x) ? goopTopRow(state, x) + 1 : 0)
+  const reach = Math.max(0, Math.floor(neighbourCols))
+  return own.map((_, x) => {
+    let base = own[x]
+    for (let d = 1; d <= reach; d++) {
+      const fade = 1 - d / (reach + 1) // the next column gives most of its height, the farthest one a little
+      const left = own[(x - d + state.width) % state.width]
+      const right = own[(x + d) % state.width]
+      base = Math.max(base, Math.floor(left * fade), Math.floor(right * fade))
+    }
+    return base
+  })
+}
+
+function pickHillSpot(state: ShiftState, rng: Rng, config: ShiftConfig, spots: number[]): { spot: number; drain: number } {
+  const { reach = 0.5, spread = 0.2, neighbourCols = 0, highFrom = 1, highDrainMult = 1 } = config.cracks
+  const lineRow = state.height - 1 - firstPoppableRow(state)
+  const bases = hillBases(state, neighbourCols)
+  const shareUp = (x: number, row: number) => {
+    const room = lineRow - bases[x]
+    return room > 0 ? (row - bases[x]) / room : 0
+  }
+  const weights = spots.map((i) => {
+    const x = i % state.width
+    const row = state.height - 1 - Math.floor(i / state.width)
+    const room = Math.max(0, lineRow - bases[x])
+    const peak = bases[x] + reach * room
+    const width = Math.max(1, spread * room) // never narrower than a row
+    return Math.exp(-0.5 * ((row - peak) / width) ** 2)
+  })
+  let r = rng.next() * weights.reduce((a, b) => a + b, 0)
+  let spot = spots[spots.length - 1]
+  for (let k = 0; k < spots.length; k++) {
+    r -= weights[k]
+    if (r < 0) { spot = spots[k]; break }
+  }
+  const x = spot % state.width
+  const row = state.height - 1 - Math.floor(spot / state.width)
+  return { spot, drain: shareUp(x, row) >= highFrom ? highDrainMult : 1 }
 }
 
 // The top bias (Muzzy, F27, 2026-10-19: "bias towards the top of the range … there are so many near the floor that I
