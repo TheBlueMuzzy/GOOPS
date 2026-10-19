@@ -17,6 +17,7 @@ import type { Message } from '../game/messages'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
+import { getAudio, useAudioSnapshot } from '../audio'
 import { rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { Console } from './Console'
@@ -185,6 +186,8 @@ export function App() {
   }), [endAtConsole])
 
   const peeking = PEEK.includes(mode)
+  // at the console mid-shift the tank runs on under it, a little quieter (content/audio.json snapshots.console)
+  useAudioSnapshot(getAudio(), peeking ? 'console' : null)
   // how fast the shift runs: full in the tank, slowed at the console mid-shift, stopped under any menu or a slide
   const speed = open.length ? 0 : mode === 'shift' ? 1 : peeking ? breakdowns.consoleTimeScale : 0
   // The HUD (F26, Muzzy's mock-up 2026-10-18): ONE top row — score · cracks (big, shrinking to fit) · Console button —

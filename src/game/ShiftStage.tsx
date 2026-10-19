@@ -24,6 +24,8 @@ import pauseTuning from '../../content/tuning/pause.json'
 import { clockPause, looksClock, rulesClock } from '../devkit/gameClock'
 import { onTuning } from '../devkit/tuning/liveTuning'
 import { session } from './session'
+import { playGameSound, playShiftSounds } from './sound'
+import { SOUNDS } from './shiftSounds'
 import './game.css'
 
 const HUD_SIDE_ROOM = 16 // CSS px the HUD may reach past each side of the tank (the kit's screen edge gap)
@@ -160,7 +162,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       const half = clockPause() === 'half' && s.status === 'playing'
       if (active) engine.tick(dt * 1000 * rate)
       const events: ShiftEvent[] = engine.takeEvents()
-      if (events.length) session.emit(events)
+      if (events.length) { session.emit(events); playShiftSounds(events) } // (sounds: only while the rules clock runs)
       camera = stepCamera(camera, s.spin, s.width, dt, tank.cameraSpeed)
       view.camera = camera
       drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still))
@@ -219,6 +221,11 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       const [fx, fy] = flatPoint(px - r.left, py - r.top, tankRect(view, s.visibleWidth, s.height - s.bufferRows), visorFx.current?.curve() ?? 0)
       return screenToCell(fx, fy, view, s.width, s.bufferRows)
     }
+    // fast drop held (on) / let go: the engine has no event for it (it's the player's hold), so its whoosh plays here
+    const softDrop = (on: boolean) => {
+      if (on && !softHeld) playGameSound(SOUNDS.fastDrop)
+      softHeld = on; engine.act({ type: 'softDrop', on })
+    }
     // dev + tests only: lets a Playwright check reach the engine (fast-forward a shift, read the grid)
     // (cellAt(px, py): the cell a click there picks; curve(): the visor's curve right now — e2e/controls.mjs;
     // gooMotion(cell): how fast the goo there is moving — e2e/controls.mjs pokes goop that can't pop yet)
@@ -229,14 +236,14 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       say: (key: Message['key'], seconds = 30) => live.current.onMessage({ key, danger: false, seconds }),
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
-      fastDrop: (on: boolean) => { softHeld = on; engine.act({ type: 'softDrop', on }) },
+      fastDrop: softDrop,
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }) }
 
     const detach = attachControls(el, {
       spin: (dir) => engine.act({ type: 'spin', dir }),
       rotate: (dir) => engine.act({ type: 'rotate', dir }),
-      softDrop: (on) => { softHeld = on; engine.act({ type: 'softDrop', on }) },
+      softDrop,
       hold: () => engine.act({ type: 'hold' }),
       console: () => live.current.onConsole(),
       holdProgress: (p) => { holdProgress = p },
