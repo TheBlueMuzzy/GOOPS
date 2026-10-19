@@ -22,4 +22,5 @@ Check: monitor shots before/after match · switching presets in the Dev Kit chan
 - [ ] 🤖 12. Prove it's quick: put it on the next-piece window's frame (or where Muzzy picks) in a few lines; note it for the framework session as a kit effect — src/ui/App.tsx, .planning/STATE.md
 
 ## Notes
+- Muzzy, 2026-10-19: "render shaders" (reusable looks) are a component category to get better at. F60 is the first step: its findings go in .planning/research/looks-module.md (the look = surface × engine × layers × when × clock), like lesson-module.md. While doing F60, give the CRT's scan-line knobs the same names as the x-ray box's (three scan-line versions exist today).
 - Tech calls (Claude): unlock ranks live in progression.json (`unlocks: { nextPiece: 1, swap: 3, upgrades: 5 }`) and one function answers "is X unlocked at rank N" — no rank numbers in UI code. `?rank=` keeps working as before. Swap stays a 1.5 s hold (tank.holdToSwapMs; the Goop Swap upgrade still shortens it in beta). Swapping back and forth is allowed (it's just choosing between two pieces). Lesson shifts keep swap off.
