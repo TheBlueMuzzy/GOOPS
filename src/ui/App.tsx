@@ -23,6 +23,7 @@ import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
 import { isUnlocked, rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
+import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
 import { art } from './art'
 import { useShort } from './useShort'
@@ -266,10 +267,12 @@ export function App() {
   // lesson's own timers and the lesson holds the tank still (lessonPlay.speed)
   // (a phone held sideways: paused under the "Turn your phone upright" card, the game's own pause)
   const speed = open.length || sideways ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
-  // The HUD (F26, Muzzy's mock-up 2026-10-18): ONE top row — score · cracks (big, shrinking to fit) · Console button —
-  // then the tank, then a panel under it: the unlocked machines' bars with big names above (one centred, two or three
-  // evenly spaced), and the long integrity bar with its name inside. A phone on its side: the panel is a column beside
-  // the tank, headed by the crack count; the score and the Console button sit in the top corners beside the tank. Every bar reads the same way: full = good (laser charge, controls' room before overheating, visor signal,
+  // The HUD (F26, Muzzy's mock-up 2026-10-18; F59): ONE top row — score · the next-piece window (from its rank,
+  // centred over the tank's top edge where the goop drops in: ShiftStage hangs it there) · Console button — then the tank, then a panel under it: the unlocked machines' bars with
+  // big names above (one centred, two or three evenly spaced), and under them the integrity bar with its name inside and
+  // the crack count to its right (shrinking to fit). A short window: the panel is a column beside the tank, headed by
+  // the next-piece window and the crack count; the score and the Console button sit in the top corners beside the tank.
+  // Every bar reads the same way: full = good (laser charge, controls' room before overheating, visor signal,
   // tank integrity); below bars.lowAt it turns red and pulses, a broken machine flashes (content/tuning/hud.json).
   // The pressure readout hangs on the pressure line (ShiftStage); messages show just above the goop.
   // (Which bars the panel holds is known when the shift starts — machines unlock between shifts — so its height never
@@ -289,17 +292,21 @@ export function App() {
   const integrityAlert = ruptured ? 'flash' : hud && hud.integrity < low ? 'pulse' : undefined
   const integrityBar = hud && <Bar plain label={text.hud.integrity} labelAt="inside" width={short ? 1 : hudTuning.bars.integrityWidth} thickness="l"
     value={Math.round(hud.integrity * 100)} variant={integrityAlert ? 'danger' : 'primary'} alert={integrityAlert} />
-  const status = <HudText size="l" fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>
-  // (a phone on its side: the crack count heads the panel column, and the tank takes the whole height)
+  const status = <HudText size={short ? 'l' : 'm'} fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>
+  // F59: the next-piece window, from its rank (known when the shift starts, like the machines)
+  const showNext = !!engine && isUnlocked('nextPiece', engine.state.rank)
+  const nextWindow = hud && showNext ? <NextWindow piece={hud.next} label={text.hud.next} /> : undefined
+  // (a short window: the next-piece window and the crack count head the panel column, and the tank takes the whole height)
   const panel = hud && (short
-    ? <Stack gap="s">{status}{machineBars}{integrityBar}</Stack>
-    : <Stack gap="s">{unlocked.length > 0 && <Row gap="l" justify="center">{machineBars}</Row>}<Row justify="center">{integrityBar}</Row></Stack>)
+    ? <Stack gap="s">{nextWindow}{status}{machineBars}{integrityBar}</Stack>
+    : <Stack gap="s">{unlocked.length > 0 && <Row gap="l" justify="center">{machineBars}</Row>}<Row gap="m" justify="center">{integrityBar}<div className="hud-cracks">{status}</div></Row></Stack>)
   const readout = hud && <HudText size="s" live numbers>{fill(text.hud.pressureReadout, { n: Math.round(hud.pressure * 100) })}</HudText>
   return (
     <>
       {engine && mode !== 'console' && (
         <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length && !sideways}
-          panel={unlocked.length ? 'machines' : 'integrity'} side={short} readout={readout}
+          panel={unlocked.length ? 'machines' : 'integrity'} side={short} nextWindow={showNext && !short} next={short ? undefined : nextWindow}
+          readout={readout}
           onHud={setHud} onEnd={onEnd} onMessage={onMessage} onConsole={peekIn} />
       )}
       {mode === 'shift' && (
@@ -307,7 +314,6 @@ export function App() {
           {hud && (
             <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')} oneRow
               vitals={<Score value={hud.score} compact />}
-              status={short ? undefined : status}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
               dock={panel} dockSide={short ? 'right' : 'bottom'} />
           )}

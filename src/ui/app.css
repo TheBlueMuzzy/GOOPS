@@ -5,3 +5,7 @@ html, body, #root { margin: 0; height: 100%; }
    inside it would (so a lesson tag beside it in the same layer doesn't push the control into a second row) */
 .repair-grab { display: grid; grid-area: 1 / 1; grid-template: minmax(0, 1fr) / minmax(0, 1fr); min-inline-size: 0; min-block-size: 0; }
 .repair-grab > * { grid-area: 1 / 1; }
+
+/* F59: the crack count beside the integrity bar in the HUD's bottom panel — takes the rest of the row (and shrinks its
+   words to fit it: HudText fit), so the two share one line */
+.hud-cracks { flex: 1 1 0; min-inline-size: 0; }

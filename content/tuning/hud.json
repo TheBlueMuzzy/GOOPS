@@ -12,11 +12,22 @@
     "gapPx": 8,
     "sideRem": 13
   },
-  "_bars": "lowAt = a bar below this (0..1) turns red and pulses (a broken machine flashes). machineWidth / integrityWidth = share of the panel's width each bar takes (a machine bar is never narrower than its label).",
+  "_nextWindow": "F59: the next-piece window (from rank 1 — progression.json unlocks.nextPiece), centred over the tank's top edge where the goop drops in, its bottom gapPx above the tank (on a short window: at the top of the panel column beside the tank). Always the same size: cols × rows cells (room for the widest and tallest piece, 3 × 6), each cellRem big (rem: it grows with Settings → Text size), with padCells of room round them inside the frame. cellGap = the dark line between cells, cornerCells = how round each cell's corners are (all three in cells). topRowPx = the room kept above the tank while the window shows (instead of topRowPx), so it sits above the tank instead of over the falling piece.",
+  "nextWindow": {
+    "cols": 3,
+    "rows": 6,
+    "cellRem": 0.42,
+    "padCells": 0.5,
+    "cellGap": 0.14,
+    "cornerCells": 0.18,
+    "topRowPx": 78,
+    "gapPx": 4
+  },
+  "_bars": "lowAt = a bar below this (0..1) turns red and pulses (a broken machine flashes). machineWidth / integrityWidth = share of the panel's width each bar takes (a machine bar is never narrower than its label). F59: the integrity bar shares its row with the crack count, to its right.",
   "bars": {
     "lowAt": 0.3,
     "machineWidth": 0.24,
-    "integrityWidth": 0.9
+    "integrityWidth": 0.42
   },
   "_readout": "The pressure readout: a thin line from the pressure line up to the right, then '10% PRESS' at its top end (or mirrored: the text, then the line down to the pressure line — Settings → Pressure readout direction). run / rise = how far the line goes across / up, in cells (in a tank too narrow for the words and the whole line, the line gets shorter). gapPx = between the line's end and the text; edgePx = kept clear of the tank's walls, top and floor (the readout stays inside the tank at every size); lineWidthPx, color = the line; footPx = radius of the dot where it meets the pressure line (0 = none).",
   "readout": {
