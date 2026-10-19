@@ -1,0 +1,10 @@
+/* The Dev Kit's Lessons tab (LessonsTab.tsx) — the game's own tool, in the Dev Kit panel's plain look. */
+.lessons-tab { display: grid; gap: 10px; padding: 10px 12px; }
+.lessons-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lessons-top select { padding: 4px 6px; background: #22232d; border: 1px solid #3a3b48; border-radius: 6px; }
+.lessons-steps { width: 100%; border-collapse: collapse; font-size: 13px; }
+.lessons-steps th { text-align: left; font-weight: 500; color: #9a9bab; padding: 4px; }
+.lessons-steps td { padding: 4px; border-top: 1px solid #2c2d38; vertical-align: middle; }
+.lessons-steps tr[data-now] td { background: #23314f; } /* the step the running lesson is on */
+.lessons-steps input { width: 64px; padding: 3px 5px; background: #22232d; border: 1px solid #3a3b48; border-radius: 6px; }
+.lessons-pattern { display: block; font-size: 11px; color: #8a8b9b; }
