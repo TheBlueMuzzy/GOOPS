@@ -5,12 +5,15 @@ import { App } from './ui/App'
 import style from '../content/ui/style.json'
 import fonts from '../content/ui/fonts.json'
 import settings from '../content/ui/settings.json'
+import { startSound } from './game/sound'
 import './ui/app.css'
 
 // The game's own fonts (public/fonts/, listed in content/ui/fonts.json) — style.json's font tweaks may name them
 loadGameFonts(fonts, import.meta.env.BASE_URL)
 applyStyle(style)
-applyAccessibility(loadSettings(settings as SettingsSchema))
+const saved = loadSettings(settings as SettingsSchema)
+applyAccessibility(saved)
+startSound(saved) // the audio engine (src/game/sound.ts); it unlocks itself on the first tap
 
 // Dev Kit (` key or triple-tap) — always in local dev; in release builds only while content/devkit.json
 // "inReleaseBuilds" is true (until 1.0). When both are false this import is dead code and never ships.

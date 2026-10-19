@@ -17,10 +17,14 @@
 //   import { myGameAdapter } from './myGameAdapter'
 //   registerDevKitGame(myGameAdapter)
 import type { ComponentType } from 'react'
+import audioJson from '../../content/audio.json'
+import { getAudio } from '../audio'
 import { registerDevKitGame } from '../devkit/devkitGame'
+import { soundTab } from '../devkit/sound/soundTabEntry'
 import { goopsAdapter } from './goopsAdapter'
 
 // Snapshots, Bug capture and the Pause buttons reach the running shift through this (goopsAdapter.ts)
 registerDevKitGame(goopsAdapter)
 
-export const gameTabs: { id: string; label: string; Panel: ComponentType }[] = []
+// Sound: every sound in content/audio.json — listen, tune, swap files, the mixer and the log (F29)
+export const gameTabs: { id: string; label: string; Panel: ComponentType<{ query?: string }> }[] = [soundTab(getAudio, { file: audioJson })]

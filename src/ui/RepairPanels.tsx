@@ -8,6 +8,8 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import { ArtLayer, Button, SnapControl, fill } from './kit'
 import { controlsTurn, controlsDone, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide, visorWantsDown } from '../game/repairs'
 import { art } from './art'
+import { playUiSound } from '../game/sound'
+import { SOUNDS } from '../game/shiftSounds'
 import text from '../../content/text/en.json'
 
 const t = text.console
@@ -22,6 +24,15 @@ function useSolved(solved: boolean, onRepair: () => void) {
   const latest = useRef(onRepair)
   useEffect(() => { latest.current = onRepair })
   useEffect(() => { if (solved) latest.current() }, [solved])
+}
+
+// a step of the repair done right (`done` went up) → its blip (the knob's own click is the kit's ui.tap)
+function useStepSound(done: number, live: boolean) {
+  const last = useRef(done)
+  useEffect(() => {
+    if (live && done > last.current) playUiSound(SOUNDS.repairStep)
+    last.current = done
+  }, [done, live])
 }
 
 // A lamp: its "off" picture, with the "on" picture over it while lit (blinking while it asks for something)
@@ -39,6 +50,7 @@ export function LaserPanel({ live, onRepair, fewerSteps }: PanelProps) {
   const [want] = useState(() => newLaser(Math.random, repairSteps('laser', fewerSteps)))
   const [pos, setPos] = useState([1, 1, 1, 1]) // every knob starts in the middle
   useSolved(live && laserSolved(want, pos), onRepair)
+  useStepSound(want.filter((w, i) => w !== null && pos[i] === w).length, live)
   return (
     <>
       <ArtLayer {...a.laser} off={!live} label={live ? undefined : offLabel(t.laser)} />
@@ -76,10 +88,11 @@ export function VisorPanel({ live, onRepair, fewerSteps }: PanelProps) {
   const [v, setV] = useState(() => newVisor(Math.random, repairSteps('visor', fewerSteps)))
   const [shake, setShake] = useState(0)
   useSolved(live && visorDone(v), onRepair)
+  useStepSound(v.step, live)
   const lit = live ? visorLitButton(v) : null
   const press = (b: number) => {
     const next = visorPress(v, b)
-    if (next.wrong) setShake((n) => n + 1)
+    if (next.wrong) { setShake((n) => n + 1); playUiSound(SOUNDS.wrong) }
     else setV(next.visor)
   }
   return (
@@ -110,6 +123,7 @@ export function VisorPanel({ live, onRepair, fewerSteps }: PanelProps) {
 export function ControlsPanel({ live, onRepair, fewerSteps }: PanelProps) {
   const [c, setC] = useState(() => newControls(Math.random, repairSteps('controls', fewerSteps)))
   useSolved(live && controlsDone(c), onRepair)
+  useStepSound(c.step, live)
   const target = live && !controlsDone(c) ? c.targets[c.step] : null
   return (
     <>

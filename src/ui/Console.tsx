@@ -11,6 +11,8 @@ import { ArtLayer, ArtStage, Button, LevelMeter, PullHandle, Screen, TitleArt, f
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
 import { ControlsPanel, LaserPanel, VisorPanel } from './RepairPanels'
+import { playUiSound } from '../game/sound'
+import { SOUNDS } from '../game/shiftSounds'
 import { art } from './art'
 import { useShort } from './useShort'
 import text from '../../content/text/en.json'
@@ -69,7 +71,8 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{fill(t.version, { v: import.meta.env.GOOPS_VERSION })}</ArtLayer>
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>
-          <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving} onPull={onPull}
+          <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving}
+            onPull={() => { playUiSound(SOUNDS.periscope); onPull() } /* the clunk as it reaches the end */}
             disabled={phase === 'arriving' || (!!midShift && short) /* a phone on its side: Back to the tank does it (the periscope is mostly off screen) */}>
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
