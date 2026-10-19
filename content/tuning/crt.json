@@ -1,0 +1,43 @@
+{
+  "_about": "F32 (Muzzy, 2026-10-19: 'make it look like old DOS'): how the words on the console's monitor look — its own words (PULL DOWN THE PERISCOPE, REPAIR THE VISOR!…) and a lesson's lines. Looks only: nothing here changes a rule. The screen stays dark blue (content/ui/art.json console.crt.screen) and the font stays the game's. The words glow phosphor green over faint scan lines and type out letter by letter, with a blinking block cursor where the next letter goes. The box never changes size while typing: the whole text is laid out from the first frame and the letters are uncovered. Reduce motion: the words show at once, the cursor holds still, no wobble.",
+  "_help": {
+    "lettersPerSecond": "How fast the words type out (letters per second). New words (a new hint, a lesson's next step) type again from the start.",
+    "cursorBlinkSeconds": "One blink of the block cursor: on, then off (seconds). 0 = it holds still.",
+    "cursorWidth": "The block cursor's width (1 = as wide as the letters are tall).",
+    "textColor": "The letters' colour (phosphor green).",
+    "glowColor": "The glow round the letters.",
+    "glowSize": "How far the glow spreads (1 = a letter's height).",
+    "glowStrength": "How strong the glow is (0 = none, 1 = full).",
+    "scanGap": "Scan lines: the distance from one line to the next (console art units; the monitor's screen is about 540 wide).",
+    "scanLine": "Scan lines: how much of each gap is the dark line (0 = none, 1 = all dark).",
+    "scanStrength": "How dark the scan lines are (0 = none, 1 = black).",
+    "wobble": "Phase wobble: now and then the words jitter sideways this much (1 = a letter's height; 0 = never). Off with reduce motion.",
+    "wobbleSeconds": "How often the wobble comes round (seconds)."
+  },
+  "_labels": {
+    "lettersPerSecond": "Typing speed (letters/s)",
+    "cursorBlinkSeconds": "Cursor blink (s)",
+    "cursorWidth": "Cursor width",
+    "textColor": "Text colour",
+    "glowColor": "Glow colour",
+    "glowSize": "Glow size",
+    "glowStrength": "Glow strength",
+    "scanGap": "Scan line spacing",
+    "scanLine": "Scan line thickness",
+    "scanStrength": "Scan line darkness",
+    "wobble": "Phase wobble",
+    "wobbleSeconds": "Wobble every (s)"
+  },
+  "lettersPerSecond": 45,
+  "cursorBlinkSeconds": 1.06,
+  "cursorWidth": 0.55,
+  "textColor": "#9cffb0",
+  "glowColor": "#2bff6a",
+  "glowSize": 0.4,
+  "glowStrength": 0.7,
+  "scanGap": 6,
+  "scanLine": 0.45,
+  "scanStrength": 0.28,
+  "wobble": 0.04,
+  "wobbleSeconds": 5
+}

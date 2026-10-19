@@ -77,6 +77,11 @@
     "quit": "End shift",
     "quitTitle": "Clock out early?"
   },
+  "upright": {
+    "label": "Turn your phone upright",
+    "title": "Turn your phone upright",
+    "message": "Goops plays upright. Your shift waits right where you left it."
+  },
   "end": {
     "wonTitle": "Shift complete",
     "lostTitle": "Shift failed",

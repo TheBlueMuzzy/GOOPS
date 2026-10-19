@@ -99,3 +99,10 @@ export function controlsTurn(c: Controls, corner: number): Controls {
   const locked = !controlsDone(c) && corner === c.targets[c.step]
   return { ...c, dial: corner, step: locked ? c.step + 1 : c.step }
 }
+
+// DURING A LESSON ONLY THE OUTLINED PART ANSWERS (F32, Muzzy's second try: "I was able to slide the sliders that weren't
+// highlighted by the pink outline… it's a bit misleading"). While a lesson step outlines something, a repair control
+// works only if it carries one of the outlined tags (its tag = what it is now: "repair-<machine>" while it's the part to
+// use next); the others don't move or press — they give the panel's "wrong" shake. No lesson (nothing outlined): every
+// control works as always.
+export const controlAnswers = (outlined: readonly string[], tag?: string) => !outlined.length || (!!tag && outlined.includes(tag))

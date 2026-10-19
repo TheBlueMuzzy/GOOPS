@@ -26,6 +26,8 @@ import { loadProgress, saveProgress } from '../progress/save'
 import { Console } from './Console'
 import { art } from './art'
 import { useShort } from './useShort'
+import { usePortraitLock, useSideways } from './portrait'
+import { UprightScreen } from './Upright'
 import shiftConfig from '../../content/tuning/shift.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import hudTuning from '../../content/tuning/hud.json'
@@ -83,6 +85,10 @@ export function App() {
   const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward } | null>(null)
   const open = useScreens()
   const short = useShort()
+  // portrait only (F32, Muzzy): locked upright where the browser allows it; a touch phone held sideways gets the
+  // "Turn your phone upright" card and the shift pauses under it (src/ui/portrait.ts)
+  const sideways = useSideways()
+  usePortraitLock()
   const engineRef = useRef<ShiftEngine | null>(null)
   const [saved] = useState(loadProgress)
   const [progress, setProgress] = useState(saved) // for the console; progressRef for the handlers
@@ -252,7 +258,8 @@ export function App() {
   // how fast the shift runs: full in the tank, slowed at the console mid-shift, stopped under any menu or a slide.
   // A first-breakdown lesson freezes the tank at the console instead (F32): the rules clock runs at full speed for the
   // lesson's own timers and the lesson holds the tank still (lessonPlay.speed)
-  const speed = open.length ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
+  // (a phone held sideways: paused under the "Turn your phone upright" card, the game's own pause)
+  const speed = open.length || sideways ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
   // The HUD (F26, Muzzy's mock-up 2026-10-18): ONE top row — score · cracks (big, shrinking to fit) · Console button —
   // then the tank, then a panel under it: the unlocked machines' bars with big names above (one centred, two or three
   // evenly spaced), and the long integrity bar with its name inside. A phone on its side: the panel is a column beside
@@ -285,7 +292,7 @@ export function App() {
   return (
     <>
       {engine && mode !== 'console' && (
-        <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length}
+        <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length && !sideways}
           panel={unlocked.length ? 'machines' : 'integrity'} side={short} readout={readout}
           onHud={setHud} onEnd={onEnd} onMessage={onMessage} onConsole={peekIn} />
       )}
@@ -312,6 +319,7 @@ export function App() {
       {/* F30: a lesson's message — in the tank a bubble in the kit Callout look; at the console mid-shift (F32) its words
           are on the monitor and this draws the spotlight; over a menu only a step's reaction ("That's the pause menu…") */}
       {(mode === 'shift' || peeking) && <LessonView overMenu={open.length > 0} atConsole={peeking} />}
+      {sideways && <UprightScreen />}
     </>
   )
 }

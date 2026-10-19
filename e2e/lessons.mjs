@@ -7,7 +7,7 @@
 import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 
 const PORT = 5341, OUT = 'e2e-shots/lessons'
 mkdirSync(OUT, { recursive: true })
@@ -154,8 +154,52 @@ async function repairVisor(page, atButtons) {
   await drag(vs.y + vs.height * 0.15, vs.y + vs.height + 20)
 }
 
+// F32 task 8, the monitor's DOS look: a log of the monitor every frame — its words, whether it's still typing, how many
+// letters are typed, and the size of the screen, its words box and its words (none may change while it types)
+const crtLogger = () => {
+  window.__crtLog = []
+  const size = (e) => { const b = e.getBoundingClientRect(); return [Math.round(b.width * 10) / 10, Math.round(b.height * 10) / 10] }
+  const tick = () => {
+    const el = document.querySelector('[data-tag="crt"]')
+    const words = el?.querySelector('.lesson-words'), body = el?.querySelector('.crt-body'), read = el?.querySelector('.crt-read')
+    if (el && words && body && read) {
+      const typed = words.firstChild?.nodeType === 3 ? words.firstChild.textContent.length : 0
+      window.__crtLog.push({ t: performance.now(), key: read.textContent, typing: el.hasAttribute('data-typing'), typed, fonts: document.fonts.status === 'loaded', words: size(words), body: size(body), crt: size(el) })
+      if (window.__crtLog.length > 6000) window.__crtLog.splice(0, 2000)
+    }
+    requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+const CRT = JSON.parse(readFileSync('content/tuning/crt.json', 'utf8'))
+// how one text typed out: did it type (letters in between), how long it took, and did any box change size meanwhile
+// (outer = the screen itself too: only where nothing makes it slide down like a toaster, the start console)
+// (sizes are compared once the game's fonts have loaded: on the very first page load the font arriving re-lays every
+// word on the page, typing or not)
+const typingOf = (log, key, outer = false) => {
+  const rows = log.filter((r) => r.key === key)
+  const typing = rows.filter((r) => r.typing && r.fonts)
+  const done = rows.find((r) => !r.typing)
+  const same = (pick) => typing.every((r) => Math.abs(pick(r)[0] - pick(typing[0])[0]) < 0.6 && Math.abs(pick(r)[1] - pick(typing[0])[1]) < 0.6)
+  return {
+    frames: rows.length, typingFrames: typing.length,
+    partial: rows.some((r) => r.typing && r.typed > 0 && r.typed < key.length),
+    ms: done && rows.length ? Math.round(done.t - rows[0].t) : null,
+    steady: typing.length > 3 && same((r) => r.words) && same((r) => r.body) && (!outer || same((r) => r.crt)),
+  }
+}
+// the block cursor: there, and drawn (a block as tall as the letters, in the words' colour)
+const cursorOf = (page) => page.evaluate(() => {
+  const c = document.querySelectorAll('[data-tag="crt"] .crt-cursor')
+  if (c.length !== 1) return { count: c.length }
+  const st = getComputedStyle(c[0], '::after')
+  return { count: 1, w: parseFloat(st.width), h: parseFloat(st.height), bg: st.backgroundColor, anim: st.animationName }
+})
+const typedOut = (page, timeout = 8000) => page.waitForFunction(() => { const c = document.querySelector('[data-tag="crt"]'); return !!c && !c.hasAttribute('data-typing') }, null, { timeout })
+
 async function open(w, h, url) {
   const page = await browser.newPage({ viewport: { width: w, height: h } })
+  await page.addInitScript(crtLogger)
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('Lesson'))) errors.push(m.text()) })
@@ -509,7 +553,22 @@ try {
       await stepIs(page, 'fullyPaused')
       await consoleStill(page)
       await page.waitForTimeout(400)
-      await shot('3-fully-paused')
+      await shot('3-fully-paused') // (mid-typing: the line is ~90 letters)
+      if (!side) {
+        // F32 task 8: the lesson's line types out on the monitor — the cursor there, Got it from the start, nothing
+        // changing size while it types, all of it in about letters ÷ speed
+        const midCursor = await cursorOf(page)
+        const gotItEarly = (await crt(page).getByRole('button', { name: 'Got it' }).count()) === 1
+        await typedOut(page)
+        await page.waitForTimeout(150)
+        await shot('3b-fully-paused-typed')
+        const key = await page.evaluate(() => document.querySelector('[data-tag="crt"] .crt-read').textContent)
+        const typing = typingOf(await page.evaluate(() => window.__crtLog), key)
+        const endCursor = await cursorOf(page)
+        check(`${name}: the lesson line types out on the monitor (cursor while typing and after; Got it from the start; words box steady; ~letters ÷ speed)`,
+          midCursor.count === 1 && midCursor.w > 2 && midCursor.h > 5 && endCursor.count === 1 && gotItEarly && typing.partial && typing.steady
+          && typing.ms !== null && typing.ms <= (key.length / CRT.lettersPerSecond) * 1000 + 500, JSON.stringify({ midCursor, endCursor, typing, letters: key.length }))
+      }
       if (!side) check(`${name}: fully paused — on the monitor with Got it, screen undimmed, no bubble`, (await crt(page).getByRole('button', { name: 'Got it' }).count()) === 1 && await undimmed(page, '[data-tag="crt"]') && (await bubble(page).count()) === 0)
       else check(`${name}: fully paused — a bubble (the monitor is off screen) inside the window`, await inColumn(page))
       await look('fullyPaused', { bubble: side, crt: !side })
@@ -557,6 +616,153 @@ try {
     await page.getByRole('button', { name: 'Back to the tank' }).click()
     await page.waitForFunction(() => document.querySelector('.kit-art-stage') === null, null, { timeout: 5000 })
     check('phone console note: no page errors', errors.length === 0, errors.join(' | '))
+    await page.close()
+  }
+
+  // ---------------- F32 task 8: the monitor's DOS look on the START console (Muzzy's second try) ----------------
+  // green glowing words, typed out quickly letter by letter, a block cursor where the next letter goes; the screen
+  // never changes size while it types. Shots: mid-typing (typing slowed right down for the picture) and fully typed.
+  const seenAll = () => { // (no lesson on the way)
+    const k = `kit-tips:${location.pathname.split('/').slice(1, -1)[0] ?? ''}`
+    localStorage.setItem(k, JSON.stringify({ on: true, seen: ['lesson:visor', 'lesson:laser', 'lesson:controls'] }))
+  }
+  for (const [w, h] of [[390, 844], [360, 780], [1440, 900], [1920, 1080]]) {
+    const name = `${w}x${h}`
+    {
+      const page = await browser.newPage({ viewport: { width: w, height: h } })
+      const errors = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await page.addInitScript(crtLogger)
+      await page.goto(`http://localhost:${PORT}/?seed=7`)
+      await crt(page).waitFor()
+      const midCursor = await cursorOf(page)
+      await typedOut(page)
+      await page.waitForTimeout(200)
+      await page.screenshot({ path: `${OUT}/f32-crt-start-typed-${name}.png` })
+      const key = await page.evaluate(() => document.querySelector('[data-tag="crt"] .crt-read').textContent)
+      const typing = typingOf(await page.evaluate(() => window.__crtLog), key, true)
+      const look = await page.evaluate(() => {
+        const words = document.querySelector('[data-tag="crt"] .lesson-words'), st = getComputedStyle(words)
+        const s = document.querySelector('[data-tag="crt"]').getBoundingClientRect(), r = words.getBoundingClientRect()
+        return { color: st.color, glow: st.textShadow !== 'none', scan: getComputedStyle(document.querySelector('[data-tag="crt"]'), '::after').backgroundImage.includes('gradient'),
+          inside: r.left >= s.left + 4 && r.right <= s.right - 4 && r.top >= s.top + 4 && r.bottom <= s.bottom - 4 }
+      })
+      const endCursor = await cursorOf(page)
+      check(`${name} start console: the monitor types its words out (letters in between, the screen and its words never change size, done in ~letters ÷ speed)`,
+        typing.partial && typing.steady && typing.ms !== null && typing.ms <= (key.length / CRT.lettersPerSecond) * 1000 + 500, JSON.stringify({ typing, letters: key.length }))
+      check(`${name} start console: a block cursor while typing and after it (blinking), green glowing words over scan lines, inside the screen`,
+        midCursor.count === 1 && midCursor.w > 2 && midCursor.h > 5 && endCursor.count === 1 && endCursor.anim === 'crt-blink'
+        && look.color === `rgb(${[1, 3, 5].map((i) => parseInt(CRT.textColor.slice(i, i + 2), 16)).join(', ')})` && look.glow && look.scan && look.inside, JSON.stringify({ midCursor, endCursor, look }))
+      check(`${name} start console: no page errors`, errors.length === 0, errors.join(' | '))
+      await page.close()
+    }
+    { // mid-typing, for the picture: typing slowed to 6 letters a second (the Dev Kit's live edit, sent as the page loads)
+      const page = await browser.newPage({ viewport: { width: w, height: h } })
+      await page.addInitScript((crt) => {
+        document.addEventListener('DOMContentLoaded', () => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'crt', data: { ...crt, lettersPerSecond: 6 } } })))
+      }, CRT)
+      await page.goto(`http://localhost:${PORT}/?seed=7`)
+      await crt(page).waitFor()
+      await page.waitForTimeout(1600)
+      const typed = await page.evaluate(() => { const w = document.querySelector('[data-tag="crt"] .lesson-words'); return w.firstChild?.nodeType === 3 ? w.firstChild.textContent : '' })
+      await page.screenshot({ path: `${OUT}/f32-crt-start-typing-${name}.png` })
+      check(`${name} start console: the typing speed is live (6 letters/s from the Dev Kit → part of the words after 1.6 s)`, typed.length >= 5 && typed.length <= 14, JSON.stringify(typed))
+      await page.close()
+    }
+  }
+  // reduce motion: the words are all there at once (no typing), the cursor holds still, no wobble
+  {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' })
+    const page = await context.newPage()
+    await page.addInitScript(crtLogger)
+    await page.goto(`http://localhost:${PORT}/?seed=7`)
+    await crt(page).waitFor()
+    await page.waitForTimeout(600)
+    const log = await page.evaluate(() => window.__crtLog)
+    const cursor = await cursorOf(page)
+    const wobble = await page.evaluate(() => getComputedStyle(document.querySelector('[data-tag="crt"] .lesson-words')).animationName)
+    check('reduce motion: the monitor\'s words are all there from the first frame (no typing), the cursor still, no wobble',
+      log.length > 0 && log.every((r) => !r.typing) && cursor.count === 1 && cursor.anim === 'none' && wobble === 'none', JSON.stringify({ frames: log.length, typingFrames: log.filter((r) => r.typing).length, cursor, wobble }))
+    await page.screenshot({ path: `${OUT}/f32-crt-reduce-motion-390x844.png` })
+    await context.close()
+  }
+  // the mid-shift console (a broken machine's hint, typed out) at the four sizes
+  for (const [w, h] of [[390, 844], [360, 780], [1440, 900], [1920, 1080]]) {
+    const page = await browser.newPage({ viewport: { width: w, height: h } })
+    await page.addInitScript(crtLogger)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=6`)
+    await page.evaluate(seenAll)
+    await page.reload()
+    await startShift(page)
+    await page.evaluate(() => window.__goops.breakMachine('laser', true))
+    await page.keyboard.press('KeyW')
+    await consoleStill(page)
+    // (the first visits show the console note — "The tank keeps running at 25% speed…" — typed out the same way)
+    await page.waitForTimeout(250)
+    await page.screenshot({ path: `${OUT}/f32-crt-midshift-typing-${w}x${h}.png` })
+    await typedOut(page)
+    await page.waitForTimeout(150)
+    await page.screenshot({ path: `${OUT}/f32-crt-midshift-typed-${w}x${h}.png` })
+    await page.close()
+  }
+
+  // ---------------- F32 task 8: during a lesson only the outlined part answers (Muzzy's second try) ----------------
+  // "I was able to slide the sliders that weren't highlighted by the pink outline" → those don't move now; they give
+  // the panel's "wrong" shake. In normal play (no lesson) every slider moves as before.
+  const laserSliders = (page) => page.evaluate(() => [...document.querySelectorAll('[role="slider"][aria-label^="Laser slider"]')].map((el) => {
+    const r = el.getBoundingClientRect()
+    return { label: el.getAttribute('aria-label'), value: el.getAttribute('aria-valuenow'), outlined: !!el.closest('.kit-art-layer').querySelector('[data-tag="repair-laser"]'), x: r.x, y: r.y, w: r.width, h: r.height }
+  }))
+  const dragAcross = async (page, s) => {
+    const y = s.y + s.h / 2, x0 = s.x + s.w / 2, x1 = s.x + s.w + 30
+    await page.mouse.move(x0, y); await page.mouse.down()
+    for (let k = 1; k <= 8; k++) await page.mouse.move(x0 + ((x1 - x0) * k) / 8, y)
+    await page.mouse.up()
+    await page.waitForTimeout(250)
+  }
+  const laserShake = (page) => page.evaluate(() => document.querySelector('[data-tag="panel-laser"]').parentElement.getAttribute('data-shake') ?? '')
+  {
+    const { page, errors } = await open(1440, 900, '?seed=7&rank=6')
+    await page.evaluate(() => window.__goops.breakMachine('laser', true))
+    await stepIs(page, 'broke')
+    await clickGotIt(page)
+    await stepIs(page, 'toConsole')
+    await page.keyboard.press('KeyW')
+    await stepIs(page, 'fullyPaused')
+    await consoleStill(page)
+    await clickGotIt(page)
+    await stepIs(page, 'fix')
+    await page.waitForTimeout(500)
+    const before = await laserSliders(page)
+    const other = before.find((s) => !s.outlined), shown = before.find((s) => s.outlined)
+    const s0 = await laserShake(page)
+    await dragAcross(page, other)
+    const after = await laserSliders(page)
+    const s1 = await laserShake(page)
+    await page.screenshot({ path: `${OUT}/f32-lock-laser-1440x900.png` })
+    check('lesson: a laser slider that isn\'t outlined doesn\'t move when dragged, and the panel shakes',
+      !!other && after.find((s) => s.label === other.label).value === other.value && s1 !== s0, JSON.stringify({ other, now: after.find((s) => s.label === other?.label), s0, s1 }))
+    await dragAcross(page, shown)
+    const moved = (await laserSliders(page)).find((s) => s.label === shown.label)
+    check('lesson: the outlined slider still moves', !!shown && moved.value !== shown.value, JSON.stringify({ shown, moved }))
+    check('lesson lock: no page errors', errors.length === 0, errors.join(' | '))
+    await page.close()
+  }
+  {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=6`)
+    await page.evaluate(seenAll)
+    await page.reload()
+    await startShift(page)
+    await page.evaluate(() => window.__goops.breakMachine('laser', true))
+    await page.keyboard.press('KeyW')
+    await consoleStill(page)
+    await page.waitForTimeout(300)
+    const before = await laserSliders(page)
+    const s0 = await laserShake(page)
+    await dragAcross(page, before[1])
+    const after = (await laserSliders(page))[1]
+    check('normal play (no lesson): any laser slider moves when dragged, no shake', after.value !== before[1].value && (await laserShake(page)) === s0, JSON.stringify({ before: before[1], after }))
     await page.close()
   }
 } finally {

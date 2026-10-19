@@ -87,7 +87,10 @@ try {
     const name = `${w}x${h}`
     if (only && !only.includes(name)) continue
     const short = h <= 480
-    const page = await browser.newPage({ viewport: { width: w, height: h }, hasTouch: true })
+    // (F32 portrait only, TDD D11: a TOUCH screen held landscape now shows "Turn your phone upright" — e2e/portrait.mjs.
+    // The landscape sizes here are desktop windows with a mouse, which keep their own layout: no touch, mouse only)
+    const touch = h > w
+    const page = await browser.newPage({ viewport: { width: w, height: h }, hasTouch: touch })
     const cdp = await page.context().newCDPSession(page)
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
@@ -99,6 +102,7 @@ try {
 
     // ── gestures: a real mouse, or a real finger (CDP touch events) ──
     const finger = async (path, ms = 25) => {
+      if (!touch) return mouse(path) // (a landscape desktop window: no touch screen)
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: path[0][0], y: path[0][1] }] })
       for (const [x, y] of path.slice(1)) { await sleep(ms); await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] }) }
       await sleep(ms)
