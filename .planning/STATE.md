@@ -1,11 +1,13 @@
 ## ▶ RESUME HERE
-🌙 Overnight build done (2026-10-17): M1 "Core shift" plays end to end — one full shift, v1 rules, Jelly or Particle goo (Settings → Gameplay → Goo style). Branch `dev/m1-core-shift` (not delivered).
-Play: https://claude.ai/artifact/6kKDMuj25K2fEMoVUj5rrg (private build) · or on this PC: http://localhost:5173 · phone: http://192.168.1.152:5173 (dev server left running)
-Sprint 05 running (2026-10-18) — read the shift where you're looking: F26 HUD + messages rethink (3 layouts in-game behind Settings "HUD layout (test)", Muzzy picks), then F27 balance talk. Sprint 04 open questions live in archive/sprints/sprint-04.md Notes. Dev: ?rank=6, ?visor=0.6, ?pixel=on.
-NOT built yet: upgrades (engine is ready for them), story, tutorial, sound, the HUD rethink.
+2026-10-18 evening — **Sprint 05 nearly done** (read the shift where you're looking). Branch `dev/m1-core-shift` (not delivered), all pushed, check:fast green (277 tests).
+Built today: Muzzy's own HUD layout (one top row · bottom panel LASER/CONTROLS/VISOR + INTEGRITY · pressure readout on the line, slide/mirror in Settings · landing-strip chevrons) · plain-word messages at the stack · 4-step repairs + "fewer steps" upgrade hook · machines pause at the console · curved-TV visor always on in the vat, only over the tank · Dev Kit in Goops (0.18.0): every tuning file LIVE, ⏸ full / ◐ half pause, Snapshots + Bugs, Fonts tab with Muzzy's font library (8-bit Pusab not shipped — licence) · keys move the view · less slosh (spinCarry 0.5) · **new shift arc** (F27, worked out by maths: `.planning/research/balance-arc.md`): drain 0.001, +2% integrity per seal, crack rate hockey stick 10→45/min (curve 3), seal vent 1 s (+ sealVentMult upgrade hook), band halfwayPerColumn; seals during the rupture count.
+**Muzzy next:** play-test the new arc (task 8: calm first ~70%, surge at the end, reach 100% and hold, can you reach cracks?) · pick fonts (` → Fonts, task 18) · half pause: goo keeps jiggling? (task 23). Then 🤖 task 6 (message timing) from his notes → F26/F27 approval → archive Sprint 05.
+**Two Claude sessions (Muzzy, 2026-10-18):** a SEPARATE session owns `dev/framework` + `~/.claude` (BMUZ) — framework v0.9 "Every game wired the same" (F59–F72: hooks first (F68), then F61 conformance pack…). THIS (Goops) session never edits the framework or BMUZ files; framework changes for Goops arrive on a branch this session merges. Open Dev Kit nit for that session: the closed-panel PAUSED pill overlaps "CRACKS" on a 390 phone.
+Play: PC http://localhost:5173/?rank=4 (or ?rank=6) · phone http://192.168.1.152:5173 · private build https://claude.ai/artifact/6kKDMuj25K2fEMoVUj5rrg (last rebuilt before the Dev Kit work — rebuild before sharing) · bots: `npm run bots` → https://claude.ai/artifact/94yNKpzjvFNXxVzJoM75R7 · planner https://claude.ai/artifact/9oMd5gxAV9troSKtyQWs2z
+NOT built yet: upgrades (engine ready), story, tutorial, sound.
 
 ## Where we are
-Stage: develop (overnight M1) · Milestone: M3 Breakdowns · Sprint: 05 · Branch: dev/m1-core-shift · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
+Stage: develop · Milestone: M3 Breakdowns (follow-up) · Sprint: 05 (F26 HUD, F27 balance) · Branch: dev/m1-core-shift · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
 Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `npm run deploy`; stays up until the remake replaces it)
 
 ## Answered 2026-10-17 (written into GDD §4/§6) → build next sprint
