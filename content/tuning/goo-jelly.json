@@ -18,7 +18,8 @@
     "unfilledDim": "Filling goo: how much darker the not-yet-filled part is (0 = not darker).",
     "readyGlow": "Ready-to-pop glow strength (0 = off).",
     "readyPulse": "Ready-to-pop pulse speed (pulses per second).",
-    "popMs": "Pop drain length (ms). Placeholder until the laser look is designed."
+    "popMs": "Pop drain length (ms). Placeholder until the laser look is designed.",
+    "poke": "Zapping goop that can't pop yet (still filling, or above the line) pokes it: how hard it jiggles (0 = not at all, 1 = a gentle press, 2 = a big jolt). Muzzy 2026-10-18."
   },
   "stiffness": 700,
   "viscosity": 6.5,
@@ -37,5 +38,6 @@
   "readyGlow": 0.5,
   "readyPulse": 0.8,
   "popMs": 600,
-  "spinCarry": 0.5
+  "spinCarry": 0.5,
+  "poke": 1
 }

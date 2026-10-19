@@ -37,7 +37,7 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 29. "Reset laser / controls / visor" labels 10% smaller (too big for their spot on the console art), then 10% more (21 → 18.9 → 17, art.json)
 - [x] 🤖 30. Visor glitch waits for the meter to run out, then builds up over rampMs 4 s (was: from 95% signal down); machines count brokenMs on the rules clock (stands still at the console); visorFx test + engine test + e2e/visor.mjs check it
 - [ ] ❓ 31. The falling piece isn't centred: 12 visible columns has no middle column, so the piece column sits half a cell left of the screen's centre — Ask Muzzy: 11 or 13 visible columns, or keep 12
-- [ ] 🤖 32. Poking goop that isn't ready jiggles it (a ripple through the jelly, both goo styles) — Muzzy 2026-10-18
+- [x] 🤖 32. Poking goop that isn't ready jiggles it — a refused zap names the poked cell; Jelly presses in and springs back, Particle ripples through the cluster (weaker farther away); strength = `poke` in goo-jelly.json / goo-particle.json (1); e2e/poke.mjs reads the goo's own motion (gooMotion)
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [x] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain

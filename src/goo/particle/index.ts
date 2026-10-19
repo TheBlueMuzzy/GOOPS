@@ -352,6 +352,24 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     pieceParts = null
   }
 
+  // A poke: the poked cell squashes outward like a small landing thump, and a ripple runs through the rest of its
+  // cluster, weaker the farther each cell is (cells away, around the cylinder the short way).
+  function poke(cell: number, state: ShiftState) {
+    const w = K.wobble * K.poke
+    const px = cell % W, py = Math.floor(cell / W)
+    const group = state.groups.get(state.groupOf[cell])
+    for (const ci of group?.cells ?? [cell]) {
+      let dx = Math.abs((ci % W) - px)
+      dx = Math.min(dx, W - dx)
+      const far = Math.hypot(dx, Math.floor(ci / W) - py)
+      const fall = 1 / (1 + far) // 1 at the poked cell, ½ next to it…
+      for (const i of cellParts[ci] ?? []) {
+        VY[i] += 1.6 * w * fall
+        VX[i] += OX[i] * 4 * w * fall
+      }
+    }
+  }
+
   // ---------------- events from the engine -> particles ----------------
   function handle(events: ShiftEvent[], state: ShiftState) {
     let lastSwap = -1
@@ -388,6 +406,9 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
         }
         case 'lock':
           lockPiece(e.cells)
+          break
+        case 'reject': // a zap on goop that can't pop yet pokes it (Muzzy 2026-10-18)
+          if (e.cell !== undefined && K.poke) poke(e.cell, state)
           break
         case 'pop':
           for (const ci of e.cells) {
@@ -905,6 +926,13 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     },
     setKnobs(values) {
       mergeKnobs(K, values)
+    },
+    motion(cell) { // the average speed of this cell's particles
+      const list = cellParts[cell]
+      if (!list || !list.length) return 0
+      let sum = 0
+      for (const i of list) sum += Math.hypot(VX[i], VY[i])
+      return sum / list.length
     },
     dispose() {
       if (disposed) return

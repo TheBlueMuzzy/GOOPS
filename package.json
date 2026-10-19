@@ -14,6 +14,7 @@
     "check:ui": "node src/ui/kit/check-ui.mjs src/ui --css src",
     "e2e:smoke": "node e2e/shift-smoke.mjs",
     "e2e:controls": "node e2e/controls.mjs",
+    "e2e:poke": "node e2e/poke.mjs",
     "e2e:day": "node e2e/day.mjs",
     "e2e:console": "node e2e/console-shots.mjs",
     "e2e:fonts": "node e2e/fonts-shots.mjs",

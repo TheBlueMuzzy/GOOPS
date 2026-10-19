@@ -186,7 +186,15 @@ describe('fill and pop', () => {
     const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(rows, 5) })
     shift.takeEvents()
     shift.act({ type: 'pop', x: 5, y: 10 }) // top group, not full yet, far above the line
-    expect(shift.takeEvents()).toEqual([{ type: 'reject', action: 'pop', reason: 'aboveLine' }])
+    expect(shift.takeEvents()).toEqual([{ type: 'reject', action: 'pop', reason: 'aboveLine', cell: idx(5, 10) }])
+  })
+
+  // the goo jiggles where it was poked (Muzzy 2026-10-18): the refused zap says which cell, wrapped round the tank
+  it('a refused zap on goop names the poked cell (x wrapped round the tank)', () => {
+    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(['11'], 5) })
+    shift.takeEvents()
+    shift.act({ type: 'pop', x: 6 + shift.state.width, y: 23 })
+    expect(ofType(shift.takeEvents(), 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'filling', cell: idx(6, 23) }])
   })
 
   it('other refusals carry no reason (a turn into goop, an empty cell)', () => {
@@ -199,7 +207,7 @@ describe('fill and pop', () => {
   it('a group fills (375 ms per cell) before it can pop', () => {
     const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(['11'], 5) })
     shift.act({ type: 'pop', x: 5, y: 23 })
-    expect(ofType(shift.takeEvents(), 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'filling' }]) // F26: says why
+    expect(ofType(shift.takeEvents(), 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'filling', cell: idx(5, 23) }]) // F26: says why
     shift.tick(700)
     expect([...shift.state.groups.values()][0].ready).toBe(false)
     shift.tick(60)
@@ -222,7 +230,7 @@ describe('fill and pop', () => {
     shift.act({ type: 'pop', x: 5, y: 10 })
     const events = shift.takeEvents()
     expect(ofType(events, 'pop')).toHaveLength(0)
-    expect(ofType(events, 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'aboveLine' }]) // F26: says why
+    expect(ofType(events, 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'aboveLine', cell: idx(5, 10) }]) // F26: says why
     // The line rises with pressure: row 10 is reached at 65% (23 - 0.65 × 20 = 10).
     shift.tick(75000 * 0.65)
     expect(shift.state.pressureRow).toBeLessThanOrEqual(10)

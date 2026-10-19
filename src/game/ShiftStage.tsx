@@ -218,7 +218,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       return screenToCell(fx, fy, view, s.width, s.bufferRows)
     }
     // dev + tests only: lets a Playwright check reach the engine (fast-forward a shift, read the grid)
-    // (cellAt(px, py): the cell a click there picks; curve(): the visor's curve right now — e2e/controls.mjs)
+    // (cellAt(px, py): the cell a click there picks; curve(): the visor's curve right now — e2e/controls.mjs;
+    // gooMotion(cell): how fast the goo there is moving — e2e/controls.mjs pokes goop that can't pop yet)
     // (say: show an in-shift message now, e.g. say('brokeLaser') — e2e/hud-shots.mjs checks where it sits;
     // readout(): where the pressure readout's line and words are; setReadout({ readoutPosition, readoutDirection }): as if
     // the Settings rows changed; fastDrop(on): as if fast drop were held; clocks(): the rules + looks clocks, ms)
@@ -227,7 +228,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: (on: boolean) => { softHeld = on; engine.act({ type: 'softDrop', on }) },
-      cellAt, curve: () => visorFx.current?.curve() ?? 0,
+      cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }) }
 
     const detach = attachControls(el, {

@@ -18,6 +18,8 @@ export interface GooRenderer {
   frame(state: ShiftState, events: ShiftEvent[], view: GooView, dtSec: number): void
   setKnobs(values: Record<string, number>): void
   dispose(): void
+  // (dev + tests) how fast the goo at a cell is moving right now (cells/s) — feel checks read it (e2e: a poke jiggles)
+  motion?(cell: number): number
 }
 
 // Options for createJellyRenderer / createParticleRenderer (added F15)

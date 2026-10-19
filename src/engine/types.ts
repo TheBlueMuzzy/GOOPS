@@ -111,7 +111,7 @@ export type ShiftEvent =
   | { type: 'rupture'; reason: 'integrity' | 'overflow' } // the tank broke: integrity hit 0, or a piece had no room
   | { type: 'end'; status: ShiftStatus }
   | { type: 'hold' } // the falling piece was swapped with the held one (added by F13)
-  | { type: 'reject'; action: ShiftAction['type']; reason?: RejectReason } // an action couldn't happen (v1 played a "nope" sound) (added by F13)
+  | { type: 'reject'; action: ShiftAction['type']; reason?: RejectReason; cell?: number } // an action couldn't happen (v1 played a "nope" sound) (added by F13); cell = the goop cell a refused zap poked (y * width + x — the goo jiggles there)
   | { type: 'abilityReady'; id: string } // an ability's charge just became full (F22)
   | { type: 'ability'; id: string } // an ability was fired (F22)
   | { type: 'abilityEnd'; id: string } // a fired ability's lasting effect ran out (F22)

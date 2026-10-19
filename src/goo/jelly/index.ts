@@ -440,6 +440,12 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
         case 'pop':
           popCells(e.cells)
           break
+        case 'reject': // a zap on goop that can't pop yet pokes it: the jelly presses in and springs back (Muzzy 2026-10-18)
+          if (e.cell !== undefined && K.poke) {
+            queueKick(e.cell, 'squash', 1.6 * K.poke)
+            queueKick(e.cell, 'radial', -1.2 * K.poke)
+          }
+          break
         case 'fall': {
           const off = cellOff.slice()
           const vel = cellVel.slice()
@@ -1223,6 +1229,13 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     },
     setKnobs(values) {
       mergeKnobs(K, values)
+    },
+    motion(cell) { // the average speed of the points of the jelly that holds this cell
+      const B = cellBody[cell] >= 0 ? bodyById(cellBody[cell]) : undefined
+      if (!B || !B.n) return 0
+      let sum = 0
+      for (let i = 0; i < B.n; i++) sum += Math.hypot(B.vx[i], B.vy[i])
+      return sum / B.n
     },
     dispose() {
       if (disposed) return

@@ -257,7 +257,10 @@ class Shift implements ShiftEngine {
         this.machines.atConsole = action.on
         break
     }
-    if (!ok) this.events.push(this.rejectReason ? { type: 'reject', action: action.type, reason: this.rejectReason } : { type: 'reject', action: action.type })
+    if (!ok && this.rejectReason && action.type === 'pop') {
+      // a refused zap on goop: say why, and which cell was poked (the goo jiggles there — Muzzy 2026-10-18)
+      this.events.push({ type: 'reject', action: action.type, reason: this.rejectReason, cell: action.y * this.state.width + wrapX(action.x, this.state.width) })
+    } else if (!ok) this.events.push(this.rejectReason ? { type: 'reject', action: action.type, reason: this.rejectReason } : { type: 'reject', action: action.type })
     this.refreshView()
   }
 
