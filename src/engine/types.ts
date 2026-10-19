@@ -59,10 +59,8 @@ export interface ShiftState {
   spin: number // tank rotation: the tank column at the centre of the view (integer, 0..width-1)
   piece: Piece | null
   ghost: [number, number][] // where the piece would land
-  next: Color[] | null // preview of the next piece's colours (shape preview later)
-  held: Color[] | null
+  next: Color[] | null // the next piece's colours (the next-piece window, F59; swap trades the falling piece with it)
   nextCells?: [number, number][] | null // the next piece's shape: [x, y] offsets, same order as `next` (added by F13)
-  heldCells?: [number, number][] | null // the held piece's shape (added by F13)
   pressure: number // 0..1: rises over time, zaps and seals vent it; drains to 0 during a rupture
   pressureRow: number // y of the pressure line (goop at or below it can pop)
   integrity: number // 0..1 tank integrity: open cracks drain it, each seal gives integrity.sealRefund back; 0 = rupture
@@ -120,7 +118,7 @@ export type ShiftEvent =
   | { type: 'quotaMet' } // the last needed crack was sealed (once per shift); play goes on
   | { type: 'rupture'; reason: 'integrity' | 'overflow' } // the tank broke: integrity hit 0, or a piece had no room
   | { type: 'end'; status: ShiftStatus }
-  | { type: 'hold' } // the falling piece was swapped with the held one (added by F13)
+  | { type: 'hold' } // the falling piece was swapped with the next one (F59; was the held one before)
   | { type: 'reject'; action: ShiftAction['type']; reason?: RejectReason; cell?: number } // an action couldn't happen (v1 played a "nope" sound) (added by F13); cell = the goop cell a refused zap poked (y * width + x — the goo jiggles there)
   | { type: 'abilityReady'; id: string } // an ability's charge just became full (F22)
   | { type: 'ability'; id: string } // an ability was fired (F22)
@@ -138,7 +136,7 @@ export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column
   | { type: 'rotate'; dir: 1 | -1 }
   | { type: 'softDrop'; on: boolean } // hold to fall fast
-  | { type: 'hold' } // swap with the held piece
+  | { type: 'hold' } // swap the falling piece with the next one (F59)
   | { type: 'pop'; x: number; y: number } // tap a cell (tank space)
   | { type: 'ability'; id: string } // fire an equipped, ready ability (F22)
   | { type: 'repair'; machine: MachineId } // the console's repair puzzle for this machine was solved (F23/F24)

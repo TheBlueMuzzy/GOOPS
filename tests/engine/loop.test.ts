@@ -112,7 +112,9 @@ describe('cracks', () => {
 
 describe('tank integrity', () => {
   it('starts full and each open crack drains 0.4% per second', () => {
-    const shift = createShift(calmConfig(0.004), { seed: 4, rank: 0, startGrid: tank([FLOOR, FLOOR]) })
+    const config = calmConfig(0.004)
+    config.cracks.highDrainMult = 1 // (a crack high up drains at half — tested with the crack band; here every crack is the same)
+    const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([FLOOR, FLOOR]) })
     expect(shift.state.integrity).toBe(1)
     tickUntil(shift, () => shift.state.cracks.length === 1)
     expect(shift.state.integrity).toBeCloseTo(1, 2)

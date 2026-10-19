@@ -75,7 +75,7 @@ export function tickUntil(shift: ShiftEngine, done: () => boolean, maxMs = 60000
 export function sealACrack(shift: ShiftEngine, config: ShiftConfig): ShiftEvent[] {
   const s = shift.state
   const onGoop = () => s.cracks.find((c) => c.y === s.height - 1 || s.grid[(c.y + 1) * s.width + c.x] !== 0)
-  tickUntil(shift, () => !!onGoop())
+  tickUntil(shift, () => !!onGoop(), 300_000) // (in an empty tank most cracks hang in mid-air: one on the floor can take a while)
   const crack = onGoop()!
   while (s.spin !== crack.x) shift.act({ type: 'spin', dir: 1 })
   const events = [...shift.takeEvents(), ...dropPiece(shift, config)]

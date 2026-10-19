@@ -19,7 +19,7 @@ export interface ShiftSnapshot {
   kind: typeof SNAPSHOT_KIND
   version: number
   // training: only in a lesson's training shift (F30) — older snapshots have none
-  options: { seed: number; rank: number; wallKick: WallKickMode; modifiers: Modifiers; abilities: AbilitySpec[]; training?: Partial<TrainingRules> }
+  options: { seed: number; rank: number; wallKick: WallKickMode; modifiers: Modifiers; abilities: AbilitySpec[]; training?: Partial<TrainingRules>; swap?: boolean }
   width: number
   height: number
   rng: number
@@ -49,7 +49,6 @@ export interface ShiftSnapshot {
     colorCount: number
     piece: FallingPiece | null
     nextDef: PieceDef
-    heldDef: PieceDef | null
     softDrop: boolean
     lockMs: number | null
     lockResets: number

@@ -1,7 +1,8 @@
 // v1's controls (hooks/useInputHandlers.ts + Game.tsx on archive/goops-v1), rebuilt as one small controller.
 // Touch/mouse: drag sideways = spin the tank (joystick: hold past the dead zone to keep spinning) · drag down = fast drop
 // · tap goop = pop it · tap empty space = rotate (left half ↺, right half ↻) · quick swipe up = console/pause
-// · hold still 1.5 s = swap with the held piece.
+// · hold still 1.5 s = swap with the next piece.
+// F59: swap unlocks by rank — before that (canSwap false) holding does nothing: no charging ring, no swap.
 // Keys (GDD §4, one set, same timing as touch): A D / ← → spin · Q / Right Ctrl ↺, E / Numpad 0 ↻
 // · S / ↓ (hold) fast drop · hold R / Right Shift 1.5 s = swap · W / ↑ console/pause.
 import tank from '../../content/tuning/tank.json'

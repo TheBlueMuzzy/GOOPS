@@ -209,13 +209,13 @@ export class Bot {
     const plan: Plan = { pieceId: this.pieceId, hold: false, rotations: 0, rotationsDone: 0, targetSpin: null, badSpins: new Set() }
     const current = this.bestRotation(s, shapeOf(s), s.piece!.colors[0])
     plan.rotations = current.rotations
-    if (k.useHold && !this.heldThisPiece && s.held && s.heldCells) {
-      // the held piece would appear where this one is: its shape offsets around the same spot
-      const heldShape = s.heldCells.map(([x, y]) => [x, y + topRow(s)] as Cell)
-      const held = this.bestRotation(s, heldShape, s.held[0])
-      if (held.score > current.score + 3) {
+    if (k.useHold && !this.heldThisPiece && s.next && s.nextCells) {
+      // swap (F59) trades with the NEXT piece, which would appear where this one is: its shape offsets around the same spot
+      const nextShape = s.nextCells.map(([x, y]) => [x, y + topRow(s)] as Cell)
+      const next = this.bestRotation(s, nextShape, s.next[0])
+      if (next.score > current.score + 3) {
         plan.hold = true
-        plan.rotations = 0 // re-planned once the held piece is in
+        plan.rotations = 0 // re-planned once the next piece is in
       }
     }
     return plan
