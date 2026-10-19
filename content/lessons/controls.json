@@ -1,0 +1,171 @@
+{
+  "_about": "F32 first-breakdown lesson: the first time the CONTROLS breaks in a real shift, once per device — the same shape as visor.json (read its _about). Words: content/text/en.json → lessons.controls (shared lines: lessons.shared).",
+  "id": "controls",
+  "start": {
+    "console": "frozen"
+  },
+  "finish": {
+    "console": "normal"
+  },
+  "steps": [
+    {
+      "id": "broke",
+      "pattern": "pauseShowDismiss",
+      "message": "broke",
+      "pointer": {
+        "tag": "bar-controls"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:controls",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        }
+      ]
+    },
+    {
+      "id": "toConsole",
+      "pattern": "runActAdvance",
+      "message": "toConsole",
+      "pointer": {
+        "tag": "bar-controls"
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleOpened"
+      },
+      "hint": {
+        "after": 3,
+        "message": "toConsoleHint"
+      },
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "pauseOpened"
+          },
+          "message": "pauseMenu",
+          "pointer": {
+            "tag": "pauseResume"
+          },
+          "until": {
+            "on": "event",
+            "event": "pauseClosed"
+          }
+        }
+      ],
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "broken:controls",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fullyPaused",
+      "pattern": "pauseShowDismiss",
+      "message": "fullyPaused",
+      "pointer": {
+        "tag": "monitor"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "breakdownLessonsSeen",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "broken:controls",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "pattern": "runActAdvance",
+      "message": "fix",
+      "pointer": {
+        "tag": "repair-controls"
+      },
+      "advance": {
+        "on": "event",
+        "event": "repaired",
+        "where": {
+          "machine": "controls"
+        }
+      },
+      "hint": {
+        "after": 5,
+        "message": "fixHint"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:controls",
+          "atMost": 0
+        }
+      ],
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "consoleClosed"
+          },
+          "message": "stillBroken",
+          "pointer": {
+            "tag": "bar-controls"
+          },
+          "until": {
+            "on": "event",
+            "event": "consoleOpened"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fixed",
+      "pattern": "pauseShowDismiss",
+      "message": "fixed",
+      "pointer": {
+        "tag": "panel-controls"
+      }
+    },
+    {
+      "id": "back",
+      "pattern": "runActAdvance",
+      "message": "back",
+      "pointer": {
+        "tag": "periscope",
+        "placement": "right"
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleClosed"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        }
+      ]
+    }
+  ]
+}
