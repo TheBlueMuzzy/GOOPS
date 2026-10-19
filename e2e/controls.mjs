@@ -182,7 +182,13 @@ try {
   await toConsole('KeyW')
   await page.getByRole('button', { name: 'Settings' }).click(); await page.waitForTimeout(300) // the gear: the pause menu
   await page.getByRole('dialog').getByRole('button', { name: 'Settings' }).click(); await page.waitForTimeout(300)
-  await page.getByRole('tab', { name: 'Gameplay' }).click(); await page.waitForTimeout(200)
+  // 4+ tabs (Audio joined in F29): a phone gets the ◀ Audio ▶ picker instead of the tab bar — step to Gameplay
+  const gameplayTab = page.getByRole('tab', { name: 'Gameplay' })
+  if (await gameplayTab.isVisible()) await gameplayTab.click()
+  else for (let i = 0; i < 6 && !(await page.getByRole('button', { name: 'Next Wall kick' }).isVisible()); i++) {
+    await page.getByRole('button', { name: 'Next Settings' }).click(); await page.waitForTimeout(150)
+  }
+  await page.waitForTimeout(200)
   await page.getByRole('button', { name: 'Next Wall kick' }).click(); await page.waitForTimeout(200)
   check('Settings switch → Shunt piece mid-shift', (await kick()) === 'shuntPiece', String(await kick()))
   await page.reload(); await startShift(page)
