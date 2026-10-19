@@ -428,6 +428,31 @@ try {
     await page.close()
   }
 
+  // ---------------- F32 bug (Muzzy, 2026-10-19): Replay lessons from the START console's gear did nothing ----------------
+  // (that screen stack had no kit confirm screen: Settings closed and nothing was forgotten)
+  {
+    const { page, errors } = await open(1440, 900, '?seed=7&rank=6')
+    await page.evaluate(() => { // (the kit's key: 'kit-tips:' + the first folder of the page's path — '' here)
+      const k = `kit-tips:${location.pathname.split('/').slice(1, -1)[0] ?? ''}`
+      localStorage.setItem(k, JSON.stringify({ on: true, seen: ['lesson:visor', 'lesson:laser', 'lesson:controls'] }))
+    })
+    await page.reload()
+    await page.getByRole('button', { name: 'Settings' }).click()
+    await page.getByRole('tab', { name: 'Gameplay' }).click()
+    await page.getByRole('button', { name: 'Replay lessons' }).click()
+    await page.locator('.kit-ask').getByRole('button', { name: 'Replay lessons' }).click({ timeout: 3000 })
+    const forgot = await page.waitForFunction(() => JSON.parse(localStorage.getItem(Object.keys(localStorage).find((k) => k.startsWith('kit-tips')))).seen.length === 0, null, { timeout: 3000 }).then(() => true, () => false)
+    check('Replay lessons from the start console: the device forgets the lessons', forgot,
+      await page.evaluate(() => Object.entries(localStorage).filter(([k]) => k.startsWith('kit-tips')).map(([, v]) => v).join()))
+    for (let i = 0; i < 6 && await page.evaluate(() => document.querySelector('.kit-layer') !== null); i++) { await page.keyboard.press('Escape'); await page.waitForTimeout(300) }
+    await startShift(page)
+    await page.evaluate(() => window.__goops.breakMachine('visor', true))
+    await stepIs(page, 'broke')
+    check('…and the next visor break plays its lesson', true)
+    check('Replay from the console: no page errors', errors.length === 0, errors.join(' | '))
+    await page.close()
+  }
+
   // ---------------- F32: the tank ruptures mid-lesson → the lesson steps aside, the drain runs ----------------
   {
     const { page, errors } = await open(1440, 900, '?seed=7&rank=6')

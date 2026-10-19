@@ -301,7 +301,7 @@ export function App() {
         </ScreenStack>
       )}
       {mode !== 'shift' && (
-        <ScreenStack screens={peeking ? consoleScreens : { settings: SettingsScreen }}>
+        <ScreenStack screens={peeking ? consoleScreens : { ...kitScreens, settings: SettingsScreen }}>{/* (Settings' buttons ask first: Replay lessons) */}
           <Console progress={progress} shownFrom={peeking ? null : meterFrom} onSlideEnd={consoleSlid}
             phase={mode === 'console' || mode === 'peek' ? 'idle' : mode === 'leaving' || mode === 'peekOut' ? 'leaving' : 'arriving'}
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
