@@ -23,8 +23,8 @@ Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `n
 
 ## Key facts
 **Reviewed through:** 16dfb93 — review (low) of F32 task 8 (CRT look, lesson lock, portrait only): 1 fix after it (the last "back" step no longer locks a second broken machine), 2026-10-19
-**Last full check:** e0b1acd, 2026-10-19 — no check:full yet; all 11 e2e scripts one at a time (shift-smoke, controls, repairs, visor, poke, day, devkit-live, crack-spread, cracks-look, sound, hud-shots) + check:fast (322 tests), all green
-**Run (remake):** `npm run dev -- --host` · checks `npm run check:fast` (127 tests + build + lint + UI rules) · e2e `npm run e2e:smoke`, `npm run e2e:controls`, `node e2e/perf.mjs` · goo lab (dev only) `/goo-lab.html` · preview build `npx vite build --base ./ --outDir dist-preview` → republish to the Play artifact
+**Last full check:** ec80486, 2026-10-19 — `npm run check:full` (new: fast + 13 e2e, 3 at a time, ~7 min; page e2e-shots/checks.html): all green (day fixed and re-run alone). Not in it: art/fonts/perf shot tools, console-shots (red on a short desktop window — kit swipe rule, SPRINT 08 Notes)
+**Run (remake):** `npm run dev -- --host` · checks `npm run check:full` (everything) or `npm run check:fast` (127 tests + build + lint + UI rules) · e2e `npm run e2e:smoke`, `npm run e2e:controls`, `node e2e/perf.mjs` · goo lab (dev only) `/goo-lab.html` · preview build `npx vite build --base ./ --outDir dist-preview` → republish to the Play artifact
 **v1:** branch `archive/goops-v1` (old run/deploy: `npm run deploy` → gh-pages, still live)
 **Remake setup:** v1 design docs (PRD, vision, glossary, soft-body, tutorials) → `.planning/research/v1/`. GSD state/phases/investigations → `.planning/archive/gsd/`. BMUZ 1 hooks removed 2026-10-16.
 **Planner (PPP):** https://claude.ai/artifact/9oMd5gxAV9troSKtyQWs2z (pilot) — `node ~/.claude/config/bmuz/templates/ppp/build-ppp.mjs .` → republish `.planning/ppp.html` to that URL (gitignored, generated)
