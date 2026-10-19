@@ -29,6 +29,9 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [ ] 🙋 23. Half pause: should the goo keep jiggling? (default yes — content/tuning/pause.json halfPauseGooMoves)
 - [x] 🤖 21. Typing in the Dev Kit no longer reaches the game's hotkeys (Dev Kit 0.17.1 + the game ignores keys typed in text boxes)
 - [x] 🤖 20. Locked goo sloshes 50% less when the tank turns (goo-jelly / goo-particle `spinCarry` 0.5)
+- [x] 🤖 24. Curve sliders step by 0.25 (crack curve + visor curves, `_ranges`)
+- [x] 🤖 25. Pressure readout says "% PSI"; its dot sits on the BENT pressure line (follows the visor's curve — visorFx `curvedY`)
+- [ ] 🤖 26. At ~95% pressure the readout's words slide under "CRACKS 0 / 6" — waiting on Muzzy: fix now or later
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [x] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain
