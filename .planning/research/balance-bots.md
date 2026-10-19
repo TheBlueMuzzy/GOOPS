@@ -115,3 +115,21 @@ The "before" rows reproduce the first run exactly (same seeds), so the band code
 - **Per column is a little kinder than halfway** (+8–14 s, rank 10 quota 68% vs 40%): it closes the "one tall column lets cracks float over low ones" gap.
 - **Quota:** ranks 0–4 are now near-certain for Focused/Sharp; rank 6 is 80–86%; rank 10 is 16–40% (was 0%).
 - **Sensitivity, `pressure.riseMsToFull` ±25% (75 s):** −25% (56 s) → shifts ~10–25 s shorter (Sharp 93 → 86 s), peak pressure ~80% median / ~86–90% p90, quota at rank 10 falls to 2–16%, rank 6 to 66–72%. +25% (94 s) → shifts 7–13 s longer, peak ~53–55%, rank 10 quota 44–62%. Still no shift reached 100% either way.
+
+# Rerun: half drain + top bias (F27, 2026-10-19)
+**Why:** Muzzy played the new arc: "cracks are forming pretty low over time and i have no reason to build upwards … i just drop, wait, pop … there's no interesting puzzle/decision point." His fix: halve the drain (0.001 → 0.0005) and lean crack spawns toward the top of the band (`cracks.topBias`, new: each spot counts by rows above the goop in its column, to that power).
+**Runs:** 5 tunings × 4 bots × 5 ranks × 30 seeds = 4,200 shifts in 195 s (`npm run bots -- --seeds 30`).
+
+| Tuning | Sharp shift | Sharp quota (rank 0/2/4/6/10) | Focused quota | Casual quota r0 | Rows above the goop (avg) | Sealed (Sharp) |
+|---|---|---|---|---|---|---|
+| Played 10-18 (drain 0.001, bias 0) | 125 → 118 s | 100/100/100/100/40% | 100/100/100/97/33% | 27% | 3.5 | 33% |
+| Half drain, bias 0 | 157 → 150 s | 100/100/100/100/83% | 100/100/100/100/83% | 57% | 3.9 | 29% |
+| Half drain, bias 1 | 148 → 140 s | 100/100/100/97/10% | 100/100/100/97/10% | 10% | 5.2 | 21% |
+| **Half drain, bias 2 (the file)** | 142 → 138 s | 100/100/90/63/0% | 100/100/77/53/3% | 0% | 5.9 | 17% |
+| Half drain, bias 3 | 139 → 136 s | 100/100/83/53/3% | 100/97/80/40/0% | 3% | 6.4 | 15% |
+
+- **Half drain alone makes it easier and changes nothing about where cracks are** (gap 3.5 → 3.9; rank 10 quota 40 → 83%): more time, same drop-and-pop. It only works together with the bias.
+- **The bias is what breaks drop-wait-pop:** Casual (ignores cracks, keeps low) meets no quota at bias 2 (27% at rank 0 before). Cracks float ~6 rows above the goop instead of ~3.5.
+- Every shift now reaches 100% pressure and ends by integrity (Idle by overflow). Shifts ~140 s.
+- Bots plan one piece at a time and only build toward a crack weakly (`underCrack` 4), so they are the drop-and-pop player: their falling quota is the point. A player who builds up should do better than Sharp here.
+- Finding 3 above (seals during the rupture drain count): **answered by Muzzy — yes, they count** (2026-10-18, again 2026-10-19). Not a question any more.

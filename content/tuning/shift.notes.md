@@ -13,8 +13,8 @@ All values are v1's as shipped (from the v1 code, which wins over the v1 docs) u
 **pressure** — `riseMsToFull` 75000: pressure climbs from 0% to 100% in this long if nothing vents it. The pop line rises with it. Zapping and sealing vent it (see `pop` and `cracks.sealRefundMs`, counted in ms of this rise). Caps at 100%.
 
 **integrity** — the arc (Muzzy, 2026-10-18: lower drain + gentler cracks, pressure must reach 100%, integrity is the fail point; worked out by maths, not a sim — `.planning/research/balance-arc.md`)
-- `drainPerCrackPerSec` 0.001: every open (unsealed) crack wears the tank down 0.1% per second. At 0 the tank ruptures. (0.004 → 0.002 → 0.001, Muzzy 2026-10-18: "I want drain to be lower so players have more time to reach the cracks up high.")
-- `sealRefund` 0.02: sealing a crack gives 2% integrity back, never past 100%. Nothing comes back during a rupture (the seal still counts for the quota). At 0.001 drain, 2% = 20 crack-seconds — more than a sealed crack costs while it's open (~11 s), so sealing always pays.
+- `drainPerCrackPerSec` 0.0005: every open (unsealed) crack wears the tank down 0.05% per second. At 0 the tank ruptures. (0.004 → 0.002 → 0.001 → 0.0005, Muzzy 2026-10-18: "I want drain to be lower so players have more time to reach the cracks up high"; halved again 2026-10-19 together with `cracks.topBias` — cracks now float higher, so reaching them takes longer.)
+- `sealRefund` 0.02: sealing a crack gives 2% integrity back, never past 100%. Nothing comes back during a rupture (the seal still counts for the quota). At 0.0005 drain, 2% = 40 crack-seconds — more than a sealed crack costs while it's open, so sealing always pays.
 
 **rupture** — `drainMs` 5000: after a rupture, pressure drains from 100% to 0 in this long (the pop line sinks with it). Pieces keep coming and you can still zap; no new cracks. At 0 the shift ends — won if the quota was met. A piece with no room to spawn also ruptures the tank (and ends the shift at once if it has already ruptured).
 
@@ -33,6 +33,7 @@ All values are v1's as shipped (from the v1 code, which wins over the v1 docs) u
   - `"halfway"` (Muzzy's rule, tank-wide): cracks only from the floor up to row X, halfway between the highest goop anywhere in the tank and the pop line, rounded down. Example: top goop at row 12, line at 16 → (16 − 12) ÷ 2 = 2 → cracks up to row 14, in any column. Goop at or above the line → X = the line. Empty tank → the floor counts as the top goop.
   - `"halfwayPerColumn"` (the default since 2026-10-18 — Muzzy's rule applied column by column; it did better in every bot measure): the same, but each column uses its own goop (the floor if it's empty). Stops one tall column letting cracks float high over the low columns next to it.
   - `"none"`: the old rule, anywhere up to the pop line. Kept for comparison.
+- `topBias` 2 — WHERE in the band (Muzzy, 2026-10-19: "so many near the floor that I don't need to stack to meet quota … drop, wait, pop"). Each empty spot counts by how many rows it floats above the goop in its own column (the rows you'd have to build to reach it), to the power `topBias`. 0 = every spot equally (before) · 1 = a spot 4 rows up is 4× as likely as one sitting on goop · 2 = 16× · 3 = 64×. Cracks never leave the band, so they stay reachable. Empty tank at bias 2: ~2 in 3 cracks land in the band's top third, ~1 in 300 on the floor. Bots (2026-10-19, research/balance-bots.md): the average crack floats 6 rows up (3.5 before); the bot that ignores cracks no longer meets any quota (27% at rank 0 before).
 - **Crack curve** (6000 → 1333 ms, curve 3):
 
   | Pressure | 0% | 25% | 50% | 75% | 90% | 100% |

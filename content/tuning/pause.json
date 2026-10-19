@@ -4,5 +4,5 @@
     "halfPauseGooMoves": "On: during a Half pause the goo keeps jiggling and settling (it's only looks). Off: the goo stands still too."
   },
   "_labels": { "halfPauseGooMoves": "Half pause: goo keeps moving" },
-  "halfPauseGooMoves": true
+  "halfPauseGooMoves": false
 }

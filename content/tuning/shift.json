@@ -1,5 +1,5 @@
 {
-  "_ranges": { "cracks.curve": [0, 10, 0.25] },
+  "_ranges": { "cracks.curve": [0, 10, 0.25], "cracks.topBias": [0, 4, 0.25] },
   "tank": { "width": 30, "height": 24, "bufferRows": 3, "visibleWidth": 12 },
   "colors": ["red", "blue", "green", "yellow", "purple", "white", "black"],
   "colorsByRank": [
@@ -15,13 +15,13 @@
     { "rank": 9, "count": 11 }
   ],
   "pressure": { "riseMsToFull": 75000 },
-  "integrity": { "drainPerCrackPerSec": 0.001, "sealRefund": 0.02 },
+  "integrity": { "drainPerCrackPerSec": 0.0005, "sealRefund": 0.02 },
   "rupture": { "drainMs": 5000 },
   "fall": { "msPerRow": 780, "softDropFactor": 8 },
   "lock": { "delayMs": 500, "softDropDelayMs": 50, "maxResets": 10 },
   "fill": { "msPerCell": 375 },
   "pop": { "refundMsPerCell": 100, "refundTierFromSize": 15, "refundTierStep": 10, "refundTierMs": 250 },
-  "cracks": { "everyMsAtEmpty": 6000, "everyMsAtFull": 1333, "curve": 3, "sealRefundMs": 1000, "onePerColour": false, "band": "halfwayPerColumn" },
+  "cracks": { "everyMsAtEmpty": 6000, "everyMsAtFull": 1333, "curve": 3, "sealRefundMs": 1000, "onePerColour": false, "band": "halfwayPerColumn", "topBias": 2 },
   "score": {
     "perCell": 10,
     "heightPerRow": 10,

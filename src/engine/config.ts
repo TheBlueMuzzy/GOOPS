@@ -42,6 +42,9 @@ export interface ShiftConfig {
     // 'halfway' = up to halfway between the top of the goop (whole tank) and the pop line;
     // 'halfwayPerColumn' = the same, worked out for each column from that column's own goop. Anything else = 'none'.
     band: string
+    // Where in that band (cracks.ts pickHighSpot): 0 = any empty spot equally; higher = more often high above the goop
+    // in its column (bias 2: a spot 4 rows up is 16× as likely as one right on the goop). Unset = 0.
+    topBias?: number
   }
   score: {
     perCell: number

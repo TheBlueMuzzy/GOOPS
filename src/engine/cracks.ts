@@ -91,8 +91,33 @@ export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, col
   if (spots.length === 0) return null
 
   const color = rng.pick(colors)
-  const spot = rng.pick(spots)
+  const bias = lowRows ? 0 : (config.cracks.topBias ?? 0)
+  const spot = bias > 0 ? pickHighSpot(state, rng, spots, bias) : rng.pick(spots)
   return { id, x: spot % state.width, y: Math.floor(spot / state.width), color, plugged: false }
+}
+
+// The top bias (Muzzy, F27, 2026-10-19: "bias towards the top of the range … there are so many near the floor that I
+// don't need to stack"). Each spot counts by how high it floats above the goop in ITS column — the rows you'd have to
+// build to reach it — raised to `bias`: 1 cell up counts 1, 4 cells up counts 4 (bias 1) or 16 (bias 2).
+// A spot right on top of the goop (or on an empty floor) is still possible, just rare.
+function pickHighSpot(state: ShiftState, rng: Rng, spots: number[], bias: number): number {
+  const colTop: number[] = [] // the column's top goop as a row from the floor; an empty column = -1 (below the floor)
+  for (let x = 0; x < state.width; x++) colTop.push(columnHasGoop(state, x) ? goopTopRow(state, x) : -1)
+  const weights = spots.map((i) => {
+    const rowsUp = state.height - 1 - Math.floor(i / state.width) - colTop[i % state.width] // 1 = right on the goop
+    return Math.max(1, rowsUp) ** bias // under an overhang counts as 1
+  })
+  let r = rng.next() * weights.reduce((a, b) => a + b, 0)
+  for (let k = 0; k < spots.length; k++) {
+    r -= weights[k]
+    if (r < 0) return spots[k]
+  }
+  return spots[spots.length - 1]
+}
+
+function columnHasGoop(state: ShiftState, x: number): boolean {
+  for (let y = 0; y < state.height; y++) if (state.grid[y * state.width + x] !== 0) return true
+  return false
 }
 
 // A crack is plugged while goop of its own colour sits on it. Wrong-colour goop just covers it.

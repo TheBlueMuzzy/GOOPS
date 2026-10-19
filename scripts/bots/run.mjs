@@ -12,13 +12,14 @@ const root = new URL('../../', import.meta.url)
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, root), 'utf8'))
 
 const RANKS = [0, 2, 4, 6, 10]
-// Named tuning variants, each a set of changes on top of content/tuning/shift.json (F27 task 10, 2026-10-18).
+// Named tuning variants, each a set of changes on top of content/tuning/shift.json (F27, 2026-10-19: drain halved + top bias).
 // 'base' = the file as it is (today's default). The others are for comparison; `--variants base` runs only the file.
 const VARIANTS = {
-  before: { short: 'Before', label: 'Before (drain 0.004, no refund, no band)', set: { 'integrity.drainPerCrackPerSec': 0.004, 'integrity.sealRefund': 0, 'cracks.band': 'none' } },
-  none: { short: 'New · band none', label: 'New drain + refund, band none', set: { 'cracks.band': 'none' } },
-  base: { short: 'New · halfway', label: 'New drain + refund, band halfway (the file)', set: {} },
-  perColumn: { short: 'New · per column', label: 'New drain + refund, band halfwayPerColumn', set: { 'cracks.band': 'halfwayPerColumn' } },
+  played: { short: 'Played 10-18', label: 'What Muzzy played 2026-10-18 (drain 0.001, no top bias)', set: { 'integrity.drainPerCrackPerSec': 0.001, 'cracks.topBias': 0 } },
+  halfDrain: { short: 'Half drain', label: 'Drain 0.0005, no top bias', set: { 'cracks.topBias': 0 } },
+  bias1: { short: 'Half drain · bias 1', label: 'Drain 0.0005, top bias 1', set: { 'cracks.topBias': 1 } },
+  base: { short: 'Half drain · bias 2', label: 'Drain 0.0005, top bias 2 (the file)', set: {} },
+  bias3: { short: 'Half drain · bias 3', label: 'Drain 0.0005, top bias 3', set: { 'cracks.topBias': 3 } },
 }
 const KNOBS = [['pressure', 'riseMsToFull']] // ±25% on the file's tuning (Muzzy steers with this one)
 const SENSITIVITY_BOTS = ['focused', 'sharp']

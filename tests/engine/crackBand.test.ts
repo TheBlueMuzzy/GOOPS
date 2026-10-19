@@ -208,3 +208,50 @@ describe('integrity: lower drain and the seal refund', () => {
     expect(shift.state.integrity).toBe(0)
   })
 })
+
+// Top bias (Muzzy, 2026-10-19): cracks lean toward the top of the band — high above the goop in their column —
+// so dropping onto the floor and popping isn't enough any more.
+describe('top bias', () => {
+  // 600 cracks on an empty tank, line at row 16 → 'halfwayPerColumn' band = rows 0–8. Rows counted from the floor.
+  function rowsWith(bias: number): number[] {
+    const config = calmConfig('halfwayPerColumn')
+    config.cracks.topBias = bias
+    const shift = createShift(config, { seed: 1, rank: 0, startGrid: new Uint8Array(30 * H) })
+    shift.state.pressure = 0.8
+    const rows: number[] = []
+    for (let seed = 1; seed <= 600; seed++) {
+      const crack = spawnCrack(shift.state, createRng(seed), config, 1, seed)!
+      expect(shift.state.grid[idx(crack.x, crack.y)]).toBe(0)
+      rows.push(H - 1 - crack.y)
+    }
+    return rows
+  }
+  const share = (rows: number[], test: (r: number) => boolean) => rows.filter(test).length / rows.length
+
+  it('bias 0: every row of the band equally (about 1 in 9 on the floor)', () => {
+    const rows = rowsWith(0)
+    expect(Math.max(...rows)).toBe(8)
+    expect(share(rows, (r) => r === 0)).toBeGreaterThan(0.07)
+  })
+
+  it('bias 2: most cracks in the top third of the band, the floor rare — but still inside the band', () => {
+    const rows = rowsWith(2)
+    expect(Math.max(...rows)).toBe(8)
+    expect(share(rows, (r) => r >= 6)).toBeGreaterThan(0.55) // maths: (49 + 64 + 81) / 285 = 68%
+    expect(share(rows, (r) => r === 0)).toBeLessThan(0.02) // maths: 1 / 285
+  })
+
+  it('counts rows above the goop in ITS column: a crack right on top of goop is the rare one', () => {
+    const config = calmConfig('none')
+    config.cracks.topBias = 2
+    const grid = oneColumn(15) // column 5 filled up to row 15; the line is row 16
+    const shift = createShift(config, { seed: 1, rank: 0, startGrid: grid })
+    shift.state.pressure = 0.8
+    let onTop = 0
+    for (let seed = 1; seed <= 600; seed++) {
+      const crack = spawnCrack(shift.state, createRng(seed), config, 1, seed)!
+      if (crack.x === 5) onTop++ // the only free cell in column 5 is row 16, right on its goop
+    }
+    expect(onTop).toBeLessThan(6) // weight 1 against the empty columns' 17² at row 16
+  })
+})
