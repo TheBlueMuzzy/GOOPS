@@ -22,7 +22,7 @@ Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `n
 - Info only, no answer needed: start screen is a placeholder for the console · every shift is rank 1 · pops are a placeholder until the zap is designed · rows are whole steps · the falling piece draws fully filled.
 
 ## Key facts
-**Reviewed through:** e0b1acd — /code-review low on 47d7df1..e0b1acd (sprint 07), no findings, 2026-10-19
+**Reviewed through:** 67e8049 — review (low) of F30 d1828cc^..23779ce: normal play untouched; 2 minor lesson-only fixes in 67e8049, 2026-10-19
 **Last full check:** e0b1acd, 2026-10-19 — no check:full yet; all 11 e2e scripts one at a time (shift-smoke, controls, repairs, visor, poke, day, devkit-live, crack-spread, cracks-look, sound, hud-shots) + check:fast (322 tests), all green
 **Run (remake):** `npm run dev -- --host` · checks `npm run check:fast` (127 tests + build + lint + UI rules) · e2e `npm run e2e:smoke`, `npm run e2e:controls`, `node e2e/perf.mjs` · goo lab (dev only) `/goo-lab.html` · preview build `npx vite build --base ./ --outDir dist-preview` → republish to the Play artifact
 **v1:** branch `archive/goops-v1` (old run/deploy: `npm run deploy` → gh-pages, still live)
