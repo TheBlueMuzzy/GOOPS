@@ -4,11 +4,11 @@ What changes for Muzzy: decisions and docs (what alpha / beta / 1.0 need; the bu
 Decided at planning (Muzzy, 2026-10-19): the goo-lab checks are moot — Jelly is already in the real game → F02 ✅ (its last bit, the TDD goo write-up from the real code, is a docs job done alongside). F09 Story in play waits for its own sprint. Gesture fixes become their own feature once F10 says what misfires. Message timing playtest (F26 task 6): Muzzy, whenever (STATE).
 
 ## F10 ❓ Phone gestures without conflicts
-- [ ] 🤖 1. List every touch gesture, where they can collide, and a phone checklist — src/input/controls.ts → .planning/research/gestures.md
+- [x] 🤖 1. List every touch gesture, where they can collide, and a phone checklist — src/input/controls.ts → .planning/research/gestures.md (11 collisions, a 14-line checklist in §3; checked first-hand: hard-coded drag numbers controls.ts:28-31, second finger ignored, taps beside the tank wrap to the hidden back — geometry.ts screenToCell, nothing checks the column is visible)
 - [ ] 🙋 2. Phone playtest with the checklist — note every misread; then pick a fix per conflict (2–3 options each)
 
 ## F07 ❓ Releases: what alpha, beta and 1.0 must have
-- [ ] 🤖 3. Draft the must-haves per release + the build milestones after M0 (GDD, v1, parking lot, what's built) — .planning/research/release-scope.md
+- [x] 🤖 3. Draft the must-haves per release + the build milestones after M0 (GDD, v1, parking lot, what's built) — .planning/research/release-scope.md (alpha = ranks 0–9 done properly; M4 alpha F28–F38, M5 beta F39–F51, M6 1.0 F52–F57; corrected: the Dev Kit IS on in release builds today, content/devkit.json)
 - [ ] 🙋 4. Edit + approve → Claude writes them into ROADMAP + GDD §7
 
 ## Notes

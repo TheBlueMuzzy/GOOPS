@@ -40,7 +40,7 @@ Built? column: ✅ built in the remake · 🟡 partly · ❌ not built. "Ask Muz
 | Settings (goo style, wall kick, readout, volume rows) | ✅ F16 | alpha | must | Built. Volume rows exist but are switched off until there's sound. |
 | Three breakdowns + repairs at the console (laser 4, visor 2, controls 6) | ✅ F23–F25 | alpha | must | Built and softened. |
 | HUD (your layout) + plain-word messages at the stack | ✅ F26 | alpha | must | Message timing still waits on your playtest (F26 task 6). |
-| Dev Kit hidden in release builds | ✅ `src/main.tsx` (only on if `content/devkit.json` says so) | alpha | must | v1 leaked "RANK SELECT" into the live game. **Ask Muzzy:** leave the Dev Kit's **bug capture** switched on in the alpha so friends can send you a bug file? I'd say yes for alpha, off for 1.0. |
+| Dev Kit in release builds | ✅ switch built (`src/main.tsx` + `content/devkit.json`). **It is ON today** (`inReleaseBuilds: true` — the BMUZ default: testers can open it until 1.0; `/deliver` turns it off at 1.0) | 1.0: off | must | v1 leaked "RANK SELECT" into the live game. **Ask Muzzy:** for alpha keep the whole Dev Kit on (friends can capture bugs, but can also tweak/peek), or ship it off? I'd keep it on for alpha (bug files are worth it), off at 1.0. |
 
 ### Phone & release basics
 | Item | Built? | Release | Scope | Why |
@@ -116,7 +116,7 @@ Goal: a friend installs it from a link, learns it from "your first day", plays t
 - 📐 F35 🎮 Story ranks 0–9: rank titles + Employer beats — must:alpha · needs: F09, F30
 - 📐 F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25
 - 📐 F37 ❓ Version numbers + where alpha lives (+ bug capture on for friends?) — must:alpha
-- 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit off (or bug capture only), 60 fps on two real phones — must:alpha · needs: F37, F28
+- 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit on/off per Muzzy's call (on today), 60 fps on two real phones — must:alpha · needs: F37, F28
 ```mermaid
 flowchart LR
   F10[F10 Gestures] --> F28[F28 Gesture fixes]
