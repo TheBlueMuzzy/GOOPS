@@ -128,7 +128,33 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     ctx.lineWidth = Math.max(1, X.width * cp)
     ctx.setLineDash([X.dash * cp, X.gap * cp])
     ctx.lineDashOffset = still ? 0 : -timeSec * X.dashSpeed * cp
-    ctx.strokeRect(sx - cp / 2 - pad, top - pad, cp + 2 * pad, cp + 2 * pad)
+    const bx = sx - cp / 2 - pad, by = top - pad, bs = cp + 2 * pad
+    ctx.strokeRect(bx, by, bs, bs)
+    // inside the box it reads as the visor's screen: a faint tint + scan lines rolling down (Muzzy, 2026-10-19:
+    // "some sort of render effect … like they come from the visor"), and a wrong colour on the crack gets a pixel X
+    // ("this one won't seal")
+    ctx.save()
+    ctx.beginPath(); ctx.rect(bx, by, bs, bs); ctx.clip()
+    ctx.globalAlpha = X.tintAlpha
+    ctx.fillStyle = X.tint
+    ctx.fillRect(bx, by, bs, bs)
+    const gap = Math.max(2, X.scanGap * cp)
+    const roll = still ? 0 : (timeSec * X.scanSpeed * cp) % gap
+    ctx.globalAlpha = X.scanAlpha
+    for (let y = by - gap + roll; y < by + bs; y += gap) ctx.fillRect(bx, y, bs, Math.max(1, X.scanWidth * cp))
+    if (!c.plugged && X.wrongAlpha > 0) {
+      const n = Math.max(3, Math.round(X.wrongPixels)), size = X.wrongSize * cp, p = size / n
+      const x0 = sx - size / 2, y0 = top + (cp - size) / 2
+      ctx.globalAlpha = X.wrongAlpha
+      // a dark rim first, so the X still reads over a red crack
+      for (const [fill, grow] of [[X.wrongOutline, Math.max(1, p * 0.3)], [X.wrongColor, 0]] as const) {
+        ctx.fillStyle = fill
+        for (let i = 0; i < n; i++) for (const col of [i, n - 1 - i]) {
+          ctx.fillRect(Math.round(x0 + col * p - grow), Math.round(y0 + i * p - grow), Math.ceil(p + 2 * grow), Math.ceil(p + 2 * grow))
+        }
+      }
+    }
+    ctx.restore()
   }
   ctx.setLineDash([])
   ctx.lineDashOffset = 0

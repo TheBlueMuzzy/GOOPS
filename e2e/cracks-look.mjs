@@ -42,7 +42,7 @@ const setup = async (page) => page.evaluate(async () => {
   regroup(s, engine.book)
   for (const g of s.groups.values()) { g.fill = 1; engine.book.fillMs.set(g.id, 1e9) }
   const crack = (id, k, row, color) => ({ id, x: vis(k), y: yOf(row), color, plugged: s.grid[yOf(row) * s.width + vis(k)] === color })
-  s.cracks.push(crack(901, 1, 0, 1), crack(902, 3, 2, 4), crack(903, 5, 1, 1), crack(904, 8, 1, 3))
+  s.cracks.push(crack(901, 1, 0, 1), crack(902, 3, 2, 4), crack(903, 5, 1, 4), crack(904, 8, 1, 3))
   s.sealedCracks = [{ id: 801, x: vis(10), y: yOf(0) }, { id: 802, x: vis(10), y: yOf(3) }, { id: 803, x: vis(6), y: yOf(1) }]
   engine.setPressure(0.5)
   const at = (k, row) => yOf(row) * s.width + vis(k)
@@ -82,8 +82,16 @@ const probe = (page) => page.evaluate(() => {
   }
   const sealed = (s.sealedCracks ?? []).map((k) => ({ id: k.id, grey: greyAt(k.x, k.y) }))
   const control = greyAt((s.spin + 3) % s.width, s.height - 8)
+  // the pixel X (wrong colour on the crack: it will not seal): red pixels in the crack's cell
+  const redAt = (k) => {
+    const b = cellBox(k.x, k.y), d = px(b.left, b.top, b.size, b.size)
+    let red = 0
+    for (let i = 0; i < d.length; i += 4) if (d[i] > 190 && d[i + 1] < 90 && d[i + 2] < 100) red++
+    return red
+  }
+  const wrongX = Object.fromEntries(s.cracks.filter((k) => s.grid[k.y * s.width + k.x] !== 0).map((k) => [k.id, redAt(k)]))
   const bubbles = Object.fromEntries(s.cracks.map((k) => [k.id, window.__goops.bubbles.from(k.id)]))
-  return { xray, sealed, control, bubbles, gooXray: view.xray }
+  return { xray, sealed, control, bubbles, wrongX, gooXray: view.xray }
 })
 
 try {
@@ -98,12 +106,14 @@ try {
     await page.waitForTimeout(1500) // bubbles rise for a while
     const r = await probe(page)
     await page.screenshot({ path: `${OUT}/${name}.png` })
-    console.log(`${name} ${w}x${h}: bubbles ${JSON.stringify(r.bubbles)} · x-ray white px ${r.xray.map((x) => x.white).join('/')} · sealed grey px ${r.sealed.map((x) => x.grey).join('/')} (empty spot ${r.control})`)
+    console.log(`${name} ${w}x${h}: bubbles ${JSON.stringify(r.bubbles)} · x-ray white px ${r.xray.map((x) => x.white).join('/')} · sealed grey px ${r.sealed.map((x) => x.grey).join('/')} (empty spot ${r.control}) · red X px ${JSON.stringify(r.wrongX)}`)
     if (r.control >= 8) fail(`${name}: the scar probe sees grey where there is no scar (${r.control})`)
     for (const id of scene.open) if (!(r.bubbles[id] > 0)) fail(`${name}: open crack ${id} has no bubbles`)
     for (const id of [903, 904]) if (r.bubbles[id] > 0) fail(`${name}: covered crack ${id} is bubbling`)
     if (r.xray.length !== 2 || r.xray.some((x) => x.white < 3)) fail(`${name}: x-ray box missing`, JSON.stringify(r.xray))
     if (JSON.stringify([...(r.gooXray?.cells ?? [])].sort()) !== JSON.stringify([...scene.covered].sort())) fail(`${name}: goo not told the x-ray cells`, JSON.stringify(r.gooXray))
+    if (!(r.wrongX[903] >= 6)) fail(`${name}: no red X on the wrong-colour crack 903`, JSON.stringify(r.wrongX))
+    if (r.wrongX[904] > 2) fail(`${name}: a red X on the plugged (right colour) crack 904`, JSON.stringify(r.wrongX))
     if (r.sealed.length !== 3 || r.sealed.some((x) => x.grey < 8)) fail(`${name}: sealed scar missing`, JSON.stringify(r.sealed))
 
     if (name === 'phone') {
