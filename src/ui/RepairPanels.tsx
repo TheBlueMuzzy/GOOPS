@@ -8,7 +8,7 @@
 // "repair-<machine>" = the part that wants doing next (the blinking lamp, or the laser's next slider).
 import { Fragment, useEffect, useRef, useState, type PointerEvent } from 'react'
 import { ArtLayer, Button, SnapControl, fill } from './kit'
-import { controlsTurn, controlsDone, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide, visorWantsDown } from '../game/repairs'
+import { controlAnswers, controlsTurn, controlsDone, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide, visorWantsDown } from '../game/repairs'
 import { art } from './art'
 import { playUiSound } from '../game/sound'
 import { SOUNDS } from '../game/shiftSounds'
@@ -33,8 +33,15 @@ const laserTopRow = (at: [number, number, number, number]) => {
 }
 
 // fewerSteps: from upgrades (later); 0 today. showcase (F32): a lesson is showing this panel off ("Fixed!") — it looks
-// switched on (not dimmed) though there's nothing to do on it
-type PanelProps = { live: boolean; onRepair(): void; fewerSteps?: number; showcase?: boolean }
+// switched on (not dimmed) though there's nothing to do on it. outlined (F32): the tags a lesson step outlines now
+type PanelProps = { live: boolean; onRepair(): void; fewerSteps?: number; showcase?: boolean; outlined?: string[] }
+
+// (during a lesson only the outlined part answers: controlAnswers, src/game/repairs.ts)
+// the panel's "no" wobble and sound (a wrong button, a slider touched out of turn, a part the lesson isn't showing)
+function useWrong() {
+  const [shake, setShake] = useState(0)
+  return [shake, () => { setShake((n) => n + 1); playUiSound(SOUNDS.wrong) }] as const
+}
 
 // calls onRepair once, the moment the puzzle is solved
 function useSolved(solved: boolean, onRepair: () => void) {
@@ -90,8 +97,9 @@ function Lamp({ at, lit, blink, live, tag, side }: { at: [number, number, number
 }
 
 // LASER: the sliders light up (all 4: repairSteps('laser')), each wanting left or right (its lamp at that end blinks until the knob is there)
-export function LaserPanel({ live, onRepair, fewerSteps, showcase }: PanelProps) {
+export function LaserPanel({ live, onRepair, fewerSteps, showcase, outlined = [] }: PanelProps) {
   const [want] = useState(() => newLaser(Math.random, repairSteps('laser', fewerSteps)))
+  const [shake, wrong] = useWrong()
   const [pos, setPos] = useState([1, 1, 1, 1]) // every knob starts in the middle
   useSolved(live && laserSolved(want, pos), onRepair)
   useStepSound(want.filter((w, i) => w !== null && pos[i] === w).length, live)
@@ -99,20 +107,22 @@ export function LaserPanel({ live, onRepair, fewerSteps, showcase }: PanelProps)
   const on = live || !!showcase
   return (
     <>
-      <ArtLayer {...a.laser} off={!on} label={on ? undefined : offLabel(t.laser)}><LessonTag tag="panel-laser" /></ArtLayer>
-      <ArtLayer {...a.words.laser} tone="primary" off={!on}>{t.laser}</ArtLayer>
+      <ArtLayer {...a.laser} off={!on} shake={shake} label={on ? undefined : offLabel(t.laser)}><LessonTag tag="panel-laser" /></ArtLayer>
+      <ArtLayer {...a.words.laser} tone="primary" off={!on} shake={shake}>{t.laser}</ArtLayer>
       {r.laser.sliders.map((at, i) => (
         <SliderRow key={i} at={at} lamps={r.laser.lamps[i]} live={live} on={on} want={live ? want[i] : null} value={pos[i]} next={i === next}
+          locked={live && !controlAnswers(outlined, i === next ? 'repair-laser' : undefined)} onLocked={wrong} shake={shake}
           label={fill(t.laserSlider, { n: i + 1 })} onChange={(v) => setPos((p) => p.map((old, k) => (k === i ? v : old)))} />
       ))}
     </>
   )
 }
-function SliderRow({ at, lamps, live, on, want, value, next, label, onChange }: {
+function SliderRow({ at, lamps, live, on, want, value, next, locked, onLocked, shake, label, onChange }: {
   at: [number, number, number, number]; lamps: [number, number, number, number][]; live: boolean; on: boolean; want: 0 | 2 | null
-  value: number; next: boolean; label: string; onChange(v: number): void
+  value: number; next: boolean; locked: boolean; onLocked(): void; shake: number; label: string; onChange(v: number): void
 }) {
-  const drag = useDragOnly()
+  // (locked: a lesson outlines another part — this one doesn't move, a touch shakes the panel)
+  const drag = useDragOnly(() => { if (locked) onLocked() })
   const side = laserTopRow(at) ? 'top' : 'bottom'
   return (
     <>
@@ -122,11 +132,11 @@ function SliderRow({ at, lamps, live, on, want, value, next, label, onChange }: 
         return <Lamp key={end} at={lampAt} live={on} lit={want === stop} blink={value !== stop ? 'fast' : undefined}
           tag={next && want === stop ? 'repair-laser' : undefined} side={side} />
       })}
-      <ArtLayer at={at} off={!on}>
+      <ArtLayer at={at} off={!on} shake={shake}>
         {next && <LessonTag tag="repair-laser" placement={side} />}
         <div className="repair-grab" {...drag.handlers}>
           <SnapControl label={label} stops={3} knob={r.knobShare} value={value} onChange={(v) => { if (!drag.tapping()) onChange(v) }}
-            disabled={!live} valueText={(v) => t.positions[v]}>
+            disabled={!live || locked} valueText={(v) => t.positions[v]}>
             <img src={r.knob} alt="" draggable={false} />
           </SnapControl>
         </div>
@@ -137,13 +147,12 @@ function SliderRow({ at, lamps, live, on, want, value, next, label, onChange }: 
 
 // VISOR (the RESET VISOR panel): top lamp blinks → slide up → the lit button, three times (repairSteps('visor')) → bottom lamp → slide down.
 // The slider only moves when it's asked for (otherwise it springs back); a wrong button shakes the panel, nothing resets.
-export function VisorPanel({ live, onRepair, fewerSteps, showcase }: PanelProps) {
+export function VisorPanel({ live, onRepair, fewerSteps, showcase, outlined = [] }: PanelProps) {
   const [v, setV] = useState(() => newVisor(Math.random, repairSteps('visor', fewerSteps)))
-  const [shake, setShake] = useState(0)
+  const [shake, wrong] = useWrong()
   useSolved(live && visorDone(v), onRepair)
   useStepSound(v.step, live)
   const lit = live ? visorLitButton(v) : null
-  const wrong = () => { setShake((n) => n + 1); playUiSound(SOUNDS.wrong) }
   const press = (b: number) => {
     const next = visorPress(v, b)
     if (next.wrong) wrong()
@@ -152,7 +161,10 @@ export function VisorPanel({ live, onRepair, fewerSteps, showcase }: PanelProps)
   // the slider is a real drag (no tap), and touching it while it isn't asked for (the buttons' turn) shakes the panel,
   // like a wrong button (F32, Muzzy)
   const sliderWanted = v.step === 0 || visorWantsDown(v)
-  const drag = useDragOnly(() => { if (live && !sliderWanted) wrong() })
+  const sliderTag = live && sliderWanted // (the lesson's outline: the lit lamp and the slider, together)
+  const sliderLocked = live && !controlAnswers(outlined, sliderTag ? 'repair-visor' : undefined) // (a lesson outlines another part)
+  const buttonLocked = (i: number) => !controlAnswers(outlined, lit === i ? 'repair-visor' : undefined)
+  const drag = useDragOnly(() => { if (live && (!sliderWanted || sliderLocked)) wrong() })
   const slide = (to: number) => {
     if (drag.tapping()) return
     const next = visorSlide(v, to as 0 | 1)
@@ -160,7 +172,6 @@ export function VisorPanel({ live, onRepair, fewerSteps, showcase }: PanelProps)
     else if (!drag.pointer()) wrong() // (keys: the press itself didn't shake it)
   }
   const on = live || !!showcase
-  const sliderTag = live && sliderWanted // (the lesson's outline: the lit lamp and the slider, together)
   return (
     <>
       <ArtLayer {...a.lights} off={!on} shake={shake} label={on ? undefined : offLabel(t.lights)}><LessonTag tag="panel-visor" /></ArtLayer>
@@ -174,7 +185,7 @@ export function VisorPanel({ live, onRepair, fewerSteps, showcase }: PanelProps)
       <ArtLayer at={r.visor.slider} off={!on} shake={shake}>
         {sliderTag && <LessonTag tag="repair-visor" placement={v.step === 0 ? 'left' : 'bottom'} say="fixSlide" />}
         <div className="repair-grab" {...drag.handlers}>
-          <SnapControl label={t.visorSlider} axis="y" stops={2} knob={r.knobShare} value={v.slider} disabled={!live}
+          <SnapControl label={t.visorSlider} axis="y" stops={2} knob={r.knobShare} value={v.slider} disabled={!live || sliderLocked}
             onChange={slide} valueText={(k) => t.upDown[k]}>
             <img src={r.knob} alt="" draggable={false} />
           </SnapControl>
@@ -185,7 +196,7 @@ export function VisorPanel({ live, onRepair, fewerSteps, showcase }: PanelProps)
           <Lamp at={b.lamp} live={on} lit={lit === i} blink="slow" tag={lit === i ? 'repair-visor' : undefined} side="right" />
           <ArtLayer at={b.at} off={!on} shake={shake}>
             {lit === i && <LessonTag tag="repair-visor" placement="right" say="fixButton" />}
-            <Button art={b.art} disabled={!on} onClick={() => { if (live) press(i) }}>{t.visorButtons[i]}</Button>
+            <Button art={b.art} disabled={!on} onClick={() => { if (live) { if (buttonLocked(i)) wrong(); else press(i) } }}>{t.visorButtons[i]}</Button>
           </ArtLayer>
         </Fragment>
       ))}
@@ -194,26 +205,30 @@ export function VisorPanel({ live, onRepair, fewerSteps, showcase }: PanelProps)
 }
 
 // CONTROLS: one corner lamp blinks; turn the dial's arrow to it and it locks by itself; then the next; 4 in all (repairSteps('controls'))
-export function ControlsPanel({ live, onRepair, fewerSteps, showcase }: PanelProps) {
+export function ControlsPanel({ live, onRepair, fewerSteps, showcase, outlined = [] }: PanelProps) {
   const [c, setC] = useState(() => newControls(Math.random, repairSteps('controls', fewerSteps)))
+  const [shake, wrong] = useWrong()
   useSolved(live && controlsDone(c), onRepair)
   useStepSound(c.step, live)
   const target = live && !controlsDone(c) ? c.targets[c.step] : null
   const on = live || !!showcase
+  const locked = live && !controlAnswers(outlined, target !== null ? 'repair-controls' : undefined) // (a lesson outlines another part)
   return (
     <>
-      <ArtLayer {...a.controls} off={!on} label={on ? undefined : offLabel(t.controls)}><LessonTag tag="panel-controls" /></ArtLayer>
-      <ArtLayer {...a.words.controls} tone="primary" off={!on}>{t.controls}</ArtLayer>
+      <ArtLayer {...a.controls} off={!on} shake={shake} label={on ? undefined : offLabel(t.controls)}><LessonTag tag="panel-controls" /></ArtLayer>
+      <ArtLayer {...a.words.controls} tone="primary" off={!on} shake={shake}>{t.controls}</ArtLayer>
       {/* (a bubble, on a phone on its side: above the top corners, below the bottom ones — never over the dial) */}
       {r.controls.lamps.map((at, k) => <Lamp key={k} at={at} live={on} lit={target === k} blink="fast"
         tag={target === k ? 'repair-controls' : undefined} side={k < 2 ? 'top' : 'bottom'} />)}
-      <ArtLayer at={r.controls.dialAt} off={!on}>
+      <ArtLayer at={r.controls.dialAt} off={!on} shake={shake}>
         {/* (the lesson's outline: the blinking corner and the dial, together) */}
         {target !== null && <LessonTag tag="repair-controls" placement={target < 2 ? 'top' : 'bottom'} />}
-        <SnapControl kind="turn" label={t.dial} angles={r.controls.angles} value={c.dial} disabled={!live}
-          onChange={(k) => setC((now) => controlsTurn(now, k))} valueText={(k) => t.corners[k]}>
-          <img src={r.controls.dial} alt="" draggable={false} />
-        </SnapControl>
+        <div className="repair-grab" onPointerDownCapture={(e) => { if (locked && e.button === 0) wrong() }}>
+          <SnapControl kind="turn" label={t.dial} angles={r.controls.angles} value={c.dial} disabled={!live || locked}
+            onChange={(k) => setC((now) => controlsTurn(now, k))} valueText={(k) => t.corners[k]}>
+            <img src={r.controls.dial} alt="" draggable={false} />
+          </SnapControl>
+        </div>
       </ArtLayer>
     </>
   )

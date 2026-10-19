@@ -1,0 +1,50 @@
+/* F32 (Muzzy, 2026-10-19: "keep the dark blue background and the font, but the text should have a greenish glow to
+   it, and have slight scanlines … make it look like old DOS"): the console monitor's words (Console.tsx Crt, src/game/
+   crt.ts). Every value comes from content/tuning/crt.json as a CSS variable (live in the Dev Kit's Tuning tab).
+   Sizes: --u = one console art unit in px (Console.tsx measures it); em = the words' own size. */
+
+/* the words: phosphor green with a soft glow */
+.crt-words { color: var(--crt-ink); position: relative; z-index: 1;
+  text-shadow: 0 0 calc(var(--crt-glow-size) * 1em) color-mix(in srgb, var(--crt-glow) var(--crt-glow-strength), transparent),
+    0 0 calc(var(--crt-glow-size) * 0.3em) color-mix(in srgb, var(--crt-glow) var(--crt-glow-strength), transparent);
+  animation: crt-wobble var(--crt-wobble-time) steps(1) infinite; }
+/* the letters not typed yet: laid out already (so the screen never changes size), just not shown */
+.crt-rest { color: transparent; text-shadow: none; }
+
+/* the block cursor where the next letter goes (an empty mark between the typed and untyped letters: it takes no room,
+   the block hangs off it, as tall as a line of letters) */
+.crt-cursor { position: relative; }
+.crt-cursor::after { content: ''; position: absolute; inset-block: 0; inset-inline-start: 0.04em; inline-size: calc(var(--crt-cursor-w) * 1em);
+  background: var(--crt-ink); pointer-events: none;
+  box-shadow: 0 0 calc(var(--crt-glow-size) * 0.6em) color-mix(in srgb, var(--crt-glow) var(--crt-glow-strength), transparent);
+  animation: crt-blink var(--crt-blink) steps(1) infinite; }
+.crt[data-blink="off"] .crt-cursor::after { animation: none; }
+/* (while the letters come, the cursor stays lit, like a real terminal's; it blinks once they stop) */
+.crt[data-typing] .crt-cursor::after { animation: none; }
+@keyframes crt-blink { 50% { opacity: 0; } }
+
+/* faint scan lines over the whole screen (over the words too, like the real thing; Got it stays on top, clean) */
+.crt::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit;
+  background: repeating-linear-gradient(to bottom,
+    transparent 0, transparent calc(var(--crt-scan-gap) * (1 - var(--crt-scan-line)) * var(--u, 1px)),
+    color-mix(in srgb, black var(--crt-scan-strength), transparent) calc(var(--crt-scan-gap) * (1 - var(--crt-scan-line)) * var(--u, 1px)),
+    color-mix(in srgb, black var(--crt-scan-strength), transparent) calc(var(--crt-scan-gap) * var(--u, 1px))); }
+.crt-body > button { position: relative; z-index: 3; }
+
+/* the phase wobble: now and then the words jitter sideways for a blink of an eye */
+@keyframes crt-wobble {
+  0% { translate: 0; }
+  91% { translate: calc(var(--crt-wobble) * 1em) 0; }
+  92.5% { translate: calc(var(--crt-wobble) * -1em) 0; }
+  94% { translate: calc(var(--crt-wobble) * 0.5em) 0; }
+  95.5% { translate: 0; }
+}
+
+/* reduce motion: no blink, no wobble (the words are all there at once — crt.ts) */
+@media (prefers-reduced-motion: reduce) {
+  .crt-words, .crt-cursor::after { animation: none; }
+}
+:root[data-reduce-motion] .crt-words, :root[data-reduce-motion] .crt-cursor::after { animation: none; }
+
+/* the whole text for screen readers (the typed letters on show are hidden from them) */
+.crt-read { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

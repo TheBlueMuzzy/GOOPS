@@ -16,6 +16,8 @@ import { playUiSound } from '../game/sound'
 import { SOUNDS } from '../game/shiftSounds'
 import { art } from './art'
 import { useShort } from './useShort'
+import { useCrtLook, useTyped } from '../game/crt'
+import crtTuning from '../../content/tuning/crt.json'
 import text from '../../content/text/en.json'
 
 export type ConsolePhase = 'idle' | 'leaving' | 'arriving'
@@ -37,13 +39,14 @@ const t = text.console
 const a = art.console
 const format = (n: number) => n.toLocaleString('en')
 const MACHINES: MachineId[] = ['laser', 'visor', 'controls']
+const NOTHING: string[] = []
 
 
 // THE MONITOR'S SCREEN (F32, Muzzy 2026-10-19: "use the CRT panel at the top of the console as our tutorial bubbles. it
 // just toasters down if it needs more room"): its words (the hint), or a lesson's line with its Got it. Words that
 // need more room than the screen has make it slide down past the bezel, in the screen's colours (art.json console.crt).
 type CrtLine = { text: string; gotIt: boolean; onGotIt(): void }
-function Crt({ hint, accent, lesson }: { hint: string; accent: boolean; lesson: CrtLine | null }) {
+function Crt({ hint, lesson }: { hint: string; lesson: CrtLine | null }) {
   const c = a.crt, [x, y, w, h] = a.words.hint.at
   const box = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
@@ -66,13 +69,24 @@ function Crt({ hint, accent, lesson }: { hint: string; accent: boolean; lesson: 
     return () => ro.disconnect()
   }, [c.screenBottom, c.screenTop, y, w])
   const height = fit ? fit.height + 'px' : undefined, unit = fit ? fit.unit + 'px' : undefined
+  // F32 (Muzzy: "make it look like old DOS"): green glowing words over scan lines, typed out letter by letter with a
+  // block cursor where the next letter goes (src/game/crt.ts + crt.css; content/tuning/crt.json). The whole text is
+  // laid out from the first frame — the letters not typed yet are there, unseen — so the screen never changes size.
+  // (a broken machine's hint used to be in the accent colour: every word on the monitor is phosphor green now)
+  const words = lesson ? lesson.text : hint
+  const typed = useTyped(words)
+  const look = useCrtLook()
   return (
-    <ArtLayer at={[x, y, w, h]} text={a.words.hint.text} tone={!lesson && accent ? 'accent' : undefined}>
-      <div ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined}
-        style={{ '--crt-inset': x - c.screenLeft, '--crt-top': y - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
+    <ArtLayer at={[x, y, w, h]} text={a.words.hint.text}>
+      <div ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined} data-typing={typed < words.length || undefined}
+        data-blink={crtTuning.cursorBlinkSeconds > 0 ? undefined : 'off'}
+        style={{ ...look, '--crt-inset': x - c.screenLeft, '--crt-top': y - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
           '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
         <div ref={body} className="crt-body">
-          <span className="lesson-words">{lesson ? lesson.text : hint}</span>
+          <span className="crt-read">{words}</span>
+          <span className="lesson-words crt-words" aria-hidden>
+            {words.slice(0, typed)}<span className="crt-cursor" /><span className="crt-rest">{words.slice(typed)}</span>
+          </span>
           {lesson?.gotIt && <Button onClick={lesson.onGotIt}>{text.lessons.gotIt}</Button>}
         </div>
       </div>
@@ -96,6 +110,8 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const lessonLine = useCrtLesson()
   const spotlit = useSpotlitTags()
   const showcase = (id: MachineId) => !!midShift && spotlit.includes(`panel-${id}`)
+  // (and while a lesson step outlines a part, only that part answers — the other controls shake: RepairPanels.tsx)
+  const outlined = midShift ? spotlit : NOTHING
 
   return (
     <Screen label={t.label} column backdrop={a.backdrop}
@@ -111,9 +127,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             words={{ label: t.rank, unit: t.xp, max: t.maxRank }} art={a.meterFill}
             steps={steps.length ? steps : undefined} play={phase === 'idle'} />
         </ArtLayer>
-        <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} />
-        <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} />
-        <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} />
+        <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} outlined={outlined} />
+        <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
+        <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
         <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{fill(t.version, { v: import.meta.env.GOOPS_VERSION })}</ArtLayer>
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>
@@ -124,7 +140,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor}><LessonTag tag="monitor" /></ArtLayer>
-        <Crt hint={hint} accent={broken.length > 0} lesson={midShift ? lessonLine : null} />
+        <Crt hint={hint} lesson={midShift ? lessonLine : null} />
       </ArtStage>
     </Screen>
   )

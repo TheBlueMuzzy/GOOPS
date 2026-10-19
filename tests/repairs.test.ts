@@ -1,7 +1,7 @@
 // F24: the console's repair puzzles (src/game/repairs.ts) — Muzzy's rules, 2026-10-18.
 import { describe, expect, it } from 'vitest'
 import breakdowns from '../content/tuning/breakdowns.json'
-import { controlsDone, controlsTurn, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide } from '../src/game/repairs'
+import { controlAnswers, controlsDone, controlsTurn, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide } from '../src/game/repairs'
 
 // a seeded random (mulberry32), so every run is the same
 const seeded = (seed: number) => () => {
@@ -113,5 +113,21 @@ describe('controls (the dial)', () => {
     expect(c.dial).toBe(other)
     for (let i = 0; i < 4; i++) c = controlsTurn(c, c.targets[i])
     expect(controlsDone(c)).toBe(true)
+  })
+})
+
+// F32 (Muzzy's second try): during a lesson only the outlined part answers; with no lesson every control does
+describe('during a lesson only the outlined part answers', () => {
+  it('no lesson (nothing outlined): every control works', () => {
+    expect(controlAnswers([], undefined)).toBe(true)
+    expect(controlAnswers([], 'repair-laser')).toBe(true)
+  })
+  it('a step outlines a part: that part works, the others do not', () => {
+    expect(controlAnswers(['repair-laser'], 'repair-laser')).toBe(true)
+    expect(controlAnswers(['repair-laser'], undefined)).toBe(false)
+    expect(controlAnswers(['repair-laser'], 'repair-visor')).toBe(false)
+  })
+  it('a step outlining something else (the monitor): no repair control works', () => {
+    expect(controlAnswers(['monitor', 'crt'], 'repair-visor')).toBe(false)
   })
 })
