@@ -14,6 +14,9 @@ export const session = {
   inShift: false,
   /** Put a saved moment back: App makes a new engine from it and shows the tank. null = back to the console. */
   restore: null as ((snapshot: ShiftSnapshot | null) => void) | null,
+  /** F30: play a lesson from a step (1 = the first, or a step id) in a new training shift, straight away. App sets it.
+   *  false = no such lesson. (The Dev Kit's Lessons tab and window.__goops.lesson use it.) */
+  startLesson: null as ((id: string, step?: number | string) => boolean) | null,
   /** ShiftStage: this frame's events, after the engine gave them. */
   emit(events: ShiftEvent[]) {
     for (const l of listeners) l(events)

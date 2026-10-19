@@ -7,4 +7,6 @@ export { NEUTRAL_MODIFIERS, NO_FEWER_REPAIR_STEPS, clampModifiers, playableUpgra
 export type { FewerRepairSteps, Modifiers, ModifierName, ResolvedUpgrades, UpgradeBook, UpgradeDef } from './upgrades'
 export type { AbilitySpec, ActiveEffects } from './abilities'
 export { MACHINE_IDS } from './machines'
+export { TRAINING_START } from './training'
+export type { PieceChoice, TrainingCommand, TrainingRules } from './training'
 export type { BreakdownConfig } from './machines'
