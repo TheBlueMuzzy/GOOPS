@@ -137,6 +137,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
   }
   function heard(kind: 'event' | 'action', name: string, data?: Record<string, unknown>) {
     for (const w of [...watchers]) {
+      if (!watchers.includes(w)) continue // an earlier watcher moved the lesson on: this one belongs to the old step
       const c = w.cond
       if (c.on !== kind) continue
       if ((c.on === 'event' ? c.event : c.on === 'action' ? c.action : '') !== name) continue

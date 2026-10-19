@@ -153,6 +153,7 @@ export interface ShiftEngine {
   // F30 lessons: a command for a TRAINING shift (createShift with options.training; src/engine/training.ts) — choose
   // the next pieces, bring one in, place goop / cracks, set pressure, switch rules. false = refused (or not training).
   train(command: import('./training').TrainingCommand): boolean
+  allows(type: ShiftAction['type']): boolean // does this control work right now? (false only in a lesson step that blocks it)
   // The Dev Kit's Snapshots (src/engine/snapshot.ts): this exact moment as plain JSON, and putting one back.
   // restore() needs an engine made with the snapshot's own options (restoreShift does both).
   snapshot(): import('./snapshot').ShiftSnapshot

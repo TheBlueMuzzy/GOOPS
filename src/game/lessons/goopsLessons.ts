@@ -147,13 +147,15 @@ export const lessonPlay = {
     anchorSpin = e.state.spin
     return {
       get state() { return e.state },
-      act(action: ShiftAction) { e.act(action); runner.action(action.type) },
+      // (a control the step blocks isn't heard either, so it can't move the lesson on)
+      act(action: ShiftAction) { const heard = e.allows(action.type); e.act(action); if (heard) runner.action(action.type) },
       tick: (ms) => e.tick(ms),
       takeEvents: () => e.takeEvents(),
       setWallKick: (mode) => e.setWallKick(mode),
       snapshot: () => e.snapshot(),
       restore: (snap) => e.restore(snap),
       train: (cmd) => e.train(cmd),
+      allows: (type) => e.allows(type),
     }
   },
   /** Start a lesson at a step (1 = the first; or a step id). Unknown lesson → false. */

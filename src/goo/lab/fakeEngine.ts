@@ -288,4 +288,5 @@ export class FakeEngine implements ShiftEngine {
   snapshot(): never { throw new Error('The goo lab fake engine has no snapshots.') }
   restore(): void { throw new Error('The goo lab fake engine has no snapshots.') }
   train(): boolean { return false } // (no lessons in the goo lab)
+  allows(): boolean { return true }
 }

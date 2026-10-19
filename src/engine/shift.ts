@@ -250,8 +250,7 @@ class Shift implements ShiftEngine {
     if (this.state.status !== 'playing') return
     // a lesson step that only allows some controls: the others do nothing (no "nope" — the lesson says what to do)
     // (going to the console is never blocked: the game sends it on its own when the console slides over the tank)
-    const allow = this.training?.allow
-    if (allow && action.type !== 'console' && !allow.includes(action.type)) return
+    if (!this.allows(action.type)) return
     let ok = true
     this.rejectReason = undefined
     switch (action.type) {
@@ -608,6 +607,12 @@ class Shift implements ShiftEngine {
   }
 
   // ---------------------------------------------------------------- training (F30 lessons; training.ts)
+
+  // Does this control work right now? (Always, except in a lesson step that only allows some.)
+  allows(type: ShiftAction['type']): boolean {
+    const allow = this.training?.allow
+    return !allow || type === 'console' || allow.includes(type)
+  }
 
   // A lesson's command. false = refused (not a training shift, or the command can't happen) — nothing changed then.
   train(cmd: TrainingCommand): boolean {
