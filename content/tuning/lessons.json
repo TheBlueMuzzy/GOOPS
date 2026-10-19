@@ -1,0 +1,19 @@
+{
+  "_help": {
+    "_file": "Timings shared by every lesson (F30, src/game/lessons/). Each lesson's own timings (showAfter, hint after…) are in its file in content/lessons/ — the Dev Kit's Lessons tab edits those live.",
+    "dismissArmSeconds": "A message that waits for 'Got it' can't be closed for this long after it appears (so a tap meant for the game doesn't close it unread).",
+    "betweenStepsSeconds": "A short breath between one step ending and the next starting.",
+    "slowSpeed": "How fast the game runs under a step that shows its message with \"while\": \"slow\" (1 = normal speed).",
+    "gatePollMs": "How often a step checks its gate (the piece's row, the pressure…), in ms."
+  },
+  "_labels": {
+    "dismissArmSeconds": "Got it: works after (s)",
+    "betweenStepsSeconds": "Pause between steps (s)",
+    "slowSpeed": "Slow message: game speed",
+    "gatePollMs": "Gate check every (ms)"
+  },
+  "dismissArmSeconds": 0.4,
+  "betweenStepsSeconds": 0.5,
+  "slowSpeed": 0.3,
+  "gatePollMs": 100
+}

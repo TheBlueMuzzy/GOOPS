@@ -92,5 +92,30 @@
     "xp": "XP",
     "xpValue": "+{xp}",
     "xpRankUp": "+{xp} · Rank up! {rank}"
+  },
+  "lessons": {
+    "gotIt": "Got it",
+    "sample": {
+      "welcome": "Goop drops into the tank from up here.",
+      "falls": "It falls on its own.",
+      "fastDrop": {
+        "keys": "Too slow? Hold S (or ↓) to fast-drop it.",
+        "mouse": "Too slow? Hold S (or ↓) to fast-drop it.",
+        "phone": "Too slow? Drag down to fast-drop it."
+      },
+      "fastDropHint": {
+        "keys": "Hold S to drop it faster.",
+        "mouse": "Hold S to drop it faster.",
+        "phone": "Drag down and hold to drop it faster."
+      },
+      "zap": {
+        "keys": "Goop on the line can be zapped. Click the green goop.",
+        "mouse": "Goop on the line can be zapped. Click the green goop.",
+        "phone": "Goop on the line can be zapped. Tap the green goop."
+      },
+      "zapHint": "Zap the green goop to clear it.",
+      "pressure": "Pressure rises over time: {pressure}% now.",
+      "done": "That's the sample lesson. The shift carries on from here."
+    }
   }
 }

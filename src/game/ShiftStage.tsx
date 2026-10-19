@@ -26,6 +26,7 @@ import pauseTuning from '../../content/tuning/pause.json'
 import { clockPause, looksClock, rulesClock } from '../devkit/gameClock'
 import { onTuning } from '../devkit/tuning/liveTuning'
 import { session } from './session'
+import { lessonPlay, placeLessonMark, runner as lessonRunner } from './lessons/goopsLessons'
 import { playGameSound, playShiftSounds } from './sound'
 import { SOUNDS } from './shiftSounds'
 import './game.css'
@@ -71,6 +72,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
   const gooCanvas = useRef<HTMLCanvasElement>(null)
   const readoutCanvas = useRef<HTMLCanvasElement>(null)
   const readoutEl = useRef<HTMLDivElement>(null)
+  const lessonMark = useRef<HTMLDivElement>(null)
   const live = useRef({ inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
   useEffect(() => { live.current = { inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
@@ -159,7 +161,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       const looksMs = looksClock.now()
       const dt = Math.min((looksMs - last) / 1000, 0.1)
       last = looksMs
-      const rate = rulesClock.rate
+      // (× a lesson's speed: 0 while a lesson message pauses the shift, src/game/lessons/goopsLessons.ts)
+      const rate = rulesClock.rate * lessonPlay.speed()
       const active = rate > 0 && s.status === 'playing'
       // ◐ the Dev Kit's half pause: the rules stand still, the looks (wave, pulses, glide, goo) keep moving
       const half = clockPause() === 'half' && s.status === 'playing'
@@ -178,6 +181,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
       visorFx.current?.frame(s, view, looksMs / 1000)
+      placeLessonMark(lessonMark.current, s, view) // what a lesson message points at (F30)
       readoutDrawn = placeReadout(readoutEl.current, rctx, s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0, readoutDrawn)
       // count new breakdowns BEFORE the HUD snapshot: the console keys each repair panel by its break count, so a
       // snapshot saying "broken" with the old count would re-light an already-solved panel (a free repair)
@@ -246,7 +250,10 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       fastDrop: softDrop,
       bubbles: { count: () => bubbles.count(), from: (crackId: number) => bubbles.from(crackId) }, // F36 e2e/cracks-look.mjs
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
-      clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }) }
+      clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }),
+      // F30 lessons: lesson('sample', 3) plays a lesson from a step (1 = the first, or a step id); lessonView(): where it is
+      lesson: (id: string, step: number | string = 1) => session.startLesson?.(id, step) ?? false,
+      lessonView: () => lessonRunner.view() }
 
     const detach = attachControls(el, {
       spin: (dir) => engine.act({ type: 'spin', dir }),
@@ -265,7 +272,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
         engine.act({ type: 'pop', x, y })
         return true
       },
-    }, () => live.current.inputOn && rulesClock.rate > 0 && s.status === 'playing')
+    }, () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.inputOn() && s.status === 'playing')
 
     return () => {
       cancelAnimationFrame(raf); ro.disconnect(); detach(); stopHudEdits()
@@ -283,6 +290,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>
       </div>
+      {/* F30: an invisible box the frame loop puts over what a lesson message points at (a cell, the falling piece) —
+          the kit's Callout points at it and rings it */}
+      <div className="stage-pin lesson-mark" ref={lessonMark} aria-hidden />
     </div>
   )
 }

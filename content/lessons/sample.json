@@ -1,0 +1,54 @@
+{
+  "_about": "A small SAMPLE lesson that proves the lesson runner (F30) — not the real tutorial (that's F31, from .planning/research/tutorial.md). Words: content/text/en.json → lessons.sample. Cells are [column from the middle of the view (0 = where pieces fall, -1 = one left), row from the floor (0 = the bottom row), colour]. Times in seconds. The format: src/game/lessons/lessonTypes.ts; what Goops understands in setup / gates / pointers: src/game/lessons/goopsLessons.ts.",
+  "id": "sample",
+  "start": { "clear": true, "rules": { "autoSpawn": false, "allow": [] } },
+  "finish": { "play": "normal" },
+  "steps": [
+    {
+      "id": "welcome",
+      "pattern": "pauseShowDismiss",
+      "setup": { "pieces": [{ "shape": "T_I", "color": "blue" }], "spawn": true },
+      "message": "welcome",
+      "pointer": { "piece": true }
+    },
+    {
+      "id": "falls",
+      "pattern": "positionGated",
+      "message": "falls",
+      "pointer": { "piece": true },
+      "advance": { "on": "gate", "gate": "position", "atLeast": 5 }
+    },
+    {
+      "id": "fastDrop",
+      "pattern": "waitThenHint",
+      "setup": { "rules": { "allow": ["softDrop"] } },
+      "message": "fastDrop",
+      "pointer": { "piece": true },
+      "advance": { "on": "event", "event": "lock" },
+      "hint": { "after": 4, "message": "fastDropHint" }
+    },
+    {
+      "id": "zap",
+      "pattern": "waitThenHint",
+      "setup": { "goop": [[2, 0, "green"], [3, 0, "green"], [4, 0, "green"]], "rules": { "allow": ["pop"], "zapColors": ["green"] } },
+      "message": "zap",
+      "pointer": { "cell": [3, 0] },
+      "showAfter": 0.3,
+      "advance": { "on": "event", "event": "pop" },
+      "hint": { "after": 5, "message": "zapHint" }
+    },
+    {
+      "id": "pressure",
+      "pattern": "pressureGated",
+      "setup": { "rules": { "pressureRise": 8, "pressureCap": 0.5, "allow": [] } },
+      "message": "pressure",
+      "pointer": { "tag": "readout" },
+      "advance": { "on": "gate", "gate": "pressure", "atLeast": 30 }
+    },
+    {
+      "id": "done",
+      "pattern": "pauseShowDismiss",
+      "message": "done"
+    }
+  ]
+}

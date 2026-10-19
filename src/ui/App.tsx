@@ -14,6 +14,8 @@ import { looksClock } from '../devkit/gameClock'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { readoutSetting } from '../game/readoutSetting'
 import type { Message } from '../game/messages'
+import { lessonFromUrl, lessonNow, lessonPlay } from '../game/lessons/goopsLessons'
+import { LessonView } from '../game/lessons/LessonView'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
@@ -36,13 +38,15 @@ const fill = (s: string, vars: Record<string, number | string>) => s.replace(/\{
 
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.
 // The shift plays at the player's saved rank (colours, starting junk, crack quota). Dev/tests: ?rank=12 forces one.
-function newEngine(progress: Progress): ShiftEngine {
+// training = a lesson's shift (F30, src/engine/training.ts): empty, held still, the lesson sets it up step by step.
+function newEngine(progress: Progress, training = false): ShiftEngine {
   const params = new URLSearchParams(location.search)
   const seed = Number(params.get('seed')) || Math.floor(Math.random() * 1e9)
   const forced = import.meta.env.DEV ? params.get('rank') : null
   const rank = forced !== null ? Number(forced) : rankInfo(progress).rank
-  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns })
+  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, ...(training ? { training: {} } : {}) })
 }
+type LessonStart = { id: string; step: number | string }
 
 const SettingsScreen = () => (
   <Settings schema={settings} onChange={(values) => {
@@ -54,6 +58,7 @@ const SettingsScreen = () => (
 // LOOKS time (src/devkit/gameClock.ts): the Dev Kit's full pause holds it on screen, so the frozen picture stays whole.
 const ONE_DAY_S = 86_400 // (the kit's own timer, never reached: the looks clock takes it away)
 const onMessage = (m: Message) => {
+  if (lessonPlay.messageUp()) return // a lesson message is up: the game's own messages keep quiet (F30)
   const id = toast(text.messages[m.key], { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
@@ -80,19 +85,35 @@ export function App() {
   const modeRef = useRef(mode)
   useEffect(() => { modeRef.current = mode }, [mode])
 
-  const start = useCallback(() => {
-    const e = newEngine(progressRef.current)
+  // F30 lessons: the lesson to start once the tank is on screen (a training shift is made for it); ?lesson=<id>&step=<n>
+  // (dev) makes the first "Start shift" play that lesson
+  const pendingLesson = useRef<LessonStart | null>(null)
+  const urlLesson = useRef<LessonStart | null>(lessonFromUrl())
+  const start = useCallback((lesson?: LessonStart) => {
+    lessonPlay.stop()
+    const e = lesson ? lessonPlay.attach(newEngine(progressRef.current, true)) : newEngine(progressRef.current)
+    pendingLesson.current = lesson ?? null
     engineRef.current = e
     setResult(null); setHud(null); setEngine(e)
   }, [])
   // the periscope is down: the shift is made (paused) under the console, which slides away to show it
-  const leaveConsole = useCallback(() => { start(); setMeterFrom(null); setMode('leaving') }, [start])
+  const leaveConsole = useCallback(() => {
+    const lesson = urlLesson.current
+    urlLesson.current = null
+    start(lesson ?? undefined); setMeterFrom(null); setMode('leaving')
+  }, [start])
+  // the tank is on screen: a lesson waiting for it starts now
+  useEffect(() => {
+    const lesson = pendingLesson.current
+    if (mode === 'shift' && engine && lesson) { pendingLesson.current = null; lessonPlay.start(lesson.id, lesson.step) }
+  }, [mode, engine])
   // back to the console (swipe up / "Back to the console" / End shift): it slides up over the tank, the meter fills
   const toConsole = useCallback(() => {
     while (screens.current.length) screens.pop()
     toasts.current.forEach((t) => toasts.dismiss(t.id))
     setMeterFrom(meterShown.current)
     meterShown.current = progressRef.current
+    lessonPlay.stop() // (a lesson ends with its shift)
     setMode('arriving')
   }, [])
   // The report closed some other way (Esc, phone Back) after the shift ended: that means "back to the console" too,
@@ -102,6 +123,16 @@ export function App() {
   useEffect(() => {
     if (mode === 'shift' && endPending.current) { endPending.current = false; screens.push('end') }
   }, [mode])
+  // the Dev Kit's Lessons tab / window.__goops.lesson (F30): a lesson from any step, straight to the tank
+  const startLessonNow = useCallback((id: string, step: number | string = 1) => {
+    if (!lessonNow(id)) return false
+    while (screens.current.length) screens.pop()
+    toasts.current.forEach((t) => toasts.dismiss(t.id))
+    endPending.current = false
+    start({ id, step }); setMeterFrom(null); setMode('shift')
+    return true
+  }, [start])
+  useEffect(() => { session.startLesson = startLessonNow; return () => { session.startLesson = null } }, [startLessonNow])
   useEffect(() => {
     if (mode === 'shift' && result && !screens.current.includes('end')) toConsole()
   }, [mode, result, open, toConsole])
@@ -114,12 +145,14 @@ export function App() {
   const endAtConsole = useCallback(() => {
     while (screens.current.length) screens.pop()
     toasts.current.forEach((t) => toasts.dismiss(t.id))
+    lessonPlay.stop()
     setMode('console')
   }, [])
   const repair = useCallback((machine: MachineId) => engineRef.current?.act({ type: 'repair', machine }), [])
   // The Dev Kit's Snapshots (src/devkit-game/goopsAdapter.ts): a saved moment → a new engine carrying on from it, on
   // the tank straight away (menus closed); null → back to the console. Junk throws (restoreShift says why).
   const restoreSnapshot = useCallback((snapshot: ShiftSnapshot | null) => {
+    lessonPlay.stop() // (a snapshot puts back the shift, not a lesson's place in it)
     const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns)
     while (screens.current.length) screens.pop()
     toasts.current.forEach((t) => toasts.dismiss(t.id))
@@ -246,6 +279,8 @@ export function App() {
         </ScreenStack>
       )}
       <ToastStack place="at" variant="plain" /* just above the goop; words, not button-like plates (Muzzy 2026-10-18) */ />
+      {/* F30: a lesson's message (kit Callout), only over the running tank — never over a menu */}
+      {mode === 'shift' && !open.length && <LessonView />}
     </>
   )
 }
