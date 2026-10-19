@@ -1,0 +1,30 @@
+{
+  "_about": "F32: the console-visit note — the first few times (content/tuning/lessons.json consoleNoteVisits) the player goes to the console mid-shift outside a lesson, this one line shows (src/game/lessons/firstBreakdowns.ts) until they close it, they're back in the tank, or for a short while (on a phone it can sit over the periscope, so it can always be closed): lesson time runs at the console's speed (25%), so 1.5 s here = 6 s. Words: content/text/en.json → lessons.console-note.",
+  "id": "console-note",
+  "steps": [
+    {
+      "id": "slow",
+      "pattern": "runActAdvance",
+      "message": "slow",
+      "pointer": {
+        "tag": "monitor"
+      },
+      "advance": {
+        "on": "any",
+        "of": [
+          {
+            "on": "dismiss"
+          },
+          {
+            "on": "event",
+            "event": "consoleClosed"
+          },
+          {
+            "on": "time",
+            "after": 1.5
+          }
+        ]
+      }
+    }
+  ]
+}
