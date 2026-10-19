@@ -19,7 +19,6 @@
     "e2e:console": "node e2e/console-shots.mjs",
     "e2e:fonts": "node e2e/fonts-shots.mjs",
     "e2e:sound": "node e2e/sound.mjs",
-    "sounds": "node scripts/make-sounds.mjs",
     "check:devkit": "node src/devkit/check-devkit.mjs",
     "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs"
   },

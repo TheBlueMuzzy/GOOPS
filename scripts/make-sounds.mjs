@@ -1,3 +1,4 @@
+// THROWAWAY ONLY: play uses recorded CC0 sounds (content/credits.json) — this makes code-made placeholders and OVERWRITES them in public/audio/; don't run it on the game.
 // PLACEHOLDER SOUNDS, MADE IN CODE (F29) — every sound in content/audio.json, synthesised here and written to
 // public/audio/{sfx,ui}/ as mp3 (named category_object_action_01). Placeholders until real recordings replace them:
 // swap a file in public/audio/ (or in the Dev Kit's Sound tab) and this script is no longer needed for it.
