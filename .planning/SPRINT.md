@@ -33,7 +33,7 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 25. Pressure readout says "% PSI"; its dot sits on the BENT pressure line (follows the visor's curve — visorFx `curvedY`)
 - [x] 🤖 26. At ~95% pressure the readout's words slid under "CRACKS 0 / 6" (the top row hangs over the tank since topRowPx 19) → the words stay below any top-row part over them, flipping under the line near the top; hud-shots checks it at 97% and now allows the top row over the tank's top edge
 - [ ] 🤖 27. Phone on its side + short window: a message ("PRESSURE NEAR MAX") lands on the pressure readout, and in the short window runs past the screen edge (hud-shots, 8 fails — older than task 26)
-- [ ] 🤖 28. Left click over a 1-cell locked goop rotates the piece instead of popping it (Muzzy 2026-10-18)
+- [x] 🤖 28. Left click over a 1-cell locked goop rotated the piece instead of popping it — the curved-TV look moves what you see (16 of 252 cells at curve 0.5, 72 at curve 1 were picked as a NEIGHBOUR when clicked dead centre); clicks now go through the same bend (visorFx `flatPoint`), checked in e2e/controls.mjs
 - [x] 🤖 29. "Reset laser / controls / visor" labels 10% smaller (too big for their spot on the console art)
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works

@@ -126,6 +126,36 @@ try {
     const after = await get(() => window.__goops.engine.state.score)
     check('tap a ready blob pops it', after > target.score, `score ${target.score} → ${after} (group of ${target.size})`)
   }
+  // a click picks the cell you SEE under the curved-TV look (Muzzy 2026-10-18: a one-cell goop near a corner was
+  // missed, so the click rotated the piece): click the centre of where each visible cell appears in the bent picture
+  // → the game must pick that cell. Checked with no glitch (the always-on curve) and a full glitch (curve at its most).
+  for (const amount of [0, 1]) {
+    await page.evaluate((a) => window.__goopsVisor?.set({ amount: a }), amount)
+    await page.waitForTimeout(150)
+    const r = await get(() => {
+      const { engine, view, cellAt, curve } = window.__goops, s = engine.state
+      const k = curve() * 0.1, vis = s.visibleWidth, cp = view.cellPx, rows = s.height - s.bufferRows
+      const stage = document.querySelector('[data-testid="stage"]').getBoundingClientRect()
+      const rect = { left: view.centreX - (Math.ceil(vis / 2) - 1 + 0.5) * cp, top: view.topY, width: vis * cp, height: rows * cp }
+      // where a flat point shows up: solve shown * (1 + k|shown|²) = flat (the shader's barrel, backwards)
+      const shown = (fx, fy) => {
+        const cx = ((fx - rect.left) / rect.width) * 2 - 1, cy = ((fy - rect.top) / rect.height) * 2 - 1
+        let ox = cx, oy = cy
+        for (let i = 0; i < 60; i++) { const m = 1 + k * (ox * ox + oy * oy); ox = cx / m; oy = cy / m }
+        return [rect.left + ((ox + 1) / 2) * rect.width, rect.top + ((oy + 1) / 2) * rect.height]
+      }
+      const wrong = []
+      for (let col = -(Math.ceil(vis / 2) - 1); col <= Math.floor(vis / 2); col++) for (let row = 0; row < rows; row++) {
+        const want = [((Math.round(view.camera) + col) % s.width + s.width) % s.width, row + s.bufferRows]
+        const [sx, sy] = shown(view.centreX + (col + Math.round(view.camera) - view.camera) * cp, view.topY + (row + 0.5) * cp)
+        const got = cellAt(sx + stage.left, sy + stage.top)
+        if (got[0] !== want[0] || got[1] !== want[1]) wrong.push(`${want} → ${got}`)
+      }
+      return { curve: curve(), wrong }
+    })
+    check(`a click picks the cell it's on in the curved picture (curve ${r.curve})`, r.curve > 0 && !r.wrong.length, r.wrong.slice(0, 4).join(' · '))
+  }
+  await page.evaluate(() => window.__goopsVisor?.set({ amount: null }))
   // typing in the Dev Kit never reaches the game's hotkeys (Muzzy 2026-10-18: "curve" in Search came out "cuv" — R and E
   // went to the game). Dev Kit 0.17.1 keeps its keys inside; the game also ignores keys typed into any text box.
   {

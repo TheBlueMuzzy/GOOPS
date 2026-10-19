@@ -14,7 +14,7 @@ import { gooStyle } from './gooStyle'
 import { wallKick } from './wallKick'
 import { readoutSetting, type ReadoutSetting } from './readoutSetting'
 import { createMessages, type Message, type MessageTuning } from './messages'
-import { createVisorFx, curvedY, type VisorFx } from '../view/visorFx'
+import { createVisorFx, curvedY, flatPoint, type VisorFx } from '../view/visorFx'
 import { PinnedBox, reduceMotion } from '../ui/kit'
 import tank from '../../content/tuning/tank.json'
 import hud from '../../content/tuning/hud.json'
@@ -210,7 +210,15 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       }
     }
     raf = requestAnimationFrame(frame)
+    // The tank cell under a click (page px). The curved-TV look moves what you see, so it's the cell the player is
+    // pointing at in the BENT picture (Muzzy 2026-10-18: a one-cell goop near a corner was missed → the piece rotated).
+    const cellAt = (px: number, py: number) => {
+      const r = el.getBoundingClientRect()
+      const [fx, fy] = flatPoint(px - r.left, py - r.top, tankRect(view, s.visibleWidth, s.height - s.bufferRows), visorFx.current?.curve() ?? 0)
+      return screenToCell(fx, fy, view, s.width, s.bufferRows)
+    }
     // dev + tests only: lets a Playwright check reach the engine (fast-forward a shift, read the grid)
+    // (cellAt(px, py): the cell a click there picks; curve(): the visor's curve right now — e2e/controls.mjs)
     // (say: show an in-shift message now, e.g. say('brokeLaser') — e2e/hud-shots.mjs checks where it sits;
     // readout(): where the pressure readout's line and words are; setReadout({ readoutPosition, readoutDirection }): as if
     // the Settings rows changed; fastDrop(on): as if fast drop were held; clocks(): the rules + looks clocks, ms)
@@ -219,6 +227,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: (on: boolean) => { softHeld = on; engine.act({ type: 'softDrop', on }) },
+      cellAt, curve: () => visorFx.current?.curve() ?? 0,
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }) }
 
     const detach = attachControls(el, {
@@ -231,8 +240,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       // broken controls (F23/F24): a held turn repeats slower; single presses and quick swipes stay the same
       spinSlowdown: () => (s.machines?.controls.broken ? breakdowns.controls.heldSpinSlowdown : 1),
       tapCell: (px, py) => {
-        const r = el.getBoundingClientRect()
-        const [x, y] = screenToCell(px - r.left, py - r.top, view, s.width, s.bufferRows)
+        const [x, y] = cellAt(px, py)
         if (y < 0 || y >= s.height || !s.grid[y * s.width + x]) return false
         engine.act({ type: 'pop', x, y })
         return true

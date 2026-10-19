@@ -45,6 +45,16 @@ export function curvedY(x: number, y: number, rect: { left: number; top: number;
   return rect.top + ((cy + 1) / 2) * rect.height
 }
 
+// The other way round: the flat tank point the player sees at screen point (x, y) — what a tap is really pointing at
+// (Muzzy 2026-10-18: a click on a one-cell goop near the tank's corners missed it and rotated the piece instead).
+// Exactly the shader's barrel, so it needs no solving.
+export function flatPoint(x: number, y: number, rect: { left: number; top: number; width: number; height: number }, curve: number): [number, number] {
+  if (curve <= 0 || rect.width <= 0 || rect.height <= 0) return [x, y]
+  const cx = ((x - rect.left) / rect.width) * 2 - 1, cy = ((y - rect.top) / rect.height) * 2 - 1
+  const m = 1 + curve * 0.1 * (cx * cx + cy * cy)
+  return [rect.left + ((cx * m + 1) / 2) * rect.width, rect.top + ((cy * m + 1) / 2) * rect.height]
+}
+
 // Dev-only URL overrides: ?visor=0.6 locks the glitch amount, ?visor=off forces 0; ?pixel=on|off forces the pixel filter.
 export interface VisorOverride { amount: number | null; pixelate: boolean | null }
 export function parseVisorOverride(search: string): VisorOverride {
