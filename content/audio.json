@@ -6,9 +6,9 @@
     "buses.ui": "How loud menu and button sounds are, in dB under master. Keep it 6-10 dB under the effects: players hear these hundreds of times.",
     "master.limiterDb": "The safety net: nothing gets louder than this (dB). -1 is the standard. Lower = squashes loud moments more.",
     "master.muteDelayMs": "Settings → Sound switched off: the sound that has just started (the switch's own \"off\" click) keeps playing this long (ms), then everything fades to silence. About the length of that click.",
-    "tiers.small": "The sound a \"small\" juiced moment plays when it has no sound of its own (same intention, same sound).",
-    "tiers.medium": "The sound a \"medium\" juiced moment plays when it has no sound of its own.",
-    "tiers.big": "The sound a \"big\" juiced moment plays when it has no sound of its own.",
+    "tiers.small": "The sound a \"small\" juiced moment plays when it has no sound of its own (Goops: the merge squelch).",
+    "tiers.medium": "The sound a \"medium\" juiced moment plays when it has no sound of its own (Goops: the pop).",
+    "tiers.big": "The sound a \"big\" juiced moment plays when it has no sound of its own (Goops: the quota fanfare).",
     "ladder.scale": "The notes a ladder sound climbs: pentatonic (no wrong notes, the default), major, minorPentatonic or chromatic.",
     "ladder.root": "The key your ladder sounds are recorded in, e.g. D. Record or tune them to this note so they sit in the music's key.",
     "ladder.steps": "How many notes the ladder climbs before it holds the top note. 5 = one octave on the pentatonic scale.",
@@ -16,9 +16,6 @@
     "snapshots.paused.music": "While paused: how much the music drops, in dB (0 = no change).",
     "snapshots.paused.lowpassHz": "While paused: the music sounds muffled, as if behind a door. Lower = more muffled. 0 = off.",
     "snapshots.paused.fadeMs": "How long (ms) the paused mix takes to fade in and out.",
-    "snapshots.reveal.music": "During the big reveal: how much the music drops, in dB.",
-    "snapshots.reveal.ambience": "During the big reveal: how much the background sounds drop, in dB.",
-    "snapshots.reveal.fadeMs": "How long (ms) the reveal mix takes to fade in and out.",
     "duck.amountDb": "When a sound with \"duck\" plays, the music drops this much (dB) so the moment is clear. -6 to -8 is typical.",
     "duck.downMs": "How fast (ms) the music drops for a ducking sound. Short = snappy.",
     "duck.backMs": "How long (ms) the music takes to come back up after it ducked.",
@@ -60,7 +57,35 @@
     "music.tracks.*.playsBeforeRest": "How many plays before the music rests (just the ambience for a while). 0 = never rests.",
     "music.tracks.*.restSeconds": "How long a rest is, in seconds: a random time between the two numbers.",
     "music.tracks.*.fadeInMs": "Fade in (ms) when it starts and when it comes back after a rest.",
-    "music.tracks.*.fadeOutMs": "Fade out (ms) at the end of the last play before a rest, and when it's stopped."
+    "music.tracks.*.fadeOutMs": "Fade out (ms) at the end of the last play before a rest, and when it's stopped.",
+    "sounds.goop.land": "A falling piece lands and becomes goop (a wet thud).",
+    "sounds.goop.merge": "Goop joins a group of its colour (a squelch, just after the land).",
+    "sounds.goop.ready": "A group finishes filling and can be zapped (a soft \"bloop\"; quick ones climb the ladder).",
+    "sounds.goop.pop": "A zapped group pops. Bigger groups play it lower and louder (content/tuning/sound.json).",
+    "sounds.goop.poke": "A zap on goop that can't pop yet (above the line, or still filling): it jiggles.",
+    "sounds.crack.seal": "A pop sealed a crack (a hiss of pressure, then a clunk).",
+    "sounds.crack.form": "A new crack appears in the tank wall (a glassy tick).",
+    "sounds.piece.rotate": "The falling piece turns.",
+    "sounds.tank.spin": "The tank turns one column (a quiet ratchet tick; held turns are thinned by the cooldown).",
+    "sounds.piece.swap": "The falling piece is swapped with the held one.",
+    "sounds.piece.fastDrop": "Fast drop starts (a short downward whoosh).",
+    "sounds.machine.laser.break": "The laser breaks (powers down with a fizz).",
+    "sounds.machine.visor.break": "The visor breaks (a burst of static).",
+    "sounds.machine.controls.break": "The controls break (they overheat: a sputter and a hiss).",
+    "sounds.machine.fixed": "A machine is repaired at the console (powers back up).",
+    "sounds.tank.rupture": "The tank ruptures (a low alarm).",
+    "sounds.shift.quota": "The last crack the shift needs is sealed (a bright little fanfare).",
+    "sounds.shift.won": "The shift ends with the quota met.",
+    "sounds.shift.lost": "The shift ends without the quota.",
+    "sounds.ui.periscope": "The periscope is pulled all the way: the console slides away (a mechanical clunk).",
+    "sounds.ui.repair": "A repair step done right on the console (a lamp goes out).",
+    "sounds.ui.wrong": "A wrong button on a repair panel (a short buzz; the panel shakes).",
+    "sounds.ui.tap": "Any button, slider stop or dial click on the console and in the menus. Menu sounds never vary (Muzzy, 2026-10-10).",
+    "sounds.ui.back": "Back, Close and Resume buttons.",
+    "sounds.ui.toggle.on": "A switch in Settings turned on (rising).",
+    "sounds.ui.toggle.off": "A switch in Settings turned off (falling).",
+    "snapshots.console.sfx": "At the console mid-shift (the tank runs on slowly under it): how much quieter the tank's sounds are, in dB.",
+    "snapshots.console.fadeMs": "How long (ms) the console mix takes to fade in and out."
   },
   "_labels": {
     "buses.music": "Music (dB)",
@@ -79,9 +104,6 @@
     "snapshots.paused.music": "Paused: music (dB)",
     "snapshots.paused.lowpassHz": "Paused: muffle music (Hz)",
     "snapshots.paused.fadeMs": "Paused: fade (ms)",
-    "snapshots.reveal.music": "Reveal: music (dB)",
-    "snapshots.reveal.ambience": "Reveal: ambience (dB)",
-    "snapshots.reveal.fadeMs": "Reveal: fade (ms)",
     "duck.amountDb": "Ducking: music drops (dB)",
     "duck.downMs": "Ducking: down in (ms)",
     "duck.backMs": "Ducking: back over (ms)",
@@ -123,7 +145,9 @@
     "music.tracks.*.playsBeforeRest": "Plays before a rest",
     "music.tracks.*.restSeconds": "Rest (seconds, shortest-longest)",
     "music.tracks.*.fadeInMs": "Fade in (ms)",
-    "music.tracks.*.fadeOutMs": "Fade out (ms)"
+    "music.tracks.*.fadeOutMs": "Fade out (ms)",
+    "snapshots.console.sfx": "At the console: tank sounds (dB)",
+    "snapshots.console.fadeMs": "At the console: fade (ms)"
   },
   "_sections": {
     "Mix": ["buses", "master"],
@@ -146,9 +170,6 @@
     "snapshots.paused.music": [-40, 0, 0.5],
     "snapshots.paused.lowpassHz": [0, 20000, 10],
     "snapshots.paused.fadeMs": [0, 2000, 10],
-    "snapshots.reveal.music": [-40, 0, 0.5],
-    "snapshots.reveal.ambience": [-40, 0, 0.5],
-    "snapshots.reveal.fadeMs": [0, 2000, 10],
     "duck.amountDb": [-24, 0, 0.5],
     "duck.downMs": [0, 500, 5],
     "duck.backMs": [0, 3000, 10],
@@ -181,66 +202,248 @@
     "music.tracks.*.playsBeforeRest": [0, 20, 1],
     "music.tracks.*.restSeconds": [0, 600, 1],
     "music.tracks.*.fadeInMs": [0, 20000, 50],
-    "music.tracks.*.fadeOutMs": [0, 20000, 50]
+    "music.tracks.*.fadeOutMs": [0, 20000, 50],
+    "snapshots.console.sfx": [-40, 0, 0.5],
+    "snapshots.console.fadeMs": [0, 2000, 10]
   },
   "buses": { "music": -8, "ambience": -10, "sfx": 0, "ui": -8 },
   "master": { "limiterDb": -1, "muteDelayMs": 250 },
-  "tiers": { "small": "tier.small", "medium": "tier.medium", "big": "tier.big" },
+  "tiers": { "small": "goop.merge", "medium": "goop.pop", "big": "shift.quota" },
   "ladder": { "scale": "pentatonic", "root": "D", "steps": 10, "resetMs": 1200 },
   "snapshots": {
     "paused": { "music": -10, "lowpassHz": 900, "fadeMs": 250 },
-    "reveal": { "music": -6, "ambience": -8, "fadeMs": 400 }
+    "console": { "sfx": -6, "fadeMs": 250 }
   },
   "duck": { "amountDb": -7, "downMs": 10, "backMs": 600 },
   "limits": { "maxVoices": 14, "staleMs": 400 },
   "sounds": {
-    "example.pop": {
-      "files": ["sfx/example_pop_01.mp3", "sfx/example_pop_02.mp3", "sfx/example_pop_03.mp3"],
-      "pick": "random",
+    "goop.land": {
+      "files": ["sfx/sfx_goop_land_01.mp3", "sfx/sfx_goop_land_02.mp3", "sfx/sfx_goop_land_03.mp3"],
       "bus": "sfx",
       "volumeDb": -6,
-      "pitch": 0,
-      "randomPitch": 0.5,
+      "randomPitch": 1,
       "randomVolumeDb": 2,
-      "delayMs": 0,
-      "trimStartMs": 0,
-      "trimEndMs": 0,
-      "fadeInMs": 0,
-      "fadeOutMs": 0,
-      "loop": false,
-      "loopStartMs": 0,
-      "loopEndMs": 0,
       "maxVoices": 3,
       "cooldownMs": 40,
-      "priority": 2,
-      "pan": 0,
-      "lowpassHz": 0,
-      "highpassHz": 0,
-      "ladder": false,
-      "duck": false,
-      "stream": "auto",
-      "loopCrossfadeMs": 100
+      "priority": 2
     },
-    "tier.small": { "files": [], "bus": "sfx", "volumeDb": -10, "randomPitch": 0.5, "maxVoices": 3, "cooldownMs": 40, "priority": 1 },
-    "tier.medium": { "files": [], "bus": "sfx", "volumeDb": -6, "randomPitch": 0.5, "maxVoices": 3, "cooldownMs": 40, "priority": 2 },
-    "tier.big": { "files": [], "bus": "sfx", "volumeDb": -3, "maxVoices": 2, "cooldownMs": 100, "priority": 4, "duck": true }
+    "goop.merge": {
+      "files": ["sfx/sfx_goop_merge_01.mp3", "sfx/sfx_goop_merge_02.mp3"],
+      "bus": "sfx",
+      "volumeDb": -10,
+      "randomPitch": 1,
+      "randomVolumeDb": 2,
+      "delayMs": 40,
+      "maxVoices": 2,
+      "cooldownMs": 60,
+      "priority": 1
+    },
+    "goop.ready": {
+      "files": ["sfx/sfx_goop_ready_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -13,
+      "ladder": true,
+      "maxVoices": 3,
+      "cooldownMs": 50,
+      "priority": 2
+    },
+    "goop.pop": {
+      "files": ["sfx/sfx_goop_pop_01.mp3", "sfx/sfx_goop_pop_02.mp3", "sfx/sfx_goop_pop_03.mp3"],
+      "bus": "sfx",
+      "volumeDb": -4,
+      "randomPitch": 0.8,
+      "randomVolumeDb": 1.5,
+      "maxVoices": 4,
+      "cooldownMs": 30,
+      "priority": 3
+    },
+    "goop.poke": {
+      "files": ["sfx/sfx_goop_poke_01.mp3", "sfx/sfx_goop_poke_02.mp3"],
+      "bus": "sfx",
+      "volumeDb": -11,
+      "randomPitch": 1.5,
+      "maxVoices": 2,
+      "cooldownMs": 80,
+      "priority": 1
+    },
+    "crack.seal": {
+      "files": ["sfx/sfx_crack_seal_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -5,
+      "delayMs": 60,
+      "maxVoices": 2,
+      "cooldownMs": 60,
+      "priority": 4
+    },
+    "crack.form": {
+      "files": ["sfx/sfx_crack_form_01.mp3", "sfx/sfx_crack_form_02.mp3"],
+      "bus": "sfx",
+      "volumeDb": -8,
+      "randomPitch": 0.7,
+      "maxVoices": 2,
+      "cooldownMs": 80,
+      "priority": 3
+    },
+    "piece.rotate": {
+      "files": ["sfx/sfx_piece_rotate_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -15,
+      "randomPitch": 0.5,
+      "maxVoices": 2,
+      "cooldownMs": 40,
+      "priority": 1
+    },
+    "tank.spin": {
+      "files": ["sfx/sfx_tank_spin_01.mp3", "sfx/sfx_tank_spin_02.mp3"],
+      "bus": "sfx",
+      "volumeDb": -21,
+      "randomPitch": 0.7,
+      "maxVoices": 2,
+      "cooldownMs": 70,
+      "priority": 0
+    },
+    "piece.swap": {
+      "files": ["sfx/sfx_piece_swap_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -10,
+      "maxVoices": 1,
+      "cooldownMs": 100,
+      "priority": 2
+    },
+    "piece.fastDrop": {
+      "files": ["sfx/sfx_piece_drop_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -13,
+      "maxVoices": 1,
+      "cooldownMs": 150,
+      "priority": 1
+    },
+    "machine.laser.break": {
+      "files": ["sfx/sfx_laser_break_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -4,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 4
+    },
+    "machine.visor.break": {
+      "files": ["sfx/sfx_visor_break_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -5,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 4
+    },
+    "machine.controls.break": {
+      "files": ["sfx/sfx_controls_break_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -5,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 4
+    },
+    "machine.fixed": {
+      "files": ["sfx/sfx_machine_fix_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -5,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 3
+    },
+    "tank.rupture": {
+      "files": ["sfx/sfx_tank_rupture_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -2,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 5,
+      "duck": true
+    },
+    "shift.quota": {
+      "files": ["sfx/sfx_shift_quota_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -4,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 5,
+      "duck": true
+    },
+    "shift.won": {
+      "files": ["sfx/sfx_shift_won_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -4,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 5,
+      "duck": true
+    },
+    "shift.lost": {
+      "files": ["sfx/sfx_shift_lost_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -4,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 5,
+      "duck": true
+    },
+    "ui.periscope": {
+      "files": ["ui/ui_periscope_pull_01.mp3"],
+      "bus": "ui",
+      "volumeDb": 0,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 3
+    },
+    "ui.repair": {
+      "files": ["ui/ui_repair_step_01.mp3"],
+      "bus": "ui",
+      "volumeDb": -2,
+      "maxVoices": 2,
+      "cooldownMs": 40,
+      "priority": 2
+    },
+    "ui.wrong": {
+      "files": ["ui/ui_repair_wrong_01.mp3"],
+      "bus": "ui",
+      "volumeDb": -4,
+      "maxVoices": 1,
+      "cooldownMs": 120,
+      "priority": 2
+    },
+    "ui.tap": {
+      "files": ["ui/ui_button_tap_01.mp3"],
+      "bus": "ui",
+      "volumeDb": 0,
+      "maxVoices": 2,
+      "cooldownMs": 30,
+      "priority": 2
+    },
+    "ui.back": {
+      "files": ["ui/ui_button_back_01.mp3"],
+      "bus": "ui",
+      "volumeDb": 0,
+      "maxVoices": 2,
+      "cooldownMs": 30,
+      "priority": 2
+    },
+    "ui.toggle.on": {
+      "files": ["ui/ui_toggle_on_01.mp3"],
+      "bus": "ui",
+      "volumeDb": 0,
+      "maxVoices": 1,
+      "cooldownMs": 30,
+      "priority": 2
+    },
+    "ui.toggle.off": {
+      "files": ["ui/ui_toggle_off_01.mp3"],
+      "bus": "ui",
+      "volumeDb": 0,
+      "maxVoices": 1,
+      "cooldownMs": 30,
+      "priority": 2
+    }
   },
   "music": {
-    "tracks": {
-      "example.theme": {
-        "layers": {
-          "melody": { "file": "mus/example_theme_melody.mp3", "volumeDb": 0, "fromIntensity": 0, "fullAtIntensity": 0 },
-          "drums": { "file": "mus/example_theme_drums.mp3", "volumeDb": -4, "fromIntensity": 0.4, "fullAtIntensity": 0.8 }
-        },
-        "loop": true,
-        "loopStartMs": 0,
-        "loopEndMs": 0,
-        "loopCrossfadeMs": 100,
-        "playsBeforeRest": 2,
-        "restSeconds": [60, 90],
-        "fadeInMs": 2000,
-        "fadeOutMs": 3000
-      }
-    }
+    "tracks": {}
   }
 }
