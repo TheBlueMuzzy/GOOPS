@@ -16,11 +16,12 @@ Check: unit tests for swap-with-next and the unlock rule · e2e/unlocks.mjs at r
 
 ## F60 🧱 Screen look, reusable
 Check: monitor shots before/after match · switching presets in the Dev Kit changes the look live · the second use (next-piece window) takes a few lines · check:full green
-- [ ] 🤖 9. Pull the CRT look (glow, scan lines, typing + block cursor, wobble) out of the monitor into one reusable piece — src/game/crt.ts, src/game/crt.css
-- [ ] 🤖 10. Applying it = one wrapper or class with a preset name; the monitor uses it, looks unchanged (shot before/after) — src/ui/Console.tsx
-- [ ] 🤖 11. Presets in content (green DOS = today's look, plus amber and off), each live in the Dev Kit — content/tuning/crt.json
+- [x] 🤖 9. Pull the CRT look (glow, scan lines, typing + block cursor, wobble) out of the monitor into one reusable piece — src/game/crt.ts, src/game/crt.css
+- [x] 🤖 10. Applying it = one wrapper or class with a preset name; the monitor uses it, looks unchanged (shot before/after) — src/ui/Console.tsx
+- [x] 🤖 11. Presets in content (green DOS = today's look, plus amber and off), each live in the Dev Kit — content/tuning/crt.json
 - [ ] 🤖 12. Prove it's quick: put it on the next-piece window's frame (or where Muzzy picks) in a few lines; note it for the framework session as a kit effect — src/ui/App.tsx, .planning/STATE.md
 
 ## Notes
 - Muzzy, 2026-10-19: "render shaders" (reusable looks) are a component category to get better at. F60 is the first step: its findings go in .planning/research/looks-module.md (the look = surface × engine × layers × when × clock), like lesson-module.md. While doing F60, give the CRT's scan-line knobs the same names as the x-ray box's (three scan-line versions exist today).
+- F60 tasks 9–11 (2026-10-19): applying the look = `<CrtLook preset="dos">…<TypedText text={words} /></CrtLook>` (or `place="monitor"` = the preset crt.json `use.monitor` names, a Dev Kit dropdown) — src/game/CrtLook.tsx, crt.ts, crt.css. Kept the file name crt.json (it IS the CRT look; renaming bought nothing). Monitor shots before/after are pixel-identical at 390x844, 360x780, 1440x900, 1920x1080 + a lesson line (~/Documents/dev/.scratch/goops-f60/). Surprises: (1) the old wobble/blink kept moving in the Dev Kit's full pause (only the typing followed the looks clock) — the wrapper now pauses its CSS motion (data-paused); (2) content/devkit/select.json doesn't exist in Goops, so there was no select-map step (main session: skip it); (3) amber has a slow roll (scanSpeed 4) so the roll knob shows something — a taste call, Muzzy can zero it.
 - Tech calls (Claude): unlock ranks live in progression.json (`unlocks: { nextPiece: 1, swap: 3, upgrades: 5 }`) and one function answers "is X unlocked at rank N" — no rank numbers in UI code. `?rank=` keeps working as before. Swap stays a 1.5 s hold (tank.holdToSwapMs; the Goop Swap upgrade still shortens it in beta). Swapping back and forth is allowed (it's just choosing between two pieces). Lesson shifts keep swap off.
