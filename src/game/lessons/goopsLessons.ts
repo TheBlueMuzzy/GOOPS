@@ -15,16 +15,25 @@
 //     "cracks": [[col, row, colour], …]    cracks placed · "removeCracks": [[col, row], …]
 //     "pieces": [{ "shape": "T_I", "color": "blue", "turns": 1 }, …]   the next pieces, in order
 //     "spawn": true                        bring the next piece in now
+//     "console": "frozen" / "normal"       F32: at the console mid-shift the tank stands still (a first repair) / runs at
+//                                          content/tuning/breakdowns.json consoleTimeScale as usual (also back to normal
+//                                          whenever a lesson ends)
 //   gates   "position" (rows the falling piece's bottom has come into the tank) · "pressure" / "integrity" (percent) ·
-//           "sealed" (cracks sealed) · "cracksOutOfView" · "wrongCover" (cracks covered by another colour's goop)
-//   events  every engine event by its type (lock, pop, plug, crack, ready, merge, quotaMet, rupture, breakdown…), with
-//           its details for `where` (e.g. pop → sealed); plus "shiftStarted" (screen events: more later, F31/F32)
+//           "sealed" (cracks sealed) · "cracksOutOfView" · "wrongCover" (cracks covered by another colour's goop) ·
+//           F32: "atConsole" (1 = the console is over the tank mid-shift) · "broken:<machine>" (1 = broken) ·
+//           "breakdownLessonsSeen" (how many first-breakdown lessons this device has finished)
+//   events  every engine event by its type (lock, pop, plug, crack, ready, merge, quotaMet, rupture, breakdown, repaired…),
+//           with its details for `where` (e.g. pop → sealed, repaired → machine); plus the screen events "shiftStarted",
+//           "consoleOpened" (W / ↑ / flick up, mid-shift), "consoleClosed" (back in the tank), "pauseOpened", "pauseClosed"
 //   actions spin, rotate, softDrop, hold, pop, repair, console
 //   pointer { "piece": true } · { "cell": [col, row] } (follows the tank as it spins) · { "tag": "readout" } (an element
-//           with that data-tag) · { "selector": "…" } · none = where pieces drop in
+//           with that data-tag; F32 tags: "bar-<machine>" the HUD's machine bar, "repair-<machine>" the part of its
+//           repair panel that wants doing next, "panel-<machine>", "periscope", "monitor", "pauseResume") ·
+//           { "selector": "…" } · none = where pieces drop in. The message goes on the side the target's data-placement
+//           says, else the pointer's "placement" ("top" / "bottom" / "left" / "right"), else wherever it fits.
 //   words   a text id in content/text/en.json → lessons.<lesson id>; a { keys, mouse, phone } entry picks by the input used
-//           last; {left} {total} {sealed} {pressure} {integrity} {tries} are filled from the live shift
-import type { PieceChoice, ShiftAction, ShiftEngine, ShiftState, TrainingRules } from '../../engine'
+//           last; {left} {total} {sealed} {pressure} {integrity} {tries} {consoleSpeed} are filled from the live shift
+import type { MachineId, PieceChoice, ShiftAction, ShiftEngine, ShiftState, TrainingRules } from '../../engine'
 import { isOnScreen } from '../../engine/tank'
 import { liveTuning } from '../../devkit/tuning/liveTuning'
 import { rulesClock } from '../../devkit/gameClock'
@@ -37,6 +46,7 @@ import { createLessonRunner } from './runner'
 import type { Lesson } from './lessonTypes'
 import lessonTiming from '../../../content/tuning/lessons.json'
 import shiftConfig from '../../../content/tuning/shift.json'
+import breakdowns from '../../../content/tuning/breakdowns.json'
 import text from '../../../content/text/en.json'
 
 // ---- the lesson files: content/lessons/<id>.json, each live (the Dev Kit's Lessons tab sends edits as "lesson-<id>")
@@ -55,6 +65,9 @@ let speed = 1 // × the shift's speed while a lesson message shows (0 = paused)
 let inputOn = true
 let anchorSpin = 0 // the tank's turn when the step was set up: lesson columns count from the middle of the view THEN
 let lastInput: 'keys' | 'mouse' | 'phone' = 'keys'
+let atConsole = false // F32: the console is over the tank mid-shift (App says so: lessonPlay.screen)
+let consoleFrozen = false // F32: a lesson froze the tank while at the console (its first repair)
+let training = false // the attached engine is a lesson's training shift (not a real one)
 
 const NORMAL_PLAY: Partial<TrainingRules> = { pressureRise: 1, cracks: true, integrity: true, breakdowns: true, falling: true,
   autoSpawn: true, allow: null, zone: null, pressureCap: 1, integrityFloor: 0, rupture: true, overflowRail: false, ruptureDrainSpeed: 1, zapColors: null }
@@ -95,7 +108,13 @@ function setup(setup: Record<string, unknown>) {
     train('pieces', { type: 'queue', pieces: (setup.pieces as PieceChoice[]).map((p) => ({ ...p, color: colour(p.color) })) })
   }
   if (setup.spawn) train('spawn', { type: 'spawn' })
+  if (setup.console === 'frozen' || setup.console === 'normal') consoleFrozen = setup.console === 'frozen'
 }
+
+// The machines with a first-breakdown lesson (content/lessons/<machine>.json, F32)
+export const BREAKDOWN_LESSONS = ['visor', 'laser', 'controls'] as const
+/** Has this device finished that lesson? (kit tips memory: 'lesson:<id>', cleared by Settings → Replay lessons) */
+export const lessonSeen = (id: string) => tipsMemory().seen(`lesson:${id}`)
 
 function gate(name: string): number | null {
   const s = engine?.state
@@ -107,8 +126,14 @@ function gate(name: string): number | null {
     case 'sealed': return s.cracksSealed
     case 'cracksOutOfView': return s.cracks.filter((c) => !isOnScreen(c.x, s.spin, s.width, s.visibleWidth)).length
     case 'wrongCover': return s.cracks.filter((c) => { const g = s.grid[c.y * s.width + c.x]; return g !== 0 && g !== c.color }).length
-    default: return null
+    case 'atConsole': return atConsole ? 1 : 0
+    case 'breakdownLessonsSeen': return BREAKDOWN_LESSONS.filter(lessonSeen).length
   }
+  if (name.startsWith('broken:')) {
+    const m = s.machines?.[name.slice('broken:'.length) as MachineId]
+    return m ? (m.broken ? 1 : 0) : null
+  }
+  return null
 }
 
 export const runner = createLessonRunner({
@@ -120,7 +145,7 @@ export const runner = createLessonRunner({
     setSpeed: (value, input) => { speed = value; inputOn = input },
     seen: (id) => tipsMemory().seen(id),
     markSeen: (id) => tipsMemory().markSeen(id),
-    finished: (id) => tipsMemory().markSeen(`lesson:${id}`),
+    finished: (id) => { consoleFrozen = false; tipsMemory().markSeen(`lesson:${id}`) },
   },
 })
 
@@ -134,8 +159,20 @@ if (typeof window !== 'undefined') {
 }
 
 export const lessonPlay = {
-  /** × the shift's speed (ShiftStage multiplies the rules clock's rate by it): 0 while a paused message shows. */
-  speed: () => speed,
+  /** × the shift's speed (ShiftStage multiplies the rules clock's rate by it): 0 while a paused message shows, and at
+   *  the console while a lesson freezes the tank there (F32). */
+  speed: () => (consoleFrozen && atConsole ? 0 : speed),
+  /** F32: is the tank frozen at the console for a lesson? (App then runs the rules clock at full speed there, so the
+   *  lesson's own timers — hints, "Got it" — keep their time while the tank stands still.) */
+  consoleFrozen: () => consoleFrozen && !!runner.view().lessonId,
+  /** F32: a screen event — App says what the player did (the console opened / closed mid-shift, the pause menu). */
+  screen(name: 'consoleOpened' | 'consoleClosed' | 'pauseOpened' | 'pauseClosed') {
+    if (name === 'consoleOpened') atConsole = true
+    if (name === 'consoleClosed') atConsole = false
+    runner.event(name)
+  },
+  /** Is the running shift a real one (not a lesson's training shift)? */
+  realShift: () => !!engine && !training,
   /** Does the tank take the player's controls right now? (Not under a paused message.) */
   inputOn: () => inputOn,
   /** Is a lesson message up? (The game's own in-shift messages wait while it is.) */
@@ -144,6 +181,7 @@ export const lessonPlay = {
   /** App: this engine is the lesson's. Returns it wrapped, so the runner hears the player's controls. */
   attach(e: ShiftEngine): ShiftEngine {
     engine = e
+    training = true
     anchorSpin = e.state.spin
     return {
       get state() { return e.state },
@@ -158,6 +196,13 @@ export const lessonPlay = {
       allows: (type) => e.allows(type),
     }
   },
+  /** App: a REAL shift started — its first breakdowns may start lessons (F32, firstBreakdowns.ts). The engine isn't
+   *  wrapped: a real shift's lessons only listen (events, screen events, gates). */
+  watch(e: ShiftEngine) {
+    engine = e
+    training = false
+    anchorSpin = e.state.spin
+  },
   /** Start a lesson at a step (1 = the first; or a step id). Unknown lesson → false. */
   start(id: string, step: number | string = 1): boolean {
     const lesson = lessonNow(id)
@@ -171,23 +216,29 @@ export const lessonPlay = {
   stop() {
     runner.stop() // (sets the speed back to 1 with input on)
     engine = null
+    training = false
+    atConsole = false
+    consoleFrozen = false
   },
   /** The live numbers a message's {placeholders} can show. */
   vars(): Record<string, number> {
     const s = engine?.state
     if (!s) return {}
     return { left: Math.max(0, s.cracksNeeded - s.cracksSealed), total: s.cracksNeeded, sealed: s.cracksSealed,
-      pressure: Math.round(s.pressure * 100), integrity: Math.round(s.integrity * 100), tries: runner.view().message?.tries ?? 0 }
+      pressure: Math.round(s.pressure * 100), integrity: Math.round(s.integrity * 100), tries: runner.view().message?.tries ?? 0,
+      consoleSpeed: Math.round(breakdowns.consoleTimeScale * 100) }
   },
 }
 
 type Words = string | { keys?: string; mouse?: string; phone?: string }
 
-/** A message id → its words: content/text/en.json → lessons.<lesson id>.<id>, picked by input, {placeholders} filled.
+/** A message id → its words: content/text/en.json → lessons.<lesson id>.<id> (or lessons.shared.<id>), picked by input,
+ *  {placeholders} filled.
  *  (An id that isn't in en.json is shown as it is: handy while writing a lesson.) */
 export function lessonWords(lessonId: string | null, id: string, vars: Record<string, number>, input: 'keys' | 'mouse' | 'phone'): string {
   const book = (text as unknown as { lessons?: Record<string, Record<string, Words>> }).lessons?.[lessonId ?? ''] ?? {}
-  const entry = book[id] ?? id
+  const shared = (text as unknown as { lessons?: Record<string, Record<string, Words>> }).lessons?.shared ?? {}
+  const entry = book[id] ?? shared[id] ?? id // (lessons.shared: lines several lessons use, e.g. "go to the console")
   const words = typeof entry === 'string' ? entry : (entry[input] ?? entry.keys ?? entry.mouse ?? entry.phone ?? id)
   return fill(words, vars)
 }
@@ -205,7 +256,14 @@ export function lessonFromUrl(): { id: string; step: number | string } | null {
 // ---- the pointer: where the message points (CSS px in the stage), placed by ShiftStage's frame loop on its
 // invisible .lesson-mark box; the kit's Callout points at that box and its pulse ring outlines it.
 // Tags whose visible part is inside the tagged element (the readout's words sit in a kit PinnedBox hung on its point)
-const TAG_TARGETS: Record<string, string> = { readout: '[data-tag="readout"] .kit-pinned' }
+// (the HUD's machine bars are kit Bars, found by their meter's name — the whole bar, its name above it included)
+const barOf = (name: string) => `.kit-bar:has([role="progressbar"][aria-label="${name}"])`
+const TAG_TARGETS: Record<string, string> = {
+  readout: '[data-tag="readout"] .kit-pinned',
+  'bar-visor': barOf(text.hud.visor), 'bar-laser': barOf(text.hud.laser), 'bar-controls': barOf(text.hud.controls),
+  pauseResume: '.kit-pause .kit-menu > button:first-child', // the pause menu's "Back to the tank" (the kit's Pause)
+  periscope: '.kit-pull-grip', // the console's periscope: the part you grab (the kit's PullHandle)
+}
 
 /** A CSS selector for the Callout's target, from the message's pointer. */
 export function lessonTarget(pointer: unknown): string {

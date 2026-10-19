@@ -32,7 +32,7 @@ export interface LessonClock {
 
 // What the look shows. `text` is the step's message id (or words) — the game turns it into words.
 export interface LessonMessage {
-  kind: 'step' | 'hint' | 'retry' | 'interrupt'
+  kind: 'step' | 'hint' | 'retry' | 'interrupt' | 'reaction'
   text: string
   pointer?: unknown
   dim: boolean
@@ -64,7 +64,10 @@ function timerPool(clock: LessonClock) {
   }
 }
 
-const IDLE: LessonView = { lessonId: null, stepIndex: -1, stepId: null, total: 0, message: null, done: false }
+// Does closing the message ("Got it") move this step on? (dismiss, or an 'any' that includes it)
+const closedByDismiss = (c: Condition): boolean => c.on === 'dismiss' || (c.on === 'any' && c.of.some(closedByDismiss))
+
+const IDLE: LessonView ={ lessonId: null, stepIndex: -1, stepId: null, total: 0, message: null, done: false }
 
 export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; timing: () => LessonTiming; patterns?: Record<string, Partial<LessonStep>> }) {
   const { game, clock, timing } = o
@@ -80,6 +83,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
   let firedInterrupts = new Set<string>()
   let interrupt: { saved: { message: LessonMessage; while: WhileShowing } | null } | null = null // an interrupt is up
   let showingWhile: WhileShowing = 'run'
+  let reacting: { saved: LessonMessage | null } | null = null // a step's reaction is up (the step's message kept)
   let view: LessonView = IDLE
   const listeners = new Set<() => void>()
 
@@ -95,6 +99,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
   // Put a message up (or, while an interrupt is up, keep it for when the interrupt is closed).
   function show(message: LessonMessage, w: WhileShowing) {
     if (interrupt && message.kind !== 'interrupt') { interrupt.saved = { message, while: w }; return }
+    reacting = null // (a new message ends a reaction)
     showingWhile = w
     speedFor(w)
     publish({ message })
@@ -115,6 +120,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
 
   // ---- conditions
   function holds(cond: Condition): boolean {
+    if (cond.on === 'any') return cond.of.some(holds)
     if (cond.on !== 'gate') return false
     const value = game.gate(cond.gate)
     if (value === null) return false
@@ -122,7 +128,8 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
   }
   function watch(cond: Condition, fire: () => void, scope: 'step' | 'lesson', name: string) {
     const timers = scope === 'step' ? stepTimers : lessonTimers
-    if (cond.on === 'event' || cond.on === 'action') watchers.push({ cond, fire, n: 0, scope })
+    if (cond.on === 'any') cond.of.forEach((c, k) => watch(c, fire, scope, `${name}:${k}`))
+    else if (cond.on === 'event' || cond.on === 'action') watchers.push({ cond, fire, n: 0, scope })
     else if (cond.on === 'gate') timers.every(name, Math.max(16, timing().gatePollMs), () => { if (holds(cond)) fire() })
     else if (cond.on === 'time') timers.after(name, cond.after * 1000, fire)
     // ('dismiss' is the message's own "Got it")
@@ -149,6 +156,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
 
   // ---- steps
   function clearStep() {
+    reacting = null
     stepTimers.clearAll()
     watchers = watchers.filter((w) => w.scope === 'lesson')
   }
@@ -176,16 +184,21 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     publish({ stepIndex: i, stepId: s.id, total: lesson.steps.length })
     if (s.setup) game.setup(s.setup)
     hide()
-    if (s.skipIf && holds(s.skipIf)) return advance() // the player is already past this one
+    const skips = s.skipIf ? (Array.isArray(s.skipIf) ? s.skipIf : [s.skipIf]) : []
+    if (skips.some(holds)) return advance() // the player is already past this one
     const advanceOn = s.advance ?? { on: 'dismiss' }
     watch(advanceOn, advance, 'step', 'advance')
     if (s.retry) watch(s.retry.when, retry, 'step', 'retry')
+    s.reactions?.forEach((r, k) => {
+      watch(r.when, () => react(r), 'step', `react:${k}`)
+      if (r.until) watch(r.until, unreact, 'step', `unreact:${k}`)
+    })
     const w = s.while ?? 'run'
     // a paused message: the hint clock starts once it's closed (doing nothing while reading isn't "stuck")
     if (!(s.message && w === 'pause')) startHint()
     if (s.message) {
       const message: LessonMessage = { kind: 'step', text: s.message, pointer: s.pointer, dim: !!s.dim,
-        waitsForDismiss: advanceOn.on === 'dismiss' || w === 'pause', armed: false, tries }
+        waitsForDismiss: closedByDismiss(advanceOn) || w === 'pause', armed: false, tries }
       if (!s.showAfter) show(message, w)
       else stepTimers.after('show', s.showAfter * 1000, () => show(message, w))
     }
@@ -197,7 +210,8 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     clearStep()
     hide()
     const next = index + 1
-    const breath = timing().betweenStepsSeconds * 1000
+    // (a breath between steps — none after the last: the lesson is over at once)
+    const breath = next < (getLesson?.().steps.length ?? 0) ? timing().betweenStepsSeconds * 1000 : 0
     if (breath > 0) stepTimers.after('next', breath, () => enter(next))
     else enter(next)
   }
@@ -211,6 +225,22 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     if (r.message) show({ kind: 'retry', text: r.message, pointer: step?.pointer, dim: false, waitsForDismiss: true, armed: false, tries }, 'pause')
   }
 
+  // a step's reaction (lessonTypes LessonReaction): its words over the step's message until `until`; the game's
+  // speed stays as it was (no "Got it")
+  function react(r: NonNullable<LessonStep['reactions']>[number]) {
+    if (advancing || interrupt) return
+    if (!reacting) reacting = { saved: view.message?.kind === 'reaction' ? null : view.message }
+    publish({ message: { kind: 'reaction', text: r.message, pointer: r.pointer, dim: false, waitsForDismiss: false, armed: false, tries } })
+  }
+  function unreact() {
+    if (!reacting) return
+    const saved = reacting.saved
+    reacting = null
+    if (view.message?.kind !== 'reaction') return
+    if (saved) show(saved, showingWhile) // (shown again: re-armed, if it waits for "Got it")
+    else publish({ message: null })
+  }
+
   function finish(lesson: Lesson) {
     lessonTimers.clearAll()
     watchers = []
@@ -220,6 +250,8 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     game.finished?.(lesson.id)
     const next = queued.shift()
     if (next) return begin(next, 0)
+    getLesson = null // (nothing running: the next queue() starts at once)
+    index = -1
     publish({ ...IDLE, done: true })
   }
 
@@ -276,7 +308,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
         else hide()
         return
       }
-      if (m.kind === 'step' && (step?.advance ?? { on: 'dismiss' }).on === 'dismiss') return advance()
+      if (m.kind === 'step' && closedByDismiss(step?.advance ?? { on: 'dismiss' })) return advance()
       hide() // a paused message read: the game goes on, and the step waits for its own thing
       if (m.kind === 'step') startHint()
     },

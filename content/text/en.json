@@ -95,6 +95,7 @@
   },
   "lessons": {
     "gotIt": "Got it",
+    "replayed": "The machine lessons will play again.",
     "sample": {
       "welcome": "Goop drops into the tank from up here.",
       "falls": "It falls on its own.",
@@ -116,6 +117,55 @@
       "zapHint": "Zap the green goop to clear it.",
       "pressure": "Pressure rises over time: {pressure}% now.",
       "done": "That's the sample lesson. The shift carries on from here."
+    },
+    "shared": {
+      "toConsole": {
+        "keys": "Press W or ↑ for the console.",
+        "mouse": "Flick up for the console.",
+        "phone": "Flick up for the console."
+      },
+      "toConsoleHint": {
+        "keys": "W or ↑ opens the console. That's where you fix it.",
+        "mouse": "Drag up quickly on the tank to open the console.",
+        "phone": "Flick up on the tank to open the console."
+      },
+      "pauseMenu": {
+        "keys": "That's the pause menu. Use W or ↑ for the console.",
+        "mouse": "That's the pause menu. Close it, then flick up for the console.",
+        "phone": "That's the pause menu. Close it, then flick up for the console."
+      },
+      "stillBroken": {
+        "keys": "It's still broken. Press W or ↑ to go back to the console.",
+        "mouse": "It's still broken. Flick up to go back to the console.",
+        "phone": "It's still broken. Flick up to go back to the console."
+      },
+      "fullyPaused": "The game is fully paused for this moment. Normally it keeps running at {consoleSpeed}% speed while you're here.",
+      "fixHint": "Do what the blinking light asks.",
+      "back": "Pull the periscope down to go back to the tank."
+    },
+    "visor": {
+      "broke": "Your visor broke. The view will glitch until you fix it.",
+      "fix": "Follow the lights: slide up, press the lit buttons, slide down.",
+      "fixed": "Fixed! Fast drops keep the visor charged."
+    },
+    "laser": {
+      "broke": {
+        "keys": "Your laser broke. Each zap now takes two clicks: prime, then zap.",
+        "mouse": "Your laser broke. Each zap now takes two clicks: prime, then zap.",
+        "phone": "Your laser broke. Each zap now takes two taps: prime, then zap."
+      },
+      "fix": "Slide each lit slider to its blinking light.",
+      "fixHint": "Next: this slider, to its blinking light.",
+      "fixed": "Fixed! Zapping drains the laser; every landed piece recharges it."
+    },
+    "controls": {
+      "broke": "Your controls overheated. Held spins now turn the tank slowly.",
+      "fix": "Turn the dial to the blinking light. Keep going until none blink.",
+      "fixHint": "Turn the dial to the blinking corner.",
+      "fixed": "Fixed! Every spin heats the controls; short rests cool them."
+    },
+    "console-note": {
+      "slow": "The tank keeps running at {consoleSpeed}% speed while you're here."
     }
   }
 }

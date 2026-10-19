@@ -1,0 +1,171 @@
+{
+  "_about": "F32 first-breakdown lesson: the first time the VISOR breaks in a real shift (rank 2+), once per device (src/game/lessons/firstBreakdowns.ts starts it). What broke → go to the console → fix it (the tank frozen there) → how to prevent it → back to the tank. Steps the player is already past are skipped (skipIf). Words: content/text/en.json → lessons.visor. Design: .planning/research/tutorial.md §5. laser.json and controls.json are the same shape.",
+  "id": "visor",
+  "start": {
+    "console": "frozen"
+  },
+  "finish": {
+    "console": "normal"
+  },
+  "steps": [
+    {
+      "id": "broke",
+      "pattern": "pauseShowDismiss",
+      "message": "broke",
+      "pointer": {
+        "tag": "bar-visor"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        }
+      ]
+    },
+    {
+      "id": "toConsole",
+      "pattern": "runActAdvance",
+      "message": "toConsole",
+      "pointer": {
+        "tag": "bar-visor"
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleOpened"
+      },
+      "hint": {
+        "after": 3,
+        "message": "toConsoleHint"
+      },
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "pauseOpened"
+          },
+          "message": "pauseMenu",
+          "pointer": {
+            "tag": "pauseResume"
+          },
+          "until": {
+            "on": "event",
+            "event": "pauseClosed"
+          }
+        }
+      ],
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fullyPaused",
+      "pattern": "pauseShowDismiss",
+      "message": "fullyPaused",
+      "pointer": {
+        "tag": "monitor"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "breakdownLessonsSeen",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "pattern": "runActAdvance",
+      "message": "fix",
+      "pointer": {
+        "tag": "repair-visor"
+      },
+      "advance": {
+        "on": "event",
+        "event": "repaired",
+        "where": {
+          "machine": "visor"
+        }
+      },
+      "hint": {
+        "after": 5,
+        "message": "fixHint"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        }
+      ],
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "consoleClosed"
+          },
+          "message": "stillBroken",
+          "pointer": {
+            "tag": "bar-visor"
+          },
+          "until": {
+            "on": "event",
+            "event": "consoleOpened"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fixed",
+      "pattern": "pauseShowDismiss",
+      "message": "fixed",
+      "pointer": {
+        "tag": "panel-visor"
+      }
+    },
+    {
+      "id": "back",
+      "pattern": "runActAdvance",
+      "message": "back",
+      "pointer": {
+        "tag": "periscope",
+        "placement": "right"
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleClosed"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        }
+      ]
+    }
+  ]
+}

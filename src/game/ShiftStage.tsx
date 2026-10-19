@@ -391,12 +391,14 @@ const machinesNow = (m: ShiftEngine['state']['machines']) => Object.fromEntries(
 // DEV + tests only (e2e/repairs.mjs): break a machine NOW, as the engine does when its meter runs out — without
 // playing until it happens. Same state change and event the engine makes (src/engine/machines.ts), so the console reacts
 // exactly as in play; the repair itself goes through the real engine (act({ type: 'repair' })).
+// announce = also tell the event's listeners (as the engine's own break would: F32's first-breakdown lessons start)
 function devBreakMachine(engine: ShiftEngine, breaks: Record<MachineId, number>) {
-  return (id: MachineId) => {
+  return (id: MachineId, announce = false) => {
     const m = engine.state.machines?.[id]
     if (!m || m.broken) return false
     Object.assign(m, { unlocked: true, broken: true, health: 0, cooldownMs: 0 })
     breaks[id]++
+    if (announce) session.emit([{ type: 'breakdown', machine: id }])
     return true
   }
 }

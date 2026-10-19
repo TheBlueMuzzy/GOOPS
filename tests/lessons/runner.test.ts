@@ -152,6 +152,34 @@ describe('the lesson runner', () => {
     expect(t.runner.view().stepId).toBe('two')
   })
 
+  it('skip-ahead with a list: any gate that holds skips the step (F32)', () => {
+    const t = setup({ id: 's', steps: [{ id: 'one', message: 'x',
+      skipIf: [{ on: 'gate', gate: 'atConsole', atLeast: 1 }, { on: 'gate', gate: 'broken', atMost: 0 }] }, { id: 'two', message: 'y' }] })
+    t.gates.atConsole = 0; t.gates.broken = 1
+    t.runner.start(t.lesson)
+    expect(t.runner.view().stepId).toBe('one')
+    t.gates.broken = 0
+    t.runner.start(t.lesson)
+    expect(t.runner.view().stepId).toBe('two')
+  })
+
+  it('a reaction says something else until its `until`, then the step\'s own message comes back (F32)', () => {
+    const t = setup({ id: 'r', steps: [{ id: 'go', message: 'go', advance: { on: 'event', event: 'opened' },
+      reactions: [{ when: { on: 'event', event: 'pauseOpened' }, message: 'pauseMenu', until: { on: 'event', event: 'pauseClosed' } }] },
+    { id: 'next', message: 'next' }] })
+    t.runner.start(t.lesson)
+    t.runner.event('pauseOpened')
+    expect(t.runner.view().message).toMatchObject({ kind: 'reaction', text: 'pauseMenu', waitsForDismiss: false })
+    expect(t.speed()).toBe(1) // (the game's speed stays as it was)
+    t.runner.event('pauseClosed')
+    expect(t.runner.view().message).toMatchObject({ kind: 'step', text: 'go' })
+    t.runner.event('pauseOpened')
+    t.runner.event('opened') // the step moves on under a reaction: the reaction ends with it
+    expect(t.runner.view()).toMatchObject({ stepId: 'next', message: { text: 'next' } })
+    t.runner.event('pauseClosed')
+    expect(t.runner.view().message!.text).toBe('next')
+  })
+
   it('a lesson queued behind another plays when the first finishes', () => {
     const t = setup(lesson)
     const second: Lesson = { id: 'second', steps: [{ id: 'only', message: 'hi' }] }
@@ -159,6 +187,15 @@ describe('the lesson runner', () => {
     t.runner.queue(() => second)
     t.runner.event('go')
     expect(t.runner.view().lessonId).toBe('second')
+  })
+
+  it('once a lesson has finished, a queued one starts at once (F32: nothing is left "running")', () => {
+    const t = setup(lesson)
+    t.runner.start(() => ({ id: 'first', steps: [{ id: 'a', advance: { on: 'event', event: 'go' } }] }))
+    t.runner.event('go')
+    expect(t.runner.view()).toMatchObject({ lessonId: null, done: true })
+    t.runner.queue(() => ({ id: 'later', steps: [{ id: 'b', message: 'hi' }] }))
+    expect(t.runner.view().lessonId).toBe('later')
   })
 
   it('restart point: the last checkpoint at or before a step', () => {

@@ -13,6 +13,7 @@ export type Condition =
   | { on: 'action'; action: string; count?: number } // the player tried a control (spin, rotate, softDrop, pop, hold…)
   | { on: 'gate'; gate: string; atLeast?: number; atMost?: number } // a number the game reports reached a value
   | { on: 'time'; after: number } // seconds after the step started
+  | { on: 'any'; of: Condition[] } // whichever of these comes first (F32)
 
 // How the game runs while a message shows: 'pause' = stopped (and no input) until dismissed, 'slow' = slowed
 // (content/tuning/lessons.json slowSpeed), 'run' = as normal.
@@ -44,8 +45,20 @@ export interface LessonStep {
   advance?: Condition // default: dismiss
   hint?: LessonHint
   retry?: LessonRetry
-  skipIf?: Condition // already done (a gate that's already true when the step starts) → straight on to the next
+  // already done (a gate that's already true when the step starts) → straight on to the next. A list = any of them.
+  skipIf?: Condition | Condition[]
+  reactions?: LessonReaction[]
   checkpoint?: boolean // leaving mid-lesson restarts here (the start of a phase)
+}
+
+// "If something else happens" during a step (F32): say this instead of the step's message — no "Got it", the game
+// keeps going as it was — until `until` happens (or the step ends); then the step's own message comes back.
+// e.g. the player opens the pause menu while told to go to the console: "That's the pause menu…"
+export interface LessonReaction {
+  when: Condition
+  message: string
+  pointer?: unknown
+  until?: Condition
 }
 
 // A message that can break into ANY step once (v1's discovery, e.g. "a crack went out of view"): it pauses the step

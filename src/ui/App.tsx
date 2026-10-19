@@ -4,8 +4,8 @@
 // Mid-shift (F23/F24): swipe up / W / ↑ → the same console slides over the tank while the shift runs on at
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Bar, GameOver, Hud, HudText, kitScreens, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, toast, toasts, useScreens } from './kit'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { Bar, GameOver, Hud, HudText, kitScreens, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
@@ -14,8 +14,9 @@ import { looksClock } from '../devkit/gameClock'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { readoutSetting } from '../game/readoutSetting'
 import type { Message } from '../game/messages'
-import { lessonFromUrl, lessonNow, lessonPlay } from '../game/lessons/goopsLessons'
+import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '../game/lessons/goopsLessons'
 import { LessonView } from '../game/lessons/LessonView'
+import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
@@ -48,8 +49,15 @@ function newEngine(progress: Progress, training = false): ShiftEngine {
 }
 type LessonStart = { id: string; step: number | string }
 
+// (Replay lessons, F32: the device forgets which lessons it has seen — each machine's plays again at its next break)
+const onSettingsAction = (id: string) => {
+  if (id !== 'replayLessons') return
+  tipsMemory().resetTips()
+  const shown = toast(text.lessons.replayed, { seconds: ONE_DAY_S })
+  looksClock.after(3000, () => toasts.dismiss(shown))
+}
 const SettingsScreen = () => (
-  <Settings schema={settings} onChange={(values) => {
+  <Settings schema={settings} onAction={onSettingsAction} onChange={(values) => {
     gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick); readoutSetting.setFromSettings(values)
     soundSettingsChanged(values)
   }} />
@@ -92,6 +100,8 @@ export function App() {
   const start = useCallback((lesson?: LessonStart) => {
     lessonPlay.stop()
     const e = lesson ? lessonPlay.attach(newEngine(progressRef.current, true)) : newEngine(progressRef.current)
+    // a real shift: its machines' first breakdowns may start their lessons (F32)
+    if (!lesson) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     pendingLesson.current = lesson ?? null
     engineRef.current = e
     setResult(null); setHud(null); setEngine(e)
@@ -154,6 +164,7 @@ export function App() {
   const restoreSnapshot = useCallback((snapshot: ShiftSnapshot | null) => {
     lessonPlay.stop() // (a snapshot puts back the shift, not a lesson's place in it)
     const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns)
+    if (e) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     while (screens.current.length) screens.pop()
     toasts.current.forEach((t) => toasts.dismiss(t.id))
     endPending.current = false
@@ -219,10 +230,29 @@ export function App() {
   }), [endAtConsole])
 
   const peeking = PEEK.includes(mode)
+  // F32 lessons hear what the player does on screen: the console opening mid-shift (W / ↑ / flick up — the first few
+  // visits outside a lesson get a one-line note), back in the tank, the pause menu opening and closing
+  const lastMode = useRef(mode)
+  useEffect(() => {
+    const was = lastMode.current
+    lastMode.current = mode
+    if (mode === 'peekIn' && was === 'shift') { lessonPlay.screen('consoleOpened'); firstBreakdowns.consoleVisited() }
+    if (mode === 'shift' && was === 'peekOut') lessonPlay.screen('consoleClosed')
+  }, [mode])
+  const pauseOpen = open.includes('pause')
+  const lastPause = useRef(pauseOpen)
+  useEffect(() => {
+    if (pauseOpen !== lastPause.current) lessonPlay.screen(pauseOpen ? 'pauseOpened' : 'pauseClosed')
+    lastPause.current = pauseOpen
+  }, [pauseOpen])
+  // (re-drawn when a lesson changes: it may freeze the tank at the console)
+  useSyncExternalStore(lessonRunner.subscribe, lessonRunner.view)
   // at the console mid-shift the tank runs on under it, a little quieter (content/audio.json snapshots.console)
   useAudioSnapshot(getAudio(), peeking ? 'console' : null)
-  // how fast the shift runs: full in the tank, slowed at the console mid-shift, stopped under any menu or a slide
-  const speed = open.length ? 0 : mode === 'shift' ? 1 : peeking ? breakdowns.consoleTimeScale : 0
+  // how fast the shift runs: full in the tank, slowed at the console mid-shift, stopped under any menu or a slide.
+  // A first-breakdown lesson freezes the tank at the console instead (F32): the rules clock runs at full speed for the
+  // lesson's own timers and the lesson holds the tank still (lessonPlay.speed)
+  const speed = open.length ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
   // The HUD (F26, Muzzy's mock-up 2026-10-18): ONE top row — score · cracks (big, shrinking to fit) · Console button —
   // then the tank, then a panel under it: the unlocked machines' bars with big names above (one centred, two or three
   // evenly spaced), and the long integrity bar with its name inside. A phone on its side: the panel is a column beside
@@ -279,8 +309,9 @@ export function App() {
         </ScreenStack>
       )}
       <ToastStack place="at" variant="plain" /* just above the goop; words, not button-like plates (Muzzy 2026-10-18) */ />
-      {/* F30: a lesson's message (kit Callout), only over the running tank — never over a menu */}
-      {mode === 'shift' && !open.length && <LessonView />}
+      {/* F30: a lesson's message (kit Callout), over the running tank or the console mid-shift (F32); over a menu only a
+          step's reaction ("That's the pause menu…") */}
+      {(mode === 'shift' || peeking) && <LessonView overMenu={open.length > 0} />}
     </>
   )
 }

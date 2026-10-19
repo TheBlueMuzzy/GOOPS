@@ -6,3 +6,8 @@
    with a CSS translate), above the visor glitch (z-index 1), so the reading stays clear while the view breaks up. */
 .stage-readout { z-index: 2; pointer-events: none; }
 .stage-pin { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; }
+/* F32: a lesson's invisible target box on the console art (src/ui/RepairPanels.tsx LessonTag) fills its whole layer,
+   even a layer of words (which centres its contents) — and a little past it, so the lesson's pulse ring has breathing
+   room round the lamp or the words instead of crossing them */
+.lesson-tag { place-self: stretch; margin: -0.25em; pointer-events: none; }
+[data-text] > .lesson-tag { margin: -0.7em -0.5em; } /* (words: their letters reach past their line box) */

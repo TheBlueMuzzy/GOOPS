@@ -10,7 +10,7 @@ import { useMemo } from 'react'
 import { ArtLayer, ArtStage, Button, LevelMeter, PullHandle, Screen, TitleArt, fill } from './kit'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
-import { ControlsPanel, LaserPanel, VisorPanel } from './RepairPanels'
+import { ControlsPanel, LaserPanel, LessonTag, VisorPanel } from './RepairPanels'
 import { playUiSound } from '../game/sound'
 import { SOUNDS } from '../game/shiftSounds'
 import { art } from './art'
@@ -78,7 +78,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor} />
-        <ArtLayer {...a.words.hint} tone={broken.length ? 'accent' : undefined}>{hint}</ArtLayer>
+        {/* (a lesson pointing at the monitor points at its words, and its message goes to their side, clear of the
+            periscope under them — the kit flips it where there's no room) */}
+        <ArtLayer {...a.words.hint} tone={broken.length ? 'accent' : undefined}><LessonTag tag="monitor" placement="left" />{hint}</ArtLayer>
       </ArtStage>
     </Screen>
   )
