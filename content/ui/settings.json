@@ -231,6 +231,13 @@
           "on": false
         },
         {
+          "id": "replayLessons",
+          "type": "button",
+          "label": "Replay lessons",
+          "detail": "Each machine's lesson plays again the next time it breaks.",
+          "confirm": "Each machine's lesson will play again the next time it breaks."
+        },
+        {
           "id": "confirmEndTurn",
           "type": "toggle",
           "label": "Ask before ending a turn",
