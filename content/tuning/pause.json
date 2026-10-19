@@ -1,6 +1,6 @@
 {
   "_help": {
-    "_file": "The Dev Kit's ◐ Half pause: the rules stop (nothing falls, no timers run, the shift's numbers stand still) while the looks keep moving (crack pulses, the ready glow, lamps, the drop guide's wave, the camera glide).",
+    "_file": "The Dev Kit's ◐ Half pause: the rules stop (nothing falls, no timers run, the shift's numbers stand still) while the looks keep moving (crack pulses, lamps, the drop guide's wave, the camera glide). The goo — and the ready glow drawn on it — only moves if halfPauseGooMoves is on.",
     "halfPauseGooMoves": "On: during a Half pause the goo keeps jiggling and settling (it's only looks). Off: the goo stands still too."
   },
   "_labels": { "halfPauseGooMoves": "Half pause: goo keeps moving" },

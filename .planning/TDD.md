@@ -2,13 +2,13 @@
 
 > How the game is built. Plain English first; code names in `backticks` only where they help.
 > Living document — /define writes it, /develop keeps it true, /tdd shows it.
-> Last updated: 2026-10-18 (Sprint 04 F23: breakdowns in the engine)
+> Last updated: 2026-10-19 (F02 close-out: the goo written up from the real code)
 
 ## 1. At a glance
 - **Platforms:** web (desktop + phone browsers), installable PWA later (like v1).
 - **Stack:** Vite + TypeScript + React for screens/HUD, plus one plain WebGL2 canvas for the tank and goo. Why: the goo lab proved WebGL2 + hand-written physics runs at 60 fps; no 3D, so no R3F.
 - **Where it runs online:** GitHub Pages (v1's `gh-pages` stays live until /deliver replaces it).
-- **Dev Kit tools used:** none yet. **Recommended next:** Tuning (the goo knobs and shift numbers already live in `content/`), Snapshots (save a board to replay a bug).
+- **Dev Kit tools used:** Tuning (every `content/tuning/*.json`, goo knobs included — edits show live), ⏸ / ◐ Pause, Snapshots and Bug capture (`src/devkit-game/goopsAdapter.ts`).
 
 ## 2. How it fits together
 ```mermaid
@@ -19,8 +19,8 @@ flowchart LR
   Data[(content/*.json)] --> Engine
   Data --> Goo
 ```
-- **Shift engine** (`src/engine/`): pure TypeScript, no screen, no timers of its own. Owns the tank grid (30 columns around, 24 rows), pieces, spin, merge, fill, pop, pressure, cracks, score. `tick(ms)` advances it; actions come in (`spin`, `rotate`, `drop`, `pop`…); events come out (`spawn`, `move`, `rotate`, `lock`, `pop`, `fall`, `crackSeal`…). Seeded random, so a shift can be replayed.
-- **Goo overlay** (`src/goo/`): reads the engine's state + events, never writes back. Two interchangeable renderers, Jelly (one soft body per group, the F02 pick) and Particle (L3), chosen in Settings. Ported from `.planning/research/sketches/lab-L4-jelly.html` and `lab-L3-particles.html`.
+- **Shift engine** (`src/engine/`): pure TypeScript, no screen, no timers of its own. Owns the tank grid (30 columns around, 24 rows), pieces, spin, merge, fill, pop, pressure, cracks, score. `tick(ms)` advances it; actions come in (`spin`, `rotate`, `softDrop`, `hold`, `pop`…); events come out (`spawn`, `move`, `rotate`, `lock`, `merge`, `ready`, `pop`, `fall`, `crack`, `reject`…). Seeded random, so a shift can be replayed.
+- **Goo overlay** (`src/goo/`): reads the engine's state + events, never writes back. Two interchangeable renderers, Jelly (`src/goo/jelly/`, one soft body per group, the F02 pick, default) and Particle (`src/goo/particle/`), chosen in Settings → Goo style. First ported from the lab sketches `lab-L4-jelly.html` / `lab-L3-particles.html`; the code is now the truth (§2b).
 - **Tank view** (`src/view/`): turns tank columns into screen space around the spin (the 12 visible columns of 30), draws the tank, grid lines, pressure water, cracks, ghost piece, fill progress. Shared by both goo renderers.
 - **Input** (`src/input/`): v1's controls — drag sideways = spin, tap left/right half = rotate, drag down = fast drop, tap a ready blob = pop; keyboard on desktop.
 - **Screens** (`src/ui/`): console-lite start, shift HUD, end-of-shift report, Settings (goo style).
@@ -31,8 +31,53 @@ flowchart LR
 - The engine has no `Date.now()`, no `Math.random()` outside its seeded generator, no DOM.
 
 ## 2b. Game-specific systems
-**Real-time / visual physics** — the engine's grid decides; Jelly and Particle goo read grid + events each frame and simulate in *view space* (tank columns placed around the current spin, so spinning the tank makes the goo slosh). Nothing visual is read back by the rules.
-- A frame can carry MANY events (a slow frame, tests fast-forwarding): renderers handle each event against its own piece, never by adding up offsets across pieces (Jelly bug fixed 2026-10-17). The falling piece and the ghost are placed by `state.spin`; the grid by the gliding camera, so the piece stays still while the tank slides under it.
+### The goo (F02 → built in F15)
+**The idea:** the grid decides every rule; the goo is only a picture that follows the grid. Pillar "the goo is alive" — it jiggles, sloshes, stretches and sticks — but nothing it does is ever read back by the engine (`src/goo/types.ts`: renderers READ state + events, never write). Switching style mid-shift changes no result.
+
+**Two looks, one plug** (`GooRenderer` in `src/goo/types.ts`: `frame`, `setKnobs`, `dispose`, `motion`):
+- **Jelly** (default) — `src/goo/jelly/`. One soft body per same-colour group: a ring of outline points traced round the group's cells (`outline.ts`, rounded by `corner`). Each point is pulled toward "keep my shape" (best rigid fit of its rest shape) and "stay on my grid spot" (`home`), with damping (`viscosity`).
+- **Particle** — `src/goo/particle/`. Each cell owns 9 particles on a 3×3 grid, each on a weak spring to its spot. Same colours stick (bonds + pull), other colours push apart a little so seams stay clean.
+- Picked by the Settings row **Goo style** (`content/ui/settings.json` → `src/game/gooStyle.ts`); `src/game/gooFactory.ts` makes the renderer. A change rebuilds it on a fresh canvas (the canvas is keyed by style in `ShiftStage.tsx`). Shared parts: `src/goo/shared/` (springs for the falling piece, tank wrap maths, colours, knob files, WebGL helpers).
+
+**One frame** (`src/game/ShiftStage.tsx`):
+```mermaid
+flowchart LR
+  Tick["engine.tick(dt × rules rate)"] --> Ev["engine.takeEvents()"]
+  Ev --> Cam["camera glides to state.spin (tank.json cameraSpeed)"]
+  Cam --> Tank["drawTank (2D canvas, under)"]
+  Cam --> Goo["goo.frame(state, events, view, dt)"]
+  Goo --> Bodies["events → goo bodies / particles → physics steps"]
+  Bodies --> Draw["WebGL draw (canvas over the tank)"]
+```
+- Each frame the renderer first copies any Dev Kit edit of its knob file and of `goo-colors.json` (`followFile` in `shared/knobs.ts`), then handles the events, then steps the physics, then draws.
+- A frame can carry MANY events (a slow frame, tests fast-forwarding): each event is handled against its own piece, never by adding offsets across pieces (Jelly bug fixed 2026-10-17).
+- **View space** (D03): the goo simulates in cells around the camera, so when the tank turns every grid spot moves and the goo sloshes after it for free. The spawn rows above the tank are clipped off (CSS clip-path), and the shaders only draw inside the 12-column tank window (`tankWindow`, `shared/tank.ts`).
+
+**What happens when…**
+| Moment | Jelly | Particle |
+|---|---|---|
+| **Falling piece** | Its own body, placed by the shared piece pose (`shared/piecePose.ts`): placed by `state.spin` so it stays put while the tank slides under it; glides smoothly between rows (`piece.fall`); a rotate lags 90° behind and springs over with a little overshoot; a sideways move lags. Touching a same-colour jelly makes a sticky string (`tension`). | Same piece pose; the 4 clumps are carried with it so a rotate swings them round as one. |
+| **Landing** (`lock`) | The piece's wobble is copied into the new grid body; a squash kick on the landed cells, a smaller one on their neighbours. | The clumps are handed to the locked cells by shape; a thump squashes them out and nudges neighbours (`wobble`). |
+| **Merging** | Bodies are rebuilt whenever the grid or groups change. A new body copies the wobble of the nearest old points; one made from 2+ old bodies gets a merge kick. A body that split gets a string between its parts that thins and snaps (`tension`), dripping a bead. | No rebuild: same-colour particles that touch bond, so merges just happen. `magnetism` makes nearby same-colour goo reach for each other in both looks. |
+| **Filling** | The fill line comes from the engine's group fill (`groupFillLines`, rises from the bottom row); it rides with the body's sag. Not-yet-filled part drawn see-through/darker (`unfilledAlpha`, `unfilledDim`); ready = glow pulse (`readyGlow`, `readyPulse`). | Same, per particle. |
+| **Popping** | Placeholder (the laser "explode/harden" look is still open): home springs let go, it swells a touch, shrinks and fades over `popMs`; neighbours get a small inward kick. | Placeholder: particles shrink toward where they were and fade over `popMs`. |
+| **Goop falling after a pop** (`fall`) | Cells keep where they were drawn and fall to their new spot under `gravity`, landing with a squash and re-merging. | Clumps move to their new cells and fall there (`gravity`, `landing`, `maxFall`). |
+| **Poke** (a zap on goop that can't pop yet: still filling or above the line → engine `reject` with `cell`) | Squash + press-in kick on that jelly, size `poke`. | A ripple from the poked cell through its cluster, weaker further away, size `poke` × `wobble`. |
+| **Tank turning** | Locked goo rides `spinCarry` of each turn at once and sloshes behind for the rest (0.5 = half the slosh, Muzzy 2026-10-18). Popping goo and drips ride the whole turn. A body crossing the wrap seam moves with its whole sim; a ring all the way round is rebuilt as the camera moves. | Same `spinCarry` rule; popping particles ride the whole turn; the falling piece isn't on the tank, so it's left alone. |
+| **Hold swap** | A different piece without a spawn appears where it is. | The old piece's goo fades; the new one appears. |
+
+**Pause and slow time** — the goo gets the frame's time × the rules clock rate (`ShiftStage.tsx`):
+- Playing → normal; at the console mid-shift → slow-motion at `consoleTimeScale`; a menu → stands still.
+- Dev Kit ⏸ full pause → the looks clock stops, so the goo freezes.
+- Dev Kit ◐ half pause → rules stop; the goo moves only if `content/tuning/pause.json` `halfPauseGooMoves` is on. **It's `false` now**, so the goo stands still in a half pause — its ready glow pulse too (the goo's own clock only runs on the time it's given). The camera glide and the tank view's effects keep moving.
+
+**Performance** (target in §5; `node e2e/perf.mjs` measures fps + worst frame on a 390×844@3× phone size and 1280×800 desktop, both looks, busy tank — reports only, no pass/fail line):
+- Pixel ratio capped by `maxDpr` (1.5); the goo is drawn into half-res and quarter-res textures, full res only for the last pass.
+- Physics steps at 120 per second. Jelly: frame time capped at 50 ms, split into sub-steps. Particle: fixed steps, at most 4 per frame — a very slow frame makes the goo slow-mo instead of piling up work.
+- Particle simulates only columns within `margin` (3) of the screen, with hard caps (9,000 particles, 40,000 bonds) and a spatial hash for neighbours. Jelly simulates every body all the way round the tank and only skips drawing the off-screen ones.
+- Phones without float textures fall back to 8-bit ones (both looks).
+
+**Tests:** `tests/goo/` (colours, knob files, piece turn + glide, wrap seam, fill lines); `e2e/poke.mjs` (a click on goop that can't pop yet makes it move, both looks, via the dev hook `gooMotion`); `e2e/perf.mjs`. The dev-only goo lab (`/goo-lab.html`, `src/goo/lab/`, a fake engine) is not in the production build.
 
 **Timers**
 | Timer | Length | Owned by | Starts when | On expiry |
@@ -72,10 +117,28 @@ flowchart LR
 | `content/tuning/shift.json` | tank size, shift length, fall speed, lock delay, fill time, refunds, crack rules | Obsidian (Dev Kit later) |
 | `content/tuning/breakdowns.json` | the three machines' meters (v1 numbers), unlock ranks, repair cooldown, `consoleTimeScale` (F23) | Obsidian |
 | `content/tuning/upgrades.json` | upgrade definitions: type, rank, max level, per-level effects / ability charge + numbers (only the two test-only ones so far) | Obsidian |
-| `content/tuning/goo-jelly.json` | Muzzy's Jelly pick (`research/goo-lab/picks.json`) | Obsidian / in-game Settings later |
-| `content/tuning/goo-particle.json` | Muzzy's Particle pick | same |
+| `content/tuning/goo-jelly.json` | Jelly's knobs (started as Muzzy's Preset 2; plain-English help for each under `_help`) | Dev Kit Tuning (live) / Obsidian |
+| `content/tuning/goo-particle.json` | Particle's knobs (started as Muzzy's Preset 1; `_help` too) | same |
+| `content/tuning/goo-colors.json` | colour name → hex (red, blue, green, yellow, purple, white, black); `shift.json` `colors` sets their order | same — the goo, cracks and ghost change at once |
+| `content/tuning/pause.json` | `halfPauseGooMoves` (off) — does the goo keep moving in the Dev Kit's ◐ half pause | Dev Kit Tuning |
 | `content/text/en.json` | player-facing words | Obsidian |
 | `content/ui/art.json` | which of Muzzy's pictures goes where: the console (layers cut from art/Example1.svg, each at its box in the mock-up's units; the views; periscope travel + grip; where the game writes words), end-report frame + its cut lines, buttons | Obsidian |
+
+**Goo knobs Muzzy can change live** (Dev Kit → Tuning; the renderer picks up a changed value on the next frame — `followFile` in `src/goo/shared/knobs.ts`). Both files share most names:
+- `stiffness` — how hard the goo springs back to its grid shape (Jelly 700, Particle 189). High = firm, fast jiggle.
+- `viscosity` — damping / thickness (Jelly 6.5, Particle 0.21). Low = jiggles keep going.
+- `wobble` — size of the kicks on land, rotate, merge, pop (Particle: also the idle wiggle).
+- `gravity` — how fast loose goo falls after a pop (m/s²).
+- `magnetism` — same-colour goo reaching for each other (reach 0.25 + 0.5 × this cells).
+- `tension` — sticky strings: how far they stretch before they snap (0.35 + 0.75 × this cells; 0 = none).
+- `spinCarry` — how much of a tank turn locked goo rides at once (0 = full slosh, 0.5 now, 1 = none).
+- `poke` — how hard goop jiggles when zapped before it can pop (0 = off, 1 = gentle, 2 = big jolt).
+- `translucency`, `wetness` — see-through and shine.
+- `unfilledAlpha`, `unfilledDim` — how the not-yet-filled part looks; `readyGlow`, `readyPulse` — the ready-to-pop glow.
+- `popMs` — pop fade length (Jelly 600, Particle 350; placeholder until the laser look is designed).
+- `maxDpr` — pixel-ratio cap (performance).
+- Jelly only: `home` (grid pull as a share of stiffness — also how much spinning sloshes), `corner` (outline rounding), `skin` (off).
+- Particle only: `threshold` (fatter ↔ beadier edge), `blur`, `dome`, `splat`, `snap`, `landing`, `maxFall`, `margin` (columns simulated past the screen), plus `bulge`, `absorb`, `fresnel` (shading; no `_help` line yet).
 
 ## 4. Standards
 - **Folders:** `src/engine` rules · `src/goo` renderers · `src/view` tank drawing · `src/input` controls · `src/ui` screens · `content/` data · `tests/` unit tests · `e2e/` Playwright checks.
@@ -144,5 +207,7 @@ D01 · 2026-10-17 · Plain WebGL2 + React, no R3F / no game engine
 | opentype.js (dev only) | outlines the title's words in scripts/art-prep.mjs | MIT | yes |
 
 ## 10. Risks & open questions
-- Goo across the wrap seam (a group spanning column 29 → 0): handled by view space; check a group sitting on the seam while spinning.
-- Particle goo on a full 30×24 tank: up to ~6,500 particles; may need to simulate only near the visible window.
+- Goo across the wrap seam (a group spanning column 29 → 0): handled — groups are unwrapped into one piece (`unwrapCells`, tested in `tests/goo/tank.test.ts`); a ring all the way round is cut on the far side.
+- Particle goo on a full tank: already simulates only near the screen (`margin`) with caps (9,000 particles); past the cap, new cells quietly get fewer particles.
+- Jelly simulates every body all the way round the tank, even off-screen ones; a very full tank on a slow phone is the case to watch (`node e2e/perf.mjs`; no pass/fail line yet).
+- The pop look is a placeholder in both styles until the laser "explode/harden" look is designed.

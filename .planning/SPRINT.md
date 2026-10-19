@@ -12,3 +12,4 @@ Decided at planning (Muzzy, 2026-10-19): the goo-lab checks are moot — Jelly i
 - [ ] 🙋 4. Edit + approve → Claude writes them into ROADMAP + GDD §7
 
 ## Notes
+- Done 2026-10-19 (F02 close-out, helper): TDD §1/§2/§2b/§3/§10 rewritten from the real goo code (the TDD listed a `drop` action + `crackSeal` event that don't exist, "Dev Kit tools: none yet", Particle "may need" view culling it already has). Fixed alongside: pause.json help said the ready glow keeps moving in half pause — it doesn't (the goo gets 0 time, ShiftStage.tsx:167). **Later (not this sprint):** goo numbers hard-coded in code that belong in content/ (Jelly kick sizes, piece spring K=260, Particle KREP/SEP/cohK, caps 9,000/40,000, 120 Hz step); dead hard-drop code in both renderers (`case 'drop'`, Particle thump flag); Particle `bulge` / `absorb` / `fresnel` have no `_help`; `src/goo/flat/` unused; e2e/perf.mjs has no pass/fail line vs 60 fps; Jelly simulates off-screen bodies.
