@@ -22,7 +22,45 @@ export function crackEveryMs(config: ShiftConfig, pressure: number): number {
   return everyMsAtEmpty + (everyMsAtFull - everyMsAtEmpty) * pressure
 }
 
-// One new crack where it can be sealed right now: an empty cell (no goop, no crack) at or below the pop line.
+// ---------------------------------------------------------------- the crack band (Muzzy, F27, 2026-10-18)
+// In this block rows are counted FROM THE FLOOR UP (the floor row = 0), the way Muzzy describes them.
+// The engine's grid counts y from the top down, so: row from the floor = height - 1 - y.
+
+// The highest goop cell, as a row from the floor. Leave out `x` for the whole tank (all columns), or give a column.
+// No goop at all → 0 (the floor).
+export function goopTopRow(state: ShiftState, x?: number): number {
+  for (let y = 0; y < state.height; y++) {
+    if (x === undefined) {
+      for (let col = 0; col < state.width; col++) if (state.grid[y * state.width + col] !== 0) return state.height - 1 - y
+    } else if (state.grid[y * state.width + x] !== 0) return state.height - 1 - y
+  }
+  return 0
+}
+
+// Muzzy's rule: cracks may form from the floor up to row X, halfway between the top of the goop and the pop line,
+// rounded down. His example: goop top 12, line 16 → 16 − 12 = 4, 4 / 2 = 2, 12 + 2 = 14.
+// Goop at or above the line → X = the line (the old rule).
+export function crackBandTop(goopTop: number, lineRow: number): number {
+  if (goopTop >= lineRow) return lineRow
+  return goopTop + Math.floor((lineRow - goopTop) / 2)
+}
+
+// For each column: the highest grid y (top-down) a crack may form at, using config.cracks.band (read live).
+function firstCrackRows(state: ShiftState, config: ShiftConfig): number[] {
+  const lineY = firstPoppableRow(state)
+  const lineRow = state.height - 1 - lineY
+  const band = config.cracks.band
+  const tankTop = band === 'halfway' ? crackBandTop(goopTopRow(state), lineRow) : lineRow
+  const rows: number[] = []
+  for (let x = 0; x < state.width; x++) {
+    const top = band === 'halfwayPerColumn' ? crackBandTop(goopTopRow(state, x), lineRow) : tankTop
+    rows.push(state.height - 1 - top)
+  }
+  return rows
+}
+
+// One new crack where it can be sealed right now: an empty cell (no goop, no crack) at or below the pop line —
+// and, with a crack band on, no higher than the band (see above).
 // `lowRows` (the low-cracks ability, F22): only in the bottom lowRows rows instead, pop line or not (v1 Crack Down).
 // Returns null if there is nowhere to put it (or, with onePerColour, every colour already has an open crack).
 export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, colorCount: number, id: number, lowRows?: number): Crack | null {
@@ -35,11 +73,13 @@ export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, col
 
   const cracked = new Set(state.cracks.map((c) => c.y * state.width + c.x))
   const spots: number[] = []
-  const top = lowRows ? Math.max(state.bufferRows, state.height - lowRows) : firstPoppableRow(state)
-  for (let y = top; y < state.height; y++) {
+  const lowTop = lowRows ? Math.max(state.bufferRows, state.height - lowRows) : 0
+  const firstRow = lowRows ? Array<number>(state.width).fill(lowTop) : firstCrackRows(state, config)
+  // Spots are listed row by row, top to bottom (the same order as before the band, so 'none' picks the same cells).
+  for (let y = Math.min(...firstRow); y < state.height; y++) {
     for (let x = 0; x < state.width; x++) {
       const i = y * state.width + x
-      if (state.grid[i] === 0 && !cracked.has(i)) spots.push(i)
+      if (y >= firstRow[x] && state.grid[i] === 0 && !cracked.has(i)) spots.push(i)
     }
   }
   if (spots.length === 0) return null

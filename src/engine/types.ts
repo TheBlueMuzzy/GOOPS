@@ -56,7 +56,7 @@ export interface ShiftState {
   heldCells?: [number, number][] | null // the held piece's shape (added by F13)
   pressure: number // 0..1: rises over time, zaps and seals vent it; drains to 0 during a rupture
   pressureRow: number // y of the pressure line (goop at or below it can pop)
-  integrity: number // 0..1 tank integrity: open cracks drain it, it never refills; 0 = rupture
+  integrity: number // 0..1 tank integrity: open cracks drain it, each seal gives integrity.sealRefund back; 0 = rupture
   phase: ShiftPhase
   ruptureReason: 'integrity' | 'overflow' | null // why the tank broke (null until it does)
   cracks: Crack[]

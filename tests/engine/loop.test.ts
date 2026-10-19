@@ -113,8 +113,9 @@ describe('tank integrity', () => {
     expect(shift.state.integrity).toBeCloseTo(before - 0.008, 6)
   })
 
-  it('never comes back (sealing stops the drain but does not refill)', () => {
+  it('with sealRefund 0, sealing stops the drain but does not refill', () => {
     const config = calmConfig(0.004)
+    config.integrity.sealRefund = 0
     const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([FLOOR, FLOOR]) })
     sealACrack(shift, config)
     expect(shift.state.cracks).toHaveLength(0)

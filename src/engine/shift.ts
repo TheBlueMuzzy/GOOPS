@@ -303,13 +303,14 @@ class Shift implements ShiftEngine {
     const s = this.state
     this.crackTimerMs += dt
     if (this.crackTimerMs < crackEveryMs(this.config, s.pressure) * this.mods.crackEveryMult) return
-    this.crackTimerMs = 0
     // The low-cracks ability: this crack goes in the bottom rows (if there's no room there, a normal crack instead).
     const low = this.effects.lowCracks
     let crack = low ? spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId, low.rows) : null
     const wasLow = !!crack
     crack ??= spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId)
-    if (!crack) return // nowhere sealable right now: try again next time
+    // Nowhere for it right now: keep the timer, so it tries again next step (not a whole interval later).
+    if (!crack) return
+    this.crackTimerMs = 0
     this.nextCrackId++
     s.cracks.push(crack)
     this.events.push({ type: 'crack', crack: { ...crack } })
@@ -319,7 +320,7 @@ class Shift implements ShiftEngine {
     }
   }
 
-  // Every open (unsealed) crack wears the tank down a little each second. Integrity never comes back.
+  // Every open (unsealed) crack wears the tank down a little each second. Sealing one gives a little back (pop).
   private drainIntegrity(dt: number): void {
     const s = this.state
     const drain = s.cracks.length * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
@@ -495,6 +496,8 @@ class Shift implements ShiftEngine {
     if (s.phase === 'playing') {
       const ventMs = popRefundMs(this.config, g.cells.length) + sealed.length * this.config.cracks.sealRefundMs
       this.setPressure(s.pressure - ventMs / this.riseMsToFull())
+      // Each seal patches the tank a little (integrity.sealRefund, F27), never past full. Not during a rupture.
+      s.integrity = Math.min(1, s.integrity + sealed.length * this.config.integrity.sealRefund)
       this.chargeAbilities(0, sealed.length)
     }
 

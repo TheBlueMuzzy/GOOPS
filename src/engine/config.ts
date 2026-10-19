@@ -23,7 +23,10 @@ export interface ShiftConfig {
   colorsByRank: RankStep[] // how many colours are in play from each rank
   junkByRank: RankStep[] // single goop cells on the floor at shift start
   pressure: { riseMsToFull: number } // pressure goes 0 → 1 in this long (if nothing vents it)
-  integrity: { drainPerCrackPerSec: number } // tank integrity lost per open crack per second (1 = full tank)
+  integrity: {
+    drainPerCrackPerSec: number // tank integrity lost per open crack per second (1 = full tank)
+    sealRefund: number // integrity given back per crack sealed (0.03 = 3%), capped at full; none during a rupture
+  }
   rupture: { drainMs: number } // after a rupture, pressure falls by 1 (100%) in this long
   fall: { msPerRow: number; softDropFactor: number }
   lock: { delayMs: number; softDropDelayMs: number; maxResets: number }
@@ -34,6 +37,10 @@ export interface ShiftConfig {
     everyMsAtFull: number // …and at 100% (straight line in between)
     sealRefundMs: number // pressure vented per seal, in "ms of rise"
     onePerColour: boolean // v1: at most one open crack per colour
+    // How high cracks may form (F27, cracks.ts crackBandTop): 'none' = anywhere up to the pop line;
+    // 'halfway' = up to halfway between the top of the goop (whole tank) and the pop line;
+    // 'halfwayPerColumn' = the same, worked out for each column from that column's own goop. Anything else = 'none'.
+    band: string
   }
   score: {
     perCell: number

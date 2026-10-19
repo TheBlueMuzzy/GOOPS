@@ -14,13 +14,13 @@
     { "rank": 9, "count": 11 }
   ],
   "pressure": { "riseMsToFull": 75000 },
-  "integrity": { "drainPerCrackPerSec": 0.004 },
+  "integrity": { "drainPerCrackPerSec": 0.002, "sealRefund": 0.03 },
   "rupture": { "drainMs": 5000 },
   "fall": { "msPerRow": 780, "softDropFactor": 8 },
   "lock": { "delayMs": 500, "softDropDelayMs": 50, "maxResets": 10 },
   "fill": { "msPerCell": 375 },
   "pop": { "refundMsPerCell": 100, "refundTierFromSize": 15, "refundTierStep": 10, "refundTierMs": 250 },
-  "cracks": { "everyMsAtEmpty": 5000, "everyMsAtFull": 1000, "sealRefundMs": 3000, "onePerColour": false },
+  "cracks": { "everyMsAtEmpty": 5000, "everyMsAtFull": 1000, "sealRefundMs": 3000, "onePerColour": false, "band": "halfway" },
   "score": {
     "perCell": 10,
     "heightPerRow": 10,
