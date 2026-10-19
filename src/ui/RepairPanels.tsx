@@ -52,7 +52,10 @@ function useDragOnly(onPress?: () => void) {
   const press = useRef<{ x: number; y: number; moved: boolean } | null>(null)
   const slop = () => TAP_SLOP_REM * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16)
   const handlers = {
-    onPointerDownCapture: (e: PointerEvent) => { press.current = { x: e.clientX, y: e.clientY, moved: false }; onPress?.() },
+    onPointerDownCapture: (e: PointerEvent) => {
+      if (e.button !== 0) return // (a right-click is no press: it would leave a "tap" behind and shake the panel)
+      press.current = { x: e.clientX, y: e.clientY, moved: false }; onPress?.()
+    },
     onPointerMoveCapture: (e: PointerEvent) => {
       const p = press.current
       if (p && !p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) >= slop()) p.moved = true

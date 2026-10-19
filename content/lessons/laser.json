@@ -85,7 +85,7 @@
       "message": "fullyPaused",
       "dim": true,
       "pointer": {
-        "tag": "monitor",
+        "tags": ["monitor", "crt"],
         "or": {
           "tag": "backToTank",
           "placement": "top"

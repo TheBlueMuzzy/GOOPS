@@ -218,6 +218,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     if (!it || advancing || !step || insisted === step) return // (once per step: a gate keeps holding)
     insisted = step
     stepTimers.clear('hint') // (one message: no hint on top of it)
+    stepTimers.clear('show') // (nor a late showAfter replacing the insisting message)
     show({ kind: 'step', text: step.message ?? '', pointer: step.pointer, dim: it.dim ?? true, waitsForDismiss: false, armed: false,
       tries, insisting: true, only: it.only }, it.while ?? 'pause')
   }
