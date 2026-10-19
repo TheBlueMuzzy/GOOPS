@@ -172,6 +172,7 @@ const crtLogger = () => {
   requestAnimationFrame(tick)
 }
 const CRT = JSON.parse(readFileSync('content/tuning/crt.json', 'utf8'))
+const MONITOR = CRT.presets[CRT.use.monitor] // (F60: the preset the monitor wears)
 // how one text typed out: did it type (letters in between), how long it took, and did any box change size meanwhile
 // (outer = the screen itself too: only where nothing makes it slide down like a toaster, the start console)
 // (sizes are compared once the game's fonts have loaded: on the very first page load the font arriving re-lays every
@@ -567,7 +568,7 @@ try {
         const endCursor = await cursorOf(page)
         check(`${name}: the lesson line types out on the monitor (cursor while typing and after; Got it from the start; words box steady; ~letters ÷ speed)`,
           midCursor.count === 1 && midCursor.w > 2 && midCursor.h > 5 && endCursor.count === 1 && gotItEarly && typing.partial && typing.steady
-          && typing.ms !== null && typing.ms <= (key.length / CRT.lettersPerSecond) * 1000 + 500, JSON.stringify({ midCursor, endCursor, typing, letters: key.length }))
+          && typing.ms !== null && typing.ms <= (key.length / MONITOR.lettersPerSecond) * 1000 + 500, JSON.stringify({ midCursor, endCursor, typing, letters: key.length }))
       }
       if (!side) check(`${name}: fully paused — on the monitor with Got it, screen undimmed, no bubble`, (await crt(page).getByRole('button', { name: 'Got it' }).count()) === 1 && await undimmed(page, '[data-tag="crt"]') && (await bubble(page).count()) === 0)
       else check(`${name}: fully paused — a bubble (the monitor is off screen) inside the window`, await inColumn(page))
@@ -649,17 +650,18 @@ try {
       })
       const endCursor = await cursorOf(page)
       check(`${name} start console: the monitor types its words out (letters in between, the screen and its words never change size, done in ~letters ÷ speed)`,
-        typing.partial && typing.steady && typing.ms !== null && typing.ms <= (key.length / CRT.lettersPerSecond) * 1000 + 500, JSON.stringify({ typing, letters: key.length }))
+        typing.partial && typing.steady && typing.ms !== null && typing.ms <= (key.length / MONITOR.lettersPerSecond) * 1000 + 500, JSON.stringify({ typing, letters: key.length }))
       check(`${name} start console: a block cursor while typing and after it (blinking), green glowing words over scan lines, inside the screen`,
         midCursor.count === 1 && midCursor.w > 2 && midCursor.h > 5 && endCursor.count === 1 && endCursor.anim === 'crt-blink'
-        && look.color === `rgb(${[1, 3, 5].map((i) => parseInt(CRT.textColor.slice(i, i + 2), 16)).join(', ')})` && look.glow && look.scan && look.inside, JSON.stringify({ midCursor, endCursor, look }))
+        && look.color === `rgb(${[1, 3, 5].map((i) => parseInt(MONITOR.textColor.slice(i, i + 2), 16)).join(', ')})` && look.glow && look.scan && look.inside, JSON.stringify({ midCursor, endCursor, look }))
       check(`${name} start console: no page errors`, errors.length === 0, errors.join(' | '))
       await page.close()
     }
     { // mid-typing, for the picture: typing slowed to 6 letters a second (the Dev Kit's live edit, sent as the page loads)
       const page = await browser.newPage({ viewport: { width: w, height: h } })
       await page.addInitScript((crt) => {
-        document.addEventListener('DOMContentLoaded', () => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'crt', data: { ...crt, lettersPerSecond: 6 } } })))
+        const name = crt.use.monitor, slow = { ...crt, presets: { ...crt.presets, [name]: { ...crt.presets[name], lettersPerSecond: 6 } } }
+        document.addEventListener('DOMContentLoaded', () => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'crt', data: slow } })))
       }, CRT)
       await page.goto(`http://localhost:${PORT}/?seed=7`)
       await crt(page).waitFor()

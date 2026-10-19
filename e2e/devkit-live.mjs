@@ -8,6 +8,8 @@
 //   ◐ half pause — the engine's state doesn't change over 1 s, while the picture does (the drop guide's wave, the goo)
 //   P cycles off → full → half → off in the panel; online games: n/a (Goops is offline)
 //   Snapshots — Save moment → play on → Restore puts the exact shift back
+//   F60 the CRT look — crt.json use.monitor → amber / off changes the monitor at once, a preset knob too, full pause
+//     holds its motion (shots crt-amber / crt-off at 390x844)
 //   Screenshots of the panel with both buttons + the badge at 1440x900 and 390x844 → e2e-shots/devkit-live/
 // Run: node e2e/devkit-live.mjs  (own dev server on port 5282)
 import { chromium } from 'playwright-core'
@@ -222,6 +224,48 @@ try {
     await phone.locator('.devkit-pause-badge').click()
     check('390x844: the badge resumes', (await clocks(phone)).pause === null)
     check('390x844: no console errors', pe.length === 0, pe.slice(0, 3).join(' | '))
+  }
+
+  // ---- F60: the CRT look's presets, live (content/tuning/crt.json; the start console's monitor wears use.monitor) ----
+  {
+    const crtPage = await browser.newPage({ viewport: { width: 390, height: 844 } })
+    const ce = []
+    crtPage.on('pageerror', (e) => ce.push(e.message))
+    await crtPage.goto(`http://localhost:${PORT}/?seed=7`)
+    await crtPage.locator('[data-tag="crt"]').waitFor()
+    await crtPage.waitForFunction(() => !document.querySelector('[data-tag="crt"]').hasAttribute('data-typing'), null, { timeout: 8000 })
+    const look = () => crtPage.evaluate(() => {
+      const el = document.querySelector('[data-tag="crt"]'), words = el.querySelector('.crt-words'), cursor = el.querySelector('.crt-cursor')
+      return { name: el.dataset.look, color: getComputedStyle(words).color, glow: getComputedStyle(words).textShadow !== 'none',
+        scan: getComputedStyle(el, '::after').backgroundImage.includes('gradient'), roll: getComputedStyle(el, '::after').animationName,
+        cursor: !!cursor, paused: el.hasAttribute('data-paused'), wordsPlay: getComputedStyle(words).animationPlayState }
+    })
+    const crt = file('crt')
+    const dos = await look()
+    await send(crtPage, 'crt', edit('crt', (d) => { d.use.monitor = 'amber' }))
+    await crtPage.waitForTimeout(300)
+    const amber = await look()
+    await crtPage.screenshot({ path: `${OUT}/crt-amber-390x844.png` })
+    check('crt.json use.monitor → amber: the monitor changes look at once (amber words, glow, rolling scan lines)',
+      dos.name === 'dos' && amber.name === 'amber' && amber.color !== dos.color && amber.glow && amber.scan && amber.roll === 'crt-roll' && dos.roll === 'none', JSON.stringify({ dos, amber }))
+    await send(crtPage, 'crt', edit('crt', (d) => { d.use.monitor = 'off' }))
+    await crtPage.waitForTimeout(300)
+    const off = await look()
+    await crtPage.screenshot({ path: `${OUT}/crt-off-390x844.png` })
+    check('crt.json use.monitor → off: no glow, no scan lines, no cursor (the words just as they are)', off.name === 'off' && !off.glow && !off.scan && !off.cursor, JSON.stringify(off))
+    await send(crtPage, 'crt', edit('crt', (d) => { d.presets.dos.textColor = '#ff00ff' }))
+    await crtPage.waitForTimeout(300)
+    const knob = await look()
+    check('a preset knob (dos text colour) shows at once', knob.color === 'rgb(255, 0, 255)', knob.color)
+    await send(crtPage, 'crt', crt)
+    await openKit(crtPage)
+    await pauseBtn(crtPage, 'full').click()
+    await crtPage.waitForTimeout(150)
+    const held = await look()
+    await pauseBtn(crtPage, 'full').click()
+    check('full pause holds the look\'s motion (wobble, blink, roll paused on the looks clock)', held.paused && held.wordsPlay === 'paused', JSON.stringify(held))
+    check('crt presets: no page errors', ce.length === 0, ce.slice(0, 3).join(' | '))
+    await crtPage.close()
   }
 } catch (e) {
   console.log('FAIL', e)

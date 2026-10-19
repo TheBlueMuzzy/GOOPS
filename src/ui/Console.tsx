@@ -16,8 +16,7 @@ import { playUiSound } from '../game/sound'
 import { SOUNDS } from '../game/shiftSounds'
 import { art } from './art'
 import { useShort } from './useShort'
-import { useCrtLook, useTyped } from '../game/crt'
-import crtTuning from '../../content/tuning/crt.json'
+import { CrtLook, TypedText } from '../game/CrtLook'
 import text from '../../content/text/en.json'
 
 export type ConsolePhase = 'idle' | 'leaving' | 'arriving'
@@ -69,27 +68,22 @@ function Crt({ hint, lesson }: { hint: string; lesson: CrtLine | null }) {
     return () => ro.disconnect()
   }, [c.screenBottom, c.screenTop, y, w])
   const height = fit ? fit.height + 'px' : undefined, unit = fit ? fit.unit + 'px' : undefined
-  // F32 (Muzzy: "make it look like old DOS"): green glowing words over scan lines, typed out letter by letter with a
-  // block cursor where the next letter goes (src/game/crt.ts + crt.css; content/tuning/crt.json). The whole text is
-  // laid out from the first frame — the letters not typed yet are there, unseen — so the screen never changes size.
+  // F32 (Muzzy: "make it look like old DOS") → F60: the CRT look, one wrapper (src/game/CrtLook.tsx): green glowing
+  // words over scan lines, typed out letter by letter with a block cursor where the next letter goes. The preset is
+  // the one content/tuning/crt.json use.monitor names (dos; a dropdown in the Dev Kit). The whole text is laid out
+  // from the first frame — the letters not typed yet are there, unseen — so the screen never changes size.
   // (a broken machine's hint used to be in the accent colour: every word on the monitor is phosphor green now)
   const words = lesson ? lesson.text : hint
-  const typed = useTyped(words)
-  const look = useCrtLook()
   return (
     <ArtLayer at={[x, y, w, h]} text={a.words.hint.text}>
-      <div ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined} data-typing={typed < words.length || undefined}
-        data-blink={crtTuning.cursorBlinkSeconds > 0 ? undefined : 'off'}
-        style={{ ...look, '--crt-inset': x - c.screenLeft, '--crt-top': y - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
+      <CrtLook place="monitor" unit={unit} ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined}
+        style={{ '--crt-inset': x - c.screenLeft, '--crt-top': y - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
           '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
         <div ref={body} className="crt-body">
-          <span className="crt-read">{words}</span>
-          <span className="lesson-words crt-words" aria-hidden>
-            {words.slice(0, typed)}<span className="crt-cursor" /><span className="crt-rest">{words.slice(typed)}</span>
-          </span>
+          <TypedText text={words} className="lesson-words" />
           {lesson?.gotIt && <Button onClick={lesson.onGotIt}>{text.lessons.gotIt}</Button>}
         </div>
-      </div>
+      </CrtLook>
     </ArtLayer>
   )
 }
