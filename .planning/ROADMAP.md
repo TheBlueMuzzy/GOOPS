@@ -43,7 +43,7 @@ Goal: every design question the remake needs is answered, so /define can write t
 - 📐 F10 ❓ Phone gestures without conflicts — must:alpha
   note: gesture list + 14-line phone checklist done (research/gestures.md); waits for Muzzy's phone session (2026-10-19: "developing fully on PC for now")
 - ✅ F11 Look: Muzzy's art; kit Neon only where there's no art; pixel look later (Ideas) — sound still open — must:alpha
-- 🔨 F12 ❓ Tutorial: "your first day", a scripted staged day (v1 style, Muzzy 2026-10-19) — must:alpha · needs: F03, F04, F06
+- ✅ F12 ❓ Tutorial: "your first day", a scripted staged day (v1 style, Muzzy 2026-10-19) — must:alpha · needs: F03, F04, F06 · decided 2026-10-19: research/tutorial.md (15 steps + 3 breakdown lessons; answers in §8)
   note: F10 dropped from needs (Muzzy 2026-10-19: teach on PC first; the phone gesture wording slots in after the phone check)
   what: last on purpose: it teaches the settled rules
 ```mermaid
@@ -103,6 +103,8 @@ Goal: a friend installs it from a link, learns to play from "your first day", an
 - ✅ F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25 · approved 2026-10-19 (+ visor scan lines in the box, pixel red X = wrong colour, covered cracks leak half the bubbles, sealed none)
 - ✅ F58 🐞 Clicks beside the tank zap goop you can't see (screenToCell wraps to the hidden back) — must:alpha · fixed 2026-10-19: only the visible tank takes clicks (geometry.ts screenToVisibleCell; tests/view/geometry.test.ts + e2e/controls.mjs)
 - ✅ F37 ❓ Version numbers + where alpha lives — must:alpha · decided 2026-10-19: the remake's own version.json (BMUZ X.Y.Z.B, from 0.0.0; 1.0 numbering decided when it replaces v1) · alpha lives at thebluemuzzy.github.io/GOOPS/alpha/ (same repo + Pages site, v1 untouched at the root)
+- 📐 F59 ❓ Rank unlocks: swap (and ~2 other small features) unlock at sequential ranks, each with a one-line "unlocked" moment — must:alpha · needs: F30
+  what: Muzzy 2026-10-19: "lock this behind a level change… come up with a few small feature unlocks like that so this doesn't sit alone. maybe 3 of them that happen at sequential level unlocks" — decide which 3 + which ranks
 - 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit ON for friends (Muzzy 2026-10-19), 60 fps on two real phones — must:alpha · needs: F37, F28
 ```mermaid
 flowchart LR

@@ -5,7 +5,7 @@ Decided at planning (Muzzy, 2026-10-19): the tutorial is **v1 style, fully scrip
 
 ## F12 ❓ Tutorial: "your first day", taught as a scripted day
 - [x] 🤖 1. The step list for the new loop: v1 Tutorial v3's 15 steps rewritten for pressure → cracks → integrity → rupture (no hard drop, console start, plain how-to-play, no story voice), plus the three first-breakdown lessons; GDD tutorial section updated — .planning/research/tutorial.md, .planning/GDD.md
-- [ ] 🙋 2. Read the step list: approve, or say what to change
+- [x] 🙋 2. Read the step list: approve, or say what to change — answered 2026-10-19 (research/tutorial.md §8: real rupture ending; swap locked behind a rank → F59; progressive breakdown lessons; tank frozen for the first repair; console-visit note ×5)
 
 ## F30 🧱 Lesson runner
 - [x] 🤖 1. Training hooks in the engine: chosen next pieces, placed cracks, pressure held or set, cracks/breakdowns off unless a step asks — src/engine/
@@ -19,6 +19,7 @@ Decided at planning (Muzzy, 2026-10-19): the tutorial is **v1 style, fully scrip
 - [ ] 🤖 2. Laser lesson — content/lessons/laser.json
 - [ ] 🤖 3. Controls lesson — content/lessons/controls.json
 - [ ] 🤖 4. Each shows once (remembered on the device), "Replay lessons" in Settings + e2e — src/game/, e2e/lessons.mjs
+- [ ] 🤖 6. Console visits: W / ↑ / flick up go straight to the console; the first 5 mid-shift visits say the tank runs at 25% there; the very first breakdown lesson says the game is fully paused for it (Muzzy) — src/game/, content/text/en.json
 - [ ] 🙋 5. (tuning) Try them: wording, timing, pointers
 
 ## Notes

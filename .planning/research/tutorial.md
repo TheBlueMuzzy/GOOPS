@@ -270,7 +270,9 @@ Rules for all three: the lesson message replaces the game's own "broken" message
 | K3 | At the console, tank frozen. Pointer on the blinking corner light. | "Turn the dial to the blinking light. Keep going until none blink." | `repaired` | Hint 5 s: pointer on the corner that's blinking now. | P2 + P3 |
 | K4 | = V4, with: "Fixed! Every spin heats the controls; short rests cool them." | | | | P1 → P2 |
 
-After the first repair of each machine, the console is back to normal (the tank runs at 25% while you're there). The first time a player goes to the console mid-shift after any lesson, one line: "The tank keeps running slowly while you're here." (once ever).
+After the first repair of each machine, the console is back to normal (the tank runs at 25% while you're there).
+
+**Muzzy, 2026-10-19 (answers):** the lessons are progressive — the bar is on screen from its rank, but nothing calls attention to it until the machine fails; then the game pauses and goes on rails: what broke, how to fix it, how to prevent it. The **very first** breakdown lesson (whichever machine breaks first) also says, at the console: "The game is fully paused for this moment. Normally it keeps running at 25% speed while you're here." · Going to the console mid-shift (W / ↑ / flick up — straight to the console): the **first 5 times** (outside a lesson), one line: "The tank keeps running at 25% speed while you're here."
 
 ---
 
@@ -321,6 +323,8 @@ Alpha is plain words. In beta the same steps get the Employer's static-garbled i
 ---
 
 ## 8. Open questions for Muzzy (taste calls)
+
+**Answered by Muzzy, 2026-10-19:** Q1 = a (a real rupture — "we need to explain that system and trigger: integrity ends it, cracks drain integrity, last chance to pop as pressure fast drains") · Q2 = swap is locked behind a rank: reaching it tells you it's unlocked — one of ~3 small feature unlocks at sequential ranks (F59) · Q3 = progressive: taught when the machine first fails (pause → guided: fix it, prevent it) · Q4 = a (frozen: "a tutorial on rails") · the console keys go straight to the console; the first 5 visits say the game runs at 25% there.
 
 **Q1 — How does day one end?**
 a) A real rupture after the quota, with a nudge (pressure rises faster) if it hasn't come within 60 s. *(my pick: it shows the end of every shift once, safely.)*
