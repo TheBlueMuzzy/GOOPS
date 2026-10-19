@@ -86,7 +86,7 @@ Goal: machines break from your own play and you fix them at the console while th
 - ✅ F23 Breakdowns in the engine — must:alpha · needs: F06
 - ✅ F24 Repairs at the console — must:alpha · needs: F23, F21
 - ✅ F25 Visor glitch (sketch first) — must:alpha · needs: F23
-- 🔨 F26 HUD + messages rethink (from the parking lot) — must:alpha · needs: F24
+- ✅ F26 HUD + messages rethink (from the parking lot) — must:alpha · needs: F24 · approved 2026-10-19 (message timing waits for Muzzy's dedicated playtest — sprint task 6)
 - 🔨 F27 ❓ Integrity / crack balance talk — must:alpha · needs: F26
 
 ## Parking lot
