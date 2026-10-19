@@ -94,7 +94,7 @@ Goal: machines break from your own play and you fix them at the console while th
 ## M4 — Alpha: the playable game, for you + friends
 Goal: a friend installs it from a link, learns to play from "your first day", and plays shifts through rank 9 with all three machines and sound — no upgrades, no story yet (Muzzy 2026-10-19: "alpha is playable game").
 - 📐 F28 🎮 Gesture fixes (from F10's list) — must:alpha · needs: F10
-- 🔨 F29 🧱 Sound basics: code-made effects through the framework audio module, volume rows on — must:alpha
+- 🎛️ F29 🧱 Sound basics: recorded CC0 effects through the framework audio module, volume rows on — must:alpha
 - 📐 F30 🧱 Lesson runner: plain how-to-play lessons from data files (the story's intercom voice layers on in beta) — must:alpha · needs: F12
 - 📐 F31 🎮 Your first day: the rank 0 how-to-play — must:alpha · needs: F30, F28
 - 📐 F32 🎮 First-breakdown lessons (visor, laser, controls) — must:alpha · needs: F30
