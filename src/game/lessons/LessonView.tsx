@@ -4,17 +4,19 @@
 // Words come from content/text/en.json → lessons.<lesson id>, picked by the input used last, with {placeholders} from
 // the live shift.
 // overMenu (F32): a menu is open over the game — only a step's reaction shows then ("That's the pause menu…").
-// If what it points at isn't on screen (a console part after leaving the console…), it points at the screen's middle
-// instead, so a message is never up but unseen.
+// If what it points at isn't on screen, it points at the pointer's "or" (F32), else at the screen's middle, so a message
+// is never up but unseen.
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Callout, type CalloutPlacement } from '../../ui/kit'
 import { looksClock } from '../../devkit/gameClock'
 import { lessonPlay, lessonTarget, lessonWords, runner } from './goopsLessons'
 import text from '../../../content/text/en.json'
 
+type Pointer = { placement?: string; or?: Pointer }
 const shown = (selector: string) => {
   const r = document.querySelector(selector)?.getBoundingClientRect()
-  return !!r && (r.width > 0 || r.height > 0)
+  // (there, and at least partly inside the window)
+  return !!r && (r.width > 0 || r.height > 0) && r.bottom > 0 && r.right > 0 && r.top < window.innerHeight && r.left < window.innerWidth
 }
 
 export function LessonView({ overMenu = false }: { overMenu?: boolean }) {
@@ -34,13 +36,17 @@ export function LessonView({ overMenu = false }: { overMenu?: boolean }) {
   }, [canClose])
   if (!m || (overMenu && m.kind !== 'reaction')) return null
   const words = lessonWords(view.lessonId, m.text, lessonPlay.vars(), lessonPlay.inputKind())
-  const wanted = lessonTarget(m.pointer)
+  // the pointer, or its "or" when that isn't on screen (e.g. the monitor, off screen on a phone on its side), and so on
   // (the tank's mark box is placed by the frame loop, a frame after the message: always there)
-  const target = wanted === '.lesson-mark' || shown(wanted) ? wanted : { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+  let pointer = m.pointer as Pointer | undefined
+  let target: string | { x: number; y: number } = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+  for (let p = pointer; p; p = p.or) {
+    const wanted = lessonTarget(p)
+    if (wanted === '.lesson-mark' || shown(wanted)) { target = wanted; pointer = p; break }
+  }
   // which side the message goes: the thing pointed at may say (data-placement — the console's repair parts), else the
   // pointer's own "placement", else wherever it fits
-  const side = (typeof target === 'string' ? document.querySelector(target)?.getAttribute('data-placement') : null)
-    ?? (m.pointer as { placement?: string } | undefined)?.placement
+  const side = (typeof target === 'string' ? document.querySelector(target)?.getAttribute('data-placement') : null) ?? pointer?.placement
   return (
     <Callout key={`${view.stepId}:${m.kind}`} target={target} text={words} dim={m.dim} pulse
       placement={(side ?? 'auto') as CalloutPlacement}

@@ -10,4 +10,4 @@
    even a layer of words (which centres its contents) — and a little past it, so the lesson's pulse ring has breathing
    room round the lamp or the words instead of crossing them */
 .lesson-tag { place-self: stretch; margin: -0.25em; pointer-events: none; }
-[data-text] > .lesson-tag { margin: -0.7em -0.5em; } /* (words: their letters reach past their line box) */
+[data-text] > .lesson-tag { margin: -0.7em 0; } /* (words: their letters reach past their line box) */

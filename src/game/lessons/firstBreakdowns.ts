@@ -41,9 +41,10 @@ export const firstBreakdowns = {
   /** App: a new real shift — nothing asked yet. */
   newShift() { asked.clear() },
   /** App: the player went to the console mid-shift (W / ↑ / flick up). Outside a lesson, the first few visits on this
-   *  device get the one-line note. */
-  consoleVisited() {
-    if (!lessonPlay.realShift() || runner.view().lessonId || !lessonNow(CONSOLE_NOTE)) return
+   *  device get the one-line note. cramped = a phone on its side: the console's panels fill the screen and the note would
+   *  sit on them, so it waits for a roomier visit (not counted). */
+  consoleVisited(cramped: boolean) {
+    if (cramped || !lessonPlay.realShift() || runner.view().lessonId || !lessonNow(CONSOLE_NOTE)) return
     const memory = tipsMemory()
     const shown = memory.seenIds.filter((id) => id.startsWith('consoleNote:')).length
     if (shown >= lessonTiming.consoleNoteVisits) return

@@ -31,6 +31,7 @@
 //           repair panel that wants doing next, "panel-<machine>", "periscope", "monitor", "pauseResume") ·
 //           { "selector": "…" } · none = where pieces drop in. The message goes on the side the target's data-placement
 //           says, else the pointer's "placement" ("top" / "bottom" / "left" / "right"), else wherever it fits.
+//           "or": { another pointer } = where to point when this one isn't on screen (LessonView).
 //   words   a text id in content/text/en.json → lessons.<lesson id>; a { keys, mouse, phone } entry picks by the input used
 //           last; {left} {total} {sealed} {pressure} {integrity} {tries} {consoleSpeed} are filled from the live shift
 import type { MachineId, PieceChoice, ShiftAction, ShiftEngine, ShiftState, TrainingRules } from '../../engine'
@@ -263,6 +264,8 @@ const TAG_TARGETS: Record<string, string> = {
   'bar-visor': barOf(text.hud.visor), 'bar-laser': barOf(text.hud.laser), 'bar-controls': barOf(text.hud.controls),
   pauseResume: '.kit-pause .kit-menu > button:first-child', // the pause menu's "Back to the tank" (the kit's Pause)
   periscope: '.kit-pull-grip', // the console's periscope: the part you grab (the kit's PullHandle)
+  // the console's "Back to the tank" button (a phone on its side, where the periscope and monitor are off screen)
+  backToTank: '.kit-screen[aria-label="Console"] [data-slot="bottom-left"] button',
 }
 
 /** A CSS selector for the Callout's target, from the message's pointer. */

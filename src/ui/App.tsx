@@ -236,9 +236,9 @@ export function App() {
   useEffect(() => {
     const was = lastMode.current
     lastMode.current = mode
-    if (mode === 'peekIn' && was === 'shift') { lessonPlay.screen('consoleOpened'); firstBreakdowns.consoleVisited() }
+    if (mode === 'peekIn' && was === 'shift') { lessonPlay.screen('consoleOpened'); firstBreakdowns.consoleVisited(short) }
     if (mode === 'shift' && was === 'peekOut') lessonPlay.screen('consoleClosed')
-  }, [mode])
+  }, [mode, short])
   const pauseOpen = open.includes('pause')
   const lastPause = useRef(pauseOpen)
   useEffect(() => {
