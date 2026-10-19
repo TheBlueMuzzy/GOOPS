@@ -130,5 +130,17 @@
     "light": "🔴",
     "url": "",
     "credit": ""
+  },
+  {
+    "paths": [
+      "public/audio/sfx/",
+      "public/audio/ui/"
+    ],
+    "source": "Made by us: placeholder sounds generated in code (scripts/make-sounds.mjs, F29) — replace with recordings later",
+    "author": "Goops (code-generated)",
+    "licence": "Ours",
+    "light": "🟢",
+    "url": "",
+    "credit": ""
   }
 ]

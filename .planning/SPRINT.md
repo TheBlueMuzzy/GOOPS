@@ -6,7 +6,7 @@ Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · al
 ## F29 🧱 Sound basics
 - [x] 🤖 1. Install the framework audio module + start-up wiring + Settings sound rows on — src/audio/, src/main.tsx
 - [x] 🤖 2. The sound list: every moment that gets a sound (land, merge, ready, zap, seal, crack, poke, rotate, move, swap, machine breaks / fixed, rupture, quota met, periscope, console buttons) — content/audio.json
-- [ ] 🤖 3. Placeholder sounds made in code (ZzFX → files), logged in credits — public/audio/, content/credits.json
+- [x] 🤖 3. Placeholder sounds made in code (ZzFX → files), logged in credits — public/audio/, content/credits.json
 - [ ] 🤖 4. Play them from the game's events, on the rules clock (both Dev Kit pauses silence them) — src/game/ShiftStage.tsx
 - [ ] 🤖 5. Tests + an e2e that reads the audio log for each moment — tests/, e2e/sound.mjs
 - [ ] 🙋 6. (tuning) Listen: loudness and feel of each sound (Dev Kit Sound tab)
