@@ -1,4 +1,5 @@
 {
+  "_ranges": { "cracks.curve": [0, 10, 0.25] },
   "tank": { "width": 30, "height": 24, "bufferRows": 3, "visibleWidth": 12 },
   "colors": ["red", "blue", "green", "yellow", "purple", "white", "black"],
   "colorsByRank": [
