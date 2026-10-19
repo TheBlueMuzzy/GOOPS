@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { createShift } from '../../src/engine'
 import type { ShiftConfig, ShiftEngine, ShiftEvent } from '../../src/engine'
 import { crackEveryMs } from '../../src/engine/cracks'
-import { dropPiece, idx, ofType, oneShapeConfig, sealACrack, tank, tickUntil } from './helpers'
+import { dropPiece, idx, ofType, oneShapeConfig, sealACrack, straightLineCracks, tank, tickUntil } from './helpers'
 
 const FLOOR = '2'.repeat(30)
 
 // One-cell colour-1 pieces that hang at the top; optional integrity drain (0 = the tank never ruptures).
+// Cracks on v1's straight line (5 s at 0% → 1 s at 100%): the crack-count tests below are about that mechanic.
 function calmConfig(drain = 0): ShiftConfig {
-  const config = oneShapeConfig([[0, 0]])
+  const config = straightLineCracks(oneShapeConfig([[0, 0]]))
   config.integrity.drainPerCrackPerSec = drain
   return config
 }
@@ -52,6 +53,17 @@ describe('cracks', () => {
     expect(crackEveryMs(config, 0)).toBe(5000)
     expect(crackEveryMs(config, 0.5)).toBe(3000)
     expect(crackEveryMs(config, 1)).toBe(1000)
+  })
+
+  it('with curve set, the crack RATE follows pressure^curve — a hockey stick (Muzzy, F27): 6 s → 1.33 s, 4.2 s at 50%', () => {
+    const config = calmConfig()
+    config.cracks = { ...config.cracks, everyMsAtEmpty: 6000, everyMsAtFull: 1333, curve: 3 }
+    expect(crackEveryMs(config, 0)).toBeCloseTo(6000, 0)
+    expect(crackEveryMs(config, 1)).toBeCloseTo(1333, 0)
+    expect(crackEveryMs(config, 0.25) / 1000).toBeCloseTo(5.69, 1) // nearly flat early
+    expect(crackEveryMs(config, 0.5) / 1000).toBeCloseTo(4.17, 1)
+    expect(crackEveryMs(config, 0.75) / 1000).toBeCloseTo(2.42, 1) // steep at the end
+    for (let p = 0; p < 1; p += 0.05) expect(crackEveryMs(config, p + 0.05)).toBeLessThan(crackEveryMs(config, p)) // always rising
   })
 
   it('about 2 cracks in the first 10 s; about 10 in 10 s at full pressure; they keep coming', () => {

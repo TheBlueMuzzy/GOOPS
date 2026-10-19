@@ -494,7 +494,7 @@ class Shift implements ShiftEngine {
     // Zapping vents pressure, sealing vents more (v1's time refunds, turned into pressure: ms of rise).
     // Not during a rupture: there pressure drains on its own, and venting would only shorten the time to zap.
     if (s.phase === 'playing') {
-      const ventMs = popRefundMs(this.config, g.cells.length) + sealed.length * this.config.cracks.sealRefundMs
+      const ventMs = popRefundMs(this.config, g.cells.length) + sealed.length * this.config.cracks.sealRefundMs * this.mods.sealVentMult
       this.setPressure(s.pressure - ventMs / this.riseMsToFull())
       // Each seal patches the tank a little (integrity.sealRefund, F27), never past full. Not during a rupture.
       s.integrity = Math.min(1, s.integrity + sealed.length * this.config.integrity.sealRefund)

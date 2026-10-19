@@ -8,6 +8,15 @@ export function realConfig(): ShiftConfig {
   return structuredClone(shiftJson) as ShiftConfig
 }
 
+// Mechanic tests set the crack timing they need instead of leaning on the live tuning file:
+// v1's straight line, everyMsAtEmpty at 0% pressure down to everyMsAtFull at 100% (no `curve`).
+export function straightLineCracks(config: ShiftConfig, atEmpty = 5000, atFull = 1000): ShiftConfig {
+  config.cracks.everyMsAtEmpty = atEmpty
+  config.cracks.everyMsAtFull = atFull
+  delete config.cracks.curve
+  return config
+}
+
 // Every piece is this one shape, colour 1, never corrupted or mirrored. Pieces fall very slowly
 // unless msPerRow is given, so they stay out of the way at the top.
 export function oneShapeConfig(cells: number[][], options: { msPerRow?: number; noRotate?: boolean } = {}): ShiftConfig {

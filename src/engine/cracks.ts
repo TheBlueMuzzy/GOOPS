@@ -16,10 +16,16 @@ export function firstPoppableRow(state: ShiftState): number {
   return Math.ceil(popLine(state) - 1e-9)
 }
 
-// Time between cracks: everyMsAtEmpty at 0% pressure, straight down to everyMsAtFull at 100%.
+// Time between cracks: everyMsAtEmpty at 0% pressure, everyMsAtFull at 100%.
+// With `curve` set (Muzzy, F27, 2026-10-18: "hockey stick style … but still always rising slightly"), the crack RATE
+// rises along pressure^curve: nearly flat through the early pressure, then steeply in the last quarter (curve 3:
+// half the extra rate arrives only above ~80%). Without it: v1's straight line in the time between cracks.
 export function crackEveryMs(config: ShiftConfig, pressure: number): number {
-  const { everyMsAtEmpty, everyMsAtFull } = config.cracks
-  return everyMsAtEmpty + (everyMsAtFull - everyMsAtEmpty) * pressure
+  const { everyMsAtEmpty, everyMsAtFull, curve } = config.cracks
+  if (curve === undefined) return everyMsAtEmpty + (everyMsAtFull - everyMsAtEmpty) * pressure
+  const p = Math.max(0, Math.min(1, pressure))
+  const rate = 1 / everyMsAtEmpty + (1 / everyMsAtFull - 1 / everyMsAtEmpty) * p ** curve // cracks per ms
+  return 1 / rate
 }
 
 // ---------------------------------------------------------------- the crack band (Muzzy, F27, 2026-10-18)

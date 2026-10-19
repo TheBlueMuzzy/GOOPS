@@ -10,6 +10,8 @@
 - **Slower depressurise after a rupture** → modifier `ruptureDrainTimeMult` (× `rupture.drainMs`): more time to zap leftovers before the shift ends. Ready in the engine now.
 - **Tougher tank (more cracks before rupture)** → modifier `integrityDrainMult` (× `integrity.drainPerCrackPerSec`): open cracks wear the tank slower. Ready now; the test-only "Sturdy tank" proves it. If the "X of 10 cracks → rupture" fallback is ever used instead, the same upgrade becomes `+N cracks allowed`.
 
+- **Seal venting (Muzzy, F27, 2026-10-18)** → modifier `sealVentMult` (× `cracks.sealRefundMs`): each seal vents more pressure (default 1 s of rise, kept low on purpose so pressure keeps climbing). Ready in the engine now (2 = twice the vent, tested). Name, rank and per-level steps are taste calls.
+
 ## Onboarding band (ranks 2–9)
 | Upgrade (type · rank · max) | What v1's code did | Touches | New loop | PROPOSAL (new loop) | Plugs in |
 |---|---|---|---|---|---|

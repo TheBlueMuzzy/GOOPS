@@ -257,6 +257,9 @@ describe('plugging and sealing', () => {
     // One colour, so the crack, the pieces and the goop all match. A colour-2 floor two rows deep.
     const floor = '2'.repeat(30)
     const config = oneShapeConfig([[0, 0]])
+    config.pressure.riseMsToFull = 75000 // the vent maths below uses exactly these
+    config.pop.refundMsPerCell = 100
+    config.cracks.sealRefundMs = 3000
     const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([floor, floor]) })
     tickUntil(shift, () => shift.state.cracks.length > 0)
     const crack = shift.state.cracks[0]

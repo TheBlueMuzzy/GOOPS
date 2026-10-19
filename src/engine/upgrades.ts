@@ -13,6 +13,7 @@ export interface Modifiers {
   crackEveryMult: number // × the time between cracks — 1.2 = cracks come 20% less often
   fallSpeedMult: number // × the piece's fall speed — 1.25 = pieces fall 25% faster (fast drop too)
   leftoverPenaltyMult: number // × score.leftoverPerCell — 0.5 = leftover goop costs half
+  sealVentMult: number // × cracks.sealRefundMs — 2 = each seal vents twice as much pressure (Muzzy, F27: low by default, an upgrade raises it)
   // Breakdowns (F23, content/tuning/breakdowns.json):
   laserDrainMult: number // × laser.drainPerCell — 0.75 = each zap drains the capacitor 25% less (Capacitor Efficiency)
   visorGraceMult: number // × visor.graceMs — 1.15 = the visor holds 15% longer before fading (Circuit Stabilizer)
@@ -42,6 +43,7 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   crackEveryMult: 1,
   fallSpeedMult: 1,
   leftoverPenaltyMult: 1,
+  sealVentMult: 1,
   laserDrainMult: 1,
   visorGraceMult: 1,
   controlsCoolMult: 1,
@@ -57,6 +59,7 @@ const LIMITS: Record<ModifierName, [min: number, max: number]> = {
   crackEveryMult: [0.1, 10],
   fallSpeedMult: [0.1, 10],
   leftoverPenaltyMult: [0, 10],
+  sealVentMult: [0, 10],
   laserDrainMult: [0, 10], // 0 = the laser never drains
   visorGraceMult: [0, 10],
   controlsCoolMult: [0, 10],

@@ -7,7 +7,7 @@ import type { AbilitySpec, ShiftConfig, ShiftEngine, ShiftEvent, ShiftOptions, U
 import { ABILITY_EFFECTS } from '../../src/engine/abilities'
 import { isFewerStepsName, isModifierName } from '../../src/engine/upgrades'
 import { createRng } from '../../src/engine/rng'
-import { ofType, oneShapeConfig, realConfig, sealACrack, tank, tickUntil } from './helpers'
+import { dropPiece, idx, ofType, oneShapeConfig, realConfig, sealACrack, straightLineCracks, tank, tickUntil } from './helpers'
 
 const book = upgradesJson as UpgradeBook
 const STURDY = 'sturdyTankTest'
@@ -182,7 +182,7 @@ describe('each modifier changes exactly its own tuning value', () => {
   })
 
   it('crackEveryMult: 2 = the first crack comes twice as late', () => {
-    const config = calmConfig()
+    const config = straightLineCracks(calmConfig(), 5000) // 5 s between cracks at 0% pressure
     config.pressure.riseMsToFull = 1e12 // pressure stays ~0, so the crack interval stays 5 s
     const first = (mult: number) => {
       const shift = createShift(config, { seed: 1, rank: 0, modifiers: { crackEveryMult: mult } })
@@ -195,6 +195,31 @@ describe('each modifier changes exactly its own tuning value', () => {
     }
     expect(first(1)).toBeCloseTo(5000, -2)
     expect(first(2)).toBeCloseTo(10000, -2)
+  })
+
+  it('sealVentMult: 2 = each seal vents twice as much pressure', () => {
+    const vent = (mult: number) => {
+      const config = calmConfig()
+      config.pressure.riseMsToFull = 75000
+      config.pop.refundMsPerCell = 0 // only the seal vents: no per-cell or size-tier refund
+      config.pop.refundTierMs = 0
+      config.cracks.sealRefundMs = 1000
+      const floor = '2'.repeat(30)
+      const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([floor, floor]), modifiers: { sealVentMult: mult } })
+      const s = shift.state
+      tickUntil(shift, () => s.cracks.length > 0)
+      const crack = s.cracks[0]
+      while (s.spin !== crack.x) shift.act({ type: 'spin', dir: 1 })
+      dropPiece(shift, config)
+      tickUntil(shift, () => !!s.groups.get(s.groupOf[idx(crack.x, crack.y)])?.ready)
+      shift.takeEvents()
+      const before = s.pressure
+      shift.act({ type: 'pop', x: crack.x, y: crack.y })
+      expect(ofType(shift.takeEvents(), 'pop')[0].sealed).toEqual([crack.id])
+      return before - s.pressure
+    }
+    expect(vent(1)).toBeCloseTo(1000 / 75000, 9)
+    expect(vent(2)).toBeCloseTo(2000 / 75000, 9)
   })
 
   it('fallSpeedMult: 2 = the piece steps down twice as often', () => {

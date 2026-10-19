@@ -4,14 +4,15 @@ import { createShift } from '../../src/engine'
 import type { ShiftConfig, ShiftEngine, ShiftEvent } from '../../src/engine'
 import { crackBandTop, goopTopRow, spawnCrack } from '../../src/engine/cracks'
 import { createRng } from '../../src/engine/rng'
-import { dropPiece, idx, ofType, oneShapeConfig, realConfig, tank, tickUntil } from './helpers'
+import { dropPiece, idx, ofType, oneShapeConfig, realConfig, straightLineCracks, tank, tickUntil } from './helpers'
 
 const FLOOR = '2'.repeat(30)
 const H = 24 // tank height: a row counted from the floor up = H - 1 - y
 
 // One-cell colour-1 pieces hanging at the top; integrity drain as given (0 = never ruptures); band as given.
+// Cracks on v1's straight line (5 s at 0% → 1 s at 100%), so the timer tests don't depend on the live tuning.
 function calmConfig(band: string, drain = 0): ShiftConfig {
-  const config = oneShapeConfig([[0, 0]])
+  const config = straightLineCracks(oneShapeConfig([[0, 0]]))
   config.integrity.drainPerCrackPerSec = drain
   config.cracks.band = band
   return config
@@ -142,20 +143,22 @@ describe('crack timer', () => {
 })
 
 describe('integrity: lower drain and the seal refund', () => {
-  it('the tuning file: drain 0.002 a crack a second, refund 0.03 a seal, band halfway', () => {
+  // Reads the file, never restates its numbers: only the relations that keep the shift arc sane.
+  it('the tuning file: cracks wear the tank, a seal patches it (less than a whole tank), the band is a known setting', () => {
     const config = realConfig()
-    expect(config.integrity.drainPerCrackPerSec).toBe(0.002)
-    expect(config.integrity.sealRefund).toBe(0.03)
-    expect(config.cracks.band).toBe('halfway')
+    expect(config.integrity.drainPerCrackPerSec).toBeGreaterThan(0)
+    expect(config.integrity.sealRefund).toBeGreaterThan(0)
+    expect(config.integrity.sealRefund).toBeLessThan(1)
+    expect(['none', 'halfway', 'halfwayPerColumn']).toContain(config.cracks.band)
   })
 
-  it('with the real drain, one open crack wears 0.2% a second', () => {
+  it('with the real drain, one open crack wears drainPerCrackPerSec a second', () => {
     const config = oneShapeConfig([[0, 0]]) // real drain, not overridden
     const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([FLOOR, FLOOR]) })
     tickUntil(shift, () => shift.state.cracks.length === 1)
     const before = shift.state.integrity
     shift.tick(1000)
-    expect(shift.state.integrity).toBeCloseTo(before - 0.002, 6)
+    expect(shift.state.integrity).toBeCloseTo(before - config.integrity.drainPerCrackPerSec, 9)
   })
 
   // Plug the first crack that sits on goop and wait until it can be zapped. Returns the crack.
@@ -171,8 +174,9 @@ describe('integrity: lower drain and the seal refund', () => {
     return crack
   }
 
-  it('sealing a crack gives 3% integrity back', () => {
+  it('sealing a crack gives sealRefund integrity back (set to 3% here)', () => {
     const config = calmConfig('halfway', 0.002)
+    config.integrity.sealRefund = 0.03
     const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([FLOOR, FLOOR]) })
     const crack = plugged(shift, config)
     shift.state.integrity = 0.5

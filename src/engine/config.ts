@@ -34,7 +34,8 @@ export interface ShiftConfig {
   pop: { refundMsPerCell: number; refundTierFromSize: number; refundTierStep: number; refundTierMs: number }
   cracks: {
     everyMsAtEmpty: number // time between cracks at 0% pressure…
-    everyMsAtFull: number // …and at 100% (straight line in between)
+    everyMsAtFull: number // …and at 100%
+    curve?: number // the crack rate follows pressure^curve between them (3 = hockey stick); unset = v1's straight line
     sealRefundMs: number // pressure vented per seal, in "ms of rise"
     onePerColour: boolean // v1: at most one open crack per colour
     // How high cracks may form (F27, cracks.ts crackBandTop): 'none' = anywhere up to the pop line;
