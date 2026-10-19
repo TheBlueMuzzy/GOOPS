@@ -278,6 +278,26 @@ try {
     await page.close()
   }
 
+  // ---------------- F32: the tank ruptures mid-lesson → the lesson steps aside, the drain runs ----------------
+  {
+    const { page, errors } = await open(1440, 900, '?seed=7&rank=6')
+    await page.evaluate(() => window.__goops.breakMachine('visor', true))
+    await stepIs(page, 'broke')
+    await gotIt(page).click()
+    await stepIs(page, 'toConsole')
+    await page.evaluate(() => { const s = window.__goops.engine.state; s.pressure = 0.8; s.integrity = 0 })
+    await page.waitForFunction(() => window.__goops.engine.state.phase === 'rupture', null, { timeout: 5000 })
+    await page.waitForTimeout(300)
+    check('rupture mid-lesson: the lesson stops', await page.evaluate(() => !window.__goops.lessonView().lessonId))
+    const p0 = await page.evaluate(() => window.__goops.engine.state.pressure)
+    await page.keyboard.press('KeyW')
+    await page.waitForTimeout(1500)
+    const p1 = await page.evaluate(() => window.__goops.engine.state.pressure)
+    check('rupture mid-lesson: the drain keeps running at the console', p1 < p0, `${p0} → ${p1}`)
+    check('rupture mid-lesson: no page errors', errors.length === 0, errors.join(' | '))
+    await page.close()
+  }
+
   // ---------------- F32: each lesson's first and console steps, phone + desktop (screenshots + pointer checks) ----------------
   for (const [w, h] of [[1440, 900], [390, 844]]) {
     for (const machine of ['visor', 'laser', 'controls']) {

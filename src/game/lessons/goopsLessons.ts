@@ -221,6 +221,11 @@ export const lessonPlay = {
     atConsole = false
     consoleFrozen = false
   },
+  /** The tank ruptured mid-lesson: drop the lesson (and any waiting) so the drain runs as normal; the shift goes on. */
+  drop() {
+    runner.stop()
+    consoleFrozen = false
+  },
   /** The live numbers a message's {placeholders} can show. */
   vars(): Record<string, number> {
     const s = engine?.state

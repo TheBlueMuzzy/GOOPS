@@ -34,6 +34,8 @@ session.listen((events) => {
     }
     // the repair is the part that counts: done → seen, even if the shift ends before the lesson's last words
     if (e.type === 'repaired' && runner.view().lessonId === e.machine) tipsMemory().markSeen(`lesson:${e.machine}`)
+    // the tank ruptured: the drain is the player's last chance to zap — no lesson freezes it (unseen → plays next time)
+    if (e.type === 'rupture' && runner.view().lessonId) lessonPlay.drop()
   }
 })
 
