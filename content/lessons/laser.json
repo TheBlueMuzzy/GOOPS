@@ -1,0 +1,171 @@
+{
+  "_about": "F32 first-breakdown lesson: the first time the LASER breaks in a real shift, once per device — the same shape as visor.json (read its _about). Words: content/text/en.json → lessons.laser (shared lines: lessons.shared).",
+  "id": "laser",
+  "start": {
+    "console": "frozen"
+  },
+  "finish": {
+    "console": "normal"
+  },
+  "steps": [
+    {
+      "id": "broke",
+      "pattern": "pauseShowDismiss",
+      "message": "broke",
+      "pointer": {
+        "tag": "bar-laser"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:laser",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        }
+      ]
+    },
+    {
+      "id": "toConsole",
+      "pattern": "runActAdvance",
+      "message": "toConsole",
+      "pointer": {
+        "tag": "bar-laser"
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleOpened"
+      },
+      "hint": {
+        "after": 3,
+        "message": "toConsoleHint"
+      },
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "pauseOpened"
+          },
+          "message": "pauseMenu",
+          "pointer": {
+            "tag": "pauseResume"
+          },
+          "until": {
+            "on": "event",
+            "event": "pauseClosed"
+          }
+        }
+      ],
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "broken:laser",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fullyPaused",
+      "pattern": "pauseShowDismiss",
+      "message": "fullyPaused",
+      "pointer": {
+        "tag": "monitor"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "breakdownLessonsSeen",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "broken:laser",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "pattern": "runActAdvance",
+      "message": "fix",
+      "pointer": {
+        "tag": "repair-laser"
+      },
+      "advance": {
+        "on": "event",
+        "event": "repaired",
+        "where": {
+          "machine": "laser"
+        }
+      },
+      "hint": {
+        "after": 5,
+        "message": "fixHint"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:laser",
+          "atMost": 0
+        }
+      ],
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "consoleClosed"
+          },
+          "message": "stillBroken",
+          "pointer": {
+            "tag": "bar-laser"
+          },
+          "until": {
+            "on": "event",
+            "event": "consoleOpened"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fixed",
+      "pattern": "pauseShowDismiss",
+      "message": "fixed",
+      "pointer": {
+        "tag": "panel-laser"
+      }
+    },
+    {
+      "id": "back",
+      "pattern": "runActAdvance",
+      "message": "back",
+      "pointer": {
+        "tag": "periscope",
+        "placement": "right"
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleClosed"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        }
+      ]
+    }
+  ]
+}
