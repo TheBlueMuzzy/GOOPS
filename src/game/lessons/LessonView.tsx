@@ -1,32 +1,32 @@
-// THE LESSON LOOK (F30): the running lesson's message as the UI kit's Callout — a speech bubble pointing at a tank cell,
-// the falling piece, a HUD item or a console part (goopsLessons.ts lessonTarget / placeLessonMark), with the kit's
-// pulse ring round it. A message that waits to be closed gets a "Got it" button (Enter works too) once it's armed.
-// Words come from content/text/en.json → lessons.<lesson id>, picked by the input used last, with {placeholders} from
-// the live shift.
-// overMenu (F32): a menu is open over the game — only a step's reaction shows then ("That's the pause menu…").
-// If what it points at isn't on screen, it points at the pointer's "or" (F32), else at the screen's middle, so a message
-// is never up but unseen.
-import { useEffect, useState, useSyncExternalStore } from 'react'
-import { Callout, type CalloutPlacement } from '../../ui/kit'
-import { looksClock } from '../../devkit/gameClock'
-import { lessonPlay, lessonTarget, lessonWords, runner } from './goopsLessons'
+// THE LESSON LOOK (F30; F32 from Muzzy's first try). The running lesson's message:
+//   IN THE TANK — a speech bubble in the kit's Callout look (Spotlight.tsx), inside the game's phone-width column,
+//     pointing at a tank cell, the falling piece or a HUD item, with the pink outline round it and, for a step that
+//     says so (`dim`), the spotlight's dim round it. Words and "Got it" are there together from the first frame.
+//   AT THE CONSOLE (Muzzy, 2026-10-19: "use the CRT panel at the top of the console as our tutorial bubbles… no popups
+//     while in the console") — the words go on the monitor's screen (useCrtLesson, drawn by Console.tsx; it slides
+//     down like a toaster when it needs more room) and this only draws the spotlight: the dim with cut-outs for the
+//     screen and the target, and the outline round the target. A phone on its side has the monitor off screen, so
+//     there the bubble comes back (pointing at the pointer's "or").
+// One text at a time: a part the message points at may ask for its own words (data-say: the visor's slider "Drag the
+// slider toward the light", its lit button "Press the lit button"), which then replace the step's.
+// An insisting step (runner `insist`): the same words, now dimmed, with the tank still taking the flick up through
+// the dim (passThrough) — the only control that works then.
+// overMenu: a menu is open over the game — only a step's reaction shows then ("That's the pause menu…").
+import { useEffect, useSyncExternalStore } from 'react'
+import type { CalloutPlacement } from '../../ui/kit'
+import { useShort } from '../../ui/useShort'
+import { boxAround, gameColumn, lessonTankBox, lessonTargets, lessonTuning, runner, type LessonPointer } from './goopsLessons'
+import { targetsOf, useLessonTick, wordsOf } from './lessonLine'
+import { Spotlight, type SpotLayout } from './Spotlight'
 import text from '../../../content/text/en.json'
 
-type Pointer = { placement?: string; or?: Pointer }
-const shown = (selector: string) => {
-  const r = document.querySelector(selector)?.getBoundingClientRect()
-  // (there, and at least partly inside the window)
-  return !!r && (r.width > 0 || r.height > 0) && r.bottom > 0 && r.right > 0 && r.top < window.innerHeight && r.left < window.innerWidth
-}
-
-export function LessonView({ overMenu = false }: { overMenu?: boolean }) {
+export function LessonView({ overMenu = false, atConsole = false }: { overMenu?: boolean; atConsole?: boolean }) {
   const view = useSyncExternalStore(runner.subscribe, runner.view)
+  const short = useShort()
   const m = view.message
-  // re-read a few times a second (looks time: still on a full pause): words with live numbers ({pressure}…), and
-  // whether the thing it points at is on screen
-  const [, setTick] = useState(0)
-  useEffect(() => (m ? looksClock.every(250, () => setTick((n) => n + 1)) : undefined), [m])
-  // Enter closes a message that waits for "Got it"
+  useLessonTick(!!m)
+  const crt = atConsole && !short // the words are on the monitor
+  // Enter closes a message that waits for "Got it" (once it works: dismissArmSeconds)
   const canClose = !!m && m.waitsForDismiss && m.armed && !overMenu
   useEffect(() => {
     if (!canClose) return
@@ -35,21 +35,35 @@ export function LessonView({ overMenu = false }: { overMenu?: boolean }) {
     return () => window.removeEventListener('keydown', key)
   }, [canClose])
   if (!m || (overMenu && m.kind !== 'reaction')) return null
-  const words = lessonWords(view.lessonId, m.text, lessonPlay.vars(), lessonPlay.inputKind())
-  // the pointer, or its "or" when that isn't on screen (e.g. the monitor, off screen on a phone on its side), and so on
-  // (the tank's mark box is placed by the frame loop, a frame after the message: always there)
-  let pointer = m.pointer as Pointer | undefined
-  let target: string | { x: number; y: number } = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
-  for (let p = pointer; p; p = p.or) {
-    const wanted = lessonTarget(p)
-    if (wanted === '.lesson-mark' || shown(wanted)) { target = wanted; pointer = p; break }
+
+  const words = crt ? '' : wordsOf(view.lessonId, m, atConsole)
+  const found = targetsOf(m, atConsole)
+  // which side the bubble goes: the thing pointed at may say (data-placement), else the pointer's own "placement"
+  const side = found?.els[0]?.getAttribute('data-placement') ?? (found?.pointer as LessonPointer | undefined)?.placement
+  const layout = (): SpotLayout | null => {
+    const now = runner.view().message
+    if (!now) return null
+    const at = targetsOf(now, atConsole)
+    const focus = at ? boxAround(at.els) : null
+    const holes = focus ? [focus] : []
+    // the pointer's "show": more to keep out of the dim (not outlined) — e.g. the whole visor panel round the part to use
+    const show = (at?.pointer as LessonPointer | undefined)?.show
+    const shown = show ? lessonTargets(show) : null
+    if (shown) holes.push(boxAround(shown.els)!)
+    // (the monitor — bezel and screen — is the message at the console: never dimmed, and nor is its toaster)
+    if (crt) for (const part of document.querySelectorAll('[data-tag="monitor"], [data-tag="crt"]')) holes.push(boxAround([part])!)
+    // an insisting go-to-console message: the flick up reaches the tank through the dim — below the HUD's top row (its
+    // pause button stays behind the dim)
+    let tank = lessonTankBox()
+    if (tank) for (const item of document.querySelectorAll('.kit-hud-slot > *')) {
+      const b = item.getBoundingClientRect()
+      if (b.height && b.bottom < (tank.top + tank.bottom) / 2) tank = { ...tank, top: Math.max(tank.top, b.bottom) }
+    }
+    return { focus, holes, passThrough: now.only?.includes('console') && !atConsole && tank ? [tank] : [], frame: gameColumn() }
   }
-  // which side the message goes: the thing pointed at may say (data-placement — the console's repair parts), else the
-  // pointer's own "placement", else wherever it fits
-  const side = (typeof target === 'string' ? document.querySelector(target)?.getAttribute('data-placement') : null) ?? pointer?.placement
   return (
-    <Callout key={`${view.stepId}:${m.kind}`} target={target} text={words} dim={m.dim} pulse
-      placement={(side ?? 'auto') as CalloutPlacement}
-      action={canClose ? text.lessons.gotIt : undefined} onDismiss={canClose ? () => runner.dismiss() : undefined} />
+    <Spotlight key={`${view.stepId}:${m.kind}`} layout={layout} dim={m.dim} dimAmount={lessonTuning().dimAmount}
+      text={words || undefined} placement={(side ?? 'auto') as CalloutPlacement}
+      action={m.waitsForDismiss ? text.lessons.gotIt : undefined} onAction={() => runner.dismiss()} />
   )
 }

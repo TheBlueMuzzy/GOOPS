@@ -42,7 +42,12 @@ function consoleProblems() {
     const r = box(img), want = img.naturalWidth / img.naturalHeight, got = r.width / r.height
     if (img.naturalWidth && r.width && Math.abs(got / want - 1) > 0.01) problems.push(`stretched art ${img.src.split('/').pop()} (${got.toFixed(3)} vs ${want.toFixed(3)})`)
   }
-  for (const el of document.querySelectorAll('.kit-art-layer[data-text]:not(:has(.kit-level-meter))')) {
+  // (F32: the monitor's screen is drawn by the game, wider than its words box on purpose — its words must stay on it)
+  for (const screen of document.querySelectorAll('.crt')) {
+    const s = box(screen), w = box(screen.querySelector('.lesson-words'))
+    if (w.left < s.left || w.right > s.right) problems.push(`monitor words spill off the screen: "${screen.textContent}"`)
+  }
+  for (const el of document.querySelectorAll('.kit-art-layer[data-text]:not(:has(.kit-level-meter)):not(:has(.crt))')) {
     if (el.scrollWidth > el.clientWidth + 1) problems.push(`words spill: "${el.textContent}" (${el.scrollWidth} > ${el.clientWidth})`)
   }
   // live controls: big enough, and no two of them fighting for the same spot
@@ -164,28 +169,42 @@ try {
     }
     const litLamps = () => page.evaluate(() => [...document.querySelectorAll('.kit-art-layer > img[src*="Light-On"]')].map((i) => { const r = i.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2] }))
 
-    // ── 3. LASER: read the 4 lit lamps (all sliders, breakdowns.json laser.repairSliders); mouse and finger take turns
-    //    (drag on even sizes, tap on odd) ──
+    // ── 3. LASER: read the 4 lit lamps (all sliders, breakdowns.json laser.repairSliders); mouse and finger take turns.
+    //    The sliders are a real drag (F32, Muzzy): on odd sizes a tap on the end first — it must NOT move the knob ──
     await broken('laser', 3)
     const lamps = await litLamps()
     check(name, 'laser: 4 lamps lit (all sliders)', lamps.length === 4, String(lamps.length))
     const sliders = await Promise.all([1, 2, 3, 4].map((n) => boxOf(page.getByRole('slider', { name: `Laser slider ${n}` }))))
     const tapStyle = index % 2 === 1
+    const knobs = () => page.evaluate(() => [...document.querySelectorAll('[aria-label^="Laser slider"]')].map((e) => e.getAttribute('aria-valuenow')).join())
+    let tapsStill = true
     for (const [k, [lx, ly]] of lamps.entries()) {
       const s = sliders.reduce((best, r) => (Math.abs(centre(r)[1] - ly) + Math.abs(centre(r)[0] - lx) < Math.abs(centre(best)[1] - ly) + Math.abs(centre(best)[0] - lx) ? r : best))
       const [cx, cy] = centre(s), leftEnd = lx < cx
       const end = leftEnd ? s.x + s.width * 0.1 : s.x + s.width * 0.9
-      // a drag starts on the knob (in the middle) and goes past the end; a tap goes on the end
-      await gesture(k % 2 === 1, tapStyle ? [[end, cy]] : line(cx, cy, leftEnd ? s.x - 20 : s.x + s.width + 20, cy))
+      if (tapStyle) { // a tap on the end: the knob stays where it is
+        const before = await knobs()
+        await gesture(k % 2 === 1, [[end, cy]])
+        await page.waitForTimeout(150)
+        if ((await knobs()) !== before) tapsStill = false
+      }
+      // a drag starts on the knob (in the middle) and goes past the end
+      await gesture(k % 2 === 1, line(cx, cy, leftEnd ? s.x - 20 : s.x + s.width + 20, cy))
       await page.waitForTimeout(250)
       if (k === 0) await page.screenshot({ path: `${OUT}/${name}-4-laser-half.png` })
     }
     await page.waitForTimeout(250)
-    check(name, `laser: fixed (${tapStyle ? 'mouse + finger taps' : 'mouse + finger drags'}) → act repair`, await repaired('laser'))
+    if (tapStyle) check(name, 'laser: a tap on a slider\'s end doesn\'t move its knob (a real drag only)', tapsStill)
+    check(name, 'laser: fixed (mouse + finger drags) → act repair', await repaired('laser'))
 
     // ── 4. VISOR: top lamp → slide up (mouse) → 3 lit buttons (mouse, finger, mouse; a wrong one first) → slide down (finger) ──
     await broken('visor', 5)
     const vs = await boxOf(page.getByRole('slider', { name: 'Visor slider' }))
+    const visorAt = () => page.evaluate(() => document.querySelector('[aria-label="Visor slider"]')?.getAttribute('aria-valuenow'))
+    // F32 (Muzzy): a click on the top of the track doesn't teleport the knob there — it's a drag
+    await page.mouse.click(vs.x + vs.width / 2, vs.y + vs.height * 0.1)
+    await page.waitForTimeout(150)
+    check(name, 'visor: a click on the top of the track leaves the knob down', (await visorAt()) === '1')
     await mouse(line(vs.x + vs.width / 2, vs.y + vs.height * 0.85, vs.x + vs.width / 2, vs.y - 20))
     await page.waitForTimeout(250)
     const buttons = await Promise.all(['Blue button', 'Yellow button', 'Pink button'].map((n) => boxOf(page.getByRole('button', { name: n }))))
@@ -199,7 +218,14 @@ try {
         const shook = await page.evaluate(() => document.querySelectorAll('.kit-art-layer[data-shake]').length > 0)
         const still = (await litLamps()).some(([, y]) => Math.abs(y - ly) < 2)
         check(name, 'visor: a wrong button shakes the panel and changes nothing', shook && still)
-        await page.waitForTimeout(300)
+        await page.waitForTimeout(400)
+        // F32 (Muzzy): touching the slider at the buttons' turn shakes it the same way (and it stays up)
+        const shakeOf = () => page.evaluate(() => document.querySelector('.kit-art-layer[data-shake]')?.getAttribute('data-shake') ?? '')
+        const s0 = await shakeOf()
+        await page.mouse.click(vs.x + vs.width / 2, vs.y + vs.height * 0.2)
+        await page.waitForTimeout(80)
+        check(name, 'visor: touching the slider at the buttons\' turn shakes the panel, the knob stays up', (await shakeOf()) !== s0 && (await visorAt()) === '0')
+        await page.waitForTimeout(400)
       }
       if (i === 1) await finger([centre(b)]); else await page.mouse.click(...centre(b))
       await page.waitForTimeout(200)

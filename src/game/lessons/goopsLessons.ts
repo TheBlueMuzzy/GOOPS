@@ -45,10 +45,15 @@ import type { GooView } from '../../goo/types'
 import { session } from '../session'
 import { createLessonRunner } from './runner'
 import type { Lesson } from './lessonTypes'
-import lessonTiming from '../../../content/tuning/lessons.json'
+import lessonTimingFile from '../../../content/tuning/lessons.json'
 import shiftConfig from '../../../content/tuning/shift.json'
 import breakdowns from '../../../content/tuning/breakdowns.json'
 import text from '../../../content/text/en.json'
+
+// ---- the shared timings and looks (content/tuning/lessons.json), live in the Dev Kit's Tuning tab
+const tuning = liveTuning('lessons', lessonTimingFile)
+/** content/tuning/lessons.json as it is now (with the Dev Kit's edits). */
+export const lessonTuning = () => tuning.current
 
 // ---- the lesson files: content/lessons/<id>.json, each live (the Dev Kit's Lessons tab sends edits as "lesson-<id>")
 const files = import.meta.glob<Lesson>('../../../content/lessons/*.json', { eager: true, import: 'default' })
@@ -64,6 +69,7 @@ export const lessonPath = (id: string) => `content/lessons/${id}.json`
 let engine: ShiftEngine | null = null
 let speed = 1 // × the shift's speed while a lesson message shows (0 = paused)
 let inputOn = true
+let only: string[] | null = null // F32: while input is off, the controls that still work (a step's insist: ["console"])
 let anchorSpin = 0 // the tank's turn when the step was set up: lesson columns count from the middle of the view THEN
 let lastInput: 'keys' | 'mouse' | 'phone' = 'keys'
 let atConsole = false // F32: the console is over the tank mid-shift (App says so: lessonPlay.screen)
@@ -134,16 +140,22 @@ function gate(name: string): number | null {
     const m = s.machines?.[name.slice('broken:'.length) as MachineId]
     return m ? (m.broken ? 1 : 0) : null
   }
+  // F32: 1 = the machine has been broken long enough (shift time) for the go-to-console message to insist
+  // (content/tuning/lessons.json insistSeconds; 4 = the visor's glitch at full strength, visor-fx.json rampMs)
+  if (name.startsWith('insist:')) {
+    const m = s.machines?.[name.slice('insist:'.length) as MachineId]
+    return m ? (m.broken && (m.brokenMs ?? 0) >= tuning.current.insistSeconds * 1000 ? 1 : 0) : null
+  }
   return null
 }
 
 export const runner = createLessonRunner({
   clock: rulesClock, // the rules clock: the Dev Kit's ⏸ / ◐ and the game's own pause stop the lesson's timers
-  timing: () => lessonTiming,
+  timing: () => tuning.current,
   game: {
     setup,
     gate,
-    setSpeed: (value, input) => { speed = value; inputOn = input },
+    setSpeed: (value, input, controls) => { speed = value; inputOn = input; only = input ? null : controls ?? null },
     seen: (id) => tipsMemory().seen(id),
     markSeen: (id) => tipsMemory().markSeen(id),
     finished: (id) => { consoleFrozen = false; tipsMemory().markSeen(`lesson:${id}`) },
@@ -176,6 +188,8 @@ export const lessonPlay = {
   realShift: () => !!engine && !training,
   /** Does the tank take the player's controls right now? (Not under a paused message.) */
   inputOn: () => inputOn,
+  /** F32: under an insisting message only the console control works (W / ↑ / flick up) — the tank's controls don't. */
+  consoleOnly: () => !inputOn && !!only?.includes('console'),
   /** Is a lesson message up? (The game's own in-shift messages wait while it is.) */
   messageUp: () => !!runner.view().message,
   inputKind: () => lastInput,
@@ -268,17 +282,75 @@ const TAG_TARGETS: Record<string, string> = {
   readout: '[data-tag="readout"] .kit-pinned',
   'bar-visor': barOf(text.hud.visor), 'bar-laser': barOf(text.hud.laser), 'bar-controls': barOf(text.hud.controls),
   pauseResume: '.kit-pause .kit-menu > button:first-child', // the pause menu's "Back to the tank" (the kit's Pause)
-  periscope: '.kit-pull-grip', // the console's periscope: the part you grab (the kit's PullHandle)
+  // the console's periscope: the part you grab (the kit's PullHandle) — while it works (a phone on its side switches it
+  // off: the "or" pointer, Back to the tank, takes over)
+  periscope: '.kit-pull-grip:not(:disabled)',
   // the console's "Back to the tank" button (a phone on its side, where the periscope and monitor are off screen)
   backToTank: '.kit-screen[aria-label="Console"] [data-slot="bottom-left"] button',
 }
 
-/** A CSS selector for the Callout's target, from the message's pointer. */
+/** What a lesson step's `pointer` can say (Goops). tags = several things joined into ONE outlined box (F32: a lamp and
+ *  the slider it asks for); every element carrying a tag counts (the visor's "repair-visor" = the lit lamp AND its
+ *  control). or = where to point when none of this is on screen. */
+export type LessonPointer = { tag?: string; tags?: string[]; selector?: string; piece?: boolean; cell?: [number, number]
+  placement?: string; or?: LessonPointer; show?: LessonPointer } // show (F32): also kept out of the dim, not outlined
+export type Box = { left: number; top: number; right: number; bottom: number }
+
+/** A CSS selector for what the pointer points at (several tags: a selector list). */
 export function lessonTarget(pointer: unknown): string {
-  const p = (pointer ?? {}) as { tag?: string; selector?: string }
-  if (p.tag) return TAG_TARGETS[p.tag] ?? `[data-tag="${p.tag}"]`
+  const p = (pointer ?? {}) as LessonPointer
+  const tags = p.tags ?? (p.tag ? [p.tag] : [])
+  if (tags.length) return tags.map((tag) => TAG_TARGETS[tag] ?? `[data-tag="${tag}"]`).join(', ')
   if (p.selector) return p.selector
   return '.lesson-mark'
+}
+
+// on screen: there, with a size, and at least partly inside the window
+const onScreen = (r: DOMRect) => (r.width > 0 || r.height > 0) && r.bottom > 0 && r.right > 0 && r.top < window.innerHeight && r.left < window.innerWidth
+
+/** The elements a pointer points at now — or its "or" when they aren't on screen, and so on. null = nothing on screen
+ *  (or no pointer: the message points at nothing). */
+export function lessonTargets(pointer: unknown): { els: Element[]; pointer: LessonPointer } | null {
+  for (let p = pointer as LessonPointer | undefined; p; p = p.or) {
+    const els = [...document.querySelectorAll(lessonTarget(p))].filter((el) => onScreen(el.getBoundingClientRect()))
+    if (els.length) return { els, pointer: p }
+  }
+  return null
+}
+
+/** The one box round all of these elements (page px). */
+export function boxAround(els: Element[]): Box | null {
+  let box: Box | null = null
+  for (const el of els) {
+    const r = el.getBoundingClientRect()
+    box = box ? { left: Math.min(box.left, r.left), top: Math.min(box.top, r.top), right: Math.max(box.right, r.right), bottom: Math.max(box.bottom, r.bottom) }
+      : { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+  }
+  return box
+}
+
+/** F32: the words the thing pointed at asks for (data-say on it: the visor's slider "fixSlide", its lit button
+ *  "fixButton"), instead of the step's own — so the message always says what to do with the part that's outlined. */
+export const lessonSay = (els: Element[]) => els.map((el) => el.getAttribute('data-say')).find(Boolean) ?? null
+
+/** F32: the visible tank's box (page px), kept by the frame loop — under an insisting go-to-console message the flick
+ *  up still has to reach it through the dim. */
+let tankBox: Box | null = null
+export const lessonTankBox = () => tankBox
+
+/** F32: the room a lesson message may use — the game's phone-width column, minus the kit's edge room (on a wide window
+ *  the game is a phone-shaped column; a message never sits outside it). */
+export function gameColumn(): Box {
+  const w = window.innerWidth, h = window.innerHeight
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  const consoleScreen = document.querySelector('.kit-screen[aria-label="Console"]')
+  if (consoleScreen) { // the console's column: its slots' room (the kit's padding = the column's edges + edge room)
+    const r = consoleScreen.getBoundingClientRect(), st = getComputedStyle(consoleScreen)
+    return { left: r.left + parseFloat(st.paddingLeft), top: r.top + rem, right: r.right - parseFloat(st.paddingRight), bottom: r.bottom - rem }
+  }
+  // the tank: the HUD's column (ShiftStage's --kit-hud-w: the tank and a little room each side)
+  const col = Math.min(w, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kit-hud-w')) || w)
+  return { left: (w - col) / 2 + rem, top: rem, right: (w + col) / 2 - rem, bottom: h - rem }
 }
 
 // Where a flat tank point shows on screen under the visor's curved-TV look (the other way round from flatPoint: a few
@@ -297,9 +369,10 @@ function bentPoint(fx: number, fy: number, rect: ReturnType<typeof tankRect>, cu
  *  curve = the visor's curved-TV strength now: the box goes where the cell is SEEN. */
 export function placeLessonMark(el: HTMLElement | null, s: ShiftState, view: GooView, curve: number) {
   if (!el) return
-  const p = (runner.view().message?.pointer ?? {}) as { piece?: boolean; cell?: [number, number]; tag?: string; selector?: string }
+  const p = (runner.view().message?.pointer ?? {}) as LessonPointer
   let box: [number, number, number, number] | null = null // left, top, right, bottom
   const rect = tankRect(view, s.visibleWidth, s.height - s.bufferRows)
+  tankBox = { left: rect.left, top: rect.top, right: rect.left + rect.width, bottom: rect.top + rect.height } // (the stage fills the window: its px are the page's)
   const cellBox = (x: number, y: number): [number, number, number, number] => {
     const [fx, fy] = cellToScreen(x, y, view, s.width, s.bufferRows)
     const [cx, cy] = bentPoint(fx, fy, rect, curve)
@@ -308,7 +381,7 @@ export function placeLessonMark(el: HTMLElement | null, s: ShiftState, view: Goo
   }
   const around = (cells: [number, number][]) => cells.map(([x, y]) => cellBox(x, Math.max(y, s.bufferRows)))
     .reduce((a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])])
-  if (!runner.view().message || p.tag || p.selector) box = null
+  if (!runner.view().message || p.tag || p.tags || p.selector) box = null
   else if (p.cell) box = cellBox(...toTank(s, p.cell[0], p.cell[1]))
   else if (p.piece && s.piece) box = around(s.piece.cells)
   else box = cellBox(wrap(s.spin, s.width), s.bufferRows) // where pieces drop in

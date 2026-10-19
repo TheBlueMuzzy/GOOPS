@@ -1,0 +1,309 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="356.86 1530.44 50.51 175.86" width="50.51" height="175.86">
+  <!-- made by scripts/art-prep.mjs from art/Example1.svg -->
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f6f081;
+      }
+
+      .cls-2 {
+        fill: #35385b;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 {
+        fill-rule: evenodd;
+      }
+
+      .cls-17 {
+        fill: #2a2d47;
+      }
+
+      .cls-18 {
+        letter-spacing: -.05em;
+      }
+
+      .cls-19 {
+        letter-spacing: .01em;
+      }
+
+      .cls-20 {
+        letter-spacing: .02em;
+      }
+
+      .cls-21 {
+        fill: #cb8abc;
+      }
+
+      .cls-22 {
+        fill: #fff;
+      }
+
+      .cls-23 {
+        letter-spacing: .02em;
+      }
+
+      .cls-24 {
+        letter-spacing: 0em;
+      }
+
+      .cls-25 {
+        fill: #d36b28;
+      }
+
+      .cls-3 {
+        fill: #4c833c;
+      }
+
+      .cls-26 {
+        fill: #eebfc5;
+      }
+
+      .cls-27, .cls-28 {
+        fill: #6acbda;
+      }
+
+      .cls-27, .cls-29 {
+        font-family: AmazonEmber-Heavy, 'Amazon Ember';
+        font-weight: 800;
+      }
+
+      .cls-27, .cls-30 {
+        font-size: 34.88px;
+      }
+
+      .cls-31 {
+        letter-spacing: -.06em;
+      }
+
+      .cls-32, .cls-4, .cls-33 {
+        fill: #59acae;
+      }
+
+      .cls-34 {
+        letter-spacing: .04em;
+      }
+
+      .cls-35 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-36 {
+        letter-spacing: .02em;
+      }
+
+      .cls-37, .cls-13 {
+        fill: none;
+      }
+
+      .cls-38 {
+        letter-spacing: .02em;
+      }
+
+      .cls-39, .cls-30 {
+        fill: #ffd92b;
+      }
+
+      .cls-40 {
+        letter-spacing: .03em;
+      }
+
+      .cls-41 {
+        letter-spacing: 0em;
+      }
+
+      .cls-5, .cls-42 {
+        fill: #45486c;
+      }
+
+      .cls-43 {
+        letter-spacing: -.05em;
+      }
+
+      .cls-44 {
+        letter-spacing: -.06em;
+      }
+
+      .cls-45 {
+        letter-spacing: .03em;
+      }
+
+      .cls-6 {
+        fill: #474871;
+      }
+
+      .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 {
+        font-family: AmazonEmber-Regular, 'Amazon Ember';
+      }
+
+      .cls-28, .cls-42 {
+        font-size: 20.93px;
+      }
+
+      .cls-49 {
+        letter-spacing: 0em;
+      }
+
+      .cls-50 {
+        letter-spacing: .02em;
+      }
+
+      .cls-51 {
+        fill: #1f1f38;
+      }
+
+      .cls-52 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-7 {
+        fill: #616a79;
+      }
+
+      .cls-53 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-8 {
+        fill: #803d83;
+      }
+
+      .cls-54 {
+        fill: #0d1a19;
+      }
+
+      .cls-9, .cls-47, .cls-48 {
+        fill: #aad9d9;
+      }
+
+      .cls-55 {
+        letter-spacing: .02em;
+      }
+
+      .cls-56 {
+        fill: #f2a743;
+      }
+
+      .cls-10, .cls-15 {
+        fill: #d8672b;
+      }
+
+      .cls-11 {
+        fill: #231f20;
+      }
+
+      .cls-47 {
+        font-size: 19.19px;
+      }
+
+      .cls-57 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-12 {
+        fill: #0f1829;
+      }
+
+      .cls-58 {
+        font-size: 62.79px;
+      }
+
+      .cls-58, .cls-59 {
+        fill: #5bbc70;
+      }
+
+      .cls-58, .cls-60 {
+        font-family: FromWhereYouAre, 'From Where You Are';
+      }
+
+      .cls-13 {
+        stroke: #1d1d3a;
+        stroke-miterlimit: 10;
+        stroke-width: 5px;
+      }
+
+      .cls-61 {
+        fill: #0b1c3f;
+      }
+
+      .cls-62 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-63 {
+        letter-spacing: .01em;
+      }
+
+      .cls-64 {
+        letter-spacing: .01em;
+      }
+
+      .cls-65 {
+        letter-spacing: .05em;
+      }
+
+      .cls-14 {
+        fill: #3d8380;
+      }
+
+      .cls-66 {
+        letter-spacing: .02em;
+      }
+
+      .cls-15 {
+        opacity: .25;
+      }
+
+      .cls-33 {
+        font-size: 17.44px;
+      }
+
+      .cls-67 {
+        fill: #087962;
+      }
+
+      .cls-68 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-30 {
+        font-family: AmazonEmber-Bold, 'Amazon Ember';
+        font-weight: 700;
+      }
+
+      .cls-60 {
+        fill: #f1a941;
+        font-size: 29.65px;
+      }
+
+      .cls-69 {
+        letter-spacing: .03em;
+      }
+
+      .cls-70 {
+        fill: #373a60;
+      }
+
+      .cls-16 {
+        fill: #f8aaa1;
+      }
+
+      .cls-48 {
+        font-size: 15.7px;
+      }
+
+      .cls-71 {
+        fill: #96d7dd;
+      }
+
+      .cls-72 {
+        letter-spacing: .02em;
+      }
+
+      .cls-73 {
+        letter-spacing: -.05em;
+      }
+    </style>
+  </defs>
+  <rect class="cls-26" x="356.86" y="1530.44" width="50.51" height="175.86" rx="6.92" ry="6.92"/>
+  <path class="cls-15" d="M377.67,1532.56l-20.81,20.81v-4.24l18.68-18.68h13.15l18.68,18.68v4.24l-20.81-20.81c-2.45-2.45-6.44-2.45-8.89,0ZM407.37,1682.88l-20.81,20.81c-2.45,2.45-6.44,2.45-8.89,0l-20.81-20.81v4.24l18.69,18.69c.18.18.36.34.55.49h12.04c.19-.16.37-.32.55-.49l18.69-18.69v-4.24ZM386.56,1679.01c-1.19,1.19-2.77,1.84-4.45,1.84s-3.26-.65-4.45-1.84l-20.81-20.81v4.24l18.69,18.69c1.75,1.75,4.09,2.72,6.57,2.72s4.81-.97,6.57-2.72l18.69-18.69v-4.24l-20.81,20.81ZM382.12,1552.39c-2.48,0-4.81.97-6.57,2.72l-18.69,18.69v4.24l20.81-20.81c1.19-1.19,2.77-1.84,4.45-1.84s3.26.65,4.45,1.84l20.81,20.81v-4.24l-18.69-18.69c-1.75-1.75-4.09-2.72-6.57-2.72ZM386.56,1653.42c-2.45,2.45-6.44,2.45-8.89,0l-20.81-20.81v4.24l18.69,18.69c1.81,1.81,4.19,2.72,6.57,2.72s4.76-.91,6.57-2.72l18.69-18.69v-4.24l-20.81,20.81ZM375.55,1580.7l-18.69,18.69v4.24l20.81-20.81c2.45-2.45,6.44-2.45,8.89,0l20.81,20.81v-4.24l-18.69-18.69c-3.62-3.62-9.52-3.62-13.14,0Z"/>
+</svg>

@@ -309,9 +309,9 @@ export function App() {
         </ScreenStack>
       )}
       <ToastStack place="at" variant="plain" /* just above the goop; words, not button-like plates (Muzzy 2026-10-18) */ />
-      {/* F30: a lesson's message (kit Callout), over the running tank or the console mid-shift (F32); over a menu only a
-          step's reaction ("That's the pause menu…") */}
-      {(mode === 'shift' || peeking) && <LessonView overMenu={open.length > 0} />}
+      {/* F30: a lesson's message — in the tank a bubble in the kit Callout look; at the console mid-shift (F32) its words
+          are on the monitor and this draws the spotlight; over a menu only a step's reaction ("That's the pause menu…") */}
+      {(mode === 'shift' || peeking) && <LessonView overMenu={open.length > 0} atConsole={peeking} />}
     </>
   )
 }

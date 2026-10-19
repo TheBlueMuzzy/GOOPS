@@ -18,7 +18,9 @@ import { expandStep } from './patterns'
 export interface LessonGame {
   setup(setup: Record<string, unknown>): void // put the game in a step's starting state
   gate(name: string): number | null // a number a step can wait on (null = can't tell right now)
-  setSpeed(speed: number, inputOn: boolean): void // how fast the game runs (0 = stopped) and whether it takes input
+  // how fast the game runs (0 = stopped) and whether it takes input; only = while stopped, just these controls still
+  // work (a step's insist, F32: e.g. ["console"])
+  setSpeed(speed: number, inputOn: boolean, only?: string[]): void
   seen?(id: string): boolean // remembered on this device (an interrupt with remember: true)
   markSeen?(id: string): void
   finished?(lessonId: string): void // the last step of a lesson is done
@@ -39,6 +41,8 @@ export interface LessonMessage {
   waitsForDismiss: boolean // it has a "Got it" (and Enter closes it)
   armed: boolean // …which works now
   tries: number // retries so far in this step ({tries} in the words)
+  insisting?: boolean // F32: the step's insist has come (the same words, now with the game stopped and the dim on)
+  only?: string[] // F32: the only controls that work while it shows (an insist)
 }
 
 export interface LessonView {
@@ -79,6 +83,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
   let index = -1
   let step: LessonStep | null = null
   let advancing = false
+  let insisted: LessonStep | null = null // the step whose insist has come (F32)
   let tries = 0
   let firedInterrupts = new Set<string>()
   let interrupt: { saved: { message: LessonMessage; while: WhileShowing } | null } | null = null // an interrupt is up
@@ -91,8 +96,8 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     view = { ...view, ...change }
     for (const l of listeners) l()
   }
-  const speedFor = (w: WhileShowing) => {
-    if (w === 'pause') game.setSpeed(0, false)
+  const speedFor = (w: WhileShowing, only?: string[]) => {
+    if (w === 'pause') game.setSpeed(0, false, only)
     else game.setSpeed(w === 'slow' ? timing().slowSpeed : 1, true)
   }
 
@@ -101,7 +106,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     if (interrupt && message.kind !== 'interrupt') { interrupt.saved = { message, while: w }; return }
     reacting = null // (a new message ends a reaction)
     showingWhile = w
-    speedFor(w)
+    speedFor(w, message.only)
     publish({ message })
     if (message.waitsForDismiss) {
       // (an interrupt's timer lives across steps: the step may move on under it)
@@ -180,6 +185,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     index = i
     step = expandStep(lesson.steps[i], o.patterns)
     tries = 0
+    insisted = null
     const s = step
     publish({ stepIndex: i, stepId: s.id, total: lesson.steps.length })
     if (s.setup) game.setup(s.setup)
@@ -196,12 +202,24 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     const w = s.while ?? 'run'
     // a paused message: the hint clock starts once it's closed (doing nothing while reading isn't "stuck")
     if (!(s.message && w === 'pause')) startHint()
-    if (s.message) {
-      const message: LessonMessage = { kind: 'step', text: s.message, pointer: s.pointer, dim: !!s.dim,
-        waitsForDismiss: closedByDismiss(advanceOn) || w === 'pause', armed: false, tries }
+    // (no message but a pointer: it only points — the spotlight, no words, nothing to close)
+    if (s.message || s.pointer !== undefined) {
+      const message: LessonMessage = { kind: 'step', text: s.message ?? '', pointer: s.pointer, dim: !!s.dim,
+        waitsForDismiss: !!s.message && (closedByDismiss(advanceOn) || w === 'pause'), armed: false, tries }
       if (!s.showAfter) show(message, w)
       else stepTimers.after('show', s.showAfter * 1000, () => show(message, w))
     }
+    if (s.insist) watch(s.insist.when, insist, 'step', 'insist')
+  }
+
+  // the step's insist (F32): its own message again, now with the game stopped, the dim on and only `only` working
+  function insist() {
+    const it = step?.insist
+    if (!it || advancing || !step || insisted === step) return // (once per step: a gate keeps holding)
+    insisted = step
+    stepTimers.clear('hint') // (one message: no hint on top of it)
+    show({ kind: 'step', text: step.message ?? '', pointer: step.pointer, dim: it.dim ?? true, waitsForDismiss: false, armed: false,
+      tries, insisting: true, only: it.only }, it.while ?? 'pause')
   }
 
   function advance() {

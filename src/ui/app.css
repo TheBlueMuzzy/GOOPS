@@ -1,2 +1,7 @@
 /* Page base; the kit paints its own screens. */
 html, body, #root { margin: 0; height: 100%; }
+
+/* F32: the repair sliders' grab wrapper (RepairPanels useDragOnly) — fills its art layer's one cell, like the control
+   inside it would (so a lesson tag beside it in the same layer doesn't push the control into a second row) */
+.repair-grab { display: grid; grid-area: 1 / 1; grid-template: minmax(0, 1fr) / minmax(0, 1fr); min-inline-size: 0; min-block-size: 0; }
+.repair-grab > * { grid-area: 1 / 1; }

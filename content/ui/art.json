@@ -16,22 +16,33 @@
       "meter": { "file": "art/ConsoleMeter.svg", "groups": ["Operator_Rank_-_meter"], "strip": ["Meter_Fill"], "at": [81.41, 1138.58, 487.02, 66.4] },
       "laser": { "file": "art/ConsoleLaser.svg", "groups": ["Reset_Laser"], "stripClasses": ["cls-25", "cls-22", "cls-10", "cls-11", "cls-51"], "at": [67.86, 1239.78, 516.75, 141.42] },
       "controls": { "file": "art/ConsoleControls.svg", "groups": ["Reset_Controls"], "stripClasses": ["cls-25", "cls-22", "cls-10", "cls-11", "cls-51"], "at": [74.36, 1450.93, 243.08, 273.92] },
-      "lights": { "file": "art/ConsoleLights.svg", "groups": ["Reset_Lights"], "strip": ["Blue_Button", "Purple_Button", "Green_Button"], "stripClasses": ["cls-25", "cls-22", "cls-10", "cls-11", "cls-51"], "at": [341.17, 1452.22, 267.53, 267.9] },
+      "lights": { "file": "art/ConsoleLights.svg", "groups": ["Reset_Lights"], "strip": ["Blue_Button", "Purple_Button", "Green_Button"], "stripClasses": ["cls-25", "cls-22", "cls-10", "cls-11", "cls-51", "cls-26", "cls-15"], "at": [341.17, 1452.22, 267.53, 267.9] },
       "periscope": { "file": "art/ConsolePeriscope.svg", "groups": ["Periscope"], "at": [22.36, 496.8, 603.66, 640.08], "travel": 0.566, "grip": 0.345 },
       "monitor": { "file": "art/ConsoleMonitor.svg", "groups": ["Monitor"], "at": [31.92, 0, 583.67, 909.59] }
     },
     "meterFill": { "file": "art/ConsoleMeterFill.svg", "colourOf": "cls-59", "at": [81.91, 1184.71, 486.02, 19.76] },
     "meterText": 21,
     "words": {
-      "hint": { "at": [56, 838, 536, 42], "text": 26 },
+      "hint": { "at": [72, 806, 504, 62], "text": 22 },
       "laser": { "at": [226, 1298, 200, 24], "text": 17 },
       "controls": { "at": [88, 1460, 212, 24], "text": 17 },
       "lights": { "at": [363, 1458, 180, 24], "text": 17 },
       "version": { "at": [70, 1841, 172, 20], "text": 15.7 },
       "credit": { "at": [370, 1841, 216, 20], "text": 15.7 }
     },
+    "crt": {
+      "_about": "F32 (Muzzy, 2026-10-19): the monitor's screen IS the lesson message at the console. Its words sit in words.hint (smaller and higher than the mock-up, so they stay on the screen, off the bezel); a lesson line that needs more room makes the screen slide down past its bezel like a toaster. screen / bezel = the monitor art's colours (cls-51 / cls-56 in Example1.svg); bezelWidth = the bezel's thickness at the sides and bottom; screenLeft / screenTop / screenWidth / screenBottom = the screen's edges (mock-up units: the game draws the screen over the art's, so a longer line can slide it down seamlessly); radius = its corners.",
+      "screen": "#1f1f38",
+      "bezel": "#f2a743",
+      "bezelWidth": 23,
+      "screenLeft": 55.17,
+      "screenTop": 60.46,
+      "screenWidth": 537.16,
+      "screenBottom": 886.33,
+      "radius": 39.53
+    },
     "repairs": {
-      "_about": "F24: the repair panels' moving parts, drawn by the game over the panels (art-prep strips the same parts out of them: stripClasses = the knobs, the dial face and the lamps; strip = the three arcade buttons). Boxes are [x, y, width, height] in the mock-up's units, read off Example1.svg. viewShort = what a phone on its side shows mid-shift: just the three panels (the way back is then the Back to the tank button). knob = the slider knob's share of its track (50.23 / 175.86). Laser: sliders in the order row 1 left, row 1 right, row 2 left, row 2 right, each with its two lamps [left end, right end]. Controls: the dial, its four corner lamps (top-left, top-right, bottom-right, bottom-left) and the angle (degrees clockwise from up) the dial's arrow points at each. Visor (RESET LIGHTS): the up/down slider, its top lamp and a bottom lamp (in the track's bottom end: the knob covers it when it's down — there's no room under the track), and the three buttons top to bottom with their lamps.",
+      "_about": "F24: the repair panels' moving parts, drawn by the game over the panels (art-prep strips the same parts out of them: stripClasses = the knobs, the dial face and the lamps; strip = the three arcade buttons). Boxes are [x, y, width, height] in the mock-up's units, read off Example1.svg. viewShort = what a phone on its side shows mid-shift: just the three panels (the way back is then the Back to the tank button). knob = the slider knob's share of its track (50.23 / 175.86). Laser: sliders in the order row 1 left, row 1 right, row 2 left, row 2 right, each with its two lamps [left end, right end]. Controls: the dial, its four corner lamps (top-left, top-right, bottom-right, bottom-left) and the angle (degrees clockwise from up) the dial's arrow points at each. Visor (RESET LIGHTS): the up/down slider, its top lamp and its bottom lamp, and the three buttons top to bottom with their lamps. F32 (Muzzy: the slider sat too low and the bottom lamp overlapped it): the track is cut out of the panel into its own file (track: its shapes by colour class, from = where the mock-up had it) and drawn at `slider` — 92% of its size and higher, so both lamps fit above and below it.",
       "viewShort": [0, 1232, 648, 497],
       "lampOn": "art/Light-On.svg",
       "lampOff": "art/Light-Off.svg",
@@ -52,9 +63,10 @@
         "angles": [311, 49, 139.5, 220.5]
       },
       "visor": {
-        "slider": [356.86, 1530.44, 50.51, 175.86],
-        "topLamp": [369.09, 1496.31, 26.07, 26.07],
-        "bottomLamp": [369.09, 1668.17, 26.07, 26.07],
+        "slider": [358.88, 1517, 46.47, 161.79],
+        "track": { "file": "art/ConsoleVisorTrack.svg", "classes": ["cls-26", "cls-15"], "from": [356.86, 1530.44, 50.51, 175.86] },
+        "topLamp": [369.09, 1487, 26.07, 26.07],
+        "bottomLamp": [369.09, 1683, 26.07, 26.07],
         "buttons": [
           { "up": "art/Btn_Blue-Up.svg", "down": "art/Btn_Blue-Down.svg", "at": [431.19, 1482.48, 84.62, 73.62], "lamp": [533.16, 1507.64, 26.07, 26.07] },
           { "up": "art/Btn_Green-Up.svg", "down": "art/Btn_Green-Down.svg", "at": [437.5, 1558.58, 84.62, 73.62], "lamp": [541.58, 1584.44, 26.07, 26.07] },
