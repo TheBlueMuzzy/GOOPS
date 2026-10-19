@@ -77,6 +77,18 @@ ${body}
     out(layer.file, layer.at, body)
     console.log(`${layer.file}: ${name} (${layer.groups.join(' + ')})`)
   }
+  // F32: the visor slider's track (its shapes, by colour class, out of the lights panel — which strips them), in a file
+  // of its own, so the game can place it higher than the mock-up had it (Muzzy: its bottom lamp overlapped the track)
+  {
+    const track = scene.repairs.visor.track, panel = element(svg, 'Reset_Lights')
+    const shapes = track.classes.map((cls) => {
+      const shape = panel.match(new RegExp(`<\\w+ class="${cls}"[^>]*/>`))
+      if (!shape) throw new Error(`art: no ${cls} shape in Reset_Lights — was the visor track redrawn?`)
+      return `  ${shape[0]}`
+    })
+    out(track.file, track.from, shapes.join('\n'))
+    console.log(`${track.file}: the visor slider's track (${track.classes.join(' + ')})`)
+  }
   // the meter's bar, full: a rounded strip in the meter's green, revealed left to right by the game
   const fill = scene.meterFill, [, , w, h] = fill.at
   const green = svg.match(new RegExp(`\\.${fill.colourOf}\\b[^{]*\\{[^}]*fill:\\s*(#[0-9a-f]+)`, 'i'))[1]

@@ -1,2 +1,5 @@
 /* Page base; the kit paints its own screens. */
 html, body, #root { margin: 0; height: 100%; }
+
+/* F32: the repair sliders' grab wrapper (RepairPanels useDragOnly) — only listens, takes no room */
+.repair-grab { display: contents; }

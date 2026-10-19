@@ -30,6 +30,7 @@ export const art = {
     controls: layer(scene.layers.controls),
     lights: layer(scene.layers.lights),
     monitor: layer(scene.layers.monitor),
+    crt: scene.crt, // F32: the monitor's screen as the lesson message (its colours and edges)
     periscope: { ...layer(scene.layers.periscope), travel: scene.layers.periscope.travel, grip: scene.layers.periscope.grip },
     // the meter's words + bar sit over its art; the bar picture's shape = width / height
     meterText: scene.meterText,
@@ -49,7 +50,7 @@ export const art = {
     laser: { sliders: fix.laser.sliders.map(rect), lamps: fix.laser.lamps.map((pair) => pair.map(rect)) },
     controls: { dial: url(fix.controls.dial.file), dialAt: rect(fix.controls.dial.at), lamps: fix.controls.lamps.map(rect), angles: fix.controls.angles },
     visor: {
-      slider: rect(fix.visor.slider), topLamp: rect(fix.visor.topLamp), bottomLamp: rect(fix.visor.bottomLamp),
+      slider: rect(fix.visor.slider), track: url(fix.visor.track.file), topLamp: rect(fix.visor.topLamp), bottomLamp: rect(fix.visor.bottomLamp),
       buttons: fix.visor.buttons.map((b) => ({ art: button({ up: b.up, down: b.down, label: 'hidden', size: 'fill' }), at: rect(b.at), lamp: rect(b.lamp) })),
     },
   },

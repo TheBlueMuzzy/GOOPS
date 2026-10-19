@@ -6,7 +6,7 @@
 // Sliders and the dial are the kit's SnapControl (drag or tap); the visor's buttons are kit picture Buttons.
 // F32 lessons point at the panels by data-tag (an invisible box filling an ArtLayer): "panel-<machine>" = the panel,
 // "repair-<machine>" = the part that wants doing next (the blinking lamp, or the laser's next slider).
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState, type PointerEvent } from 'react'
 import { ArtLayer, Button, SnapControl, fill } from './kit'
 import { controlsTurn, controlsDone, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide, visorWantsDown } from '../game/repairs'
 import { art } from './art'
@@ -36,6 +36,27 @@ function useSolved(solved: boolean, onRepair: () => void) {
   const latest = useRef(onRepair)
   useEffect(() => { latest.current = onRepair })
   useEffect(() => { if (solved) latest.current() }, [solved])
+}
+
+// THE SLIDERS ARE A REAL DRAG (F32, Muzzy: "I clicked the top of the drag area, and the draggable teleported to the
+// top. it's a drag"). The kit's SnapControl also moves to the stop nearest a TAP; this wraps it and ignores a press
+// that didn't move (the kit's own rule for "moved": half a rem). Keys still step it (a deliberate press, and the way
+// in without a pointer). Returns the wrapper's handlers, whether the press now is a tap, and the press itself.
+const TAP_SLOP_REM = 0.5 // = the kit's SnapControl TAP_SLOP
+function useDragOnly(onPress?: () => void) {
+  const press = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+  const slop = () => TAP_SLOP_REM * (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16)
+  const handlers = {
+    onPointerDownCapture: (e: PointerEvent) => { press.current = { x: e.clientX, y: e.clientY, moved: false }; onPress?.() },
+    onPointerMoveCapture: (e: PointerEvent) => {
+      const p = press.current
+      if (p && !p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) >= slop()) p.moved = true
+    },
+    // (bubbling: after the kit's own pointer-up has called onChange)
+    onPointerUp: () => { press.current = null },
+    onPointerCancel: () => { press.current = null },
+  }
+  return { handlers, tapping: () => !!press.current && !press.current.moved, pointer: () => !!press.current }
 }
 
 // a step of the repair done right (`done` went up) → its blip (the knob's own click is the kit's ui.tap)
@@ -81,6 +102,7 @@ function SliderRow({ at, lamps, live, want, value, next, label, onChange }: {
   at: [number, number, number, number]; lamps: [number, number, number, number][]; live: boolean; want: 0 | 2 | null; value: number
   next: boolean; label: string; onChange(v: number): void
 }) {
+  const drag = useDragOnly()
   return (
     <>
       {lamps.map((lampAt, end) => {
@@ -89,10 +111,12 @@ function SliderRow({ at, lamps, live, want, value, next, label, onChange }: {
       })}
       <ArtLayer at={at} off={!live}>
         {next && <LessonTag tag="repair-laser" placement={laserTopRow(at) ? 'top' : 'bottom'} />}
-        <SnapControl label={label} stops={3} knob={r.knobShare} value={value} onChange={onChange} disabled={!live}
-          valueText={(v) => t.positions[v]}>
-          <img src={r.knob} alt="" draggable={false} />
-        </SnapControl>
+        <div className="repair-grab" {...drag.handlers}>
+          <SnapControl label={label} stops={3} knob={r.knobShare} value={value} onChange={(v) => { if (!drag.tapping()) onChange(v) }}
+            disabled={!live} valueText={(v) => t.positions[v]}>
+            <img src={r.knob} alt="" draggable={false} />
+          </SnapControl>
+        </div>
       </ArtLayer>
     </>
   )
@@ -106,10 +130,21 @@ export function VisorPanel({ live, onRepair, fewerSteps }: PanelProps) {
   useSolved(live && visorDone(v), onRepair)
   useStepSound(v.step, live)
   const lit = live ? visorLitButton(v) : null
+  const wrong = () => { setShake((n) => n + 1); playUiSound(SOUNDS.wrong) }
   const press = (b: number) => {
     const next = visorPress(v, b)
-    if (next.wrong) { setShake((n) => n + 1); playUiSound(SOUNDS.wrong) }
+    if (next.wrong) wrong()
     else setV(next.visor)
+  }
+  // the slider is a real drag (no tap), and touching it while it isn't asked for (the buttons' turn) shakes the panel,
+  // like a wrong button (F32, Muzzy)
+  const sliderWanted = v.step === 0 || visorWantsDown(v)
+  const drag = useDragOnly(() => { if (live && !sliderWanted) wrong() })
+  const slide = (to: number) => {
+    if (drag.tapping()) return
+    const next = visorSlide(v, to as 0 | 1)
+    if (next) setV(next)
+    else if (!drag.pointer()) wrong() // (keys: the press itself didn't shake it)
   }
   return (
     <>
@@ -119,11 +154,15 @@ export function VisorPanel({ live, onRepair, fewerSteps }: PanelProps) {
           slider or buttons still to use) */}
       <Lamp at={r.visor.topLamp} live={live} lit={v.step === 0} blink="fast" tag={live && v.step === 0 ? 'repair-visor' : undefined} side="left" />
       <Lamp at={r.visor.bottomLamp} live={live} lit={visorWantsDown(v)} blink="fast" tag={live && visorWantsDown(v) ? 'repair-visor' : undefined} side="bottom" />
+      {/* (the track: cut out of the panel art so it can sit between its two lamps — art.json repairs.visor.track) */}
+      <ArtLayer src={r.visor.track} at={r.visor.slider} off={!live} shake={shake} />
       <ArtLayer at={r.visor.slider} off={!live} shake={shake}>
-        <SnapControl label={t.visorSlider} axis="y" stops={2} knob={r.knobShare} value={v.slider} disabled={!live}
-          onChange={(to) => { const next = visorSlide(v, to as 0 | 1); if (next) setV(next) }} valueText={(k) => t.upDown[k]}>
-          <img src={r.knob} alt="" draggable={false} />
-        </SnapControl>
+        <div className="repair-grab" {...drag.handlers}>
+          <SnapControl label={t.visorSlider} axis="y" stops={2} knob={r.knobShare} value={v.slider} disabled={!live}
+            onChange={slide} valueText={(k) => t.upDown[k]}>
+            <img src={r.knob} alt="" draggable={false} />
+          </SnapControl>
+        </div>
       </ArtLayer>
       {r.visor.buttons.map((b, i) => (
         <Fragment key={i}>
