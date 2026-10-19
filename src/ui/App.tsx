@@ -16,6 +16,7 @@ import { readoutSetting } from '../game/readoutSetting'
 import type { Message } from '../game/messages'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
+import { soundSettingsChanged } from '../game/sound'
 import { rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { Console } from './Console'
@@ -45,6 +46,7 @@ function newEngine(progress: Progress): ShiftEngine {
 const SettingsScreen = () => (
   <Settings schema={settings} onChange={(values) => {
     gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick); readoutSetting.setFromSettings(values)
+    soundSettingsChanged(values)
   }} />
 )
 // in-shift messages (F26, src/game/messages.ts decides which): kit toasts just above the goop. How long one stays is

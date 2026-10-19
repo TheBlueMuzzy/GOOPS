@@ -4,7 +4,7 @@ What changes for Muzzy: the game makes sound (placeholder effects for every big 
 Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · alpha lives at /GOOPS/alpha/ (F37 ✅) · covered cracks draining half stays in beta (F49).
 
 ## F29 🧱 Sound basics
-- [ ] 🤖 1. Install the framework audio module + start-up wiring + Settings sound rows on — src/audio/, src/main.tsx
+- [x] 🤖 1. Install the framework audio module + start-up wiring + Settings sound rows on — src/audio/, src/main.tsx
 - [ ] 🤖 2. The sound list: every moment that gets a sound (land, merge, ready, zap, seal, crack, poke, rotate, move, swap, machine breaks / fixed, rupture, quota met, periscope, console buttons) — content/audio.json
 - [ ] 🤖 3. Placeholder sounds made in code (ZzFX → files), logged in credits — public/audio/, content/credits.json
 - [ ] 🤖 4. Play them from the game's events, on the rules clock (both Dev Kit pauses silence them) — src/game/ShiftStage.tsx
