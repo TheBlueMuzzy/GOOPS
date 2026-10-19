@@ -4,13 +4,19 @@ import type { ShiftState } from '../engine/types'
 import type { GooView } from '../goo/types'
 import { screenColumn } from '../goo/types'
 import { pieceScreenColumn } from './geometry'
+import { crackIsOpen, type CrackBubbles } from './crackBubbles'
+import look from '../../content/tuning/cracks-look.json'
 import tank from '../../content/tuning/tank.json'
 
 export type ColorOf = (c: number) => string
 
 // guide: drawn in the tank right after the landing shadow, under everything else that's in the tank (the drop guide's
 // chevrons, src/view/dropGuide.ts)
-export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, colorOf: ColorOf, timeSec: number, guide?: () => void) {
+// F36 cracks you can read: bubbles = the open cracks' air bubbles (src/view/crackBubbles.ts), drawn right over the
+// cracks; still = the reduce-motion setting (the x-ray box's dots stop marching)
+export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, colorOf: ColorOf, timeSec: number, guide?: () => void,
+  cracksLook: { bubbles?: CrackBubbles; still?: boolean } = {}) {
+  const { bubbles, still = false } = cracksLook
   const { cellPx: cp, centreX, topY, width: W, height: H, dpr } = view
   const visRows = s.height - s.bufferRows
   const left = centreX - (pieceScreenColumn(s.visibleWidth) + 0.5) * cp
@@ -55,6 +61,7 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     if (sx < left - cp || sx > right + cp) continue
     drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.id, timeSec)
   }
+  bubbles?.draw(ctx, s, view, left, right)
 
   // ghost: where the piece will land. Placed by the spin, not the gliding camera, like the piece itself: the piece
   // stays still on screen while the tank slides under it.
@@ -98,6 +105,27 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     }
     ctx.globalAlpha = 1
   }
+
+  // F36 the x-ray: a crack with goop on it gets a dotted box round it ("the visor is auto targeting to help", Muzzy) —
+  // the goo over it is drawn see-through (coveredCracks → view.xray → the goo renderers). Here on the tank canvas, so
+  // the visor glitch distorts it too. It breathes with the crack's own glow (drawCrack) and its dots march.
+  const X = look.xray
+  for (const c of s.cracks) {
+    if (crackIsOpen(s, c)) continue
+    const sx = centreX + screenColumn(c.x, view.camera, s.width) * cp
+    if (sx < left - cp || sx > right + cp) continue
+    const top = topY + (c.y - s.bufferRows) * cp
+    const pad = X.pad * cp
+    ctx.globalAlpha = X.alpha * (1 - X.pulse * (0.5 - 0.5 * Math.sin(timeSec * 3 + c.id)))
+    ctx.strokeStyle = X.color
+    ctx.lineWidth = Math.max(1, X.width * cp)
+    ctx.setLineDash([X.dash * cp, X.gap * cp])
+    ctx.lineDashOffset = still ? 0 : -timeSec * X.dashSpeed * cp
+    ctx.strokeRect(sx - cp / 2 - pad, top - pad, cp + 2 * pad, cp + 2 * pad)
+  }
+  ctx.setLineDash([])
+  ctx.lineDashOffset = 0
+  ctx.globalAlpha = 1
   ctx.restore()
 
   // cracks out of view: a small arrow in the crack's colour at its height, on the tank edge the short way round (v1)

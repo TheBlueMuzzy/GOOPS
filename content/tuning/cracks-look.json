@@ -1,0 +1,71 @@
+{
+  "_about": "How cracks LOOK (F36, Muzzy 2026-10-18 'Cracks you can read'). Looks only: nothing here changes a rule. Sizes are in cells (1 = one grid cell), times in seconds. Bubbles: an open crack (nothing on it) leaks an unsteady stream of air bubbles into the tank. X-ray: a crack with goop on it stays visible — a dotted white box round it (the visor auto-targeting) and the goop inside the box goes see-through; it goes when the crack is sealed. Sealed: where a crack was sealed, a dark grey mended scar stays (no crack ever forms there again — that part is the engine's rule).",
+  "_help": {
+    "bubbles.perSec": "Bubbles per second from each open crack, on average.",
+    "bubbles.gust": "How unsteady the stream is: 0 = an even trickle, 1 = it comes in gusts and lulls.",
+    "bubbles.size": "Bubble size (radius, cells).",
+    "bubbles.sizeJitter": "How much sizes vary (0 = all the same, 1 = from tiny to double).",
+    "bubbles.speed": "How fast bubbles rise (cells per second).",
+    "bubbles.wobble": "How far bubbles sway side to side as they rise (cells).",
+    "bubbles.wobbleHz": "How fast they sway (sways per second).",
+    "bubbles.lifeSec": "How long a bubble lasts before it fades out (seconds). Bubbles also pop when they reach goop.",
+    "bubbles.alpha": "How visible the bubbles are (0 = invisible, 1 = solid).",
+    "bubbles.color": "Bubble colour.",
+    "bubbles.calm": "With 'reduce motion' on in Settings: the stream is this much of the normal amount, slower and without sway.",
+    "bubbles.max": "Most bubbles on screen at once (keeps phones fast).",
+    "xray.color": "The x-ray box's colour.",
+    "xray.alpha": "How bright the x-ray box is.",
+    "xray.width": "The box's line width (cells).",
+    "xray.dash": "Length of each dash of the dotted line (cells).",
+    "xray.gap": "Gap between dashes (cells).",
+    "xray.pad": "How far the box sits outside the crack's cell (cells).",
+    "xray.dashSpeed": "The dots march round the box this fast (cells per second; 0 = still). Stops with 'reduce motion'.",
+    "xray.pulse": "How much the box breathes with the crack's glow (0 = steady).",
+    "xray.gooAlpha": "The goop inside the box: how solid it stays (1 = not see-through at all, 0 = invisible).",
+    "sealed.color": "A sealed crack's scar colour.",
+    "sealed.alpha": "How visible the scar is.",
+    "sealed.width": "The scar's line width (cells).",
+    "sealed.stitchColor": "The mending stitches across the scar.",
+    "sealed.stitches": "How many stitches cross the scar (0 = none)."
+  },
+  "_ranges": {
+    "bubbles.perSec": [0, 30, 0.5], "bubbles.gust": [0, 1, 0.05], "bubbles.size": [0.02, 0.3, 0.01], "bubbles.sizeJitter": [0, 1, 0.05],
+    "bubbles.speed": [0.2, 8, 0.1], "bubbles.wobble": [0, 0.6, 0.01], "bubbles.wobbleHz": [0, 6, 0.1], "bubbles.lifeSec": [0.2, 6, 0.1],
+    "bubbles.alpha": [0, 1, 0.05], "bubbles.calm": [0, 1, 0.05], "bubbles.max": [0, 400, 10],
+    "xray.alpha": [0, 1, 0.05], "xray.width": [0.01, 0.2, 0.01], "xray.dash": [0.02, 0.5, 0.01], "xray.gap": [0.02, 0.5, 0.01],
+    "xray.pad": [-0.2, 0.4, 0.01], "xray.dashSpeed": [0, 3, 0.05], "xray.pulse": [0, 1, 0.05], "xray.gooAlpha": [0, 1, 0.05],
+    "sealed.alpha": [0, 1, 0.05], "sealed.width": [0.02, 0.3, 0.01], "sealed.stitches": [0, 6, 1]
+  },
+  "bubbles": {
+    "perSec": 5,
+    "gust": 0.7,
+    "size": 0.07,
+    "sizeJitter": 0.6,
+    "speed": 1.8,
+    "wobble": 0.12,
+    "wobbleHz": 1.6,
+    "lifeSec": 2.2,
+    "alpha": 0.6,
+    "color": "#cfeaff",
+    "calm": 0.35,
+    "max": 160
+  },
+  "xray": {
+    "color": "#ffffff",
+    "alpha": 0.9,
+    "width": 0.06,
+    "dash": 0.14,
+    "gap": 0.1,
+    "pad": 0.06,
+    "dashSpeed": 0.4,
+    "pulse": 0.3,
+    "gooAlpha": 0.4
+  },
+  "sealed": {
+    "color": "#3a3f4b",
+    "alpha": 0.95,
+    "width": 0.09,
+    "stitchColor": "#6b7385",
+    "stitches": 3
+  }
+}

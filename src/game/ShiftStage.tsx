@@ -8,6 +8,8 @@ import type { GooRenderer, GooView } from '../goo/types'
 import { colorOf, makeGoo } from './gooFactory'
 import { drawTank } from '../view/tankView'
 import { createDropGuide } from '../view/dropGuide'
+import { createCrackBubbles, crackIsOpen } from '../view/crackBubbles'
+import cracksLook from '../../content/tuning/cracks-look.json'
 import { layoutTank, pieceScreenColumn, screenToCell, stepCamera, tankRect } from '../view/geometry'
 import { attachControls } from '../input/controls'
 import { gooStyle } from './gooStyle'
@@ -111,6 +113,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
     let toastsAt = 0, toastsAtPx = '', toastsStart = '', toastsEnd = '' // the messages' point + sides, as last set
     const messages = createMessages(messageTuning as MessageTuning) // (reads the live tuning each time it decides)
     const guide = createDropGuide()
+    const bubbles = createCrackBubbles() // F36: open cracks leak air bubbles into the tank
     let still = reduceMotion() // reduce motion: the drop guide's chevrons don't light up in a wave
     const root = document.documentElement
     let holdProgress: number | null = null
@@ -163,7 +166,11 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       if (events.length) session.emit(events)
       camera = stepCamera(camera, s.spin, s.width, dt, tank.cameraSpeed)
       view.camera = camera
-      drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still))
+      bubbles.step(s, dt, still) // (looks clock: keeps rising in the half pause, stops in the full pause)
+      drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still), { bubbles, still })
+      // the x-ray (F36): the goo over a covered crack is drawn see-through, round the box the tank view drew
+      const X = cracksLook.xray
+      view.xray = { cells: s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), pad: X.pad + X.width, alpha: X.gooAlpha }
       gooRef.current?.frame(s, events, view, active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
@@ -230,6 +237,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: (on: boolean) => { softHeld = on; engine.act({ type: 'softDrop', on }) },
+      bubbles: { count: () => bubbles.count(), from: (crackId: number) => bubbles.from(crackId) }, // F36 e2e/cracks-look.mjs
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }) }
 

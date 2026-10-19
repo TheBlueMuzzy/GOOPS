@@ -4,6 +4,7 @@
 // 2) small blur (half res): anti-aliased edge + rim bevel   3) big blur (quarter res): body thickness = the dome
 // 4) final: strongest colour wins (clean seams), glossy translucent jelly, written as premultiplied colour over the
 //    TRANSPARENT canvas (the tank underneath is the lead's 2D canvas).
+import { XRAY_GLSL } from '../shared/xray'
 
 export const MASK_VS = `#version 300 es
 layout(location=0) in vec4 aPos; uniform vec2 uOrigin, uCover; uniform float uCell; out vec2 vUv;
@@ -39,6 +40,7 @@ uniform sampler2D uS0, uS1, uS2, uQ0, uQ1, uQ2, uM1;
 uniform vec2 uRes, uOrigin, uQTex; uniform float uCell, uTime, uTrans, uWet, uUnA, uUnDim, uGlow, uPulse, uClipL, uClipR, uClipB;
 uniform vec3 uCols[8];
 out vec4 outColor;
+${XRAY_GLSL}
 float pick(vec4 t0, vec4 t1, vec4 s0, vec3 s1){ return dot(t0, s0) + dot(t1.rgb, s1); }
 // premultiplied "over"
 vec4 over(vec4 top, vec4 under){ return top + under * (1.0 - top.a); }
@@ -112,5 +114,5 @@ void main(){
     vec3 col = a * ((1.0 - op) * base * 0.12 + op * body + vec3(spec + hl));
     res = over(vec4(col, a * op), res);
   }
-  outColor = res * clip;
+  outColor = res * clip * xrayKeep(p, px);   // F36: see-through inside the x-ray boxes
 }`

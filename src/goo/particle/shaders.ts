@@ -1,6 +1,7 @@
 // Particle shaders (ported from lab-L3-particles.html): splat particles + bond capsules into a per-colour field
 // (half res) -> blur -> threshold + wet shading, written as premultiplied colour over the TRANSPARENT canvas.
 // Field textures: tex0 = colours 1-4, tex1.rgb = colours 5-7, tex2 = r unfilled weight / g ready weight.
+import { XRAY_GLSL } from '../shared/xray'
 
 export const SPLAT_VS = `#version 300 es
 layout(location=0) in vec2 aCorner;
@@ -56,6 +57,7 @@ uniform vec2 uRes, uOrigin; uniform float uCell, uScale, uTh, uWet, uBulge, uAbs
 uniform float uUnA, uUnDim, uGlow, uPulse, uClipL, uClipR, uClipB;
 uniform vec3 uCols[8];
 out vec4 outColor;
+${XRAY_GLSL}
 float field(vec2 uv, vec4 m0, vec4 m1){ return (dot(texture(uT0, uv), m0) + dot(texture(uT1, uv), m1)) * uScale; }
 float hgt(float f){ return sqrt(clamp((f - uTh) / 0.9, 0.0, 1.0)); }   // steep wet edge, soft dome on top
 vec4 over(vec4 top, vec4 under){ return top + under * (1.0 - top.a); }
@@ -131,5 +133,5 @@ void main(){
     float al = cover * mix(1.0, uUnA, un);
     outc = over(vec4(col * al, al), outc);
   }
-  outColor = outc * clip;
+  outColor = outc * clip * xrayKeep(p, px);   // F36: see-through inside the x-ray boxes
 }`
