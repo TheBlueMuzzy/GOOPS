@@ -15,13 +15,14 @@ Decided at planning (Muzzy, 2026-10-19): the tutorial is **v1 style, fully scrip
 - [x] 🤖 5. Tests + an e2e that plays a sample lesson start to finish — tests/, e2e/lessons.mjs
 
 ## F32 🎮 First-breakdown lessons (visor, laser, controls)
-- [ ] 🤖 1. Visor lesson: the first visor break → what broke, go to the console, fix it — content/lessons/visor.json
-- [ ] 🤖 2. Laser lesson — content/lessons/laser.json
-- [ ] 🤖 3. Controls lesson — content/lessons/controls.json
-- [ ] 🤖 4. Each shows once (remembered on the device), "Replay lessons" in Settings + e2e — src/game/, e2e/lessons.mjs
-- [ ] 🤖 6. Console visits: W / ↑ / flick up go straight to the console; the first 5 mid-shift visits say the tank runs at 25% there; the very first breakdown lesson says the game is fully paused for it (Muzzy) — src/game/, content/text/en.json
+- [x] 🤖 1. Visor lesson: the first visor break → what broke, go to the console, fix it — content/lessons/visor.json
+- [x] 🤖 2. Laser lesson — content/lessons/laser.json
+- [x] 🤖 3. Controls lesson — content/lessons/controls.json
+- [x] 🤖 4. Each shows once (remembered on the device), "Replay lessons" in Settings + e2e — src/game/, e2e/lessons.mjs
+- [x] 🤖 6. Console visits: W / ↑ / flick up go straight to the console; the first 5 mid-shift visits say the tank runs at 25% there; the very first breakdown lesson says the game is fully paused for it (Muzzy) — src/game/, content/text/en.json
 - [ ] 🙋 5. (tuning) Try them: wording, timing, pointers
 
 ## Notes
 - F30 (helper, 2026-10-19): engine training mode (src/engine/training.ts, `createShift({ training })` + `engine.train(...)`), a Goops-free step machine (src/game/lessons/runner.ts, patterns.ts, lessonTypes.ts) + Goops adapter (goopsLessons.ts, LessonView.tsx on the kit Callout), Dev Kit Lessons tab, `?lesson=<id>&step=<n>`, shared timings content/tuning/lessons.json, sample lesson content/lessons/sample.json. Tutorial §6 checklist: most done; stubbed = remember on device, screen events (only shiftStarted), checkpoints; not done = queue refill rule, zap filter by group, freeze the tank at the console, Replay lessons (F32), finishing day one (F31), pointers at console parts.
+- F32 (helper, 2026-10-19): built — the three lessons + console note as data (content/lessons/), src/game/lessons/firstBreakdowns.ts (when they start), runner pieces (TDD §2b Lessons → F32), console tags in src/ui/RepairPanels.tsx / Console.tsx, Replay lessons row. e2e/lessons.mjs plays a REAL visor break at rank 2 through by real input (incl. the repair), checks once-per-device, Replay, leaving before the repair, the 5 console notes, full-speed play after; screenshots of each lesson's V1 + console steps at 1440x900 / 390x844 in e2e-shots/lessons/f32-*. Calls for Muzzy to review: step 4 split into "Fixed! …prevent it" (Got it) + "Pull the periscope down to go back" (points at the periscope); mouse wording for "go to the console" is "Flick up for the console." (per the table; W works too); the console note has a Got it and closes itself after ~6 s (on a phone it can sit over the periscope); it's skipped on a phone on its side (no free room); a queued lesson whose machine was already fixed skips to "Fixed!"; the Dev Kit's ▶ on a breakdown lesson still starts a training shift (nothing broken) — use `__goops.breakMachine('<machine>', true)` in a real shift instead.
 - Look nits (screenshots): on a phone the bubble pointing at floor goop covers the "0% PSI" readout; the welcome ring round the spawning piece overlaps "CRACKS". The kit Callout has no "keep clear of" list → ask the framework session (Callout avoid boxes); log, not fixing in-game.
