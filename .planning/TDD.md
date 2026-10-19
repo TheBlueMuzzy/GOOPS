@@ -96,6 +96,12 @@ flowchart LR
 | Breakdown cooldown | max(8, 20 − (rank − unlock)) s × `breakdownCooldownMult` | engine | a repair | the machine can break again (its meter was kept `cooldown.margin` above the break point) |
 | Console time scale | the game ticks the engine at `consoleTimeScale` (0.25) | game | at the console mid-shift | — (the engine is purely dt-driven) |
 
+### Lessons (F30 — the runner; the real tutorial is F31, the breakdown lessons F32)
+- **Engine:** `createShift({ training: {} })` = a training shift (src/engine/training.ts): empty tank, nothing held, no piece until the lesson brings one; pressure held, no natural cracks, no integrity drain, no breakdowns, no rupture (overflow rail instead), pieces stay 4 cells — each a rule a step can switch (`train({ type: 'rules' })`). `train()` also queues chosen pieces (shape, colour, turns), spawns, places goop / cracks, removes cracks, sets pressure, clears the tank. Pure + seeded; in snapshots.
+- **Runner (game-agnostic):** `lessonTypes.ts` (the data format) · `patterns.ts` (v1's named building blocks: pauseShowDismiss, runActAdvance, waitThenHint, positionGated, pressureGated; retry and interrupts are step/lesson fields) · `runner.ts` (the step machine: entering → waiting → showing → advancing; one timer pool per step on the rules clock; hints, retries with a counter, skip-ahead, interrupts that resume the step, a lesson queue, checkpoints).
+- **Goops side:** `goopsLessons.ts` turns set-ups into `train()` commands (cells as [column from the middle of the view, row from the floor]), answers gates (position, pressure, integrity, sealed, cracksOutOfView, wrongCover), feeds engine events + player actions to the runner, and holds the speed / input switches ShiftStage reads every frame. `LessonView.tsx` = the kit's Callout pointing at an invisible `.lesson-mark` box the frame loop keeps over the cell / piece (bent with the visor curve), or at a HUD item by `data-tag`. Words: en.json `lessons.<id>`, `{keys, mouse, phone}` by the input used last, `{placeholders}` live. The game's own messages wait while a lesson message is up.
+- **Dev:** Dev Kit → Lessons tab (▶ any step, timings live, Save) · `window.__goops.lesson(id, step)` · `?lesson=<id>&step=<n>` on the next Start shift · e2e/lessons.mjs.
+
 ## 2c. Upgrades & abilities  (F22 — plumbing only; no real upgrade is in the game yet)
 Every v1 upgrade has a home: `design/upgrades-map.md`. Three kinds, three plugs — the engine stays pure and seeded, and with no upgrades it plays **exactly** as before (tested: same events, score and tank on seeded shifts).
 ```mermaid
@@ -123,6 +129,8 @@ flowchart LR
 | `content/tuning/cracks-look.json` | F36 readable cracks, looks only: `bubbles` (open cracks leak air — rate, gusts, size, speed, sway, life, alpha, colour, calm for reduce motion, max), `xray` (the dotted box round a covered crack + `gooAlpha`: how solid the goo stays inside it), `sealed` (the mended scar). The rule half (no crack on a sealed spot) is the engine's: `state.sealedCracks`, in snapshots | Dev Kit Tuning (live) |
 | `content/tuning/pause.json` | `halfPauseGooMoves` (off) — does the goo keep moving in the Dev Kit's ◐ half pause | Dev Kit Tuning |
 | `content/text/en.json` | player-facing words | Obsidian |
+| `content/lessons/<id>.json` | F30: one lesson per file — `start` / `finish` set-up, `steps` (setup, message id, pointer, while, showAfter, advance, hint, retry, skipIf, checkpoint, pattern), `interrupts`. Words in en.json → `lessons.<id>`. Format: src/game/lessons/lessonTypes.ts; what Goops understands: goopsLessons.ts | Dev Kit Lessons tab (▶ any step, timings live, Save) / Obsidian |
+| `content/tuning/lessons.json` | F30: timings shared by every lesson — Got it delay, pause between steps, slow speed, gate check rate | Dev Kit Tuning (live) |
 | `content/ui/art.json` | which of Muzzy's pictures goes where: the console (layers cut from art/Example1.svg, each at its box in the mock-up's units; the views; periscope travel + grip; where the game writes words), end-report frame + its cut lines, buttons | Obsidian |
 
 **Goo knobs Muzzy can change live** (Dev Kit → Tuning; the renderer picks up a changed value on the next frame — `followFile` in `src/goo/shared/knobs.ts`). Both files share most names:
@@ -158,6 +166,11 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D09 · 2026-10-19 · The lesson runner is built in Goops first, its core kept game-agnostic (F30)
+  Proposed by: Muzzy (in-game now, a framework module later)   Chose: lessonTypes + patterns + runner know nothing
+  about Goops (a LessonGame adapter + an injected clock); goopsLessons.ts is the thin Goops side — so a framework
+  session can lift the core into a module. A lesson message pauses the GAME (engine tick × 0), not the rules clock,
+  so the lesson's own timers keep running on the rules clock (Dev Kit ⏸ / ◐ and the pause menu still stop them).
 D08 · 2026-10-18 · Breakdowns live in the engine as three meters (F23)
   Proposed by: Claude (shape) from Muzzy's F06 calls   Options: the game tracks the meters / the engine does
   Chose: the engine (src/engine/machines.ts) — the meters respond to engine actions (zap, land, spin, fast drop), so

@@ -12,7 +12,7 @@ Decided at planning (Muzzy, 2026-10-19): the tutorial is **v1 style, fully scrip
 - [x] 🤖 2. The runner: steps from data files, v1's patterns (pause-show-dismiss, act-to-advance, wait-then-hint, position / pressure gates), on the rules clock — src/game/lessons/, content/lessons/
 - [x] 🤖 3. The lesson look: kit message box + a pointer at a tank cell or HUD item (game-ui) — src/game/lessons/
 - [x] 🤖 4. Dev Kit: jump to / replay any step; every lesson timing live — content/lessons/, content/devkit.json
-- [ ] 🤖 5. Tests + an e2e that plays a sample lesson start to finish — tests/, e2e/lessons.mjs
+- [x] 🤖 5. Tests + an e2e that plays a sample lesson start to finish — tests/, e2e/lessons.mjs
 
 ## F32 🎮 First-breakdown lessons (visor, laser, controls)
 - [ ] 🤖 1. Visor lesson: the first visor break → what broke, go to the console, fix it — content/lessons/visor.json

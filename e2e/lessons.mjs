@@ -94,6 +94,18 @@ try {
     const after = await page.evaluate(() => ({ p: window.__goops.engine.state.pressure, piece: !!window.__goops.engine.state.piece }))
     check('finished: no message, the shift carries on as normal play (a piece, pressure rising)',
       (await bubble(page).count()) === 0 && after.piece && after.p > p0, `pressure ${p0.toFixed(3)} → ${after.p.toFixed(3)}`)
+
+    // the Dev Kit's Lessons tab: ▶ a step plays the lesson from there; a timing edit reaches the running lesson
+    await page.keyboard.press('Backquote'); await page.waitForTimeout(300)
+    await page.locator('aside.devkit .devkit-tab', { hasText: 'Lessons' }).click()
+    await page.getByRole('button', { name: 'Play from step 4' }).click()
+    await stepIs(page, 'zap')
+    await page.getByLabel('zap: hint after').fill('1')
+    await page.screenshot({ path: `${OUT}/5-devkit-tab-1440x900.png` })
+    await page.keyboard.press('Escape'); await page.waitForTimeout(200)
+    await page.evaluate(() => window.__goops.lesson('sample', 'zap')) // the step again, with the edit
+    await page.waitForTimeout(1600)
+    check('Lessons tab: ▶ jumps to a step; an edited hint time (1 s) is used when the step plays again', (await lesson(page)).kind === 'hint')
     check('desktop: no page errors or lesson set-up warnings', errors.length === 0, errors.join(' | '))
     await page.close()
   }
