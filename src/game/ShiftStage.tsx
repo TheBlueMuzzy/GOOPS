@@ -182,10 +182,12 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
         still = reduceMotion()
         const box = readoutEl.current?.querySelector('.kit-pinned')?.getBoundingClientRect()
         if (box?.width) { readoutSize.w = box.width; readoutSize.h = box.height }
+        // (in the stage's own px, like the tank: the page's px minus the stage's corner)
         topRow.length = 0
+        const stage = el.getBoundingClientRect()
         for (const e of document.querySelectorAll('.kit-hud-slot > *')) {
           const b = e.getBoundingClientRect()
-          if (b.width) topRow.push({ left: b.left, right: b.right, bottom: b.bottom })
+          if (b.width) topRow.push({ left: b.left - stage.left, right: b.right - stage.left, bottom: b.bottom - stage.top })
         }
       }
       // the messages sit just above the goop (where the eyes are): the kit's toasts' point (--kit-toasts-at), a few
