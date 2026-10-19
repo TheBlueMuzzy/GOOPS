@@ -40,7 +40,8 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
 - 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
   note: Muzzy (2026-10-19, F07): "story is beta. alpha is playable game"
-- 🔨 F10 ❓ Phone gestures without conflicts — must:alpha
+- 📐 F10 ❓ Phone gestures without conflicts — must:alpha
+  note: gesture list + 14-line phone checklist done (research/gestures.md); waits for Muzzy's phone session (2026-10-19: "developing fully on PC for now")
 - ✅ F11 Look: Muzzy's art; kit Neon only where there's no art; pixel look later (Ideas) — sound still open — must:alpha
 - 📐 F12 ❓ Tutorial: "your first day", taught at the moment of action — must:alpha · needs: F03, F04, F06, F10
   what: last on purpose: it teaches the settled rules
@@ -98,7 +99,7 @@ Goal: a friend installs it from a link, learns to play from "your first day", an
 - 📐 F31 🎮 Your first day: the rank 0 how-to-play — must:alpha · needs: F30, F28
 - 📐 F32 🎮 First-breakdown lessons (visor, laser, controls) — must:alpha · needs: F30
 - 📐 F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25
-- 📐 F37 ❓ Version numbers + where alpha lives — must:alpha
+- ✅ F37 ❓ Version numbers + where alpha lives — must:alpha · decided 2026-10-19: the remake's own version.json (BMUZ X.Y.Z.B, from 0.0.0; 1.0 numbering decided when it replaces v1) · alpha lives at thebluemuzzy.github.io/GOOPS/alpha/ (same repo + Pages site, v1 untouched at the root)
 - 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit ON for friends (Muzzy 2026-10-19), 60 fps on two real phones — must:alpha · needs: F37, F28
 ```mermaid
 flowchart LR
