@@ -142,12 +142,7 @@ function pickHillSpot(state: ShiftState, rng: Rng, config: ShiftConfig, spots: n
     const width = Math.max(1, spread * room) // never narrower than a row
     return Math.exp(-0.5 * ((row - peak) / width) ** 2)
   })
-  let r = rng.next() * weights.reduce((a, b) => a + b, 0)
-  let spot = spots[spots.length - 1]
-  for (let k = 0; k < spots.length; k++) {
-    r -= weights[k]
-    if (r < 0) { spot = spots[k]; break }
-  }
+  const spot = weightedPick(rng, spots, weights)
   const x = spot % state.width
   const row = state.height - 1 - Math.floor(spot / state.width)
   return { spot, drain: shareUp(x, row) >= highFrom ? highDrainMult : 1 }
@@ -164,12 +159,17 @@ function pickHighSpot(state: ShiftState, rng: Rng, spots: number[], bias: number
     const rowsUp = state.height - 1 - Math.floor(i / state.width) - colTop[i % state.width] // 1 = right on the goop
     return Math.max(1, rowsUp) ** bias // under an overhang counts as 1
   })
+  return weightedPick(rng, spots, weights)
+}
+
+// One of `items`, each as likely as its weight (both crack pickers use this).
+function weightedPick<T>(rng: Rng, items: T[], weights: number[]): T {
   let r = rng.next() * weights.reduce((a, b) => a + b, 0)
-  for (let k = 0; k < spots.length; k++) {
+  for (let k = 0; k < items.length; k++) {
     r -= weights[k]
-    if (r < 0) return spots[k]
+    if (r < 0) return items[k]
   }
-  return spots[spots.length - 1]
+  return items[items.length - 1]
 }
 
 function columnHasGoop(state: ShiftState, x: number): boolean {

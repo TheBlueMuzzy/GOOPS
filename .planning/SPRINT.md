@@ -44,12 +44,13 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] ❓ 35. 360-wide phone: "RESET CONTROLS" at the 10 px floor was as wide as its dark tab — Muzzy: just "CONTROLS", "LASER", "VISOR" (en.json); room on every side at 360 (screenshot). e2e: day.mjs reads the words from en.json; day / smoke / art-shots find the end screen by its heading (the Dev Kit Fonts tab's samples also say "Shift failed")
 - [x] 🤖 37. F27 play (Muzzy 2026-10-19: "cracks are forming pretty low … drop, wait, pop … no interesting puzzle/decision point"): drain halved 0.001 → 0.0005 + new `cracks.topBias` 2 (cracks lean toward the top of the band, counted as rows above the goop in their own column) — src/engine/cracks.ts, content/tuning/shift.json; tests/engine/crackBand.test.ts; bots rerun (research/balance-bots.md, bottom)
 - [x] 🤖 39. Muzzy (2026-10-19, played 38: "already felt better, like it was guiding me to build higher… the visual of the tank with an actual obvious band with zero cracks above feels aesthetically incorrect"): crack **hill** — `cracks.band` "hill": most likely row halfway from the column's goop to the line (`reach` 0.5), thinning out above + below (`spread` 0.3), never above the line; empty columns borrow height from stacks up to 4 away (`neighbourCols`); cracks above 75% of the way drain at half, unseen (`highFrom` / `highDrainMult`). Bots: plays like what he liked (spread 0.3). Tests (crackBand "hill") + e2e/crack-spread.mjs shots
-- [ ] 🙋 40. Play the hill — does the tank look natural now, and does the pacing still feel as good? Sliders: Dev Kit → Tuning → shift → cracks (reach, spread, neighbourCols)
+- [x] 🙋 40. Play the hill — does the tank look natural now, and does the pacing still feel as good? — Muzzy: approved (2026-10-19)
+- [x] 🤖 41. Code review (low) of 456487b^..9bae7ea: no bugs; 1 cleanup done — both crack pickers share one weighted pick (cracks.ts `weightedPick`)
 - [x] 🙋 38. Play the new crack placement — do you have to build up now? Is there a choice again (pop now vs build toward a crack)? Too hard → `cracks.topBias` slider in the Dev Kit (1 = gentler, 3 = harsher)
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [x] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain
-- [ ] 🙋 8. Play a few shifts with the new HUD — what feels unfair?
+- [x] 🙋 8. Play a few shifts with the new HUD — what feels unfair? — Muzzy (2026-10-19): cracks too low, drop-wait-pop → tasks 37–40 (top bias, then the crack hill); approved
 - [x] 🤖 9. Numbers + cause → 2–3 single knobs with a prediction each (Levers A/B/C, 2026-10-18)
 - [x] 🙋 10. Pick one knob → content/tuning (Muzzy picked B + C + his version of A; built + bots rerun 2026-10-18)
 ## Notes

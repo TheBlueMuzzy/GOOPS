@@ -87,7 +87,7 @@ Goal: machines break from your own play and you fix them at the console while th
 - ✅ F24 Repairs at the console — must:alpha · needs: F23, F21
 - ✅ F25 Visor glitch (sketch first) — must:alpha · needs: F23
 - ✅ F26 HUD + messages rethink (from the parking lot) — must:alpha · needs: F24 · approved 2026-10-19 (message timing waits for Muzzy's dedicated playtest — sprint task 6)
-- 🔨 F27 ❓ Integrity / crack balance talk — must:alpha · needs: F26
+- ✅ F27 ❓ Integrity / crack balance talk — must:alpha · needs: F26 · approved 2026-10-19 (crack hill, drain 0.0005, seal +2%, hockey-stick crack rate)
 
 ## Parking lot
 - 💡 2026-10-18 — **Cracks you can read (Muzzy):** (1) an open crack lets out a slightly unsteady stream of bubbles into the tank, "as if air is getting in" — also makes it easy to spot · (2) a crack under goop stays visible: a dotted white "x-ray" box round it ("the visor is auto targeting to help") and the goop inside the box goes slightly see-through; pop that cluster → the crack seals and the box goes · (3) a sealed crack turns black/grey so it looks fixed, and no crack can ever form on a sealed spot again · (4) goop covering a crack HALVES its drain (and its bubbles). Claude's notes: (4) changes the loop — covering a crack becomes worth doing before you can pop it (stall vs. seal); the bot runs (F27) should be rerun with it. The x-ray box sits UNDER the visor glitch, so the glitch distorts it too (Muzzy 2026-10-18).
