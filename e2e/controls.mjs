@@ -149,11 +149,16 @@ try {
         const want = [((Math.round(view.camera) + col) % s.width + s.width) % s.width, row + s.bufferRows]
         const [sx, sy] = shown(view.centreX + (col + Math.round(view.camera) - view.camera) * cp, view.topY + (row + 0.5) * cp)
         const got = cellAt(sx + stage.left, sy + stage.top)
-        if (got[0] !== want[0] || got[1] !== want[1]) wrong.push(`${want} → ${got}`)
+        if (!got || got[0] !== want[0] || got[1] !== want[1]) wrong.push(`${want} → ${got}`)
       }
-      return { curve: curve(), wrong }
+      // F58: a click just beside the tank (or above it) picks nothing — it used to wrap to a hidden column on the back
+      const beside = [[rect.left - 3, rect.top + rect.height / 2], [rect.left + rect.width + 3, rect.top + rect.height / 2],
+        [rect.left - 60, rect.top + rect.height - 5], [view.centreX, rect.top - 3]]
+        .map(([x, y]) => cellAt(x + stage.left, y + stage.top)).filter((c) => c !== null)
+      return { curve: curve(), wrong, beside }
     })
     check(`a click picks the cell it's on in the curved picture (curve ${r.curve})`, r.curve > 0 && !r.wrong.length, r.wrong.slice(0, 4).join(' · '))
+    check(`a click beside or above the tank picks no cell (curve ${r.curve})`, !r.beside.length, r.beside.join(' · '))
   }
   await page.evaluate(() => window.__goopsVisor?.set({ amount: null }))
   // typing in the Dev Kit never reaches the game's hotkeys (Muzzy 2026-10-18: "curve" in Search came out "cuv" — R and E

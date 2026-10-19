@@ -19,8 +19,8 @@ Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · al
 - [ ] 🙋 5. (tuning) Look: bubbles, x-ray box, sealed look
 
 ## F58 🐞 Clicks beside the tank zap goop you can't see
-- [ ] 🤖 1. Failing test: a click just outside the tank's side hits a hidden column — tests/
-- [ ] 🤖 2. Fix: only the 12 visible columns take clicks — src/view/geometry.ts, src/game/ShiftStage.tsx
-- [ ] 🤖 3. e2e: a desktop click beside the tank does nothing — e2e/controls.mjs
+- [x] 🤖 1. Failing test: a click just outside the tank's side hits a hidden column — tests/
+- [x] 🤖 2. Fix: only the 12 visible columns take clicks — src/view/geometry.ts, src/game/ShiftStage.tsx
+- [x] 🤖 3. e2e: a desktop click beside the tank does nothing — e2e/controls.mjs
 
 ## Notes

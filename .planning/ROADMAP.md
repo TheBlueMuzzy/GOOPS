@@ -99,7 +99,7 @@ Goal: a friend installs it from a link, learns to play from "your first day", an
 - 📐 F31 🎮 Your first day: the rank 0 how-to-play — must:alpha · needs: F30, F28
 - 📐 F32 🎮 First-breakdown lessons (visor, laser, controls) — must:alpha · needs: F30
 - 🔨 F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25
-- 🔨 F58 🐞 Clicks beside the tank zap goop you can't see (screenToCell wraps to the hidden back) — must:alpha
+- ✅ F58 🐞 Clicks beside the tank zap goop you can't see (screenToCell wraps to the hidden back) — must:alpha · fixed 2026-10-19: only the visible tank takes clicks (geometry.ts screenToVisibleCell; tests/view/geometry.test.ts + e2e/controls.mjs)
 - ✅ F37 ❓ Version numbers + where alpha lives — must:alpha · decided 2026-10-19: the remake's own version.json (BMUZ X.Y.Z.B, from 0.0.0; 1.0 numbering decided when it replaces v1) · alpha lives at thebluemuzzy.github.io/GOOPS/alpha/ (same repo + Pages site, v1 untouched at the root)
 - 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit ON for friends (Muzzy 2026-10-19), 60 fps on two real phones — must:alpha · needs: F37, F28
 ```mermaid

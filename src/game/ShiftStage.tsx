@@ -8,7 +8,7 @@ import type { GooRenderer, GooView } from '../goo/types'
 import { colorOf, makeGoo } from './gooFactory'
 import { drawTank } from '../view/tankView'
 import { createDropGuide } from '../view/dropGuide'
-import { layoutTank, pieceScreenColumn, screenToCell, stepCamera, tankRect } from '../view/geometry'
+import { layoutTank, pieceScreenColumn, screenToVisibleCell, stepCamera, tankRect } from '../view/geometry'
 import { attachControls } from '../input/controls'
 import { gooStyle } from './gooStyle'
 import { wallKick } from './wallKick'
@@ -217,7 +217,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
     const cellAt = (px: number, py: number) => {
       const r = el.getBoundingClientRect()
       const [fx, fy] = flatPoint(px - r.left, py - r.top, tankRect(view, s.visibleWidth, s.height - s.bufferRows), visorFx.current?.curve() ?? 0)
-      return screenToCell(fx, fy, view, s.width, s.bufferRows)
+      return screenToVisibleCell(fx, fy, view, s.width, s.bufferRows, s.visibleWidth, s.height - s.bufferRows)
     }
     // dev + tests only: lets a Playwright check reach the engine (fast-forward a shift, read the grid)
     // (cellAt(px, py): the cell a click there picks; curve(): the visor's curve right now — e2e/controls.mjs;
@@ -243,7 +243,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
       // broken controls (F23/F24): a held turn repeats slower; single presses and quick swipes stay the same
       spinSlowdown: () => (s.machines?.controls.broken ? breakdowns.controls.heldSpinSlowdown : 1),
       tapCell: (px, py) => {
-        const [x, y] = cellAt(px, py)
+        const cell = cellAt(px, py)
+        if (!cell) return false // beside or above the visible tank: a plain tap (rotate)
+        const [x, y] = cell
         if (y < 0 || y >= s.height || !s.grid[y * s.width + x]) return false
         engine.act({ type: 'pop', x, y })
         return true

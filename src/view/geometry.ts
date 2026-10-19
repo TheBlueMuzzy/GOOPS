@@ -55,6 +55,15 @@ export function screenToCell(px: number, py: number, view: GooView, width: numbe
   return [x, y]
 }
 
+// The tank cell under a click — only inside the visible tank (F58, 2026-10-19: a click just beside the tank wrapped
+// round to a column on the hidden back and zapped goop the player couldn't see). Outside → null.
+export function screenToVisibleCell(px: number, py: number, view: GooView, width: number, bufferRows: number,
+  visibleWidth: number, visibleRows: number): [number, number] | null {
+  const r = tankRect(view, visibleWidth, visibleRows)
+  if (px < r.left || px >= r.left + r.width || py < r.top || py >= r.top + r.height) return null
+  return screenToCell(px, py, view, width, bufferRows)
+}
+
 // The camera glides toward the engine's spin, taking the short way round the cylinder.
 export function stepCamera(camera: number, spin: number, width: number, dtSec: number, speed: number): number {
   let d = spin - camera
