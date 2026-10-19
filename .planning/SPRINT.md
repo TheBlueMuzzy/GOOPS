@@ -10,7 +10,7 @@ Check: unit tests for swap-with-next and the unlock rule · e2e/unlocks.mjs at r
 - [x] 🤖 3. Swap off before its rank: Right Shift, R and the phone hold do nothing (no hold-progress ring); the first-day plan keeps swap off in free play — src/input/controls.ts, src/ui/App.tsx, .planning/research/tutorial.md
 - [x] 🤖 4. HUD: next-piece window top centre (from rank 1, place + size in content); cracks moves to the bottom beside a shorter integrity bar → 3 machine bars over integrity + cracks — src/ui/App.tsx, content/tuning/hud.json
 - [x] 🤖 5. Upgrades button at the console: grey with the scraps count until rank 5, then opens a screen with scraps and "The first upgrades arrive in the next update" — src/ui/Console.tsx, content/text/en.json
-- [ ] 🤖 6. Unlock moments: a line on the end report's rank-up + an interrupt lesson at the start of the first shift after each unlock (window, swap), the pink outline on the Upgrades button at the console; once per device, Replay lessons covers them — content/lessons/, src/game/lessons/
+- [x] 🤖 6. Unlock moments: a line on the end report's rank-up + an interrupt lesson at the start of the first shift after each unlock (window, swap), the pink outline on the Upgrades button at the console; once per device, Replay lessons covers them — content/lessons/, src/game/lessons/
 - [ ] 🤖 7. Docs: GDD §4 (swap = trade with next, controls table note, unlock table), upgrades-map (Hold Viewer + Window retired → 2 slots to refill), TDD data files — .planning/GDD.md, .planning/design/upgrades-map.md, .planning/TDD.md
 - [ ] 🤖 8. Prove it: e2e for ranks 0 / 1 / 3 / 5 (what shows, swap on/off, lessons fire once) + shots at 390x844, 360x780 and desktop windows; add to check:full — e2e/unlocks.mjs, scripts/check-all.mjs
 

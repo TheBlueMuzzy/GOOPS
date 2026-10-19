@@ -17,11 +17,12 @@ import type { Message } from '../game/messages'
 import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '../game/lessons/goopsLessons'
 import { LessonView } from '../game/lessons/LessonView'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
+import { unlockLessons } from '../game/lessons/unlockLessons'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { isUnlocked, rankInfo, rewardShift, scrapsAt, unlockRank, type Progress, type ShiftReward } from '../progress/progression'
+import { isUnlocked, rankInfo, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
@@ -80,6 +81,21 @@ const onMessage = (m: Message) => {
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
 
+// The end report's XP line: what the shift earned; a rank-up if it crossed one, naming what the new rank unlocked (F59:
+// the progression unlocks and the machines, in the order they come)
+function rankUpLine(r: ShiftReward): string {
+  const xp = r.xp.toLocaleString('en')
+  if (r.rankUps <= 0) return fill(text.end.xpValue, { xp })
+  const from = r.before.rank, to = r.after.rank
+  const gained: [number, string][] = [
+    ...unlocksBetween(from, to).map((u): [number, string] => [unlockRank(u), text.unlocks[u]]),
+    ...MACHINES.filter((id) => breakdowns[id].unlockRank > from && breakdowns[id].unlockRank <= to).map((id): [number, string] => [breakdowns[id].unlockRank, text.unlocks[id]]),
+  ]
+  gained.sort((a, b) => a[0] - b[0])
+  return gained.length ? fill(text.end.xpRankUpNew, { xp, rank: to, what: gained.map(([, name]) => name).join(', ') })
+    : fill(text.end.xpRankUp, { xp, rank: to })
+}
+
 // console = on the console · leaving = sliding away to the tank · shift = in the tank (report included) · arriving = sliding back
 // peekIn / peek / peekOut = mid-shift: the console sliding over the running tank / on it / sliding away back to the shift
 type Mode = 'console' | 'leaving' | 'shift' | 'arriving' | 'peekIn' | 'peek' | 'peekOut'
@@ -110,12 +126,14 @@ export function App() {
   // (dev) makes the first "Start shift" play that lesson
   const pendingLesson = useRef<LessonStart | null>(null)
   const urlLesson = useRef<LessonStart | null>(lessonFromUrl())
+  const freshShift = useRef(false) // F59: a real shift just started — its unlock lesson (if any) plays once the tank shows
   const start = useCallback((lesson?: LessonStart) => {
     lessonPlay.stop()
     const e = lesson ? lessonPlay.attach(newEngine(progressRef.current, true)) : newEngine(progressRef.current)
     // a real shift: its machines' first breakdowns may start their lessons (F32)
     if (!lesson) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     pendingLesson.current = lesson ?? null
+    freshShift.current = !lesson
     engineRef.current = e
     setResult(null); setHud(null); setEngine(e)
   }, [])
@@ -125,10 +143,12 @@ export function App() {
     urlLesson.current = null
     start(lesson ?? undefined); setMeterFrom(null); setMode('leaving')
   }, [start])
-  // the tank is on screen: a lesson waiting for it starts now
+  // the tank is on screen: a lesson waiting for it starts now — or, at the start of a real shift, what this rank
+  // unlocked that the device hasn't been shown yet (F59, one per shift start: unlockLessons.ts)
   useEffect(() => {
     const lesson = pendingLesson.current
     if (mode === 'shift' && engine && lesson) { pendingLesson.current = null; lessonPlay.start(lesson.id, lesson.step) }
+    else if (mode === 'shift' && engine && freshShift.current) { freshShift.current = false; unlockLessons.shiftStarted(engine.state.rank) }
   }, [mode, engine])
   // back to the console (swipe up / "Back to the console" / End shift): it slides up over the tank, the meter fills
   const toConsole = useCallback(() => {
@@ -219,9 +239,8 @@ export function App() {
       if (!result) return null
       const stats = [{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` },
         // what the shift earned, and a rank-up if it crossed one
-        { label: text.end.xp, value: result.reward.rankUps > 0
-          ? fill(text.end.xpRankUp, { xp: result.reward.xp.toLocaleString('en'), rank: result.reward.after.rank })
-          : fill(text.end.xpValue, { xp: result.reward.xp.toLocaleString('en') }) }]
+        // (F59: and what that rank unlocked)
+        { label: text.end.xp, value: rankUpLine(result.reward) }]
       const again = () => { screens.pop(); start() }
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
@@ -250,6 +269,8 @@ export function App() {
     ),
   }), [scraps])
   const openUpgrades = useCallback(() => { screens.push('upgrades'); lessonPlay.screen('upgradesOpened') }, [])
+  // F59: on the console between shifts at upgrading's rank, its unlock lesson (once per device: unlockLessons.ts)
+  useEffect(() => { if (mode === 'console') unlockLessons.atConsole(rank) }, [mode, rank])
 
   // the console mid-shift: Settings and the pause menu (End shift throws the run away)
   const consoleScreens = useMemo(() => ({
@@ -347,7 +368,8 @@ export function App() {
       <ToastStack place="at" variant="plain" /* just above the goop; words, not button-like plates (Muzzy 2026-10-18) */ />
       {/* F30: a lesson's message — in the tank a bubble in the kit Callout look; at the console mid-shift (F32) its words
           are on the monitor and this draws the spotlight; over a menu only a step's reaction ("That's the pause menu…") */}
-      {(mode === 'shift' || peeking) && <LessonView overMenu={open.length > 0} atConsole={peeking} />}
+      {/* (F59: and on the console between shifts — the Upgrades unlock lesson outlines its button there) */}
+      {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={open.length > 0} atConsole={mode !== 'shift'} />}
       {sideways && <UprightScreen />}
     </>
   )

@@ -1,0 +1,18 @@
+{
+  "_about": "F59 unlock lesson AT THE CONSOLE, between shifts: the first time the console shows at rank 5 or more (upgrading unlocks at progression.json unlocks.upgrades). At the console the monitor is the lesson's surface: its one line goes on the monitor's screen and the Upgrades button gets the pink outline — no dim, no Got it (nothing is paused between shifts). Opening Upgrades finishes it (once per device; Settings → Replay lessons plays it again); leaving for a shift first, it comes back next time. Words: content/text/en.json → lessons.unlock-upgrades.",
+  "id": "unlock-upgrades",
+  "steps": [
+    {
+      "id": "upgrades",
+      "pattern": "runActAdvance",
+      "message": "upgrades",
+      "pointer": {
+        "tag": "upgrades"
+      },
+      "advance": {
+        "on": "event",
+        "event": "upgradesOpened"
+      }
+    }
+  ]
+}

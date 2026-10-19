@@ -157,7 +157,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor}><LessonTag tag="monitor" /></ArtLayer>
-        <Crt hint={hint} lesson={midShift ? lessonLine : null} />
+        <Crt hint={hint} lesson={lessonLine} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
       </ArtStage>
     </Screen>
   )

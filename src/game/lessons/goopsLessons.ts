@@ -228,6 +228,13 @@ export const lessonPlay = {
     runner.event('shiftStarted')
     return true
   },
+  /** F59: a lesson at the console BETWEEN shifts (no shift running: nothing to set up or pause — its line goes on the
+   *  monitor, LessonView outlines what it points at). Starting a shift stops it. */
+  startAtConsole(id: string): boolean {
+    if (!lessonNow(id)) return false
+    runner.start(() => lessonNow(id)!, 0)
+    return true
+  },
   /** The lesson is over (back to the console, a new shift): stop it, nothing paused. */
   stop() {
     runner.stop() // (sets the speed back to 1 with input on)

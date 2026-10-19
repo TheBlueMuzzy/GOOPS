@@ -1,0 +1,15 @@
+{
+  "_about": "F59 unlock lesson: the start of the first shift at rank 3 or more (swap unlocks at progression.json unlocks.swap). An interrupt like unlock-window, pointing at the next-piece window (what a swap trades for); the words follow the input used last (keys / mouse / phone). Once per device; one unlock lesson per shift start (src/game/lessons/unlockLessons.ts). Words: content/text/en.json → lessons.unlock-swap.",
+  "id": "unlock-swap",
+  "steps": [
+    {
+      "id": "swap",
+      "pattern": "pauseShowDismiss",
+      "message": "swap",
+      "dim": true,
+      "pointer": {
+        "tag": "next-window"
+      }
+    }
+  ]
+}
