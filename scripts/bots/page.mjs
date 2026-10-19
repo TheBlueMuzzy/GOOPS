@@ -93,6 +93,42 @@ function sensitivityChart(s, bot) {
   return `<figure class="wide"><figcaption>${LABEL[bot]}: what each knob does to rupture time <span class="key"><i class="sw v-lo"></i>−25% <i class="sw v-hi"></i>+25%</span></figcaption><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sensitivity for ${LABEL[bot]}">${out}</svg></figure>`
 }
 
+// Before / after: rupture time per variant and bot, all ranks pooled — median (dot) and 10–90% (line).
+function variantChart(s) {
+  const names = Object.keys(s.variants)
+  const W = 700, rowH = 15, L = 130, R = 20, T = 20
+  const H = T + names.length * (BOTS.length * rowH + 14) + 24
+  const all = names.flatMap((v) => BOTS.map((b) => s.variants[v].bots[b].all.endS))
+  const xMax = Math.ceil(Math.max(...all.map((g) => g.p90 ?? 0)) / 20) * 20
+  const X = (v) => L + (v / xMax) * (W - L - R)
+  let out = ''
+  for (let v = 0; v <= xMax; v += 20) out += `<line class="grid" x1="${X(v)}" x2="${X(v)}" y1="${T - 8}" y2="${H - 22}"/><text class="tick" x="${X(v)}" y="${H - 6}" text-anchor="middle">${v}s</text>`
+  let y = T
+  for (const v of names) {
+    const label = s.variants[v].label
+    out += `<text class="lab" x="4" y="${y + (BOTS.length * rowH) / 2 + 4}">${esc(s.variants[v].short ?? v)}<title>${esc(label)}</title></text>`
+    for (const b of BOTS) {
+      const g = s.variants[v].bots[b].all.endS
+      const cy = y + rowH / 2
+      out += `<g><title>${esc(label)} · ${LABEL[b]}: shift over at a median ${g.median} s (10–90%: ${g.p10}–${g.p90} s), all ranks</title><rect x="${L}" y="${y}" width="${W - L - R}" height="${rowH}" fill="transparent"/><line class="wh s-${b}" x1="${X(g.p10)}" x2="${X(g.p90)}" y1="${cy}" y2="${cy}"/><circle class="dot s-${b}" cx="${X(g.median)}" cy="${cy}" r="4.5"/></g>`
+      y += rowH
+    }
+    y += 14
+  }
+  return `<figure class="wide"><figcaption>How long a shift lasts, per tuning — median (dot) and 10–90% of shifts (line), all ranks together</figcaption><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Shift length by tuning variant and bot">${out}</svg></figure>`
+}
+
+function variantTable(s) {
+  let rows = ''
+  for (const [v, vs] of Object.entries(s.variants)) {
+    BOTS.forEach((b, i) => {
+      const { all, byRank } = vs.bots[b]
+      rows += `<tr${i === 0 ? ' class="first"' : ''}>${i === 0 ? `<td rowspan="${BOTS.length}">${esc(vs.label)}</td>` : ''}<td>${LABEL[b]}</td><td>${s.ranks.map((r) => num(byRank[r].ruptureS.median)).join(' / ')}</td><td>${s.ranks.map((r) => pct(byRank[r].quotaRate)).join(' / ')}</td><td>${pct(all.peakPressure.median)} / ${pct(all.peakPressure.p90)}</td><td>${pct(all.reached100Before)}</td><td>${all.formed.median}</td><td>${pct(all.spots.surface)} / ${pct(all.spots.air)} / ${pct(all.spots.under)}</td><td>${num(all.gap.mean)} <small>(${pct(all.gap.atLeast3)} ≥3)</small></td><td>${pct(all.sealedShare)}</td><td>${pct(all.endedBy.integrity)} / ${pct(all.endedBy.overflow)} / ${pct(all.endedBy.timedOut)}</td></tr>`
+    })
+  }
+  return `<div class="tw"><table><thead><tr><th>Tuning</th><th>Bot</th><th>Rupture s, rank ${s.ranks.join(' / ')}</th><th>Quota met, rank ${s.ranks.join(' / ')}</th><th>Peak pressure (median / 90%)</th><th>Reaches 100%</th><th>Cracks a shift</th><th>Surface / air / under</th><th>Rows above the goop under it (avg)</th><th>Sealed</th><th>Ended by integrity / overflow / time limit</th></tr></thead><tbody>${rows}</tbody></table></div>`
+}
+
 // ---------------------------------------------------------------- tables
 
 function baseTable(s, set, title) {
@@ -111,19 +147,19 @@ function crackTable(s) {
   for (const b of BOTS) {
     for (const r of [0, 6]) {
       const g = s.base[b][r]
-      rows += `<tr><td>${LABEL[b]}</td><td>${r}</td><td>${g.crackEveryS}</td><td>${g.crackOpenS}</td><td>${num(g.sealS.median)}</td><td>${pct(g.sealedShare)}</td><td>${pct(g.spots.surface)} / ${pct(g.spots.air)} / ${pct(g.spots.under)}</td><td>${pct(g.sealedBySpot.surface)} / ${pct(g.sealedBySpot.air)} / ${pct(g.sealedBySpot.under)}</td><td>${pct(g.spots.visible)}</td><td>${pct(g.sealedByVisible.visible)} / ${pct(g.sealedByVisible.offscreen)}</td><td>${g.crackSecondsPerShift}</td><td>${pct(g.crackSecondsShare.neverSealed)}</td><td>${num(g.integrityPerCrackSecond)}</td></tr>`
+      rows += `<tr><td>${LABEL[b]}</td><td>${r}</td><td>${g.crackEveryS}</td><td>${g.crackOpenS}</td><td>${num(g.sealS.median)}</td><td>${pct(g.sealedShare)}</td><td>${pct(g.spots.surface)} / ${pct(g.spots.air)} / ${pct(g.spots.under)}</td><td>${pct(g.sealedBySpot.surface)} / ${pct(g.sealedBySpot.air)} / ${pct(g.sealedBySpot.under)}</td><td>${num(g.gap.mean)}</td><td>${pct(g.spots.visible)}</td><td>${pct(g.sealedByVisible.visible)} / ${pct(g.sealedByVisible.offscreen)}</td><td>${g.crackSecondsPerShift}</td><td>${pct(g.crackSecondsShare.neverSealed)}</td><td>${num(g.integrityPerCrackSecond)}</td></tr>`
     }
   }
-  return `<div class="tw"><table><thead><tr><th>Bot</th><th>Rank</th><th>A crack every (s)</th><th>Crack open (s, avg)</th><th>Time to seal (s, median)</th><th>Sealed</th><th>Formed on surface / in air / under goop</th><th>Sealed: surface / air / under</th><th>Formed on screen</th><th>Sealed: on / off screen</th><th>Crack-seconds a shift</th><th>…from never-sealed cracks</th><th>Integrity per crack-second</th></tr></thead><tbody>${rows}</tbody></table></div>`
+  return `<div class="tw"><table><thead><tr><th>Bot</th><th>Rank</th><th>A crack every (s)</th><th>Crack open (s, avg)</th><th>Time to seal (s, median)</th><th>Sealed</th><th>Formed on surface / in air / under goop</th><th>Sealed: surface / air / under</th><th>Rows above goop (avg)</th><th>Formed on screen</th><th>Sealed: on / off screen</th><th>Crack-seconds a shift</th><th>…from never-sealed cracks</th><th>Integrity per crack-second</th></tr></thead><tbody>${rows}</tbody></table></div>`
 }
 
 function sensitivityTable(s) {
   let rows = ''
   for (const x of s.sensitivity) {
-    const cell = (byRank) => s.ranks.map((r) => `${num(byRank[r].ruptureS)}s ${pct(byRank[r].quotaRate)}`).join('<br>')
+    const cell = (byRank) => s.ranks.map((r) => `${num(byRank[r].ruptureS)}s · ${pct(byRank[r].quotaRate)}${byRank[r].peakPressure !== undefined ? ` · peak ${pct(byRank[r].peakPressure)} <small>(90%: ${pct(byRank[r].peakPressureP90)})</small> · ${num(byRank[r].formed)} cracks` : ''}`).join('<br>')
     rows += `<tr><td>${LABEL[x.bot]}</td><td>${esc(x.knob)} <small>(${x.base})</small></td><td>${cell(x.variants['0.75'])}</td><td>${cell(x.baseByRank)}</td><td>${cell(x.variants['1.25'])}</td></tr>`
   }
-  return `<div class="tw"><table><thead><tr><th>Bot</th><th>Knob (today)</th><th>−25%</th><th>Today</th><th>+25%</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Each cell: rank ${s.ranks.join(' / ')} top to bottom — median rupture time, then share of shifts that met the quota.</p>`
+  return `<div class="tw"><table><thead><tr><th>Bot</th><th>Knob (today)</th><th>−25%</th><th>Today</th><th>+25%</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Each cell: rank ${s.ranks.join(' / ')} top to bottom — median rupture time, share of shifts that met the quota, then (newer runs) the median peak pressure and cracks a shift.</p>`
 }
 
 // ---------------------------------------------------------------- page
@@ -152,11 +188,16 @@ g:hover .dot,g:hover .bar{opacity:.75}
 .tw{overflow-x:auto;border:1px solid var(--grid);border-radius:10px;margin:8px 0}
 table{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;min-width:100%}
 th,td{padding:5px 8px;border-bottom:1px solid var(--grid);text-align:left;white-space:nowrap}th{position:sticky;top:0;background:var(--bg);font-weight:600}
-small{color:var(--ink2)}
+small{color:var(--ink2)}tr.first td{border-top:2px solid var(--ink2)}td[rowspan]{white-space:normal;max-width:180px;vertical-align:top}
 </style></head><body><main>
 <h1>Goops — balance bots</h1>
 <p>${s.shifts} headless shifts on the real engine and today's tuning (${s.seeds} seeds per cell, ranks ${s.ranks.join(', ')}), made ${esc(s.made.slice(0, 16).replace('T', ' '))} UTC in ${s.seconds} s. Medians, with 10–90% spreads. Hover a mark for its numbers. Plain-English write-up: <code>.planning/research/balance-bots.md</code>.</p>
 ${legend}
+${s.variants ? `<h2>Before / after (Muzzy's changes, 2026-10-18)</h2>
+<p>Each row is the same bots and seeds on a different tuning. <b>Before</b> = the tuning the first bot run used. The rest use Muzzy's lower drain (0.002) and the 3% seal refund, with each crack-band setting. Everything below this section is the file's tuning (band <code>${esc(s.tuning.shift.cracks.band)}</code>).</p>
+${variantChart(s)}
+${variantTable(s)}
+<p class="note">Peak pressure = the highest pressure a shift reached before the rupture. Rows above the goop = empty cells between a new crack and whatever is under it (0 = sitting on goop or the floor).</p>` : ''}
 <h2>How shifts end</h2>
 ${ruptureChart(s)}
 ${quotaChart(s)}
@@ -166,7 +207,7 @@ ${[0, 6].map((r) => `<h3>Rank ${r}</h3><div class="grid2">${lineChart(s, r, 'int
 <h2>Where the integrity goes</h2>
 ${crackTable(s)}
 <p class="note">Surface = on the floor or on goop with open sky above (a piece can land on it now). In air = nothing under it yet. Under goop = buried. On screen = inside the 12 visible columns when it formed.</p>
-<h2>Sensitivity (±25%, one knob at a time)</h2>
+<h2>Sensitivity (±25%, one knob at a time, on the file's tuning)</h2>
 ${sensitivityChart(s, 'focused')}
 ${sensitivityChart(s, 'sharp')}
 ${sensitivityTable(s)}

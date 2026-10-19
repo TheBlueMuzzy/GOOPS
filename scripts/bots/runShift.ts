@@ -30,6 +30,8 @@ export interface CrackRecord {
   formedAt: number
   pressure: number
   spot: CrackSpot
+  row: number // height from the floor (floor row = 0)
+  gap: number // empty cells under it before goop or the floor (0 = sits on something; buried cracks count to the goop below)
   visible: boolean
   sealedAt: number | null
   openMs: number // until sealed, or until the rupture
@@ -47,6 +49,7 @@ export interface RunResult {
   endAt: number
   timedOut: boolean
   reached100At: number | null // first time pressure hit 100%
+  peakPressure: number // the highest pressure before the rupture (or the end)
   quotaMet: boolean
   quotaAt: number | null
   cracksSealed: number
@@ -65,6 +68,13 @@ export interface RunResult {
   timeline?: { t: number; pressure: number; integrity: number; open: number; stack: number; formed: number; sealed: number }[]
 }
 
+// Empty cells straight under (x, y) before goop or the floor.
+function gapUnder(s: ShiftState, x: number, y: number): number {
+  let gap = 0
+  for (let yy = y + 1; yy < s.height && s.grid[yy * s.width + x] === 0; yy++) gap++
+  return gap
+}
+
 function spotOf(s: ShiftState, x: number, y: number): CrackSpot {
   for (let yy = 0; yy < y; yy++) if (s.grid[yy * s.width + x] !== 0) return 'under'
   if (y === s.height - 1 || s.grid[(y + 1) * s.width + x] !== 0) return 'surface'
@@ -78,7 +88,7 @@ export function runShift(input: RunInput): RunResult {
   const cracks = new Map<number, CrackRecord>()
   const r: RunResult = {
     bot: input.bot, seed: input.seed, rank: input.rank, breakdowns: !!input.breakdowns,
-    ruptureReason: null, ruptureAt: null, pressureAtRupture: null, endAt: 0, timedOut: false, reached100At: null,
+    ruptureReason: null, ruptureAt: null, pressureAtRupture: null, endAt: 0, timedOut: false, reached100At: null, peakPressure: 0,
     quotaMet: false, quotaAt: null, cracksSealed: 0, cracksNeeded: s.cracksNeeded, cracksFormed: 0,
     score: 0, xp: 0, pieces: 0, pops: 0, breakdownsCount: { laser: 0, visor: 0, controls: 0 },
     firstBreakAt: { laser: null, visor: null, controls: null }, meanPressure: 0, crackSeconds: 0, integrityLost: 0,
@@ -114,6 +124,7 @@ export function runShift(input: RunInput): RunResult {
     now += dt
     if (s.phase === 'playing' || r.ruptureAt === now) r.integrityLost += integrityBefore - s.integrity
     if (r.reached100At === null && s.pressure >= 1) r.reached100At = now
+    if (r.ruptureAt === null || r.ruptureAt === now) r.peakPressure = Math.max(r.peakPressure, s.pressure)
 
     for (const e of engine.takeEvents()) {
       switch (e.type) {
@@ -131,7 +142,7 @@ export function runShift(input: RunInput): RunResult {
         case 'crack': {
           const c = e.crack
           cracks.set(c.id, {
-            formedAt: now, pressure: s.pressure, spot: spotOf(s, c.x, c.y),
+            formedAt: now, pressure: s.pressure, spot: spotOf(s, c.x, c.y), row: s.height - 1 - c.y, gap: gapUnder(s, c.x, c.y),
             visible: isOnScreen(c.x, s.spin, s.width, s.visibleWidth), sealedAt: null, openMs: 0, aboveLineMs: 0,
           })
           r.cracksFormed++

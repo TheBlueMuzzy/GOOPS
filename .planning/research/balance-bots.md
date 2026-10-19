@@ -94,3 +94,24 @@ Small effect: Sharp at rank 6 ruptures 1.6 s earlier with breakdowns on and meet
 
 ## Limits of the bots
 They read the board perfectly but plan one piece at a time. A strong human may seal a bit more than Sharp (better colour juggling, standing pieces up into air cracks). Even so, the shape holds: at 4 s a crack and ~11 s a seal, ~250 crack-seconds run out in about a minute unless nearly every crack is sealed. XP = the final score (floor: 100, or 100 × rank): Sharp's median at rank 0 is 3,007, about 0.9 of a rank (3,500 needed).
+
+# Rerun after Muzzy's changes (F27 task 10, 2026-10-18)
+**What changed:** drain 0.004 → 0.002 (Lever B), 3% integrity back per seal (`integrity.sealRefund` 0.03, Lever C, number = Claude's pick), and Muzzy's crack band (`cracks.band`, Lever A: cracks only up to halfway between the top goop and the pop line). Also fixed finding 4 (a crack with nowhere to go now retries next step). Crack timing (`everyMsAtEmpty`/`everyMsAtFull`) untouched.
+**Runs:** 4 tunings × 4 bots × 5 ranks × 50 seeds + breakdowns-off + `riseMsToFull` ±25% = 6,000 shifts in 188 s. `npm run bots` (`--variants base` = the file only). Page: https://claude.ai/artifact/94yNKpzjvFNXxVzJoM75R7 (section "Before / after").
+The "before" rows reproduce the first run exactly (same seeds), so the band code leaves the old rule untouched.
+
+| Tuning | Idle rupture | Sharp rupture (rank 0 → 10) | Sharp quota (rank 0/2/4/6/10) | Focused quota | Peak pressure, Sharp (median / 90%) | Cracks a shift (Sharp) | Rows above the goop (Sharp avg) | Sealed (Sharp) |
+|---|---|---|---|---|---|---|---|---|
+| Before | 47 s | 62 → 59 s | 100/80/54/18/0% | 92/56/22/6/0% | 48% / 53% | 16 | 2.3 | 48% |
+| New + band none | 62 s | 96 → 91 s | 100/98/94/82/4% | 100/96/78/44/2% | 66% / 72% | 28 | 3.4 | 43% |
+| **New + halfway (default)** | 62 s | 120 → 102 s | 100/100/100/86/40% | 100/98/98/80/16% | 62% / 70% | 32 | 2.1 | 54% |
+| New + per column | 62 s | 134 → 110 s | 100/100/98/96/68% | 100/100/100/96/32% | 61% / 67% | 33 | 1.5 | 61% |
+
+- **Skill now matters:** the gap between Idle and Sharp grew from ~15 s to ~40–60 s. Casual barely gains (63–66 s): it ignores cracks, so it only gets the lower drain.
+- **Still nobody reaches 100% pressure** (0 of 6,000 shifts), and no skilled shift ends by overflow; every bot shift that moves ends by integrity. Idle (who never moves) now overflows 5% of the time.
+- **Cracks:** ~30 a shift for Focused/Sharp (was 15). Most form at 20–60% pressure; under 1 a shift above 80%.
+- **Where they form:** the band brings cracks down (average 3.4 rows above the goop under them with no band → 2.1 halfway → 1.5 per column; 90th percentile 8 → 5 → 4 rows). They still count as "in the air" ~70–75% of the time, because one empty row under a crack is already "air"; the gap is the better measure. Air cracks sealed: Sharp 35% (none) → 46% (halfway) → 52% (per column).
+- **Without the band, the lower drain makes the air problem worse** (85% air, 3.4 rows up): with more time, pressure climbs higher and the line drags cracks up with it. The band is what keeps them reachable.
+- **Per column is a little kinder than halfway** (+8–14 s, rank 10 quota 68% vs 40%): it closes the "one tall column lets cracks float over low ones" gap.
+- **Quota:** ranks 0–4 are now near-certain for Focused/Sharp; rank 6 is 80–86%; rank 10 is 16–40% (was 0%).
+- **Sensitivity, `pressure.riseMsToFull` ±25% (75 s):** −25% (56 s) → shifts ~10–25 s shorter (Sharp 93 → 86 s), peak pressure ~80% median / ~86–90% p90, quota at rank 10 falls to 2–16%, rank 6 to 66–72%. +25% (94 s) → shifts 7–13 s longer, peak ~53–55%, rank 10 quota 44–62%. Still no shift reached 100% either way.
