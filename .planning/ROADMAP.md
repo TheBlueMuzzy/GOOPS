@@ -5,7 +5,7 @@ Release target: not set (decided in F07)
 Goal: every design question the remake needs is answered, so /define can write the TDD and lay out the build milestones.
 - ✅ F01 ❓ Feel targets — must:alpha
   what: all three feelings, one per time scale (GDD §2)
-- 🔍 F02 Goo technique: L4 Jelly (one soft body per same-colour group) — must:alpha · needs: F01
+- ✅ F02 Goo technique: L4 Jelly (one soft body per same-colour group) — must:alpha · needs: F01
   what: which way the goo is drawn and moves (research/goo-feel.md, research/goo-lab/)
   note: Muzzy's feel note (2026-10-16): low gravity (env grav 2.0 m/s²) + much lower viscosity "kinda felt good" (on research/goo-lab/refs/viscous-jello-muzzy.html, his version with sliders)
   why: Muzzy's two endpoints (2026-10-16): A) "jello/jelly that has surface tension and sticks together, but can pull apart", or B) "a thick, heavy viscous liquid that doesn't really follow the grid underneath … not sure it's fun yet, so a sketch would need to prove it out"
@@ -20,10 +20,10 @@ Goal: every design question the remake needs is answered, so /define can write t
   - [x] 🙋 Save L3 + L4 presets, paste the values → research/goo-lab/picks.json
   - [x] 🙋 Pick: L4 Jelly. Muzzy (2026-10-17): "this feels just about right. might make small tweaks in the future"
   - [x] 🤖 Fix the jelly's heavy lurch on the way down (it was yanked a cell per grid step; now glides) + one-line help under every L3/L4 knob
-  - [ ] 🙋 Check the lurch is gone in L4 (its Default is now your Preset 2)
+  - [x] 🙋 Check the lurch is gone in L4 (its Default is now your Preset 2) — moot: Jelly is in the real game (Muzzy 2026-10-19)
   - [x] 🤖 L3: rebuilt Magnetism (same colours reach for each other) + Tension (string length before snapping), Muzzy's names; values → picks.json
   - [x] 🤖 Carried Magnetism + Tension (and sticky touch → strings) into L4 Jelly, same scale as L3, defaults 1.4 / 0.15
-  - [ ] 🙋 Try Magnetism + Tension in L4 Jelly
+  - [x] 🙋 Try Magnetism + Tension in L4 Jelly — moot: Jelly is in the real game (Muzzy 2026-10-19)
   note: L3 dislikes (2026-10-17): "I don't like the pop and I don't like the way rotate looks/is handled". Don't carry L3's zap or rotate anywhere
   - [x] 🤖 Write the pick into GDD §6
   - [ ] 🤖 TDD: goo renderer + soft-body plan from lab-L4-jelly.html (when /define writes the TDD)
@@ -36,10 +36,10 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F04 Pressure: rises over time, zaps vent it, cracks grow with it, integrity → rupture ends the shift (GDD §4) — must:alpha
 - ✅ F05 Shift length: no clock — the rupture loop decides it; tuned in the balance talk (2026-10-17) — must:alpha · needs: F04
 - ✅ F06 Breakdowns: v1 meters, softer effects, the tank slows at the console, simplified repairs (GDD §5, 2026-10-18) — must:alpha · needs: F01
-- 📐 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06
+- 🔨 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
 - 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover — must:alpha · needs: F08
-- 📐 F10 ❓ Phone gestures without conflicts — must:alpha
+- 🔨 F10 ❓ Phone gestures without conflicts — must:alpha
 - ✅ F11 Look: Muzzy's art; kit Neon only where there's no art; pixel look later (Ideas) — sound still open — must:alpha
 - 📐 F12 ❓ Tutorial: "your first day", taught at the moment of action — must:alpha · needs: F03, F04, F06, F10
   what: last on purpose: it teaches the settled rules
