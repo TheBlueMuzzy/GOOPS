@@ -8,7 +8,7 @@ import type { Machines } from './machines'
 import type { FallingPiece, PieceDef } from './pieces'
 import type { AbilitySpec, ActiveEffects } from './abilities'
 import type { Modifiers } from './upgrades'
-import type { AbilityState, Crack, Group, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode } from './types'
+import type { AbilityState, Crack, Group, SealedSpot, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode } from './types'
 import { createShift } from './shift'
 
 export const SNAPSHOT_KIND = 'goops-shift'
@@ -29,6 +29,7 @@ export interface ShiftSnapshot {
     phase: ShiftPhase
     ruptureReason: 'integrity' | 'overflow' | null
     cracks: Crack[]
+    sealedCracks?: SealedSpot[] // (F36; older snapshots have none — still format 1, read as [])
     cracksSealed: number
     cracksNeeded: number
     quotaMet: boolean

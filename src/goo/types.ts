@@ -10,6 +10,9 @@ export interface GooView {
   width: number // canvas CSS size
   height: number
   dpr: number
+  // F36 the x-ray (a crack under goop stays visible): the goo inside each box — the cell (a grid index) grown by `pad`
+  // cells on every side — is drawn see-through, `alpha` as solid as usual. A read-only look the frame loop hands in.
+  xray?: { cells: number[]; pad: number; alpha: number }
 }
 
 export interface GooRenderer {

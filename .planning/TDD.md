@@ -120,6 +120,7 @@ flowchart LR
 | `content/tuning/goo-jelly.json` | Jelly's knobs (started as Muzzy's Preset 2; plain-English help for each under `_help`) | Dev Kit Tuning (live) / Obsidian |
 | `content/tuning/goo-particle.json` | Particle's knobs (started as Muzzy's Preset 1; `_help` too) | same |
 | `content/tuning/goo-colors.json` | colour name → hex (red, blue, green, yellow, purple, white, black); `shift.json` `colors` sets their order | same — the goo, cracks and ghost change at once |
+| `content/tuning/cracks-look.json` | F36 readable cracks, looks only: `bubbles` (open cracks leak air — rate, gusts, size, speed, sway, life, alpha, colour, calm for reduce motion, max), `xray` (the dotted box round a covered crack + `gooAlpha`: how solid the goo stays inside it), `sealed` (the mended scar). The rule half (no crack on a sealed spot) is the engine's: `state.sealedCracks`, in snapshots | Dev Kit Tuning (live) |
 | `content/tuning/pause.json` | `halfPauseGooMoves` (off) — does the goo keep moving in the Dev Kit's ◐ half pause | Dev Kit Tuning |
 | `content/text/en.json` | player-facing words | Obsidian |
 | `content/ui/art.json` | which of Muzzy's pictures goes where: the console (layers cut from art/Example1.svg, each at its box in the mock-up's units; the views; periscope travel + grip; where the game writes words), end-report frame + its cut lines, buttons | Obsidian |

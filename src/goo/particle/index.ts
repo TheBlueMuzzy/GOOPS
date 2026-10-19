@@ -12,6 +12,7 @@ import { groupFillLines, inWindow, tankWindow, viewOrigin, wrapNear, type FillIn
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
 import { BLUR_FS, SHADE_FS, SPLAT_FS, SPLAT_VS } from './shaders'
+import { XRAY_MAX, XRAY_UNIFORMS, setXray } from '../shared/xray'
 
 // The knobs as the file has them right now (with the Dev Kit's latest edit)
 export const particleDefaults = (): Knobs => parseKnobs(particleFile)
@@ -741,8 +742,9 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   const blurP: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uStep', 'uSigma', 'uOut', 'uTaps'])
   const shadeP: Program = makeProgram(gl, FULLSCREEN_VS, SHADE_FS, [
     'uT0', 'uT1', 'uT2', 'uW0', 'uW1', 'uW2', 'uRes', 'uOrigin', 'uCell', 'uScale', 'uTh', 'uWet', 'uBulge', 'uAbsorb',
-    'uFres', 'uTrans', 'uTime', 'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols',
+    'uFres', 'uTrans', 'uTime', 'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', ...XRAY_UNIFORMS,
   ])
+  const xrayBuf = new Float32Array(XRAY_MAX * 4)
   const emptyVAO = gl.createVertexArray()!
   const splatVAO = gl.createVertexArray()!
   gl.bindVertexArray(splatVAO)
@@ -908,6 +910,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     gl.uniform1f(u.uClipR, clipR)
     gl.uniform1f(u.uClipB, state.height)
     gl.uniform3fv(u.uCols, cols)
+    setXray(gl, u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)
   }

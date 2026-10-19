@@ -11,6 +11,7 @@ import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
 import { groupFillLines, tankWindow, unwrapAround, unwrapCells, viewOrigin, wrapNear, wrapTurns, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
+import { XRAY_MAX, XRAY_UNIFORMS, setXray } from '../shared/xray'
 import { buildPoints, traceLoops } from './outline'
 import { BLUR_FS, FINAL_FS, MASK_FS, MASK_VS } from './shaders'
 
@@ -927,8 +928,9 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   const PB: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uSize', 'uStep', 'uSigma', 'uR'])
   const PF: Program = makeProgram(gl, FULLSCREEN_VS, FINAL_FS, [
     'uS0', 'uS1', 'uS2', 'uQ0', 'uQ1', 'uQ2', 'uM1', 'uRes', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet',
-    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols',
+    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', ...XRAY_UNIFORMS,
   ])
+  const xrayBuf = new Float32Array(XRAY_MAX * 4)
   const vaoMask = gl.createVertexArray()!
   const vbo = gl.createBuffer()!
   const vaoFsq = gl.createVertexArray()!
@@ -1211,6 +1213,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     gl.uniform1f(PF.u.uClipR, clipR)
     gl.uniform1f(PF.u.uClipB, state.height)
     gl.uniform3fv(PF.u.uCols, cols)
+    setXray(gl, PF.u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)
   }
