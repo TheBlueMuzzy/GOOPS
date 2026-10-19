@@ -1,5 +1,5 @@
 # Goops — Roadmap
-Release target: not set (decided in F07)
+Release target: alpha = M4, the playable game for Muzzy + friends (F07, 2026-10-19)
 
 ## M0 — Design decided  ← current
 Goal: every design question the remake needs is answered, so /define can write the TDD and lay out the build milestones.
@@ -36,9 +36,10 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F04 Pressure: rises over time, zaps vent it, cracks grow with it, integrity → rupture ends the shift (GDD §4) — must:alpha
 - ✅ F05 Shift length: no clock — the rupture loop decides it; tuned in the balance talk (2026-10-17) — must:alpha · needs: F04
 - ✅ F06 Breakdowns: v1 meters, softer effects, the tank slows at the console, simplified repairs (GDD §5, 2026-10-18) — must:alpha · needs: F01
-- 🔨 F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06
+- ✅ F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06 · decided 2026-10-19: alpha = the playable game (no upgrades, no story) for Muzzy + friends; beta = the whole job (story, upgrades, all three rank twists); 1.0 = polished, replaces v1 (research/release-scope.md, GDD §7)
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
-- 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover — must:alpha · needs: F08
+- 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
+  note: Muzzy (2026-10-19, F07): "story is beta. alpha is playable game"
 - 🔨 F10 ❓ Phone gestures without conflicts — must:alpha
 - ✅ F11 Look: Muzzy's art; kit Neon only where there's no art; pixel look later (Ideas) — sound still open — must:alpha
 - 📐 F12 ❓ Tutorial: "your first day", taught at the moment of action — must:alpha · needs: F03, F04, F06, F10
@@ -88,6 +89,57 @@ Goal: machines break from your own play and you fix them at the console while th
 - ✅ F25 Visor glitch (sketch first) — must:alpha · needs: F23
 - ✅ F26 HUD + messages rethink (from the parking lot) — must:alpha · needs: F24 · approved 2026-10-19 (message timing waits for Muzzy's dedicated playtest — sprint task 6)
 - ✅ F27 ❓ Integrity / crack balance talk — must:alpha · needs: F26 · approved 2026-10-19 (crack hill, drain 0.0005, seal +2%, hockey-stick crack rate)
+
+## M4 — Alpha: the playable game, for you + friends
+Goal: a friend installs it from a link, learns to play from "your first day", and plays shifts through rank 9 with all three machines and sound — no upgrades, no story yet (Muzzy 2026-10-19: "alpha is playable game").
+- 📐 F28 🎮 Gesture fixes (from F10's list) — must:alpha · needs: F10
+- 📐 F29 🧱 Sound basics: code-made effects through the framework audio module, volume rows on — must:alpha
+- 📐 F30 🧱 Lesson runner: plain how-to-play lessons from data files (the story's intercom voice layers on in beta) — must:alpha · needs: F12
+- 📐 F31 🎮 Your first day: the rank 0 how-to-play — must:alpha · needs: F30, F28
+- 📐 F32 🎮 First-breakdown lessons (visor, laser, controls) — must:alpha · needs: F30
+- 📐 F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25
+- 📐 F37 ❓ Version numbers + where alpha lives — must:alpha
+- 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit ON for friends (Muzzy 2026-10-19), 60 fps on two real phones — must:alpha · needs: F37, F28
+```mermaid
+flowchart LR
+  F10[F10 Gestures] --> F28[F28 Gesture fixes]
+  F12[F12 Tutorial] --> F30[F30 Lesson runner]
+  F30 --> F31[F31 First day]
+  F28 --> F31
+  F30 --> F32[F32 Breakdown lessons]
+  F25[F25 Visor glitch] --> F36[F36 Readable cracks]
+  F37[F37 Versions?] --> F38[F38 Alpha kit]
+  F28 --> F38
+  F29[F29 Sound basics]
+```
+
+## M5 — Beta: the whole job, rank 0 to the takeover
+Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every v1 system are in; numbers can still be rough.
+- ⏳ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · needs: F08
+- ⏳ F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
+- ⏳ F35 🎮 Story ranks 0–9: rank titles, Employer beats, the intercom voice — must:beta · needs: F09, F30
+- ⏳ F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
+  note: Muzzy (2026-10-19): keep all three
+- ⏳ F40 🎮 The Veteran: radio hijacks + smuggled upgrades — must:beta · needs: F35
+- ⏳ F41 🎮 Fines on the end report — must:beta · needs: F09, F35
+- ⏳ F42 🎮 Active abilities: equip slots + the charge button in the HUD — must:beta · needs: F34
+- ⏳ F43 🎮 Upgrades ranks 10–38 + hold viewer + next-piece window — must:beta · needs: F34, F42
+- ⏳ F45 🎮 Ranks 40–49 + the takeover at rank 50 — must:beta · needs: F40, F39
+- ⏳ F46 🎮 Operator Journal — should:beta · needs: F30
+- ⏳ F47 ✨ The zap look (sketch first) — should:beta
+- ⏳ F48 🎮 Quick Fix upgrade (fewer repair steps) — should:beta · needs: F34
+- ⏳ F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
+- ⏳ F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
+- ⏳ F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
+
+## M6 — 1.0: polished, balanced, replaces v1
+Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
+- ⏳ F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
+- ⏳ F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
+- ⏳ F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
+- ⏳ F55 🎮 Credits screen — must:1.0
+- ⏳ F56 ✨ Periscope zoom — should:1.0
+- ⏳ F57 🎮 Colour-blind help — should:1.0
 
 ## Parking lot
 - 💡 2026-10-18 — **Cracks you can read (Muzzy):** (1) an open crack lets out a slightly unsteady stream of bubbles into the tank, "as if air is getting in" — also makes it easy to spot · (2) a crack under goop stays visible: a dotted white "x-ray" box round it ("the visor is auto targeting to help") and the goop inside the box goes slightly see-through; pop that cluster → the crack seals and the box goes · (3) a sealed crack turns black/grey so it looks fixed, and no crack can ever form on a sealed spot again · (4) goop covering a crack HALVES its drain (and its bubbles). Claude's notes: (4) changes the loop — covering a crack becomes worth doing before you can pop it (stall vs. seal); the bot runs (F27) should be rerun with it. The x-ray box sits UNDER the visor glitch, so the glitch distorts it too (Muzzy 2026-10-18).

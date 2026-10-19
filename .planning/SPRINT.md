@@ -9,7 +9,7 @@ Decided at planning (Muzzy, 2026-10-19): the goo-lab checks are moot — Jelly i
 
 ## F07 ❓ Releases: what alpha, beta and 1.0 must have
 - [x] 🤖 3. Draft the must-haves per release + the build milestones after M0 (GDD, v1, parking lot, what's built) — .planning/research/release-scope.md (alpha = ranks 0–9 done properly; M4 alpha F28–F38, M5 beta F39–F51, M6 1.0 F52–F57; corrected: the Dev Kit IS on in release builds today, content/devkit.json)
-- [ ] 🙋 4. Edit + approve → Claude writes them into ROADMAP + GDD §7
+- [x] 🙋 4. Edit + approve → Claude writes them into ROADMAP + GDD §7 — Muzzy (2026-10-19): no upgrades in alpha · story is beta, alpha is the playable game · keep all three rank twists · Dev Kit on for alpha → ROADMAP M4–M6, GDD §7
 
 ## Notes
 - Done 2026-10-19 (F02 close-out, helper): TDD §1/§2/§2b/§3/§10 rewritten from the real goo code (the TDD listed a `drop` action + `crackSeal` event that don't exist, "Dev Kit tools: none yet", Particle "may need" view culling it already has). Fixed alongside: pause.json help said the ready glow keeps moving in half pause — it doesn't (the goo gets 0 time, ShiftStage.tsx:167). **Later (not this sprint):** goo numbers hard-coded in code that belong in content/ (Jelly kick sizes, piece spring K=260, Particle KREP/SEP/cohK, caps 9,000/40,000, 120 Hz step); dead hard-drop code in both renderers (`case 'drop'`, Particle thump flag); Particle `bulge` / `absorb` / `fresnel` have no `_help`; `src/goo/flat/` unused; e2e/perf.mjs has no pass/fail line vs 60 fps; Jelly simulates off-screen bodies.

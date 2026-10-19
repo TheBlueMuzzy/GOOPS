@@ -1,4 +1,6 @@
-# Goops remake — what alpha, beta and 1.0 must have (DRAFT for Muzzy)
+# Goops remake — what alpha, beta and 1.0 must have
+> **DECIDED 2026-10-19 (Muzzy) — this changes the draft below:** alpha = the playable game ("story is beta. alpha is playable game") → **no upgrades and no story in alpha** (F33/F34/F35 moved to beta, F09 Story in play is must:beta); **rank twists: keep all three** (F39 is now "build them as v1", F44 merged into it); **Dev Kit ON for alpha**. Claude's defaults: placeholder sound in alpha; tutorial in alpha as plain how-to-play; versions 0.x until it replaces v1 (F37). Final milestones: ROADMAP M4–M6; summary: GDD §7.
+
 > Sprint 06 · F07 task 3 · written 2026-10-19 by Claude. **This is a draft for you to edit.** Change anything: cross out rows, move them, rewrite the reasons. When you approve it, Claude copies the result into ROADMAP (milestones M4+) and GDD §7 Scope.
 > Sources: GDD (all, esp. §7 "everything in v1 is a must; the story is new must work"), ROADMAP (M0–M3, Parking lot), STATE (built / not built), TDD, `design/story.md`, `design/progression.md`, `design/upgrades-map.md`, `research/v1-review.md`, `research/v1/PRD.md`, and a look at the code (`src/`, `content/`).
 > Words: **must** = that release can't go out without it · **should** = we want it, but it can slip a release · **could** = nice if there's time · **later** = after 1.0 (stays in the parking lot) · **won't** = decided against.
