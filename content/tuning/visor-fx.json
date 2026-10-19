@@ -5,7 +5,7 @@
   "_ranges": { "always.curve": [0, 10, 0.25], "look.curve": [0, 10, 0.25] },
   "_alwaysAbout": "'always' = the curved-TV look you see whenever you're in the vat, glitch or not (Muzzy 2026-10-18: \"the curved render effect should be on whenever you're inside the visor\"). curve / vignette: their own strength (same scale as look.curve / look.vignette; 1 = the sketch's full curve, higher = rounder); the glitch never makes them weaker than this. 0 = off.",
   "always": {
-    "curve": 1,
+    "curve": 0.5,
     "vignette": 0.5
   },
   "look": {
