@@ -1,5 +1,5 @@
 // Cracks you can read (F36, Muzzy 2026-10-18): one tank with every kind of crack, at every size → e2e-shots/cracks-look/
-//   - OPEN cracks (nothing on them) leak bubbles into the tank
+//   - OPEN cracks (nothing on them) leak bubbles into the tank; covered ones leak half as much; sealed ones none
 //   - COVERED cracks (goop of any colour on them: a wrong colour, and the right colour = plugged) get the dotted white
 //     x-ray box, and the goop over them is handed to the goo as see-through (view.xray)
 //   - SEALED spots (cracks sealed earlier) show a dark grey mended scar
@@ -109,7 +109,8 @@ try {
     console.log(`${name} ${w}x${h}: bubbles ${JSON.stringify(r.bubbles)} · x-ray white px ${r.xray.map((x) => x.white).join('/')} · sealed grey px ${r.sealed.map((x) => x.grey).join('/')} (empty spot ${r.control}) · red X px ${JSON.stringify(r.wrongX)}`)
     if (r.control >= 8) fail(`${name}: the scar probe sees grey where there is no scar (${r.control})`)
     for (const id of scene.open) if (!(r.bubbles[id] > 0)) fail(`${name}: open crack ${id} has no bubbles`)
-    for (const id of [903, 904]) if (r.bubbles[id] > 0) fail(`${name}: covered crack ${id} is bubbling`)
+    // covered cracks leak too, at half the rate, up through the goop (Muzzy 2026-10-19) — a random stream, so the pair
+    if (!(r.bubbles[903] + r.bubbles[904] > 0)) fail(`${name}: covered cracks 903/904 are not bubbling`)
     if (r.xray.length !== 2 || r.xray.some((x) => x.white < 3)) fail(`${name}: x-ray box missing`, JSON.stringify(r.xray))
     if (JSON.stringify([...(r.gooXray?.cells ?? [])].sort()) !== JSON.stringify([...scene.covered].sort())) fail(`${name}: goo not told the x-ray cells`, JSON.stringify(r.gooXray))
     if (!(r.wrongX[903] >= 6)) fail(`${name}: no red X on the wrong-colour crack 903`, JSON.stringify(r.wrongX))
@@ -149,6 +150,11 @@ try {
       console.log(`  after sealing 904: crack left ${sealed.still} · scar ${sealed.scar} · x-ray boxes ${after.xray.length}`)
       if (sealed.still || !sealed.scar) fail('popping the plugged goop did not seal 904 into a scar')
       if (after.xray.length !== 1) fail('the x-ray box stayed after the seal')
+      // a sealed crack never leaks: once the bubbles already out have faded, none come from it
+      await page.waitForTimeout(3200)
+      const fromSealed = await page.evaluate(() => window.__goops.bubbles.from(904))
+      console.log(`  sealed 904 bubbles after 4 s: ${fromSealed}`)
+      if (fromSealed !== 0) fail('a sealed crack still leaks bubbles')
     }
     if (errors.length) fail(`${name}: console errors:`, errors.join(' | '))
     await page.close()

@@ -20,7 +20,9 @@ export interface CrackBubbles {
   from(crackId: number): number // (dev + tests) live bubbles from this crack
 }
 
-// An open crack: nothing on it (no goop of any colour). Plugged and covered cracks are quiet (they get the x-ray box).
+// An open crack: nothing on it (no goop of any colour). A covered one (any colour on it) gets the x-ray box and leaks
+// at bubbles.covered × the rate, its bubbles rising up through the goop (Muzzy, 2026-10-19: "bubbles always leak from
+// open cracks, but half as much from covered cracks, and not at all from sealed cracks" — sealed ones leave s.cracks).
 export const crackIsOpen = (s: ShiftState, c: { x: number; y: number }) => s.grid[c.y * s.width + c.x] === 0
 
 export function createCrackBubbles(): CrackBubbles {
@@ -33,10 +35,11 @@ export function createCrackBubbles(): CrackBubbles {
   const rise = new Float32Array(POOL) // this bubble's own speed share
   const phase = new Float32Array(POOL)
   const crackOf = new Int32Array(POOL) // the crack id it came from
+  const through = new Uint8Array(POOL) // came from a covered crack: rises through goop instead of popping on it
   const due = new Map<number, number>() // crack id → bubbles owed (grows with time, one comes out per whole number)
   let alive = 0, t = 0, calmNow = false // calmNow: reduce motion was on at the last step (no sway)
 
-  const spawn = (c: { id: number; x: number; y: number }, B: typeof look.bubbles) => {
+  const spawn = (c: { id: number; x: number; y: number }, B: typeof look.bubbles, covered: boolean) => {
     if (alive >= Math.min(POOL, B.max)) return
     let i = 0
     while (live[i]) i++
@@ -49,6 +52,7 @@ export function createCrackBubbles(): CrackBubbles {
     rise[i] = 0.75 + 0.5 * Math.random()
     phase[i] = Math.random() * Math.PI * 2
     crackOf[i] = c.id
+    through[i] = covered ? 1 : 0
   }
 
   return {
@@ -58,16 +62,16 @@ export function createCrackBubbles(): CrackBubbles {
       calmNow = still
       const B = look.bubbles
       const calm = still ? B.calm : 1
-      // the stream: each open crack owes perSec bubbles a second, swelling and fading in gusts (two slow waves of
-      // its own, so neighbouring cracks don't puff in step) — "slightly unsteady"
+      // the stream: each open crack owes perSec bubbles a second (a covered one × covered), swelling and fading in
+      // gusts (two slow waves of its own, so neighbouring cracks don't puff in step) — "slightly unsteady"
       const seen = new Set<number>()
       for (const c of s.cracks) {
         seen.add(c.id)
-        if (!crackIsOpen(s, c)) { due.delete(c.id); continue }
+        const covered = !crackIsOpen(s, c)
         const wave = 0.5 * Math.sin(t * 1.7 + c.id * 2.1) + 0.5 * Math.sin(t * 0.63 + c.id * 4.7) // −1..1
-        const rate = Math.max(0, B.perSec * calm * (1 + B.gust * wave))
+        const rate = Math.max(0, B.perSec * (covered ? B.covered : 1) * calm * (1 + B.gust * wave))
         let owed = (due.get(c.id) ?? Math.random()) + rate * dt
-        while (owed >= 1) { spawn(c, B); owed -= 1 }
+        while (owed >= 1) { spawn(c, B, covered); owed -= 1 }
         due.set(c.id, owed)
       }
       for (const id of due.keys()) if (!seen.has(id)) due.delete(id)
@@ -80,7 +84,7 @@ export function createCrackBubbles(): CrackBubbles {
         const col = ((Math.round(x[i]) % s.width) + s.width) % s.width
         const row = Math.floor(y[i])
         const inGoop = row >= 0 && row < s.height && s.grid[row * s.width + col] !== 0
-        if (age[i] >= life[i] || y[i] < s.bufferRows || (inGoop && age[i] > 0.15)) { live[i] = 0; alive-- }
+        if (age[i] >= life[i] || y[i] < s.bufferRows || (inGoop && !through[i] && age[i] > 0.15)) { live[i] = 0; alive-- }
       }
     },
 

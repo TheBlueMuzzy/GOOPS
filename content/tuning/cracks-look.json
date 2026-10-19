@@ -1,5 +1,5 @@
 {
-  "_about": "How cracks LOOK (F36, Muzzy 2026-10-18 'Cracks you can read'). Looks only: nothing here changes a rule. Sizes are in cells (1 = one grid cell), times in seconds. Bubbles: an open crack (nothing on it) leaks an unsteady stream of air bubbles into the tank. X-ray: a crack with goop on it stays visible — a dotted white box round it (the visor auto-targeting) and the goop inside the box goes see-through; it goes when the crack is sealed. Sealed: where a crack was sealed, a dark grey mended scar stays (no crack ever forms there again — that part is the engine's rule).",
+  "_about": "How cracks LOOK (F36, Muzzy 2026-10-18 'Cracks you can read'). Looks only: nothing here changes a rule. Sizes are in cells (1 = one grid cell), times in seconds. Bubbles: an open crack leaks an unsteady stream of air bubbles into the tank; a covered one leaks half as much, up through the goop; a sealed one none. X-ray: a crack with goop on it stays visible — a dotted white box round it (the visor auto-targeting) and the goop inside the box goes see-through; it goes when the crack is sealed. Sealed: where a crack was sealed, a dark grey mended scar stays (no crack ever forms there again — that part is the engine's rule).",
   "_help": {
     "bubbles.perSec": "Bubbles per second from each open crack, on average.",
     "bubbles.gust": "How unsteady the stream is: 0 = an even trickle, 1 = it comes in gusts and lulls.",
@@ -37,7 +37,8 @@
     "xray.wrongAlpha": "How visible the pixel X is (0 = no X).",
     "xray.wrongPixels": "How many chunky pixels make each stroke of the X (fewer = blockier).",
     "xray.wrongSize": "How big the X is (1 = a whole cell).",
-    "xray.wrongOutline": "A dark rim round the X pixels, so it still reads over a red crack."
+    "xray.wrongOutline": "A dark rim round the X pixels, so it still reads over a red crack.",
+    "bubbles.covered": "A crack with goop on it leaks this share of the open stream (0.5 = half); its bubbles rise up through the goop. Sealed cracks never leak."
   },
   "_ranges": {
     "bubbles.perSec": [
@@ -189,10 +190,16 @@
       0.2,
       1.2,
       0.05
+    ],
+    "bubbles.covered": [
+      0,
+      1,
+      0.05
     ]
   },
   "bubbles": {
     "perSec": 5,
+    "covered": 0.5,
     "gust": 0.7,
     "size": 0.09,
     "sizeJitter": 0.6,

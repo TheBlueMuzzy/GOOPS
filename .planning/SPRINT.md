@@ -10,7 +10,7 @@ Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · al
 - [x] 🤖 4. Play them from the game's events, on the rules clock (both Dev Kit pauses silence them) — src/game/ShiftStage.tsx
 - [x] 🤖 5. Tests + an e2e that reads the audio log for each moment — tests/, e2e/sound.mjs
 - [x] 🤖 3b. Recorded CC0 sounds instead of code-made (Kenney / OpenGameArt; Muzzy called code-made "horrible") — public/audio/, content/audio.json, content/credits.json
-- [ ] 🙋 6. (tuning) Listen: loudness and feel of each sound (Dev Kit Sound tab)
+- [x] 🙋 6. (tuning) Listen: loudness and feel of each sound (Dev Kit Sound tab) — approved as placeholders 2026-10-19; better ones in F53 step 1
 
 ## F36 ✨ Readable cracks
 - [x] 🤖 1. Open cracks let out an unsteady stream of bubbles (knobs in content/) — src/view/
@@ -18,7 +18,8 @@ Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · al
 - [x] 🤖 3. Sealed cracks turn dark grey, and no crack ever forms on a sealed spot again (+ engine test, bots rerun) — src/engine/cracks.ts
 - [x] 🤖 4. Screenshots at every size + e2e — e2e/cracks-look.mjs
 - [x] 🤖 6. Muzzy's look notes: visor scan lines + tint inside the x-ray box; a pixel red X on a crack covered by the wrong colour ("this one won't seal") + e2e — src/view/tankView.ts, content/tuning/cracks-look.json
-- [ ] 🙋 5. (tuning) Look: bubbles, x-ray box, sealed look
+- [x] 🤖 7. Covered cracks leak bubbles too, at half the rate, rising up through the goop; sealed cracks none (Muzzy) + e2e — src/view/crackBubbles.ts, content/tuning/cracks-look.json
+- [x] 🙋 5. (tuning) Look: bubbles, x-ray box, sealed look — approved 2026-10-19
 
 ## F58 🐞 Clicks beside the tank zap goop you can't see
 - [x] 🤖 1. Failing test: a click just outside the tank's side hits a hidden column — tests/

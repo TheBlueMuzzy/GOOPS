@@ -94,11 +94,11 @@ Goal: machines break from your own play and you fix them at the console while th
 ## M4 — Alpha: the playable game, for you + friends
 Goal: a friend installs it from a link, learns to play from "your first day", and plays shifts through rank 9 with all three machines and sound — no upgrades, no story yet (Muzzy 2026-10-19: "alpha is playable game").
 - 📐 F28 🎮 Gesture fixes (from F10's list) — must:alpha · needs: F10
-- 🎛️ F29 🧱 Sound basics: recorded CC0 effects through the framework audio module, volume rows on — must:alpha
+- ✅ F29 🧱 Sound basics: recorded CC0 effects through the framework audio module, volume rows on — must:alpha · approved 2026-10-19 ("not great, but happy to have sounds"; better sounds come in F53)
 - 📐 F30 🧱 Lesson runner: plain how-to-play lessons from data files (the story's intercom voice layers on in beta) — must:alpha · needs: F12
 - 📐 F31 🎮 Your first day: the rank 0 how-to-play — must:alpha · needs: F30, F28
 - 📐 F32 🎮 First-breakdown lessons (visor, laser, controls) — must:alpha · needs: F30
-- 🎛️ F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25
+- ✅ F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25 · approved 2026-10-19 (+ visor scan lines in the box, pixel red X = wrong colour, covered cracks leak half the bubbles, sealed none)
 - ✅ F58 🐞 Clicks beside the tank zap goop you can't see (screenToCell wraps to the hidden back) — must:alpha · fixed 2026-10-19: only the visible tank takes clicks (geometry.ts screenToVisibleCell; tests/view/geometry.test.ts + e2e/controls.mjs)
 - ✅ F37 ❓ Version numbers + where alpha lives — must:alpha · decided 2026-10-19: the remake's own version.json (BMUZ X.Y.Z.B, from 0.0.0; 1.0 numbering decided when it replaces v1) · alpha lives at thebluemuzzy.github.io/GOOPS/alpha/ (same repo + Pages site, v1 untouched at the root)
 - 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit ON for friends (Muzzy 2026-10-19), 60 fps on two real phones — must:alpha · needs: F37, F28
@@ -138,6 +138,7 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
 - ⏳ F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
 - ⏳ F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
+  what: step 1 = swap in the sounds Muzzy finds for the 26 placeholder moments (he hunts; Claude trims, matches loudness, credits — Muzzy 2026-10-19: "add a step during polish to update sounds")
 - ⏳ F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
 - ⏳ F55 🎮 Credits screen — must:1.0
 - ⏳ F56 ✨ Periscope zoom — should:1.0
@@ -145,6 +146,7 @@ Goal: Goops 2 goes live at the old address, works offline, sounds finished, and 
 
 ## Parking lot
 - 💡 2026-10-18 — **Cracks you can read (Muzzy):** (1) an open crack lets out a slightly unsteady stream of bubbles into the tank, "as if air is getting in" — also makes it easy to spot · (2) a crack under goop stays visible: a dotted white "x-ray" box round it ("the visor is auto targeting to help") and the goop inside the box goes slightly see-through; pop that cluster → the crack seals and the box goes · (3) a sealed crack turns black/grey so it looks fixed, and no crack can ever form on a sealed spot again · (4) goop covering a crack HALVES its drain (and its bubbles). Claude's notes: (4) changes the loop — covering a crack becomes worth doing before you can pop it (stall vs. seal); the bot runs (F27) should be rerun with it. The x-ray box sits UNDER the visor glitch, so the glitch distorts it too (Muzzy 2026-10-18).
+- 💡 2026-10-19 — **Look like a device (Muzzy, thoughts only):** the curve alone isn't enough, "everything looks too clean" — one more "looking through a device" element. Ideas: very light scanlines over the whole tank (worry: doubled over the x-ray box's own scan lines — would need the box's to go or line up), or the pixel look below (goop made of hundreds of tiny pixel blobs). Not now; no full scanlines yet.
 - 💡 2026-10-18 — **Periscope zoom (polish):** pulling the periscope down zooms INTO its visor and the shift is playing in there; swiping up zooms back out. At the console the game stays small and visible through the visor (Muzzy: "like you're actually looking directly into the periscope visor… put this for polish later")
 - 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
 - 💡 2026-10-17 — Pixel look: the UI drawn as small pixels, and eventually the goop too ("pixellated goop would look cool") (Muzzy)
