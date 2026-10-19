@@ -30,6 +30,14 @@ export interface Crack {
   drain?: number // × the integrity drain while open (the hill's high cracks drain less, unseen); unset = 1
 }
 
+// Where a crack was sealed (F36, Muzzy 2026-10-18: "no crack can ever form on a sealed spot again"). The tank view
+// draws a mended scar there; id = the sealed crack's, so the scar keeps the crack's shape.
+export interface SealedSpot {
+  id: number
+  x: number
+  y: number
+}
+
 export type ShiftStatus = 'playing' | 'won' | 'lost'
 
 // 'playing' = the normal shift. 'rupture' = the tank broke: pressure drains to 0, pieces still come, no new cracks.
@@ -61,6 +69,7 @@ export interface ShiftState {
   phase: ShiftPhase
   ruptureReason: 'integrity' | 'overflow' | null // why the tank broke (null until it does)
   cracks: Crack[]
+  sealedCracks?: SealedSpot[] // every spot sealed this shift: no new crack forms there (F36); the engine always sets it
   cracksSealed: number
   cracksNeeded: number
   quotaMet: boolean // cracksSealed has reached cracksNeeded (seals after this are bonus)

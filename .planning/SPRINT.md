@@ -14,7 +14,7 @@ Decided at planning (Muzzy, 2026-10-19): PC first, phone later (F10 waits) · al
 ## F36 ✨ Readable cracks
 - [x] 🤖 1. Open cracks let out an unsteady stream of bubbles (knobs in content/) — src/view/
 - [x] 🤖 2. A crack under goop stays visible: dotted white x-ray box, the goop inside slightly see-through, under the visor glitch — src/view/, src/goo/
-- [ ] 🤖 3. Sealed cracks turn dark grey, and no crack ever forms on a sealed spot again (+ engine test, bots rerun) — src/engine/cracks.ts
+- [x] 🤖 3. Sealed cracks turn dark grey, and no crack ever forms on a sealed spot again (+ engine test, bots rerun) — src/engine/cracks.ts
 - [ ] 🤖 4. Screenshots at every size + e2e — e2e/cracks-look.mjs
 - [ ] 🙋 5. (tuning) Look: bubbles, x-ray box, sealed look
 

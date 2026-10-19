@@ -150,3 +150,15 @@ The "before" rows reproduce the first run exactly (same seeds), so the band code
 - A tight hill is harder than the old band: the band + top bias averaged BELOW halfway (packed under a ceiling at halfway); a hill centred AT halfway sits higher. A wider hill puts more cracks low enough to reach and the high ones drain at half, so 0.3 lands where Muzzy liked the pacing.
 - Neighbour borrowing barely moves the numbers (it changes where cracks sit relative to your stacks, not how many you can reach).
 - Shots (same tank, pressure 100%, 30 cracks): halfwayPerColumn rows 2–11, one above row 10; hill rows 1–19, 15 above row 10, none above the line.
+
+# Sealed spots never crack again (F36, 2026-10-19)
+**Why:** Muzzy's readable cracks: "no crack can ever form on a sealed spot again". The engine now remembers every sealed spot (`state.sealedCracks`) and `spawnCrack` skips them.
+**Runs:** `npm run bots -- --seeds 20 --variants base` (the file: hill, spread 0.3), the same 20 seeds with the rule off and on.
+
+| | Sharp quota (rank 0/2/4/6/10) | Focused quota | Casual quota r0 | Shift (Sharp) | Cracks / sealed (Sharp) |
+|---|---|---|---|---|---|
+| Rule off (same seeds) | 100/95/95/50/0% | 100/100/85/60/0% | 5% | ~142.7 s | 65 / 14% |
+| **Rule on (the game now)** | 100/95/85/55/0% | 100/100/75/40/0% | 0% | ~141.9 s | 65 / 15% |
+
+- **Pacing didn't move:** shifts the same length (±1 s), the same crack count, the same seal share. A bot shift seals only ~8–11 spots, out of hundreds of empty cells under the line, so the rule rarely bites.
+- The quota numbers move by 1–4 seeds out of 20 in both directions (Sharp rank 4 −10%, rank 6 +5%; Focused rank 4/6 −10/−20%) — within the seed noise at 20 seeds (the last table, 30 seeds: Sharp 100/97/90/47/0%). No retune.

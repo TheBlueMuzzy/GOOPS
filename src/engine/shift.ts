@@ -111,6 +111,7 @@ class Shift implements ShiftEngine {
       phase: 'playing',
       ruptureReason: null,
       cracks: [],
+      sealedCracks: [],
       cracksSealed: 0,
       cracksNeeded: cracksNeededFor(config, options.rank),
       quotaMet: false,
@@ -158,7 +159,7 @@ class Shift implements ShiftEngine {
       rng: this.rng.save(),
       state: {
         grid: Array.from(s.grid), spin: s.spin, pressure: s.pressure, integrity: s.integrity, phase: s.phase,
-        ruptureReason: s.ruptureReason, cracks: s.cracks, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
+        ruptureReason: s.ruptureReason, cracks: s.cracks, sealedCracks: s.sealedCracks ?? [], cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
         quotaMet: s.quotaMet, score: s.score, status: s.status, leftoverPenalty: s.leftoverPenalty ?? null,
         groups: [...s.groups.values()], abilities: this.abilities, effects: this.effects,
       },
@@ -187,6 +188,7 @@ class Shift implements ShiftEngine {
       spin: st.spin, integrity: st.integrity, phase: st.phase, ruptureReason: st.ruptureReason, cracks: st.cracks,
       cracksSealed: st.cracksSealed, cracksNeeded: st.cracksNeeded, quotaMet: st.quotaMet, score: st.score,
       status: st.status, rank: x.options.rank,
+      sealedCracks: st.sealedCracks ?? [], // (snapshots from before F36 have none)
     })
     if (st.leftoverPenalty === null) delete s.leftoverPenalty
     else s.leftoverPenalty = st.leftoverPenalty
@@ -491,8 +493,11 @@ class Shift implements ShiftEngine {
 
     // Seal every plugged crack under this group.
     const cellSet = new Set(g.cells)
-    const sealed = s.cracks.filter((c) => c.plugged && cellSet.has(c.y * s.width + c.x)).map((c) => c.id)
+    const sealedNow = s.cracks.filter((c) => c.plugged && cellSet.has(c.y * s.width + c.x))
+    const sealed = sealedNow.map((c) => c.id)
     s.cracks = s.cracks.filter((c) => !sealed.includes(c.id))
+    // the spot is mended for good: no crack forms there again (F36, cracks.ts spawnCrack)
+    for (const c of sealedNow) (s.sealedCracks ??= []).push({ id: c.id, x: c.x, y: c.y })
     s.cracksSealed += sealed.length
 
     // Zapping vents pressure, sealing vents more (v1's time refunds, turned into pressure: ms of rise).
