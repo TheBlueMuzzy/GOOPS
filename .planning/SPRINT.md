@@ -13,7 +13,7 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🙋 3c. Send the layout mock-up (2026-10-18)
 - [x] 🤖 4. Build the mock-up for real (new parts kit-first), drop the test layouts · includes: pressure meter → a leader line off the pressure line + white digital % on top of everything, with settings to slide it along the line and mirror it · machines nearing failure + integrity made easy to notice
 - [x] 🤖 5. HUD checks at 9 sizes + "big moments show near the stack" check · update GDD
-- [ ] 🤖 6. (tuning) message timing and loudness
+- [ ] 🙋 6. (tuning) message timing and loudness — waits for Muzzy's dedicated playtest (2026-10-18: "i'll have to do a dedicated playtest of this later. for now, move on")
 
 ## Play-test fixes (Muzzy's notes, 2026-10-18)
 - [x] 🤖 11. Periscope acts at once on a full pull (kit 0.15.1)
@@ -40,7 +40,7 @@ Done when: Muzzy picked a layout after playing it with the real goo; it's in the
 - [x] 🤖 32. Poking goop that isn't ready jiggles it — a refused zap names the poked cell; Jelly presses in and springs back, Particle ripples through the cluster (weaker farther away); strength = `poke` in goo-jelly.json / goo-particle.json (1); e2e/poke.mjs reads the goo's own motion (gooMotion). Muzzy saw nothing at first: the first strength was ~1–4% of a landing's motion → raised ~20× (about a fifth of a landing; a clear bulge + spring back in frame strips)
 - [x] 🤖 33. Muzzy: after a console fix the visor meter stayed at 0 and the glitch on — not reproduced on a fresh page (natural break → console repair → meter 1, glitch 0); likely his page had tonight's engine edits hot-swapped in mid-shift. e2e/repairs.mjs now also checks the meter is back at its best (health 1) and a fixed visor shows no glitch. Muzzy: refresh; if it happens again → Dev Kit Bugs capture
 - [x] 🤖 34. 360-wide phone: "Reset controls" (103 > 101 px) and "Version 0.1.0" (83 > 81) spilled their spots — the kit's 10 px text floor holds them above their scaled size, so a smaller size number changes nothing there; the two spots got a few art units more room (controls 200 → 212 wide, centred; version 160 → 172), art.json. repairs.mjs all green
-- [ ] ❓ 35. 360-wide phone: "RESET CONTROLS" at the 10 px floor is as wide as its dark tab (letters touch the tab's edges) — Ask Muzzy: a shorter word ("RESET DIAL"), let console art words go under 10 px on the smallest phones, or accept it there
+- [x] ❓ 35. 360-wide phone: "RESET CONTROLS" at the 10 px floor was as wide as its dark tab — Muzzy: just "CONTROLS", "LASER", "VISOR" (en.json); room on every side at 360 (screenshot). e2e: day.mjs reads the words from en.json; day / smoke / art-shots find the end screen by its heading (the Dev Kit Fonts tab's samples also say "Shift failed")
 
 ## F27 ❓ Integrity / crack balance talk — after F26 works
 - [x] 🤖 7. Bot runs: how shifts end (cracks vs pressure 100%), cracks sealed vs drain

@@ -4,7 +4,8 @@
 // Playwright's own Chromium (never the user's Chrome). Run: node e2e/day.mjs  (its own dev server on 5263, stopped after)
 import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
+const en = JSON.parse(readFileSync('content/text/en.json', 'utf8')) // the game's words (never restated here)
 
 const PORT = 5263, OUT = 'e2e-shots/console'
 mkdirSync(OUT, { recursive: true })
@@ -36,7 +37,7 @@ try {
   // 1. opens on the console
   check('opens on the console', await page.locator('.kit-art-stage').count() === 1 && await grip.count() === 1)
   check('fresh player: rank 0 on the meter', (await meterText()) === 'Operator rank 0 · 0 / 3,500 XP', await meterText())
-  check('the repair panels read out as unavailable', await page.getByRole('img', { name: 'Reset laser (unavailable)' }).count() === 1)
+  check('the repair panels read out as unavailable', await page.getByRole('img', { name: en.console.unavailable.replace('{name}', en.console.laser) }).count() === 1)
 
   // 2. a short drag springs back; a real drag past the threshold pulls it
   let box = await grip.boundingBox()
@@ -55,7 +56,7 @@ try {
 
   // 3. fast-forward to the end; the report
   await page.evaluate(() => { const e = window.__goops.engine; for (let i = 0; i < 60 && e.state.status === 'playing'; i++) e.tick(600000) })
-  await page.getByText(/Shift (complete|failed)/).waitFor({ timeout: 5000 })
+  await page.getByRole('heading', { name: /Shift (complete|failed)/ }).waitFor({ timeout: 5000 })
   check('the report says "Swipe up to end the day"', await page.getByText('Swipe up to end the day').count() === 1)
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') || 'null'))
   check('the shift\'s XP is saved', saved?.totalXp >= 100, JSON.stringify(saved))
@@ -94,7 +95,7 @@ try {
   check('the second shift is a fresh one', second === 0, `score ${second}`)
   // 7. …and a finger swipes up on its report → the console again
   await page.evaluate(() => { const e = window.__goops.engine; for (let i = 0; i < 60 && e.state.status === 'playing'; i++) e.tick(600000) })
-  await page.getByText(/Shift (complete|failed)/).waitFor({ timeout: 5000 })
+  await page.getByRole('heading', { name: /Shift (complete|failed)/ }).waitFor({ timeout: 5000 })
   const msg = await page.getByText(/Swipe up to end the day/).boundingBox()
   const tx = msg.x + msg.width / 2, ty = msg.y
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: tx, y: ty }] })
@@ -106,7 +107,7 @@ try {
   await grip.click()
   check('a tap on the periscope starts a third shift', await stageGone())
   await page.evaluate(() => { const e = window.__goops.engine; for (let i = 0; i < 60 && e.state.status === 'playing'; i++) e.tick(600000) })
-  await page.getByText(/Shift (complete|failed)/).waitFor({ timeout: 5000 })
+  await page.getByRole('heading', { name: /Shift (complete|failed)/ }).waitFor({ timeout: 5000 })
   await page.keyboard.press('Escape')
   check('Esc on the report goes back to the console', await page.locator('.kit-art-stage').waitFor({ timeout: 3000 }).then(() => true, () => false))
   check('no console errors', errors.length === 0, errors.join(' | '))

@@ -58,7 +58,7 @@ try {
     await page.evaluate(() => { const e = window.__goops.engine; for (let t = 0; t < 600000 && e.state.status === 'playing'; t += 1000) e.tick(1000) }) // to the rupture and the end
     await page.waitForTimeout(1200)
     await page.screenshot({ path: `${OUT}/${name}-4-end.png` })
-    const endShown = await page.getByText(/Shift (complete|failed)/).count()
+    const endShown = await page.getByRole('heading', { name: /Shift (complete|failed)/ }).count()
     console.log(name, JSON.stringify(state), 'end screen:', endShown ? 'yes' : 'NO', errors.length ? 'ERRORS: ' + errors.join(' | ') : 'no errors')
     // F20: the shift's score became XP, saved; a reload keeps it; ?rank= reaches the engine (dev only)
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') || 'null'))

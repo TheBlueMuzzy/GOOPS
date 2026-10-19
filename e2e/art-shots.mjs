@@ -65,13 +65,13 @@ try {
     // fast-forward to the end of the shift through the dev hook (the engine is changing in parallel, so keep ticking)
     let ticks = 0
     for (; ticks < 60; ticks++) {
-      if (await page.getByText(/Shift (complete|failed)/).count()) break
+      if (await page.getByRole('heading', { name: /Shift (complete|failed)/ }).count()) break
       await page.evaluate(() => window.__goops.engine.tick(600000))
       await page.waitForTimeout(100)
     }
     await page.waitForTimeout(900) // entrance animation
     await page.screenshot({ path: `${OUT}/${name}-3-end.png` })
-    const endShown = await page.getByText(/Shift (complete|failed)/).count()
+    const endShown = await page.getByRole('heading', { name: /Shift (complete|failed)/ }).count()
     if (w === 390) { // hold Next shift on the report: its pushed-in picture shows
       const box = await page.getByRole('button', { name: 'Next shift' }).boundingBox()
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
