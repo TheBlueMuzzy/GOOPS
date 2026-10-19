@@ -1,7 +1,7 @@
 // Ranks + XP (F20) and the save.
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
-import { freshProgress, meterSteps, rankInfo, rewardShift, xpToNext } from '../src/progress/progression'
+import { freshProgress, isUnlocked, meterSteps, rankInfo, rewardShift, unlocksBetween, xpToNext } from '../src/progress/progression'
 import { loadProgress, saveProgress } from '../src/progress/save'
 
 // sum of every rank's XP up to (not including) rank n
@@ -91,5 +91,29 @@ describe('rank meter steps (F21: the console meter fills with the XP since it la
     expect(meterSteps(p(500), p(500))).toEqual([])
     const top = 481250
     expect(meterSteps(p(top), p(top + 5000))).toEqual([])
+  })
+})
+
+// F59: what each rank unlocks (content/tuning/progression.json → unlocks)
+describe('unlocks', () => {
+  it('next piece at 1, swap at 3, upgrades at 5 — from that rank on', () => {
+    expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('nextPiece', r))).toEqual([false, true, true, true, true, true, true])
+    expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('swap', r))).toEqual([false, false, false, true, true, true, true])
+    expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('upgrades', r))).toEqual([false, false, false, false, false, true, true])
+  })
+
+  it('reads the ranks from the tuning file', () => {
+    const t = { ...tuning, unlocks: { nextPiece: 0, swap: 10, upgrades: 2 } }
+    expect(isUnlocked('nextPiece', 0, t)).toBe(true)
+    expect(isUnlocked('swap', 9, t)).toBe(false)
+    expect(isUnlocked('upgrades', 2, t)).toBe(true)
+  })
+
+  it('names what a rank-up unlocked, in order (none when nothing new)', () => {
+    expect(unlocksBetween(0, 1)).toEqual(['nextPiece'])
+    expect(unlocksBetween(1, 2)).toEqual([])
+    expect(unlocksBetween(2, 3)).toEqual(['swap'])
+    expect(unlocksBetween(0, 6)).toEqual(['nextPiece', 'swap', 'upgrades'])
+    expect(unlocksBetween(5, 5)).toEqual([])
   })
 })

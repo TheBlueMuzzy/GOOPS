@@ -5,7 +5,7 @@ Decided at planning (Muzzy, 2026-10-19): rank 1 = next piece shown · rank 3 = s
 
 ## F59 🎮 Rank unlocks (window 1 · swap 3 · upgrades 5)
 Check: unit tests for swap-with-next and the unlock rule · e2e/unlocks.mjs at ranks 0/1/3/5 (window shows from 1, swap only from 3, Upgrades button opens at 5, each unlock lesson fires once) · shots at 390x844, 360x780, 1440x900 looked at · Muzzy plays ?rank=0 → 5 on PC and phone
-- [ ] 🤖 1. Unlock ranks in content + one "what's unlocked at this rank" rule the HUD, input and console all ask — content/tuning/progression.json, src/progress/progression.ts
+- [x] 🤖 1. Unlock ranks in content + one "what's unlocked at this rank" rule the HUD, input and console all ask — content/tuning/progression.json, src/progress/progression.ts
 - [ ] 🤖 2. Swap trades the falling piece with the next one (it appears where the falling one was; the old one goes back to the window); no held piece, no hold filled at shift start; tests — src/engine/shift.ts, tests/
 - [ ] 🤖 3. Swap off before its rank: Right Shift, R and the phone hold do nothing (no hold-progress ring); the first-day plan keeps swap off in free play — src/input/controls.ts, src/ui/App.tsx, .planning/research/tutorial.md
 - [ ] 🤖 4. HUD: next-piece window top centre (from rank 1, place + size in content); cracks moves to the bottom beside a shorter integrity bar → 3 machine bars over integrity + cracks — src/ui/App.tsx, content/tuning/hud.json

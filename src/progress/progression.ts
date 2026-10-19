@@ -31,6 +31,21 @@ export function rankInfo(p: Progress, t: ProgressionTuning = tuning): RankInfo {
   return { rank, xpIntoRank: atMax ? 0 : left, xpToNext: atMax ? 0 : xpToNext(rank, t), scraps: rank * t.scrapsPerRank - p.scrapsSpent }
 }
 
+// UNLOCKS (F59): what a rank opens up — content/tuning/progression.json → unlocks (the rank each one needs). The HUD,
+// the controls and the console all ask isUnlocked; no rank numbers anywhere else.
+export type Unlock = keyof ProgressionTuning['unlocks']
+export const UNLOCKS: Unlock[] = ['nextPiece', 'swap', 'upgrades'] // (in the order they come)
+
+/** Is this part of the game unlocked at this rank? */
+export function isUnlocked(what: Unlock, rank: number, t: ProgressionTuning = tuning): boolean {
+  return rank >= t.unlocks[what]
+}
+
+/** What ranking up from `from` to `to` unlocked (the end report names it), in the order they come. */
+export function unlocksBetween(from: number, to: number, t: ProgressionTuning = tuning): Unlock[] {
+  return UNLOCKS.filter((u) => !isUnlocked(u, from, t) && isUnlocked(u, to, t))
+}
+
 export interface ShiftReward {
   xp: number // XP this shift earned (score, or the floor)
   before: RankInfo
