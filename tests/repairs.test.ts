@@ -130,4 +130,8 @@ describe('during a lesson only the outlined part answers', () => {
   it('a step outlining something else (the monitor): no repair control works', () => {
     expect(controlAnswers(['monitor', 'crt'], 'repair-visor')).toBe(false)
   })
+  it('the last step (only the periscope): every repair control works again — a second broken machine can be fixed', () => {
+    expect(controlAnswers(['periscope'], 'repair-laser')).toBe(true)
+    expect(controlAnswers(['periscope'], undefined)).toBe(true)
+  })
 })

@@ -105,4 +105,8 @@ export function controlsTurn(c: Controls, corner: number): Controls {
 // works only if it carries one of the outlined tags (its tag = what it is now: "repair-<machine>" while it's the part to
 // use next); the others don't move or press — they give the panel's "wrong" shake. No lesson (nothing outlined): every
 // control works as always.
-export const controlAnswers = (outlined: readonly string[], tag?: string) => !outlined.length || (!!tag && outlined.includes(tag))
+// (the lesson's last step only outlines the periscope — the lesson is done with the console, so a second broken machine
+// is repairable again there; message steps with Got it keep everything on rails)
+const FREE_STEP = new Set(['periscope', 'backToTank'])
+export const controlAnswers = (outlined: readonly string[], tag?: string) =>
+  outlined.every((t) => FREE_STEP.has(t)) || (!!tag && outlined.includes(tag))
