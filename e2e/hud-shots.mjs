@@ -19,7 +19,8 @@ import { mkdirSync } from 'node:fs'
 
 const PORT = 5254, OUT = 'e2e-shots/hud'
 const [rankFilter = '', sizeFilter = ''] = process.argv.slice(2)
-const sizes = [['phone', 390, 844], ['small', 360, 780], ['landscape', 844, 390], ['short', 768, 343], ['laptop', 1100, 800],
+// (no phone on its side or short-and-wide window: Goops is portrait only — Muzzy 2026-10-18)
+const sizes = [['phone', 390, 844], ['small', 360, 780], ['laptop', 1100, 800],
   ['desktop', 1440, 900], ['hd', 1920, 1080], ['wide', 2000, 1121], ['tall', 1400, 1400], ['narrow', 654, 900], ['monitor', 2560, 1440]]
   .filter(([name]) => !sizeFilter || sizeFilter.split(',').includes(name))
 // rank → how many machine bars the panel shows (visor unlocks at 2, laser at 4, controls at 6)

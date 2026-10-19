@@ -442,8 +442,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
           break
         case 'reject': // a zap on goop that can't pop yet pokes it: the jelly presses in and springs back (Muzzy 2026-10-18)
           if (e.cell !== undefined && K.poke) {
-            queueKick(e.cell, 'squash', 1.6 * K.poke)
-            queueKick(e.cell, 'radial', -1.2 * K.poke)
+            queueKick(e.cell, 'squash', 30 * K.poke)
+            queueKick(e.cell, 'radial', -22 * K.poke)
           }
           break
         case 'fall': {

@@ -364,8 +364,8 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
       const far = Math.hypot(dx, Math.floor(ci / W) - py)
       const fall = 1 / (1 + far) // 1 at the poked cell, ½ next to it…
       for (const i of cellParts[ci] ?? []) {
-        VY[i] += 1.6 * w * fall
-        VX[i] += OX[i] * 4 * w * fall
+        VY[i] += 75 * w * fall
+        VX[i] += OX[i] * 150 * w * fall
       }
     }
   }

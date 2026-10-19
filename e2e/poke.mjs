@@ -17,7 +17,9 @@ const browser = await chromium.launch()
 let failed = 0
 const check = (name, ok, detail = '') => { console.log(ok ? '✓' : '✗', name, detail); if (!ok) failed++ }
 try {
-  for (const style of ['Jelly', 'Particle']) {
+  // both reasons a zap is refused (Muzzy 2026-10-18: "it should jiggle in both instances"): above the pressure line
+  // (pressure 0 — the line sits at the floor) and below it but still filling (pressure 90%)
+  for (const style of ['Jelly', 'Particle']) for (const [where, pressure] of [['above the line', 0], ['below the line, still filling', 0.9]]) {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
@@ -25,13 +27,17 @@ try {
     await startShift(page)
     await page.evaluate((st) => window.__goops.gooStyle.setFromSetting(st), style)
     // land the first piece, then hold the rules still: it stays "filling", nothing else falls; the goo keeps animating
-    const cell = await page.evaluate(() => { const { engine } = window.__goops
-      for (let t = 0; t < 80 && engine.state.groups.size === 0; t++) { engine.act({ type: 'softDrop', on: true }); engine.tick(100) }
+    const got = await page.evaluate((pressure) => { const { engine } = window.__goops, s = engine.state
+      for (let t = 0; t < 80 && s.groups.size === 0; t++) { engine.act({ type: 'softDrop', on: true }); engine.tick(100) }
       engine.act({ type: 'softDrop', on: false })
-      const g = [...engine.state.groups.values()][0]
-      engine.state.piece = null; engine.tick = () => {}
-      return g && !g.ready ? g.cells[0] : null })
-    if (cell === null) { check(`${style}: a filling group to poke`, false); await page.close(); continue }
+      engine.setPressure(pressure)
+      const g = [...s.groups.values()][0]
+      s.piece = null; engine.tick = () => {}
+      const top = Math.min(...g.cells.map((c) => Math.floor(c / s.width)))
+      return g && !g.ready ? { cell: g.cells[0], above: top < s.pressureRow } : null }, pressure)
+    const name = `${style}, ${where}`
+    if (!got || got.above !== (pressure === 0)) { check(`${name}: a group that can't pop yet to poke`, false, JSON.stringify(got)); await page.close(); continue }
+    const { cell } = got
     await page.waitForTimeout(5000) // the landing wobble settles
     const pos = await page.evaluate((c) => { const { engine, view, cellAt } = window.__goops, s = engine.state
       const x = c % s.width, y = Math.floor(c / s.width)
@@ -48,10 +54,10 @@ try {
     await page.waitForTimeout(2000)
     const settled = await motion()
     const popped = await page.evaluate((c) => !window.__goops.engine.state.grid[c], cell)
-    check(`${style}: poking goop that is still filling jiggles it`, pos.onCell && !popped && peak > Math.max(calm * 4, 0.02),
+    check(`${name}: poking goop that can't pop yet jiggles it`, pos.onCell && !popped && peak > Math.max(calm * 4, 0.02),
       `motion at rest ${calm.toFixed(3)} → peak ${peak.toFixed(3)} → ${settled.toFixed(3)} after 2 s`)
-    check(`${style}: …and it settles again`, settled < peak / 3)
-    check(`${style}: no page errors`, errors.length === 0, errors.join(' | '))
+    check(`${name}: …and it settles again`, settled < peak / 3)
+    check(`${name}: no page errors`, errors.length === 0, errors.join(' | '))
     await page.close()
   }
 } finally {

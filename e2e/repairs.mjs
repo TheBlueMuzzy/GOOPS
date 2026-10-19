@@ -148,7 +148,13 @@ try {
     check(name, 'the tank takes no input under the console', await page.evaluate(() => { const before = window.__acts.length; window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyA' })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA' })); return window.__acts.length === before }))
     await page.screenshot({ path: `${OUT}/${name}-2-console-mid-shift.png` })
 
-    const repaired = (id) => page.evaluate((id) => window.__acts.some((a) => a.type === 'repair' && a.machine === id) && !window.__goops.engine.state.machines[id].broken, id)
+    // fixed = the repair fired, the machine works again AND its meter is back at its best (Muzzy 2026-10-18: "fixes should
+    // reset the meter to its best value"); a fixed visor shows no glitch
+    const repaired = (id) => page.evaluate(async (id) => {
+      const m = window.__goops.engine.state.machines[id]
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+      return window.__acts.some((a) => a.type === 'repair' && a.machine === id) && !m.broken && m.health === 1 && (id !== 'visor' || window.__goopsVisor?.amount === 0)
+    }, id)
     const broken = async (id, n) => {
       check(name, `${id}: breaks (dev hook)`, await page.evaluate((id) => window.__goops.breakMachine(id), id))
       await page.waitForTimeout(250) // the console reads the machines every 100 ms
