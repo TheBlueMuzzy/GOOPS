@@ -45,8 +45,13 @@ function consoleProblems() {
     if (img.naturalWidth && Math.abs(got / want - 1) > 0.01) problems.push(`stretched art ${img.src.split('/').pop()} (${got.toFixed(3)} vs ${want.toFixed(3)})`)
   }
   // words never spill out of their box (one line each), and the meter's words stay above its bar
-  for (const el of document.querySelectorAll('.kit-art-layer[data-text]:not(:has(.kit-level-meter))')) {
+  for (const el of document.querySelectorAll('.kit-art-layer[data-text]:not(:has(.kit-level-meter)):not(:has(.crt))')) {
     if (el.scrollWidth > el.clientWidth + 1) problems.push(`words spill: "${el.textContent}" (${el.scrollWidth} > ${el.clientWidth})`)
+  }
+  // (F32: the monitor's screen is drawn by the game, wider than its words box on purpose — its words must stay on it)
+  for (const screen of document.querySelectorAll('.crt')) {
+    const s = box(screen), w = box(screen.querySelector('.lesson-words'))
+    if (w.left < s.left || w.right > s.right) problems.push(`monitor words spill off the screen: "${screen.textContent}"`)
   }
   const words = document.querySelector('.kit-level-meter-words'), bar = document.querySelector('.kit-level-meter-bar')
   if (words.scrollWidth > words.clientWidth + 1) problems.push(`meter words spill (${words.scrollWidth} > ${words.clientWidth})`)

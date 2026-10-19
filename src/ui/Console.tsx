@@ -6,7 +6,8 @@
 // a broken machine's repair panel comes alive (RepairPanels.tsx), the gear opens the pause menu, and pulling the
 // periscope goes back to the same shift. On a phone on its side only the panels show, with a Back to the tank button.
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCrtLesson, useSpotlitTags } from '../game/lessons/lessonLine'
 import { ArtLayer, ArtStage, Button, LevelMeter, PullHandle, Screen, TitleArt, fill } from './kit'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
@@ -38,6 +39,47 @@ const format = (n: number) => n.toLocaleString('en')
 const MACHINES: MachineId[] = ['laser', 'visor', 'controls']
 
 
+// THE MONITOR'S SCREEN (F32, Muzzy 2026-10-19: "use the CRT panel at the top of the console as our tutorial bubbles. it
+// just toasters down if it needs more room"): its words (the hint), or a lesson's line with its Got it. Words that
+// need more room than the screen has make it slide down past the bezel, in the screen's colours (art.json console.crt).
+type CrtLine = { text: string; gotIt: boolean; onGotIt(): void }
+function Crt({ hint, accent, lesson }: { hint: string; accent: boolean; lesson: CrtLine | null }) {
+  const c = a.crt, [x, y, w, h] = a.words.hint.at
+  const box = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
+  const [fit, setFit] = useState<{ height: number; grown: boolean; unit: number } | null>(null)
+  // measure: the words' own height vs the words box and the screen's bottom edge (px, from the layer's px per unit)
+  useLayoutEffect(() => {
+    const el = box.current, inner = body.current, layer = el?.parentElement
+    if (!el || !inner || !layer) return
+    // the screen is drawn from its top edge; the words start at the words box (y) and need `need` px; the screen ends
+    // where the art's does unless the words need more — then it's longer (grown: the toaster)
+    const measure = () => {
+      const unit = layer.clientWidth / w, need = Math.max(layer.clientHeight, inner.offsetHeight)
+      const height = Math.max((c.screenBottom - c.screenTop) * unit, (y - c.screenTop) * unit + need)
+      const grown = (y - c.screenTop) * unit + need > (c.screenBottom - c.screenTop) * unit + 0.5
+      setFit((old) => (old && Math.abs(old.height - height) < 0.5 && old.grown === grown && Math.abs(old.unit - unit) < 0.001 ? old : { height, grown, unit }))
+    }
+    const ro = new ResizeObserver(measure)
+    ro.observe(inner); ro.observe(layer)
+    measure()
+    return () => ro.disconnect()
+  }, [c.screenBottom, c.screenTop, y, w])
+  const height = fit ? fit.height + 'px' : undefined, unit = fit ? fit.unit + 'px' : undefined
+  return (
+    <ArtLayer at={[x, y, w, h]} text={a.words.hint.text} tone={!lesson && accent ? 'accent' : undefined}>
+      <div ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined}
+        style={{ '--crt-inset': x - c.screenLeft, '--crt-top': y - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
+          '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
+        <div ref={body} className="crt-body">
+          <span className="lesson-words">{lesson ? lesson.text : hint}</span>
+          {lesson?.gotIt && <Button onClick={lesson.onGotIt}>{text.lessons.gotIt}</Button>}
+        </div>
+      </div>
+    </ArtLayer>
+  )
+}
+
 export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift }: Props) {
   const now = rankInfo(progress)
   const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, progress) : []), [shownFrom, progress])
@@ -50,6 +92,10 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const repair = (id: MachineId) => () => midShift?.onRepair(id)
   const key = (id: MachineId) => `${id}-${midShift?.breaks[id] ?? 0}`
   const fewer = (id: MachineId) => midShift?.fewerRepairSteps?.[id] ?? 0
+  // F32: a lesson's line goes on the monitor's screen; a panel a lesson shows off ("Fixed!") looks lit, not switched off
+  const lessonLine = useCrtLesson()
+  const spotlit = useSpotlitTags()
+  const showcase = (id: MachineId) => !!midShift && spotlit.includes(`panel-${id}`)
 
   return (
     <Screen label={t.label} column backdrop={a.backdrop}
@@ -65,9 +111,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             words={{ label: t.rank, unit: t.xp, max: t.maxRank }} art={a.meterFill}
             steps={steps.length ? steps : undefined} play={phase === 'idle'} />
         </ArtLayer>
-        <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} />
-        <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} />
-        <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} />
+        <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} />
+        <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} />
+        <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} />
         <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{fill(t.version, { v: import.meta.env.GOOPS_VERSION })}</ArtLayer>
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>
@@ -77,10 +123,8 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
-        <ArtLayer {...a.monitor} />
-        {/* (a lesson pointing at the monitor points at its words, and its message goes to their side, clear of the
-            periscope under them — the kit flips it where there's no room) */}
-        <ArtLayer {...a.words.hint} tone={broken.length ? 'accent' : undefined}><LessonTag tag="monitor" placement="left" />{hint}</ArtLayer>
+        <ArtLayer {...a.monitor}><LessonTag tag="monitor" /></ArtLayer>
+        <Crt hint={hint} accent={broken.length > 0} lesson={midShift ? lessonLine : null} />
       </ArtStage>
     </Screen>
   )

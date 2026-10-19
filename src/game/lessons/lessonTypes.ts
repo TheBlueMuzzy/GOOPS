@@ -38,7 +38,9 @@ export interface LessonStep {
   pattern?: string // a named building block (patterns.ts) that fills in the fields this step leaves out
   setup?: Record<string, unknown> // for the game: pieces, goop, cracks, pressure, which controls work…
   message?: string // a text id (or the words themselves); the game fills {placeholders} from its live state
-  pointer?: unknown // for the game's look: what the message points at
+  // for the game's look: what the message points at. A step with a pointer and NO message only points (F32: "pull the
+  // periscope" — the screen already says it, so only the spotlight shows)
+  pointer?: unknown
   dim?: boolean // darken everything but what it points at
   while?: WhileShowing // default 'run'
   showAfter?: number // seconds before the message shows (the game runs meanwhile); default 0
@@ -48,6 +50,7 @@ export interface LessonStep {
   // already done (a gate that's already true when the step starts) → straight on to the next. A list = any of them.
   skipIf?: Condition | Condition[]
   reactions?: LessonReaction[]
+  insist?: LessonInsist
   checkpoint?: boolean // leaving mid-lesson restarts here (the start of a phase)
 }
 
@@ -59,6 +62,16 @@ export interface LessonReaction {
   message: string
   pointer?: unknown
   until?: Condition
+}
+
+// "Still not done?" (F32, Muzzy: ONE message that gets more assertive): when `when` happens, the step's SAME message
+// stays up, but the game stops (`while`, default 'pause'), the dim comes on (`dim`, default true) and only the controls
+// named in `only` work (e.g. ["console"]: the one thing the step asks for). No "Got it": doing the thing moves on.
+export interface LessonInsist {
+  when: Condition
+  while?: WhileShowing
+  dim?: boolean
+  only?: string[]
 }
 
 // A message that can break into ANY step once (v1's discovery, e.g. "a crack went out of view"): it pauses the step

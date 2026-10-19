@@ -31,11 +31,12 @@
       "credit": { "at": [370, 1841, 216, 20], "text": 15.7 }
     },
     "crt": {
-      "_about": "F32 (Muzzy, 2026-10-19): the monitor's screen IS the lesson message at the console. Its words sit in words.hint (smaller and higher than the mock-up, so they stay on the screen, off the bezel); a lesson line that needs more room makes the screen slide down past its bezel like a toaster. screen / bezel = the monitor art's colours (cls-51 / cls-56 in Example1.svg); bezelWidth = the bezel's thickness at the sides and bottom; screenBottom = where the screen ends (mock-up units); radius = its corners.",
+      "_about": "F32 (Muzzy, 2026-10-19): the monitor's screen IS the lesson message at the console. Its words sit in words.hint (smaller and higher than the mock-up, so they stay on the screen, off the bezel); a lesson line that needs more room makes the screen slide down past its bezel like a toaster. screen / bezel = the monitor art's colours (cls-51 / cls-56 in Example1.svg); bezelWidth = the bezel's thickness at the sides and bottom; screenLeft / screenTop / screenWidth / screenBottom = the screen's edges (mock-up units: the game draws the screen over the art's, so a longer line can slide it down seamlessly); radius = its corners.",
       "screen": "#1f1f38",
       "bezel": "#f2a743",
       "bezelWidth": 23,
       "screenLeft": 55.17,
+      "screenTop": 60.46,
       "screenWidth": 537.16,
       "screenBottom": 886.33,
       "radius": 39.53

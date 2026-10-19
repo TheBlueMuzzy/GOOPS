@@ -10,8 +10,7 @@
 // The lessons themselves are plain data; this file only decides when they start.
 import { tipsMemory } from '../../ui/kit'
 import { session } from '../session'
-import { BREAKDOWN_LESSONS, lessonNow, lessonPlay, lessonSeen, runner } from './goopsLessons'
-import lessonTiming from '../../../content/tuning/lessons.json'
+import { BREAKDOWN_LESSONS, lessonNow, lessonPlay, lessonSeen, lessonTuning, runner } from './goopsLessons'
 
 const CONSOLE_NOTE = 'console-note'
 const asked = new Set<string>() // lessons running or waiting their turn (a machine breaking twice meanwhile: one lesson)
@@ -49,7 +48,7 @@ export const firstBreakdowns = {
     if (cramped || !lessonPlay.realShift() || runner.view().lessonId || !lessonNow(CONSOLE_NOTE)) return
     const memory = tipsMemory()
     const shown = memory.seenIds.filter((id) => id.startsWith('consoleNote:')).length
-    if (shown >= lessonTiming.consoleNoteVisits) return
+    if (shown >= lessonTuning().consoleNoteVisits) return
     memory.markSeen(`consoleNote:${shown + 1}`)
     runner.queue(() => lessonNow(CONSOLE_NOTE)!)
   },

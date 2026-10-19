@@ -30,7 +30,9 @@ const DRAG_DEADZONE = 20 // px sideways before the tank starts spinning
 const SWIPE_MS = 300
 const SWIPE_PX = 50
 
-export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: () => boolean) {
+// consoleOnly (F32): while isActive() is false, the console control (W / ↑ / a quick flick up) may still work — a
+// lesson insisting "go to the console" pauses everything else
+export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: () => boolean, consoleOnly: () => boolean = () => false) {
   let ptr: { id: number; x: number; y: number; t: number; locked: 'H' | 'V' | null; consumed: boolean } | null = null
   let dragDir: -1 | 0 | 1 = 0
   const keys = new Set<string>()
@@ -78,14 +80,19 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   }
 
   const down = (e: PointerEvent) => {
-    if (ptr || holdKey || !isActive()) return
+    const full = isActive()
+    if (ptr || holdKey || !(full || consoleOnly())) return
     el.setPointerCapture(e.pointerId)
     ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: clock(), locked: null, consumed: false }
     holdStart = clock()
-    holdTimer = requestAnimationFrame(tickHold)
+    if (full) holdTimer = requestAnimationFrame(tickHold) // (console only: no hold-to-swap)
   }
   const move = (e: PointerEvent) => {
     if (!ptr || e.pointerId !== ptr.id) return
+    if (!isActive() && consoleOnly()) { // console only: just watch for the flick (no spin, no fast drop)
+      if (!ptr.locked && Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > DRAG_LOCK) ptr.locked = 'V'
+      return
+    }
     const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y
     if (!ptr.locked && (Math.abs(dx) > DRAG_LOCK || Math.abs(dy) > DRAG_LOCK)) {
       clearHold()
@@ -104,7 +111,11 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     cb.softDrop(false)
     dragDir = 0
     const dt = clock() - p.t, dx = e.clientX - p.x, dy = e.clientY - p.y
-    if (p.consumed || !isActive()) return
+    if (p.consumed) return
+    if (!isActive()) { // console only: a quick flick up is the one thing that works
+      if (consoleOnly() && dt < SWIPE_MS && dy < 0 && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_PX) cb.console()
+      return
+    }
     if (!p.locked) {
       if (dt >= tank.holdDelayMs) return // a hold that didn't finish isn't a tap
       if (cb.tapCell(e.clientX, e.clientY)) return
@@ -118,8 +129,12 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   const cancel = (e: PointerEvent) => { if (ptr && e.pointerId === ptr.id) { ptr = null; clearHold(); cb.softDrop(false); dragDir = 0 } }
 
   const keyDown = (e: KeyboardEvent) => {
-    if (!isActive() || e.repeat || typingIn(e.target)) return // letters typed into a text box are words, not hotkeys
+    if (e.repeat || typingIn(e.target)) return // letters typed into a text box are words, not hotkeys
     const k = e.code
+    if (!isActive()) { // console only: W / ↑
+      if (consoleOnly() && (k === 'KeyW' || k === 'ArrowUp')) { e.preventDefault(); cb.console() }
+      return
+    }
     if (k === 'ArrowLeft' || k === 'KeyA' || k === 'ArrowRight' || k === 'KeyD') {
       keys.add(k)
       cb.spin(k === 'ArrowLeft' || k === 'KeyA' ? -1 : 1) // (the view moves left: see spinDir)

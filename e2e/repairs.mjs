@@ -42,7 +42,12 @@ function consoleProblems() {
     const r = box(img), want = img.naturalWidth / img.naturalHeight, got = r.width / r.height
     if (img.naturalWidth && r.width && Math.abs(got / want - 1) > 0.01) problems.push(`stretched art ${img.src.split('/').pop()} (${got.toFixed(3)} vs ${want.toFixed(3)})`)
   }
-  for (const el of document.querySelectorAll('.kit-art-layer[data-text]:not(:has(.kit-level-meter))')) {
+  // (F32: the monitor's screen is drawn by the game, wider than its words box on purpose — its words must stay on it)
+  for (const screen of document.querySelectorAll('.crt')) {
+    const s = box(screen), w = box(screen.querySelector('.lesson-words'))
+    if (w.left < s.left || w.right > s.right) problems.push(`monitor words spill off the screen: "${screen.textContent}"`)
+  }
+  for (const el of document.querySelectorAll('.kit-art-layer[data-text]:not(:has(.kit-level-meter)):not(:has(.crt))')) {
     if (el.scrollWidth > el.clientWidth + 1) problems.push(`words spill: "${el.textContent}" (${el.scrollWidth} > ${el.clientWidth})`)
   }
   // live controls: big enough, and no two of them fighting for the same spot

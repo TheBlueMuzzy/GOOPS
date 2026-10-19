@@ -31,19 +31,19 @@ function setup(lesson: Lesson) {
   const { clock, run, count } = handClock()
   const log: string[] = []
   const gates: Record<string, number> = {}
-  let speed = 1, input = true
+  let speed = 1, input = true, only: string[] | undefined
   const seen = new Set<string>()
   const runner = createLessonRunner({
     clock, timing: () => TIMING,
     game: {
       setup: (s) => log.push(JSON.stringify(s)),
       gate: (name) => gates[name] ?? null,
-      setSpeed: (s, i) => { speed = s; input = i },
+      setSpeed: (s, i, o) => { speed = s; input = i; only = o },
       seen: (id) => seen.has(id), markSeen: (id) => seen.add(id),
       finished: (id) => log.push(`finished ${id}`),
     },
   })
-  return { runner, run, log, gates, count, seen, speed: () => speed, input: () => input, lesson: () => lesson }
+  return { runner, run, log, gates, count, seen, speed: () => speed, input: () => input, only: () => only, lesson: () => lesson }
 }
 
 const lesson: Lesson = {
@@ -57,6 +57,49 @@ const lesson: Lesson = {
 }
 
 describe('the lesson runner', () => {
+  it('insist (F32): the SAME message, then — when its gate holds — paused, dimmed, only the named controls; once; doing it moves on', () => {
+    const t = setup({ id: 'i', steps: [
+      { id: 'go', message: 'go', pointer: { tag: 'bar' }, advance: { on: 'event', event: 'consoleOpened' },
+        insist: { when: { on: 'gate', gate: 'insist', atLeast: 1 }, only: ['console'] } },
+      { id: 'next', message: 'next' },
+    ] })
+    t.runner.start(t.lesson)
+    const first = t.runner.view().message!
+    expect(first.dim).toBe(false)
+    expect(first.waitsForDismiss).toBe(false)
+    expect(t.speed()).toBe(1) // shown while the game runs
+    t.run(1000)
+    expect(t.runner.view().message).toBe(first) // not yet
+    t.gates.insist = 1
+    t.run(100)
+    const insisting = t.runner.view().message!
+    expect(insisting.text).toBe('go') // one message: the same words
+    expect(insisting.insisting).toBe(true)
+    expect(insisting.dim).toBe(true)
+    expect(insisting.waitsForDismiss).toBe(false) // no Got it: only doing it moves on
+    expect(t.speed()).toBe(0)
+    expect(t.input()).toBe(false)
+    expect(t.only()).toEqual(['console'])
+    t.run(1000) // the gate still holds: shown once, not again and again
+    expect(t.runner.view().message).toBe(insisting)
+    t.runner.event('consoleOpened')
+    expect(t.runner.view().stepId).toBe('next')
+    expect(t.speed()).toBe(1)
+    expect(t.only()).toBeUndefined()
+  })
+
+  it('a step with a pointer and no message only points (F32: the spotlight, no words, nothing to close)', () => {
+    const t = setup({ id: 'p', steps: [{ id: 'look', pointer: { tag: 'periscope' }, dim: true, advance: { on: 'event', event: 'consoleClosed' } }] })
+    t.runner.start(t.lesson)
+    const m = t.runner.view().message!
+    expect(m.text).toBe('')
+    expect(m.pointer).toEqual({ tag: 'periscope' })
+    expect(m.dim).toBe(true)
+    expect(m.waitsForDismiss).toBe(false)
+    t.runner.event('consoleClosed')
+    expect(t.runner.view().done).toBe(true)
+  })
+
   it('plays a lesson: pause-show-dismiss, act to advance, a gate, then finish', () => {
     const t = setup(lesson)
     t.runner.start(t.lesson)

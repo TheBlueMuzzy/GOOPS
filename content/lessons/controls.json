@@ -12,6 +12,7 @@
       "id": "broke",
       "pattern": "pauseShowDismiss",
       "message": "broke",
+      "dim": true,
       "pointer": {
         "tag": "bar-controls"
       },
@@ -39,9 +40,15 @@
         "on": "event",
         "event": "consoleOpened"
       },
-      "hint": {
-        "after": 3,
-        "message": "toConsoleHint"
+      "insist": {
+        "when": {
+          "on": "gate",
+          "gate": "insist:controls",
+          "atLeast": 1
+        },
+        "only": [
+          "console"
+        ]
       },
       "reactions": [
         {
@@ -76,6 +83,7 @@
       "id": "fullyPaused",
       "pattern": "pauseShowDismiss",
       "message": "fullyPaused",
+      "dim": true,
       "pointer": {
         "tag": "monitor",
         "or": {
@@ -105,8 +113,12 @@
       "id": "fix",
       "pattern": "runActAdvance",
       "message": "fix",
+      "dim": true,
       "pointer": {
-        "tag": "repair-controls"
+        "tag": "repair-controls",
+        "show": {
+          "tag": "panel-controls"
+        }
       },
       "advance": {
         "on": "event",
@@ -114,10 +126,6 @@
         "where": {
           "machine": "controls"
         }
-      },
-      "hint": {
-        "after": 5,
-        "message": "fixHint"
       },
       "skipIf": [
         {
@@ -147,6 +155,7 @@
       "id": "fixed",
       "pattern": "pauseShowDismiss",
       "message": "fixed",
+      "dim": true,
       "pointer": {
         "tag": "panel-controls"
       }
@@ -154,10 +163,9 @@
     {
       "id": "back",
       "pattern": "runActAdvance",
-      "message": "back",
+      "dim": true,
       "pointer": {
         "tag": "periscope",
-        "placement": "right",
         "or": {
           "tag": "backToTank",
           "placement": "top"

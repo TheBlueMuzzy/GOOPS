@@ -272,7 +272,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, readout, onHud
         engine.act({ type: 'pop', x, y })
         return true
       },
-    }, () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.inputOn() && s.status === 'playing')
+    }, () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.inputOn() && s.status === 'playing',
+    // (F32: a lesson insisting "go to the console" — the shift paused, only W / ↑ / flick up work)
+    () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.consoleOnly() && s.status === 'playing')
 
     return () => {
       cancelAnimationFrame(raf); ro.disconnect(); detach(); stopHudEdits()
