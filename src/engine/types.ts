@@ -126,6 +126,7 @@ export type ShiftEvent =
   | { type: 'breakdown'; machine: MachineId } // a machine broke (F23)
   | { type: 'repaired'; machine: MachineId } // its repair was finished at the console (F23)
   | { type: 'prime'; groupId: number } // broken laser: a first zap primed this group; zap it again to pop (F23)
+  | { type: 'overflowRail'; cells: number } // F31: a lesson's overflow rail cleared this many goop cells at the top (no rupture)
 
 // Why a zap on goop was refused (F26), so the screen can say it: 'aboveLine' = the group reaches above the pressure line
 // (it can't pop until pressure rises or it's lowered), 'filling' = it's below the line but hasn't finished filling.

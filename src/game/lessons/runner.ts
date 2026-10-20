@@ -154,6 +154,7 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
       if (c.on !== kind) continue
       if ((c.on === 'event' ? c.event : c.on === 'action' ? c.action : '') !== name) continue
       if (c.on === 'event' && !matches(c.where, data)) continue
+      if (c.if && !holds(c.if)) continue // (F31: only while this gate holds, e.g. a landing that missed the crack)
       w.n++
       if (w.n >= ((c.on === 'event' || c.on === 'action') && c.count ? c.count : 1)) { w.n = 0; w.fire() }
     }
@@ -162,18 +163,47 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
   // ---- steps
   function clearStep() {
     reacting = null
+    hintFor = null
+    hintOff = false
+    hintCovered = null
     stepTimers.clearAll()
     watchers = watchers.filter((w) => w.scope === 'lesson')
   }
 
+  // ---- the step's hint (wait-then-hint): `after` seconds from the step's start — or from `from` (F31) — unless
+  // `unless` happens first (F31); `again` starts the wait over (F31). A hint that goes away gives back what it covered.
+  let hintFor: LessonStep | null = null // the step whose hint is running (started once per step)
+  let hintOff = false // the step's `unless` happened: no hint for the rest of the step
+  let hintCovered: { message: LessonMessage; while: WhileShowing } | null = null // the message the hint is shown over
   function startHint() {
     const h = step?.hint
-    if (!h) return
+    if (!h || !step || hintFor === step) return
     const at = step
-    stepTimers.after('hint', h.after * 1000, () => {
-      if (step !== at || advancing) return
+    hintFor = at
+    let started = !h.from
+    const wait = () => stepTimers.after('hint', h.after * 1000, () => {
+      if (step !== at || advancing || hintOff) return
+      if (view.message && view.message.kind !== 'hint') hintCovered = { message: view.message, while: showingWhile }
       show({ kind: 'hint', text: h.message, pointer: h.pointer ?? step?.pointer, dim: false, waitsForDismiss: false, armed: false, tries }, h.while ?? 'run')
     })
+    if (h.from) {
+      watch(h.from, () => {
+        if (started) return
+        started = true
+        stepTimers.clear('hint:from') // (a gate: stop asking)
+        wait()
+      }, 'step', 'hint:from')
+    } else wait()
+    if (h.unless) watch(h.unless, () => { hintOff = true; takeHintDown() }, 'step', 'hint:unless')
+    if (h.again) watch(h.again, () => { if (hintOff || !started) return; takeHintDown(); wait() }, 'step', 'hint:again')
+  }
+  function takeHintDown() {
+    stepTimers.clear('hint')
+    if (view.message?.kind !== 'hint') return
+    const covered = hintCovered
+    hintCovered = null
+    if (covered) show(covered.message, covered.while)
+    else hide()
   }
 
   function enter(i: number) {
@@ -189,6 +219,8 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
     const s = step
     publish({ stepIndex: i, stepId: s.id, total: lesson.steps.length })
     if (s.setup) game.setup(s.setup)
+    // F31: an interrupt this step makes sure of (it hasn't fired yet: this set-up makes it happen)
+    if (s.ensure && !interruptDone(s.ensure.interrupt)) game.setup(s.ensure.setup)
     hide()
     const skips = s.skipIf ? (Array.isArray(s.skipIf) ? s.skipIf : [s.skipIf]) : []
     if (skips.some(holds)) return advance() // the player is already past this one
@@ -275,9 +307,17 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
   }
 
   // ---- interrupts (v1's discovery: once, across steps, resuming the step exactly where it was)
+  const interruptDone = (id: string) => firedInterrupts.has(id) || !!game.seen?.(`interrupt:${id}`)
+  // F31: is the lesson at a step the interrupt is armed for? (its from / to step ids; an unknown id = no limit)
+  function armedNow(lesson: Lesson, it: NonNullable<Lesson['interrupts']>[number]) {
+    const at = (id: string | undefined) => (id === undefined ? -1 : lesson.steps.findIndex((x) => x.id === id))
+    const from = at(it.from), to = at(it.to)
+    return (from < 0 || index >= from) && (to < 0 || index <= to)
+  }
   function fireInterrupt(id: string) {
-    const it = getLesson?.().interrupts?.find((x) => x.id === id)
-    if (!it || firedInterrupts.has(id) || interrupt) return
+    const lesson = getLesson?.()
+    const it = lesson?.interrupts?.find((x) => x.id === id)
+    if (!lesson || !it || firedInterrupts.has(id) || interrupt || !armedNow(lesson, it)) return
     firedInterrupts.add(id)
     if (it.remember) game.markSeen?.(`interrupt:${id}`)
     interrupt = { saved: view.message ? { message: view.message, while: showingWhile } : null }

@@ -6,7 +6,8 @@
 import type { ShiftConfig } from './config'
 import { shapeSet } from './config'
 import { type Cell, type PieceDef, rotateCells, rotationCenter } from './pieces'
-import type { Color, ShiftAction } from './types'
+import { isOnScreen } from './tank'
+import type { Color, ShiftAction, ShiftState } from './types'
 
 // What a lesson can switch on and off while a training shift runs.
 export interface TrainingRules {
@@ -57,12 +58,64 @@ export interface PieceChoice {
   turns?: number // 0..3 quarter turns clockwise (default 0)
 }
 
+// F31: what comes when a lesson's chosen pieces run out, instead of random ones — e.g. day one's E1: "green O's, with a
+// blue I first while the column under the crack is still too low to reach it".
+//   pieces  — these, round and round (in order)
+//   buildUp — before each of them: if goop dropped in column x couldn't reach row y yet (the stack there is too low for
+//             the piece that's due), this piece comes instead. Decided as each piece comes in, so it sees the latest stack.
+export interface PieceFallback {
+  pieces: PieceChoice[]
+  buildUp?: { x: number; y: number; piece: PieceChoice }
+}
+
+// Is column x's stack too low for this piece to reach row y if it's dropped there? (It lands on top of the stack, so
+// its top row ends up `rows tall` above it.) A cell that's already goop, or under the stack, isn't "too low".
+export function columnTooLow(s: { grid: ArrayLike<number>; width: number; height: number }, x: number, y: number, piece: PieceDef): boolean {
+  let top = s.height // the first goop row from the top (the floor's row + 1 when empty)
+  for (let r = 0; r < s.height; r++) if (s.grid[r * s.width + x] !== 0) { top = r; break }
+  const tall = new Set(piece.cells.map(([, cy]) => cy)).size
+  return y < top && top - tall > y
+}
+
+// F31: where a crack can go on row y, nearest first — 'inView' = the visible columns, from where pieces fall outwards
+// (day one's D2 retries: each new crack near the middle) · 'outOfView' = the columns just past the view's edges, the
+// nearest first (day one's D4: an arrow on the tank's edge). Only a cell with no goop, no crack and no sealed spot.
+// null = nowhere on that row.
+export function freeCrackSpot(s: ShiftState, y: number, where: 'inView' | 'outOfView'): number | null {
+  if (!Number.isInteger(y) || y < 0 || y >= s.height) return null
+  const left = Math.floor((s.visibleWidth - 1) / 2) // visible columns: spin - left .. spin + right (tank.ts isOnScreen)
+  const right = s.visibleWidth - 1 - left
+  const offsets: number[] = []
+  if (where === 'inView') {
+    for (let d = 0; d <= Math.max(left, right); d++) {
+      if (d <= right) offsets.push(d)
+      if (d > 0 && d <= left) offsets.push(-d)
+    }
+  } else {
+    for (let k = 1; k <= s.width; k++) offsets.push(right + k, -(left + k))
+  }
+  const at = (c: { x: number; y: number }, x: number) => c.x === x && c.y === y
+  const tried = new Set<number>()
+  for (const d of offsets) {
+    const x = (((s.spin + d) % s.width) + s.width) % s.width
+    if (tried.has(x)) continue
+    tried.add(x)
+    if (where === 'outOfView' && isOnScreen(x, s.spin, s.width, s.visibleWidth)) continue // (a narrow tank wraps round)
+    if (s.grid[y * s.width + x] !== 0 || s.cracks.some((c) => at(c, x)) || (s.sealedCracks ?? []).some((c) => at(c, x))) continue
+    return x
+  }
+  return null
+}
+
 // What a lesson can tell the engine (engine.train). Cells are TANK cells: x = column round the tank, y = row from the top.
 export type TrainingCommand =
   | { type: 'rules'; rules: Partial<TrainingRules> } // change some of the rules (the rest stay as they are)
-  | { type: 'queue'; pieces: PieceChoice[] } // these pieces come next, in this order (then random ones again)
+  // these pieces come next, in this order — then random ones again, or (F31) the `then` fallback rule until the next queue
+  | { type: 'queue'; pieces: PieceChoice[]; then?: PieceFallback }
   | { type: 'spawn' } // bring in the next piece now (refused while one is falling)
   | { type: 'crack'; x: number; y: number; color: Color } // a crack at this cell (refused on goop, a crack or a sealed spot)
+  // F31: a crack on row y at the first free spot in view / just out of view (freeCrackSpot; refused when there's none)
+  | { type: 'freeCrack'; where: 'inView' | 'outOfView'; y: number; color: Color }
   | { type: 'removeCrack'; x: number; y: number } // take away the crack at this cell (not sealed — just gone)
   | { type: 'goop'; cells: [x: number, y: number, color: Color][] } // put goop here (as if it had landed long ago)
   | { type: 'pressure'; value: number } // set the pressure (0..1)

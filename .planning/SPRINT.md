@@ -18,7 +18,7 @@ Check: e2e/gestures.mjs with real fingers (touch events) covers every tank gestu
 
 ## F31 🎮 Your first day
 Check: e2e/first-day.mjs plays the whole day A1→F3 (keys + finger) and lands at rank 1 · leaving mid-day restarts the phase · Replay lessons replays it · shots at 390x844, 360x780, 1440x900 · Muzzy plays it
-- [ ] 🤖 9. Spike: check the lesson runner against tutorial.md §6 (the "must be able to do" list) and build what's missing — src/game/lessons/goopsLessons.ts, src/engine/training.ts
+- [x] 🤖 9. Spike: check the lesson runner against tutorial.md §6 (the "must be able to do" list) and build what's missing — src/game/lessons/goopsLessons.ts, src/engine/training.ts
 - [ ] 🤖 10. The 15 steps as data (phases A–F), Keys / Mouse / Phone wordings — content/lessons/first-day.json, content/text/en.json
 - [ ] 🤖 11. Wire it: rank 0 starts the day, leaving mid-day restarts the phase, finishing → rank 1 (never on a replay), Replay lessons covers it — src/ui/App.tsx, src/game/lessons/
 - [ ] 🤖 12. Prove it: the whole day end to end + shots; add to check:full — e2e/first-day.mjs, scripts/check-all.mjs
@@ -27,4 +27,5 @@ Check: e2e/first-day.mjs plays the whole day A1→F3 (keys + finger) and lands a
 
 ## Notes
 - Tech calls (Claude, 2026-10-20): touch numbers go in tank.json next to holdDelayMs / holdToSwapMs; distances in rem (screen pixels feel different on small vs big / dense phones). No open P0/P1 bugs.
+- F31 task 9 spike (Claude, 2026-10-20): tutorial.md §9 has the table. Built: piece fallback rule (`then`, decided as each piece comes in), `freeCrack` in view / just out of view, `overflowRail` event; runner `if`, hint `from`/`unless`/`again`, interrupt `from`/`to`, step `ensure`; colour gates + `{ crack }`/`{ goop }` pointers + `bar-integrity` in a new pure `goopsGates.ts`; "play" now runs before "rules" (D14). Surprises: normal play used to wipe the rails (F1 couldn't be written); hints were never cancelled by doing the thing; App hides the game's own "Above the pressure line" / "Still filling" while ANY lesson message is up, and C1 / C3 rely on them → no-message step or a reaction (task 10). Left for task 11 (all App): console/pause per step, A1 → B1 across the periscope (`startAtConsole` then `lessonPlay.start(id, "B1")`), report screen event + tag, CRACKS tag, rank 0 → 1, saving the checkpoint. A worktree has no node_modules/vite: the e2e scripts need a junction to the main checkout's.
 - Retro change from Sprint 09: helper briefs name the next free TDD decision number (next free: D14); a HUD change gets a quick mock-up or a 30-second play before it's built.

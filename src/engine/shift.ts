@@ -28,7 +28,8 @@ import { type Modifiers, clampModifiers } from './upgrades'
 import { ABILITY_EFFECTS, type AbilitySpec, type ActiveEffects } from './abilities'
 import { type BreakdownConfig, Machines } from './machines'
 import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
-import { type PieceChoice, type TrainingCommand, type TrainingRules, OVERFLOW_RAIL_ROWS, TRAINING_START, pieceFromChoice } from './training'
+import { type PieceChoice, type PieceFallback, type TrainingCommand, type TrainingRules, OVERFLOW_RAIL_ROWS, TRAINING_START,
+  columnTooLow, freeCrackSpot, pieceFromChoice } from './training'
 
 export interface ShiftOptions {
   seed: number
@@ -82,6 +83,9 @@ class Shift implements ShiftEngine {
   private readonly primed = new Map<number, string>() // broken laser: primed group id → its cells when primed
   private training: TrainingRules | null // F30: a lesson's training shift (null = a normal shift)
   private queue: PieceChoice[] = [] // F30: pieces a lesson chose to come next, after nextDef
+  // F31: what comes when the queue runs out (null = random pieces), how far round its pieces it is, and whether the
+  // next piece came from it (then it's decided again as it comes in — the stack may have changed since)
+  private fallback: { rule: PieceFallback; index: number; nextFromRule: boolean } | null = null
 
   constructor(config: ShiftConfig, options: ShiftOptions) {
     this.config = config
@@ -175,7 +179,7 @@ class Shift implements ShiftEngine {
         piece: this.piece, nextDef: this.nextDef, softDrop: this.softDrop, lockMs: this.lockMs,
         lockResets: this.lockResets, crackTimerMs: this.crackTimerMs, popStreak: this.popStreak, playedMs: this.playedMs,
         primed: [...this.primed], machines: this.machines.save(),
-        ...(this.training ? { training: { rules: this.training, queue: this.queue } } : {}),
+        ...(this.training ? { training: { rules: this.training, queue: this.queue, fallback: this.fallback } } : {}),
       },
     })
   }
@@ -224,6 +228,7 @@ class Shift implements ShiftEngine {
     // a lesson's training shift (F30): its rules and chosen pieces as they were
     this.training = inner.training ? inner.training.rules : null
     this.queue = inner.training ? inner.training.queue : []
+    this.fallback = inner.training?.fallback ?? null // (F31; older snapshots have none)
     this.events = []
     this.refreshView()
   }
@@ -477,6 +482,7 @@ class Shift implements ShiftEngine {
     const swapped = newFallingPiece(this.nextDef, p.offset, p.y)
     if (this.blockedAt(swapped.cells, this.state.spin + swapped.offset, swapped.y)) return false
     this.nextDef = p.def
+    if (this.fallback) this.fallback.nextFromRule = false // (the next one is now the piece that was falling: keep it)
     this.piece = swapped
     this.lockMs = null
     this.lockResets = 0
@@ -587,10 +593,28 @@ class Shift implements ShiftEngine {
     return randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount)
   }
 
-  // The piece after the one coming in: a lesson's chosen piece first (F30), otherwise a random one.
+  // The piece after the one coming in: a lesson's chosen piece first (F30), then the lesson's fallback rule (F31),
+  // otherwise a random one.
   private takeNextDef(): PieceDef {
     const choice = this.queue.shift()
-    return (choice && pieceFromChoice(this.config, choice)) || this.randomDef()
+    if (this.fallback) this.fallback.nextFromRule = !choice
+    if (choice) return pieceFromChoice(this.config, choice) || this.randomDef()
+    return this.fallbackChoice()?.def ?? this.randomDef()
+  }
+
+  // F31: the fallback rule's piece as the tank is NOW — its next piece round, or the build-up piece first while the
+  // column it builds under is still too low for that piece to reach. null = no rule.
+  private fallbackChoice(): { def: PieceDef; buildUp: boolean } | null {
+    const f = this.fallback
+    if (!f || f.rule.pieces.length === 0) return null
+    const def = pieceFromChoice(this.config, f.rule.pieces[f.index % f.rule.pieces.length])
+    if (!def) return null
+    const b = f.rule.buildUp
+    if (b && columnTooLow(this.state, wrapX(b.x, this.state.width), b.y, def)) {
+      const build = pieceFromChoice(this.config, b.piece)
+      if (build) return { def: build, buildUp: true }
+    }
+    return { def, buildUp: false }
   }
 
   // ---------------------------------------------------------------- training (F30 lessons; training.ts)
@@ -615,8 +639,12 @@ class Shift implements ShiftEngine {
         break
       case 'queue': {
         // every piece must be a real shape, or none are queued (a typo in a lesson file shouldn't half-work)
-        if (!cmd.pieces.every((p) => pieceFromChoice(this.config, p))) return false
+        const then = cmd.then
+        const all = [...cmd.pieces, ...(then?.pieces ?? []), ...(then?.buildUp ? [then.buildUp.piece] : [])]
+        if (!all.every((p) => pieceFromChoice(this.config, p))) return false
         this.queue = cmd.pieces.map((p) => ({ ...p }))
+        // (a new queue replaces the old fallback rule; none = random pieces after the queue, as before F31)
+        this.fallback = then ? { rule: structuredClone(then), index: 0, nextFromRule: false } : null
         this.nextDef = this.takeNextDef() // the first chosen piece is the very next one
         break
       }
@@ -625,10 +653,14 @@ class Shift implements ShiftEngine {
         this.spawnNext() // (no room: the overflow rail, or a rupture if the lesson allows one)
         if (!this.piece) return false
         break
-      case 'crack': {
-        const x = wrapX(cmd.x, s.width), i = cmd.y * s.width + x
+      case 'crack':
+      case 'freeCrack': {
+        // (freeCrack, F31: the engine picks the cell — the first free one on that row in view / just out of view)
+        const at = cmd.type === 'crack' ? cmd.x : freeCrackSpot(s, cmd.y, cmd.where)
+        if (at === null) return false
+        const x = wrapX(at, s.width), i = cmd.y * s.width + x
         const taken = (c: { x: number; y: number }) => c.x === x && c.y === cmd.y
-        if (!inTank(cmd.x, cmd.y) || !goodColor(cmd.color) || s.grid[i] !== 0 || s.cracks.some(taken) || (s.sealedCracks ?? []).some(taken)) return false
+        if (!inTank(at, cmd.y) || !goodColor(cmd.color) || s.grid[i] !== 0 || s.cracks.some(taken) || (s.sealedCracks ?? []).some(taken)) return false
         const crack = { id: this.nextCrackId++, x, y: cmd.y, color: cmd.color, plugged: false }
         s.cracks.push(crack)
         this.events.push({ type: 'crack', crack: { ...crack } })
@@ -693,13 +725,18 @@ class Shift implements ShiftEngine {
     for (const i of cells) s.grid[i] = 0
     regroup(s, this.book)
     this.settle()
+    this.events.push({ type: 'overflowRail', cells: cells.length }) // (F31: so a lesson can say why the goop vanished)
   }
 
   // Bring in the next piece if there's room for it. v1: always the centre column, top row of the hidden buffer.
   private trySpawn(): boolean {
+    // (F31: a piece from a lesson's fallback rule is decided again now — the last piece may have built the column up)
+    const ruled = this.fallback?.nextFromRule ? this.fallbackChoice() : null
+    if (ruled) this.nextDef = ruled.def
     const piece = newFallingPiece(this.nextDef, 0, 0)
     this.piece = null
     if (this.blockedAt(piece.cells, this.state.spin, 0)) return false
+    if (ruled && !ruled.buildUp) this.fallback!.index++ // (a build-up piece doesn't use up the rule's turn)
     this.nextDef = this.takeNextDef()
     this.lockMs = null
     this.lockResets = 0

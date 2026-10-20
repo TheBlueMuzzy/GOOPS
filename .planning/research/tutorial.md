@@ -344,3 +344,79 @@ c) Both.
 **Q4 — The tank during the first repair of each machine?**
 a) Frozen for that first repair, then one line that it keeps running slowly. *(my pick: learning a panel under time pressure feels bad.)*
 b) The real 25% speed from the start.
+
+---
+
+## 9. Runner check (Sprint 10 spike)
+
+*2026-10-20, F31 task 9. §6 line by line against the code on `dev/m1-core-shift`, then each of the 15 steps against the lesson format. ✅ have = already there · 🔨 built now = added in this spike (unit tests in `tests/engine/training.test.ts`, `tests/lessons/runner.test.ts`, `tests/lessons/goopsDay.test.ts`) · ⏳ missing = still to do, and where.*
+
+### §6, line by line
+
+| §6 needs | | Where / what |
+|---|---|---|
+| Start with a given grid or empty | ✅ | A training shift starts empty, no junk (`shift.ts:138`, `startGrid` `shift.ts:37`); `"clear"` + `"goop"` set-ups |
+| Choose the next pieces (shape, colour, which way up) | ✅ | `"pieces"` → engine `queue` (`training.ts` PieceChoice `turns`) |
+| …plus a fallback rule, then back to random | 🔨 | `"then": { "pieces", "buildUp" }` → `PieceFallback` + `columnTooLow` (`training.ts:73`), decided again as each piece comes in (`shift.ts:607` fallbackChoice) — a new queue without `then` = random again |
+| Hold the piece size at 4 | ✅ / 🔨 | rule `zone: "tetra"` (`training.ts:21`, on from the start of a training shift). 🔨 `"play": "normal"` now runs **before** `"rules"`, so F1 can say "normal play + zone tetra + rails" in one set-up (before, normal play wiped the rails and the size lock) |
+| A piece falls on its own, all input off | ✅ | `allow: []` + `falling` (`training.ts:18`) |
+| Place a crack (colour, row, column from the middle) · remove cracks | ✅ | `"cracks"` / `"removeCracks"` (`shift.ts:656`, `:669`); refused on goop, a crack or a sealed spot |
+| …"first empty column just out of view" | 🔨 | `"cracks": [["outOfView", row, colour]]` / `["inView", …]` → `freeCrack` (`training.ts:84` freeCrackSpot: in view from the middle out; out of view just past the edges, nearest first) |
+| Natural cracks off / on | ✅ | rule `cracks` (`training.ts:15`) |
+| Pressure: set, hold, ×N, cap | ✅ | `"pressure"`; rules `pressureRise`, `pressureCap` (`training.ts:14`, `:22`) |
+| Integrity: drain on/off, floor, rupture allowed | ✅ | rules `integrity`, `integrityFloor`, `rupture` (`training.ts:16`, `:23`, `:24`) |
+| Overflow rail | ✅ / 🔨 | rule `overflowRail` (`training.ts:25`). 🔨 it now sends an `overflowRail` event (`shift.ts:728`) so F1's "Too full — I've cleared some" can react to it |
+| Rupture drain speed | ✅ | rule `ruptureDrainSpeed` (`training.ts:26`) |
+| Zap filter by colour | ✅ | rule `zapColors`, colour names (`training.ts:27`). By group: not needed on day one |
+| Everything as events | ✅ | all engine events reach the runner (`goopsLessons.ts` session.listen); `ready` carries only a group id → 🔨 colour gates below |
+| Steps from data (set-up, messages, advance, hint, reactions, pause, timings) | ✅ | `lessonTypes.ts` |
+| Allowed inputs: spin, rotate, fast drop, zap, swap | ✅ | `allow` (`goopsLessons.ts:215` — a blocked control isn't even heard) |
+| …console and pause button | ⏳ | the engine always lets `console` through and the pause button is App's — **task 11** (App: the console / pause switch per step) |
+| Pause vs slow vs freeze | ✅ | `while` (`runner.ts:100`), `"console": "frozen"` (`goopsLessons.ts:133`) |
+| Wait for an engine event with a filter | ✅ | `where` (e.g. `plug` `{ "plugged": true }`, `pop` `{ "sealed": 1 }`) |
+| …only while something holds (D2's miss = a landing while the crack is open) | 🔨 | `{ "on": "event", …, "if": <gate> }` (`runner.ts:157`) |
+| Screen events: console opened/closed, pause menu, shift started | ✅ | `lessonPlay.screen` + `shiftStarted` |
+| …periscope pulled at A1, report closed at F3 | ⏳ | **task 11** (App: A1 ends on the shift starting; the report's "Back to the console" needs a screen event) |
+| Piece row ≥ N · pressure ≥ N · time | ✅ | gates `position`, `pressure`; `{ "on": "time" }` |
+| A group under the line / ready / full, by colour | 🔨 | gates `underLine:<colour>`, `ready:<colour>`, `full:<colour>` (`goopsGates.ts:24`) |
+| A crack out of view · covered by the wrong colour | ✅ | gates `cracksOutOfView`, `wrongCover` (F30 built them; §6's "there is no event" is answered by a polled gate). 🔨 also `plugged`, `openCracks` |
+| Wait-then-hint, cancelled by doing the thing | 🔨 | before: only the step moving on cancelled a hint. Now hint `from` (start the wait on an event / gate), `unless` (doing it = no hint, one that's up goes and the step's words come back), `again` (start over: "20 s without a seal") (`runner.ts:178`) |
+| Retry with a counter | ✅ | `retry` + `{tries}` (`runner.ts:270`) |
+| A discovery listener across steps, once, resuming the step | ✅ | `interrupts` (`runner.ts:317`) |
+| …armed from D2 to the end; only during E1 | 🔨 | interrupt `from` / `to` step ids (`runner.ts:312`) |
+| …"if it hasn't fired by free play, put a crack out of view" | 🔨 | step `ensure: { interrupt, setup }` (`runner.ts:223`) — skipped when it fired or was seen on this device |
+| Lessons queue · skip-ahead | ✅ | `queue` (`runner.ts:357`), `skipIf` |
+| Hide the game's own messages under a lesson message | ✅ | `App.tsx:80` (see the C1 / C3 note below) |
+| Input-aware wording incl. Phone | ✅ | `{ keys, mouse, phone }` words (`goopsLessons.ts:276`), last input from keydown / pointer type (`:181`) — touch = phone. The day's words are task 10 |
+| Words with numbers | ✅ | `{left}` `{total}` `{sealed}` … (`goopsLessons.ts:262`) |
+| Remember: breakdown lessons, the D4 discovery | ✅ | kit tips memory (`lessonSeen`, interrupt `remember`) |
+| …first day done · rank 0 → 1 (never on a replay) | ⏳ | **task 11** (App + progress) |
+| Restart at the phase start | ✅ / ⏳ | runner side ✅: `checkpoint` + `restartPoint` (`runner.ts:379`); saving the step reached and starting there next time ⏳ **task 11**. Dev Kit jump ✅ |
+| Message box: paused-and-dismissed or just shown | ✅ | LessonView |
+| Pointer: a tank cell, following the spin | ✅ | `{ "cell" }`, `{ "piece" }` |
+| …a crack / the x-ray box / the red X / an off-screen arrow / a group | 🔨 | `{ "crack": "open" \| "plugged" \| "wrongCover" \| "outOfView" }` (nearest; out of view = the edge cell where its arrow is) and `{ "goop": "<colour>" }` (biggest group) (`goopsGates.ts:47`, `goopsLessons.ts:407`) |
+| …HUD: PSI readout, machine bars, INTEGRITY | ✅ / 🔨 | tags `readout`, `bar-<machine>`; 🔨 `bar-integrity` (`goopsLessons.ts:302`) |
+| …HUD `CRACKS n / 4` · the report's button | ⏳ | neither has a data-tag (`App.tsx:337`; the report screen) — **task 11** (one `data-tag` each) |
+| …console parts (periscope, panels) | ✅ | F32 tags |
+
+### The 15 steps against the format
+
+| Step | Set-up | Advance | Hint | Retry / "if something else" | |
+|---|---|---|---|---|---|
+| A1 | none (console) | `shiftStarted` | `time` 6 s, pointer `periscope` | Settings: nothing to do | ✅ + ⏳ App: start A1 at the console (`startAtConsole`), then on the pull start the training shift at **B1** (`lessonPlay.start(id, "B1")`) — today a new shift stops a console lesson (`App.tsx:132`) |
+| B1 | clear, allow [], pressureRise 0, autoSpawn off, blue I `turns: 1`, spawn | gate `position` | — | controls off | ✅ |
+| B2 | allow [softDrop] | `lock` | 3 s `unless` softDrop | lands anyway | ✅ (🔨 unless) |
+| B3 | yellow T, spawn, allow [rotate, softDrop]; `showAfter` 1.2, pause | `lock` | `from` position ≥ half, after 0, `unless` rotate | lands unturned: moves on | ✅ (🔨 from / unless) |
+| C1 | 3 steps: paused line (pointer `readout`) → pressureRise 4, zapColors [yellow], allow [pop], **no message** → pressureRise 0 + "Now click the yellow" | gate `ready:yellow` ≥ 1, then `pop` | 3 s, pointer `{ "goop": "yellow" }` | early click: the game's own "Above the pressure line" | ✅ (🔨 gate, pointer) — the middle step must have no message: App hides the game's messages while ANY lesson message (even pointer-only) is up |
+| C2 | pressure 15, blue O, allow [softDrop, rotate] | `merge`, then a paused line | — | — | ✅ (pointer `{ "goop": "blue" }` 🔨) |
+| C3 | zapColors [blue], allow [pop] | `pop`, then paused line on `readout` | `from` gate `ready:blue`, 3 s | "Still filling": a **reaction** on `reject` `{ "reason": "filling" }` until `ready:blue` (the step's message is up, so the game's own toast is hidden) | ✅ (🔨 from) |
+| D1 | clear, pressure 15, crack [3, 0, green], integrity on; `showAfter` 1.5 pause; 2nd page pointer `bar-integrity` | dismiss × 2 | — | — | ✅ (🔨 tag) |
+| D2 | green O + `then` green O's, spawn, allow spin/rotate/softDrop; a no-message step to row 14, then the paused line | `plug` `{ "plugged": true }` | 3 s `unless` spin, pointer `{ "crack": "open" }` | retry on `lock` `if` `plugged` ≤ 0 → `"cracks": [["inView", 0, "green"]]` + "Try again" | ✅ (🔨 if, freeCrack, then, unless) |
+| D3 | zapColors null, allow + pop | `pop` `{ "sealed": 1 }`, then paused line on CRACKS | `from` `ready:green`, 3 s, pointer `{ "crack": "plugged" }` | extra seals just count | ✅ + ⏳ CRACKS tag |
+| D4 | interrupt, `from: "D2"`, gate `cracksOutOfView` ≥ 1, `remember`, pointer `{ "crack": "outOfView" }` | dismiss → the step resumes | — | once ever | ✅ (🔨 from, pointer) |
+| E1 | clear, pressure 35, crack [-2, 4, green], blue I + green O, `then` green O's with `buildUp` blue I under [-2, 4] | `plug`, then `pop` `{ "sealed": 1 }` | `from` `lock` count 2, after 8 | red X: interrupt `from`/`to` E1's steps, gate `wrongCover` ≥ 1, pointer `{ "crack": "wrongCover" }` | ✅ (🔨 fallback, from, interrupt range) |
+| F1 | `play: normal` + rules { zone tetra, pressureCap 0.9, integrityFloor 0.2, rupture false, overflowRail true }; `ensure` d4 → `[["outOfView", 0, colour]]` | `quotaMet` | 20 s, `again` `pop` `{ "sealed": 1 }`, pointer `{ "crack": "open" }` | reactions: `overflowRail` event → "Too full…"; gate pressure ≥ 90 until ≤ 89 | ✅ (🔨 play order, ensure, again, event) — check in task 12 that the game's "Quota met!" banner isn't hidden by F1's own line going at the same moment |
+| F2 | rails off, ruptureDrainSpeed 0.5 | `rupture` → paused line (`showAfter` ~1 s so "Rupture!" shows first) → `end` | — | 60 s nudge: `retry` `when` time 60 → pressureRise 3, no message | ✅ — a training shift's rupture doesn't drop the lesson (`firstBreakdowns.ts:37` only drops in real shifts) |
+| F3 | none (the report) | ⏳ a screen event for "Back to the console" / "Next shift" | 6 s pulse | — | ⏳ task 11: the event, the report button's tag, rank 0 → 1, the lesson running with no engine after the shift ended (the F59 console lessons already prove the runner needs none) |
+
+**Still missing, and why it waits:** all of it is App wiring, which is task 11 — per-step console / pause switches, A1 → B1 across the periscope, the report's screen event + tag, the CRACKS tag, "first day done" + rank 0 → 1, and saving the reached checkpoint. Nothing missing in the engine or the runner.

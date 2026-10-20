@@ -254,3 +254,116 @@ describe('the lesson runner', () => {
     expect(expandStep({ id: 'x', pattern: 'waitThenHint' }).hint).toBeUndefined()
   })
 })
+
+// F31 (the Sprint 10 spike): what day one's 15 steps need from the runner (.planning/research/tutorial.md §9).
+describe('the lesson runner, day one additions', () => {
+  it('event `if`: a landing only counts as a miss while the crack is still unplugged (D2 retry)', () => {
+    const t = setup({ id: 'd2', steps: [{ id: 'spin', message: 'spin', advance: { on: 'event', event: 'plug' },
+      retry: { when: { on: 'event', event: 'lock', if: { on: 'gate', gate: 'plugged', atMost: 0 } }, setup: { cracks: [['inView', 0, 'green']] }, message: 'again' } },
+    { id: 'seal', message: 'seal' }] })
+    t.gates.plugged = 0
+    t.runner.start(t.lesson)
+    t.runner.event('lock') // a miss: the crack is still open
+    expect(t.runner.view().message!.kind).toBe('retry')
+    expect(t.log.filter((l) => l.includes('inView'))).toHaveLength(1)
+    t.run(300); t.runner.dismiss()
+    t.gates.plugged = 1 // this landing covered it: not a miss (the plug event moves on)
+    t.runner.event('lock')
+    expect(t.log.filter((l) => l.includes('inView'))).toHaveLength(1)
+    t.runner.event('plug')
+    t.run(1)
+    expect(t.runner.view().stepId).toBe('seal')
+  })
+
+  it('hint `unless`: doing the thing first means no hint, all step long (B2: 3 s without fast-dropping)', () => {
+    const t = setup({ id: 'b2', steps: [{ id: 'drop', message: 'drop', advance: { on: 'event', event: 'lock' },
+      hint: { after: 3, message: 'dropHint', unless: { on: 'action', action: 'softDrop' } } }] })
+    t.runner.start(t.lesson)
+    t.run(1000)
+    t.runner.action('softDrop')
+    t.run(10_000)
+    expect(t.runner.view().message!.text).toBe('drop')
+  })
+
+  it('hint `unless` after the hint is up: it goes and the step message comes back', () => {
+    const t = setup({ id: 'd2', steps: [{ id: 'spin', message: 'spin', advance: { on: 'event', event: 'plug' },
+      hint: { after: 3, message: 'spinHint', unless: { on: 'action', action: 'spin' } } }] })
+    t.runner.start(t.lesson)
+    t.run(3000)
+    expect(t.runner.view().message!.text).toBe('spinHint')
+    t.runner.action('spin')
+    expect(t.runner.view().message!.text).toBe('spin')
+  })
+
+  it('hint `from`: the wait starts when the goop is ready, not at the step start (C3: 3 s after it is full)', () => {
+    const t = setup({ id: 'c3', steps: [{ id: 'zap', message: 'zap', advance: { on: 'event', event: 'pop' },
+      hint: { after: 3, message: 'zapHint', from: { on: 'gate', gate: 'ready:blue', atLeast: 1 } } }] })
+    t.gates['ready:blue'] = 0
+    t.runner.start(t.lesson)
+    t.run(10_000)
+    expect(t.runner.view().message!.text).toBe('zap') // never ready yet: no hint
+    t.gates['ready:blue'] = 1
+    t.run(2900)
+    expect(t.runner.view().message!.text).toBe('zap') // (the gate is seen at the next poll, then 3 s)
+    t.run(300)
+    expect(t.runner.view().message!.text).toBe('zapHint')
+  })
+
+  it('hint `again`: each seal starts the wait over (F1: 20 s without a seal)', () => {
+    const t = setup({ id: 'f1', steps: [{ id: 'quota', message: 'quota', advance: { on: 'event', event: 'quotaMet' },
+      hint: { after: 20, message: 'sealHint', again: { on: 'event', event: 'pop', where: { sealed: 1 } } } }] })
+    t.runner.start(t.lesson)
+    t.run(15_000)
+    t.runner.event('pop', { sealed: [7] })
+    t.run(15_000)
+    expect(t.runner.view().message!.text).toBe('quota') // 15 s since the seal
+    t.run(5000)
+    expect(t.runner.view().message!.text).toBe('sealHint')
+    t.runner.event('pop', { sealed: [8] }) // a seal takes it down and starts the wait again
+    expect(t.runner.view().message!.text).toBe('quota')
+    t.run(20_000)
+    expect(t.runner.view().message!.text).toBe('sealHint')
+  })
+
+  it('interrupt from / to: armed only during those steps (D4 from D2 on; the red X only in E1)', () => {
+    const t = setup({ id: 'day', interrupts: [
+      { id: 'd4', from: 'd2', when: { on: 'event', event: 'away' }, message: 'arrows' },
+      { id: 'redX', from: 'e1', to: 'e1', when: { on: 'event', event: 'wrong' }, message: 'redX' }],
+    steps: [{ id: 'd1', message: 'd1' }, { id: 'd2', message: 'd2' }, { id: 'e1', message: 'e1' }, { id: 'f1', message: 'f1' }] })
+    t.runner.start(t.lesson)
+    t.runner.event('away') // in d1: not armed yet
+    t.runner.event('wrong')
+    expect(t.runner.view().message!.text).toBe('d1')
+    t.run(300); t.runner.dismiss(); t.run(1)
+    expect(t.runner.view().stepId).toBe('d2')
+    t.runner.event('wrong') // not E1 yet
+    expect(t.runner.view().message!.text).toBe('d2')
+    t.runner.event('away')
+    expect(t.runner.view().message!.text).toBe('arrows')
+    t.run(300); t.runner.dismiss()
+    t.run(300); t.runner.dismiss(); t.run(1) // d2 → e1
+    t.run(300); t.runner.dismiss(); t.run(1) // e1 → f1
+    t.runner.event('wrong') // past E1: no red X
+    expect(t.runner.view().message!.text).toBe('f1')
+  })
+
+  it('ensure: a step makes its interrupt happen only if it has not fired yet (F1: the first crack out of view)', () => {
+    const lesson: Lesson = { id: 'day', interrupts: [{ id: 'd4', when: { on: 'event', event: 'away' }, message: 'arrows', remember: true }],
+      steps: [{ id: 'e1', message: 'e1' }, { id: 'f1', message: 'f1', ensure: { interrupt: 'd4', setup: { cracks: [['outOfView', 0, 'green']] } } }] }
+    const fresh = setup(lesson)
+    fresh.runner.start(fresh.lesson)
+    fresh.run(300); fresh.runner.dismiss(); fresh.run(1)
+    expect(fresh.log.some((l) => l.includes('outOfView'))).toBe(true) // never fired: F1 puts a crack out of view
+    const fired = setup(lesson)
+    fired.runner.start(fired.lesson)
+    fired.runner.event('away') // it fired in E1
+    fired.run(300); fired.runner.dismiss()
+    fired.run(300); fired.runner.dismiss(); fired.run(1)
+    expect(fired.runner.view().stepId).toBe('f1')
+    expect(fired.log.some((l) => l.includes('outOfView'))).toBe(false)
+    const seenBefore = setup(lesson)
+    seenBefore.seen.add('interrupt:d4') // seen on this device on an earlier day (a replay)
+    seenBefore.runner.start(seenBefore.lesson, 1)
+    expect(seenBefore.log.some((l) => l.includes('outOfView'))).toBe(false)
+  })
+})

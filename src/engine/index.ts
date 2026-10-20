@@ -8,5 +8,5 @@ export type { FewerRepairSteps, Modifiers, ModifierName, ResolvedUpgrades, Upgra
 export type { AbilitySpec, ActiveEffects } from './abilities'
 export { MACHINE_IDS } from './machines'
 export { TRAINING_START } from './training'
-export type { PieceChoice, TrainingCommand, TrainingRules } from './training'
+export type { PieceChoice, PieceFallback, TrainingCommand, TrainingRules } from './training'
 export type { BreakdownConfig } from './machines'

@@ -9,8 +9,9 @@ export type Condition =
   // something happened in the game (a lock, a pop, a crack…). `where` filters on the event's details: each key must
   // equal the detail — or, when the detail is a list and the value a number, the list must have at least that many
   // (e.g. { "on": "event", "event": "pop", "where": { "sealed": 1 } } = a pop that sealed at least one crack)
-  | { on: 'event'; event: string; count?: number; where?: Record<string, unknown> }
-  | { on: 'action'; action: string; count?: number } // the player tried a control (spin, rotate, softDrop, pop, hold…)
+  // F31 `if`: …and only counts while this gate holds at that moment (e.g. a piece landed AND the crack isn't plugged = a miss)
+  | { on: 'event'; event: string; count?: number; where?: Record<string, unknown>; if?: Condition }
+  | { on: 'action'; action: string; count?: number; if?: Condition } // the player tried a control (spin, rotate, softDrop, pop, hold…)
   | { on: 'gate'; gate: string; atLeast?: number; atMost?: number } // a number the game reports reached a value
   | { on: 'time'; after: number } // seconds after the step started
   | { on: 'any'; of: Condition[] } // whichever of these comes first (F32)
@@ -20,7 +21,16 @@ export type Condition =
 export type WhileShowing = 'pause' | 'slow' | 'run'
 
 export interface LessonHint {
-  after: number // seconds after the step started (doing the thing first means it never shows)
+  after: number // seconds after the step started — or after `from` (doing the thing first means it never shows)
+  // F31: when the wait starts, instead of the step's start (once: the first time it happens) — e.g. "3 s after the goop
+  // is ready" = { "on": "gate", "gate": "ready:blue", "atLeast": 1 }
+  from?: Condition
+  // F31: doing this means they've got it: no hint for the rest of the step (one that's up goes, the step's message
+  // comes back) — e.g. "3 s without fast-dropping" = unless { "on": "action", "action": "softDrop" }
+  unless?: Condition
+  // F31: each time this happens the wait starts over (one that's up goes) — e.g. "20 s without a seal". An event or an
+  // action (a gate would keep starting it over while it holds).
+  again?: Condition
   message: string // a text id (or the words themselves)
   pointer?: unknown
   while?: WhileShowing // default 'run'
@@ -52,6 +62,10 @@ export interface LessonStep {
   reactions?: LessonReaction[]
   insist?: LessonInsist
   checkpoint?: boolean // leaving mid-lesson restarts here (the start of a phase)
+  // F31: make sure an interrupt happens — if the lesson's interrupt `interrupt` hasn't fired by this step (nor been
+  // seen on this device), this set-up runs too, after the step's own (day one's F1: the first crack goes just out of
+  // view, so "cracks out of view" is taught before the day ends)
+  ensure?: { interrupt: string; setup: Record<string, unknown> }
 }
 
 // "If something else happens" during a step (F32): say this instead of the step's message — no "Got it", the game
@@ -83,6 +97,10 @@ export interface LessonInterrupt {
   pointer?: unknown
   while?: WhileShowing // default 'pause'
   remember?: boolean
+  // F31: only during these steps (step ids, both included; left out = from the first / to the last) — day one's D4 is
+  // armed from D2 to the end; E1's red X only during E1. Outside them it waits (an event can still fire it later).
+  from?: string
+  to?: string
 }
 
 export interface Lesson {
