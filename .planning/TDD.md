@@ -139,7 +139,7 @@ flowchart LR
 | `content/lessons/visor.json` · `laser.json` · `controls.json` | F32: each machine's first-breakdown lesson (broke → toConsole → fullyPaused (the very first only) → fix → fixed → back), same shape; words en.json `lessons.<machine>` + `lessons.shared` | Dev Kit Lessons tab / Obsidian |
 | `content/lessons/console-note.json` | F32: the one-line console-visit note (closes on Got it, back in the tank, or after 1.5 lesson-seconds = 6 s at the console's 25%) | Dev Kit Lessons tab / Obsidian |
 | `content/tuning/progression.json` | ranks + XP (v1 numbers), scraps per rank · F59 `unlocks` = the rank each part of the game unlocks at (`nextPiece` 1 · `swap` 3 · `upgrades` 5); `isUnlocked(what, rank)` in src/progress/progression.ts is the ONE rule the HUD, the controls (engine `swap` option) and the console ask — no rank numbers in UI code | Dev Kit Tuning (live) |
-| `content/tuning/hud.json` | the shift's HUD sizes (top row room, panel, bars, readout, chevrons) · F59 `nextWindow` (cols × rows cells, `cellRem`, `padCells`, `cellGap`, `cornerCells`, `topRowPx` = top room while it shows, `gapPx` above the tank) and a shorter `bars.integrityWidth` (the crack count shares its row) | Dev Kit Tuning (live) |
+| `content/tuning/hud.json` | the shift's HUD sizes (top row room `topRowPx`, panel, bars, readout, chevrons) · F59 `nextWindow` (cols × rows cells, `cellRem`, `padCells`, `cellGap`, `cornerCells`) — the window sits at the left of the bottom panel, which is at least its height (ShiftStage adds the frame's kit gaps + border) · `bars.machineWidth` = the most of the room right of the window a machine bar takes (shared out evenly, never narrower than its name), `bars.integrityWidth` 1 = all of it | Dev Kit Tuning (live) |
 | `content/lessons/unlock-window.json` · `unlock-swap.json` · `unlock-upgrades.json` | F59: the unlock lessons — one step each; the window's and swap's pause the start of the first shift after their rank (one per shift start: src/game/lessons/unlockLessons.ts), upgrading's is the console monitor's line + the Upgrades button outlined until it's opened. Words en.json `lessons.unlock-*` | Dev Kit Lessons tab / Obsidian |
 | `content/ui/art.json` | which of Muzzy's pictures goes where: the console (layers cut from art/Example1.svg, each at its box in the mock-up's units; the views; periscope travel + grip; where the game writes words), end-report frame + its cut lines, buttons | Obsidian |
 
@@ -186,10 +186,11 @@ D13 · 2026-10-19 · Swap trades with the NEXT piece; no held piece (F59)
   option `swap: false` → `allows('hold')` false (the same gate lesson steps use) and the controls' `canSwap()` reads it,
   so a locked hold never starts its charging bar. Pieces' rotation centre is a plain 0, never -0 (a snapshot's JSON
   round trip turned -0 into 0 — the Dev Kit adapter test caught it with the new piece order).
-  Also (Claude's calls): the next-piece window hangs centred over the tank's top edge from ShiftStage (not in the HUD's
-  top slot, which sits between the corners — a growing score would have pushed it sideways), with its own top room
-  (`nextWindow.topRowPx` 78 vs 19) so it never covers a piece coming in; it shows the piece the way up it comes in,
-  in a fixed 3 × 6 box. Unlock lessons: one per shift start (window, then swap), not chained. The Upgrades button
+  Also (Claude's calls): the next-piece window first hung centred over the tank's top edge from ShiftStage with its own
+  top room; after playing, Muzzy found it far too small and the layout poor (2026-10-19, task 13) → his mock-up: CRACKS
+  back in the top row's centre, the window at the left of the bottom panel (cells 0.9rem, ~3× the area), the machine
+  bars in a row over one long integrity bar to its right; the tank gets the plain `topRowPx` back (taller than before
+  F59's window). The window shows the piece the way up it comes in, in a fixed 3 × 6 box. Unlock lessons: one per shift start (window, then swap), not chained. The Upgrades button
   sits over the GOOPS title (the corners beside the title are too narrow on a 360 px phone) and only between shifts.
 D12 · 2026-10-19 · The CRT look is one wrapper + a preset name (F60)
   Proposed by: Muzzy (sprint 08 retro: "that render shader should be accessible to apply to things in the future, and

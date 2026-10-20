@@ -1,13 +1,17 @@
-// HUD screenshots + checks for the shift's HUD (F26, Muzzy's mock-up 2026-10-18; F59): one top row (score · the
-// next-piece window from rank 1 · Console button), the tank, the bottom panel (machine bars over integrity + the crack
-// count; a column beside the tank on a phone on its side), the pressure readout on the pressure line, messages just above
-// the goop — at every size, at ranks 0 / 2 / 4 / 6 (no machine · one · two · three), with a 5-digit score. Checked in
+// HUD screenshots + checks for the shift's HUD (F26, Muzzy's mock-up 2026-10-18; F59 his second, 2026-10-19): one top
+// row (score · CRACKS x / y · Console button), the tank, the bottom panel (the next-piece window at its left from rank 1,
+// the machine bars in a row over the integrity bar to its right; a column beside the tank on a phone on its side, headed
+// by the crack count), the pressure readout on the pressure line, messages just above the goop — at every size, at
+// ranks 0 / 1 / 3 / 4 / 6 (no machine · the window · + one machine · two · three), with a 5-digit score. Checked in
 // each state (playing, quota met, a real rupture):
 //   - every top-row part sits over the HUD column (--kit-hud-w) and inside the screen, in ONE row; nothing overlaps;
-//     no text spills its box; nothing covers the tank (the next-piece window sits above it, the piece inside it with
-//     room round it, and only from rank 1)
-//   - the panel: never over the tank, on screen, the same height all shift; the right number of machine bars (one
-//     centred, two / three evenly spaced and centred; beside the tank: stacked); integrity and the crack count always there
+//     no text spills its box; nothing covers the tank; the crack count clear of the score and the Console button
+//   - the panel: never over the tank, on screen, the same height all shift and never taller than the stage made room
+//     for (--kit-hud-dock-size); the right number of machine bars (in one row, evenly spaced, centred over the
+//     integrity bar; beside the tank: stacked); integrity always there; the crack count in the top row (beside the tank:
+//     heading the panel)
+//   - the next-piece window: only from rank 1, in the panel at its left, clear of its edges and of the bars, the piece
+//     inside it with room round it, its cells big (at least 11 px)
 //   - the readout inside the tank in both directions at position 0 and 100, above the visor glitch
 //   - a message sits above the highest goop and the pressure readout, inside the tank, clear of the top row and the panel
 //   - off-screen cracks get their edge arrow; the rupture says why; no sideways overflow, no errors
@@ -25,8 +29,8 @@ const [rankFilter = '', sizeFilter = ''] = process.argv.slice(2)
 const sizes = [['phone', 390, 844], ['small', 360, 780], ['laptop', 1100, 800],
   ['desktop', 1440, 900], ['hd', 1920, 1080], ['wide', 2000, 1121], ['tall', 1400, 1400], ['narrow', 654, 900], ['monitor', 2560, 1440]]
   .filter(([name]) => !sizeFilter || sizeFilter.split(',').includes(name))
-// rank → how many machine bars the panel shows (visor unlocks at 2, laser at 4, controls at 6)
-const RANKS = { 0: 0, 2: 1, 4: 2, 6: 3 }
+// rank → how many machine bars the panel shows (visor unlocks at 2, laser at 4, controls at 6; the window at 1)
+const RANKS = { 0: 0, 1: 0, 3: 1, 4: 2, 6: 3 }
 const ranks = Object.keys(RANKS).filter((r) => !rankFilter || rankFilter.split(',').includes(r))
 
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
@@ -47,7 +51,7 @@ const measure = () => {
   const box = (e) => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height } }
   const hud = [...document.querySelectorAll('.kit-hud-slot > *')].map(box).filter((r) => r.width) // the slot itself has no box
   const dockEl = document.querySelector('.kit-hud-dock')
-  const dock = dockEl ? { ...box(dockEl), side: dockEl.dataset.side } : null
+  const dock = dockEl ? { ...box(dockEl), side: dockEl.dataset.side, room: parseFloat(document.documentElement.style.getPropertyValue('--kit-hud-dock-size')) } : null
   const machineBars = [...document.querySelectorAll('.kit-hud-dock .kit-bar[data-label-at="above"]')].map(box)
   const integrity = [...document.querySelectorAll('.kit-hud-dock .kit-bar[data-label-at="inside"]')].map(box)
   const dockStatus = !!document.querySelector('.kit-hud-dock .kit-hud-text')
@@ -59,6 +63,9 @@ const measure = () => {
   const words = document.querySelector('.kit-hud-dock .kit-hud-text .kit-text')
   let dockWords = null
   if (words) { const r = document.createRange(); r.selectNodeContents(words); dockWords = box(r) }
+  const topText = document.querySelector('.kit-hud-slot .kit-hud-text .kit-text')
+  let topWords = null
+  if (topText) { const r = document.createRange(); r.selectNodeContents(topText); topWords = box(r) }
   const readoutEl = document.querySelector('.stage-pin[data-tag="readout"] .kit-pinned')
   const readout = readoutEl ? box(readoutEl) : null
   const toastsEl = document.querySelector('.kit-toasts:popover-open')
@@ -79,7 +86,7 @@ const measure = () => {
   const z = (e) => Number(e && getComputedStyle(e).zIndex) || 0
   const visor = document.querySelector('canvas[data-visor]')
   const readoutOnTop = z(document.querySelector('.stage-readout')) > z(visor) && z(document.querySelector('.stage-pin[data-tag="readout"]')) > z(visor)
-  return { tank, hud, dock, dockStatus, dockWords, next, nextCells, pieceCells: s.nextCells?.length ?? 0, machineBars, integrity, readout, line: window.__goops.readout(), toasts, spills, goopTop, hudW,
+  return { tank, hud, dock, dockStatus, dockWords, topWords, next, nextCells, pieceCells: s.nextCells?.length ?? 0, machineBars, integrity, readout, line: window.__goops.readout(), toasts, spills, goopTop, hudW,
     readoutOnTop, W: innerWidth, H: innerHeight, overflow: document.documentElement.scrollWidth > innerWidth }
 }
 const hit = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1
@@ -93,28 +100,32 @@ function hudProblems(m, bars, rank) {
   if (!m.hud.length) problems.push('no HUD parts')
   for (const r of m.hud) if (r.left < mid - half || r.right > mid + half) problems.push(`HUD part outside its column ${fmt(r)}`)
   m.hud.forEach((a, i) => m.hud.slice(i + 1).forEach((b) => { if (hit(a, b)) problems.push(`overlap ${fmt(a)} × ${fmt(b)}`) }))
-  // one top row: the score, the next-piece window (from rank 1, F59) and the Console button share a line (their boxes
-  // overlap top to bottom). (A phone on its side: the score and the Console button beside the tank, the window and the
-  // crack count heading the panel column.)
+  // one top row: the score, the crack count (big, centred) and the Console button share a line (their boxes overlap top
+  // to bottom). (A phone on its side: the score and the Console button beside the tank, the crack count heading the
+  // panel column.)
   const sideways = m.dock?.side === 'right'
   const window = Number(rank) >= 1
   // (Muzzy's hud.json topRowPx 19, 2026-10-18: the top row may hang over the tank's top edge, so a top-row part is one
   // that STARTS at or above the tank's top)
-  const top = m.hud.filter((r) => sideways ? r.top < m.tank.top + 60 : r.top < m.tank.top + 8)
-  if (top.length !== 2) problems.push(`${top.length} of 2 parts in the top row (score, Console button)`)
-  if (!m.dockStatus) problems.push('no crack count in the panel')
-  // F59: the next-piece window from rank 1 only — centred over the tank's top edge (the stage hangs it there, so a long
-  // score never pushes it), above the tank (not over the falling piece), clear of the score and the Console button, the
-  // whole piece inside it with room round it (nothing touches a container's edge)
+  const top = m.hud.filter((r) => sideways ? r.top < m.tank.top + 60 : r.top < m.tank.top + 8).sort((a, b) => a.left - b.left)
+  const want = sideways ? 2 : 3
+  if (top.length !== want) problems.push(`${top.length} of ${want} parts in the top row (score, ${sideways ? '' : 'cracks, '}Console button)`)
+  if (sideways !== m.dockStatus) problems.push(sideways ? 'no crack count heading the panel column' : 'the crack count is in the bottom panel, not the top row')
+  // (the crack count's words between the corners, clear of the score and the Console button)
+  if (!sideways && top.length === 3 && m.topWords && (m.topWords.left < top[0].right + 4 || m.topWords.right > top[2].left - 4))
+    problems.push(`the crack count touches the score or the Console button ${fmt(m.topWords)}`)
+  // F59: the next-piece window from rank 1 only — in the panel, at its left (the bars to its right), clear of the
+  // panel's edges, the whole piece inside it with room round it (nothing touches a container's edge), cells big
   if (window !== !!m.next) problems.push(window ? 'no next-piece window' : 'a next-piece window before rank 1')
-  if (m.next && !sideways) {
-    if (m.next.bottom > m.tank.top + 1) problems.push(`the next-piece window hangs over the tank ${fmt(m.next)} tank ${fmt(m.tank)}`)
-    if (Math.abs((m.next.left + m.next.right) / 2 - mid) > 2) problems.push(`the next-piece window is not centred over the tank ${fmt(m.next)} tank ${fmt(m.tank)}`)
-    if (offScreen(m.next, m.W, m.H)) problems.push(`the next-piece window is past the screen edge ${fmt(m.next)}`)
+  if (m.next && m.dock) {
+    const d = m.dock
+    if (m.next.left < d.left + 4 || m.next.right > d.right - 4 || m.next.top < d.top + 4 || m.next.bottom > d.bottom - 4) problems.push(`the next-piece window touches the panel's edge ${fmt(m.next)} panel ${fmt(d)}`)
+    for (const r of [...m.machineBars, ...m.integrity]) if (r.left < m.next.right + 4) problems.push(`a bar is not right of the next-piece window ${fmt(r)} window ${fmt(m.next)}`)
     for (const r of m.hud) if (hit(r, m.next)) problems.push(`the next-piece window is under a HUD part ${fmt(m.next)} × ${fmt(r)}`)
   }
   if (m.next && m.nextCells.length !== m.pieceCells) problems.push(`${m.nextCells.length} of ${m.pieceCells} cells in the next-piece window`)
   if (m.next) for (const c of m.nextCells) if (c.left < m.next.left + 4 || c.right > m.next.right - 4 || c.top < m.next.top + 4 || c.bottom > m.next.bottom - 4) problems.push(`a cell touches the next-piece window's edge ${fmt(c)} in ${fmt(m.next)}`)
+  if (m.next && m.nextCells.some((c) => c.width < 11 || c.height < 11)) problems.push(`the next-piece window's cells are small (${Math.round(m.nextCells[0].width)} px)`)
   if (top.some((a) => top.some((b) => a.bottom < b.top || b.bottom < a.top))) problems.push('the top row is not one row')
   for (const r of m.hud) if (offScreen(r, m.W, m.H)) problems.push(`past the screen edge ${fmt(r)}`)
   // only the top row may overlap the tank, and only its top edge (no deeper than topRowPx + one row of HUD text)
@@ -130,13 +141,17 @@ function hudProblems(m, bars, rank) {
     for (const r of m.hud) if (hit(r, d)) problems.push(`a HUD part under the panel ${fmt(r)}`)
     if (m.machineBars.length !== bars) problems.push(`${m.machineBars.length} of ${bars} machine bars`)
     if (m.integrity.length !== 1) problems.push('no integrity bar')
+    // the stage keeps the tank clear of the room it made for the panel: the panel never needs more (F59: a row of
+    // machine names that wrapped made it grow over that room)
+    if (d.side === 'bottom' && d.height > d.room + 0.5) problems.push(`the panel is taller than its room (${Math.round(d.height)} > ${d.room} px)`)
     for (const r of [...m.machineBars, ...m.integrity]) if (!inside(r, d)) problems.push(`a bar outside the panel ${fmt(r)}`)
     // nothing touches the panel's edge (breathing room on every side)
     for (const r of [...m.machineBars, ...m.integrity]) if (r.left < d.left + 4 || r.right > d.right - 4 || r.top < d.top + 4 || r.bottom > d.bottom - 4) problems.push(`a bar touches the panel's edge ${fmt(r)}`)
     // (and the crack count's words, beside the integrity bar since F59: measured by their ink, not their box)
     if (m.dockWords && (m.dockWords.left < d.left + 4 || m.dockWords.right > d.right - 4 || m.dockWords.top < d.top + 4 || m.dockWords.bottom > d.bottom - 4)) problems.push(`the crack count touches the panel's edge ${fmt(m.dockWords)} panel ${fmt(d)}`)
-    if (d.side === 'bottom' && bars) {
-      const centre = (d.left + d.right) / 2, b = [...m.machineBars].sort((x, y) => x.left - y.left)
+    if (d.side === 'bottom' && bars && m.integrity.length) {
+      // (centred over the integrity bar: the window takes the panel's left)
+      const centre = (m.integrity[0].left + m.integrity[0].right) / 2, b = [...m.machineBars].sort((x, y) => x.left - y.left)
       const groupMid = (b[0].left + b[b.length - 1].right) / 2
       if (Math.abs(groupMid - centre) > 2) problems.push(`machine bars not centred (${Math.round(groupMid)} vs ${Math.round(centre)})`)
       const gaps = b.slice(1).map((r, i) => r.left - b[i].right)

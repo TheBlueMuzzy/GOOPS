@@ -14,7 +14,6 @@
 
 /* F59 the next-piece window (NextWindow.tsx): a kit panel holding a fixed box of cells — content/tuning/hud.json
    nextWindow (--next-cols × --next-rows cells with the room round them, --next-cell each). Inside it the cells wear the CRT look
-   (F60, <CrtLook place="nextWindow">). */
-.next-pin { transform: translate(-50%, -100%); } /* (its point = the middle of its bottom edge) */
+   (F60, <CrtLook place="nextWindow">). Its padding (gap-xs) is counted in the bottom panel's height (ShiftStage). */
 div.next-window { flex: none; inline-size: max-content; margin-inline: auto; padding: var(--gap-xs); pointer-events: none; }
 .next-window-cells { display: block; inline-size: calc(var(--next-cols) * var(--next-cell)); block-size: calc(var(--next-rows) * var(--next-cell)); }

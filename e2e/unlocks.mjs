@@ -3,8 +3,9 @@
 // ?rank=N:
 //   rank 0 — no next-piece window; swap refused (Right Shift / R held: no swap, no charging bar); Upgrades grey with
 //            its scraps; no unlock lesson anywhere
-//   rank 1 — the window shows the next piece (its cells, in the window, with room round them); the window's unlock
-//            lesson pauses the start of the first shift, pointing at it; Got it → never again on this device
+//   rank 1 — the window shows the next piece (its cells, in the window, with room round them), at the left of the
+//            bottom panel (Muzzy's mock-up 2026-10-19); the window's unlock lesson pauses the start of the first shift,
+//            its ring round the window and its bubble above it, on screen; Got it → never again on this device
 //   rank 3 — one unlock lesson per shift start: the window's first, swap's at the next shift, then none; swap works
 //            (held Right Shift: the falling piece and the next one trade places, with the charging bar)
 //   rank 5 — Upgrades opens (the scraps, "the first upgrades arrive in the next update"); its unlock lesson is the
@@ -45,6 +46,19 @@ const upgradesButton = (page) => page.locator('[data-tag="upgrades"]')
 // the console's own lesson (between shifts there is no __goops yet): the monitor's words
 const monitorSays = (page) => page.locator('[data-tag="crt"] .crt-read').textContent()
 const gotIt = async (page) => { await page.waitForTimeout(500); await page.getByRole('button', { name: 'Got it' }).click() } // (it works once armed)
+// a lesson pointing at the next-piece window: its ring round the window, its bubble above it (the window sits at the
+// bottom of the screen, F59 task 13) and on screen
+const pointsAtWindow = (page) => page.evaluate(() => {
+  const box = (sel) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return r.width ? r : null }
+  const win = box('.next-window'), ring = box('.kit-callout-ring'), bubble = box('.kit-callout'), dock = box('.kit-hud-dock')
+  if (!win || !ring || !bubble) return { ok: false, why: `window ${!!win} ring ${!!ring} bubble ${!!bubble}` }
+  const f = (r) => `${Math.round(r.left)},${Math.round(r.top)}–${Math.round(r.right)},${Math.round(r.bottom)}`
+  const round = ring.left <= win.left + 1 && ring.right >= win.right - 1 && ring.top <= win.top + 1 && ring.bottom >= win.bottom - 1
+  const above = bubble.bottom <= win.top + 1
+  const onScreen = bubble.left >= -0.5 && bubble.top >= -0.5 && bubble.right <= innerWidth + 0.5 && bubble.bottom <= innerHeight + 0.5
+  const inPanel = !!dock && win.left >= dock.left && win.right <= dock.right && win.top >= dock.top && win.bottom <= dock.bottom
+  return { ok: round && above && onScreen && inPanel, why: `window ${f(win)} ring ${f(ring)} bubble ${f(bubble)}${inPanel ? '' : ' (window not in the panel)'}` }
+})
 // back to the console and straight into a new shift (a new shift start), as a player would: pause → End shift
 async function nextShift(page) {
   await page.getByRole('button', { name: en.hud.pause }).click()
@@ -87,7 +101,8 @@ try {
     await page.waitForTimeout(500)
     check('rank 0: no unlock lesson at the shift start', (await lessonId(page)) === null)
     check('rank 0: no next-piece window', await page.locator('.next-window').count() === 0)
-    check('rank 0: the crack count sits in the bottom panel', await page.locator('.kit-hud-dock').getByText(/CRACKS/).count() === 1)
+    check('rank 0: the crack count sits in the top row, not the bottom panel', await page.locator('.kit-hud-slot').getByText(/CRACKS/).count() === 1
+      && await page.locator('.kit-hud-dock').getByText(/CRACKS/).count() === 0)
     const swap = await holdSwap(page)
     check('rank 0: Right Shift held does nothing (no swap, no charging bar)', swap.swapped === 0 && swap.bar === 0, JSON.stringify(swap))
     const r = await holdSwap(page, 'KeyR')
@@ -114,6 +129,8 @@ try {
     check('rank 1: the shift waits under it', paused)
     const cells = await page.evaluate(() => ({ drawn: document.querySelectorAll('.next-window rect').length, piece: window.__goops.engine.state.nextCells.length }))
     check('rank 1: the window shows the next piece', cells.drawn === cells.piece && cells.drawn > 0, JSON.stringify(cells))
+    const at = await pointsAtWindow(page)
+    check('rank 1: the lesson rings the window in the bottom panel, its bubble above it', at.ok, at.why)
     await page.screenshot({ path: `${OUT}/rank1-lesson-390x844.png` })
     await gotIt(page)
     await page.waitForTimeout(300)
@@ -230,6 +247,8 @@ try {
     await page.waitForTimeout(800)
     await page.screenshot({ path: `${OUT}/rank5-swap-lesson-${w}x${h}.png` })
     check(`${w}x${h}: the swap lesson shows`, (await lessonId(page)) === 'unlock-swap')
+    const at = await pointsAtWindow(page)
+    check(`${w}x${h}: it rings the next-piece window, its bubble above it`, at.ok, at.why)
     await close()
   }
 } finally {

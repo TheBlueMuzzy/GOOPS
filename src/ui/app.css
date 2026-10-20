@@ -6,6 +6,14 @@ html, body, #root { margin: 0; height: 100%; }
 .repair-grab { display: grid; grid-area: 1 / 1; grid-template: minmax(0, 1fr) / minmax(0, 1fr); min-inline-size: 0; min-block-size: 0; }
 .repair-grab > * { grid-area: 1 / 1; }
 
-/* F59: the crack count beside the integrity bar in the HUD's bottom panel — takes the rest of the row (and shrinks its
-   words to fit it: HudText fit), so the two share one line */
-.hud-cracks { flex: 1 1 0; min-inline-size: 0; }
+/* F59 (Muzzy's mock-up 2026-10-19): the HUD's bottom panel — the next-piece window at the left (its own size), the
+   machine bars over the integrity bar taking the rest of the width; one line, never wrapping */
+.hud-panel { flex-wrap: nowrap; align-items: center; }
+.hud-panel-bars { flex: 1 1 0; min-inline-size: 0; }
+/* the machine bars: one row, the room shared out evenly, each at most its kit share (hud.json bars.machineWidth) and
+   never narrower than its name — instead of exactly its share, so three fit a 360 px phone at the body text size */
+.hud-machines { flex-wrap: nowrap; }
+.hud-machines > .kit-bar { flex: 1 1 0; inline-size: auto; max-inline-size: calc(var(--kit-bar-share) * 100%); }
+/* the panel's sides: the kit dock's gap-s instead of gap-m, so the window + three machine names fit a 360 px phone
+   (still clear of the edge) */
+.kit-hud-dock > .kit-panel:has(.hud-panel) { padding-inline: var(--gap-s); }

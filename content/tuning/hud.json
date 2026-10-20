@@ -1,6 +1,6 @@
 {
   "_about": "The shift's HUD (F26, Muzzy's mock-up 2026-10-18). Words are in content/text/en.json → hud. Sizes in CSS px unless they say cells (one tank cell) or rem (the text size, so it grows with Settings → Text size).",
-  "_layout": "topRowPx = room kept above the tank for the one top row (score · cracks · Console button). gutterPx = the least room at each side of the tank. panel = the bottom panel under the tank: share of the window's height with machine bars (integrityShare with only the integrity bar), but at least machinesRem / integrityRem tall (room for its rows at the current text size — it never changes height mid-shift, machines unlock between shifts), gapPx between the tank and it. A phone on its side has no height to spare: the panel is a column beside the tank's bottom-right corner instead, sideRem wide, headed by the crack count; the score and the Console button sit in the top corners beside the tank, so the tank only keeps sideTopPx free above it.",
+  "_layout": "topRowPx = room kept above the tank for the one top row (score · CRACKS x / y · Console button). gutterPx = the least room at each side of the tank. panel = the bottom panel under the tank: share of the window's height with machine bars (integrityShare with only the integrity bar), but at least machinesRem / integrityRem tall (room for its rows at the current text size) — and from rank 1 at least as tall as the next-piece window in it; it never changes height mid-shift (machines and the window unlock between shifts). gapPx between the tank and it. A short window (a phone on its side) has no height to spare: the panel is a column beside the tank's bottom-right corner instead, sideRem wide: the crack count on top, then the next-piece window with the bars stacked beside it; the score and the Console button sit in the top corners beside the tank, so the tank only keeps sideTopPx free above it.",
   "topRowPx": 19,
   "sideTopPx": 12,
   "gutterPx": 6,
@@ -10,24 +10,22 @@
     "machinesRem": 6,
     "integrityRem": 3,
     "gapPx": 8,
-    "sideRem": 13
+    "sideRem": 15
   },
-  "_nextWindow": "F59: the next-piece window (from rank 1 — progression.json unlocks.nextPiece), centred over the tank's top edge where the goop drops in, its bottom gapPx above the tank (on a short window: at the top of the panel column beside the tank). Always the same size: cols × rows cells (room for the widest and tallest piece, 3 × 6), each cellRem big (rem: it grows with Settings → Text size), with padCells of room round them inside the frame. cellGap = the dark line between cells, cornerCells = how round each cell's corners are (all three in cells). topRowPx = the room kept above the tank while the window shows (instead of topRowPx), so it sits above the tank instead of over the falling piece.",
+  "_nextWindow": "F59 (Muzzy's mock-up 2026-10-19): the next-piece window (from rank 1 — progression.json unlocks.nextPiece), at the LEFT of the bottom panel, the machine bars and the integrity bar to its right (on a short window: at the top of the panel column beside the tank). Always the same size: cols × rows cells (room for the widest and tallest piece, 3 × 6), each cellRem big (rem: it grows with Settings → Text size), with padCells of room round them inside the frame. cellGap = the dark line between cells, cornerCells = how round each cell's corners are (all three in cells).",
   "nextWindow": {
     "cols": 3,
     "rows": 6,
-    "cellRem": 0.6,
+    "cellRem": 0.9,
     "padCells": 0.5,
     "cellGap": 0.14,
-    "cornerCells": 0.18,
-    "topRowPx": 92,
-    "gapPx": 4
+    "cornerCells": 0.18
   },
-  "_bars": "lowAt = a bar below this (0..1) turns red and pulses (a broken machine flashes). machineWidth / integrityWidth = share of the panel's width each bar takes (a machine bar is never narrower than its label). F59: the integrity bar shares its row with the crack count, to its right.",
+  "_bars": "lowAt = a bar below this (0..1) turns red and pulses (a broken machine flashes). machineWidth = the most of the room right of the next-piece window each machine bar takes (in a row, centred, shared out evenly; never narrower than its label); integrityWidth = the same for the one integrity bar under them. (A short window: the bars are stacked in the panel column, full width.)",
   "bars": {
     "lowAt": 0.3,
-    "machineWidth": 0.24,
-    "integrityWidth": 0.42
+    "machineWidth": 0.31,
+    "integrityWidth": 1
   },
   "_readout": "The pressure readout: a thin line from the pressure line up to the right, then '10% PRESS' at its top end (or mirrored: the text, then the line down to the pressure line — Settings → Pressure readout direction). run / rise = how far the line goes across / up, in cells (in a tank too narrow for the words and the whole line, the line gets shorter). gapPx = between the line's end and the text; edgePx = kept clear of the tank's walls, top and floor (the readout stays inside the tank at every size); lineWidthPx, color = the line; footPx = radius of the dot where it meets the pressure line (0 = none).",
   "readout": {

@@ -1,7 +1,7 @@
 // The playing field: the tank canvas (2D, under), the goo canvas (WebGL, over), the controls, and the frame loop that
 // ticks the engine and hands its state + events to both. React only renders this once; per-frame work uses refs.
-// It also decides where the tank sits around the HUD (F26, Muzzy's mock-up): one top row above it, the bottom panel
-// under it (or beside it on a phone on its side), and the pressure readout hanging on the pressure line.
+// It also decides where the tank sits around the HUD (F26, Muzzy's mock-up; F59 his second one): one top row above it,
+// the bottom panel under it (or beside it on a phone on its side), and the pressure readout hanging on the pressure line.
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
 import type { MachineId, ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase, ShiftState } from '../engine'
 import type { GooRenderer, GooView } from '../goo/types'
@@ -59,8 +59,7 @@ interface Props {
   // (shorter). Known when the shift starts, so the panel never changes height mid-shift.
   panel: 'machines' | 'integrity'
   side: boolean // a phone on its side: the panel is a column beside the tank, which keeps the whole height
-  nextWindow: boolean // F59: the next-piece window shows above the tank (from its rank) — more room kept there for it
-  next?: ReactNode // …and the window itself (App draws it), hung centred over the tank's top edge by the stage
+  nextWindow: boolean // F59: the next-piece window shows in the bottom panel (from its rank) — the panel is at least its height
   readout: ReactNode // the pressure readout's words ("10% PSI"), hung on the pressure line by the frame loop
   onHud(h: HudSnapshot): void
   onEnd(status: ShiftStatus): void
@@ -68,7 +67,7 @@ interface Props {
   onConsole(): void
 }
 
-export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, next, readout, onHud, onEnd, onMessage, onConsole }: Props) {
+export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, readout, onHud, onEnd, onMessage, onConsole }: Props) {
   const style = useSyncExternalStore(gooStyle.subscribe, gooStyle.get)
   const readoutAt = useSyncExternalStore(readoutSetting.subscribe, readoutSetting.get)
   const host = useRef<HTMLDivElement>(null)
@@ -76,7 +75,6 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ne
   const gooCanvas = useRef<HTMLCanvasElement>(null)
   const readoutCanvas = useRef<HTMLCanvasElement>(null)
   const readoutEl = useRef<HTMLDivElement>(null)
-  const nextEl = useRef<HTMLDivElement>(null)
   const lessonMark = useRef<HTMLDivElement>(null)
   const live = useRef({ inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
   useEffect(() => { live.current = { inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
@@ -137,18 +135,21 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ne
     const resize = () => {
       const r = el.getBoundingClientRect()
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      // the bottom panel: a share of the window's height, but tall enough for its rows at the current text size; on a
-      // phone on its side a column beside the tank instead (content/tuning/hud.json → panel)
+      // the bottom panel: a share of the window's height, but tall enough for its rows at the current text size — and
+      // (F59, from rank 1) for the next-piece window at its left: its cells + its frame (padding gap-xs + border) + the
+      // panel's own padding (gap-s + border; kit tokens on the root). On a phone on its side a column beside the tank
+      // instead (content/tuning/hud.json → panel, nextWindow)
       const P = hud.panel, { panel, side, nextWindow } = layoutRef.current
-      const remPx = parseFloat(getComputedStyle(root).fontSize) || 16
-      const dock = Math.round(side ? P.sideRem * remPx
-        : panel === 'machines' ? Math.max(P.share * r.height, P.machinesRem * remPx) : Math.max(P.integrityShare * r.height, P.integrityRem * remPx))
+      const css = getComputedStyle(root), remPx = parseFloat(css.fontSize) || 16
+      const token = (name: string) => parseFloat(css.getPropertyValue(`--${name}`)) || 0
+      const frame = token('border-width')
+      const NW = hud.nextWindow // (its box of cells: rows + the room round them, cellRem each — NextWindow.tsx)
+      const windowPx = nextWindow ? (NW.rows + 2 * NW.padCells) * NW.cellRem * remPx + 2 * (token('gap-xs') + frame) + 2 * (token('gap-s') + frame) : 0
+      const dock = Math.ceil(side ? P.sideRem * remPx
+        : Math.max(windowPx, panel === 'machines' ? Math.max(P.share * r.height, P.machinesRem * remPx) : Math.max(P.integrityShare * r.height, P.integrityRem * remPx)))
       const L = layoutTank({ screenW: r.width, screenH: r.height, visibleWidth: s.visibleWidth, visibleRows: s.height - s.bufferRows,
-        reserveTop: side ? hud.sideTopPx : nextWindow ? hud.nextWindow.topRowPx : hud.topRowPx, reserveBottom: side ? 2 * hud.gutterPx : dock + P.gapPx, gutter: hud.gutterPx })
+        reserveTop: side ? hud.sideTopPx : hud.topRowPx, reserveBottom: side ? 2 * hud.gutterPx : dock + P.gapPx, gutter: hud.gutterPx })
       Object.assign(view, { cellPx: L.cellPx, centreX: L.centreX, topY: L.topY, width: r.width, height: r.height, dpr })
-      // F59: the next-piece window hangs over the middle of the tank's top edge (where the goop drops in), its bottom
-      // gapPx above it — the same place whatever the HUD's corners hold (a long score never pushes it sideways)
-      if (nextEl.current) nextEl.current.style.translate = `${Math.round(L.centreX + L.cellPx / 2)}px ${Math.round(L.topY - hud.nextWindow.gapPx)}px`
       // the HUD's corners sit over the tank, not at the far window edges (kit --kit-hud-w; menus keep the whole window);
       // beside a tank on a phone on its side it reaches past it far enough for the panel column
       const sideRoom = side ? dock + 2 * HUD_SIDE_ROOM : HUD_SIDE_ROOM
@@ -217,7 +218,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ne
       if (now - toastsAt > messageTuning.stack.updateMs) {
         toastsAt = now
         const g = readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0)
-        const L = layoutRef.current, clearTop = L.side ? hud.sideTopPx : L.nextWindow ? hud.nextWindow.topRowPx : hud.topRowPx
+        const clearTop = layoutRef.current.side ? hud.sideTopPx : hud.topRowPx
         const px = `${Math.round(messagesPoint(s, view, clearTop, Math.min(g.text[1] - readoutSize.h / 2, g.end[1])))}px`
         if (px !== toastsAtPx) { toastsAtPx = px; root.style.setProperty('--kit-toasts-at', px) }
         // and only as wide as the tank (+ the HUD's 16 px), so they never reach the panel beside it (kit
@@ -299,8 +300,6 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ne
       {/* the pressure readout, on top of everything in the tank (the goo and the visor glitch): its line on a canvas
           of its own, its words kit text in a kit PinnedBox (never catches taps, so zaps reach the tank under it) */}
       <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
-      {/* F59: the next-piece window, centred over the tank's top edge (placed by resize) */}
-      <div className="stage-pin next-pin" ref={nextEl}>{next}</div>
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>
       </div>
