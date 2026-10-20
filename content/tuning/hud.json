@@ -16,11 +16,11 @@
   "nextWindow": {
     "cols": 3,
     "rows": 6,
-    "cellRem": 0.42,
+    "cellRem": 0.6,
     "padCells": 0.5,
     "cellGap": 0.14,
     "cornerCells": 0.18,
-    "topRowPx": 78,
+    "topRowPx": 92,
     "gapPx": 4
   },
   "_bars": "lowAt = a bar below this (0..1) turns red and pulses (a broken machine flashes). machineWidth / integrityWidth = share of the panel's width each bar takes (a machine bar is never narrower than its label). F59: the integrity bar shares its row with the crack count, to its right.",

@@ -2,11 +2,12 @@
 // after the falling one, in its goop colour (content/tuning/goo-colors.json) and the way up it will come in. Swapping
 // (from rank 3) trades the falling piece with this one.
 // The window is always the same size (room for the tallest, widest piece: content/tuning/hud.json → nextWindow), so
-// nothing moves when a bigger piece comes up. Its frame is plain for now; the reusable CRT look (F60) goes on
-// `.next-window` later.
+// nothing moves when a bigger piece comes up. Inside the frame it wears the reusable CRT look (F60: scan lines over the piece; content/tuning/crt.json
+// use.nextWindow, a Dev Kit dropdown — the second place to wear it, and it took one wrapper + one line of data).
 import type { CSSProperties } from 'react'
 import { Panel } from '../ui/kit'
 import { colorOf } from './gooFactory'
+import { CrtLook } from './CrtLook'
 import hud from '../../content/tuning/hud.json'
 
 export type NextPiece = { cells: [number, number][]; color: number }
@@ -22,12 +23,14 @@ export function NextWindow({ piece, label }: { piece: NextPiece | null; label: s
   return (
     <Panel gap="xs" className="next-window" data-tag="next-window" data-knobs="next-window" data-placement="bottom"
       style={{ '--next-cols': W.cols + 2 * pad, '--next-rows': W.rows + 2 * pad, '--next-cell': `${W.cellRem}rem` } as CSSProperties}>
+      <CrtLook place="nextWindow">
       <svg className="next-window-cells" viewBox={`${-pad} ${-pad} ${W.cols + 2 * pad} ${W.rows + 2 * pad}`} role="img" aria-label={label}>
         {piece?.cells.map(([x, y], i) => (
           <rect key={i} x={left + x + gap / 2} y={top + y + gap / 2} width={1 - gap} height={1 - gap} rx={W.cornerCells}
             fill={colorOf(piece.color)} />
         ))}
       </svg>
+      </CrtLook>
     </Panel>
   )
 }

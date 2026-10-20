@@ -2,6 +2,7 @@
   "_about": "F60 (Muzzy, sprint 08 retro: 'that render shader should be accessible to apply to things in the future, and should feel pretty simple/fast to apply'): the CRT look as presets any panel can take — <CrtLook preset=\"dos\"> or <CrtLook place=\"monitor\"> (src/game/CrtLook.tsx). First built for the console monitor (F32: 'make it look like old DOS'). Looks only: nothing here changes a rule. Each preset switches its layers on or off (tint, glow, scan lines, wobble, typing) and holds their knobs. 'use' = which preset each place on screen wears (a dropdown, live). The monitor's screen stays dark blue (content/ui/art.json console.crt) and the font stays the game's. Reduce motion: the words show at once, the cursor holds still, no wobble, no rolling. Scan-line knobs mean the same as the x-ray box's (cracks-look.json xray.scan*): gap = from one line to the next, width = a line's thickness, alpha = how dark, speed = how fast they roll down.",
   "_help": {
     "use.monitor": "Which preset the console's monitor wears (its own words and a lesson's lines).",
+    "use.nextWindow": "Which preset the next-piece window wears (scan lines over the piece; F60 task 12, the second place).",
     "presets.dos.tint": "Colour the words (text colour). Off = the panel's own text colour.",
     "presets.dos.glow": "Glow round the letters.",
     "presets.dos.scanLines": "Dark scan lines over the whole panel (words too).",
@@ -25,6 +26,7 @@
   },
   "_labels": {
     "use.monitor": "Console monitor wears",
+    "use.nextWindow": "Next-piece window wears",
     "presets.dos.tint": "dos: tint the words",
     "presets.dos.glow": "dos: glow",
     "presets.dos.scanLines": "dos: scan lines",
@@ -85,6 +87,11 @@
       "dos": "dos · green DOS screen",
       "amber": "amber · old amber monitor",
       "off": "off · no look"
+    },
+    "use.nextWindow": {
+      "dos": "dos · green DOS screen",
+      "amber": "amber · old amber monitor",
+      "off": "off · no look"
     }
   },
   "_ranges": {
@@ -99,7 +106,8 @@
     "presets.off.scanSpeed": [0, 60, 1]
   },
   "use": {
-    "monitor": "dos"
+    "monitor": "dos",
+    "nextWindow": "dos"
   },
   "presets": {
     "dos": {
