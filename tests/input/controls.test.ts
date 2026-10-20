@@ -179,3 +179,169 @@ describe('quick flicks', () => {
     expect(seen.consoles).toBe(1)
   })
 })
+
+// F28 (Muzzy 2026-10-20, GDD §4 "Touch, finger by finger"): every finger is its own gesture. The first finger to drag
+// sideways owns the spin until it lifts, the first to drag down owns the fast drop (one finger each, both at once);
+// only one hold charges a swap; a finger lifting or cancelled lets go of only what it owned.
+describe('two fingers', () => {
+  function fingerSetup() {
+    const el = Object.assign(new EventTarget(), {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }),
+    }) as unknown as HTMLElement
+    const seen = { spins: [] as number[], rotates: [] as number[], holds: 0, consoles: 0, drop: false, rings: [] as ({ p: number; at?: { x: number; y: number } } | null)[] }
+    detach = attachControls(el, {
+      spin: (dir) => seen.spins.push(dir), rotate: (dir) => seen.rotates.push(dir), tapCell: () => false,
+      hold: () => { seen.holds++ }, console: () => { seen.consoles++ }, softDrop: (on) => { seen.drop = on },
+      holdProgress: (p, at) => { seen.rings.push(p === null ? null : { p, at }) },
+    }, () => true)
+    const finger = (type: string, id: number, x: number, y: number) => el.dispatchEvent(event(type, { pointerId: id, clientX: x, clientY: y }))
+    return { seen, finger }
+  }
+  const holdFor = tank.holdToSwapMs + 200
+
+  it('a second finger taps while the first drags sideways: it rotates, and the spinning keeps going', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 400); finger('pointermove', 1, 140, 400) // A: drag left and hold
+    vi.advanceTimersByTime(300)
+    finger('pointerdown', 2, 350, 300); vi.advanceTimersByTime(40); finger('pointerup', 2, 350, 300) // B: tap the right half
+    const spinsAtTap = seen.spins.length
+    vi.advanceTimersByTime(500)
+    expect(seen.rotates).toEqual([1])
+    expect(seen.spins.length).toBeGreaterThan(spinsAtTap + 2) // A still spinning
+    finger('pointerup', 1, 140, 400)
+  })
+
+  it('a second finger holds still while the first drags: exactly one swap, the ring at the second finger', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 400); finger('pointermove', 1, 140, 400) // A drags (its own charge is cancelled)
+    finger('pointerdown', 2, 300, 600)
+    vi.advanceTimersByTime(holdFor)
+    finger('pointerup', 2, 300, 600)
+    vi.advanceTimersByTime(holdFor) // (nothing more charges)
+    finger('pointerup', 1, 140, 400)
+    expect(seen.holds).toBe(1)
+    const charging = seen.rings.filter((r) => r !== null)
+    expect(charging.length).toBeGreaterThan(0)
+    expect(charging.every((r) => r!.at?.x === 300 && r!.at?.y === 600)).toBe(true)
+    expect(seen.rotates).toEqual([]) // the finished hold isn't a tap
+  })
+
+  it('one finger swipes sideways while the other flicks up: the tank spins AND the console opens', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 400); finger('pointermove', 1, 140, 400)
+    vi.advanceTimersByTime(100)
+    finger('pointerdown', 2, 300, 600)
+    for (const y of [580, 540, 500]) { vi.advanceTimersByTime(20); finger('pointermove', 2, 300, y) }
+    finger('pointerup', 2, 300, 500)
+    vi.advanceTimersByTime(100)
+    finger('pointerup', 1, 140, 400)
+    expect(seen.consoles).toBe(1)
+    expect(seen.spins.length).toBeGreaterThan(0)
+    expect(seen.spins.every((d) => d === 1)).toBe(true)
+  })
+
+  it('two fingers both holding still: one swap only', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 100, 400); vi.advanceTimersByTime(100); finger('pointerdown', 2, 300, 400)
+    vi.advanceTimersByTime(holdFor * 2)
+    finger('pointerup', 1, 100, 400); finger('pointerup', 2, 300, 400)
+    expect(seen.holds).toBe(1)
+    expect(seen.rotates).toEqual([])
+  })
+
+  it('a finger that only tapped, or a second drag down, never stops the first finger\'s fast drop', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 300); finger('pointermove', 1, 200, 360) // A: drag down and hold
+    expect(seen.drop).toBe(true)
+    finger('pointerdown', 2, 300, 300); finger('pointerup', 2, 300, 300) // B taps
+    expect(seen.drop).toBe(true)
+    finger('pointerdown', 2, 300, 300); finger('pointermove', 2, 300, 360); vi.advanceTimersByTime(400); finger('pointerup', 2, 300, 360) // B drags down and lifts
+    vi.advanceTimersByTime(tank.flickDropMs + 50)
+    expect(seen.drop).toBe(true) // still A's
+    finger('pointerup', 1, 200, 360)
+    expect(seen.drop).toBe(false)
+  })
+
+  it('the first sideways finger owns the spin: A drags left and holds, B drags right → the tank keeps turning A\'s way', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 400); finger('pointermove', 1, 140, 400) // A: left → +1
+    vi.advanceTimersByTime(200)
+    finger('pointerdown', 2, 200, 600); finger('pointermove', 2, 260, 600) // B: right (would be -1)
+    vi.advanceTimersByTime(500)
+    expect(seen.spins.length).toBeGreaterThan(4)
+    expect(seen.spins.every((d) => d === 1)).toBe(true)
+    finger('pointerup', 2, 260, 600)
+    finger('pointerup', 1, 140, 400)
+    const n = seen.spins.length
+    vi.advanceTimersByTime(500)
+    expect(seen.spins.length).toBe(n) // both up: no more spinning
+  })
+
+  it('spin and fast drop at once: A drags left, B drags down; lifting B stops only the drop, lifting A only the spin', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 400); finger('pointermove', 1, 140, 400) // A: spin
+    finger('pointerdown', 2, 300, 300); finger('pointermove', 2, 300, 360) // B: fast drop
+    vi.advanceTimersByTime(400)
+    expect(seen.drop).toBe(true)
+    let n = seen.spins.length
+    expect(n).toBeGreaterThan(2)
+    finger('pointerup', 2, 300, 360)
+    expect(seen.drop).toBe(false)
+    vi.advanceTimersByTime(300)
+    expect(seen.spins.length).toBeGreaterThan(n + 1) // A still spinning
+    finger('pointerdown', 2, 300, 300); finger('pointermove', 2, 300, 360) // B drops again
+    finger('pointerup', 1, 140, 400)
+    n = seen.spins.length
+    vi.advanceTimersByTime(300)
+    expect(seen.spins.length).toBe(n) // spin stopped…
+    expect(seen.drop).toBe(true) // …the drop didn't
+    finger('pointerup', 2, 300, 360)
+  })
+
+  it('pointercancel of every finger clears everything: no stuck spin, fast drop or charge', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 400); finger('pointermove', 1, 140, 400) // spin
+    finger('pointerdown', 2, 300, 300); finger('pointermove', 2, 300, 360) // fast drop
+    finger('pointerdown', 3, 100, 700) // charging
+    vi.advanceTimersByTime(tank.holdDelayMs + 100)
+    expect(seen.rings.at(-1)).not.toBeNull()
+    for (const id of [1, 2, 3]) finger('pointercancel', id, 0, 0)
+    expect(seen.drop).toBe(false)
+    expect(seen.rings.at(-1)).toBeNull()
+    const n = seen.spins.length
+    vi.advanceTimersByTime(holdFor)
+    expect(seen.spins.length).toBe(n)
+    expect(seen.holds).toBe(0)
+    expect(seen.rotates).toEqual([])
+    // and a new finger works normally afterwards
+    finger('pointerdown', 4, 350, 300); finger('pointerup', 4, 350, 300)
+    expect(seen.rotates).toEqual([1])
+  })
+
+  it('detaching the controls lets go of every finger too', () => {
+    const { seen, finger } = fingerSetup()
+    finger('pointerdown', 1, 200, 400); finger('pointermove', 1, 140, 400)
+    finger('pointerdown', 2, 300, 300); finger('pointermove', 2, 300, 360)
+    finger('pointerdown', 3, 100, 700)
+    vi.advanceTimersByTime(tank.holdDelayMs + 100)
+    detach!(); detach = null
+    expect(seen.drop).toBe(false)
+    expect(seen.rings.at(-1)).toBeNull()
+    const n = seen.spins.length
+    vi.advanceTimersByTime(holdFor)
+    expect(seen.spins.length).toBe(n)
+    expect(seen.holds).toBe(0)
+  })
+
+  it('a key hold and a finger hold never both charge', () => {
+    const { seen, finger } = fingerSetup()
+    const key = (type: 'keydown' | 'keyup', code: string) => (window as unknown as EventTarget).dispatchEvent(event(type, { code, repeat: false }))
+    key('keydown', 'KeyR'); finger('pointerdown', 1, 200, 400)
+    vi.advanceTimersByTime(holdFor)
+    expect(seen.holds).toBe(1)
+    expect(seen.rings.filter((r) => r !== null).every((r) => r!.at === undefined)).toBe(true) // the key's: no finger position
+    key('keyup', 'KeyR'); finger('pointerup', 1, 200, 400)
+    expect(seen.holds).toBe(1)
+  })
+})

@@ -76,6 +76,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
   const readoutCanvas = useRef<HTMLCanvasElement>(null)
   const readoutEl = useRef<HTMLDivElement>(null)
   const lessonMark = useRef<HTMLDivElement>(null)
+  const swapRing = useRef<SVGSVGElement>(null)
   const live = useRef({ inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
   useEffect(() => { live.current = { inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
@@ -271,7 +272,11 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       softDrop,
       hold: () => engine.act({ type: 'hold' }),
       console: () => live.current.onConsole(),
-      holdProgress: (p) => { holdProgress = p },
+      // F28: a held key's swap timer is the HUD's Swap bar; a finger's (or the mouse's) is the ring beside it
+      holdProgress: (p, at) => {
+        holdProgress = at ? null : p
+        placeSwapRing(swapRing.current, el, p, at, layoutRef.current.side ? hud.sideTopPx : hud.topRowPx)
+      },
       canSwap: () => engine.allows('hold'), // F59: off before its rank (and in lessons) — no charging ring then
       // broken controls (F23/F24): a held turn repeats slower; single presses and quick swipes stay the same
       spinSlowdown: () => (s.machines?.controls.broken ? breakdowns.controls.heldSpinSlowdown : 1),
@@ -306,8 +311,37 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       {/* F30: an invisible box the frame loop puts over what a lesson message points at (a cell, the falling piece) —
           the kit's Callout points at it and rings it */}
       <div className="stage-pin lesson-mark" ref={lessonMark} aria-hidden />
+      {/* F28: the swap timer beside a holding finger (placeSwapRing moves and fills it; hidden otherwise) */}
+      <svg className="swap-ring" ref={swapRing} viewBox="0 0 100 100" data-testid="swap-ring" aria-hidden>
+        <circle className="swap-ring-track" cx="50" cy="50" r="40" />
+        <circle className="swap-ring-fill" cx="50" cy="50" r="40" pathLength={1} strokeDasharray="0 1" />
+      </svg>
     </div>
   )
+}
+
+// F28: the swap timer for a finger (or mouse) hold — a ring that fills (p 0..1) beside the finger at `at` (page px),
+// content/tuning/hud.json → swapRing: offset above-left so the thumb doesn't hide it; near a screen edge (or the HUD's
+// top row, clearTop px) it flips to the other side of the finger. p null (or a key hold, no `at`): hidden.
+// Moved straight on the element every frame of the charge (no React re-render).
+function placeSwapRing(svg: SVGSVGElement | null, stage: HTMLElement, p: number | null, at: { x: number; y: number } | undefined, clearTop: number) {
+  if (!svg) return
+  if (p === null || !at) { svg.style.display = 'none'; return }
+  const R = hud.swapRing, rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+  const size = R.sizeRem * rem, half = size / 2, box = stage.getBoundingClientRect()
+  const fx = at.x - box.left, fy = at.y - box.top // the finger, in the stage's px
+  const minX = half + R.edgePx, maxX = box.width - half - R.edgePx, minY = clearTop + half + R.edgePx, maxY = box.height - half - R.edgePx
+  let cx = fx + R.offsetXRem * rem, cy = fy + R.offsetYRem * rem
+  if (cx < minX || cx > maxX) cx = fx - R.offsetXRem * rem // off the side: the other side of the finger
+  if (cy < minY || cy > maxY) cy = fy - R.offsetYRem * rem // under the top row: below the finger
+  cx = Math.min(Math.max(cx, minX), maxX); cy = Math.min(Math.max(cy, minY), maxY)
+  // the line's thickness, in the ring's own 0..100 units (the circles have r 40: room for up to 20 units of line)
+  const stroke = String(Math.min(20, (R.strokeRem / R.sizeRem) * 100))
+  for (const c of svg.querySelectorAll('circle')) c.setAttribute('stroke-width', stroke)
+  svg.querySelector('.swap-ring-fill')?.setAttribute('stroke-dasharray', `${p} 1`)
+  svg.style.display = 'block'
+  svg.style.width = svg.style.height = `${size}px`
+  svg.style.transform = `translate(${cx - half}px, ${cy - half}px)`
 }
 
 // The visible tank's left and right edges on screen (CSS px)

@@ -176,6 +176,23 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D15 · 2026-10-20 · Every finger is its own gesture: per-finger state with owners, swap ring at the finger (F28 task 5)
+  Proposed by: Muzzy (C-1: "if one finger is dragging, and the other taps, i don't mind if it's dragging and rotating at
+  the same time… the 'swap' timer graphic appears next to the touch"; "if one finger is drag holding left, the other
+  finger can't drag hold right, because drag hold is already being used"; "i can drag hold left and drag hold down at
+  the same time")
+  Chose: controls.ts keeps a Map of fingers by pointerId (one Finger each: start, now, lock axis, consumed…) instead of
+  the one `ptr`. OWNERS: the spin belongs to the first finger to lock sideways, the fast drop to the first to lock
+  up/down, each until that finger lifts — another finger dragging the same way does nothing; a finger's lift / cancel
+  lets go of only what it owned (letGo), and detach lets go of every finger. ONE swap charge at a time (holdFinger or
+  holdKey); a finger that drags cancels only its own charge; a second finger landing never cancels anything. A finger's
+  flick up opens the console whoever owns what; a flick down's short drop only from the drop owner, and its timer won't
+  turn off a newer drag-down. holdProgress(p, at): at = the finger's page px → ShiftStage's placeSwapRing moves an SVG
+  ring straight on the element each frame of the charge (no React re-render; the HUD snapshot is only 10 a second);
+  no `at` (a key) → the HUD's Swap bar as before. Ring knobs: content/tuning/hud.json swapRing (rem; flips to the other
+  side of the finger near an edge or the top row). Colours = the style's accent (the Swap bar's) + surface tokens.
+  Not chosen: the "most recent finger's direction wins" spin (Muzzy overruled it); a kit ring part (the kit has none —
+  a small SVG in the stage, pointer-events none).
 D14 · 2026-10-20 · Day one's missing lesson pieces are small additions to the F30 format, not a tutorial mode (F31 spike)
   Proposed by: Claude (Sprint 10 task 9: tutorial.md §6 checked line by line → §9)
   Chose: extend what's there. Engine (training.ts): a queue's `then` fallback rule (pieces round and round + a build-up

@@ -6,6 +6,13 @@
    with a CSS translate), above the visor glitch (z-index 1), so the reading stays clear while the view breaks up. */
 .stage-readout { z-index: 2; pointer-events: none; }
 .stage-pin { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; }
+/* F28 the swap timer beside a holding finger (ShiftStage placeSwapRing: size, place and fill; content/tuning/hud.json
+   swapRing). Never catches touches. Fills clockwise from the top in the style's accent (the HUD Swap bar's colour), on
+   a faint track of the same colour over a dark disc, so it reads over goop and water alike. */
+.swap-ring { position: absolute; left: 0; top: 0; z-index: 2; display: none; pointer-events: none; overflow: visible; }
+.swap-ring circle { fill: none; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.swap-ring .swap-ring-track { stroke: var(--accent); stroke-opacity: 0.3; fill: var(--surface); fill-opacity: 0.6; }
+.swap-ring-fill { stroke: var(--accent); stroke-linecap: round; filter: var(--glow); }
 /* F32: a lesson's invisible target box on the console art (src/ui/RepairPanels.tsx LessonTag) fills its whole layer,
    even a layer of words (which centres its contents) — and a little past it, so the lesson's pulse ring has breathing
    room round the lamp or the words instead of crossing them */

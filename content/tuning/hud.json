@@ -37,6 +37,14 @@
     "color": "#ffffff",
     "footPx": 4
   },
+  "_swapRing": "F28 (Muzzy 2026-10-20): the swap timer for a FINGER (or mouse) hold — a small ring that fills beside the holding finger instead of the HUD's Swap bar (a held key keeps the bar). sizeRem = the ring's width; strokeRem = how thick its line is; offsetXRem / offsetYRem = where its centre sits from the finger (negative = left / up — above-left so the thumb doesn't cover it; near a screen edge it flips to the other side); edgePx = kept clear of the screen's edges and the HUD's top row. In rem, so it grows with Settings → Text size. Colours are the UI style's accent (fill) and surface (track).",
+  "swapRing": {
+    "sizeRem": 2.75,
+    "strokeRem": 0.3,
+    "offsetXRem": -2.6,
+    "offsetYRem": -2.6,
+    "edgePx": 4
+  },
   "_chevrons": "The drop guide: faint downward chevrons in the column under the falling piece, from just below it down to its landing shadow. spacingCells = one chevron every this many rows, counted up from the landing shadow. widthCells / heightCells / lineWidthCells = each chevron's size. color; alpha = how faint at rest, peakAlpha = the brightest, as a wave of light runs down them (top to bottom, like landing lights), over only the chevrons still showing. wavePerSec = chevrons the wave passes per second (the beat stays the same however many are left); fastMultiplier = how much faster while fast drop is held; waveWidth = how many chevrons the bright part spans. Reduce motion: no wave, just the faint chevrons.",
   "chevrons": {
     "spacingCells": 2.5,

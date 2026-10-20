@@ -5,9 +5,12 @@
 //   hold = fast drop until the lift · quick flick down = a short fast drop · quick flick up = the console · C-6 fast
 //   sideways drag ending in an upward lift = no console · C-8 drag down then flick up = no console · hold still 1.5 s =
 //   swap with the next piece (rank 3+), nothing at rank 2 · diagonal drag = one axis only (the bigger one at the drag
-//   lock) · tap a ready group = pops it
-//   + TODAY'S BEHAVIOUR, three blocks marked "Muzzy's call pending — F28 task 5": C-1 second finger ignored · C-2 tap on
-//   goop that isn't ready jiggles, no rotate · C-3 a 0.5 s press does nothing. Flip those blocks when he decides.
+//   lock) · tap a ready group = pops it · tap the falling piece = rotates by screen half (not a zap)
+//   + Muzzy's calls (2026-10-20, F28 task 5): C-1 every finger is its own gesture — a second finger's tap rotates and its
+//   hold swaps while the first drags; the first sideways finger owns the spin (a second one dragging the other way does
+//   nothing); one finger spins while another fast-drops · the swap timer for a finger hold is a ring BESIDE the finger
+//   (not the HUD's Swap bar; a held key keeps the bar) · C-2 contextual taps, as a PC click (goop that isn't ready
+//   jiggles, no rotate) · C-3 a 0.5 s press does nothing (no change until the phone re-check).
 // Every touch number comes from content/tuning/tank.json (dragLockRem, dragDeadZoneRem, flickMs, flickRem, flickDropMs,
 // holdDelayMs, holdToSwapMs, spinRepeatMs) × the page's rem — never restated here.
 // Reads the game through the dev hooks (window.__goops) and a spy on engine.act (which controls were sent, with what).
@@ -93,6 +96,24 @@ try {
     }
     return most
   }, [ms, text.hud.swap])
+  // F28: the swap ring beside a holding finger (ShiftStage placeSwapRing) — watch it for ms while the finger is at
+  // (fx, fy) → the fullest it got (0..1, or -1 if it never showed), the furthest its centre was from the finger (px), and
+  // whether the HUD's Swap bar showed meanwhile (it shouldn't, for a finger)
+  const swapRing = (ms, fx, fy) => get(async ([ms, fx, fy, name]) => {
+    const end = performance.now() + ms
+    let most = -1, far = 0, bar = false
+    while (performance.now() < end) {
+      const ring = document.querySelector('[data-testid="swap-ring"]')
+      if (ring && getComputedStyle(ring).display !== 'none') {
+        most = Math.max(most, parseFloat(ring.querySelector('.swap-ring-fill').getAttribute('stroke-dasharray')))
+        const b = ring.getBoundingClientRect()
+        far = Math.max(far, Math.hypot(b.left + b.width / 2 - fx, b.top + b.height / 2 - fy))
+      }
+      for (const b of document.querySelectorAll('[role="progressbar"]')) if (b.getAttribute('aria-label') === name) bar = true
+      await new Promise((r) => setTimeout(r, 30))
+    }
+    return { most, far: Math.round(far), bar }
+  }, [ms, fx, fy, text.hud.swap])
 
   // the tank on screen: page-px points over EMPTY water in the upper tank, left and right of the middle
   const where = () => get(() => {
@@ -218,29 +239,44 @@ try {
     const before = await get(() => { const s = window.__goops.engine.state; return { piece: JSON.stringify(s.piece.colors), next: JSON.stringify(s.next) } })
     const m = await mark()
     await fingerDown(...w.mid)
-    const bar = await swapBar(tank.holdToSwapMs * 0.85)
+    const ring = await swapRing(tank.holdToSwapMs * 0.85, ...w.mid)
     await sleep(tank.holdToSwapMs * 0.15 + 400)
     await fingerUp(); await sleep(80)
     const after = await get(() => { const s = window.__goops.engine.state; return { piece: JSON.stringify(s.piece?.colors), next: JSON.stringify(s.next) } })
     const r = await actsSince(m)
     check(`rank 3: hold still ${tank.holdToSwapMs / 1000} s swaps once`, r.filter((a) => a.type === 'hold').length === 1, JSON.stringify(r.map((a) => a.type)))
     check('…the falling piece and the next piece traded', after.next === before.piece && after.piece === before.next, `${JSON.stringify(before)} → ${JSON.stringify(after)}`)
-    check('…the Swap bar filled while it charged', bar >= 50, `filled to ${bar}% (by ${Math.round(tank.holdToSwapMs * 0.85)} ms)`)
+    check('…the swap ring filled beside the finger while it charged', ring.most >= 0.5 && ring.far <= 80, `filled to ${Math.round(ring.most * 100)}% (by ${Math.round(tank.holdToSwapMs * 0.85)} ms) · centre ${ring.far} px from the finger`)
+    check('…and NOT the HUD\'s Swap bar (that\'s for a held key)', !ring.bar)
+    check('…the ring is gone after the swap', await get(() => getComputedStyle(document.querySelector('[data-testid="swap-ring"]')).display === 'none'))
     check('…no rotate, no pop on the lift', !r.some((a) => a.type === 'rotate' || a.type === 'pop'))
   }
 
-  // ═══ 9. C-3 — Muzzy's call pending — F28 task 5 ═══
-  // TODAY: a press held past holdDelayMs and lifted before holdToSwapMs does NOTHING (no rotate, no swap; the Swap bar
-  // flashes). If Muzzy picks "a short-ish press still counts as a tap", flip this block to expect one rotate.
+  // ═══ 9. C-3 — a slow press (Muzzy 2026-10-20: no change until the phone re-check) ═══
+  // A press held past holdDelayMs and lifted before holdToSwapMs does NOTHING (no rotate, no swap; the swap ring
+  // flashes up beside the finger).
   {
     const pressMs = 500
     const m = await mark()
     await fingerDown(...w.right)
-    const bar = await swapBar(pressMs - 40)
+    const ring = await swapRing(pressMs - 40, ...w.right)
     await fingerUp(); await sleep(tank.holdToSwapMs) // (past when a swap would have fired)
     const r = await actsSince(m)
-    check(`C-3 (today) a ${pressMs} ms press then lift: no rotate, no swap, no pop`, !r.some((a) => ['rotate', 'hold', 'pop'].includes(a.type)), JSON.stringify(r.map((a) => a.type)))
-    check('C-3 (today) …the Swap bar flashed up meanwhile', bar >= 0, `got to ${bar}%`)
+    check(`C-3 a ${pressMs} ms press then lift: no rotate, no swap, no pop`, !r.some((a) => ['rotate', 'hold', 'pop'].includes(a.type)), JSON.stringify(r.map((a) => a.type)))
+    check('C-3 …the swap ring flashed up meanwhile', ring.most >= 0, `got to ${Math.round(ring.most * 100)}%`)
+  }
+
+  // ═══ 9b. a held KEY's swap timer is still the HUD's Swap bar, not the ring (F28) ═══
+  {
+    const m = await mark()
+    await page.keyboard.down('ShiftRight')
+    const bar = await swapBar(tank.holdToSwapMs * 0.85)
+    const ringShown = await get(() => getComputedStyle(document.querySelector('[data-testid="swap-ring"]')).display !== 'none')
+    await sleep(tank.holdToSwapMs * 0.15 + 300)
+    await page.keyboard.up('ShiftRight'); await sleep(80)
+    const r = await actsSince(m)
+    check('a held Right Shift charges the HUD\'s Swap bar (no ring) and swaps once', bar >= 50 && !ringShown && r.filter((a) => a.type === 'hold').length === 1,
+      `bar ${bar}% · ring ${ringShown} · ${r.filter((a) => a.type === 'hold').length} swaps`)
   }
 
   // ═══ 10. diagonal drags lock to ONE axis: whichever is bigger at the drag lock (C-5 today) ═══
@@ -260,28 +296,79 @@ try {
       want === 'H' ? spun && !dropped : dropped && !spun, `spins ${r.filter((a) => a.type === 'spin').length} · fast drop ${dropped}`)
   }
 
-  // ═══ 11. C-1 — Muzzy's call pending — F28 task 5 ═══
-  // TODAY: while the first finger drags, a second finger's tap is ignored completely (no rotate, no pop) and the first
-  // finger's drag carries on. If Muzzy picks "a second thumb's tap turns the piece", flip this block to expect a rotate.
-  await fresh(); w = await where()
+  // ═══ 11. C-1 — every finger is its own gesture (Muzzy 2026-10-20, GDD §4 "Touch, finger by finger") ═══
+  // While the first finger drags left and holds: a second finger's tap rotates (by screen half), its hold swaps (with
+  // the ring beside IT), and its sideways drag the other way does nothing (the first finger owns the spin).
+  // (CDP: every touchMove / touchStart lists the first finger too, where it stays; a touchEnd lifts the fingers it lists.)
+  await fresh(3); w = await where()
   {
-    const [x, y] = w.mid, out = px(tank.dragDeadZoneRem) * 3
+    const [x, y] = w.mid, out = px(tank.dragDeadZoneRem) * 3, A = [x - out, y]
+    const spins = (r) => r.filter((a) => a.type === 'spin')
     await fingerDown(x, y)
     for (const [mx] of line(x, y, x - out, y, 5).slice(1)) { await sleep(10); await fingerMove(mx, y) }
     await sleep(250)
+    // a tap with a second finger on the right half
     const m = await mark()
     // (make sure the page really saw a second finger go down and up, or this block proves nothing)
     await get(() => { window.__fingers = []; for (const t of ['pointerdown', 'pointerup']) window.addEventListener(t, (e) => window.__fingers.push(`${t} ${e.pointerId}`), true) })
-    await touch('touchStart', [[x - out, y, 0], [w.right[0], w.right[1], 1]]) // second finger down on the right half
+    await touch('touchStart', [[...A, 0], [w.right[0], w.right[1], 1]])
     await sleep(40)
-    await touch('touchEnd', [[w.right[0], w.right[1], 1]]) // …and up again (CDP: a touchEnd lifts the fingers it lists)
+    await touch('touchEnd', [[w.right[0], w.right[1], 1]])
     await sleep(300)
     const r = await actsSince(m)
     const seen = await get(() => window.__fingers.slice())
-    await fingerUp(); await sleep(60)
     check('C-1 setup: the page saw a second finger go down and up while the first stayed', seen.length === 2 && seen[0].startsWith('pointerdown') && seen[1] === seen[0].replace('down', 'up'), seen.join(', '))
-    check('C-1 (today) a second finger\'s tap while the first drags: ignored (no rotate, no pop)', !r.some((a) => a.type === 'rotate' || a.type === 'pop'), JSON.stringify([...new Set(r.map((a) => a.type))]))
-    check('C-1 (today) …the first finger kept spinning the tank', r.filter((a) => a.type === 'spin').length >= 2, `${r.filter((a) => a.type === 'spin').length} spins`)
+    const rots = r.filter((a) => a.type === 'rotate')
+    check('C-1 a second finger\'s tap while the first drags: rotates clockwise (right half), no zap', rots.length === 1 && rots[0].dir === 1 && !r.some((a) => a.type === 'pop'), JSON.stringify(r.filter((a) => a.type !== 'spin')))
+    check('C-1 …the first finger kept spinning the tank', spins(r).length >= 2 && spins(r).every((a) => a.dir === 1), `${spins(r).length} spins`)
+
+    // a hold with the second finger: one swap, the ring beside the SECOND finger, the spin carries on
+    const B = [w.stage.left + w.stage.width * 0.7, w.stage.top + w.stage.height * 0.55]
+    const m2 = await mark()
+    await touch('touchStart', [[...A, 0], [...B, 1]])
+    const ring = await swapRing(tank.holdToSwapMs * 0.85, ...B)
+    await sleep(tank.holdToSwapMs * 0.15 + 400)
+    await touch('touchEnd', [[...B, 1]])
+    await sleep(80)
+    const r2 = await actsSince(m2)
+    check('C-1 a second finger held still while the first drags: exactly one swap (rank 3), no rotate', r2.filter((a) => a.type === 'hold').length === 1 && !r2.some((a) => a.type === 'rotate'), JSON.stringify(r2.filter((a) => a.type !== 'spin').map((a) => a.type)))
+    check('C-1 …the swap ring sat beside the holding (second) finger, not in the HUD', ring.most >= 0.5 && ring.far <= 80 && !ring.bar, JSON.stringify(ring))
+    check('C-1 …and the first finger kept spinning all the while', spins(r2).length >= 8, `${spins(r2).length} spins`)
+
+    // the second finger drags RIGHT and holds: the first (left) owns the spin, so the tank keeps turning its way
+    const C = [w.mid[0], w.stage.top + w.stage.height * 0.55]
+    const m3 = await mark()
+    await touch('touchStart', [[...A, 0], [...C, 1]])
+    for (const [cx] of line(C[0], C[1], C[0] + out, C[1], 5).slice(1)) { await sleep(10); await touch('touchMove', [[...A, 0], [cx, C[1], 1]]) }
+    await sleep(600)
+    const r3 = await actsSince(m3)
+    await touch('touchEnd', [[C[0] + out, C[1], 1]])
+    await fingerUp(); await sleep(60)
+    check('C-1 first finger drags left, second drags right: the tank keeps turning the FIRST finger\'s way', spins(r3).length >= 4 && spins(r3).every((a) => a.dir === 1),
+      `${spins(r3).length} spins, dirs ${[...new Set(spins(r3).map((a) => a.dir))]}`)
+  }
+
+  // ═══ 11b. spin and fast drop at once (Muzzy 2026-10-20: "i can drag hold left and drag hold down at the same time") ═══
+  await fresh(); w = await where()
+  {
+    const [x, y] = w.mid, out = px(tank.dragDeadZoneRem) * 3, A = [x - out, y]
+    const Bs = [w.stage.left + w.stage.width * 0.7, w.stage.top + w.stage.height * 0.35], down = px(tank.flickRem) * 1.5
+    const spins = (r) => r.filter((a) => a.type === 'spin').length
+    await fingerDown(x, y)
+    for (const [mx] of line(x, y, x - out, y, 5).slice(1)) { await sleep(10); await fingerMove(mx, y) }
+    await touch('touchStart', [[...A, 0], [...Bs, 1]])
+    for (const [, by] of line(Bs[0], Bs[1], Bs[0], Bs[1] + down, 5).slice(1)) { await sleep(10); await touch('touchMove', [[...A, 0], [Bs[0], by, 1]]) }
+    await sleep(100)
+    const m = await mark()
+    await sleep(500)
+    const both = await actsSince(m)
+    check('A drags left + B drags down, both held: the tank keeps spinning AND the piece fast-drops', spins(both) >= 3 && (await lastSoftDrop()) === true, `${spins(both)} spins in 500 ms · fast drop ${await lastSoftDrop()}`)
+    await touch('touchEnd', [[Bs[0], Bs[1] + down, 1]]); await sleep(60)
+    const m2 = await mark(); await sleep(400)
+    check('…lifting B stops only the fast drop (still spinning)', (await lastSoftDrop()) === false && spins(await actsSince(m2)) >= 2, `${spins(await actsSince(m2))} spins after`)
+    await fingerUp(); await sleep(60)
+    const m3 = await mark(); await sleep(400)
+    check('…lifting A stops the spin', spins(await actsSince(m3)) === 0)
   }
 
   // ═══ 12. rank 2 (swap not unlocked): a hold does nothing, no Swap bar ═══
@@ -289,16 +376,16 @@ try {
   {
     const m = await mark()
     await fingerDown(...w.mid)
-    const bar = await swapBar(tank.holdToSwapMs + 300)
+    const ring = await swapRing(tank.holdToSwapMs + 300, ...w.mid)
     await fingerUp(); await sleep(80)
     const r = await actsSince(m)
     check(`rank 2: hold still ${(tank.holdToSwapMs + 300) / 1000} s → no swap, no rotate`, !r.some((a) => a.type === 'hold' || a.type === 'rotate'), JSON.stringify(r.map((a) => a.type)))
-    check('rank 2: …and no Swap bar', bar === -1)
+    check('rank 2: …and no swap ring, no Swap bar', ring.most === -1 && !ring.bar)
   }
 
-  // ═══ 13. C-2 — Muzzy's call pending — F28 task 5 ═══
-  // TODAY: a tap on goop that can't pop yet (here: above the pressure line) jiggles it and does NOT rotate the piece.
-  // If Muzzy picks "the tap falls through and turns the piece", flip this block to expect one rotate (+ the jiggle).
+  // ═══ 13. C-2 — contextual taps (Muzzy 2026-10-20: contextual taps, as PC) ═══
+  // A tap on goop that can't pop yet (here: above the pressure line) jiggles it and does NOT rotate the piece — the
+  // same as a mouse click.
   await fresh(); w = await where()
   {
     // land the first piece, then hold the rules still with the pressure line at the floor: that goop can't pop
@@ -329,10 +416,32 @@ try {
       for (let k = 0; k < 6; k++) { await sleep(40); peak = Math.max(peak, await motion()) }
       const r = await actsSince(m)
       const still = await get((c) => !!window.__goops.engine.state.grid[c], got)
-      check('C-2 (today) tap on goop that can\'t pop: no rotate', pos.onCell && !r.some((a) => a.type === 'rotate'), JSON.stringify(r.map((a) => a.type)))
-      check('C-2 (today) …it tried to zap, the goop stays and jiggles', r.some((a) => a.type === 'pop') && still && peak > Math.max(calm * 4, 0.02),
+      check('C-2 tap on goop that can\'t pop: no rotate', pos.onCell && !r.some((a) => a.type === 'rotate'), JSON.stringify(r.map((a) => a.type)))
+      check('C-2 …it tried to zap, the goop stays and jiggles', r.some((a) => a.type === 'pop') && still && peak > Math.max(calm * 4, 0.02),
         `motion ${calm.toFixed(3)} → peak ${peak.toFixed(3)}`)
     }
+  }
+
+  // ═══ 13b. C-2: a tap ON THE FALLING PIECE rotates by screen half, like empty water (not a zap) ═══
+  await fresh(); w = await where()
+  {
+    // let the piece fall fully into view (rules ticked by hand, so the test doesn't wait on gravity)
+    await get(() => { const { engine } = window.__goops, s = engine.state
+      for (let t = 0; t < 60 && Math.min(...s.piece.cells.map((c) => c[1])) < s.bufferRows + 1; t++) engine.tick(100) })
+    await page.waitForTimeout(400) // the camera settles
+    const pos = await get(() => { const { engine, view, cellAt } = window.__goops, s = engine.state
+      const stage = document.querySelector('[data-testid="stage"]').getBoundingClientRect()
+      const [x, y] = s.piece.cells[0]
+      let d = x - view.camera; d = ((d % s.width) + s.width) % s.width; if (d >= s.width / 2) d -= s.width
+      const px = view.centreX + d * view.cellPx + stage.left, py = view.topY + (y - s.bufferRows + 0.5) * view.cellPx + stage.top
+      const hit = cellAt(px, py)
+      return { px, py, onPiece: !!hit && hit[0] === x && hit[1] === y, half: px < stage.left + stage.width / 2 ? -1 : 1, rotation: s.piece.rotation } })
+    const m = await mark()
+    await tap(pos.px, pos.py); await sleep(100)
+    const r = await actsSince(m)
+    const rots = r.filter((a) => a.type === 'rotate')
+    check(`C-2 a tap on the falling piece rotates it by screen half (${pos.half < 0 ? 'left ↺' : 'right ↻'}), no zap`,
+      pos.onPiece && rots.length === 1 && rots[0].dir === pos.half && !r.some((a) => a.type === 'pop'), JSON.stringify({ pos, acts: r.map((a) => a.type) }))
   }
 
   // ═══ 14. tap a ready group: pops it (T6) ═══
