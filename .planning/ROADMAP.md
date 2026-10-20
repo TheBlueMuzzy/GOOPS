@@ -40,7 +40,7 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
 - 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
   note: Muzzy (2026-10-19, F07): "story is beta. alpha is playable game"
-- 📐 F10 ❓ Phone gestures without conflicts — must:alpha
+- 🔨 F10 ❓ Phone gestures without conflicts — must:alpha
   note: gesture list + 14-line phone checklist done (research/gestures.md); waits for Muzzy's phone session (2026-10-19: "developing fully on PC for now")
 - ✅ F11 Look: Muzzy's art; kit Neon only where there's no art; pixel look later (Ideas) — sound still open — must:alpha
 - ✅ F12 ❓ Tutorial: "your first day", a scripted staged day (v1 style, Muzzy 2026-10-19) — must:alpha · needs: F03, F04, F06 · decided 2026-10-19: research/tutorial.md (15 steps + 3 breakdown lessons; answers in §8)
@@ -94,11 +94,11 @@ Goal: machines break from your own play and you fix them at the console while th
 
 ## M4 — Alpha: the playable game, for you + friends
 Goal: a friend installs it from a link, learns to play from "your first day", and plays shifts through rank 9 with all three machines and sound — no upgrades, no story yet (Muzzy 2026-10-19: "alpha is playable game").
-- 📐 F28 🎮 Gesture fixes (from F10's list) — must:alpha · needs: F10
+- 🔨 F28 🎮 Gesture fixes (from F10's list) — must:alpha · needs: F10
 - ✅ F29 🧱 Sound basics: recorded CC0 effects through the framework audio module, volume rows on — must:alpha · approved 2026-10-19 ("not great, but happy to have sounds"; better sounds come in F53)
 - ✅ F30 🧱 Lesson runner: plain how-to-play lessons from data files (the story's intercom voice layers on in beta) — must:alpha · needs: F12
   note: built in Goops first, for the framework session to lift into a module later (Muzzy 2026-10-19)
-- 📐 F31 🎮 Your first day: the rank 0 how-to-play — must:alpha · needs: F30, F28
+- 🔨 F31 🎮 Your first day: the rank 0 how-to-play — must:alpha · needs: F30, F28
 - ✅ F32 🎮 First-breakdown lessons (visor, laser, controls) — must:alpha · needs: F30
 - ✅ F36 ✨ Readable cracks: bubbles, x-ray box, sealed look — should:alpha · needs: F25 · approved 2026-10-19 (+ visor scan lines in the box, pixel red X = wrong colour, covered cracks leak half the bubbles, sealed none)
 - ✅ F58 🐞 Clicks beside the tank zap goop you can't see (screenToCell wraps to the hidden back) — must:alpha · fixed 2026-10-19: only the visible tank takes clicks (geometry.ts screenToVisibleCell; tests/view/geometry.test.ts + e2e/controls.mjs)
