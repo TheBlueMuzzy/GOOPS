@@ -5,6 +5,7 @@ Decided at planning (Muzzy, 2026-10-19): rank 1 = next piece shown · rank 3 = s
 
 ## F59 🎮 Rank unlocks (window 1 · swap 3 · upgrades 5)
 Check: unit tests for swap-with-next and the unlock rule · e2e/unlocks.mjs at ranks 0/1/3/5 (window shows from 1, swap only from 3, Upgrades button opens at 5, each unlock lesson fires once) · shots at 390x844, 360x780, 1440x900 looked at · Muzzy plays ?rank=0 → 5 on PC and phone
+Checked: check:full ALL PASS 18/18 (7.3 min, after b3edde9) incl. new e2e/unlocks 44 checks (ranks 0/1/3/5, swap refused before 3 by keys + tank hold, each unlock lesson once, Replay, rank-up line) · 386 unit tests · shots at 390x844, 360x780, 768x343, 1100x800, 1440x900, 1920x1080 looked at (helper + me) · review (low) of f3be80e..b3edde9: no real bugs; Dev Kit gap fixed (old snapshots restore swap by rank) · Muzzy plays next
 - [x] 🤖 1. Unlock ranks in content + one "what's unlocked at this rank" rule the HUD, input and console all ask — content/tuning/progression.json, src/progress/progression.ts
 - [x] 🤖 2. Swap trades the falling piece with the next one (it appears where the falling one was; the old one goes back to the window); no held piece, no hold filled at shift start; tests — src/engine/shift.ts, tests/
 - [x] 🤖 3. Swap off before its rank: Right Shift, R and the phone hold do nothing (no hold-progress ring); the first-day plan keeps swap off in free play — src/input/controls.ts, src/ui/App.tsx, .planning/research/tutorial.md
@@ -16,6 +17,7 @@ Check: unit tests for swap-with-next and the unlock rule · e2e/unlocks.mjs at r
 
 ## F60 🧱 Screen look, reusable
 Check: monitor shots before/after match · switching presets in the Dev Kit changes the look live · the second use (next-piece window) takes a few lines · check:full green
+Checked: monitor before/after pixel-identical at 390x844, 360x780, 1440x900, 1920x1080 · devkit-live: use.monitor → amber/off and a preset knob change it live, full pause freezes its motion · second place (next-piece window) = one wrapper + one data line, shots looked at · check:full green
 - [x] 🤖 9. Pull the CRT look (glow, scan lines, typing + block cursor, wobble) out of the monitor into one reusable piece — src/game/crt.ts, src/game/crt.css
 - [x] 🤖 10. Applying it = one wrapper or class with a preset name; the monitor uses it, looks unchanged (shot before/after) — src/ui/Console.tsx
 - [x] 🤖 11. Presets in content (green DOS = today's look, plus amber and off), each live in the Dev Kit — content/tuning/crt.json

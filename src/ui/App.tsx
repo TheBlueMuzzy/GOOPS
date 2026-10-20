@@ -196,6 +196,9 @@ export function App() {
   // the tank straight away (menus closed); null → back to the console. Junk throws (restoreShift says why).
   const restoreSnapshot = useCallback((snapshot: ShiftSnapshot | null) => {
     lessonPlay.stop() // (a snapshot puts back the shift, not a lesson's place in it)
+    // (a snapshot saved before F59 has no swap option: give it the one its rank has, not "on")
+    const o = snapshot?.options
+    if (o && o.swap === undefined) o.swap = !o.training && isUnlocked('swap', o.rank)
     const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns)
     if (e) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     while (screens.current.length) screens.pop()
