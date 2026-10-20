@@ -8,7 +8,7 @@ Check: version.json shown on the console · a release build at /GOOPS/alpha/ ins
 - [x] 🤖 2. Installable full-screen app at /GOOPS/alpha/: base path, manifest scope / id / matching colours / maskable icon, apple tags, a service worker scoped to /GOOPS/alpha/ with a "new version" refresh, e2e update test — public/manifest.json, index.html, src/main.tsx
 - [x] 🤖 3. Deploy script: build, then add the build as alpha/ on gh-pages keeping v1's root (dry run only — going online is /deliver) — scripts/deploy.js
 - [x] 🤖 4. Dev Kit ON in the release build: audit calls that need the dev server (kit-copy problems go to the framework session, never edited here), bug files work offline, check on a release build — src/devkit-game/
-- [ ] 🤖 5. Release plumbing: GitHub checks on every push, check:framework, the alpha release checklist — package.json, scripts/check-all.mjs
+- [x] 🤖 5. Release plumbing: GitHub checks on every push, check:framework, the alpha release checklist — package.json, scripts/check-all.mjs
 - [ ] 🤖 6. Frame-rate counter (Dev Kit / ?fps) and a pass line in the speed test, full tank, both goo styles — e2e/perf.mjs
 - [ ] 🤖 7. Broken-machine messages in PC wording on PC ("swipe up to fix" logged in Sprint 10) — content/text/en.json
 - [ ] 🙋 8. Install it on two real phones, fill the tank in both goo styles, read the fps (playtest log) — .planning/research/
