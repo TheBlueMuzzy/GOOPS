@@ -20,6 +20,7 @@ try {
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto(`http://localhost:${PORT}/?seed=11&rank=3`)
+  await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break at rank 3: its lesson would pause the keys)
   await startShift(page)
   await page.waitForTimeout(200)
   const get = (f, arg) => page.evaluate(f, arg)
