@@ -10,7 +10,7 @@ Check: version.json shown on the console · a release build at /GOOPS/alpha/ ins
 - [x] 🤖 4. Dev Kit ON in the release build: audit calls that need the dev server (kit-copy problems go to the framework session, never edited here), bug files work offline, check on a release build — src/devkit-game/
 - [x] 🤖 5. Release plumbing: GitHub checks on every push, check:framework, the alpha release checklist — package.json, scripts/check-all.mjs
 - [x] 🤖 6. Frame-rate counter (Dev Kit / ?fps) and a pass line in the speed test, full tank, both goo styles — e2e/perf.mjs
-- [ ] 🤖 7. Broken-machine messages in PC wording on PC ("swipe up to fix" logged in Sprint 10) — content/text/en.json
+- [x] 🤖 7. Broken-machine messages in PC wording on PC ("swipe up to fix" logged in Sprint 10) — content/text/en.json
 - [ ] 🙋 8. Install it on two real phones, fill the tank in both goo styles, read the fps (playtest log) — .planning/research/
 
 ## Notes

@@ -13,7 +13,7 @@ import { session } from '../game/session'
 import { looksClock, rulesClock } from '../devkit/gameClock'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { readoutSetting } from '../game/readoutSetting'
-import type { Message } from '../game/messages'
+import { messageWords, type Message } from '../game/messages'
 import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '../game/lessons/goopsLessons'
 import { LessonView } from '../game/lessons/LessonView'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
@@ -87,7 +87,7 @@ const SettingsScreen = () => (
 const ONE_DAY_S = 86_400 // (the kit's own timer, never reached: the looks clock takes it away)
 const onMessage = (m: Message) => {
   if (lessonPlay.messageUp()) return // a lesson message is up: the game's own messages keep quiet (F30)
-  const id = toast(text.messages[m.key], { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
+  const id = toast(messageWords(m.key, lessonPlay.inputKind()), { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
 

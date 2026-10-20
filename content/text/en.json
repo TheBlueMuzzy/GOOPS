@@ -79,9 +79,9 @@
   "messages": {
     "refusedAboveLine": "Above the pressure line",
     "refusedFilling": "Still filling",
-    "brokeLaser": "Laser broken — swipe up to fix",
-    "brokeVisor": "Visor broken — swipe up to fix",
-    "brokeControls": "Controls broken — swipe up to fix",
+    "brokeLaser": { "keys": "Laser broken — W or ↑ to fix", "mouse": "Laser broken — flick up to fix", "phone": "Laser broken — swipe up to fix" },
+    "brokeVisor": { "keys": "Visor broken — W or ↑ to fix", "mouse": "Visor broken — flick up to fix", "phone": "Visor broken — swipe up to fix" },
+    "brokeControls": { "keys": "Controls broken — W or ↑ to fix", "mouse": "Controls broken — flick up to fix", "phone": "Controls broken — swipe up to fix" },
     "integrityLow": "Tank weak — seal the cracks!",
     "pressureHigh": "Pressure near max — zap goop!",
     "quotaMet": "Quota met! Every crack now is a bonus.",
