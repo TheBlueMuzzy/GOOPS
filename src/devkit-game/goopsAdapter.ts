@@ -10,6 +10,7 @@ import type { DevKitGame } from '../devkit/devkitGame'
 import type { ShiftEvent, ShiftState } from '../engine'
 import { readSnapshot, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
+import { versionLabel } from '../version'
 
 type GoopsMoment = { shift: ShiftSnapshot | null }
 
@@ -46,7 +47,7 @@ export function describeShift(s: Pick<ShiftState, 'rank' | 'score' | 'cracksSeal
 
 export const goopsAdapter: DevKitGame = {
   name: 'Goops',
-  version: import.meta.env.GOOPS_VERSION ?? 'dev',
+  version: versionLabel, // "vX.Y.Z.B" — the same words as the console footer (src/version.ts)
   getState: (): GoopsMoment => ({ shift: session.inShift && session.engine ? session.engine.snapshot() : null }),
   setState(state) {
     const moment = state as Partial<GoopsMoment> | null

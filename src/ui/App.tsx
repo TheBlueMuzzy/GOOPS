@@ -27,6 +27,7 @@ import { isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank
 import { loadProgress, saveProgress } from '../progress/save'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
+import { versionLabel } from '../version'
 import { art } from './art'
 import { useShort } from './useShort'
 import { usePortraitLock, useSideways } from './portrait'
@@ -76,7 +77,7 @@ const onSettingsAction = (id: string) => {
   looksClock.after(3000, () => toasts.dismiss(shown))
 }
 const SettingsScreen = () => (
-  <Settings schema={settings} onAction={onSettingsAction} onChange={(values) => {
+  <Settings schema={settings} onAction={onSettingsAction} info={{ version: versionLabel } /* About → Version */} onChange={(values) => {
     gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick); readoutSetting.setFromSettings(values)
     soundSettingsChanged(values)
   }} />

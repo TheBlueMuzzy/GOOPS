@@ -18,6 +18,7 @@ import { art } from './art'
 import { useShort } from './useShort'
 import { CrtLook, TypedText } from '../game/CrtLook'
 import text from '../../content/text/en.json'
+import { versionLabel } from '../version'
 
 export type ConsolePhase = 'idle' | 'leaving' | 'arriving'
 export type ConsoleMachines = Record<MachineId, { broken: boolean }>
@@ -159,7 +160,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} outlined={outlined} />
         <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
         <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
-        <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{fill(t.version, { v: import.meta.env.GOOPS_VERSION })}</ArtLayer>
+        <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{versionLabel}</ArtLayer>
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>
           <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving}

@@ -6,7 +6,24 @@ import style from '../content/ui/style.json'
 import fonts from '../content/ui/fonts.json'
 import settings from '../content/ui/settings.json'
 import { startSound } from './game/sound'
+import { registerSW } from 'virtual:pwa-register'
 import './ui/app.css'
+
+// The offline cache (release builds only — vite.config.ts, TDD D17). "immediate": a returning player's page swaps to
+// a new version as it opens, instead of on their NEXT visit (BMUZ GitHub Pages recipe; e2e/sw-update.mjs guards it).
+// The browser itself checks for a new worker when the page opens; when that one takes over before registerSW is
+// listening (e2e/sw-update.mjs caught it: the new worker ran, the page stayed old), the plain controllerchange
+// still swaps the page. Only for a page that already ran under OUR worker — a first visit never reloads (not even
+// under v1's /GOOPS/ worker, which runs a v1 player's first alpha visit until ours takes over).
+if (import.meta.env.PROD) {
+  registerSW({ immediate: true })
+  const ourWorker = new URL(`${import.meta.env.BASE_URL}sw.js`, location.origin).href
+  const hadWorker = navigator.serviceWorker?.controller?.scriptURL === ourWorker
+  let swapped = false
+  navigator.serviceWorker?.addEventListener('controllerchange', () => {
+    if (hadWorker && !swapped) { swapped = true; location.reload() }
+  })
+}
 
 // The game's own fonts (public/fonts/, listed in content/ui/fonts.json) — style.json's font tweaks may name them
 loadGameFonts(fonts, import.meta.env.BASE_URL)

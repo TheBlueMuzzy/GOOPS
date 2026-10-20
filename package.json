@@ -20,6 +20,7 @@
     "e2e:console": "node e2e/console-shots.mjs",
     "e2e:fonts": "node e2e/fonts-shots.mjs",
     "e2e:sound": "node e2e/sound.mjs",
+    "e2e:update": "node e2e/sw-update.mjs",
     "check:devkit": "node src/devkit/check-devkit.mjs",
     "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs"
   },
@@ -43,6 +44,7 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.71.2",
     "vite": "^7.3.7",
+    "vite-plugin-pwa": "^1.3.0",
     "vitest": "^4.1.12"
   }
 }
