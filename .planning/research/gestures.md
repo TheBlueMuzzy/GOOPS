@@ -146,7 +146,7 @@ Ordered roughly by risk (my guess). "Wins today" = what the code actually does.
   1. Accept slow drags up too when they go far enough (e.g. 80+ px) — matches the report; small risk of opening it by accident.
   2. Raise `SWIPE_MS` to ~450 ms — gentler; still a time rule.
 
-### C-10. Taps just outside the tank's sides — **low risk on phones, real on wide screens**
+### C-10. Taps just outside the tank's sides — ✅ fixed by F58 (2026-10-19: only the visible tank takes clicks)
 - **What happens:** a tap in the margin beside the tank is turned into a column number that **wraps round the cylinder** (`geometry.ts:52-53`), i.e. a column on the hidden back of the tank. If there's goop at that height back there, the tap zaps or pokes goop the player can't see instead of rotating.
 - **Wins today:** the hidden goop.
 - **How likely:** guess — **rare on a portrait phone** (the tank is nearly edge to edge); **likely** on a desktop window or tablet.
@@ -165,28 +165,35 @@ No problem found: each press starts fresh, and a lifted drag leaves no cooldown.
 
 ---
 
-## 3. 10-minute phone playtest
+## 3. 10-minute phone playtest (refreshed 2026-10-20 for Sprint 10)
 
-Open the game on your phone, start a shift, and keep a note open. **For any line that doesn't do what it says, write the line number + what happened instead** (e.g. "6 — opened the console instead of turning"). A ✓ is enough for the rest.
+**Open on your phone:** http://192.168.1.152:5173/?rank=3 (same Wi-Fi as the PC). Rank 3 = the next-piece window and swap are on, the visor can break. A fresh phone shows two short unlock lessons at the first shift starts ("next piece", then "swap") — just press Got it. If the visor breaks mid-test, follow its lesson; that's fine.
 
-1. **Tap** the empty water above the goop, left side then right side, 5 times each. → Every tap rotates (left = anticlockwise, right = clockwise).
+Keep a note open. **For any line that doesn't do what it says, write the line number + what happened instead** (e.g. "6 — opened the console instead of turning"). Nothing to write for the lines that work.
+
+What changed since the first version of this list: taps beside the tank no longer zap hidden goop (F58, fixed); swap now **trades the falling piece with the one in the next-piece window** (no held piece); the bottom panel now holds the next-piece window, the machine bars and the integrity bar.
+
+1. **Tap** the empty water above the goop, left side then right side, 5 times each. → Every tap turns the piece (left = anticlockwise, right = clockwise).
 2. **Drag sideways** ~1 cm and hold for 2 s, then slide back to where you started. → The tank keeps turning while you hold and stops when you come back. Note if it felt too fast / slippery.
 3. **Drag down** and hold. → The piece falls fast until you lift.
-4. **Hold your thumb still** for 2 s. → A Swap bar fills, the piece swaps at 1.5 s.
-5. **Press firmly and lift** after about half a second (count "one-and"). → *Today nothing happens* (the bar flashes). Note whether that felt like a missed rotate.
+4. **Hold your thumb still** on the water for 2 s. → A Swap bar fills at the top; at 1.5 s the falling piece trades places with the one in the next-piece window.
+5. **Press firmly and lift** after about half a second (count "one-and"). → *Today nothing happens* (the Swap bar flashes). Note whether that felt like a missed turn.
 6. **Diagonal drags:** 5 drags down-and-to-the-side at about 45°, the way your thumb naturally arcs. → Note how many turned the tank vs fast-dropped, and which you meant.
-7. **Quick flick up** from the middle of the tank. → The console slides over the tank. Pull the periscope (or tap it) to go back.
+7. **Quick flick up** from the middle of the tank. → The console slides over the tank. Pull the periscope down (or tap it) to go back.
 8. **Slow swipe up** from the middle (about 1 s). → *Today nothing happens.* Note if you expected the console.
-9. **Swipe up starting on the bottom panel** (the bars under the tank), then starting right at the screen's bottom edge. → The first should open the console; the second is the phone's own gesture. Note which happened.
-10. **Two thumbs:** drag sideways with your left thumb and, while holding, tap the right side with your right thumb. → *Today the right thumb is ignored* and you may get a swap. Note if you naturally wanted this.
-11. When the goop is half-way up: **tap the right half where there's goop** (not ready yet). → *Today it jiggles and does NOT rotate.* Note if that cost you.
-12. **Fast sideways flick** that ends with your thumb lifting upward. → It should only turn the tank. Note if the console opened (that's collision C-6).
-13. **Tap ready goop** (below the green line, finished filling), including a one-cell bit near the tank's edge. → It zaps the group you tapped.
-14. At the end report, **swipe up slowly**. → Back to the console. (Compare with line 8.)
+9. **Swipe up starting on the bottom panel** (the next-piece window / the bars), then starting right at the screen's bottom edge. → The first should open the console; the second is the phone's own gesture. Note which happened.
+10. **Two thumbs:** drag sideways with your left thumb and, while holding, tap the right side with your right thumb. → *Today the right thumb is ignored* (and the left one may swap). Note if you naturally wanted this.
+11. When the goop is half-way up: **tap the right half where there's goop** (not ready yet). → *Today it jiggles and does NOT turn the piece.* Note if that cost you.
+12. **Fast sideways flick** that ends with your thumb lifting upward. → It should only turn the tank. Note if the console opened.
+13. **Tap ready goop** (under the pressure line, finished filling), including a one-cell bit near the tank's edge. → It zaps the group you tapped.
+14. **Drag the periscope** down slowly on the console (not a tap), let go halfway once, then all the way. → Halfway springs back; all the way starts the shift.
+15. At the end report, **swipe up slowly**. → Back to the console. (Compare with line 8.)
 
-Phone model + browser: ______  Left- or right-handed: ______
+Phone model + browser: ______  Left- or right-handed: ______  One thumb or two? ______
 
----
+**Then two calls (task 2), now that you've felt them:**
+- **Two thumbs (line 10, C-1):** a) a second thumb's tap turns the piece while the first drags · b) a second thumb just cancels the first thumb's swap charge · c) leave it, one thumb only.
+- **Tapping goop that isn't ready (line 11, C-2):** a) the tap falls through and turns the piece (the goop still jiggles + says why) · b) keep today's way (jiggle, no turn) · c) turning moves to its own buttons.
 
 ## 4. Fix ideas at a glance
 The fixes for each collision are listed under it in §2. The cheapest ones that need **no code**, just `content/` changes: raise `tank.json` → `holdDelayMs` (C-3) and/or `holdToSwapMs` (C-4). The biggest win per line of code is probably C-6 fix 1 (only flick when locked up/down) and C-10 fix 1 (taps outside the tank never pick goop). The biggest design calls are C-1 (two thumbs) and C-2 (tap on goop vs rotate) — those are Muzzy's.
