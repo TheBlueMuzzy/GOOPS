@@ -107,7 +107,7 @@ Goal: a friend installs it from a link, learns to play from "your first day", an
   what: decided 2026-10-19 (Muzzy): rank 1 = the next piece shows in a window top centre (where the goop comes from) · rank 3 = swap unlocks: it trades the falling piece with the next one (the held piece is gone — "the held piece is basically just the 'next piece' now") · rank 5 = the Upgrades button at the console works (scraps bank from rank 1; grey before 5; in alpha it says the first upgrades arrive in the next update). Each unlock: a line on the end report + an interrupt lesson at the start of the first shift after it. HUD: cracks moves to the bottom beside a shorter integrity bar (3 machine bars over integrity + cracks). Kick style stays a Settings toggle from the start.
 - ✅ F60 🧱 Screen look, reusable: the CRT look (glow, scan lines, typing + block cursor, wobble) as one piece any panel or text can take, quick to apply, knobs + presets in the Dev Kit — should:alpha · approved 2026-10-19
   what: Muzzy, sprint 08 retro: "that render shader should be accessible to apply to things in the future, and should feel pretty simple/fast to apply" (was an Idea 2026-10-19) · offered to the framework session as a kit effect
-- 📐 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit ON for friends (Muzzy 2026-10-19), 60 fps on two real phones — must:alpha · needs: F37, F28
+- 🔨 F38 🧱 Alpha release kit: version.json, installable full-screen PWA, Dev Kit ON for friends (Muzzy 2026-10-19), 60 fps on two real phones — must:alpha · needs: F37, F28
 ```mermaid
 flowchart LR
   F10[F10 Gestures] --> F28[F28 Gesture fixes]
