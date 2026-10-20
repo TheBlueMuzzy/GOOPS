@@ -8,9 +8,10 @@
 //     "play": "normal"                     every rule back to a normal shift (free play) — before "rules", so a step can
 //                                          say "normal play with these safety rails" (F31)
 //     "rules": { … }                       src/engine/training.ts TrainingRules: pressureRise, cracks, integrity, breakdowns,
-//                                          falling, autoSpawn, allow (["spin","rotate","softDrop","pop","hold"]), zone,
-//                                          pressureCap, integrityFloor, rupture, overflowRail, ruptureDrainSpeed,
-//                                          zapColors (colour names)
+//                                          falling, autoSpawn, allow (["spin","rotate","softDrop","pop","hold"] — F31: plus
+//                                          "console" (W / ↑ / flick up) and "pause" (the HUD's pause button), which App
+//                                          switches; left out = off), zone, pressureCap, integrityFloor, rupture,
+//                                          overflowRail, ruptureDrainSpeed, zapColors (colour names)
 //     "pressure": 40                       set the pressure, in percent
 //     "goop": [[col, row, colour], …]      goop placed (already full); col = from the middle of the view, row = from the floor
 //     "cracks": [[col, row, colour], …]    cracks placed · "removeCracks": [[col, row], …] · F31: col "inView" / "outOfView"
@@ -31,11 +32,13 @@
 //           F31: overflowRail…),
 //           with its details for `where` (e.g. pop → sealed, repaired → machine); plus the screen events "shiftStarted",
 //           "consoleOpened" (W / ↑ / flick up, mid-shift), "consoleClosed" (back in the tank), "pauseOpened", "pauseClosed",
-//           F59: "upgradesOpened" (the console's Upgrades button, between shifts)
+//           F59: "upgradesOpened" (the console's Upgrades button, between shifts) · F31: "reportClosed" (the end
+//           report's Back to the console / Next shift)
 //   actions spin, rotate, softDrop, hold, pop, repair, console
 //   pointer { "piece": true } · { "cell": [col, row] } (follows the tank as it spins) · F31: { "crack": "open" | "plugged" |
 //           "wrongCover" | "outOfView" | "any" } (the nearest; out of view = its arrow on the edge) · { "goop": "blue" }
-//           (the biggest blue group) · "bar-integrity" tag · { "tag": "readout" } (an element
+//           (the biggest blue group) · tags "bar-integrity", "cracks" (the HUD's CRACKS n / total), "reportBack" (the
+//           end report's Back to the console) · { "tag": "readout" } (an element
 //           with that data-tag; F32 tags: "bar-<machine>" the HUD's machine bar, "repair-<machine>" the part of its
 //           repair panel that wants doing next, "panel-<machine>", "periscope", "monitor", "pauseResume") ·
 //           { "selector": "…" } · none = where pieces drop in. The message goes on the side the target's data-placement
@@ -79,10 +82,17 @@ let speed = 1 // × the shift's speed while a lesson message shows (0 = paused)
 let inputOn = true
 let only: string[] | null = null // F32: while input is off, the controls that still work (a step's insist: ["console"])
 let anchorSpin = 0 // the tank's turn when the step was set up: lesson columns count from the middle of the view THEN
-let lastInput: 'keys' | 'mouse' | 'phone' = 'keys'
+// (before the first key or touch: a touch screen with no mouse is a phone — day one's first line, on the console, is
+// up before the player has touched anything)
+let lastInput: 'keys' | 'mouse' | 'phone' =
+  typeof matchMedia !== 'undefined' && matchMedia('(hover: none) and (pointer: coarse)').matches ? 'phone' : 'keys'
 let atConsole = false // F32: the console is over the tank mid-shift (App says so: lessonPlay.screen)
 let consoleFrozen = false // F32: a lesson froze the tank while at the console (its first repair)
 let training = false // the attached engine is a lesson's training shift (not a real one)
+// F31: the two controls that aren't the tank's — the console (W / ↑ / flick up) and the HUD's pause button — switched
+// by a step's "allow" like the rest (named "console" / "pause"; no "allow" list = both on)
+let consoleOn = true
+let pauseOn = true
 
 const NORMAL_PLAY: Partial<TrainingRules> = { pressureRise: 1, cracks: true, integrity: true, breakdowns: true, falling: true,
   autoSpawn: true, allow: null, zone: null, pressureCap: 1, integrityFloor: 0, rupture: true, overflowRail: false, ruptureDrainSpeed: 1, zapColors: null }
@@ -106,9 +116,17 @@ function setup(setup: Record<string, unknown>) {
   if (setup.clear) train('clear', { type: 'clear' })
   // (play first, then rules: F31's free play is "normal play, with these safety rails" in one set-up)
   if (setup.play === 'normal') train('play normal', { type: 'rules', rules: NORMAL_PLAY })
+  if (setup.play === 'normal') { consoleOn = true; pauseOn = true }
   if (setup.rules) {
     const rules = { ...(setup.rules as Record<string, unknown>) }
     if (Array.isArray(rules.zapColors)) rules.zapColors = rules.zapColors.map(colour)
+    // (F31: "console" and "pause" are App's controls, not the engine's: kept here, the rest go to the engine)
+    if (rules.allow === null) { consoleOn = true; pauseOn = true }
+    if (Array.isArray(rules.allow)) {
+      consoleOn = rules.allow.includes('console')
+      pauseOn = rules.allow.includes('pause')
+      rules.allow = rules.allow.filter((a) => a !== 'console' && a !== 'pause')
+    }
     train('rules', { type: 'rules', rules: rules as Partial<TrainingRules> })
   }
   if (typeof setup.pressure === 'number') train('pressure', { type: 'pressure', value: setup.pressure / 100 })
@@ -189,14 +207,19 @@ export const lessonPlay = {
   /** F32: is the tank frozen at the console for a lesson? (App then runs the rules clock at full speed there, so the
    *  lesson's own timers — hints, "Got it" — keep their time while the tank stands still.) */
   consoleFrozen: () => consoleFrozen && !!runner.view().lessonId,
-  /** F32: a screen event — App says what the player did (the console opened / closed mid-shift, the pause menu). */
-  screen(name: 'consoleOpened' | 'consoleClosed' | 'pauseOpened' | 'pauseClosed' | 'upgradesOpened') {
+  /** F32: a screen event — App says what the player did (the console opened / closed mid-shift, the pause menu).
+   *  F31: "reportClosed" = the end report's "Back to the console" / "Next shift" (or its swipe up). */
+  screen(name: 'consoleOpened' | 'consoleClosed' | 'pauseOpened' | 'pauseClosed' | 'upgradesOpened' | 'reportClosed') {
     if (name === 'consoleOpened') atConsole = true
     if (name === 'consoleClosed') atConsole = false
     runner.event(name)
   },
   /** Is the running shift a real one (not a lesson's training shift)? */
   realShift: () => !!engine && !training,
+  /** F31: does the console control (W / ↑ / flick up) work now? Off while a lesson's step leaves it out of "allow". */
+  consoleOn: () => !training || consoleOn,
+  /** F31: does the HUD's pause button work now? (the same, for "pause") */
+  pauseOn: () => !training || pauseOn,
   /** Does the tank take the player's controls right now? (Not under a paused message.) */
   inputOn: () => inputOn,
   /** F32: under an insisting message only the console control works (W / ↑ / flick up) — the tank's controls don't. */
@@ -208,6 +231,8 @@ export const lessonPlay = {
   attach(e: ShiftEngine): ShiftEngine {
     engine = e
     training = true
+    consoleOn = true
+    pauseOn = true
     anchorSpin = e.state.spin
     return {
       get state() { return e.state },
@@ -252,6 +277,8 @@ export const lessonPlay = {
     training = false
     atConsole = false
     consoleFrozen = false
+    consoleOn = true
+    pauseOn = true
   },
   /** The tank ruptured mid-lesson: drop the lesson (and any waiting) so the drain runs as normal; the shift goes on. */
   drop() {
@@ -300,6 +327,8 @@ const TAG_TARGETS: Record<string, string> = {
   readout: '[data-tag="readout"] .kit-pinned',
   'bar-visor': barOf(text.hud.visor), 'bar-laser': barOf(text.hud.laser), 'bar-controls': barOf(text.hud.controls),
   'bar-integrity': barOf(text.hud.integrity), // F31: day one's D1 "this bar is its health"
+  cracks: '.kit-hud-text[data-size="l"]', // F31: the HUD's CRACKS n / total (its one big line) — day one's D3
+  reportBack: '.kit-end-actions button[data-variant="secondary"]', // F31: the end report's "Back to the console" — F3
   pauseResume: '.kit-pause .kit-menu > button:first-child', // the pause menu's "Back to the tank" (the kit's Pause)
   // the console's periscope: the part you grab (the kit's PullHandle) — while it works (a phone on its side switches it
   // off: the "or" pointer, Back to the tank, takes over)

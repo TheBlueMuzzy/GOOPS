@@ -176,6 +176,28 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D16 · 2026-10-20 · The first day is ONE lesson that crosses the console, the shift and the report (F31 task 11)
+  Proposed by: Claude (tutorial.md §3 + §9's "left for App")
+  Chose: content/lessons/first-day.json is one lesson; a design step can be 2–3 runner steps (a no-message wait, then the
+  line). WHEN it plays lives in src/game/lessons/firstDay.ts (like unlockLessons.ts): due while the device hasn't
+  finished it (tips 'lesson:first-day') AND (rank 0 OR Replay lessons asked for it); a forced ?rank=N ≥ 1 never plays it.
+  A1 runs on the console with startAtConsole; the periscope pull starts the day's training shift at the saved checkpoint
+  (B1 the first time) — App hands the lesson across instead of "a new shift stops a console lesson". The checkpoint
+  reached + the replay ask are remembered in localStorage 'goops-first-day' ({ at, replay }). Runner (game-agnostic): a
+  step's `restartSetup` runs only when the lesson STARTS there — so C1 can put back B's goop on a restart without wiping
+  what the player just built in order. The console and the HUD's pause button are App's controls: a step's `allow` names
+  them too ("console", "pause"); goopsLessons keeps them and hands the rest to the engine (the day: pause always on — the
+  way out — the console only from free play). The end report doesn't stop the rules clock any more (the shift is over,
+  nothing in the tank can change) so the day's last step can run its timers there; LessonView shows over it. XP: the
+  shift's end tops it up to the first rank-up (rewardFirstDay, only from rank 0) at onEnd — so the report already says
+  "Rank up! 1", and closing the page on the report still leaves rank 1; the day counts as finished at F3 ("Back to the
+  console" / "Next shift" = the screen event `reportClosed`). New gates `quotaLeft` and `ended` (a drain can end the shift
+  before the step that waits for it starts — waiting on the event alone got stuck). The console: ↓ / Enter pull the
+  periscope from anywhere between shifts (A1 says so; the grip only took keys while focused).
+  Not chosen: a tutorial mode in App (the framework's lesson module would lose it); topping the XP up on "Back to the
+  console" (the report couldn't show the rank-up, and a closed page would lose it); a test-only switch in the game for
+  e2e — scripts mark the day seen in the device's tips memory before load (e2e/start.mjs skipFirstDay), as a player who
+  had it would be.
 D15 · 2026-10-20 · Every finger is its own gesture: per-finger state with owners, swap ring at the finger (F28 task 5)
   Proposed by: Muzzy (C-1: "if one finger is dragging, and the other taps, i don't mind if it's dragging and rotating at
   the same time… the 'swap' timer graphic appears next to the touch"; "if one finger is drag holding left, the other

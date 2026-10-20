@@ -5,6 +5,7 @@
 import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { skipFirstDay } from './start.mjs'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8')) // the game's words (never restated here)
 
 const PORT = 5263, OUT = 'e2e-shots/console'
@@ -25,6 +26,7 @@ try {
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+  await skipFirstDay(page) // (F31: a device that has had its first day — this is a plain working day)
   await page.goto(`http://localhost:${PORT}/?seed=7`)
   await page.evaluate(() => localStorage.removeItem('goops-progress'))
   await page.reload()

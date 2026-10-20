@@ -1,7 +1,7 @@
 // Ranks + XP (F20) and the save.
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
-import { freshProgress, isUnlocked, meterSteps, rankInfo, rewardShift, unlocksBetween, xpToNext } from '../src/progress/progression'
+import { freshProgress, isUnlocked, meterSteps, rankInfo, rewardFirstDay, rewardShift, unlocksBetween, xpToNext } from '../src/progress/progression'
 import { loadProgress, saveProgress } from '../src/progress/save'
 
 // sum of every rank's XP up to (not including) rank n
@@ -46,6 +46,27 @@ describe('rewardShift', () => {
 
   it('spent scraps stay spent', () => {
     expect(rankInfo({ totalXp: cumulative(4), scrapsSpent: 3 }).scraps).toBe(1)
+  })
+})
+
+describe('rewardFirstDay (F31)', () => {
+  it('a fresh player always ends day one at rank 1: the XP is topped up to the first rank-up', () => {
+    const r = rewardFirstDay(freshProgress(), 640)
+    expect(r.progress.totalXp).toBe(xpToNext(0))
+    expect(r.xp).toBe(xpToNext(0))
+    expect(r.after).toMatchObject({ rank: 1, xpIntoRank: 0 })
+    expect(r.rankUps).toBe(1)
+  })
+
+  it('a day that earned enough on its own keeps its own XP', () => {
+    const r = rewardFirstDay(freshProgress(), xpToNext(0) + 50)
+    expect(r.xp).toBe(xpToNext(0) + 50)
+    expect(r.after).toMatchObject({ rank: 1, xpIntoRank: 50 })
+  })
+
+  it('a replay at a higher rank earns what any shift earns (no top-up)', () => {
+    const rank3 = { totalXp: cumulative(3) + 5, scrapsSpent: 0 }
+    expect(rewardFirstDay(rank3, 200)).toEqual(rewardShift(rank3, 200))
   })
 })
 

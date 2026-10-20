@@ -14,7 +14,7 @@
 // Screenshots: e2e-shots/unlocks/ (390x844, 360x780, 1440x900, the short 768x343 window)
 // Run: node e2e/unlocks.mjs  (own dev server on port 5344)
 import { chromium } from 'playwright-core'
-import { startShift } from './start.mjs'
+import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 
@@ -36,6 +36,7 @@ async function device(rank, width = 390, height = 844) {
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
+  await skipFirstDay(page) // (F31: past the first day — at rank 0 it would be on the monitor)
   await page.goto(`http://localhost:${PORT}/?seed=7${rank === null ? '' : `&rank=${rank}`}`)
   await page.getByRole('button', { name: 'Start shift' }).waitFor()
   return { page, errors, close: () => context.close() }

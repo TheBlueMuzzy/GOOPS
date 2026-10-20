@@ -366,4 +366,16 @@ describe('the lesson runner, day one additions', () => {
     seenBefore.runner.start(seenBefore.lesson, 1)
     expect(seenBefore.log.some((l) => l.includes('outOfView'))).toBe(false)
   })
+
+  it('restartSetup (F31): done only when the lesson STARTS at that step (a phase restart), before its own set-up', () => {
+    const lesson: Lesson = { id: 'day', steps: [{ id: 'b', message: 'b' }, { id: 'c', message: 'c', checkpoint: true, restartSetup: { goop: 'left by B' }, setup: { own: 1 } }] }
+    const inOrder = setup(lesson)
+    inOrder.runner.start(inOrder.lesson)
+    inOrder.run(300); inOrder.runner.dismiss(); inOrder.run(1)
+    expect(inOrder.runner.view().stepId).toBe('c')
+    expect(inOrder.log).toEqual(['{"own":1}']) // reached in order: what B left stays (no restart set-up)
+    const restart = setup(lesson)
+    restart.runner.start(restart.lesson, restart.runner.restartPoint(lesson, 1))
+    expect(restart.log).toEqual(['{"goop":"left by B"}', '{"own":1}'])
+  })
 })

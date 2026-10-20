@@ -200,6 +200,87 @@
     },
     "console-note": {
       "slow": "The tank keeps running at {consoleSpeed}% speed while you're here."
+    },
+    "first-day": {
+      "pull": {
+        "keys": "Your first day! Press ↓ or Enter to pull the periscope.",
+        "mouse": "Your first day! Drag the periscope down to start.",
+        "phone": "Your first day! Pull the periscope down to start."
+      },
+      "pullHint": {
+        "keys": "Press ↓ or Enter, or click the periscope.",
+        "mouse": "Pull the periscope all the way down, or just click it.",
+        "phone": "Pull the periscope all the way down, or just tap it."
+      },
+      "falls": "Goop drops into the tank from the top.",
+      "fastDrop": {
+        "keys": "Slow, right? Hold S or ↓ to fast drop.",
+        "mouse": "Slow, right? Drag down on the tank to fast drop.",
+        "phone": "Slow, right? Drag down on the tank to fast drop."
+      },
+      "fastDropHint": {
+        "keys": "Hold S or ↓. It falls faster while you hold.",
+        "mouse": "Drag down and hold. It falls faster while you hold.",
+        "phone": "Drag down and hold. It falls faster while you hold."
+      },
+      "turn": {
+        "keys": "Q or E turns the piece. Turn it, then drop it.",
+        "mouse": "Click left or right of the piece to turn it.",
+        "phone": "Tap left or right of the piece to turn it."
+      },
+      "turnHint": {
+        "keys": "Press Q or E to turn it.",
+        "mouse": "Click beside the piece to turn it.",
+        "phone": "Tap beside the piece to turn it."
+      },
+      "pressureLine": "Pressure rises over time. Goop under the line can be zapped.",
+      "zapYellow": {
+        "keys": "Now click the yellow goop to zap it.",
+        "mouse": "Now click the yellow goop to zap it.",
+        "phone": "Now tap the yellow goop to zap it."
+      },
+      "zapYellowHint": {
+        "keys": "Click the yellow goop.",
+        "mouse": "Click the yellow goop.",
+        "phone": "Tap the yellow goop."
+      },
+      "join": "Same colours join into one blob. Fresh goop fills up first.",
+      "zapBlob": "Zap the blue blob once it's full.",
+      "zapBlobHint": {
+        "keys": "Click the blue blob.",
+        "mouse": "Click the blue blob.",
+        "phone": "Tap the blue blob."
+      },
+      "stillFilling": "Still filling. Wait until it's full.",
+      "vent": "Zapping lets out a little pressure. Big blobs let out more.",
+      "crack": "A crack! Cover it with goop of the same colour.",
+      "integrity": "Open cracks wear down the tank. This bar is its health.",
+      "spin": {
+        "keys": "The piece always falls down the middle. A / D or ← / → spins the tank.",
+        "mouse": "The piece falls down the middle. Drag sideways to spin the tank.",
+        "phone": "The piece falls down the middle. Drag sideways to spin the tank."
+      },
+      "spinHint": "Spin until the landing shadow sits over the crack.",
+      "tryAgain": "Try again. Spin until the shadow is over the crack.",
+      "seal": "The crack shows through the goop. Zap that goop to seal it.",
+      "sealHint": {
+        "keys": "Click the green goop on the crack.",
+        "mouse": "Click the green goop on the crack.",
+        "phone": "Tap the green goop on the crack."
+      },
+      "sealed": "Sealed! Seal {total} cracks a day to meet your quota.",
+      "outOfView": "You only see part of the tank. Arrows point to cracks out of view.",
+      "high": "Cracks form up high too. Stack goop under them to reach.",
+      "highHint": "Build under the crack, then drop green on it.",
+      "sealHigh": "Now zap the green goop to seal it.",
+      "redX": "Wrong colour. See the red X? Zap that goop to uncover it.",
+      "freePlay": "Cracks come faster as pressure rises. Zap goop to keep it down.",
+      "quota": "Seal {left} more to meet the quota.",
+      "quotaHint": "Cover a crack with its colour, then zap it.",
+      "tooFull": "Too full! I've cleared some. Zap more often.",
+      "capped": "Zap goop to let pressure out.",
+      "rupture": "The tank broke! Zap all the goop you can before pressure hits zero.",
+      "clockOut": "Day one done! Back to the console to clock out."
     }
   }
 }
