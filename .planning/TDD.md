@@ -176,6 +176,12 @@ flowchart LR
 ## 6. Security & fairness
 - Single-player, no server. Nothing to cheat against yet.
 
+## 7. Compliance (web, GitHub Pages)
+- [x] What it collects: nothing leaves the device. It stores only in the player's own browser: progress (goops-progress), the first-day checkpoint (goops-first-day), the kit's settings and seen tips (kit-settings:GOOPS, kit-tips:GOOPS). No accounts, analytics, ads or third-party requests; all fonts and sounds are served by the game itself (security review 2026-10-20).
+- [x] Bug reports: the tester panel only copies a report to the clipboard (version, time, the tester's words, browser + screen size, game state) — the tester chooses to send it.
+- [ ] Privacy note page + age rating: not needed for a friends alpha on a link; due before a store page (beta+).
+- [ ] Credits screen: content/credits.json lists every asset, but the in-game Credits row is off — due before beta (F55 is the 1.0 Credits screen).
+
 ## 8. Decisions log
 ```
 D17 · 2026-10-20 · The alpha's release kit: its own service worker at /GOOPS/alpha/, auto-update, deploy beside v1 (F38)
