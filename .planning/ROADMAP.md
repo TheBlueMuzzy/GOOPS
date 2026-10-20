@@ -94,7 +94,7 @@ Goal: machines break from your own play and you fix them at the console while th
 
 ## M4 — Alpha: the playable game, for you + friends
 Goal: a friend installs it from a link, learns to play from "your first day", and plays shifts through rank 9 with all three machines and sound — no upgrades, no story yet (Muzzy 2026-10-19: "alpha is playable game").
-- 🔨 F28 🎮 Gesture fixes (from F10's list) — must:alpha · needs: F10
+- ✅ F28 🎮 Gesture fixes (from F10's list) — must:alpha · needs: F10 · approved 2026-10-20 (every finger its own gesture, swap ring at the finger, touch knobs in tank.json, flick fixes)
 - ✅ F29 🧱 Sound basics: recorded CC0 effects through the framework audio module, volume rows on — must:alpha · approved 2026-10-19 ("not great, but happy to have sounds"; better sounds come in F53)
 - ✅ F30 🧱 Lesson runner: plain how-to-play lessons from data files (the story's intercom voice layers on in beta) — must:alpha · needs: F12
   note: built in Goops first, for the framework session to lift into a module later (Muzzy 2026-10-19)
