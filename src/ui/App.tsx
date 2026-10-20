@@ -5,12 +5,12 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, GameOver, Hud, HudText, kitScreens, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens } from './kit'
+import { Bar, GameOver, Hud, HudText, kitScreens, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
-import { looksClock } from '../devkit/gameClock'
+import { looksClock, rulesClock } from '../devkit/gameClock'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { readoutSetting } from '../game/readoutSetting'
 import type { Message } from '../game/messages'
@@ -18,11 +18,12 @@ import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '..
 import { LessonView } from '../game/lessons/LessonView'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
 import { unlockLessons } from '../game/lessons/unlockLessons'
+import { FIRST_DAY, firstDay } from '../game/lessons/firstDay'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { isUnlocked, rankInfo, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
+import { isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
@@ -45,9 +46,14 @@ const fill = (s: string, vars: Record<string, number | string>) => s.replace(/\{
 // The rank the player plays at: their saved rank. Dev/tests: ?rank=12 forces one. The shift (colours, starting junk,
 // crack quota) and everything a rank unlocks (F59: isUnlocked — the next-piece window, swap, the Upgrades button) use it.
 function playerRank(progress: Progress): number {
-  const forced = import.meta.env.DEV ? new URLSearchParams(location.search).get('rank') : null
-  return forced !== null ? Number(forced) : rankInfo(progress).rank
+  return forcedRank() ?? rankInfo(progress).rank
 }
+const forcedRank = () => {
+  const forced = import.meta.env.DEV ? new URLSearchParams(location.search).get('rank') : null
+  return forced !== null ? Number(forced) : null
+}
+// F31: should "your first day" play? (a fresh save, or after Replay lessons — never under a forced ?rank=N ≥ 1)
+const dayDue = (progress: Progress) => firstDay.due(playerRank(progress), forcedRank() !== null)
 
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.
 // training = a lesson's shift (F30, src/engine/training.ts): empty, held still, the lesson sets it up step by step.
@@ -60,9 +66,11 @@ function newEngine(progress: Progress, training = false): ShiftEngine {
 }
 type LessonStart = { id: string; step: number | string }
 
-// (Replay lessons, F32: the device forgets which lessons it has seen — each machine's plays again at its next break)
+// (Replay lessons, F32: the device forgets which lessons it has seen — each machine's plays again at its next break;
+// F31: and the first day plays again from the start at the next pull of the periscope, whatever the rank)
 const onSettingsAction = (id: string) => {
   if (id !== 'replayLessons') return
+  firstDay.replay()
   tipsMemory().resetTips()
   const shown = toast(text.lessons.replayed, { seconds: ONE_DAY_S })
   looksClock.after(3000, () => toasts.dismiss(shown))
@@ -139,8 +147,9 @@ export function App() {
     setResult(null); setHud(null); setEngine(e)
   }, [])
   // the periscope is down: the shift is made (paused) under the console, which slides away to show it
+  // (F31: while the first day is due, its shift — at the phase it got to; the console's own step, A1, is done)
   const leaveConsole = useCallback(() => {
-    const lesson = urlLesson.current
+    const lesson = urlLesson.current ?? (dayDue(progressRef.current) ? { id: FIRST_DAY, step: firstDay.startStep() } : null)
     urlLesson.current = null
     start(lesson ?? undefined); setMeterFrom(null); setMode('leaving')
   }, [start])
@@ -183,7 +192,8 @@ export function App() {
   // (the last shift's engine stays in state on the console, unmounted; the next pull replaces it)
   const consoleSlid = useCallback(() => setMode((m) => (m === 'leaving' || m === 'peekOut' ? 'shift' : m === 'arriving' ? 'console' : m === 'peekIn' ? 'peek' : m)), [])
   // mid-shift: to the console and back (swipe up / W / ↑ in the shift; the periscope or Back to the tank on the console)
-  const peekIn = useCallback(() => { if (modeRef.current === 'shift' && !screens.current.length) setMode('peekIn') }, [])
+  // (F31: not while a lesson step leaves the console out of its controls — day one, before free play)
+  const peekIn = useCallback(() => { if (modeRef.current === 'shift' && !screens.current.length && lessonPlay.consoleOn()) setMode('peekIn') }, [])
   const peekOut = useCallback(() => setMode((m) => (m === 'peek' ? 'peekOut' : m)), [])
   // End shift from the console mid-shift: the run is thrown away (no XP) and the console stays
   const endAtConsole = useCallback(() => {
@@ -218,7 +228,8 @@ export function App() {
     const e = engineRef.current
     if (!e) return
     // the final score (after the leftover penalty) becomes XP — saved right away
-    const reward = rewardShift(progressRef.current, e.state.score)
+    // (F31: the first day's shift tops it up to rank 1 when it started at rank 0 — the report says the rank-up)
+    const reward = (firstDay.running() ? rewardFirstDay : rewardShift)(progressRef.current, e.state.score)
     progressRef.current = reward.progress
     setProgress(reward.progress)
     saveProgress(reward.progress)
@@ -245,16 +256,18 @@ export function App() {
         // what the shift earned, and a rank-up if it crossed one
         // (F59: and what that rank unlocked)
         { label: text.end.xp, value: rankUpLine(result.reward) }]
-      const again = () => { screens.pop(); start() }
+      // (F31: a lesson hears the report close — the first day's last step is "back to the console")
+      const again = () => { lessonPlay.screen('reportClosed'); screens.pop(); start() }
+      const back = () => { lessonPlay.screen('reportClosed'); toConsole() }
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
             frame={art.end.frame} art={{ continue: art.end.again, quit: art.end.quit }} stats={stats}
-            onContinue={again} onQuit={toConsole} onSwipeUp={toConsole} />
+            onContinue={again} onQuit={back} onSwipeUp={back} />
         : <GameOver words={{ title: text.end.lostTitle, retry: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.lostOverflow : text.end.lostCracks}
             frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={stats}
-            onRetry={again} onQuit={toConsole} onSwipeUp={toConsole} />
+            onRetry={again} onQuit={back} onSwipeUp={back} />
     },
   }), [result, start, toConsole])
 
@@ -274,7 +287,15 @@ export function App() {
   }), [scraps])
   const openUpgrades = useCallback(() => { screens.push('upgrades'); lessonPlay.screen('upgradesOpened') }, [])
   // F59: on the console between shifts at upgrading's rank, its unlock lesson (once per device: unlockLessons.ts)
-  useEffect(() => { if (mode === 'console') unlockLessons.atConsole(rank) }, [mode, rank])
+  // F31: while the first day is due, its first step instead (pull the periscope) — again after Replay lessons (tips).
+  // Between shifts the rules clock runs (no shift uses it then; a console lesson's hint does).
+  const tips = useTips()
+  useEffect(() => {
+    if (mode !== 'console') return
+    rulesClock.scale = 1
+    if (dayDue(progress)) firstDay.atConsole()
+    else unlockLessons.atConsole(rank)
+  }, [mode, rank, progress, tips])
 
   // the console mid-shift: Settings and the pause menu (End shift throws the run away)
   const consoleScreens = useMemo(() => ({
@@ -307,7 +328,10 @@ export function App() {
   // A first-breakdown lesson freezes the tank at the console instead (F32): the rules clock runs at full speed for the
   // lesson's own timers and the lesson holds the tank still (lessonPlay.speed)
   // (a phone held sideways: paused under the "Turn your phone upright" card, the game's own pause)
-  const speed = open.length || sideways ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
+  // (F31: the end report isn't a menu that pauses: the shift has ended, so the rules clock running changes nothing in
+  // the tank — but a lesson on the report, day one's "back to the console", keeps its own timers)
+  const menuOpen = open.some((id) => id !== 'end')
+  const speed = menuOpen || sideways ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
   // The HUD (F26, Muzzy's mock-up 2026-10-18; F59 his second, 2026-10-19): ONE top row — score · CRACKS x / y (big,
   // shrinking to fit) · Console button — then the tank, then ONE panel under it: at its left the next-piece window (from
   // its rank; tall, big cells), and to its right the unlocked machines' bars in a row with big names above (centred),
@@ -357,7 +381,7 @@ export function App() {
       {mode === 'shift' && (
         <ScreenStack overlay screens={screenMap}>
           {hud && (
-            <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')} oneRow
+            <Hud words={{ pause: text.hud.pause }} onPause={() => { if (lessonPlay.pauseOn()) screens.push('pause') }} oneRow
               vitals={<Score value={hud.score} compact />} status={short ? undefined : status}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
               dock={panel} dockSide={short ? 'right' : 'bottom'} />
@@ -377,7 +401,8 @@ export function App() {
       {/* F30: a lesson's message — in the tank a bubble in the kit Callout look; at the console mid-shift (F32) its words
           are on the monitor and this draws the spotlight; over a menu only a step's reaction ("That's the pause menu…") */}
       {/* (F59: and on the console between shifts — the Upgrades unlock lesson outlines its button there) */}
-      {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={open.length > 0} atConsole={mode !== 'shift'} />}
+      {/* (F31: and over the end report — day one's last step points at its "Back to the console") */}
+      {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={menuOpen} atConsole={mode !== 'shift'} />}
       {sideways && <UprightScreen />}
     </>
   )

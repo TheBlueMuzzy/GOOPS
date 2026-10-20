@@ -62,6 +62,10 @@ export interface LessonStep {
   reactions?: LessonReaction[]
   insist?: LessonInsist
   checkpoint?: boolean // leaving mid-lesson restarts here (the start of a phase)
+  // F31: set-up done only when the lesson STARTS at this step (a restart at its checkpoint, or the Dev Kit's jump) —
+  // before the step's own. What the earlier steps would have left there (day one's C1: the blue and yellow goop B
+  // dropped), so a phase can start cold without wiping what the player just built when it's reached in order.
+  restartSetup?: Record<string, unknown>
   // F31: make sure an interrupt happens — if the lesson's interrupt `interrupt` hasn't fired by this step (nor been
   // seen on this device), this set-up runs too, after the step's own (day one's F1: the first crack goes just out of
   // view, so "cracks out of view" is taught before the day ends)

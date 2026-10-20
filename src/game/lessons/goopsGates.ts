@@ -2,7 +2,8 @@
 // can pick, worked out from the shift's state alone (pure, so unit tests can check them; goopsLessons.ts uses them).
 //
 //   gates    "position" (rows the falling piece's bottom has come into the tank) · "pressure" / "integrity" (percent) ·
-//            "sealed" (cracks sealed) · "cracksOutOfView" · "wrongCover" (cracks covered by another colour's goop) ·
+//            "sealed" (cracks sealed) · "quotaLeft" (seals still needed; 0 = met) · "ended" (1 = the shift is over) ·
+//            "cracksOutOfView" · "wrongCover" (cracks covered by another colour's goop) ·
 //            F31: "plugged" (cracks covered by their own colour) · "openCracks" (cracks not plugged) ·
 //            "ready:<colour>" (groups of that colour ready to zap: full and under the line) · "full:<colour>" (groups
 //            done filling) · "underLine:<colour>" (groups whose top is at or under the pressure line, full or not)
@@ -27,6 +28,8 @@ export function tankGate(s: ShiftState, name: string): number | null {
     case 'pressure': return Math.round(s.pressure * 100)
     case 'integrity': return Math.round(s.integrity * 100)
     case 'sealed': return s.cracksSealed
+    case 'quotaLeft': return Math.max(0, s.cracksNeeded - s.cracksSealed) // (F31: 0 = the quota is met)
+    case 'ended': return s.status === 'playing' ? 0 : 1 // (F31: 1 = the shift is over — a short drain can end it mid-step)
     case 'cracksOutOfView': return s.cracks.filter((c) => !isOnScreen(c.x, s.spin, s.width, s.visibleWidth)).length
     case 'wrongCover': return s.cracks.filter((c) => { const g = coveredBy(s, c); return g !== 0 && g !== c.color }).length
     case 'plugged': return s.cracks.filter((c) => c.plugged).length

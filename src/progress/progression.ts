@@ -92,3 +92,14 @@ export function rewardShift(p: Progress, finalScore: number, t: ProgressionTunin
   const after = rankInfo(progress, t)
   return { xp, before, after, rankUps: after.rank - before.rank, progress }
 }
+
+// F31: the end of "your first day" (the guided first shift): its XP like any shift, topped up to the first rank-up if it
+// fell short — so day one always ends at rank 1. Only from rank 0: a replay (Settings → Replay lessons) at a higher
+// rank earns what any shift earns, nothing more.
+export function rewardFirstDay(p: Progress, finalScore: number, t: ProgressionTuning = tuning): ShiftReward {
+  const r = rewardShift(p, finalScore, t)
+  if (r.before.rank !== 0 || r.after.rank > 0) return r
+  const progress = { ...p, totalXp: xpToNext(0, t) } // (all the XP rank 1 needs)
+  const after = rankInfo(progress, t)
+  return { xp: progress.totalXp - p.totalXp, before: r.before, after, rankUps: after.rank - r.before.rank, progress }
+}

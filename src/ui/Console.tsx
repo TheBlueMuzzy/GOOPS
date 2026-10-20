@@ -6,9 +6,9 @@
 // a broken machine's repair panel comes alive (RepairPanels.tsx), the gear opens the pause menu, and pulling the
 // periscope goes back to the same shift. On a phone on its side only the panels show, with a Back to the tank button.
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useCrtLesson, useSpotlitTags } from '../game/lessons/lessonLine'
-import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Screen, Stack, TitleArt, fill } from './kit'
+import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Screen, Stack, TitleArt, fill, screens } from './kit'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
 import { ControlsPanel, LaserPanel, LessonTag, VisorPanel } from './RepairPanels'
@@ -121,6 +121,23 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const showcase = (id: MachineId) => !!midShift && spotlit.includes(`panel-${id}`)
   // (and while a lesson step outlines a part, only that part answers — the other controls shake: RepairPanels.tsx)
   const outlined = midShift ? spotlit : NOTHING
+  // F31 (tutorial.md A1, "Press ↓ or Enter to pull the periscope"): between shifts ↓ or Enter pulls it from anywhere,
+  // not only once its grip has the keyboard's focus — the grip is clicked, so it slides down and clunks as a tap does.
+  // (Not over Settings or Upgrades, not on a held key's repeats, and Enter on a focused button stays that button's.)
+  const idle = !midShift && phase === 'idle'
+  useEffect(() => {
+    if (!idle) return
+    const key = (e: KeyboardEvent) => {
+      if (e.repeat || screens.current.length || (e.code !== 'ArrowDown' && e.code !== 'Enter' && e.code !== 'NumpadEnter')) return
+      if (e.code !== 'ArrowDown' && (e.target as HTMLElement | null)?.closest?.('button, input, select, textarea')) return
+      const grip = document.querySelector<HTMLButtonElement>('.kit-pull-grip:not(:disabled)')
+      if (!grip) return
+      e.preventDefault()
+      grip.click()
+    }
+    window.addEventListener('keydown', key)
+    return () => window.removeEventListener('keydown', key)
+  }, [idle])
 
   return (
     <Screen label={t.label} column backdrop={a.backdrop}

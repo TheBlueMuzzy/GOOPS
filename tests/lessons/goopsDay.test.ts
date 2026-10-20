@@ -6,6 +6,9 @@ import { pointerCells, tankGate } from '../../src/game/lessons/goopsGates'
 import { lessonPlay, runner } from '../../src/game/lessons/goopsLessons'
 import type { Lesson } from '../../src/game/lessons/lessonTypes'
 import breakdowns from '../../content/tuning/breakdowns.json'
+import dayFile from '../../content/lessons/first-day.json'
+
+const day = dayFile as unknown as Lesson
 import { dropPiece, idx, realConfig } from '../engine/helpers'
 
 const BLUE = 2, GREEN = 3, YELLOW = 4 // (content/tuning/shift.json colors: red, blue, green, yellow…)
@@ -52,6 +55,29 @@ describe('Goops gates for day one (goopsGates.ts)', () => {
     expect(pointerCells(s, { goop: 'blue' })).toEqual([[10, 23], [11, 23]])
     expect(pointerCells(s, { crack: 'wrongCover' })).toEqual([])
     expect(pointerCells(s, {})).toBeNull()
+  })
+})
+
+describe('content/lessons/first-day.json (F31)', () => {
+  const ids = day.steps.map((s) => s.id)
+  it('one step per id; a checkpoint at the start of every phase A–F (leaving mid-day restarts there)', () => {
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(day.steps.filter((s) => s.checkpoint).map((s) => s.id)).toEqual(['A1', 'B1', 'C1', 'D1', 'E1', 'F1'])
+  })
+  it('never stuck: every retry has a most-tries, every interrupt range names real steps', () => {
+    for (const s of day.steps) if (s.retry) expect(s.retry.max, s.id).toBeGreaterThan(0)
+    for (const it of day.interrupts ?? []) for (const at of [it.from, it.to]) if (at) expect(ids, it.id).toContain(at)
+  })
+  it('only free play (F) lets the console in; the pause button (the way out) works in every step in the tank', () => {
+    let allow: string[] | null = null
+    for (const s of day.steps.slice(1)) {
+      const rules = (s.setup?.rules ?? {}) as { allow?: string[] | null }
+      if (s.setup?.play === 'normal') allow = null
+      if (rules.allow !== undefined) allow = rules.allow
+      expect(allow === null || allow.includes('pause'), s.id).toBe(true)
+      const consoleOn = allow === null || allow.includes('console')
+      expect(consoleOn, s.id).toBe(s.id.startsWith('F'))
+    }
   })
 })
 

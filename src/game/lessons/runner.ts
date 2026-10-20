@@ -335,7 +335,11 @@ export function createLessonRunner(o: { game: LessonGame; clock: LessonClock; ti
       if (it.remember && game.seen?.(`interrupt:${it.id}`)) continue
       watch(it.when, () => fireInterrupt(it.id), 'lesson', `interrupt:${it.id}`)
     }
-    enter(Math.max(0, Math.min(at, lesson.steps.length - 1)))
+    const first = Math.max(0, Math.min(at, lesson.steps.length - 1))
+    // (F31: starting here, not reaching it in order — what the earlier steps would have left in place)
+    const restart = lesson.steps[first]?.restartSetup
+    if (restart) game.setup(restart)
+    enter(first)
   }
 
   function stop(publishIdle = true) {
