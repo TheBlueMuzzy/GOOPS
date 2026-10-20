@@ -1,6 +1,6 @@
 // F26: which in-shift message shows when (src/game/messages.ts). Numbers from content/tuning/messages.json.
 import { describe, expect, it } from 'vitest'
-import { createMessages, type MessageTuning } from '../src/game/messages'
+import { createMessages, messageWords, type MessageTuning } from '../src/game/messages'
 import { createShift } from '../src/engine'
 import type { ShiftEvent, ShiftState } from '../src/engine'
 import tuning from '../content/tuning/messages.json'
@@ -76,11 +76,29 @@ describe('warnings fire once per crossing', () => {
 
 describe('words and numbers', () => {
   it('every message has short words (phone-sized) and a time on screen', () => {
-    for (const [key, words] of Object.entries(text.messages)) {
-      expect(words.length, key).toBeGreaterThan(0)
-      expect(words.length, key).toBeLessThanOrEqual(40)
+    for (const [key, entry] of Object.entries(text.messages)) {
+      // (an input-dependent one: every wording counts)
+      for (const words of typeof entry === 'string' ? [entry] : Object.values(entry)) {
+        expect(words.length, key).toBeGreaterThan(0)
+        expect(words.length, key).toBeLessThanOrEqual(40)
+      }
     }
     for (const s of Object.values(t.seconds)) expect(s).toBeGreaterThan(0)
     expect(t.pressureHighResetAt).toBeLessThan(t.pressureHighAt)
+  })
+
+  // F38: "swipe up to fix" was wrong on a PC. The broken-machine messages say how to reach the console with the input
+  // used last — like the lessons (W / ↑ on keys, a flick up with a mouse, a swipe up on a phone).
+  it('the broken-machine messages have every wording, each true to its input', () => {
+    for (const key of ['brokeLaser', 'brokeVisor', 'brokeControls'] as const) {
+      const entry = text.messages[key]
+      expect(typeof entry, key).toBe('object')
+      for (const input of ['keys', 'mouse', 'phone'] as const) expect(messageWords(key, input).trim(), `${key}.${input}`).not.toBe('')
+      expect(messageWords(key, 'keys'), key).toContain('W or ↑')
+      expect(messageWords(key, 'keys'), key).not.toMatch(/swipe|flick/i)
+      expect(messageWords(key, 'mouse'), key).toContain('flick up')
+      expect(messageWords(key, 'phone'), key).toContain('swipe up')
+    }
+    expect(messageWords('quotaMet', 'keys')).toBe(messageWords('quotaMet', 'phone')) // a plain line is the same for all
   })
 })

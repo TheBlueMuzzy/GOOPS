@@ -13,7 +13,7 @@ import { session } from '../game/session'
 import { looksClock, rulesClock } from '../devkit/gameClock'
 import { ShiftStage, type HudSnapshot } from '../game/ShiftStage'
 import { readoutSetting } from '../game/readoutSetting'
-import type { Message } from '../game/messages'
+import { messageWords, type Message } from '../game/messages'
 import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '../game/lessons/goopsLessons'
 import { LessonView } from '../game/lessons/LessonView'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
@@ -27,6 +27,7 @@ import { isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank
 import { loadProgress, saveProgress } from '../progress/save'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
+import { versionLabel } from '../version'
 import { art } from './art'
 import { useShort } from './useShort'
 import { usePortraitLock, useSideways } from './portrait'
@@ -76,7 +77,7 @@ const onSettingsAction = (id: string) => {
   looksClock.after(3000, () => toasts.dismiss(shown))
 }
 const SettingsScreen = () => (
-  <Settings schema={settings} onAction={onSettingsAction} onChange={(values) => {
+  <Settings schema={settings} onAction={onSettingsAction} info={{ version: versionLabel } /* About → Version */} onChange={(values) => {
     gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick); readoutSetting.setFromSettings(values)
     soundSettingsChanged(values)
   }} />
@@ -86,7 +87,7 @@ const SettingsScreen = () => (
 const ONE_DAY_S = 86_400 // (the kit's own timer, never reached: the looks clock takes it away)
 const onMessage = (m: Message) => {
   if (lessonPlay.messageUp()) return // a lesson message is up: the game's own messages keep quiet (F30)
-  const id = toast(text.messages[m.key], { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
+  const id = toast(messageWords(m.key, lessonPlay.inputKind()), { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
 

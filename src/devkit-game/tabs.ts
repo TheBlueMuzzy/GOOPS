@@ -23,13 +23,16 @@ import { registerDevKitGame } from '../devkit/devkitGame'
 import { soundTab } from '../devkit/sound/soundTabEntry'
 import { goopsAdapter } from './goopsAdapter'
 import { LessonsTab } from './LessonsTab'
+import { PerfTab } from './PerfTab'
 
 // Snapshots, Bug capture and the Pause buttons reach the running shift through this (goopsAdapter.ts)
 registerDevKitGame(goopsAdapter)
 
 // Sound: every sound in content/audio.json — listen, tune, swap files, the mixer and the log (F29)
 // Lessons: play any lesson from any step, edit its timings live, save (F30)
+// Perf: the frame-rate readout on / off (F38; also ?fps)
 export const gameTabs: { id: string; label: string; Panel: ComponentType<{ query?: string }> }[] = [
   soundTab(getAudio, { file: audioJson }),
   { id: 'lessons', label: 'Lessons', Panel: LessonsTab },
+  { id: 'perf', label: 'Perf', Panel: PerfTab },
 ]

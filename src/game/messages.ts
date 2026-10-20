@@ -2,14 +2,14 @@
 // It only DECIDES (which words, danger or not, for how long); App shows them as kit toasts, where the Settings row
 // "Messages (test)" says (screen centre, or just above the goop). Numbers come from content/tuning/messages.json.
 //   refused zap      → "Above the pressure line" / "Still filling"  (at most once per refusedCooldownSeconds)
-//   machine broke    → "Laser broken — swipe up to fix" (one per machine, each time it breaks)
+//   machine broke    → "Laser broken — W or ↑ to fix" / "…flick up…" / "…swipe up…" by input (one per machine, each break)
 //   integrity low    → "Tank weak…" once when it falls below integrityLowAt, again only after it climbs back above
 //   pressure near max→ once when it reaches pressureHighAt, again only after it drops below pressureHighResetAt
 //   quota met, rupture + why (too many open cracks / overflow)
 import type { MachineId, ShiftEvent, ShiftState } from '../engine'
-import type text from '../../content/text/en.json'
+import en from '../../content/text/en.json'
 
-export type MessageKey = keyof typeof text.messages
+export type MessageKey = keyof typeof en.messages
 export interface Message { key: MessageKey; danger: boolean; seconds: number }
 
 export interface MessageTuning {
@@ -21,6 +21,14 @@ export interface MessageTuning {
 }
 
 const BROKE: Record<MachineId, MessageKey> = { laser: 'brokeLaser', visor: 'brokeVisor', controls: 'brokeControls' }
+
+/** A message's words. Some change with the input used last, like the lessons' lines (F38: "W or ↑ to fix" on a
+ *  keyboard, "flick up" with a mouse, "swipe up" on a phone): en.json gives those a { keys, mouse, phone } entry. */
+export type Input = 'keys' | 'mouse' | 'phone'
+export function messageWords(key: MessageKey, input: Input): string {
+  const words: string | Record<Input, string> = en.messages[key]
+  return typeof words === 'string' ? words : words[input]
+}
 
 export function createMessages(tuning: MessageTuning) {
   let lastRefusedAt = -Infinity // ms of the last "refused" message
