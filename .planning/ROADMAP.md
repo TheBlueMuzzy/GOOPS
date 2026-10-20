@@ -145,7 +145,7 @@ Goal: Goops 2 goes live at the old address, works offline, sounds finished, and 
 - ⏳ F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
 - ⏳ F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
   what: step 1 = swap in the sounds Muzzy finds for the 26 placeholder moments (he hunts; Claude trims, matches loudness, credits — Muzzy 2026-10-19: "add a step during polish to update sounds")
-- ⏳ F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
+- 🟢 F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
 - ⏳ F55 🎮 Credits screen — must:1.0
 - ⏳ F56 ✨ Periscope zoom — should:1.0
 - ⏳ F57 🎮 Colour-blind help — should:1.0
