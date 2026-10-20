@@ -37,3 +37,8 @@ Checked: monitor before/after pixel-identical at 390x844, 360x780, 1440x900, 192
   - The Upgrades button: the corners beside the GOOPS title are too narrow on a 360 phone (the words broke letter by letter), so it sits over the title, between shifts only (mid-shift the console is for repairs).
   - Unlock lessons: one per shift start (window, then swap), never chained. The console one (upgrades) has no Got it — it finishes when Upgrades is opened; leaving for a shift first, it comes back next visit.
   - At rank 3 the visor can break, and its first-breakdown lesson pauses the keys: e2e/controls.mjs (now at rank 3 for swap) marks `lesson:visor` seen first. e2e/start.mjs skips the unlock lessons (`window.__goopsSeen`) unless a script asks for them.
+
+Retro:
+- went well: the unlock design settled in two messages; the two helpers built F59 and F60 side by side; the CRT look is now quick to reuse (one wrapper + one data line).
+- went wrong: the next-piece window was too small, and the HUD only felt wrong after Muzzy played it (task 13 re-laid it); two helpers both wrote TDD D12.
+- change: a quick layout mock-up (or a 30-second play) before building a HUD change; helper briefs name the next free TDD decision number.
