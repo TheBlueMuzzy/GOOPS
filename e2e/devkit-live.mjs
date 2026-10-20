@@ -2,7 +2,7 @@
 // Pause buttons work (Dev Kit 0.18.0). In a real browser with the real dev server:
 //   live edits — the same devkit:tuning event the Tuning tab sends, then the change is seen: tank.json background (the
 //     tank canvas), tank.json spinRepeatMs (a held key's repeats), shift.json fall.msPerRow (the piece stops falling),
-//     hud.json topRowPx (the tank re-fits), messages.json stack.gapRows (where messages sit), goo-jelly.json look knobs
+//     hud.json nextWindow.topRowPx (the tank re-fits), messages.json stack.gapRows (where messages sit), goo-jelly.json look knobs
 //     (the goo's pixels change — drawn into a FROZEN picture: a live edit during full pause redraws one frame)
 //   ⏸ full pause — two screenshots 500 ms apart are identical; both clocks stand still; on resume nothing jumps
 //   ◐ half pause — the engine's state doesn't change over 1 s, while the picture does (the drop guide's wave, the goo)
@@ -87,12 +87,13 @@ try {
 
     const topY = () => page.evaluate(() => window.__goops.view.topY)
     const t0 = await topY()
-    await send(page, 'hud', edit('hud', (d) => { d.topRowPx += 120 }))
+    // (rank 6: the next-piece window shows, so the room above the tank is its nextWindow.topRowPx — F59)
+    await send(page, 'hud', edit('hud', (d) => { d.nextWindow.topRowPx += 120 }))
     await page.waitForTimeout(150)
     const t1 = await topY()
     await send(page, 'hud', file('hud'))
     await page.waitForTimeout(150)
-    check('hud.json topRowPx: the tank re-fits at once', t1 > t0 + 30 && Math.abs((await topY()) - t0) < 1, `tank top ${Math.round(t0)} → ${Math.round(t1)} px`)
+    check('hud.json nextWindow.topRowPx: the tank re-fits at once', t1 > t0 + 30 && Math.abs((await topY()) - t0) < 1, `tank top ${Math.round(t0)} → ${Math.round(t1)} px`)
 
     const at = () => page.evaluate(() => document.documentElement.style.getPropertyValue('--kit-toasts-at'))
     const m0 = await at()
