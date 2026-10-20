@@ -14,6 +14,7 @@ Checked: check:full ALL PASS 18/18 (7.3 min, after b3edde9) incl. new e2e/unlock
 - [x] 🤖 6. Unlock moments: a line on the end report's rank-up + an interrupt lesson at the start of the first shift after each unlock (window, swap), the pink outline on the Upgrades button at the console; once per device, Replay lessons covers them — content/lessons/, src/game/lessons/
 - [x] 🤖 7. Docs: GDD §4 (swap = trade with next, controls table note, unlock table), upgrades-map (Hold Viewer + Window retired → 2 slots to refill), TDD data files — .planning/GDD.md, .planning/design/upgrades-map.md, .planning/TDD.md
 - [x] 🤖 8. Prove it: e2e for ranks 0 / 1 / 3 / 5 (what shows, swap on/off, lessons fire once) + shots at 390x844, 360x780 and desktop windows; add to check:full — e2e/unlocks.mjs, scripts/check-all.mjs
+- [ ] 🤖 13. Muzzy after playing (2026-10-19, his mock-up): the window was far too small and the layout not great → top row = score · CRACKS x/y (big, centre) · pause; the next-piece window moves into the bottom panel on the LEFT (tall, big cells), with the 3 machine bars in a row over one long INTEGRITY bar to its right; the tank gets its top room back — src/ui/App.tsx, src/game/ShiftStage.tsx, src/game/NextWindow.tsx, content/tuning/hud.json
 
 ## F60 🧱 Screen look, reusable
 Check: monitor shots before/after match · switching presets in the Dev Kit changes the look live · the second use (next-piece window) takes a few lines · check:full green
