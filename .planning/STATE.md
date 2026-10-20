@@ -23,6 +23,9 @@ Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `
 - Info only, no answer needed: start screen is a placeholder for the console · every shift is rank 1 · pops are a placeholder until the zap is designed · rows are whole steps · the falling piece draws fully filled.
 
 ## Key facts
+**Orientation:** portrait only (D11) — never 844x390 in briefs, shots or questions; the "Turn your phone upright" card is the only sideways screen
+**Next free TDD decision:** D18 (bump when you add one; helper briefs copy it)
+**Look-back alpha** (.planning/archive/lookbacks/alpha.md): 13 [BMUZ] + 6 [FRAMEWORK] items with exact changes, for the other session to land (this session never edits ~/.claude or dev/framework) — tell Muzzy to point that session at the file
 **Release:** github-pages (recipe ~/.claude/config/bmuz/release/github-pages.md, but on the gh-pages BRANCH via scripts/deploy.js `--dest alpha --add` — an Actions Pages deploy would replace the whole site and take v1 down)
 **Security reviewed:** 15e6e57, 2026-10-20 — whole remake before its first public release: nothing private ships (no source maps, env, paths), the tester panel stays in the browser, SW scoped to /GOOPS/alpha/, no innerHTML/eval, no third-party requests; v1's .claude/.planning leftovers removed from gh-pages at the alpha deploy
 **Reviewed through:** 15e6e57 — after c956a5b only the GitHub workflow note (read by Claude) · review (low) of F38 (52df39a..db82d88): deploy can't touch v1's root; fixed: deploy refuses uncommitted changes; TDD risk logged (v1's worker drops alpha's cache), 2026-10-20
