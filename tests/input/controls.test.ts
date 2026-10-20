@@ -115,3 +115,67 @@ describe('hold to swap', () => {
     expect(seen.rotates).toBe(0)
   })
 })
+
+// F28 (gestures.md §2): a quick flick only counts when the drag was locked up/down (C-6), and a flick up only opens
+// the console if the finger never went down first (C-8). Distances are in rem: 16 px each in the node tests.
+describe('quick flicks', () => {
+  function flickSetup(consoleOnly = false) {
+    const el = Object.assign(new EventTarget(), {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }),
+    }) as unknown as HTMLElement
+    const seen = { consoles: 0, drops: [] as boolean[] }
+    detach = attachControls(el, {
+      spin: () => {}, rotate: () => {}, tapCell: () => false, hold: () => {},
+      console: () => { seen.consoles++ }, softDrop: (on) => { seen.drops.push(on) },
+    }, () => !consoleOnly, () => consoleOnly)
+    // one quick drag through the points (x, y), 20 ms apart, then lift at the last one
+    const drag = (...points: [number, number][]) => {
+      const [x0, y0] = points[0]
+      el.dispatchEvent(event('pointerdown', { pointerId: 1, clientX: x0, clientY: y0 }))
+      for (const [x, y] of points.slice(1)) { vi.advanceTimersByTime(20); el.dispatchEvent(event('pointermove', { pointerId: 1, clientX: x, clientY: y })) }
+      const [x, y] = points[points.length - 1]
+      el.dispatchEvent(event('pointerup', { pointerId: 1, clientX: x, clientY: y }))
+    }
+    return { seen, drag }
+  }
+  const px = (rem: number) => rem * 16
+
+  it('a quick flick up opens the console; a quick flick down is a short fast drop', () => {
+    const { seen, drag } = flickSetup()
+    drag([200, 400], [200, 380], [200, 400 - px(tank.flickRem) - 10])
+    expect(seen.consoles).toBe(1)
+    seen.drops.length = 0
+    drag([200, 400], [200, 420], [200, 400 + px(tank.flickRem) + 10])
+    expect(seen.drops.at(-1)).toBe(true) // the short fast drop is on…
+    vi.advanceTimersByTime(tank.flickDropMs + 20)
+    expect(seen.drops.at(-1)).toBe(false) // …and off again after flickDropMs
+  })
+
+  it('C-6: a fast sideways drag that ends with the thumb lifting is not a flick', () => {
+    const { seen, drag } = flickSetup()
+    // locks sideways first (the first move is mostly sideways), then rises steeply as the thumb lifts: overall more up than across
+    drag([200, 400], [180, 398], [170, 330], [160, 300])
+    expect(seen.consoles).toBe(0)
+    seen.drops.length = 0
+    drag([200, 400], [180, 402], [170, 470], [160, 500]) // the same, ending downward: no short fast drop either
+    expect(seen.drops.every((on) => !on)).toBe(true)
+  })
+
+  it('C-8: dragging down then flicking back up does not open the console', () => {
+    const { seen, drag } = flickSetup()
+    drag([200, 400], [200, 440], [200, 400 - px(tank.flickRem) - 10])
+    expect(seen.consoles).toBe(0)
+    // a wobble smaller than the drag lock before the flick still counts
+    drag([200, 400], [200, 400 + px(tank.dragLockRem) - 2], [200, 400 - px(tank.flickRem) - 10])
+    expect(seen.consoles).toBe(1)
+  })
+
+  it('console only (a lesson waiting on the console): the same flick-up rules', () => {
+    const { seen, drag } = flickSetup(true)
+    drag([200, 400], [200, 440], [200, 400 - px(tank.flickRem) - 10]) // down first: no
+    expect(seen.consoles).toBe(0)
+    drag([200, 400], [200, 380], [200, 400 - px(tank.flickRem) - 10]) // straight up: yes
+    expect(seen.consoles).toBe(1)
+  })
+})

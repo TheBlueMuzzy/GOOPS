@@ -9,8 +9,8 @@ Check: Muzzy's 14-line phone session done and written up · his calls on C-1 (tw
 
 ## F28 🎮 Gesture fixes
 Check: e2e/gestures.mjs with real fingers (touch events) covers every tank gesture + the fixed collisions, in check:full · touch knobs live in the Dev Kit · Muzzy re-checks the lines that failed on his phone
-- [ ] 🤖 3. Touch numbers out of code into content (drag lock, dead zone, flick time + distance, quick-flick drop), in rem so they feel the same on every phone; live in the Dev Kit — src/input/controls.ts, content/tuning/tank.json
-- [ ] 🤖 4. Cheap clear fixes: a flick only counts when the drag was locked up/down (C-6, C-8) + whatever the session turns up — src/input/controls.ts
+- [x] 🤖 3. Touch numbers out of code into content (drag lock, dead zone, flick time + distance, quick-flick drop), in rem so they feel the same on every phone; live in the Dev Kit — src/input/controls.ts, content/tuning/tank.json
+- [x] 🤖 4. Cheap clear fixes: a flick only counts when the drag was locked up/down (C-6, C-8) + whatever the session turns up — src/input/controls.ts
 - [ ] 🤖 5. Muzzy's calls on two thumbs (C-1) and tap on goop vs rotate (C-2) — src/input/controls.ts, src/game/ShiftStage.tsx
 - [ ] 🤖 6. Finger e2e for every tank gesture (tap halves, drag spin, drag down, flicks, hold-to-swap, slow press, diagonal lock, second finger); add to check:full — e2e/gestures.mjs, scripts/check-all.mjs
 - [ ] 🤖 7. Phone wording into every lesson's Phone slot (breakdown + unlock lessons) — content/lessons/
@@ -27,4 +27,5 @@ Check: e2e/first-day.mjs plays the whole day A1→F3 (keys + finger) and lands a
 
 ## Notes
 - Tech calls (Claude, 2026-10-20): touch numbers go in tank.json next to holdDelayMs / holdToSwapMs; distances in rem (screen pixels feel different on small vs big / dense phones). No open P0/P1 bugs.
+- F28 tasks 3–4 (Claude, 2026-10-20): new tank.json knobs dragLockRem 0.625 · dragDeadZoneRem 1.25 · flickMs 300 · flickRem 3.125 · flickDropMs 150 (= the old 10 px / 20 px / 300 ms / 50 px / 150 ms at 16 px) with _help; the root font size is read once per press (a Dev Kit edit counts from the next touch). C-6: a flick needs the drag locked up/down. C-8: a flick up needs the finger never to have gone more than one drag lock below its start — my call: a strict "never below" would let a 1-px thumb wobble eat real flicks. The console-only path (a lesson waiting on the console) follows the same rules. Task 4's "+ whatever the session turns up" still waits on Muzzy's phone session. No content/devkit/select.json exists in Goops yet, so there was no knob-placement test to update.
 - Retro change from Sprint 09: helper briefs name the next free TDD decision number (next free: D14); a HUD change gets a quick mock-up or a 30-second play before it's built.

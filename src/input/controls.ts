@@ -99,6 +99,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   const move = (e: PointerEvent) => {
     if (!ptr || e.pointerId !== ptr.id) return
     const dragLock = tank.dragLockRem * ptr.rem, deadZone = tank.dragDeadZoneRem * ptr.rem // (px)
+    ptr.lowest = Math.max(ptr.lowest, e.clientY)
     if (!isActive() && consoleOnly()) { // console only: just watch for the flick (no spin, no fast drop)
       if (!ptr.locked && Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > dragLock) ptr.locked = 'V'
       return
@@ -122,9 +123,13 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     dragDir = 0
     const dt = clock() - p.t, dx = e.clientX - p.x, dy = e.clientY - p.y
     if (p.consumed) return
-    const flick = dt < tank.flickMs && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > tank.flickRem * p.rem
+    // A quick flick counts only when the drag was locked up/down (C-6: a fast sideways drag whose thumb rises as it
+    // lifts isn't a flick). A flick UP opens the console only if the finger never went down first (C-8: a fast drop
+    // reversed isn't a flick up) — a dip smaller than the drag lock is just a wobbly thumb, not a drop.
+    const flick = p.locked === 'V' && dt < tank.flickMs && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > tank.flickRem * p.rem
+    const flickUp = flick && dy < 0 && p.lowest - p.y <= tank.dragLockRem * p.rem
     if (!isActive()) { // console only: a quick flick up is the one thing that works
-      if (consoleOnly() && flick && dy < 0) cb.console()
+      if (consoleOnly() && flickUp) cb.console()
       return
     }
     if (!p.locked) {
@@ -133,8 +138,8 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
       const r = el.getBoundingClientRect()
       cb.rotate(e.clientX - r.left < r.width / 2 ? -1 : 1)
     } else if (flick) {
-      if (dy < 0) cb.console()
-      else { cb.softDrop(true); stopShortDrop(); stopShortDrop = rulesClock.after(tank.flickDropMs, () => cb.softDrop(false)) } // quick swipe down = a short fast-drop
+      if (flickUp) cb.console()
+      else if (dy > 0) { cb.softDrop(true); stopShortDrop(); stopShortDrop = rulesClock.after(tank.flickDropMs, () => cb.softDrop(false)) } // quick swipe down = a short fast-drop
     }
   }
   const cancel = (e: PointerEvent) => { if (ptr && e.pointerId === ptr.id) { ptr = null; clearHold(); cb.softDrop(false); dragDir = 0 } }
