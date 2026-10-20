@@ -187,7 +187,7 @@ export function App() {
   }, [start])
   useEffect(() => { session.startLesson = startLessonNow; return () => { session.startLesson = null } }, [startLessonNow])
   useEffect(() => {
-    if (mode === 'shift' && result && !screens.current.includes('end')) toConsole()
+    if (mode === 'shift' && result && !screens.current.includes('end')) { lessonPlay.screen('reportClosed'); toConsole() } // (Esc / Back finish day one too)
   }, [mode, result, open, toConsole])
   // (the last shift's engine stays in state on the console, unmounted; the next pull replaces it)
   const consoleSlid = useCallback(() => setMode((m) => (m === 'leaving' || m === 'peekOut' ? 'shift' : m === 'arriving' ? 'console' : m === 'peekIn' ? 'peek' : m)), [])

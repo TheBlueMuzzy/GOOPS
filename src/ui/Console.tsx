@@ -123,13 +123,14 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const outlined = midShift ? spotlit : NOTHING
   // F31 (tutorial.md A1, "Press ↓ or Enter to pull the periscope"): between shifts ↓ or Enter pulls it from anywhere,
   // not only once its grip has the keyboard's focus — the grip is clicked, so it slides down and clunks as a tap does.
-  // (Not over Settings or Upgrades, not on a held key's repeats, and Enter on a focused button stays that button's.)
+  // (Not over Settings or Upgrades, not on a held key's repeats, never in a text box / slider / select, and Enter on a focused button stays that button's.)
   const idle = !midShift && phase === 'idle'
   useEffect(() => {
     if (!idle) return
     const key = (e: KeyboardEvent) => {
       if (e.repeat || screens.current.length || (e.code !== 'ArrowDown' && e.code !== 'Enter' && e.code !== 'NumpadEnter')) return
-      if (e.code !== 'ArrowDown' && (e.target as HTMLElement | null)?.closest?.('button, input, select, textarea')) return
+      const target = e.target as HTMLElement | null
+      if (target?.closest?.(e.code === 'ArrowDown' ? 'input, select, textarea' : 'button, input, select, textarea')) return // (a Dev Kit slider / field keeps its ↓)
       const grip = document.querySelector<HTMLButtonElement>('.kit-pull-grip:not(:disabled)')
       if (!grip) return
       e.preventDefault()

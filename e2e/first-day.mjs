@@ -570,6 +570,13 @@ try {
     await shot(page, `F3-${name}`)
     const bad = await lookProblems(page)
     check(`${name} F3: "Day one done!" on the report, pointing at Back to the console (${bad.join(', ') || 'look right'})`, f3 && bad.length === 0 && await ringAround(page, '.kit-end-actions button[data-variant="secondary"]'))
+    if (w === 390) { // review fix: Esc (or the phone's Back) closing the report finishes the day too — else a replay restarts it at every pull
+      await page.keyboard.press('Escape')
+      await page.getByRole('button', { name: 'Start shift' }).waitFor()
+      await page.waitForTimeout(2500)
+      const seen = await page.evaluate(() => JSON.parse(localStorage.getItem(Object.keys(localStorage).find((k) => k.startsWith('kit-tips')))).seen)
+      check(`${name} F3: Esc closes the report and the day is remembered`, seen.includes('lesson:first-day'), JSON.stringify(seen))
+    }
     check(`${name}: no page errors`, errors.length === 0, errors.join(' | '))
     await context.close()
   }

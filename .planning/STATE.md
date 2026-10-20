@@ -11,7 +11,7 @@ Play: PC http://localhost:5173/?rank=4 (or ?rank=6) · phone http://192.168.1.15
 NOT built yet: upgrades (engine ready), story, tutorial.
 
 ## Where we are
-Stage: develop · Milestone: M4 Alpha · Sprint: 10 (F10, F28, F31) · Doing: F31 — building · Branch: dev/m1-core-shift · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
+Stage: develop · Milestone: M4 Alpha · Sprint: 10 (F10, F28, F31) · Doing: F31 — waiting on Muzzy (play the first day, task 14) · Branch: dev/m1-core-shift · Version: v1 was 1.1.13 (package.json; remake numbering decided at /define)
 Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `npm run deploy`; stays up until the remake replaces it)
 
 ## Answered 2026-10-17 (written into GDD §4/§6) → build next sprint
@@ -23,8 +23,8 @@ Live: https://thebluemuzzy.github.io/GOOPS/ (v1, deployed from `gh-pages` via `n
 - Info only, no answer needed: start screen is a placeholder for the console · every shift is rank 1 · pops are a placeholder until the zap is designed · rows are whole steps · the falling piece draws fully filled.
 
 ## Key facts
-**Reviewed through:** 13aefec — review (low) of F28 (4ec5674..13aefec): no blockers; 3 small fixes in cfccd0b (held S keeps its drop, pause drops a swap charge, a help-text byte), 2026-10-20
-**Last full check:** 13aefec, 2026-10-20 — `npm run check:full`: ALL PASS 19/19 (fast + 15 e2e incl. gestures.mjs, 8.7 min; page e2e-shots/checks.html); after it only the review fixes (cfccd0b: unit 21/21, gestures 47/47, controls green). Not in it: art/fonts/perf shot tools, console-shots (red on a short desktop window — kit swipe rule, sprint 08 Notes)
+**Reviewed through:** 7819edf — review (low) of F31 (d5be6ea..7819edf): 2 fixes (Esc on the report finishes day one; ↓ in a Dev Kit field stays the field's), 2026-10-20
+**Last full check:** 7819edf, 2026-10-20 — `npm run check:full`: ALL PASS 20/20 (fast + 16 e2e incl. first-day.mjs, 10.4 min; page e2e-shots/checks.html); after it only the review fixes (first-day 108/108, fast green). Not in it: art/fonts/perf shot tools, console-shots (red on a short desktop window — kit swipe rule, sprint 08 Notes)
 **Run (remake):** `npm run dev -- --host` · checks `npm run check:full` (everything) or `npm run check:fast` (127 tests + build + lint + UI rules) · e2e `npm run e2e:smoke`, `npm run e2e:controls`, `node e2e/perf.mjs` · goo lab (dev only) `/goo-lab.html` · preview build `npx vite build --base ./ --outDir dist-preview` → republish to the Play artifact
 **v1:** branch `archive/goops-v1` (old run/deploy: `npm run deploy` → gh-pages, still live)
 **Remake setup:** v1 design docs (PRD, vision, glossary, soft-body, tutorials) → `.planning/research/v1/`. GSD state/phases/investigations → `.planning/archive/gsd/`. BMUZ 1 hooks removed 2026-10-16.
