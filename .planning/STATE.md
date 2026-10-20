@@ -11,7 +11,7 @@ Play: PC http://localhost:5173/?rank=4 (or ?rank=6) · phone http://192.168.1.15
 NOT built yet: upgrades (engine ready), story, tutorial.
 
 ## Where we are
-Stage: deliver · Milestone: M4 Alpha · Sprint: 11 (F38) · Doing: alpha released — phone install + friends · Branch: dev/m1-core-shift · Version: 0.0.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: deliver · Milestone: M4 Alpha · Sprint: 11 (F38) · Doing: alpha released — phone install + friends · Branch: dev/m1-core-shift · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Answered 2026-10-17 (written into GDD §4/§6) → build next sprint
