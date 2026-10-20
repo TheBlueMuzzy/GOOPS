@@ -29,3 +29,8 @@ Checked: check:full at db82d88 — 21/22 PASS (incl. sw-update: own worker at /G
 - Task 8 note (Claude): a phone can only INSTALL the app over https (the real deploy) — the LAN preview of the release build (vite preview, http://192.168.1.152:4173/GOOPS/alpha/?fps) reads the fps but won't offer install. So: fps now, install right after /deliver puts alpha online.
 - Lesson for the BMUZ session: on Windows `npm ci` while a dev server runs fails with EPERM (esbuild.exe locked) and leaves node_modules half-removed — check:full then fails at build/lint/unit; stop the dev server first (stop-servers.mjs) — a guard before `npm ci` would catch it.
 - v1 and the alpha share one browser storage (same site): the kit's slots are named after the first folder (`kit-settings:GOOPS`, `kit-tips:GOOPS`) and Goops' own are goops-progress / goops-first-day; v1 uses gooptris_save_v3 / proto*-dev-settings — no clash.
+
+Retro:
+- went well: one helper built the whole release kit, and Muzzy's version-everywhere ask got folded in mid-sprint; the review proved the deploy can't touch v1.
+- went wrong: packages were reinstalled while the dev server ran, which broke the install and cost a full check run; the phone install test couldn't happen before going online (install needs https).
+- change: stop servers before any reinstall; plan real-device checks that need the live site as /deliver steps from the start.
