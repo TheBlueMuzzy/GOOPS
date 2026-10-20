@@ -73,9 +73,14 @@ jobs:
             npx playwright-core install --with-deps chromium
           fi
 
-      - name: check:framework
+      # GOOPS (2026-10-20): check:ui only on GitHub for now. The Dev Kit's check-devkit.mjs (0.18, and the framework's
+      # current copy) stops its first `vite preview` with server.kill() — on Linux that kills only the `sh -c` wrapper,
+      # the server lives on, and the second build's preview finds port 5198 taken ("port 5198 is already in use").
+      # It passes on the PC (taskkill /T kills the tree), and release.mjs runs the full check:framework there before
+      # every release. Back to `npm run check:framework` once the framework session's fix is installed.
+      - name: check:framework (UI rules — see the note above)
         if: steps.framework.outputs.has == 'yes'
-        run: npm run check:framework
+        run: npm run check:ui
 
       # When something fails, keep the reports so they can be opened from the run page (Summary → Artifacts).
       - name: Keep the reports (only when something failed)
