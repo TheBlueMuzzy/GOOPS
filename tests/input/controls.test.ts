@@ -184,7 +184,7 @@ describe('quick flicks', () => {
 // sideways owns the spin until it lifts, the first to drag down owns the fast drop (one finger each, both at once);
 // only one hold charges a swap; a finger lifting or cancelled lets go of only what it owned.
 describe('two fingers', () => {
-  function fingerSetup() {
+  function fingerSetup(active: () => boolean = () => true) {
     const el = Object.assign(new EventTarget(), {
       setPointerCapture: () => {},
       getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }),
@@ -194,7 +194,7 @@ describe('two fingers', () => {
       spin: (dir) => seen.spins.push(dir), rotate: (dir) => seen.rotates.push(dir), tapCell: () => false,
       hold: () => { seen.holds++ }, console: () => { seen.consoles++ }, softDrop: (on) => { seen.drop = on },
       holdProgress: (p, at) => { seen.rings.push(p === null ? null : { p, at }) },
-    }, () => true)
+    }, active)
     const finger = (type: string, id: number, x: number, y: number) => el.dispatchEvent(event(type, { pointerId: id, clientX: x, clientY: y }))
     return { seen, finger }
   }
@@ -239,6 +239,34 @@ describe('two fingers', () => {
     expect(seen.consoles).toBe(1)
     expect(seen.spins.length).toBeGreaterThan(0)
     expect(seen.spins.every((d) => d === 1)).toBe(true)
+  })
+
+  it('review fix: a quick flick down never ends a fast drop the S key is still holding', () => {
+    const { seen, finger } = fingerSetup()
+    const key = (type: string, code: string) => (window as unknown as EventTarget).dispatchEvent(event(type, { code, repeat: false }))
+    key('keydown', 'KeyS')
+    finger('pointerdown', 1, 200, 300)
+    for (const y of [330, 370, 410]) { vi.advanceTimersByTime(10); finger('pointermove', 1, 200, y) }
+    finger('pointerup', 1, 200, 410)
+    vi.advanceTimersByTime(tank.flickDropMs + 100)
+    expect(seen.drop).toBe(true) // S still held
+    key('keyup', 'KeyS')
+    expect(seen.drop).toBe(false)
+  })
+
+  it('review fix: a pause while a swap charges drops the charge (no ring left frozen on screen, no swap after)', () => {
+    let on = true
+    const { seen, finger } = fingerSetup(() => on)
+    finger('pointerdown', 1, 300, 600)
+    vi.advanceTimersByTime(tank.holdDelayMs + 200) // the ring is showing
+    expect(seen.rings.at(-1)).not.toBeNull()
+    on = false // a lesson / the Dev Kit pauses
+    vi.advanceTimersByTime(100)
+    expect(seen.rings.at(-1)).toBeNull()
+    on = true
+    vi.advanceTimersByTime(holdFor)
+    finger('pointerup', 1, 300, 600)
+    expect(seen.holds).toBe(0)
   })
 
   it('two fingers both holding still: one swap only', () => {

@@ -95,6 +95,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     holdStart = clock()
     holdTimer = requestAnimationFrame(tickHold)
   }
+  const keyDrop = () => keys.has('KeyS') || keys.has('ArrowDown') // S / ↓ held: a finger letting go mustn't end that drop
   const stopHold = () => {
     holdFinger = null; holdKey = null
     if (holdTimer) { cancelAnimationFrame(holdTimer); holdTimer = 0; cb.holdProgress?.(null) }
@@ -102,6 +103,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
   const tickHold = () => {
     const f = holdFinger !== null ? fingers.get(holdFinger) : undefined
     if (!f && !holdKey) { holdTimer = 0; return }
+    if (!isActive()) { stopHold(); return } // paused (a lesson, the Dev Kit, a menu): the charge is dropped, no frozen ring
     const at = f ? { x: f.nowX, y: f.nowY } : undefined
     const held = clock() - holdStart
     if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (tank.holdToSwapMs - tank.holdDelayMs)), at)
@@ -120,7 +122,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     fingers.delete(f.id)
     if (holdFinger === f.id) stopHold()
     if (spinFinger === f.id) { spinFinger = null; dragDir = 0 }
-    if (dropFinger === f.id) { dropFinger = null; cb.softDrop(false) }
+    if (dropFinger === f.id) { dropFinger = null; if (!keyDrop()) cb.softDrop(false) }
   }
 
   const down = (e: PointerEvent) => {
@@ -180,7 +182,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
       if (flickUp) cb.console() // (any finger's flick up — the console isn't owned)
       else if (dy > 0 && ownedDrop) { // quick swipe down = a short fast-drop (not from a finger that never owned the drop)
         cb.softDrop(true); stopShortDrop()
-        stopShortDrop = rulesClock.after(tank.flickDropMs, () => { if (dropFinger === null) cb.softDrop(false) }) // (a new drag-down keeps its drop)
+        stopShortDrop = rulesClock.after(tank.flickDropMs, () => { if (dropFinger === null && !keyDrop()) cb.softDrop(false) }) // (a new drag-down or a held S / ↓ keeps its drop)
       }
     }
   }

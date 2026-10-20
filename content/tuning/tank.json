@@ -4,7 +4,7 @@
     "dragDeadZoneRem": "Touch: how far sideways a drag goes before the tank starts spinning (hold past it to keep spinning, like a joystick). In rem (1 rem = 16 px today).",
     "flickMs": "Touch: a quick flick up (console) or down (a short fast drop) must be over within this many ms, finger down to finger up.",
     "flickRem": "Touch: how far up or down a quick flick must travel. In rem (1 rem = 16 px today).",
-    "flickDropMs": "Touch: how long a quick flick down fast-drops for (ms, on the rules clock — it stands still under a pause)."
+    "flickDropMs": "Touch: how long a quick flick down fast-drops for (ms, on the rules clock â€” it stands still under a pause)."
   },
   "background": "#05070d",
   "tank": "#0a0f1c",
