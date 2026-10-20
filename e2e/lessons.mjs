@@ -5,7 +5,7 @@
 //   Screenshots at 1440x900 and 390x844 → e2e-shots/lessons/
 // Run: node e2e/lessons.mjs  (own dev server on port 5341)
 import { chromium } from 'playwright-core'
-import { startShift } from './start.mjs'
+import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 
@@ -664,6 +664,7 @@ try {
       const errors = []
       page.on('pageerror', (e) => errors.push(e.message))
       await page.addInitScript(crtLogger)
+      await skipFirstDay(page) // (F31: the console's own words, not the first day's line)
       await page.goto(`http://localhost:${PORT}/?seed=7`)
       await crt(page).waitFor()
       const midCursor = await cursorOf(page)
@@ -693,6 +694,7 @@ try {
         const name = crt.use.monitor, slow = { ...crt, presets: { ...crt.presets, [name]: { ...crt.presets[name], lettersPerSecond: 6 } } }
         document.addEventListener('DOMContentLoaded', () => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'crt', data: slow } })))
       }, CRT)
+      await skipFirstDay(page)
       await page.goto(`http://localhost:${PORT}/?seed=7`)
       await crt(page).waitFor()
       await page.waitForTimeout(1600)
@@ -707,6 +709,7 @@ try {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
     await page.addInitScript(crtLogger)
+    await skipFirstDay(page) // (F31: the console's own words, not the first day's line)
     await page.goto(`http://localhost:${PORT}/?seed=7`)
     await crt(page).waitFor()
     await page.waitForTimeout(600)

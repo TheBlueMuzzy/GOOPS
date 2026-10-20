@@ -25,6 +25,7 @@ const FAST = [
 // Not here: art-shots / fonts-shots / art-sheet / perf (picture and timing tools, not pass/fail checks) and console-shots
 // (red on a short desktop window: the kit's swipe rule — SPRINT 08 Notes; add it back once that's fixed).
 const E2E = [
+  ['first-day', 'e2e/first-day.mjs', ''],      // 5347
   ['lessons', 'e2e/lessons.mjs', ''],          // 5341
   ['unlocks', 'e2e/unlocks.mjs', ''],          // 5344
   ['devkit-live', 'e2e/devkit-live.mjs', ''],  // 5282

@@ -7,6 +7,7 @@
 import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
+import { skipFirstDay } from './start.mjs'
 
 const PORT = 5264, OUT = 'e2e-shots/console'
 mkdirSync(OUT, { recursive: true })
@@ -76,6 +77,7 @@ try {
     page.on('pageerror', (e) => errors.push(e.message))
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
     await page.addInitScript((save) => { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('goops-progress', save); sessionStorage.setItem('seeded', '1') } }, SAVE)
+    await skipFirstDay(page) // (F31: rank 0 with the first day had — its line would be on the monitor, its shift a lesson)
     await page.goto(`http://localhost:${PORT}/?seed=7`)
     await page.evaluate(() => document.fonts.ready)
     await page.waitForTimeout(500)

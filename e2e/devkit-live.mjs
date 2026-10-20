@@ -13,7 +13,7 @@
 //   Screenshots of the panel with both buttons + the badge at 1440x900 and 390x844 → e2e-shots/devkit-live/
 // Run: node e2e/devkit-live.mjs  (own dev server on port 5282)
 import { chromium } from 'playwright-core'
-import { startShift } from './start.mjs'
+import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 
@@ -233,6 +233,7 @@ try {
     const crtPage = await browser.newPage({ viewport: { width: 390, height: 844 } })
     const ce = []
     crtPage.on('pageerror', (e) => ce.push(e.message))
+    await skipFirstDay(crtPage) // (F31: the console's own words, not the first day's line)
     await crtPage.goto(`http://localhost:${PORT}/?seed=7`)
     await crtPage.locator('[data-tag="crt"]').waitFor()
     await crtPage.waitForFunction(() => !document.querySelector('[data-tag="crt"]').hasAttribute('data-typing'), null, { timeout: 8000 })
