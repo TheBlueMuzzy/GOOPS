@@ -1,0 +1,30 @@
+{
+  "_about": "Upgrade definitions (F22, TDD 'Upgrades & abilities'). type: passive = modifiers (always on) · active = an ability you equip, charge and fire · feature = a flag the screens read. byLevel[n-1] = the value AT level n (not added up). Passive effects: modifier = a name from src/engine/upgrades.ts Modifiers, op = 'mul' (multiply) or 'add'. Abilities: charge 0..1 (1 = ready), chargePerSecond while the shift is playing, chargePerSeal per crack sealed; byLevel = the effect's numbers. testOnly upgrades are for tests only: nothing in the game lists or grants them. The real 20 (design/upgrades-map.md) get added here when upgrades go into the game.",
+  "upgrades": [
+    {
+      "id": "sturdyTankTest",
+      "name": "Sturdy tank (test)",
+      "desc": "Open cracks wear the tank 50% slower.",
+      "type": "passive",
+      "rank": 0,
+      "maxLevel": 1,
+      "testOnly": true,
+      "effects": [{ "modifier": "integrityDrainMult", "op": "mul", "byLevel": [0.5] }]
+    },
+    {
+      "id": "lowCracksTest",
+      "name": "Low cracks (test)",
+      "desc": "When fired, the next 3 cracks form in the bottom 4 rows.",
+      "type": "active",
+      "rank": 0,
+      "maxLevel": 1,
+      "testOnly": true,
+      "ability": {
+        "effect": "lowCracks",
+        "chargePerSecond": 0,
+        "chargePerSeal": 0.5,
+        "byLevel": [{ "cracks": 3, "rows": 4 }]
+      }
+    }
+  ]
+}

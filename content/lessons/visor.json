@@ -1,0 +1,187 @@
+{
+  "_about": "F32 first-breakdown lesson: the first time the VISOR breaks in a real shift (rank 2+), once per device (src/game/lessons/firstBreakdowns.ts starts it). What broke → go to the console → fix it (the tank frozen there) → how to prevent it → back to the tank. Steps the player is already past are skipped (skipIf). Words: content/text/en.json → lessons.visor. Design: .planning/research/tutorial.md §5. laser.json and controls.json are the same shape. Muzzy's first try (2026-10-19): one text at a time (no hints on top), the spotlight dim (`dim`) round what each step shows, ONE go-to-console message that insists (pauses, dims, only the console control works) once the machine has been broken content/tuning/lessons.json insistSeconds; at the console the words are on the monitor's screen (no bubbles there), the fix step's words follow the part that's lit (the slider's / the button's own words: data-say, lessons.visor.fixSlide / fixButton), and the last step only points at the periscope (the monitor already says it).",
+  "id": "visor",
+  "start": {
+    "console": "frozen"
+  },
+  "finish": {
+    "console": "normal"
+  },
+  "steps": [
+    {
+      "id": "broke",
+      "pattern": "pauseShowDismiss",
+      "message": "broke",
+      "dim": true,
+      "pointer": {
+        "tag": "bar-visor"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        }
+      ]
+    },
+    {
+      "id": "toConsole",
+      "pattern": "runActAdvance",
+      "message": "toConsole",
+      "pointer": {
+        "tag": "bar-visor"
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleOpened"
+      },
+      "insist": {
+        "when": {
+          "on": "gate",
+          "gate": "insist:visor",
+          "atLeast": 1
+        },
+        "only": [
+          "console"
+        ]
+      },
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "pauseOpened"
+          },
+          "message": "pauseMenu",
+          "pointer": {
+            "tag": "pauseResume"
+          },
+          "until": {
+            "on": "event",
+            "event": "pauseClosed"
+          }
+        }
+      ],
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fullyPaused",
+      "pattern": "pauseShowDismiss",
+      "message": "fullyPaused",
+      "dim": true,
+      "pointer": {
+        "tags": ["monitor", "crt"],
+        "or": {
+          "tag": "backToTank",
+          "placement": "top"
+        }
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "breakdownLessonsSeen",
+          "atLeast": 1
+        },
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        },
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        }
+      ]
+    },
+    {
+      "id": "fix",
+      "pattern": "runActAdvance",
+      "message": "fix",
+      "dim": true,
+      "pointer": {
+        "tag": "repair-visor",
+        "show": {
+          "tag": "panel-visor"
+        }
+      },
+      "advance": {
+        "on": "event",
+        "event": "repaired",
+        "where": {
+          "machine": "visor"
+        }
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "broken:visor",
+          "atMost": 0
+        }
+      ],
+      "reactions": [
+        {
+          "when": {
+            "on": "event",
+            "event": "consoleClosed"
+          },
+          "message": "stillBroken",
+          "pointer": {
+            "tag": "bar-visor"
+          },
+          "until": {
+            "on": "event",
+            "event": "consoleOpened"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fixed",
+      "pattern": "pauseShowDismiss",
+      "message": "fixed",
+      "dim": true,
+      "pointer": {
+        "tag": "panel-visor"
+      }
+    },
+    {
+      "id": "back",
+      "pattern": "runActAdvance",
+      "dim": true,
+      "pointer": {
+        "tag": "periscope",
+        "or": {
+          "tag": "backToTank",
+          "placement": "top"
+        }
+      },
+      "advance": {
+        "on": "event",
+        "event": "consoleClosed"
+      },
+      "skipIf": [
+        {
+          "on": "gate",
+          "gate": "atConsole",
+          "atMost": 0
+        }
+      ]
+    }
+  ]
+}

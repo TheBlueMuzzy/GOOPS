@@ -1,0 +1,16 @@
+{
+  "_help": {
+    "_file": "Frame rate: the little fps readout (add ?fps to the address, or the Dev Kit's Perf tab) and the pass line e2e/perf.mjs judges a full tank by.",
+    "targetFps": "The frame rate the game aims for (a phone screen's usual 60).",
+    "passMedianFps": "perf.mjs passes when the middle (median) frame rate is at least this, in both goo styles.",
+    "passWorstFrameMs": "…and no single frame in the sample took longer than this (a visible hitch).",
+    "sampleMs": "How long perf.mjs measures each goo style for.",
+    "meterEveryMs": "How often the readout on screen updates (it shows the frames since the last update)."
+  },
+  "_labels": { "targetFps": "Target fps", "passMedianFps": "Pass: median fps at least", "passWorstFrameMs": "Pass: worst frame at most (ms)", "sampleMs": "Speed test sample (ms)", "meterEveryMs": "Readout updates every (ms)" },
+  "targetFps": 60,
+  "passMedianFps": 55,
+  "passWorstFrameMs": 50,
+  "sampleMs": 3000,
+  "meterEveryMs": 500
+}

@@ -1,0 +1,34 @@
+{
+  "_about": "Breakdowns (F23, GDD §5). Every machine's health is 0..1 (1 = fine). Numbers are v1's (complicationConfig.ts), as fractions instead of %. unlockRank = the starting rank from which the machine can break. consoleTimeScale = how fast the shift runs while you're at the console mid-shift (the game multiplies tick time by it; the engine never reads it). cooldown: after a repair a machine can't break for max(minSeconds, maxSeconds - (rank - unlockRank)) seconds; meanwhile its meter still moves but stays at least `margin` above its break point.",
+  "consoleTimeScale": 0.25,
+  "cooldown": { "maxSeconds": 20, "minSeconds": 8, "margin": 0.05 },
+  "laser": {
+    "_about": "health = capacitor charge. Drains per zapped goop cell, refills per landed piece (not while broken). Breaks at 0: a first zap only primes a group, a second zap pops it.",
+    "unlockRank": 4,
+    "drainPerCell": 0.04,
+    "refillPerPiece": 0.1,
+    "repairSliders": 4,
+    "_repairSliders": "the console repair (src/game/repairs.ts): how many of the 4 sliders light up, each needing left or right at random. Muzzy 2026-10-18: every repair about 4 clicks, so all 4. Later upgrades can take steps off any repair (src/game/repairs.ts repairSteps)."
+  },
+  "visor": {
+    "_about": "health = signal (was v1's lights). Holds for graceMs after you last fast-dropped, then fades from 1 to breakAt over fadeMs; fast-dropping recovers it at recoverPerSec. At breakAt it breaks and drops to brokenHealth. The game draws a glitch from health (lower = glitchier).",
+    "unlockRank": 2,
+    "graceMs": 5000,
+    "fadeMs": 5000,
+    "breakAt": 0.1,
+    "brokenHealth": 0.05,
+    "recoverPerSec": 4,
+    "repairButtons": 3,
+    "_repairButtons": "the console repair: slide up, then this many lit buttons in turn, then slide down (about 4 clicks with the slides, Muzzy 2026-10-18: 'reset visor is good')."
+  },
+  "controls": {
+    "_about": "heat = 1 - health. Each tank turn adds heatPerSpin; after coolDelayMs with no turn it cools at coolPerSec. Breaks at heat 1 (the input layer slows held turns; the engine only reports it). heldSpinSlowdown = while broken, a held turn (key or sideways drag) repeats this many times slower (src/input; single presses and quick swipes stay the same).",
+    "unlockRank": 6,
+    "heatPerSpin": 0.05,
+    "coolDelayMs": 200,
+    "coolPerSec": 0.5,
+    "heldSpinSlowdown": 2,
+    "repairCorners": 4,
+    "_repairCorners": "the console repair: how many lit corners in a row the dial must be turned to (each one random, never the corner the dial is on). Muzzy 2026-10-18: 4."
+  }
+}

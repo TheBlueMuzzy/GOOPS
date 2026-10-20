@@ -1,0 +1,24 @@
+{
+  "_about": "F32: the console-visit note — the first few times (content/tuning/lessons.json consoleNoteVisits) the player goes to the console mid-shift outside a lesson, this one line shows on the monitor's screen (src/game/lessons/firstBreakdowns.ts) until they're back in the tank or for a short while: lesson time runs at the console's speed (25%), so 1.5 s here = 6 s. No dim and no Got it (F32): the tank runs on, the panels and the periscope stay usable, and the line fits the screen without sliding it down over the periscope. Words: content/text/en.json → lessons.console-note.",
+  "id": "console-note",
+  "steps": [
+    {
+      "id": "slow",
+      "pattern": "runActAdvance",
+      "message": "slow",
+      "advance": {
+        "on": "any",
+        "of": [
+          {
+            "on": "event",
+            "event": "consoleClosed"
+          },
+          {
+            "on": "time",
+            "after": 1.5
+          }
+        ]
+      }
+    }
+  ]
+}

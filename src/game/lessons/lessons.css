@@ -1,0 +1,29 @@
+/* F32 lessons: the spotlight's tap blocker (Spotlight.tsx) — invisible; its clip-path (written every frame) leaves
+   holes where taps reach the game. Only shown with the dim. */
+.lesson-spot-block { pointer-events: auto; background: transparent; }
+/* a lesson line may be two lines on purpose ("Fixed!" / the tip, Muzzy) */
+.lesson-words { white-space: pre-line; }
+
+/* F32 (Muzzy, 2026-10-19): the console's monitor screen IS the lesson message there (Console.tsx). The game draws the
+   screen itself, exactly over the art's (content/ui/art.json console.crt), its words in the words box near its bottom;
+   when the words + Got it need more room, the screen grows downward past the bezel like a toaster, the bezel's colour
+   round the part that slid out. Sizes are in the console art's units (--u = one unit in px, measured by Console.tsx). */
+.crt {
+  align-self: start; position: relative; box-sizing: border-box; display: flex; flex-direction: column;
+  margin-block-start: calc(var(--crt-top) * -1 * var(--u)); padding-block-start: calc(var(--crt-top) * var(--u));
+  margin-inline-start: calc(var(--crt-inset) * -1 * var(--u)); inline-size: calc(var(--crt-w) * var(--u));
+  padding-inline: calc(var(--crt-inset) * var(--u));
+  block-size: var(--crt-h, auto);
+  background: var(--crt-screen); border-radius: calc(var(--crt-radius) * var(--u));
+  transition: block-size var(--motion-normal, 0.2s) ease-out;
+}
+/* the words box: the words (and Got it) in its middle; taller when they need it */
+.crt-body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(10 * var(--u));
+  min-block-size: calc(var(--crt-room) * var(--u)); padding-block: calc(12 * var(--u)); box-sizing: border-box;
+  padding-inline: calc(18 * var(--u)); /* breathing room: the words never touch the screen's sides */
+  text-align: center; flex: none; }
+/* slid down past the bezel: the bezel's colour round it (sides and bottom; the top is the monitor's own) */
+.crt[data-grown] {
+  box-shadow: 0 0 0 calc(var(--crt-bezel-w) * var(--u)) var(--crt-bezel);
+  clip-path: inset(0 calc(var(--crt-bezel-w) * -1 * var(--u)) calc(var(--crt-bezel-w) * -1 * var(--u)));
+}

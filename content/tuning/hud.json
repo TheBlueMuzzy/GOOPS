@@ -1,0 +1,61 @@
+{
+  "_about": "The shift's HUD (F26, Muzzy's mock-up 2026-10-18). Words are in content/text/en.json → hud. Sizes in CSS px unless they say cells (one tank cell) or rem (the text size, so it grows with Settings → Text size).",
+  "_layout": "topRowPx = room kept above the tank for the one top row (score · CRACKS x / y · Console button). gutterPx = the least room at each side of the tank. panel = the bottom panel under the tank: share of the window's height with machine bars (integrityShare with only the integrity bar), but at least machinesRem / integrityRem tall (room for its rows at the current text size) — and from rank 1 at least as tall as the next-piece window in it; it never changes height mid-shift (machines and the window unlock between shifts). gapPx between the tank and it. A short window (a phone on its side) has no height to spare: the panel is a column beside the tank's bottom-right corner instead, sideRem wide: the crack count on top, then the next-piece window with the bars stacked beside it; the score and the Console button sit in the top corners beside the tank, so the tank only keeps sideTopPx free above it.",
+  "topRowPx": 19,
+  "sideTopPx": 12,
+  "gutterPx": 6,
+  "panel": {
+    "share": 0.087,
+    "integrityShare": 0.07,
+    "machinesRem": 6,
+    "integrityRem": 3,
+    "gapPx": 8,
+    "sideRem": 15
+  },
+  "_nextWindow": "F59 (Muzzy's mock-up 2026-10-19): the next-piece window (from rank 1 — progression.json unlocks.nextPiece), at the LEFT of the bottom panel, the machine bars and the integrity bar to its right (on a short window: at the top of the panel column beside the tank). Always the same size: cols × rows cells (room for the widest and tallest piece, 3 × 6), each cellRem big (rem: it grows with Settings → Text size), with padCells of room round them inside the frame. cellGap = the dark line between cells, cornerCells = how round each cell's corners are (all three in cells).",
+  "nextWindow": {
+    "cols": 3,
+    "rows": 6,
+    "cellRem": 0.9,
+    "padCells": 0.5,
+    "cellGap": 0.14,
+    "cornerCells": 0.18
+  },
+  "_bars": "lowAt = a bar below this (0..1) turns red and pulses (a broken machine flashes). machineWidth = the most of the room right of the next-piece window each machine bar takes (in a row, centred, shared out evenly; never narrower than its label); integrityWidth = the same for the one integrity bar under them. (A short window: the bars are stacked in the panel column, full width.)",
+  "bars": {
+    "lowAt": 0.3,
+    "machineWidth": 0.31,
+    "integrityWidth": 1
+  },
+  "_readout": "The pressure readout: a thin line from the pressure line up to the right, then '10% PRESS' at its top end (or mirrored: the text, then the line down to the pressure line — Settings → Pressure readout direction). run / rise = how far the line goes across / up, in cells (in a tank too narrow for the words and the whole line, the line gets shorter). gapPx = between the line's end and the text; edgePx = kept clear of the tank's walls, top and floor (the readout stays inside the tank at every size); lineWidthPx, color = the line; footPx = radius of the dot where it meets the pressure line (0 = none).",
+  "readout": {
+    "run": 1.06,
+    "rise": 0.62,
+    "gapPx": 6,
+    "edgePx": 4,
+    "lineWidthPx": 1.74,
+    "color": "#ffffff",
+    "footPx": 4
+  },
+  "_swapRing": "F28 (Muzzy 2026-10-20): the swap timer for a FINGER (or mouse) hold — a small ring that fills beside the holding finger instead of the HUD's Swap bar (a held key keeps the bar). sizeRem = the ring's width; strokeRem = how thick its line is; offsetXRem / offsetYRem = where its centre sits from the finger (negative = left / up — above-left so the thumb doesn't cover it; near a screen edge it flips to the other side); edgePx = kept clear of the screen's edges and the HUD's top row. In rem, so it grows with Settings → Text size. Colours are the UI style's accent (fill) and surface (track).",
+  "swapRing": {
+    "sizeRem": 2.75,
+    "strokeRem": 0.3,
+    "offsetXRem": -2.6,
+    "offsetYRem": -2.6,
+    "edgePx": 4
+  },
+  "_chevrons": "The drop guide: faint downward chevrons in the column under the falling piece, from just below it down to its landing shadow. spacingCells = one chevron every this many rows, counted up from the landing shadow. widthCells / heightCells / lineWidthCells = each chevron's size. color; alpha = how faint at rest, peakAlpha = the brightest, as a wave of light runs down them (top to bottom, like landing lights), over only the chevrons still showing. wavePerSec = chevrons the wave passes per second (the beat stays the same however many are left); fastMultiplier = how much faster while fast drop is held; waveWidth = how many chevrons the bright part spans. Reduce motion: no wave, just the faint chevrons.",
+  "chevrons": {
+    "spacingCells": 2.5,
+    "widthCells": 0.7,
+    "heightCells": 0.3,
+    "lineWidthCells": 0.165,
+    "color": "#7fe9ff",
+    "alpha": 0.1,
+    "peakAlpha": 0.38,
+    "wavePerSec": 5,
+    "fastMultiplier": 3,
+    "waveWidth": 1.2
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "_help": {
+    "_file": "Timings and looks shared by every lesson (F30, src/game/lessons/). Each lesson's own timings (showAfter, hint after…) are in its file in content/lessons/ — the Dev Kit's Lessons tab edits those live.",
+    "dismissArmSeconds": "A message that waits for 'Got it' can't be closed for this long after it appears (so a tap meant for the game doesn't close it unread). The button is there from the start; it just doesn't work yet.",
+    "betweenStepsSeconds": "A short breath between one step ending and the next starting.",
+    "slowSpeed": "How fast the game runs under a step that shows its message with \"while\": \"slow\" (1 = normal speed).",
+    "gatePollMs": "How often a step checks its gate (the piece's row, the pressure…), in ms.",
+    "consoleNoteVisits": "F32: the first this-many times a player goes to the console mid-shift (outside a lesson), one line says the tank keeps running slowly there. Counted on the device; Settings → Replay lessons starts the count again.",
+    "insistSeconds": "F32 (Muzzy: one go-to-console message that gets more assertive): after the machine has been broken this long (shift time — the lesson's pause doesn't count), the go-to-console message insists: the shift pauses, the dim comes on, and only the console control works (W / ↑ / flick up). 4 = the moment the visor's glitch is at full strength (visor-fx.json rampMs).",
+    "dimAmount": "F32: how dark the spotlight's dim is round what a lesson shows you (0 = none, 1 = black)."
+  },
+  "_labels": {
+    "dismissArmSeconds": "Got it: works after (s)",
+    "betweenStepsSeconds": "Pause between steps (s)",
+    "slowSpeed": "Slow message: game speed",
+    "gatePollMs": "Gate check every (ms)",
+    "consoleNoteVisits": "Console note: first visits",
+    "insistSeconds": "Go to console: insists after (s)",
+    "dimAmount": "Spotlight dim"
+  },
+  "dismissArmSeconds": 0.4,
+  "betweenStepsSeconds": 0.5,
+  "slowSpeed": 0.3,
+  "gatePollMs": 100,
+  "consoleNoteVisits": 5,
+  "insistSeconds": 4,
+  "dimAmount": 0.65
+}

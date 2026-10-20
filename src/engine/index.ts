@@ -1,0 +1,12 @@
+// The shift engine's front door: the screens import from here.
+export { createShift } from './shift'
+export type { ShiftOptions } from './shift'
+export type { ShiftConfig } from './config'
+export type * from './types'
+export { NEUTRAL_MODIFIERS, NO_FEWER_REPAIR_STEPS, clampModifiers, playableUpgrades, resolveUpgrades } from './upgrades'
+export type { FewerRepairSteps, Modifiers, ModifierName, ResolvedUpgrades, UpgradeBook, UpgradeDef } from './upgrades'
+export type { AbilitySpec, ActiveEffects } from './abilities'
+export { MACHINE_IDS } from './machines'
+export { TRAINING_START } from './training'
+export type { PieceChoice, PieceFallback, TrainingCommand, TrainingRules } from './training'
+export type { BreakdownConfig } from './machines'

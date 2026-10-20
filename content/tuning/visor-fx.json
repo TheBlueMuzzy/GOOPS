@@ -1,0 +1,30 @@
+{
+  "_about": "The visor glitch (F25) + the pixel filter, drawn over the visible tank only (Muzzy 2026-10-18: not the whole screen; never over the HUD). Glitch 'amount': 0 until the visor actually BREAKS (its meter runs out — Muzzy 2026-10-18: no glitch while the meter is still draining), then it builds from 0 to 1 over rampMs of play (stands still at the console and on pause), and back to 0 when the visor is repaired. 0 while the visor is locked. Only the visor ramps (visibility matters most); the laser and controls switch straight to their broken effects. 'look' = the strength of each glitch effect at amount 1 (names match the sketch's knobs, so its 'Copy values' paste straight in; meanings in .planning/research/sketches/visor-glitch.html). 'pixel' = the pixel filter, its own switch: pixelate 1 = on, pixSize = block size in CSS px, pixFirst 1 = pixelate before the glitch (glitch stays crisp), 0 = after (glitch gets chunky too). Muzzy's values from the sketch, 2026-10-18.",
+  "rampMs": 4000,
+  "_ranges": { "always.curve": [0, 10, 0.25], "look.curve": [0, 10, 0.25] },
+  "_alwaysAbout": "'always' = the curved-TV look you see whenever you're in the vat, glitch or not (Muzzy 2026-10-18: \"the curved render effect should be on whenever you're inside the visor\"). curve / vignette: their own strength (same scale as look.curve / look.vignette; 1 = the sketch's full curve, higher = rounder); the glitch never makes them weaker than this. 0 = off.",
+  "always": {
+    "curve": 0.5,
+    "vignette": 0.5
+  },
+  "look": {
+    "scan": 1,
+    "rgb": 1,
+    "roll": 1,
+    "noise": 0.55,
+    "flicker": 0.5,
+    "tear": 1,
+    "tearSize": 1,
+    "block": 1,
+    "blockSize": 27,
+    "vignette": 1,
+    "curve": 1,
+    "dead": 0.65,
+    "dropout": 0.05
+  },
+  "pixel": {
+    "pixelate": 0,
+    "pixSize": 4,
+    "pixFirst": 1
+  }
+}

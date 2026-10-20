@@ -1,0 +1,470 @@
+/* THE BLOCKS' CSS — only what the built screens add on top of kit.css.
+   Same rules: style names only (no raw colours, px sizes or font names), same two layers. */
+
+/* ───────────── kit-base: layout only ───────────── */
+@layer kit-base {
+  /* Settings → Accessibility → Reduce motion: the same switch-off as the device setting in kit.css */
+  :root[data-reduce-motion] *, :root[data-reduce-motion] *::before, :root[data-reduce-motion] *::after {
+    animation-duration: 0s !important; animation-delay: 0s !important; transition-duration: 0s !important; scroll-behavior: auto !important;
+  }
+  :root[data-reduce-motion] button.kit-target:active { transform: none !important; }
+
+  /* THE MENU FRAME (0.10.0). Every menu card — Main menu, Pause, Settings, Credits, Mode select, How to play, Lobby,
+     Results, any Modal — is ONE width, --kit-menu-w (default 36rem), never wider than the screen (Muzzy 2026-10-13:
+     "the menus and sub menus (including credit) should be the same width/height with internal scroller"). The old
+     three sizes (menu 22 · modal 28 · wide 40rem) are now names for that one width. A yes / no question on top of
+     another screen (Confirm: kit-ask) stays narrower, --kit-ask-w (28rem): it's a question, not a menu. */
+  :is(.kit-modal, .kit-menu, .kit-wide) { inline-size: var(--kit-menu-w, 36rem); max-inline-size: 100%; }
+  .kit-modal.kit-ask { inline-size: var(--kit-ask-w, 28rem); }
+  /* Height: as tall as its contents ("only go a large height as needed"), up to --kit-menu-max-h (44rem; desktop
+     windows --kit-menu-max-h-wide, 52rem) and never past the screen. Past that only its ScrollArea body gives up height
+     (kit.css): the header and the footer row keep theirs. Not in <Screen scroll>, where the whole screen scrolls instead.
+     (.kit-tall forced a fixed height until 0.10.0; it's now a leftover name that does nothing.) */
+  .kit-screen:not([data-scroll]) > [data-slot="center"] > :is(.kit-modal, .kit-menu, .kit-wide) { max-block-size: var(--kit-menu-max-h, 44rem); }
+  @media (min-width: 40rem) and (min-height: 30rem) {
+    .kit-screen:not([data-scroll]) > [data-slot="center"] > :is(.kit-modal, .kit-menu, .kit-wide) { max-block-size: var(--kit-menu-max-h-wide, 52rem); }
+  }
+  .kit-menu .kit-button { inline-size: 100%; }
+
+  /* MenuHeader: ‹ · title · action on one line. The title takes what's left (and wraps on a narrow phone); the ‹ and
+     the action never shrink. Its gaps are inside the card's padding, so nothing touches the card's edge. */
+  .kit-menu-header { display: flex; align-items: center; gap: var(--gap-s); min-inline-size: 0; }
+  .kit-menu-header-title { flex: 1 1 auto; min-inline-size: 0; }
+  .kit-menu-header > .kit-button, .kit-menu-header-action { flex: none; }
+  /* ‹ is a small, low glyph in most fonts: drawn bigger, so it reads as an arrow and not a speck (the button stays
+     square and at least 44px) */
+  .kit-menu-header > .kit-button[data-icon] { font-size: calc(var(--text-title) * 1.4); }
+  .kit-menu-header-action { display: flex; align-items: center; gap: var(--gap-s); }
+  /* A menu inside a dialog (Pause) fills the dialog's width, so the room left and right of the buttons is the
+     dialog's own padding on both sides — even all round (it used to keep its 22rem and leave a wide gap on the right) */
+  .kit-modal > .kit-menu { inline-size: 100%; }
+  .kit-centred { text-align: center; }
+  .kit-nowrap { flex-wrap: nowrap; }
+  .kit-picture { display: block; inline-size: 100%; max-block-size: 12rem; object-fit: contain; }
+
+  /* Settings: a tab bar on wide screens, ◀ tab ▶ on phones — and on short screens (a phone on its side, a short window),
+     where six tabs wrapped onto two lines and left room for under two setting rows (0.7.0) */
+  .kit-settings-picker { display: none; }
+  .kit-settings-picker .kit-picker { inline-size: 100%; }
+  .kit-settings-picker .kit-picker-sized { flex: 1 1 auto; } /* (full width: ◀ and ▶ at the two ends) */
+  @media (max-width: 40rem), (max-height: 30rem) {
+    .kit-settings-tabs { display: none; }
+    .kit-settings-picker { display: block; }
+  }
+  /* 3 tabs or fewer (0.10.0): always the real tab bar, on one line at every size — each tab shares the line and gives
+     up its side padding first, so three tabs never wrap onto two lines on a 360-wide phone */
+  .kit-settings-few .kit-tabs { flex-wrap: nowrap; }
+  .kit-settings-few .kit-tab { flex: 1 1 0; min-inline-size: 0; padding-inline: var(--gap-xs); }
+  /* Every tab's page sits in the same spot (one grid cell): the tallest one sets the card's height, so switching tabs
+     never changes the card's size or moves its header. Only the current page shows (the others are also inert). */
+  /* The pages' cell: as tall as the tallest page, and the one part of the card that gives up height (each page then
+     scrolls inside itself — 0.10.3) */
+  .kit-screen > [data-slot="center"] > .kit-panel.kit-wide > .kit-settings-pages { flex: 1 1 auto; min-block-size: 0; }
+  .kit-settings-pages { display: grid; grid-template-rows: minmax(0, 1fr); }
+  .kit-settings-page { grid-area: 1 / 1; min-inline-size: 0; min-block-size: 0; display: flex; flex-direction: column; visibility: hidden; }
+  .kit-settings-page[data-current] { visibility: visible; }
+  /* A section heading row ("type": "heading"): breathing room above it, except at the very top */
+  .kit-settings-heading { padding-block: var(--gap-l) var(--gap-xs); }
+  .kit-settings-heading:first-child { padding-block-start: 0; }
+
+  /* Pips: little segments (lives, hearts, page dots) */
+  .kit-pip { inline-size: 0.875rem; block-size: 0.875rem; }
+
+  /* HUD: its slots let taps through to the game; only buttons and inputs catch them */
+  .kit-screen > [data-slot]:has(> .kit-hud-slot) { pointer-events: none; }
+  .kit-hud-slot { display: contents; }
+  /* a corner's pieces stay on one line (a score + pause pair wrapped onto 2 rows on a 390px phone — Goops 2026-10-17).
+     No room for a wide score beside the other corner? Put it in the status row (`status`) instead — a corner that wraps
+     grows taller than the HUD's room and covers the game (tried in 0.15.0, taken out in 0.15.2). */
+  .kit-screen > :is([data-slot="top-right"], [data-slot="bottom-right"]) > .kit-hud-slot > .kit-row { flex-wrap: nowrap; justify-content: flex-end; }
+  .kit-hud-slot :is(button, input, [tabindex="0"]) { pointer-events: auto; }
+  .kit-hud-chip { display: inline-flex; flex-wrap: nowrap; padding: var(--gap-xs) var(--gap-s); }
+  .kit-hud-chip .kit-text { white-space: nowrap; overflow-wrap: normal; } /* short HUD words never break letter by letter */
+  /* a bar in a HUD corner gives way when the other corner grows (a 5-digit score pushed the Score chip over the bars on
+     a 390px phone — Goops 2026-10-17): it shrinks to 2rem instead of holding its 6rem minimum. Bars with a width keep it. */
+  .kit-hud-chip:not([data-width]) { max-inline-size: 100%; min-inline-size: 0; }
+  .kit-hud-chip:not([data-width]) > .kit-progress { min-inline-size: 2rem; flex: 1 1 6rem; }
+  /* A chip that starts with an avatar (or a player chip's icon): breathing room on EVERY side — nothing ever touches a
+     card's edge (Muzzy, 2026-10-03: "there should always be breathing room around the edge of cards/containers so that
+     nothing touches the edges"); the text side a little more. The tightest size (xs, rows close together) keeps less. */
+  .kit-hud-chip:has(> :is(.kit-avatar, .kit-player-chip-icon):first-child) { padding: var(--gap-s) var(--gap-m) var(--gap-s) var(--gap-s); }
+  .kit-hud-chip[data-size="xs"]:has(> :is(.kit-avatar, .kit-player-chip-icon):first-child) { padding: var(--gap-xs) var(--gap-s) var(--gap-xs) var(--gap-xs); }
+  /* HUD text: plain words on the game, no plate. Never catches taps. */
+  .kit-hud-text { pointer-events: none; text-align: center; }
+  .kit-hud-text .kit-stack { align-items: center; }
+  .kit-hud-text .kit-text { overflow-wrap: normal; }
+  .kit-screen:has(> [data-slot] > .kit-hud-slot) > :is([data-slot="top"], [data-slot="bottom"]) { justify-self: center; }
+  /* Phones: the corners share the first row and the top-centre piece gets its own row below,
+     so three things never squeeze into one narrow line. Same at the bottom. A HUD on a narrow game box
+     (--kit-frame-w, 0.11.2) gets the same layout from its own width, whatever the window's width. */
+  @media (max-width: 40rem) {
+    .kit-screen:has(> [data-slot] > .kit-hud-slot) {
+      grid-template-columns: minmax(0, 1fr) auto; /* the right corner (score + pause) sizes to its pieces; the left gives way */
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "top-left top-right" "top top" "center center" "bottom-left bottom-right" "bottom bottom";
+    }
+  }
+  @container (max-width: 40rem) {
+    .kit-screen:has(> [data-slot] > .kit-hud-slot) {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "top-left top-right" "top top" "center center" "bottom-left bottom-right" "bottom bottom";
+    }
+  }
+  /* Bar width (s / m / l): the bar keeps that length and its plate hugs it. Unset = it fills the room it's given. */
+  .kit-hud-chip[data-width] { inline-size: max-content; max-inline-size: 100%; }
+  .kit-hud-chip[data-width] > .kit-progress { flex: none; min-inline-size: 0; inline-size: var(--kit-bar-w); max-inline-size: 100%; }
+  .kit-hud-chip[data-width="s"] { --kit-bar-w: 4rem; }
+  .kit-hud-chip[data-width="m"] { --kit-bar-w: 8rem; }
+  .kit-hud-chip[data-width="l"] { --kit-bar-w: 14rem; }
+  /* Bar 0.17.0. A share of its row (width={0.24}): that much of the row, never narrower than its label above */
+  :is(.kit-hud-chip, .kit-bar)[data-width="share"] { flex: none; inline-size: calc(var(--kit-bar-share) * 100%); min-inline-size: max-content; max-inline-size: 100%; }
+  .kit-hud-chip[data-width="share"] > .kit-progress { flex: 1 1 auto; inline-size: auto; }
+  /* plain (no plate): the same row of icon · label · bar, on whatever it sits on */
+  .kit-bar { display: flex; align-items: center; gap: var(--gap-s); min-inline-size: 0; }
+  .kit-bar > :is(.kit-progress, .kit-bar-inside) { flex: 1 1 6rem; min-inline-size: 2rem; }
+  /* label above: the bar's name, big and centred, then the bar across the whole width */
+  :is(.kit-bar, .kit-hud-chip)[data-label-at="above"] { flex-direction: column; align-items: stretch; gap: var(--gap-xs); }
+  :is(.kit-bar, .kit-hud-chip)[data-label-at="above"] > :is(.kit-progress, .kit-bar-inside) { flex: none; inline-size: auto; }
+  .kit-bar-label-above { text-align: center; white-space: nowrap; font-weight: 600; line-height: 1.2; }
+  /* label inside: the bar and its name in one grid cell, the name centred on top */
+  .kit-bar-inside { display: grid; min-inline-size: 0; }
+  .kit-bar-inside > * { grid-area: 1 / 1; }
+  .kit-bar-inside > .kit-progress { min-inline-size: 0; }
+  .kit-bar-label-inside { place-self: center; z-index: 1; /* over the fill (its glow filter paints it on a layer of its own) */
+    white-space: nowrap; font-size: 0.8em; font-weight: 700; letter-spacing: 0.08em; line-height: 1; pointer-events: none; }
+  /* thickness: s = the usual 0.75rem · m · l */
+  :is(.kit-bar, .kit-hud-chip)[data-thickness="m"] .kit-progress { block-size: 1rem; }
+  :is(.kit-bar, .kit-hud-chip)[data-thickness="l"] .kit-progress { block-size: 1.5rem; }
+
+  /* HUD oneRow (0.17.0): on a phone the status stays between the corners (one top row) instead of taking a row of
+     its own; it gets the room left between them (HudText fit shrinks to it). Wider HUDs already work this way. */
+  .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) { column-gap: var(--gap-s); }
+  .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) > [data-slot="top"] { justify-self: stretch; align-self: center; }
+  @media (max-width: 40rem) {
+    .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "top-left top top-right" "center center center" "bottom-left . bottom-right" "bottom bottom bottom";
+    }
+  }
+  @container (max-width: 40rem) {
+    .kit-screen:has(> [data-slot="top"] > .kit-hud-slot[data-one-row]) {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "top-left top top-right" "center center center" "bottom-left . bottom-right" "bottom bottom bottom";
+    }
+  }
+  /* HudText fit: fills its box and stays one line; too wide → the size that fits, never under body text */
+  .kit-hud-text[data-fit] { inline-size: 100%; min-inline-size: 0; }
+  .kit-hud-text[data-fit] .kit-text { white-space: nowrap; }
+  .kit-hud-text[data-fitted] .kit-text { font-size: max(var(--text-body), var(--kit-fit-size)); line-height: var(--kit-fit-line, normal); }
+
+  /* HUD dock (0.17.0): a panel on the HUD column's bottom edge, edge to edge, --kit-hud-dock-size tall (more only if
+     its contents need it). The HUD's own bottom slots sit above it. It shows meters, so taps go through it to the game.
+     (Positioned against the HUD's layer — the ScreenStack's — like the Screen itself.) */
+  .kit-hud-dock { position: absolute; display: grid; pointer-events: none; }
+  .kit-layer[data-framed] > .kit-hud-dock { pointer-events: none; }
+  .kit-hud-dock[data-side="bottom"] { inset-inline: 0; inset-block-end: 0; min-block-size: var(--kit-hud-dock-size, 6rem); }
+  /* right: a column in the bottom-right corner, as tall as its contents (a phone on its side) */
+  .kit-hud-dock[data-side="right"] { inset-inline-end: var(--gap-m); inset-block-end: var(--gap-m); inline-size: var(--kit-hud-dock-size, 12rem); }
+  .kit-hud-dock > .kit-panel { padding: var(--gap-s) var(--gap-m); justify-content: center; min-block-size: 0; }
+  .kit-screen:has(+ .kit-hud-dock[data-side="bottom"]) { padding-block-end: calc(var(--kit-hud-dock-size, 6rem) + var(--gap-m)); }
+  .kit-banner { align-items: center; text-align: center; }
+  /* +N float-up: stacked on top of its number (same grid cell), so no positioning needed */
+  .kit-float-anchor { display: inline-grid; }
+  .kit-float-anchor > * { grid-area: 1 / 1; justify-self: center; }
+  .kit-float-up { font-weight: 800; white-space: nowrap; }
+  .kit-combo { display: inline-block; }
+  .kit-timer { display: inline-grid; place-items: center; inline-size: 3.5rem; aspect-ratio: 1; border-radius: 50%; }
+  /* Flow: the countdown number on a round plate, and the end-screen title */
+  .kit-countdown { display: inline-grid; place-items: center; min-inline-size: 11rem; padding: var(--gap-l); aspect-ratio: 1; border-radius: 50%; }
+  .kit-countdown .kit-text { font-size: calc(var(--text-display) * 2.75); line-height: 1; }
+  .kit-result-name { flex: 1 1 0; min-inline-size: 0; }
+  .kit-result-name { flex-wrap: nowrap; }
+  .kit-result-name > .kit-text { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kit-place { min-inline-size: 3.5ch; }
+  /* Results on a short, wide screen (a phone on its side): title, message and buttons on the left,
+     the list on the right, so the list keeps its height instead of shrinking to one row */
+  @media (max-height: 30rem) and (min-width: 40rem) {
+    .kit-results { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+      grid-template-rows: auto auto minmax(0, 1fr); align-content: start; }
+    .kit-results > :not(.kit-scroll) { grid-column: 1; }
+    .kit-results > .kit-scroll { grid-column: 2; grid-row: 1 / -1; }
+    .kit-results > .kit-row:last-child { align-self: end; justify-content: start; }
+  }
+  /* The same on a short, wide screen for the other cards that carry a list or a column of buttons (0.7.0) — the
+     words on the left, the rest on the right, so nothing hides below the card's edge:
+     Pause: title + note on the left, its buttons on the right (like the main menu).
+     Lobby room: code + Copy, the waiting line and Leave / Start on the left; the players (+ the host's rows) on the
+     right with the whole card's height — it showed a row and a half of players.
+     Lobby join: the header (‹ + title) across the top; your name + Create on the left, "or join a friend's room" +
+     the code boxes + Join on the right; a "couldn't join" message along the bottom. All at the one menu width. */
+  @media (max-height: 30rem) and (min-width: 40rem) {
+    .kit-modal.kit-pause { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+      grid-template-rows: auto minmax(0, 1fr); align-content: start; }
+    .kit-pause > :not(.kit-menu) { grid-column: 1; }
+    .kit-pause > .kit-menu { grid-column: 2; grid-row: 1 / -1; }
+    .kit-modal.kit-lobby-room { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+      grid-template-rows: auto auto minmax(0, 1fr); align-content: start; }
+    .kit-lobby-room > :not(.kit-scroll) { grid-column: 1; }
+    .kit-lobby-room > .kit-row:first-child .kit-result-name > .kit-text { white-space: normal; } /* the code wraps, never "Room BA…" */
+    .kit-lobby-room > .kit-scroll { grid-column: 2; grid-row: 1 / -1; }
+    .kit-lobby-room > .kit-row:last-child { grid-row: 3; align-self: end; }
+    .kit-modal.kit-lobby-join { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto; column-gap: var(--gap-l); align-content: start; }
+    .kit-lobby-join > :is(:first-child, .kit-scroll) { grid-column: 1 / -1; }
+    .kit-lobby-join > .kit-text { grid-column: 1 / -1; grid-row: 3; }
+    /* the right column is as wide as the code boxes + Join on ONE line (at the one menu width a half-and-half split
+       wrapped Join under the boxes and pushed Create + Join into the bottom fade at 768×343 — 0.10.2); your name takes the rest */
+    .kit-lobby-join > .kit-scroll > .kit-stack { display: grid; grid-auto-flow: column; grid-template-rows: auto auto;
+      grid-template-columns: minmax(0, 1fr) auto; align-items: end; column-gap: var(--gap-l); }
+    .kit-lobby-join > .kit-scroll > .kit-stack > .kit-row { flex-wrap: nowrap; }
+    .kit-lobby-join > .kit-scroll > .kit-stack > :nth-last-child(n + 3) { grid-column: 1; }
+    .kit-lobby-join > .kit-scroll > .kit-stack > :nth-last-child(-n + 2) { grid-column: 2; }
+  }
+  /* Main menu: extra buttons (children) sit in the button column like the others */
+  .kit-main-menu-extra { display: contents; }
+  /* Main menu on a short, wide screen (a phone on its side): the title on the left, the buttons on the right.
+     With six or more buttons they go in two columns (main one(s) and extra buttons across both), so they still fit. */
+  @media (max-height: 30rem) and (min-width: 40rem) {
+    .kit-main-menu { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); align-items: center; }
+    .kit-main-menu-buttons:has(> .kit-button:nth-child(6)) { display: grid; grid-template-columns: 1fr 1fr; }
+    .kit-main-menu-buttons > .kit-button[data-variant="primary"], .kit-main-menu-extra > * { grid-column: 1 / -1; }
+  }
+  .kit-end-title { display: inline-block; }
+  .kit-end-swipe { display: block; text-align: center; padding-block-start: var(--gap-xs); } /* "⇧ Swipe up…": words, not a button */
+  /* Victory / Game over on a short, wide screen (a phone on its side): the report on the left, its buttons on the right (0.11.0) */
+  @media (max-height: 30rem) and (min-width: 40rem) {
+    .kit-end { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; column-gap: var(--gap-l); }
+  }
+  .kit-dot { inline-size: 0.75rem; block-size: 0.75rem; border-radius: 50%; }
+
+  /* Player chip: a HUD plate for one player, placed by the game (never catches taps) */
+  .kit-player-chip { pointer-events: none; align-items: center; inline-size: max-content; }
+  .kit-player-chip-text { min-inline-size: 0; }
+  .kit-player-chip-score { display: inline-flex; align-items: center; gap: var(--gap-xs); white-space: nowrap; }
+  .kit-player-chip-icon { display: inline-grid; place-items: center; inline-size: var(--target-min); block-size: var(--target-min); font-size: var(--text-heading); }
+  .kit-player-chip[data-size="s"] :is(.kit-avatar, .kit-player-chip-icon) { inline-size: 2rem; block-size: 2rem; }
+  .kit-player-chip[data-size="s"] .kit-player-chip-icon { font-size: var(--text-body); }
+  /* xs: one line, as short as the text — a smaller avatar (smaller initials, which are only a picture: the name is read out)
+     and a badge no taller than the words beside it */
+  .kit-player-chip[data-size="xs"] :is(.kit-avatar, .kit-player-chip-icon) { inline-size: 1.5rem; block-size: 1.5rem; font-size: calc(var(--text-body) * 0.7); }
+  .kit-player-chip[data-size="xs"] .kit-badge { line-height: 1.2; }
+
+  /* PinnedBox: a piece stuck to a point in the game world. Scaled first (--kit-pin-scale, set by PinnedBox to fit
+     its box on the table), then shifted so the point lands on its right-middle / middle / left-middle.
+     Hidden until its first measure. Never catches taps (the game underneath gets them). */
+  .kit-pinned { inline-size: max-content; transform-origin: 0 0; transform: scale(var(--kit-pin-scale, 1)) translate(-100%, -50%); visibility: hidden; }
+  .kit-pinned[data-anchor="center"] { transform: scale(var(--kit-pin-scale, 1)) translate(-50%, -50%); }
+  .kit-pinned[data-anchor="left"] { transform: scale(var(--kit-pin-scale, 1)) translate(0, -50%); }
+  .kit-pinned[data-ready] { visibility: visible; }
+  .kit-pinned, .kit-pinned * { pointer-events: none; }
+
+  /* Toasts: a popover, centred sideways, newest at the bottom. data-place: top (default), center or bottom.
+     In a letterboxed game (--kit-frame-w / --kit-frame-h, see kit.css) they stay on the game picture, out of the black bars.
+     --kit-toasts-start / --kit-toasts-end: room to keep clear at the game picture's left / right edge (default none),
+     e.g. a game whose left half is its board: :root { --kit-toasts-start: calc(var(--kit-frame-w, 100vw) / 2); }
+     puts toasts over the right half. (Plain % would be of the window, not the game picture.) */
+  .kit-toasts { --kit-letterbox-h: calc((100dvh - var(--kit-frame-h, 100dvh)) / 2);
+    --kit-letterbox-w: calc((100vw - var(--kit-frame-w, 100vw)) / 2);
+    inset-block: 0 auto; inset-inline: calc(var(--kit-letterbox-w) + var(--kit-toasts-start, 0%)) calc(var(--kit-letterbox-w) + var(--kit-toasts-end, 0%));
+    margin: calc(var(--kit-letterbox-h) + max(var(--gap-m), env(safe-area-inset-top))) auto 0; padding: 0; border: 0; background: none;
+    overflow: visible; display: none; flex-direction: column; align-items: center; gap: var(--gap-s);
+    max-inline-size: calc(var(--kit-frame-w, 100vw) - var(--kit-toasts-start, 0%) - var(--kit-toasts-end, 0%) - 2 * var(--gap-m)); }
+  .kit-toasts[data-place="center"] { inset-block: 0; margin: auto; }
+  .kit-toasts[data-place="bottom"] { inset-block: auto 0; margin: 0 auto calc(var(--kit-letterbox-h) + max(var(--gap-m), env(safe-area-inset-bottom))); }
+  /* place="at": the stack's bottom edge on the game's point (--kit-toasts-at, px from the top of the game picture; the
+     middle of the picture until the game sets it). It glides there when the point moves; reduce motion = it just moves. */
+  .kit-toasts[data-place="at"] { inset-block: 0 auto; margin: 0 auto;
+    translate: 0 calc(var(--kit-letterbox-h) + var(--kit-toasts-at, calc(var(--kit-frame-h, 100dvh) / 2)) - 100%);
+    transition: translate var(--motion-normal) var(--ease); }
+  .kit-toasts:popover-open { display: flex; }
+  .kit-toast { padding: var(--gap-s) var(--gap-m); }
+  .kit-toast[data-dismissible] { flex-direction: row; align-items: center; padding-block: var(--gap-xs); padding-inline-end: var(--gap-xs); cursor: pointer; }
+
+  /* Tooltip: a popover next to its ⓘ button (anchor positioning), centred on older browsers */
+  .kit-tooltip { margin: var(--gap-xs); inset: auto; position-area: top; position-try-fallbacks: flip-block;
+    padding: var(--gap-s) var(--gap-m); max-inline-size: min(20rem, calc(100vw - 2 * var(--gap-m))); }
+  .kit-tooltip:not(:popover-open) { display: none; } /* Panel's display would otherwise show it */
+
+  /* Idle warning: a popover like the toasts (above everything, on the game picture — out of the letterbox bars),
+     centred sideways, and it never catches taps. A FIXED width, so swapping the line (warning ↔ bot playing) or the
+     bar never resizes it. data-place: top (default), center or bottom. */
+  .kit-idle { --kit-letterbox-h: calc((100dvh - var(--kit-frame-h, 100dvh)) / 2);
+    --kit-letterbox-w: calc((100vw - var(--kit-frame-w, 100vw)) / 2);
+    inset-block: 0 auto; inset-inline: var(--kit-letterbox-w);
+    margin: calc(var(--kit-letterbox-h) + max(var(--gap-m), env(safe-area-inset-top))) auto 0; padding: 0; border: 0; background: none;
+    overflow: visible; display: none; pointer-events: none;
+    inline-size: min(22rem, calc(var(--kit-frame-w, 100vw) - 2 * var(--gap-m))); }
+  .kit-idle[data-place="center"] { inset-block: 0; margin: auto; }
+  .kit-idle[data-place="bottom"] { inset-block: auto 0; margin: 0 auto calc(var(--kit-letterbox-h) + max(var(--gap-m), env(safe-area-inset-bottom))); }
+  .kit-idle:popover-open { display: flex; }
+  .kit-idle-card { inline-size: 100%; align-items: stretch; text-align: center; }
+  .kit-idle-card .kit-number { align-self: center; }
+  .kit-idle-bar { block-size: 0.5rem; }
+
+  .kit-empty { align-items: center; text-align: center; padding: var(--gap-l); }
+  .kit-spinner-big { display: inline-block; inline-size: 2.5rem; block-size: 2.5rem; border-width: 0.3rem; }
+}
+
+/* ───────────── kit-style: paint ───────────── */
+@layer kit-style {
+  .kit-toast[data-variant="danger"] { border-color: var(--danger); }
+  .kit-toast[data-plain][data-variant="danger"] { color: var(--danger); } /* plain words: danger is their colour, no edge */
+  /* The idle bar drains from full to empty over the time left (linear: it IS the clock) */
+  .kit-idle-bar .kit-progress-fill { inline-size: 100%; transition: none; animation: kit-idle-drain var(--kit-idle-ms, 30s) linear forwards; }
+  .kit-spinner-big { color: var(--primary); }
+  .kit-tooltip { animation: kit-fade var(--motion-fast) var(--ease); }
+  .kit-pip { background: var(--border); border-radius: var(--radius-control); corner-shape: var(--corner-shape); outline: var(--border-width) solid var(--ink); }
+  .kit-pip[data-state="on"] { background: var(--primary); filter: var(--glow); }
+
+  /* A HUD chip is a flat plate: no drop shadow, because a shadow under a pill is how buttons say "press me" */
+  .kit-hud-chip { background: var(--surface) var(--panel-texture); color: var(--on-surface); border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-control); corner-shape: var(--corner-shape); }
+  .kit-hud-chip[data-state="active"] { border-color: var(--accent); outline: 0.1875rem solid var(--accent); outline-offset: -0.1875rem; }
+  /* The avatar's turn ring sits inside it in a chip (the chip's own accent edge wraps it), so it never touches the text */
+  .kit-hud-chip .kit-avatar[data-state="active"] { outline-offset: -0.1875rem; }
+  /* HUD text: the on-game colour with a soft shade behind the letters (a halo, not a box) */
+  .kit-hud-text { color: var(--on-game);
+    text-shadow: 0 0.0625rem 0.125rem var(--game-shade), 0 0 0.375rem var(--game-shade), 0 0 0.75rem var(--game-shade); }
+  .kit-hud-text[data-tone="accent"] { color: var(--accent); }
+  .kit-hud-text .kit-stack { animation: var(--enter) var(--motion-normal) var(--ease) backwards; }
+  .kit-hud-text[data-pop] .kit-stack { animation: kit-attention calc(var(--motion-normal) * 1.5) var(--ease); }
+  /* Game numbers (scores, timers, places) use the style's number font — usually its display font */
+  .kit-float-anchor, .kit-timer, .kit-number, :is(.kit-float-anchor, .kit-number, .kit-place) .kit-text { font-family: var(--font-numbers); }
+  .kit-float-up { color: var(--primary); animation: kit-float-up calc(var(--motion-normal) * 4) var(--ease) forwards; }
+  .kit-float-up[data-variant="danger"] { color: var(--danger); }
+  .kit-combo { animation: kit-pop var(--motion-normal) var(--ease); }
+  .kit-timer { --kit-ring: var(--primary); color: var(--on-surface);
+    background: radial-gradient(closest-side, var(--surface) 74%, transparent 76%), conic-gradient(var(--kit-ring) calc(var(--kit-fill) * 1turn), var(--border) 0); }
+  .kit-timer[data-variant="danger"] { --kit-ring: var(--danger); }
+  .kit-error { color: var(--danger); font-weight: 600; }
+  .kit-countdown { background: var(--surface) var(--panel-texture); color: var(--on-surface); border: var(--border-width) solid var(--border);
+    box-shadow: var(--depth-2); animation: kit-pop var(--motion-normal) var(--ease); }
+  .kit-end-title { animation: kit-pop calc(var(--motion-normal) * 2) var(--ease) backwards; }
+  /* Results rows arrive one after another: each waits one fast motion longer than the row above */
+  .kit-result-row { animation: var(--enter) var(--motion-normal) var(--ease) backwards; animation-delay: calc(var(--kit-i, 0) * var(--motion-fast)); }
+  .kit-result-row + .kit-result-row { border-block-start: var(--border-width) solid var(--border); }
+  .kit-player-chip { transition: opacity var(--motion-normal) var(--ease), filter var(--motion-normal) var(--ease); }
+  .kit-player-chip[data-dim] { opacity: 0.35; }
+  .kit-dot[data-status="good"] { background: var(--primary); }
+  .kit-dot[data-status="weak"] { box-shadow: inset 0 0 0 0.1875rem var(--danger); } /* a hollow red dot: half there */
+  .kit-dot[data-status="lost"] { background: var(--danger); }
+  /* Bar 0.17.0: a name inside the bar reads over the fill and the empty part alike (the HUD text halo) */
+  .kit-bar-label-above, .kit-bar-label-inside { text-transform: var(--text-case); }
+  .kit-bar-label-inside { color: var(--on-game);
+    text-shadow: 0 0.0625rem 0.125rem var(--game-shade), 0 0 0.375rem var(--game-shade), 0 0 0.75rem var(--game-shade); }
+  /* Bar alert: a ring in the bar's colour with a glow breathing out of it — the teaching callout's pulse (same
+     intention, same motion) — and for 'flash' the fill blinks too. Reduce motion: the ring stays lit, the fill on. */
+  :is(.kit-bar, .kit-hud-chip)[data-alert] .kit-progress { --kit-pulse: var(--primary); outline: 0.125rem solid var(--kit-pulse); outline-offset: 0.125rem;
+    animation: kit-callout-pulse calc(var(--motion-normal) * 5) ease-in-out infinite; }
+  :is(.kit-bar, .kit-hud-chip)[data-alert] .kit-progress[data-variant="accent"] { --kit-pulse: var(--accent); }
+  :is(.kit-bar, .kit-hud-chip)[data-alert] .kit-progress[data-variant="danger"] { --kit-pulse: var(--danger); }
+  :is(.kit-bar, .kit-hud-chip)[data-alert="flash"] .kit-progress-fill { animation: kit-blink calc(var(--motion-normal) * 3) linear infinite; }
+  @media (prefers-reduced-motion: reduce) { :is(.kit-bar, .kit-hud-chip)[data-alert] :is(.kit-progress, .kit-progress-fill) { animation: none !important; } }
+  :root[data-reduce-motion] :is(.kit-bar, .kit-hud-chip)[data-alert] :is(.kit-progress, .kit-progress-fill) { animation: none !important; }
+  /* HudText numbers: a readout in the style's number font */
+  .kit-hud-text[data-numbers] .kit-text { font-family: var(--font-numbers); }
+}
+
+/* The idle warning's bar: full → empty */
+@keyframes kit-idle-drain { from { inline-size: 100%; } to { inline-size: 0%; } }
+
+/* The +N float-up: rises and fades (a style's motion-normal × 4) */
+@keyframes kit-float-up { to { opacity: 0; transform: translateY(-1.75em); } }
+
+/* ───────────── Callout (teach.tsx): a speech bubble pointing at something ─────────────
+   One popover over the whole window (the top layer: above the game and every screen). Inside it everything sits in
+   the same grid cell and is moved into place with translate, from CSS variables teach.tsx writes every frame:
+   --kit-callout-x / -y (the bubble's top-left), --kit-callout-tip-x / -y (the pointer, inside the bubble) and
+   --kit-hole-l / -t / -r / -b (the target, grown by gap-s: the spotlight's hole and the glow ring).
+   .kit-callout-frame is never seen: it is the room the bubble may use (window or game picture, minus the edge room). */
+@layer kit-base {
+  .kit-callout-layer { inset: 0; inline-size: auto; block-size: auto; max-inline-size: none; max-block-size: none;
+    margin: 0; padding: 0; border: 0; background: none; overflow: hidden; display: none; pointer-events: none;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+  .kit-callout-layer:popover-open { display: grid; }
+  .kit-callout-layer > * { grid-area: 1 / 1; }
+  .kit-callout-frame { place-self: center; inline-size: var(--kit-frame-w, 100%); block-size: var(--kit-frame-h, 100%);
+    padding: max(var(--gap-m), env(safe-area-inset-top)) max(var(--gap-m), env(safe-area-inset-right))
+             max(var(--gap-m), env(safe-area-inset-bottom)) max(var(--gap-m), env(safe-area-inset-left));
+    column-gap: var(--gap-s); /* (read by teach.tsx: the room round the target) */
+    visibility: hidden; pointer-events: none; }
+  /* The bubble: as wide as its words up to 22em (never wider than the game picture), so it never changes width as it moves */
+  .kit-callout { justify-self: start; align-self: start; display: grid; inline-size: max-content;
+    max-inline-size: min(22em, calc(var(--kit-frame-w, 100vw) - 2 * var(--gap-m)));
+    translate: var(--kit-callout-x, 0) var(--kit-callout-y, 0);
+    transform-origin: var(--kit-callout-tip-x, 50%) var(--kit-callout-tip-y, 50%); /* its entrance grows out of the pointer */
+    pointer-events: auto; visibility: hidden; }
+  .kit-callout > * { grid-area: 1 / 1; }
+  .kit-callout[data-dismissible] { cursor: pointer; }
+  .kit-callout-body { padding: var(--gap-m); min-inline-size: 0; } /* breathing room: words never touch the edge */
+  /* The pointer: a turned square, half of it out past the bubble's edge, covering the border where it joins */
+  .kit-callout-tip { justify-self: start; align-self: start; inline-size: 1rem; block-size: 1rem;
+    translate: calc(var(--kit-callout-tip-x, 0) - 50%) calc(var(--kit-callout-tip-y, 0) - 50%); rotate: 45deg; pointer-events: none; }
+  /* The dim: everything but a hole round the target. clip-path also shapes where it catches taps, so taps in the
+     hole reach the target underneath */
+  .kit-callout-dim { pointer-events: auto; visibility: hidden;
+    clip-path: polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+      var(--kit-hole-l, 0) var(--kit-hole-t, 0), var(--kit-hole-r, 0) var(--kit-hole-t, 0), var(--kit-hole-r, 0) var(--kit-hole-b, 0),
+      var(--kit-hole-l, 0) var(--kit-hole-b, 0), var(--kit-hole-l, 0) var(--kit-hole-t, 0)); }
+  .kit-callout-ring { justify-self: start; align-self: start; translate: var(--kit-hole-l, 0) var(--kit-hole-t, 0);
+    inline-size: calc(var(--kit-hole-r, 0) - var(--kit-hole-l, 0)); block-size: calc(var(--kit-hole-b, 0) - var(--kit-hole-t, 0));
+    pointer-events: none; visibility: hidden; }
+  /* Shown once placed; hidden while the target is missing */
+  .kit-callout-layer[data-ready] :is(.kit-callout, .kit-callout-dim, .kit-callout-ring) { visibility: visible; }
+}
+@layer kit-style {
+  .kit-callout { background: var(--surface) var(--panel-texture); color: var(--on-surface); border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-panel); corner-shape: var(--corner-shape); box-shadow: var(--depth-2); }
+  .kit-callout-layer[data-ready] .kit-callout { animation: var(--enter) var(--motion-normal) var(--ease) backwards; }
+  .kit-callout-tip { background: var(--surface); border: 0 solid var(--border); }
+  /* Only the two sides that point out get the outline (the square is turned 45°) */
+  .kit-callout-layer[data-side="top"] .kit-callout-tip { border-inline-end-width: var(--border-width); border-block-end-width: var(--border-width); }
+  .kit-callout-layer[data-side="bottom"] .kit-callout-tip { border-inline-start-width: var(--border-width); border-block-start-width: var(--border-width); }
+  .kit-callout-layer[data-side="left"] .kit-callout-tip { border-inline-end-width: var(--border-width); border-block-start-width: var(--border-width); }
+  .kit-callout-layer[data-side="right"] .kit-callout-tip { border-inline-start-width: var(--border-width); border-block-end-width: var(--border-width); }
+  /* A dark see-through screen (game-shade is dark in every style); --kit-callout-dim = how dark (the dimAmount prop) */
+  .kit-callout-dim { background: color-mix(in srgb, var(--game-shade) var(--kit-callout-dim, 65%), transparent); animation: kit-fade var(--motion-normal) var(--ease); }
+  /* pulse: the target glows — a steady accent ring, with a soft glow breathing out of it */
+  .kit-callout-ring { border-radius: var(--radius-control); corner-shape: var(--corner-shape); outline: 0.1875rem solid var(--accent); filter: var(--glow);
+    animation: kit-callout-pulse calc(var(--motion-normal) * 5) ease-in-out infinite; }
+  /* Reduce motion (device or the kit's switch): no entrance, no breathing — the ring just stays lit */
+  @media (prefers-reduced-motion: reduce) { :is(.kit-callout, .kit-callout-dim, .kit-callout-ring) { animation: none !important; } }
+  :root[data-reduce-motion] :is(.kit-callout, .kit-callout-dim, .kit-callout-ring) { animation: none !important; }
+  /* Bar showLabel: the bar's name beside it, small and quiet (0.11.1) */
+  .kit-bar-label { font-size: 0.8em; color: var(--muted); white-space: nowrap; letter-spacing: 0.04em; }
+}
+/* (--kit-pulse: the glow's colour — the accent for a callout, the bar's own colour for a Bar alert, 0.17.0) */
+@keyframes kit-callout-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--kit-pulse, var(--accent)) 60%, transparent); }
+  60% { box-shadow: 0 0 0 0.75rem color-mix(in srgb, var(--kit-pulse, var(--accent)) 0%, transparent); }
+}
+
+/* ───────────── Level meter (meter.tsx, 0.12.0): "RANK 2 · 10,347 / 12,500 XP" over a bar ─────────────
+   Sized in em, so it follows the text size around it (inside an ArtLayer `text`: it grows with the art). */
+@layer kit-base {
+  .kit-level-meter { display: flex; flex-direction: column; justify-content: space-between; gap: 0.3em;
+    inline-size: 100%; min-inline-size: 0; white-space: nowrap; text-align: start; }
+  .kit-level-meter[data-art] { block-size: 100%; gap: 0; }
+  .kit-level-meter-words { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75em; min-inline-size: 0; }
+  .kit-level-meter-level { transform-origin: 50% 70%; }
+  .kit-level-meter-level { display: inline-block; font-size: 1.6em; line-height: 0.9; }
+  .kit-level-meter-value { font-size: 0.85em; flex-shrink: 0; }
+  .kit-level-meter-bar { display: grid; block-size: 0.6em; border-radius: 1em; overflow: hidden; }
+  /* with the game's art: the bar picture keeps its shape (never stretched); the track is the art's own */
+  .kit-level-meter[data-art] .kit-level-meter-bar { block-size: auto; aspect-ratio: var(--kit-meter-art-ratio); border-radius: 0; }
+  .kit-level-meter-fill { inline-size: 100%; block-size: 100%;
+    clip-path: inset(0 calc((1 - var(--kit-meter-share, 0)) * 100%) 0 0); }
+}
+@layer kit-style {
+  .kit-level-meter-label { font-weight: 600; text-transform: var(--text-case); color: var(--primary); }
+  .kit-level-meter-level { font-family: var(--font-numbers); font-weight: 800; }
+  .kit-level-meter-level[data-pop] { animation: kit-attention calc(var(--motion-normal) * 1.5) var(--ease); }
+  .kit-level-meter-value { font-family: var(--font-numbers); color: var(--muted); }
+  .kit-level-meter-bar { background: var(--border); }
+  .kit-level-meter-fill { background: var(--primary); }
+  .kit-level-meter[data-art] .kit-level-meter-bar { background: none; }
+  .kit-level-meter[data-art] .kit-level-meter-fill { background: var(--kit-meter-art) left / 100% 100% no-repeat; }
+}

@@ -1,0 +1,17 @@
+/* The frame-rate readout (src/game/fpsMeter.ts): a small tag in the top-left corner, over everything, never in the
+   way of a tap. Turns the danger colour while it's under perf.json's pass line. */
+.fps-meter {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + var(--gap-xs));
+  left: calc(env(safe-area-inset-left) + var(--gap-xs));
+  z-index: 2147483000;
+  padding: var(--gap-xs) var(--gap-s);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-numbers);
+  font-size: 0.625rem;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.fps-meter.is-low { color: var(--danger); }

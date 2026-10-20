@@ -1,0 +1,112 @@
+{
+  "_ranges": { "cracks.curve": [0, 10, 0.25], "cracks.topBias": [0, 4, 0.25], "cracks.reach": [0, 1, 0.05], "cracks.spread": [0.05, 1, 0.05], "cracks.neighbourCols": [0, 10, 1], "cracks.highFrom": [0, 1, 0.05], "cracks.highDrainMult": [0, 1, 0.05] },
+  "tank": { "width": 30, "height": 24, "bufferRows": 3, "visibleWidth": 12 },
+  "colors": ["red", "blue", "green", "yellow", "purple", "white", "black"],
+  "colorsByRank": [
+    { "rank": 0, "count": 4 },
+    { "rank": 10, "count": 5 },
+    { "rank": 30, "count": 6 },
+    { "rank": 50, "count": 7 }
+  ],
+  "junkByRank": [
+    { "rank": 0, "count": 0 },
+    { "rank": 3, "count": 5 },
+    { "rank": 6, "count": 8 },
+    { "rank": 9, "count": 11 }
+  ],
+  "pressure": { "riseMsToFull": 75000 },
+  "integrity": { "drainPerCrackPerSec": 0.0005, "sealRefund": 0.02 },
+  "rupture": { "drainMs": 5000 },
+  "fall": { "msPerRow": 780, "softDropFactor": 8 },
+  "lock": { "delayMs": 500, "softDropDelayMs": 50, "maxResets": 10 },
+  "fill": { "msPerCell": 375 },
+  "pop": { "refundMsPerCell": 100, "refundTierFromSize": 15, "refundTierStep": 10, "refundTierMs": 250 },
+  "cracks": { "everyMsAtEmpty": 6000, "everyMsAtFull": 1333, "curve": 3, "sealRefundMs": 1000, "onePerColour": false, "band": "hill", "topBias": 2, "reach": 0.5, "spread": 0.3, "neighbourCols": 4, "highFrom": 0.75, "highDrainMult": 0.5 },
+  "score": {
+    "perCell": 10,
+    "heightPerRow": 10,
+    "offscreenPerCell": 50,
+    "comboStep": 0.1,
+    "adjacentPerSide": 5,
+    "leftoverPerCell": 50
+  },
+  "pieces": {
+    "corruptChance": 0.15,
+    "mirrorChance": 0.5,
+    "zones": ["tetra", "penta", "hexa"],
+    "zoneEveryMs": 25000,
+    "kicks": [[0, 0], [1, 0], [-1, 0], [0, -1], [1, -1], [-1, -1], [0, -2], [1, -2], [-1, -2], [2, 0], [-2, 0]],
+    "tetra": {
+      "normal": [
+        { "name": "T_I", "cells": [[0, -1], [0, 0], [0, 1], [0, 2]] },
+        { "name": "T_L", "cells": [[0, 0], [0, 1], [0, 2], [1, 0]] },
+        { "name": "T_T", "cells": [[0, 0], [0, 1], [0, 2], [1, 1]] },
+        { "name": "T_S", "cells": [[0, 0], [0, 1], [1, 1], [1, 2]] },
+        { "name": "T_O", "cells": [[0, 0], [0, 1], [1, 0], [1, 1]], "noRotate": true }
+      ],
+      "corrupted": [
+        { "name": "T_I_C", "cells": [[0, 2], [0, 3], [1, 0], [1, 1]] },
+        { "name": "T_L_C", "cells": [[0, 0], [0, 1], [1, 0], [1, 2]] },
+        { "name": "T_T_C", "cells": [[0, 0], [0, 2], [1, 1], [2, 1]] },
+        { "name": "T_S_C", "cells": [[0, 2], [1, 0], [1, 1], [2, 1]] },
+        { "name": "T_O_C", "cells": [[0, 0], [0, 2], [1, 1], [1, 2]] }
+      ]
+    },
+    "penta": {
+      "normal": [
+        { "name": "P_I", "cells": [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2]] },
+        { "name": "P_L", "cells": [[0, 0], [0, 1], [1, 1], [1, 2], [2, 1]] },
+        { "name": "P_X", "cells": [[0, 1], [1, 0], [1, 1], [1, 2], [2, 1]] },
+        { "name": "P_U", "cells": [[0, 0], [1, 0], [1, 1], [1, 2], [2, 0]] },
+        { "name": "P_L2", "cells": [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2]] },
+        { "name": "P_Y", "cells": [[0, 0], [0, 1], [1, 1], [1, 2], [2, 2]] },
+        { "name": "P_T", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]] },
+        { "name": "P_S", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 3]] },
+        { "name": "P_P", "cells": [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2]] },
+        { "name": "P_Z", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1]] },
+        { "name": "P_W", "cells": [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]] }
+      ],
+      "corrupted": [
+        { "name": "P_I_C", "cells": [[0, 0], [0, 2], [0, 4], [1, 1], [1, 3]] },
+        { "name": "P_L_C", "cells": [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]] },
+        { "name": "P_X_C", "cells": [[0, 0], [1, 1], [1, 2], [2, 0], [2, 2]] },
+        { "name": "P_U_C", "cells": [[0, 0], [0, 2], [1, 1], [1, 2], [2, 0]] },
+        { "name": "P_L2_C", "cells": [[0, 0], [0, 2], [1, 1], [1, 2], [2, 2]] },
+        { "name": "P_Y_C", "cells": [[0, 0], [0, 1], [1, 1], [2, 0], [2, 2]] },
+        { "name": "P_T_C", "cells": [[0, 0], [0, 1], [0, 3], [1, 2], [1, 3]] },
+        { "name": "P_S_C", "cells": [[0, 0], [0, 1], [1, 0], [1, 2], [2, 1]] },
+        { "name": "P_P_C", "cells": [[0, 0], [0, 2], [1, 0], [1, 1], [1, 3]] },
+        { "name": "P_Z_C", "cells": [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0]] },
+        { "name": "P_W_C", "cells": [[0, 0], [0, 2], [1, 1], [2, 0], [2, 2]] }
+      ]
+    },
+    "hexa": {
+      "normal": [
+        { "name": "H_I", "cells": [[0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [0, 3]] },
+        { "name": "H_L", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [2, 1]] },
+        { "name": "H_X", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 3]] },
+        { "name": "H_U", "cells": [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 0]] },
+        { "name": "H_L2", "cells": [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [1, 3]] },
+        { "name": "H_Y", "cells": [[0, 0], [0, 1], [1, 0], [1, 1], [1, 2], [2, 2]] },
+        { "name": "H_T", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 1], [1, 2]] },
+        { "name": "H_S", "cells": [[0, 0], [0, 1], [1, 0], [1, 1], [2, 1], [2, 2]] },
+        { "name": "H_P", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 2], [1, 3]] },
+        { "name": "H_Z", "cells": [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [1, 3]] },
+        { "name": "H_W", "cells": [[0, 0], [0, 3], [1, 1], [1, 2], [1, 3], [2, 3]] }
+      ],
+      "corrupted": [
+        { "name": "H_I_C", "cells": [[0, 0], [0, 3], [0, 5], [1, 1], [1, 2], [1, 4]] },
+        { "name": "H_L_C", "cells": [[0, 0], [0, 2], [1, 1], [1, 2], [1, 3], [2, 0]] },
+        { "name": "H_X_C", "cells": [[0, 0], [0, 2], [0, 3], [1, 1], [1, 3], [2, 0]] },
+        { "name": "H_U_C", "cells": [[0, 0], [0, 3], [1, 1], [1, 2], [1, 4], [2, 0]] },
+        { "name": "H_L2_C", "cells": [[0, 0], [0, 1], [1, 1], [1, 2], [1, 3], [2, 0]] },
+        { "name": "H_Y_C", "cells": [[0, 0], [0, 2], [1, 0], [1, 2], [1, 3], [2, 1]] },
+        { "name": "H_T_C", "cells": [[0, 0], [0, 1], [0, 3], [1, 1], [1, 2], [1, 4]] },
+        { "name": "H_S_C", "cells": [[0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2]] },
+        { "name": "H_P_C", "cells": [[0, 0], [0, 2], [0, 4], [1, 1], [1, 2], [1, 3]] },
+        { "name": "H_Z_C", "cells": [[0, 0], [0, 1], [0, 3], [1, 0], [1, 2], [2, 3]] },
+        { "name": "H_W_C", "cells": [[0, 0], [0, 3], [1, 1], [1, 2], [2, 0], [2, 3]] }
+      ]
+    }
+  }
+}

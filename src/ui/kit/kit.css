@@ -1,0 +1,389 @@
+/* THE KIT'S CSS
+   Four layers, weakest first: game-base (a game's old page-wide rules — put its index.css and
+   "* { … }" resets in here so they can't reach kit parts), kit-base (layout + accessibility floor,
+   no colours), kit-style (paints parts using the style variables), game (a game's own additions win).
+   The kit only touches its own things: screens, toasts, a .kit-scope wrapper (kit parts shown outside
+   a Screen, e.g. pinned to a 3D point: no layout, background or positioning of its own), and a page that opts in with
+   <body class="kit-page"> (a game built fully from the kit). A game's older UI keeps its own look.
+   No raw colours, px sizes or font names here — only var(--style-name). */
+@layer game-base, kit-base, kit-style, game;
+
+/* ───────────── kit-base: layout only, zero colours ───────────── */
+@layer kit-base {
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope, .kit-overlay),
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope, .kit-overlay) *,
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope, .kit-overlay) *::before,
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope, .kit-overlay) *::after { box-sizing: border-box; }
+  .kit-page { margin: 0; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) { font-size: var(--text-body); line-height: 1.4; font-synthesis: none; /* no fake bold on one-weight fonts */ }
+
+  /* Accessibility floor: visible focus ring for keyboard + gamepad */
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) :focus-visible { outline: 0.1875rem solid var(--focus); outline-offset: 0.125rem; }
+  /* No blinking text caret anywhere but in a box you type in. With Chrome's caret browsing on (F7 — easy to switch on
+     by accident) the browser draws a caret in whatever has focus, buttons and pickers included; transparent hides it.
+     Boxes to type in get their caret back (.kit-input paints it the primary colour). */
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope, .kit-overlay) { caret-color: transparent; }
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope, .kit-overlay) :where(textarea, [contenteditable]:not([contenteditable="false"]),
+    input:not([type="range"], [type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="reset"], [type="color"], [type="file"])) { caret-color: auto; }
+
+  /* Accessibility floor: every control is at least 44px to tap */
+  .kit-target { min-block-size: var(--target-min); min-inline-size: var(--target-min); }
+
+  /* Spacing: every box reads its gap name */
+  [data-gap="xs"] { gap: var(--gap-xs); }
+  [data-gap="s"] { gap: var(--gap-s); }
+  [data-gap="m"] { gap: var(--gap-m); }
+  [data-gap="l"] { gap: var(--gap-l); }
+  [data-gap="xl"] { gap: var(--gap-xl); }
+
+  /* Screen: fills its parent; 3×3 slots kept clear of notches. The ONLY absolute positioning in the kit. */
+  .kit-screen {
+    position: absolute; inset: 0;
+    display: grid; gap: var(--gap-m);
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "top-left top top-right" "center center center" "bottom-left bottom bottom-right";
+    padding: max(var(--gap-m), env(safe-area-inset-top)) max(var(--gap-m), env(safe-area-inset-right))
+             max(var(--gap-m), env(safe-area-inset-bottom)) max(var(--gap-m), env(safe-area-inset-left));
+    pointer-events: none; /* empty space lets taps reach the game */
+  }
+  .kit-screen > [data-slot] { pointer-events: auto; min-inline-size: 0; }
+  .kit-screen > [data-slot="top-left"] { grid-area: top-left; justify-self: start; }
+  .kit-screen > [data-slot="top"] { grid-area: top; }
+  .kit-screen > [data-slot="top-right"] { grid-area: top-right; justify-self: end; }
+  /* The centre never scrolls itself (that would clip shadows): put a ScrollArea inside a Panel for tall content */
+  .kit-screen > [data-slot="center"] { grid-area: center; place-self: center; display: flex; flex-direction: column; min-block-size: 0; max-block-size: 100%; max-inline-size: 100%; }
+  /* A card (Panel) in the centre keeps everything inside it: when the window is too short for it (a phone on its side,
+     a short browser window) the card takes the height there is and scrolls inside, so no button ever hangs out of it
+     (Pause's Leave game did at 768×343 — 0.7.0). Its title, words and buttons keep their size; a ScrollArea in it
+     still gives up height first. Popovers (tooltips, toasts) sit in the top layer, so the scroll never clips them. */
+  /* (0.10.0: the last resort only — its ScrollArea body is what normally scrolls — so it hides its bar like every scroller) */
+  .kit-screen > [data-slot="center"] > .kit-panel { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .kit-screen > [data-slot="center"] > .kit-panel::-webkit-scrollbar { display: none; }
+  .kit-screen > [data-slot="center"] > .kit-panel > :not(.kit-scroll) { flex-shrink: 0; }
+  /* <Screen grow="down"> (0.10.0, every kit menu): the card OPENS in the middle, then its top stays put and it only grows
+     or shrinks DOWNWARD, so a control just tapped stays under the finger (Muzzy 2026-10-10: "it should start in the
+     center and only expand downwards"). layout.tsx measures where the middle is when it opens (and again only on a
+     window resize / rotate, or once the fonts load) and keeps that as --kit-grow-top. Its height limit loses the same
+     amount, so the card never runs off the bottom: it stops there and its body scrolls. */
+  .kit-screen[data-grow="down"] > [data-slot="center"] { align-self: start; margin-block-start: var(--kit-grow-top, 0rem);
+    max-block-size: calc(100% - var(--kit-grow-top, 0rem)); }
+  /* Short windows: a card's centre also takes the empty top / bottom slot rows (and the gaps beside them), so a
+     card on a phone on its side gets the whole height, not 20 px less at each end */
+  @media (max-height: 30rem) {
+    .kit-screen:not(:has(> :is([data-slot="top-left"], [data-slot="top"], [data-slot="top-right"]))) > [data-slot="center"]:has(> .kit-panel) { grid-row-start: 1; }
+    .kit-screen:not(:has(> :is([data-slot="bottom-left"], [data-slot="bottom"], [data-slot="bottom-right"]))) > [data-slot="center"]:has(> .kit-panel) { grid-row-end: -1; }
+  }
+  .kit-screen > [data-slot="bottom-left"] { grid-area: bottom-left; justify-self: start; }
+  .kit-screen > [data-slot="bottom"] { grid-area: bottom; }
+  .kit-screen > [data-slot="bottom-right"] { grid-area: bottom-right; justify-self: end; }
+  /* <Screen scroll>: the screen itself scrolls (drag anywhere on it, wheel, keys), with no scroll bar. The middle row
+     grows to fit (minmax(min-content, 1fr): the whole centre, so the end padding and shadow scroll into view too); the centre
+     opens in the middle at its natural height while it fits (Muzzy: "centered vertically"), at the top once it's taller than the window. The screen's padding keeps the safe areas and room for shadows.
+     It catches drags on its empty space too (a menu, not a HUD: taps there don't reach the game). */
+  .kit-screen[data-scroll] { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: none;
+    grid-template-rows: auto minmax(min-content, 1fr) auto; pointer-events: auto; }
+  .kit-screen[data-scroll]::-webkit-scrollbar { display: none; }
+  /* …and its card is NOT a scroll box of its own (it never runs out of room here): one would catch every swipe that
+     starts on it and keep it (overscroll contain), so on a phone only the thin strip round the card scrolled (0.8.2) */
+  .kit-screen[data-scroll] > [data-slot="center"] > .kit-panel { overflow: visible; overscroll-behavior: auto; }  .kit-screen[data-scroll] > [data-slot="center"] { align-self: start; max-block-size: none; } /* at the top of its row, pushed down to the middle by a top margin measured when it opens (layout.tsx keepCentredOnOpen), so it then only grows DOWN and a control you just tapped (+ / −, Person ▶ AI) stays under your finger; taller than the screen → it scrolls (Muzzy 2026-10-05, 2026-10-10) */
+  /* Screen stack layers: no box of their own, they only carry "inert" for the screens inside */
+  .kit-layer { display: contents; }
+  /* An open screen with another one on top is hidden (ScreenStack sets data-covered): only the top screen shows.
+     visibility (not display: none) keeps its scroll position; !important so no game rule can make it peek through */
+  .kit-layer[data-covered], .kit-layer[data-covered] * { visibility: hidden !important; }
+  /* <ScreenStack overlay>: open screens cover the whole window above a game that isn't built from Screens */
+  .kit-overlay { position: fixed; inset: 0; z-index: var(--kit-overlay-z, 100); pointer-events: none; }
+  .kit-overlay[data-open] { pointer-events: auto; }
+  /* Game box: a letterboxed game (e.g. 16:9 in a wider or taller window) sets --kit-frame-w / --kit-frame-h
+     so overlay screens sit on the game picture, not in the black bars. The dim still covers the whole window.
+     Unset = 100%: screens fill the window as before. */
+  .kit-overlay .kit-screen { inline-size: var(--kit-frame-w, 100%); block-size: var(--kit-frame-h, 100%); margin: auto; }
+  /* …and the always-there layer under them (a HUD) sits on the game picture too, or on its own narrower column:
+     --kit-hud-w (0.11.2 — Goops: on a wide window the HUD's corners went to the window edges, far from the
+     phone-shaped tank; menus keep the whole game picture). The HUD then lays itself out by its own width. */
+  .kit-layer[data-framed] { display: block; position: fixed; pointer-events: none; container-type: size;
+    inset-inline: max(0rem, calc((100vw - var(--kit-hud-w, var(--kit-frame-w, 100vw))) / 2));
+    inset-block: max(0rem, calc((100dvh - var(--kit-frame-h, 100dvh)) / 2)); }
+  .kit-layer[data-framed] > :not(.kit-screen) { pointer-events: auto; } /* screens pass taps through their own empty space */
+
+  .kit-panel, .kit-stack { display: flex; flex-direction: column; min-inline-size: 0; min-block-size: 0; }
+  .kit-panel { padding: var(--gap-l); }
+  @media (max-height: 30rem) { .kit-panel { padding: var(--gap-m); } } /* landscape phones: room for content */
+  .kit-row { display: flex; flex-wrap: wrap; align-items: center; }
+  .kit-row[data-justify="center"] { justify-content: center; }
+  .kit-row[data-justify="end"] { justify-content: flex-end; }
+  .kit-row[data-justify="between"] { justify-content: space-between; }
+  .kit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--kit-tile)), 1fr)); }
+  .kit-grid[data-min="s"] { --kit-tile: 8rem; }
+  .kit-grid[data-min="m"] { --kit-tile: 12rem; }
+  .kit-grid[data-min="l"] { --kit-tile: 18rem; }
+
+  /* ── Controls: shapes and sizes only ── */
+  /* A full reset, so a game's old "button { … }" rules (radius, padding, hover borders) never show through */
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) :is(button, input) { font: inherit; color: inherit; margin: 0;
+    padding: 0; border: 0; border-radius: 0; background: none; }
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) :focus:not(:focus-visible) { outline: none; } /* rings only for keys and pads */
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) button:disabled { cursor: not-allowed; }
+
+  /* text-wrap: pretty — wrapped lines never end with one word alone on the last line (no orphans) */
+  .kit-text { margin: 0; overflow-wrap: anywhere; text-wrap: pretty; }
+  .kit-text[data-kind="display"] { font-size: var(--text-display); line-height: 1.1; font-weight: 800; }
+  .kit-text[data-kind="title"] { font-size: var(--text-title); line-height: 1.15; font-weight: 700; }
+  .kit-text[data-kind="heading"] { font-size: var(--text-heading); line-height: 1.2; font-weight: 700; }
+  .kit-text[data-kind="label"] { font-weight: 600; }
+
+  .kit-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--gap-s);
+    padding: var(--gap-s) var(--gap-l); border-style: solid; font-weight: 600; text-align: center; user-select: none; }
+  /* Icon-only: the glyph is title-sized so it fills the (at least 44px) button instead of floating small in it */
+  .kit-button[data-icon] { padding: 0; aspect-ratio: 1; font-size: var(--text-title); line-height: 1; }
+  /* size="…px": as tall as the game asks (e.g. a board hex), and at least that wide — never below target-min */
+  .kit-button[data-sized] { min-block-size: max(var(--target-min), var(--kit-button-size)); min-inline-size: max(var(--target-min), var(--kit-button-size)); }
+  /* compact: a gap-m each side of the label instead of gap-l (a row of big buttons on one line on a narrow phone) */
+  .kit-button[data-compact]:not([data-icon]) { padding-inline: var(--gap-m); }
+  .kit-button:disabled:not([data-state="loading"]) { opacity: 0.5; }
+  /* locked (MainMenu item): looks disabled, still tappable so the game can say why */
+  .kit-button[data-locked] { opacity: 0.5; cursor: not-allowed; }
+  .kit-button[data-locked]:active { transform: none; }
+  .kit-spinner { inline-size: 1em; block-size: 1em; border-radius: 50%; border: 0.15em solid; animation: kit-spin 0.8s linear infinite; }
+  @keyframes kit-spin { to { transform: rotate(1turn); } }
+
+  .kit-toggle { display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0; background: none; }
+  .kit-toggle-track { display: flex; align-items: center; inline-size: 3.25rem; block-size: 1.75rem; padding: 0.1875rem; }
+  .kit-toggle-thumb { inline-size: 1.375rem; block-size: 1.375rem; }
+  .kit-toggle[data-state="on"] .kit-toggle-thumb { transform: translateX(1.5rem); }
+
+  .kit-slider { appearance: none; -webkit-appearance: none; inline-size: 12rem; max-inline-size: 100%; background: none; cursor: pointer; }
+  .kit-slider::-webkit-slider-runnable-track { block-size: 0.5rem; }
+  .kit-slider::-moz-range-track { block-size: 0.5rem; }
+  .kit-slider::-webkit-slider-thumb { -webkit-appearance: none; inline-size: 1.5rem; block-size: 1.5rem; margin-block-start: -0.5rem; }
+  .kit-slider::-moz-range-thumb { inline-size: 1.5rem; block-size: 1.5rem; }
+
+  .kit-picker { display: inline-flex; align-items: center; gap: var(--gap-xs); max-inline-size: 100%; }
+  .kit-picker > .kit-button { flex: none; }
+  .kit-picker-value { flex: 1 1 5rem; min-inline-size: 0; text-align: center; font-weight: 600; overflow-wrap: anywhere; }
+  .kit-stepper .kit-picker-value { flex-basis: 2.5rem; }
+  /* Sized by its values (Selector): its own width is the longest option's — every option piled in one spot, only the
+     current one seen (ArrowPicker sizes) */
+  .kit-picker-sized { display: grid; flex: 0 1 auto; min-inline-size: 0; }
+  .kit-picker-sized > * { grid-area: 1 / 1; min-inline-size: 0; }
+  .kit-picker-sizer { visibility: hidden; text-align: center; font-weight: 600; overflow-wrap: anywhere; } /* (sized like the value) */
+
+  .kit-tabs { display: flex; flex-wrap: wrap; gap: var(--gap-xs); padding: var(--gap-xs); }
+
+  /* Carousel: one item at a time, sliding sideways; every item as tall as the tallest, so nothing jumps as it moves */
+  .kit-carousel { display: flex; flex-direction: column; align-items: stretch; gap: var(--gap-xs); min-inline-size: 0; }
+  .kit-carousel-row { display: flex; align-items: center; gap: var(--gap-xs); min-inline-size: 0; }
+  .kit-carousel-row > .kit-button { flex: none; }
+  .kit-carousel-view { flex: 1 1 auto; min-inline-size: 0; overflow: hidden; touch-action: pan-y; cursor: pointer; }
+  /* every item in one spot (the tallest sets the height); only the current one shows — Carousel.tsx slides the one
+     leaving and the one arriving, so it loops past the end without rushing back */
+  .kit-carousel-track { display: grid; }
+  .kit-carousel-item { grid-area: 1 / 1; min-inline-size: 0; display: flex; align-items: center; justify-content: center; visibility: hidden; }
+  .kit-carousel-item[data-current] { visibility: visible; }
+  .kit-carousel-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--gap-xs); }
+  .kit-carousel-dot { inline-size: 0.5rem; block-size: 0.5rem; }
+  .kit-tab { flex: 1 0 auto; padding: var(--gap-s) var(--gap-l); border: 0; background: none; font-weight: 600; }
+
+  .kit-field { display: flex; flex-direction: column; gap: var(--gap-xs); }
+  .kit-field-label { font-weight: 600; }
+  .kit-input { inline-size: 100%; min-inline-size: 0; padding: var(--gap-s) var(--gap-m); border-style: solid; }
+  .kit-roomcode { display: flex; flex-wrap: wrap; gap: var(--gap-s); }
+  .kit-roomcode-box { inline-size: 3rem; block-size: 3.5rem; padding: 0; text-align: center; font-size: var(--text-heading); font-weight: 700; text-transform: uppercase; }
+
+  .kit-listrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--gap-s) var(--gap-m); inline-size: 100%; padding: var(--gap-s) 0; border: 0; background: none; text-align: start; }
+  .kit-listrow-text { display: flex; flex-direction: column; flex: 1 1 6rem; min-inline-size: 0; }
+  button.kit-listrow { padding-inline: 0; } /* link rows line up with value rows */
+
+  .kit-card { display: flex; flex-direction: column; gap: var(--gap-s); padding: var(--gap-l); text-align: start; border-style: solid; }
+  .kit-card-title { font-size: var(--text-heading); font-weight: 700; }
+
+  .kit-badge { display: inline-flex; align-items: center; white-space: nowrap; padding: 0 var(--gap-s); font-weight: 700; line-height: 1.6; border-style: solid; }
+  .kit-avatar { display: inline-grid; place-items: center; flex: none; inline-size: var(--target-min); block-size: var(--target-min); overflow: hidden; font-weight: 600; }
+  .kit-avatar img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+
+  .kit-progress { display: block; min-inline-size: 6rem; block-size: 0.75rem; overflow: hidden; }
+  .kit-progress-fill { display: block; block-size: 100%; inline-size: calc(var(--kit-fill, 0) * 100%); }
+
+  /* Bars and sliders share a line with their neighbours and grow to fill it */
+  :is(.kit-row, .kit-listrow) > .kit-slider { flex: 1 1 8rem; }
+  :is(.kit-row, .kit-listrow) > .kit-progress { flex: 1 1 6rem; }
+
+  /* A scroll box clips at its edge, so it keeps a little room inside for outlines, drop shadows and focus rings
+     (Cartoon's ink + press shadow poke out) and gives it back with a matching negative margin: text stays aligned. */
+  /* No scroll bar (0.10.0, Muzzy: "remove all scroll bars"): drag, swipe, wheel and keys still scroll it, and its edges
+     fade while there's more that way (kit-style below). It only keeps swipes to itself (overscroll contain) while it
+     really can scroll (data-scrolls, set by ScrollArea.tsx): one that fits must never eat a swipe (B027). */
+  .kit-scroll { flex: 1 1 auto; min-block-size: 0; overflow: auto; overscroll-behavior: auto;
+    scrollbar-width: none; padding: 0.5rem; margin: -0.5rem; }
+  .kit-scroll::-webkit-scrollbar { display: none; }
+  .kit-scroll[data-scrolls] { overscroll-behavior: contain; }
+  .kit-scroll[data-max="s"] { max-block-size: 10rem; }
+  .kit-scroll[data-max="m"] { max-block-size: 18rem; }
+  .kit-scroll[data-max="l"] { max-block-size: 28rem; }
+  /* On a short screen (landscape phone) only the scroll box gives up height; titles and buttons around it keep theirs */
+  .kit-panel:has(> .kit-scroll) > :not(.kit-scroll) { flex-shrink: 0; }
+
+  /* Accessibility floor: reduce motion turns animation off and presses don't shrink */
+  @media (prefers-reduced-motion: reduce) {
+    :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope), :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) *,
+    :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) *::before, :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) *::after {
+      animation-duration: 0s !important;
+      transition-duration: 0s !important;
+      animation-delay: 0s !important; /* nothing waits its turn either (Results rows) */
+      scroll-behavior: auto !important;
+    }
+    button.kit-target:active { transform: none !important; }
+  }
+}
+
+/* ───────────── kit-style: paint, from style variables only ───────────── */
+@layer kit-style {
+  .kit-page { background: var(--bg); }
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) { color: var(--on-bg); font-family: var(--font-body); }
+  .kit-overlay[data-open] { background: color-mix(in srgb, var(--bg) 70%, transparent); } /* dims the game under it */
+  .kit-panel {
+    background: var(--surface) var(--panel-texture); color: var(--on-surface);
+    border: var(--border-width) solid var(--border); border-radius: var(--radius-panel);
+  }
+  [data-depth="0"] { box-shadow: var(--depth-0); }
+  [data-depth="1"] { box-shadow: var(--depth-1); }
+  [data-depth="2"] { box-shadow: var(--depth-2); }
+
+  /* the three text roles (0.16.0): titles → font-title, headings → font-heading, the rest → font-body (above) */
+  .kit-text[data-kind="display"], .kit-text[data-kind="title"] { font-family: var(--font-title); }
+  .kit-text[data-kind="heading"], .kit-card-title, .kit-roomcode-box { font-family: var(--font-heading); }
+  .kit-text[data-kind="caption"], .kit-listrow-detail { color: var(--muted); }
+  .kit-text:is([data-kind="display"], [data-kind="title"], [data-kind="heading"]),
+  .kit-card-title, .kit-button, .kit-tab, .kit-badge { text-transform: var(--text-case); }
+  :where(.kit-page, .kit-screen, .kit-toasts, .kit-scope) :focus-visible { filter: var(--glow); }
+
+  /* Appearing: panels and cards play the style's entrance once (fade, float, pop, blink, flicker) */
+  .kit-panel, .kit-card { animation: var(--enter) var(--motion-normal) var(--ease) backwards; }
+  /* A dialog dims what's under it, fading the dim in (its panel plays the entrance above).
+     A screen opened over another screen dims too, dialog or not: the screen under it is hidden (ScreenStack data-covered),
+     so the top one carries the one dim over the game — e.g. Rules (not a dialog) opened from Pause (a dialog) */
+  .kit-screen[data-dialog], .kit-layer:is([data-over], [data-dim]) > .kit-screen {
+    background: color-mix(in srgb, var(--bg) 70%, transparent); transition: background-color var(--motion-normal) var(--ease); }
+  @starting-style {
+    /* (the first screen over the game's own layer, ScreenStack data-dim: fades its dim in like a dialog — 0.7.0) */
+    .kit-screen[data-dialog], .kit-layer[data-dim] > .kit-screen { background-color: transparent; }
+    /* opened over another screen: the dim was already there (the screen under it hides at once), so no fade-in flash */
+    .kit-layer[data-over] > .kit-screen { background-color: color-mix(in srgb, var(--bg) 70%, transparent); }
+  }
+
+  /* Pressing: things shrink and/or sink (the style decides how much and how fast).
+     A sinking button drops onto its shadow, so the shadow goes. */
+  button.kit-target { transition: transform var(--motion-fast) var(--ease), background-color var(--motion-fast) var(--ease), box-shadow var(--motion-fast) var(--ease); }
+  button.kit-target:active:not(:disabled) { transform: translateY(var(--press-shift)) scale(var(--press-scale)); }
+  .kit-button:active:not(:disabled) { box-shadow: none; }
+
+  .kit-button, .kit-input, .kit-picker, .kit-tabs, .kit-badge, .kit-progress, .kit-avatar,
+  .kit-toggle-track, .kit-toggle-thumb, .kit-tab, .kit-slider::-webkit-slider-runnable-track,
+  .kit-slider::-webkit-slider-thumb { border-radius: var(--radius-control); }
+  .kit-slider::-moz-range-track, .kit-slider::-moz-range-thumb { border-radius: var(--radius-control); }
+  .kit-card { border-radius: var(--radius-panel); }
+  .kit-panel, .kit-card, .kit-button, .kit-input, .kit-picker, .kit-tabs, .kit-badge, .kit-progress, .kit-avatar,
+  .kit-toggle-track, .kit-toggle-thumb, .kit-tab { corner-shape: var(--corner-shape); }
+  /* The ink line: around filled buttons and badges, and framing bars and switch tracks */
+  .kit-toggle-track, .kit-progress { outline: var(--border-width) solid var(--ink); }
+
+  .kit-button, .kit-input, .kit-card, .kit-badge { border-width: var(--border-width); border-color: var(--border); }
+  .kit-button { box-shadow: var(--depth-0); }
+  .kit-button[data-variant="primary"] { background: var(--primary); color: var(--on-primary); border-color: var(--ink); filter: var(--glow); }
+  .kit-button[data-variant="secondary"] { background: var(--surface); color: var(--on-surface); }
+  .kit-button[data-variant="ghost"] { background: transparent; border-color: transparent; box-shadow: none; }
+  .kit-button[data-variant="danger"] { background: var(--danger); color: var(--on-danger); border-color: var(--ink); }
+  .kit-spinner { border-color: currentColor; border-inline-end-color: transparent; }
+
+  .kit-toggle-track { background: var(--muted); transition: background-color var(--motion-fast) var(--ease); }
+  .kit-toggle[data-state="on"] .kit-toggle-track { background: var(--primary); filter: var(--glow); }
+  .kit-toggle-thumb { background: var(--surface); box-shadow: var(--depth-1); transition: transform var(--motion-fast) var(--ease); }
+
+  .kit-slider::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--primary) calc(var(--kit-fill, 0) * 100%), var(--border) 0); }
+  .kit-slider::-moz-range-track { background: var(--border); }
+  .kit-slider::-moz-range-progress { background: var(--primary); block-size: 0.5rem; border-radius: var(--radius-control); }
+  .kit-slider::-webkit-slider-thumb { background: var(--surface); border: var(--border-width) solid var(--border); box-shadow: var(--depth-1); }
+  .kit-slider::-moz-range-thumb { background: var(--surface); border: var(--border-width) solid var(--border); box-shadow: var(--depth-1); }
+
+  .kit-picker, .kit-tabs, .kit-input { background: var(--surface); color: var(--on-surface); border: var(--border-width) solid var(--border); }
+  .kit-input { caret-color: var(--primary); }
+  .kit-tab { color: var(--muted); }
+  .kit-carousel-dot { background: var(--border); border-radius: 50%; }
+  .kit-carousel-dot[data-state="on"] { background: var(--primary); filter: var(--glow); }
+  .kit-tab[data-state="active"] { background: var(--primary); color: var(--on-primary); }
+
+  .kit-listrow + .kit-listrow { border-block-start: var(--border-width) solid var(--border); }
+
+  /* A scroll box's "more this way" cue (0.10.0): its top / bottom edge fades out while there's more above / below
+     (ScrollArea.tsx sets data-more-start / data-more-end). A mask only reads opacity — black = shown, transparent =
+     faded — so these two words are not paint. Fade height: --kit-scroll-fade (default 2rem), but never more than
+     what's hidden that way (--kit-more-start / -end, from ScrollArea.tsx): a sliver hidden → a sliver of fade, and
+     the fade grows in as you scroll away from an end. Nothing is animated, so reduce motion has nothing to stop. */
+  .kit-scroll { --kit-fade-start: black; --kit-fade-end: black; }
+  .kit-scroll[data-more-start] { --kit-fade-start: transparent; }
+  .kit-scroll[data-more-end] { --kit-fade-end: transparent; }
+  .kit-scroll:is([data-more-start], [data-more-end]) {
+    mask-image: linear-gradient(to bottom, var(--kit-fade-start), black min(var(--kit-scroll-fade, 2rem), var(--kit-more-start, 2rem)),
+      black calc(100% - min(var(--kit-scroll-fade, 2rem), var(--kit-more-end, 2rem))), var(--kit-fade-end)); }
+
+  .kit-card { background: var(--surface) var(--panel-texture); color: var(--on-surface); }
+  .kit-card[data-state="selected"] { border-color: var(--primary); outline: 0.1875rem solid var(--primary); outline-offset: -0.1875rem; }
+
+  .kit-badge[data-variant="neutral"] { background: var(--surface); color: var(--on-surface); }
+  .kit-badge[data-variant="primary"] { background: var(--primary); color: var(--on-primary); border-color: var(--ink); }
+  .kit-badge[data-variant="danger"] { background: var(--danger); color: var(--on-danger); border-color: var(--ink); }
+
+  /* Initials always in the body font at semibold, whatever they sit in: small, heavy display letters turn to blobs */
+  .kit-avatar { background: var(--kit-avatar-color, var(--primary)); color: var(--on-primary); font-family: var(--font-body); text-transform: none; }
+  .kit-avatar[data-state="active"] { outline: 0.1875rem solid var(--accent); outline-offset: 0.125rem; }
+
+  .kit-progress { background: var(--border); }
+  .kit-progress-fill { transition: inline-size var(--motion-normal) var(--ease); filter: var(--glow); }
+  .kit-progress[data-variant="primary"] .kit-progress-fill { background: var(--primary); }
+  .kit-progress[data-variant="accent"] .kit-progress-fill { background: var(--accent); }
+  .kit-progress[data-variant="danger"] .kit-progress-fill { background: var(--danger); }
+}
+
+/* Entrances named by the style's "enter" setting */
+@keyframes kit-fade { from { opacity: 0; } }
+@keyframes kit-float { from { opacity: 0; transform: translateY(0.75rem); } }
+@keyframes kit-pop { from { opacity: 0; transform: scale(0.85); } }
+@keyframes kit-attention { 0% { transform: scale(1); } 35% { transform: scale(1.35); } 100% { transform: scale(1); } }
+@keyframes kit-blink { 0%, 24%, 50%, 74% { opacity: 0; } 25%, 49%, 75%, 100% { opacity: 1; } }
+@keyframes kit-flicker { 0% { opacity: 0; } 10% { opacity: 0.8; } 20% { opacity: 0.1; } 35% { opacity: 1; } 45% { opacity: 0.3; } 60%, 100% { opacity: 1; } }
+
+/* ───────────── Screen column · swipe · slide (0.12.0) ───────────── */
+@layer kit-base {
+  /* <Screen column>: a phone-shaped game on a wide window — the slots sit in a centred column a phone's width
+     (9:16 of the window's height, at least 22.5rem; or --kit-column-w), while the backdrop covers the whole window */
+  .kit-screen[data-column] {
+    padding-inline-start: max(var(--gap-m), env(safe-area-inset-left), calc((100% - var(--kit-column-w, max(22.5rem, 100dvh * 9 / 16))) / 2 + var(--gap-m)));
+    padding-inline-end: max(var(--gap-m), env(safe-area-inset-right), calc((100% - var(--kit-column-w, max(22.5rem, 100dvh * 9 / 16))) / 2 + var(--gap-m)));
+  }
+  /* Short windows (a phone on its side): the whole width; the bottom-centre slot (a title) moves left of the centre,
+     so the centre keeps the window's height */
+  @media (max-height: 30rem) {
+    .kit-screen[data-column] {
+      padding-inline-start: max(var(--gap-m), env(safe-area-inset-left)); padding-inline-end: max(var(--gap-m), env(safe-area-inset-right));
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+      grid-template-areas: "top-left center top-right" "bottom center ." "bottom-left center bottom-right";
+    }
+    .kit-screen[data-column] > [data-slot="bottom"] { place-self: center; }
+  }
+  /* <Screen swipe>: the whole screen catches the swipe, not just its slots */
+  .kit-screen[data-swipe] { pointer-events: auto; }
+  .kit-screen[data-slide-edge="bottom"] { --kit-slide-off: translateY(100%); }
+  .kit-screen[data-slide-edge="top"] { --kit-slide-off: translateY(-100%); }
+  .kit-screen[data-slide-edge="left"] { --kit-slide-off: translateX(-100%); }
+  .kit-screen[data-slide-edge="right"] { --kit-slide-off: translateX(100%); }
+}
+@layer kit-style {
+  /* <Screen slide>: in from its edge / out to it, at the style's normal pace (out stays out until the game removes it) */
+  .kit-screen[data-slide="in"] { animation: kit-slide-in var(--motion-normal) var(--ease) both; }
+  .kit-screen[data-slide="out"] { animation: kit-slide-out var(--motion-normal) var(--ease) both; }
+}
+@keyframes kit-slide-in { from { transform: var(--kit-slide-off); } }
+@keyframes kit-slide-out { to { transform: var(--kit-slide-off); } }

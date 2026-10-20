@@ -1,0 +1,25 @@
+{
+  "_help": {
+    "_file": "How the game picks between versions of a sound (the sounds themselves — files, loudness, variation, cooldowns — are in content/audio.json, the Dev Kit's Sound tab). A bigger popped group plays goop.pop lower and louder.",
+    "popSmallCells": "A popped group this size or smaller plays goop.pop as it is.",
+    "popBigCells": "A popped group this size or bigger plays goop.pop at its lowest and loudest (popBigPitch, popBigVolumeDb). In between it slides.",
+    "popBigPitch": "How much lower the biggest pops are, in semitones (-12 = an octave lower).",
+    "popBigVolumeDb": "How much louder the biggest pops are, in dB."
+  },
+  "_labels": {
+    "popSmallCells": "Small pop: up to (cells)",
+    "popBigCells": "Big pop: from (cells)",
+    "popBigPitch": "Big pop: lower by (semitones)",
+    "popBigVolumeDb": "Big pop: louder by (dB)"
+  },
+  "_ranges": {
+    "popSmallCells": [1, 20, 1],
+    "popBigCells": [2, 40, 1],
+    "popBigPitch": [-12, 0, 0.5],
+    "popBigVolumeDb": [0, 6, 0.5]
+  },
+  "popSmallCells": 4,
+  "popBigCells": 16,
+  "popBigPitch": -5,
+  "popBigVolumeDb": 3
+}
