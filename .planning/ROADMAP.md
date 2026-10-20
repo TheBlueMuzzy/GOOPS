@@ -40,7 +40,7 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
 - 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
   note: Muzzy (2026-10-19, F07): "story is beta. alpha is playable game"
-- 🔨 F10 ❓ Phone gestures without conflicts — must:alpha
+- ✅ F10 ❓ Phone gestures without conflicts — must:alpha · decided 2026-10-20: every finger is its own gesture (swap timer at the holding finger), taps contextual like a PC click (GDD §4, gestures.md §7)
   note: gesture list + 14-line phone checklist done (research/gestures.md); waits for Muzzy's phone session (2026-10-19: "developing fully on PC for now")
 - ✅ F11 Look: Muzzy's art; kit Neon only where there's no art; pixel look later (Ideas) — sound still open — must:alpha
 - ✅ F12 ❓ Tutorial: "your first day", a scripted staged day (v1 style, Muzzy 2026-10-19) — must:alpha · needs: F03, F04, F06 · decided 2026-10-19: research/tutorial.md (15 steps + 3 breakdown lessons; answers in §8)

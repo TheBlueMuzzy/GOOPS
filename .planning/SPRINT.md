@@ -4,8 +4,9 @@ What changes for Muzzy: after his phone session, the phone touches follow his ca
 
 ## F10 ❓ Phone gestures without conflicts
 Check: Muzzy's 14-line phone session done and written up · his calls on C-1 (two thumbs) and C-2 (tap on goop vs rotate) in GDD §4
-- [ ] 🤖 1. Refresh the phone checklist for today's game (C-10 already fixed by F58; swap = trade with the next piece from rank 3; the HUD's top-right is pause; play link at ?rank=3), then write the session results + Muzzy's calls into GDD §4 and gestures.md — .planning/research/gestures.md
-- [ ] 🙋 2. The 10-minute phone session (14 lines, note any that misbehave), then decide two thumbs (C-1) and tap on goop that isn't ready (C-2) — .planning/research/gestures.md
+Checked: calls in GDD §4 (touch finger by finger, contextual taps) + gestures.md §7 · Muzzy chose to decide without the phone; the 15-line session is F28 task 15 (the re-check)
+- [x] 🤖 1. Refresh the phone checklist for today's game (C-10 already fixed by F58; swap = trade with the next piece from rank 3; the HUD's top-right is pause; play link at ?rank=3), then write the session results + Muzzy's calls into GDD §4 and gestures.md — .planning/research/gestures.md
+- [x] 🙋 2. The 10-minute phone session (14 lines, note any that misbehave), then decide two thumbs (C-1) and tap on goop that isn't ready (C-2) — decided 2026-10-20 without the phone (gestures.md §7); the session moves to task 15 — .planning/research/gestures.md
 
 ## F28 🎮 Gesture fixes
 Check: e2e/gestures.mjs with real fingers (touch events) covers every tank gesture + the fixed collisions, in check:full · touch knobs live in the Dev Kit · Muzzy re-checks the lines that failed on his phone
@@ -15,6 +16,7 @@ Check: e2e/gestures.mjs with real fingers (touch events) covers every tank gestu
 - [x] 🤖 6. Finger e2e for every tank gesture (tap halves, drag spin, drag down, flicks, hold-to-swap, slow press, diagonal lock, second finger); add to check:full — e2e/gestures.mjs, scripts/check-all.mjs
 - [x] 🤖 7. Phone wording into every lesson's Phone slot (breakdown + unlock lessons) — content/lessons/
 - [ ] 🤖 8. (tuning) tap / hold timings from the session notes (holdDelayMs, holdToSwapMs, thresholds) — content/tuning/tank.json
+- [ ] 🙋 15. Phone re-check: the 15 lines of gestures.md §3 on your phone (incl. two thumbs + the swap timer at your finger) — .planning/research/gestures.md
 
 ## F31 🎮 Your first day
 Check: e2e/first-day.mjs plays the whole day A1→F3 (keys + finger) and lands at rank 1 · leaving mid-day restarts the phase · Replay lessons replays it · shots at 390x844, 360x780, 1440x900 · Muzzy plays it
@@ -33,3 +35,4 @@ Check: e2e/first-day.mjs plays the whole day A1→F3 (keys + finger) and lands a
 - F28 task 6 (Claude, 2026-10-20): `e2e/gestures.mjs` (port 5391, in check:full): 36 finger checks, ~42 s, green 3 runs in a row. C-1 / C-2 / C-3 are one block each marked "Muzzy's call pending — F28 task 5" (they assert today's behaviour; flip them after his calls). Every gesture behaved as gestures.md §1a says (only stale bit: T8 still says "swaps with the held one", it's the next piece now). Surprises, all test-side: each CDP touch event waits for a frame (100–150 ms headless, ~30–60 ms with the GPU flags repairs.mjs uses), so awaiting each step made a 4-step flick 230–600 ms, past flickMs — the script fires a swipe's steps without awaiting each (CDP keeps the order). CDP multi-touch: a `touchEnd` lifts the fingers it LISTS (a touchMove leaving one out does not lift it). The "first tap after a drag loses its click" pitfall never showed — the game listens to pointer events, not clicks.
 - Retro change from Sprint 09: helper briefs name the next free TDD decision number (next free: D14); a HUD change gets a quick mock-up or a 30-second play before it's built.
 - Found by the phone-wording helper (2026-10-20), logged not fixed (not this task's code): (1) the game's own HUD line "Laser broken — swipe up to fix" says "swipe up" on PC too (it isn't a lesson line, so it has no Keys/Mouse/Phone versions) · (2) on a 390 phone the lesson outline round the next-piece window sits ~2 px from the screen edge, and the LASER bar's outline almost touches the CONTROLS label (breathing room) · (3) the swap unlock lines run long (keys 15, phone 18, mouse 22 words vs the ~15 rule) — a wording call for Muzzy. Its "sideways shots" note was a false alarm: 768x343 is the short desktop window; 844x390 lives only in e2e/portrait.mjs (the "Turn your phone upright" card).
+- F10 decided (Muzzy, 2026-10-20, without the phone): C-1 = every finger is its own gesture (tap/hold/drag/flick each work alongside another finger; swap timer next to the holding finger; keys keep the HUD bar) · C-2 = today's contextual taps (= PC click), incl. the falling piece rotates by screen half. GDD §4 + gestures.md §7. The phone session becomes task 15 (re-check).

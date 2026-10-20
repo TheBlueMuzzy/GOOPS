@@ -225,3 +225,10 @@ Elsewhere: `e2e/poke.mjs` (mouse click on not-ready goop jiggles it), `e2e/repai
 - Not tested with pointer at all: **tap left half**, **drag down = fast drop**, **quick flick down**, **flick up = console**, **hold 1.5 s = swap** (only the keys are), **lift between 0.25 and 1.5 s = nothing**.
 - No test for **second finger** behaviour, **diagonal** lock, the **flick-at-end-of-sideways-drag** case (C-6), **tap on not-ready goop doesn't rotate** (poke.mjs checks the jiggle, not the missing rotation), or **taps outside the tank's sides** (C-10).
 - No test of the periscope **drag** (only taps).
+
+---
+
+## 7. Decided (Muzzy, 2026-10-20 — without the phone session; it becomes the re-check of F28)
+- **C-1 two thumbs → every finger is its own gesture.** "One touch at a time felt good", but a second finger does what its own touch says, alongside the first: tap = rotate / zap, hold still = swap, drag = spin / fast drop, flick up = console ("swiping left and up at the same time, it will move the tank left and then return to console"). **The swap timer shows next to the finger** that is holding it; a drag has no marker. Keys keep the HUD Swap bar.
+- **C-2 tap on goop → keep today's contextual taps** (= a mouse click on PC): background → rotate by screen half · the falling piece → rotate by screen half · landed goop still filling → jiggle + message · filled goop under the line → zap · filled goop above the line → jiggle + message.
+- C-3 (slow press swallowed), C-4 (resting thumb swaps), C-5 (diagonal lock), C-7, C-9: no change until the phone re-check shows a problem (Muzzy: one touch at a time felt good). C-6 and C-8: fixed (F28 task 4). C-10: fixed (F58).
