@@ -69,7 +69,7 @@ How to read each step:
 
 **Rules for every step**
 - A paused message goes on with a click, Space or Enter. While it's up, clicks and keys don't reach the tank.
-- Controls not taught yet are **off** (no "nope" sound). Swap is off until free play.
+- Controls not taught yet are **off** (no "nope" sound). Swap stays off until its rank (F59: rank 3 — free play doesn't turn it on).
 - The game's own short messages ("Still filling", "Above the pressure line") still show — they teach. They hide while a lesson message is up.
 - Natural cracks are off, machines are locked (rank 0), and piece size stays at 4 cells for the whole day (§6: the size clock would reach 6-cell pieces by free play otherwise).
 - Leaving mid-day (End shift, closing the page): the day isn't done. Next time it restarts **at the start of the phase** you were in. So each phase sets up its own tank from scratch.
@@ -191,7 +191,7 @@ How to read each step:
 ### Phase F — The rest of the day
 
 #### F1 · Work to the quota
-- **Set up:** the real rank-0 shift from here on: random 4-cell pieces in 4 colours, natural cracks on (the crack hill), pressure rises at the real speed, integrity drains for real, swap on. **Safety rails** until the quota is met: pressure can't pass 90%; the tank can't rupture (integrity stops at 20%; if a piece has no room at the top, the runner clears the top goop instead). If D4 hasn't fired, the first crack goes just out of view.
+- **Set up:** the real rank-0 shift from here on: random 4-cell pieces in 4 colours, natural cracks on (the crack hill), pressure rises at the real speed, integrity drains for real, swap still off (it unlocks at rank 3, F59). **Safety rails** until the quota is met: pressure can't pass 90%; the tank can't rupture (integrity stops at 20%; if a piece has no room at the top, the runner clears the top goop instead). If D4 hasn't fired, the first crack goes just out of view.
 - **Says** (paused, as free play starts): "Cracks come faster as pressure rises. Zap goop to keep it down." Then: "Seal {left} more to meet the quota."
 - **To move on:** the quota is met → the game's own banner, "Quota met! Every crack now is a bonus." (same banner as every shift).
 - **Hint (20 s without a seal):** pointer on the nearest open crack; "Cover a crack with its colour, then zap it."

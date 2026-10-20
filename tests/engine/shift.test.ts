@@ -166,17 +166,94 @@ describe('wall kick modes', () => {
   })
 })
 
-describe('hold', () => {
-  it('starts with a held piece and swaps it in place', () => {
-    const shift = createShift(realConfig(), { seed: 7, rank: 1 })
-    const heldCells = shift.state.heldCells!
-    expect(heldCells.length).toBe(4)
+// F59: swap trades the falling piece with the NEXT one (there is no held piece any more)
+describe('swap (hold)', () => {
+  // the piece's shape as offsets from its first cell (where it is doesn't matter, only its shape; columns wrap round
+  // the 30-column tank, so column 29 is one left of column 0)
+  const shapeOf = (cells: [number, number][]) => cells.map(([x, y]) => [((x - cells[0][0] + 45) % 30) - 15, y - cells[0][1]])
+
+  it('no held piece: a shift starts with only the falling piece and the next one', () => {
+    const shift = createShift(realConfig(), { seed: 7, rank: 3 })
+    expect('held' in shift.state).toBe(false)
+    expect('heldCells' in shift.state).toBe(false)
+    expect(shift.state.next).not.toBeNull()
+  })
+
+  it('the next piece comes in where the falling one was, and the falling one becomes the next', () => {
+    const shift = createShift(realConfig(), { seed: 7, rank: 3 })
+    shift.tick(400) // let it fall a little first: the swapped-in piece keeps its place
+    const s = shift.state
+    const before = { cells: s.piece!.cells, colors: s.piece!.colors, next: s.next!, nextCells: s.nextCells!, rotation: s.piece!.rotation }
+    const lowest = (cells: [number, number][]) => Math.max(...cells.map(([, y]) => y))
+    shift.takeEvents()
     shift.act({ type: 'hold' })
     expect(ofType(shift.takeEvents(), 'hold')).toHaveLength(1)
-    const origin = shift.state.piece!.cells[0]
-    const rel = shift.state.piece!.cells.map(([x, y]) => [x - origin[0], y - origin[1]])
-    const expected = heldCells.map(([x, y]) => [x - heldCells[0][0], y - heldCells[0][1]])
-    expect(rel).toEqual(expected)
+    expect(shapeOf(s.piece!.cells)).toEqual(shapeOf(before.nextCells))
+    expect(s.piece!.colors).toEqual(before.next)
+    expect(Math.abs(lowest(s.piece!.cells) - lowest(before.cells))).toBeLessThanOrEqual(3) // same spot (about its origin)
+    expect(s.next).toEqual(before.colors) // the falling piece is the next one now (its base shape, unturned)
+    expect(before.rotation).toBe(0)
+    expect(shapeOf(s.nextCells!)).toEqual(shapeOf(before.cells))
+  })
+
+  it('swapping again trades them back', () => {
+    const shift = createShift(realConfig(), { seed: 11, rank: 3 })
+    const s = shift.state
+    const first = { colors: s.piece!.colors, shape: shapeOf(s.piece!.cells), next: s.next }
+    shift.act({ type: 'hold' })
+    shift.act({ type: 'hold' })
+    expect(s.piece!.colors).toEqual(first.colors)
+    expect(shapeOf(s.piece!.cells)).toEqual(first.shape)
+    expect(s.next).toEqual(first.next)
+  })
+
+  it('no room where the falling piece is: refused, nothing changes', () => {
+    // a lesson's chosen pieces: a one-column piece falling, a two-column one next
+    const shift = createShift(realConfig(), { seed: 1, rank: 6, training: {} })
+    shift.train({ type: 'queue', pieces: [{ shape: 'T_I', color: 1 }, { shape: 'T_O', color: 2 }] })
+    shift.train({ type: 'spawn' })
+    const s = shift.state
+    // goop on both sides of the falling column, all the way down: the two-wide piece has no room there
+    // (straight into the grid: train('goop') would let it fall)
+    const col = s.piece!.cells[0][0]
+    for (let y = 0; y < s.height; y++) for (const x of [col - 1, col + 1]) s.grid[y * s.width + ((x + s.width) % s.width)] = 3
+    const before = { cells: s.piece!.cells, next: s.next }
+    shift.takeEvents()
+    shift.act({ type: 'hold' })
+    expect(shift.takeEvents()).toEqual([{ type: 'reject', action: 'hold' }])
+    expect(s.piece!.cells).toEqual(before.cells)
+    expect(s.next).toEqual(before.next)
+  })
+
+  it('before it unlocks (swap: false) it does nothing at all — no swap, no "nope"', () => {
+    const shift = createShift(realConfig(), { seed: 7, rank: 0, swap: false })
+    const s = shift.state
+    const before = { cells: s.piece!.cells, next: s.next }
+    expect(shift.allows('hold')).toBe(false)
+    expect(shift.allows('spin')).toBe(true)
+    shift.takeEvents()
+    shift.act({ type: 'hold' })
+    expect(shift.takeEvents()).toEqual([])
+    expect(s.piece!.cells).toEqual(before.cells)
+    expect(s.next).toEqual(before.next)
+  })
+
+  it('a snapshot keeps swap off', () => {
+    const shift = createShift(realConfig(), { seed: 7, rank: 0, swap: false })
+    expect(shift.snapshot().options.swap).toBe(false)
+  })
+
+  it("a lesson's chosen pieces still all come, in order, after a swap", () => {
+    const config = realConfig()
+    const shift = createShift(config, { seed: 1, rank: 6, training: {} })
+    shift.train({ type: 'queue', pieces: [{ shape: 'T_I', color: 1 }, { shape: 'T_O', color: 2 }, { shape: 'T_L', color: 3 }] })
+    shift.train({ type: 'spawn' }) // 1 falling, 2 next
+    shift.act({ type: 'hold' }) // 2 falling, 1 next
+    expect(shift.state.piece!.colors[0]).toBe(2)
+    expect(shift.state.next![0]).toBe(1)
+    dropPiece(shift, config) // 1 comes in, 3 is next
+    expect(shift.state.piece!.colors[0]).toBe(1)
+    expect(shift.state.next![0]).toBe(3)
   })
 })
 

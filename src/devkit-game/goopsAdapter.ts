@@ -25,7 +25,7 @@ export function eventLine(e: ShiftEvent): string | null {
     case 'quotaMet': return 'crack quota met'
     case 'rupture': return `RUPTURE (${e.reason === 'overflow' ? 'no room for the next piece' : 'too many open cracks'})`
     case 'end': return `shift over: ${e.status}`
-    case 'hold': return 'swapped with the held piece'
+    case 'hold': return 'swapped with the next piece'
     case 'breakdown': return `${e.machine} BROKE`
     case 'repaired': return `${e.machine} repaired`
     case 'prime': return `broken laser: group ${e.groupId} primed (zap again)`

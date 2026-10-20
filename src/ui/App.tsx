@@ -5,7 +5,7 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, GameOver, Hud, HudText, kitScreens, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens } from './kit'
+import { Bar, GameOver, Hud, HudText, kitScreens, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
@@ -17,12 +17,14 @@ import type { Message } from '../game/messages'
 import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '../game/lessons/goopsLessons'
 import { LessonView } from '../game/lessons/LessonView'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
+import { unlockLessons } from '../game/lessons/unlockLessons'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { rankInfo, rewardShift, type Progress, type ShiftReward } from '../progress/progression'
+import { isUnlocked, rankInfo, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
+import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
 import { art } from './art'
 import { useShort } from './useShort'
@@ -39,15 +41,21 @@ const settings = settingsJson as SettingsSchema
 const MACHINES: MachineId[] = ['laser', 'controls', 'visor']
 const fill = (s: string, vars: Record<string, number | string>) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 
+// The rank the player plays at: their saved rank. Dev/tests: ?rank=12 forces one. The shift (colours, starting junk,
+// crack quota) and everything a rank unlocks (F59: isUnlocked — the next-piece window, swap, the Upgrades button) use it.
+function playerRank(progress: Progress): number {
+  const forced = import.meta.env.DEV ? new URLSearchParams(location.search).get('rank') : null
+  return forced !== null ? Number(forced) : rankInfo(progress).rank
+}
+
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.
-// The shift plays at the player's saved rank (colours, starting junk, crack quota). Dev/tests: ?rank=12 forces one.
 // training = a lesson's shift (F30, src/engine/training.ts): empty, held still, the lesson sets it up step by step.
+// Swap works only from its rank, and never in a lesson's shift (F59).
 function newEngine(progress: Progress, training = false): ShiftEngine {
-  const params = new URLSearchParams(location.search)
-  const seed = Number(params.get('seed')) || Math.floor(Math.random() * 1e9)
-  const forced = import.meta.env.DEV ? params.get('rank') : null
-  const rank = forced !== null ? Number(forced) : rankInfo(progress).rank
-  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, ...(training ? { training: {} } : {}) })
+  const seed = Number(new URLSearchParams(location.search).get('seed')) || Math.floor(Math.random() * 1e9)
+  const rank = playerRank(progress)
+  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, swap: !training && isUnlocked('swap', rank),
+    ...(training ? { training: {} } : {}) })
 }
 type LessonStart = { id: string; step: number | string }
 
@@ -71,6 +79,21 @@ const onMessage = (m: Message) => {
   if (lessonPlay.messageUp()) return // a lesson message is up: the game's own messages keep quiet (F30)
   const id = toast(text.messages[m.key], { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
+}
+
+// The end report's XP line: what the shift earned; a rank-up if it crossed one, naming what the new rank unlocked (F59:
+// the progression unlocks and the machines, in the order they come)
+function rankUpLine(r: ShiftReward): string {
+  const xp = r.xp.toLocaleString('en')
+  if (r.rankUps <= 0) return fill(text.end.xpValue, { xp })
+  const from = r.before.rank, to = r.after.rank
+  const gained: [number, string][] = [
+    ...unlocksBetween(from, to).map((u): [number, string] => [unlockRank(u), text.unlocks[u]]),
+    ...MACHINES.filter((id) => breakdowns[id].unlockRank > from && breakdowns[id].unlockRank <= to).map((id): [number, string] => [breakdowns[id].unlockRank, text.unlocks[id]]),
+  ]
+  gained.sort((a, b) => a[0] - b[0])
+  return gained.length ? fill(text.end.xpRankUpNew, { xp, rank: to, what: gained.map(([, name]) => name).join(', ') })
+    : fill(text.end.xpRankUp, { xp, rank: to })
 }
 
 // console = on the console · leaving = sliding away to the tank · shift = in the tank (report included) · arriving = sliding back
@@ -103,12 +126,14 @@ export function App() {
   // (dev) makes the first "Start shift" play that lesson
   const pendingLesson = useRef<LessonStart | null>(null)
   const urlLesson = useRef<LessonStart | null>(lessonFromUrl())
+  const freshShift = useRef(false) // F59: a real shift just started — its unlock lesson (if any) plays once the tank shows
   const start = useCallback((lesson?: LessonStart) => {
     lessonPlay.stop()
     const e = lesson ? lessonPlay.attach(newEngine(progressRef.current, true)) : newEngine(progressRef.current)
     // a real shift: its machines' first breakdowns may start their lessons (F32)
     if (!lesson) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     pendingLesson.current = lesson ?? null
+    freshShift.current = !lesson
     engineRef.current = e
     setResult(null); setHud(null); setEngine(e)
   }, [])
@@ -118,10 +143,12 @@ export function App() {
     urlLesson.current = null
     start(lesson ?? undefined); setMeterFrom(null); setMode('leaving')
   }, [start])
-  // the tank is on screen: a lesson waiting for it starts now
+  // the tank is on screen: a lesson waiting for it starts now — or, at the start of a real shift, what this rank
+  // unlocked that the device hasn't been shown yet (F59, one per shift start: unlockLessons.ts)
   useEffect(() => {
     const lesson = pendingLesson.current
     if (mode === 'shift' && engine && lesson) { pendingLesson.current = null; lessonPlay.start(lesson.id, lesson.step) }
+    else if (mode === 'shift' && engine && freshShift.current) { freshShift.current = false; unlockLessons.shiftStarted(engine.state.rank) }
   }, [mode, engine])
   // back to the console (swipe up / "Back to the console" / End shift): it slides up over the tank, the meter fills
   const toConsole = useCallback(() => {
@@ -212,9 +239,8 @@ export function App() {
       if (!result) return null
       const stats = [{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` },
         // what the shift earned, and a rank-up if it crossed one
-        { label: text.end.xp, value: result.reward.rankUps > 0
-          ? fill(text.end.xpRankUp, { xp: result.reward.xp.toLocaleString('en'), rank: result.reward.after.rank })
-          : fill(text.end.xpValue, { xp: result.reward.xp.toLocaleString('en') }) }]
+        // (F59: and what that rank unlocked)
+        { label: text.end.xp, value: rankUpLine(result.reward) }]
       const again = () => { screens.pop(); start() }
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
@@ -227,6 +253,24 @@ export function App() {
             onRetry={again} onQuit={toConsole} onSwipeUp={toConsole} />
     },
   }), [result, start, toConsole])
+
+  // the console between shifts: Settings, and the Upgrades screen (F59, from its rank: the scraps in hand — alpha has no
+  // upgrades to buy yet, so it says when they come)
+  const rank = playerRank(progress)
+  const scraps = Math.max(0, scrapsAt(rank, progress))
+  const idleScreens = useMemo(() => ({
+    ...kitScreens, // (Settings' buttons ask first: Replay lessons)
+    settings: SettingsScreen,
+    upgrades: () => (
+      <Modal title={text.upgrades.title} onBack={() => screens.pop()} backLabel={text.upgrades.back}>
+        <Text kind="heading">{fill(text.upgrades.scraps, { n: scraps.toLocaleString('en') })}</Text>
+        <Text>{text.upgrades.soon}</Text>
+      </Modal>
+    ),
+  }), [scraps])
+  const openUpgrades = useCallback(() => { screens.push('upgrades'); lessonPlay.screen('upgradesOpened') }, [])
+  // F59: on the console between shifts at upgrading's rank, its unlock lesson (once per device: unlockLessons.ts)
+  useEffect(() => { if (mode === 'console') unlockLessons.atConsole(rank) }, [mode, rank])
 
   // the console mid-shift: Settings and the pause menu (End shift throws the run away)
   const consoleScreens = useMemo(() => ({
@@ -260,10 +304,12 @@ export function App() {
   // lesson's own timers and the lesson holds the tank still (lessonPlay.speed)
   // (a phone held sideways: paused under the "Turn your phone upright" card, the game's own pause)
   const speed = open.length || sideways ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
-  // The HUD (F26, Muzzy's mock-up 2026-10-18): ONE top row — score · cracks (big, shrinking to fit) · Console button —
-  // then the tank, then a panel under it: the unlocked machines' bars with big names above (one centred, two or three
-  // evenly spaced), and the long integrity bar with its name inside. A phone on its side: the panel is a column beside
-  // the tank, headed by the crack count; the score and the Console button sit in the top corners beside the tank. Every bar reads the same way: full = good (laser charge, controls' room before overheating, visor signal,
+  // The HUD (F26, Muzzy's mock-up 2026-10-18; F59): ONE top row — score · the next-piece window (from its rank,
+  // centred over the tank's top edge where the goop drops in: ShiftStage hangs it there) · Console button — then the tank, then a panel under it: the unlocked machines' bars with
+  // big names above (one centred, two or three evenly spaced), and under them the integrity bar with its name inside and
+  // the crack count to its right (shrinking to fit). A short window: the panel is a column beside the tank, headed by
+  // the next-piece window and the crack count; the score and the Console button sit in the top corners beside the tank.
+  // Every bar reads the same way: full = good (laser charge, controls' room before overheating, visor signal,
   // tank integrity); below bars.lowAt it turns red and pulses, a broken machine flashes (content/tuning/hud.json).
   // The pressure readout hangs on the pressure line (ShiftStage); messages show just above the goop.
   // (Which bars the panel holds is known when the shift starts — machines unlock between shifts — so its height never
@@ -283,17 +329,21 @@ export function App() {
   const integrityAlert = ruptured ? 'flash' : hud && hud.integrity < low ? 'pulse' : undefined
   const integrityBar = hud && <Bar plain label={text.hud.integrity} labelAt="inside" width={short ? 1 : hudTuning.bars.integrityWidth} thickness="l"
     value={Math.round(hud.integrity * 100)} variant={integrityAlert ? 'danger' : 'primary'} alert={integrityAlert} />
-  const status = <HudText size="l" fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>
-  // (a phone on its side: the crack count heads the panel column, and the tank takes the whole height)
+  const status = <HudText size={short ? 'l' : 'm'} fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>
+  // F59: the next-piece window, from its rank (known when the shift starts, like the machines)
+  const showNext = !!engine && isUnlocked('nextPiece', engine.state.rank)
+  const nextWindow = hud && showNext ? <NextWindow piece={hud.next} label={text.hud.next} /> : undefined
+  // (a short window: the next-piece window and the crack count head the panel column, and the tank takes the whole height)
   const panel = hud && (short
-    ? <Stack gap="s">{status}{machineBars}{integrityBar}</Stack>
-    : <Stack gap="s">{unlocked.length > 0 && <Row gap="l" justify="center">{machineBars}</Row>}<Row justify="center">{integrityBar}</Row></Stack>)
+    ? <Stack gap="s">{nextWindow}{status}{machineBars}{integrityBar}</Stack>
+    : <Stack gap="s">{unlocked.length > 0 && <Row gap="l" justify="center">{machineBars}</Row>}<Row gap="m" justify="center">{integrityBar}<div className="hud-cracks">{status}</div></Row></Stack>)
   const readout = hud && <HudText size="s" live numbers>{fill(text.hud.pressureReadout, { n: Math.round(hud.pressure * 100) })}</HudText>
   return (
     <>
       {engine && mode !== 'console' && (
         <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length && !sideways}
-          panel={unlocked.length ? 'machines' : 'integrity'} side={short} readout={readout}
+          panel={unlocked.length ? 'machines' : 'integrity'} side={short} nextWindow={showNext && !short} next={short ? undefined : nextWindow}
+          readout={readout}
           onHud={setHud} onEnd={onEnd} onMessage={onMessage} onConsole={peekIn} />
       )}
       {mode === 'shift' && (
@@ -301,24 +351,25 @@ export function App() {
           {hud && (
             <Hud words={{ pause: text.hud.pause }} onPause={() => screens.push('pause')} oneRow
               vitals={<Score value={hud.score} compact />}
-              status={short ? undefined : status}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
               dock={panel} dockSide={short ? 'right' : 'bottom'} />
           )}
         </ScreenStack>
       )}
       {mode !== 'shift' && (
-        <ScreenStack screens={peeking ? consoleScreens : { ...kitScreens, settings: SettingsScreen }}>{/* (Settings' buttons ask first: Replay lessons) */}
+        <ScreenStack screens={peeking ? consoleScreens : idleScreens}>
           <Console progress={progress} shownFrom={peeking ? null : meterFrom} onSlideEnd={consoleSlid}
             phase={mode === 'console' || mode === 'peek' ? 'idle' : mode === 'leaving' || mode === 'peekOut' ? 'leaving' : 'arriving'}
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
-            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined} />
+            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined}
+            upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }} />
         </ScreenStack>
       )}
       <ToastStack place="at" variant="plain" /* just above the goop; words, not button-like plates (Muzzy 2026-10-18) */ />
       {/* F30: a lesson's message — in the tank a bubble in the kit Callout look; at the console mid-shift (F32) its words
           are on the monitor and this draws the spotlight; over a menu only a step's reaction ("That's the pause menu…") */}
-      {(mode === 'shift' || peeking) && <LessonView overMenu={open.length > 0} atConsole={peeking} />}
+      {/* (F59: and on the console between shifts — the Upgrades unlock lesson outlines its button there) */}
+      {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={open.length > 0} atConsole={mode !== 'shift'} />}
       {sideways && <UprightScreen />}
     </>
   )

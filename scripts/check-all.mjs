@@ -26,6 +26,7 @@ const FAST = [
 // (red on a short desktop window: the kit's swipe rule — SPRINT 08 Notes; add it back once that's fixed).
 const E2E = [
   ['lessons', 'e2e/lessons.mjs', ''],          // 5341
+  ['unlocks', 'e2e/unlocks.mjs', ''],          // 5344
   ['devkit-live', 'e2e/devkit-live.mjs', ''],  // 5282
   ['day', 'e2e/day.mjs', ''],                  // 5263
   ['repairs', 'e2e/repairs.mjs', ''],          // 5267

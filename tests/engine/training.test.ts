@@ -11,12 +11,11 @@ const training = (rules = {}, seed = 1) => {
 }
 
 describe('a training shift', () => {
-  it('starts empty: no goop, no piece, nothing held', () => {
+  it('starts empty: no goop, no piece', () => {
     const { shift } = training()
     const s = shift.state
     expect(s.grid.every((c) => c === 0)).toBe(true)
     expect(s.piece).toBeNull()
-    expect(s.held).toBeNull()
   })
 
   it('holds still: no pressure, no cracks, no integrity loss, no breakdowns over a long wait', () => {

@@ -17,6 +17,9 @@
     "hintBack": "Pull the periscope to go back",
     "hintRepair": "Repair the {name}!",
     "backToTank": "Back to the tank",
+    "upgrades": "Upgrades",
+    "upgradesLocked": "Upgrades: {n} scraps saved. Upgrading opens at rank {rank}.",
+    "upgradesOpen": "Upgrades: {n} scraps to spend",
     "machineNames": {
       "laser": "laser",
       "visor": "visor",
@@ -46,11 +49,26 @@
       "bottom left"
     ]
   },
+  "unlocks": {
+    "nextPiece": "next piece",
+    "swap": "swap",
+    "upgrades": "upgrades",
+    "visor": "visor",
+    "laser": "laser",
+    "controls": "controls"
+  },
+  "upgrades": {
+    "title": "Upgrades",
+    "scraps": "Scraps: {n}",
+    "soon": "The first upgrades arrive in the next update.",
+    "back": "Back"
+  },
   "hud": {
     "cracks": "CRACKS {n} / {total}",
     "cracksDone": "QUOTA MET · {n}",
     "pause": "Console",
     "swap": "Swapping piece",
+    "next": "Next piece",
     "integrity": "INTEGRITY",
     "rupture": "RUPTURE!",
     "laser": "LASER",
@@ -96,11 +114,12 @@
     "lostOverflow": "The tank overfilled and burst before you met the quota.",
     "xp": "XP",
     "xpValue": "+{xp}",
-    "xpRankUp": "+{xp} · Rank up! {rank}"
+    "xpRankUp": "+{xp} · Rank up! {rank}",
+    "xpRankUpNew": "+{xp} · Rank up! {rank} · New: {what}"
   },
   "lessons": {
     "gotIt": "Got it",
-    "replayed": "The machine lessons will play again.",
+    "replayed": "The lessons will play again.",
     "sample": {
       "welcome": "Goop drops into the tank from up here.",
       "falls": "It falls on its own.",
@@ -161,6 +180,19 @@
       "broke": "Your controls overheated. Held spins now turn the tank slowly.",
       "fix": "Turn the dial to the blinking light.",
       "fixed": "Fixed!\nEvery spin heats the Controls. Short rests cool them."
+    },
+    "unlock-window": {
+      "window": "New at your rank: this window shows the next piece."
+    },
+    "unlock-swap": {
+      "swap": {
+        "keys": "Swap unlocked! Hold Right Shift (or R) to trade the falling piece for the next one.",
+        "mouse": "Swap unlocked! Hold the mouse still on the tank (or hold Right Shift) to trade the falling piece for the next one.",
+        "phone": "Swap unlocked! Hold your finger still on the tank to trade the falling piece for the next one."
+      }
+    },
+    "unlock-upgrades": {
+      "upgrades": "Upgrades unlocked! Spend your scraps here."
     },
     "console-note": {
       "slow": "The tank keeps running at {consoleSpeed}% speed while you're here."

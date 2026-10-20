@@ -43,6 +43,9 @@ export interface ShiftOptions {
   // F30 lessons: a TRAINING shift (training.ts) — empty tank, no piece until the lesson brings one, everything held
   // still and off except what these rules (or later train({ type: 'rules' }) commands) turn on.
   training?: Partial<TrainingRules>
+  // F59: can the player swap the falling piece with the next one? (unlocked by rank — src/progress/progression.ts; off
+  // in a lesson's training shift). Left out = on. Off: 'hold' is a control that doesn't work (allows says no).
+  swap?: boolean
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -63,7 +66,6 @@ class Shift implements ShiftEngine {
 
   private piece: FallingPiece | null = null
   private nextDef: PieceDef
-  private heldDef: PieceDef | null
   private softDrop = false
   private lockMs: number | null = null // time spent resting on something; null = still falling
   private lockResets = 0 // spins/rotations that restarted the lock timer for this piece
@@ -109,9 +111,7 @@ class Shift implements ShiftEngine {
       piece: null,
       ghost: [],
       next: null,
-      held: null,
       nextCells: null,
-      heldCells: null,
       pressure: 0,
       pressureRow: height - 1,
       integrity: 1,
@@ -135,16 +135,9 @@ class Shift implements ShiftEngine {
       this.state.grid.set(options.startGrid)
       regroup(this.state, this.book)
     } else if (!this.training) this.placeJunk(junkCount(config, options.rank))
-    if (this.training) {
-      // a lesson's shift: nothing in the hold, and no piece until the lesson brings one in (train({ type: 'spawn' }))
-      this.heldDef = null
-      this.nextDef = this.randomDef()
-    } else {
-      // v1 starts every shift with a piece already in the hold.
-      this.heldDef = this.randomDef()
-      this.nextDef = this.randomDef()
-      this.spawnNext()
-    }
+    this.nextDef = this.randomDef()
+    // (a lesson's shift: no piece until the lesson brings one in — train({ type: 'spawn' }))
+    if (!this.training) this.spawnNext()
     this.refreshView()
   }
 
@@ -166,7 +159,7 @@ class Shift implements ShiftEngine {
     return structuredClone({
       kind: SNAPSHOT_KIND,
       version: SNAPSHOT_VERSION,
-      options: { seed: o.seed, rank: o.rank, wallKick: this.wallKick, modifiers: { ...this.mods }, abilities: o.abilities ?? [],
+      options: { seed: o.seed, rank: o.rank, wallKick: this.wallKick, modifiers: { ...this.mods }, abilities: o.abilities ?? [], swap: o.swap ?? true,
         ...(this.training ? { training: { ...this.training } } : {}) },
       width: s.width,
       height: s.height,
@@ -179,7 +172,7 @@ class Shift implements ShiftEngine {
       },
       inner: {
         fillMs: [...this.book.fillMs], nextGroupId: this.book.nextId, nextCrackId: this.nextCrackId, colorCount: this.colorCount,
-        piece: this.piece, nextDef: this.nextDef, heldDef: this.heldDef, softDrop: this.softDrop, lockMs: this.lockMs,
+        piece: this.piece, nextDef: this.nextDef, softDrop: this.softDrop, lockMs: this.lockMs,
         lockResets: this.lockResets, crackTimerMs: this.crackTimerMs, popStreak: this.popStreak, playedMs: this.playedMs,
         primed: [...this.primed], machines: this.machines.save(),
         ...(this.training ? { training: { rules: this.training, queue: this.queue } } : {}),
@@ -217,7 +210,6 @@ class Shift implements ShiftEngine {
     this.colorCount = inner.colorCount
     this.piece = inner.piece
     this.nextDef = inner.nextDef
-    this.heldDef = inner.heldDef
     this.softDrop = inner.softDrop
     this.lockMs = inner.lockMs
     this.lockResets = inner.lockResets
@@ -476,20 +468,15 @@ class Shift implements ShiftEngine {
     return false
   }
 
-  // Swap the falling piece with the held one. The held piece appears where the falling one was.
+  // Swap (F59): trade the falling piece with the NEXT one. The next piece appears where the falling one was (no room
+  // there: refused, nothing changes) and the falling piece becomes the next one — so swapping again trades them back.
+  // A lesson's chosen pieces (queue) still come after the next one, in order.
   private hold(): boolean {
     const p = this.piece
     if (!p) return false
-    const held = this.heldDef
-    if (!held) {
-      this.heldDef = p.def
-      this.events.push({ type: 'hold' })
-      this.spawnNext()
-      return true
-    }
-    const swapped = newFallingPiece(held, p.offset, p.y)
+    const swapped = newFallingPiece(this.nextDef, p.offset, p.y)
     if (this.blockedAt(swapped.cells, this.state.spin + swapped.offset, swapped.y)) return false
-    this.heldDef = p.def
+    this.nextDef = p.def
     this.piece = swapped
     this.lockMs = null
     this.lockResets = 0
@@ -608,8 +595,10 @@ class Shift implements ShiftEngine {
 
   // ---------------------------------------------------------------- training (F30 lessons; training.ts)
 
-  // Does this control work right now? (Always, except in a lesson step that only allows some.)
+  // Does this control work right now? (Always, except swap before it's unlocked (F59) and in a lesson step that only
+  // allows some.)
   allows(type: ShiftAction['type']): boolean {
+    if (type === 'hold' && this.options.swap === false) return false
     const allow = this.training?.allow
     return !allow || type === 'console' || allow.includes(type)
   }
@@ -831,7 +820,5 @@ class Shift implements ShiftEngine {
     }
     s.next = this.nextDef.cells.map(() => this.nextDef.color)
     s.nextCells = this.nextDef.cells.map(([x, y]) => [x, y])
-    s.held = this.heldDef ? this.heldDef.cells.map(() => this.heldDef!.color) : null
-    s.heldCells = this.heldDef ? this.heldDef.cells.map(([x, y]) => [x, y]) : null
   }
 }

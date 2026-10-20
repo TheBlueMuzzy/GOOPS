@@ -51,8 +51,20 @@
   | Move | drag sideways | A / D | ← / → |
   | Rotate ccw / cw | tap left / right half | Q / E | Right Ctrl / Numpad 0 |
   | Fast drop | drag down | S | ↓ |
-  | Swap | hold 1.5 s | hold R 1.5 s | hold Right Shift 1.5 s |
+  | Swap (from rank 3) | hold 1.5 s | hold R 1.5 s | hold Right Shift 1.5 s |
   | Console | swipe up | W | ↑ |
+  Swap is **off until rank 3** (F59): before that, holding does nothing — no charging bar, no swap, no "nope".
+- **Swap = trade with the next piece (Muzzy, 2026-10-19, F59: the held piece is "basically just the 'next piece' now"):** holding swap trades the falling piece with the NEXT one: the next piece comes in where the falling one was (no room there: refused, as before) and the falling piece becomes the next one, so swapping again trades them back. There is no held piece any more, and nothing is held at the start of a shift. Still the 1.5 s hold (`tank.holdToSwapMs`). Lesson shifts keep it off.
+- **What each rank unlocks (Muzzy, 2026-10-19, F59)** — `content/tuning/progression.json` → `unlocks` (machines: `breakdowns.json` → `unlockRank`):
+  | Rank | Unlocks |
+  |---|---|
+  | 1 | the **next-piece window**: top centre, over where the goop drops in |
+  | 2 | the visor (can break) |
+  | 3 | **swap** (trade the falling piece with the next one) |
+  | 4 | the laser (can break) |
+  | 5 | **upgrading**: the console's Upgrades button opens (scraps bank from rank 1; before rank 5 the button is grey with the count). Alpha has no upgrades yet — it says the first ones arrive in the next update |
+  | 6 | the controls (can break) |
+  The end report's rank-up line names what the new rank unlocked ("Rank up! 3 · New: swap"). The first shift after each tank unlock starts with a one-line lesson that pauses it (window, then swap — one per shift start); upgrading's lesson is at the console: its line on the monitor, the Upgrades button outlined. Once per device each; Settings → Replay lessons plays them again.
 - Full v1 rules and systems: `research/v1-review.md` §1–2 and `research/v1/PRD.md`.
 
 ## 5. Systems
@@ -76,7 +88,7 @@ Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of
 - **Goo (F02, 2026-10-17): L4 Jelly.** Each same-colour group is one glossy, translucent soft body that springs back to its grid shape and jiggles as one; the piece glides down smoothly (no per-cell lurch). The goo follows the grid (F02b = A): it's the costume, never the rules. Muzzy's values: `research/goo-lab/picks.json` (sketch: `research/sketches/lab-L4-jelly.html`).
 - **Art (Muzzy):** use his console art in `art/` (background, title, buttons up/down, dial, lights, slider, periscope, rank meter, end-game screen). Kit Neon only for small bits with no art.
 - **Zap (open):** the laser should explode/harden the goo, not pop it (Muzzy, 2026-10-17). To design later.
-- **HUD (F26, Muzzy's mock-up 2026-10-18):** everything sits where the eyes are, around the tank. One top row: score (top left) · CRACKS n / total (big, centred) · Console button. The tank goes nearly edge to edge, down to a solid panel under it (~12% of a phone's height): LASER · CONTROLS · VISOR bars with big names above (only unlocked machines; one centred, two or three evenly spaced), then a long INTEGRITY bar with its name inside, always there. Every bar reads full = good (controls = room before it overheats); below 30% a bar turns red and pulses, a broken machine flashes. No pressure meter: a thin white line rises from the pressure line to a white "NN% PSI" readout on top of everything (Settings: slide it along the line, or mirror it: text first, line down to it). Faint chevrons under the falling piece down to its landing shadow light up in a wave running downward, like landing lights, faster on fast drop; passed ones vanish. Messages are plain glowing words just above the goop (and above the readout). (Portrait only: the old phone-on-its-side layout, the panel as a column beside the tank, is no longer a target.) Numbers: `content/tuning/hud.json`.
+- **HUD (F26, Muzzy's mock-up 2026-10-18):** everything sits where the eyes are, around the tank. One top row: score (top left) · the next-piece window (from rank 1, centred over the tank's top edge where the goop drops in — F59) · Console button. The tank goes nearly edge to edge, down to a solid panel under it (~12% of a phone's height): LASER · CONTROLS · VISOR bars with big names above (only unlocked machines; one centred, two or three evenly spaced), then the INTEGRITY bar with its name inside (shorter since F59) with CRACKS n / total to its right, always there. Every bar reads full = good (controls = room before it overheats); below 30% a bar turns red and pulses, a broken machine flashes. No pressure meter: a thin white line rises from the pressure line to a white "NN% PSI" readout on top of everything (Settings: slide it along the line, or mirror it: text first, line down to it). Faint chevrons under the falling piece down to its landing shadow light up in a wave running downward, like landing lights, faster on fast drop; passed ones vanish. Messages are plain glowing words just above the goop (and above the readout). (Portrait only: the old phone-on-its-side layout, the panel as a column beside the tank, is no longer a target.) Numbers: `content/tuning/hud.json`.
 
 ## 7. Scope
 Decided 2026-10-19 (F07; detail + every item: `research/release-scope.md`; build order: ROADMAP M4–M6). Starting rule kept: everything in v1 is a must — by 1.0.

@@ -7,7 +7,7 @@ import { wrapX } from './tank'
 
 export type Cell = [x: number, y: number]
 
-// A piece before it is placed: its base shape and colour (what "next" and "held" hold).
+// A piece before it is placed: its base shape and colour (what "next" holds).
 export interface PieceDef {
   name: string
   cells: Cell[]
@@ -47,7 +47,8 @@ export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCo
 export function rotationCenter(cells: Cell[]): Cell {
   const sx = cells.reduce((sum, c) => sum + c[0], 0)
   const sy = cells.reduce((sum, c) => sum + c[1], 0)
-  return [Math.round(sx / cells.length), Math.round(sy / cells.length)]
+  // (+ 0: Math.round(-0.25) is -0, which a saved snapshot (JSON) turns into 0 — keep it a plain 0 from the start)
+  return [Math.round(sx / cells.length) + 0, Math.round(sy / cells.length) + 0]
 }
 
 // Quarter turn around a fixed point. dir 1 = clockwise (on screen, y down).

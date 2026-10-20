@@ -1,5 +1,6 @@
 // Controls check with real input: drag sideways spins, tap empty space rotates, tap a ready blob pops it,
-// and every key in the GDD §4 table does its one job (hold-to-swap uses the same 1.5 s as touch).
+// and every key in the GDD §4 table does its one job (hold-to-swap uses the same 1.5 s as touch). Plays at rank 3,
+// where swap unlocks (F59; before it, e2e/unlocks.mjs checks that the swap keys do nothing).
 // Run: node e2e/controls.mjs  (own dev server on port 5251)
 import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
@@ -18,7 +19,8 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: false })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto(`http://localhost:${PORT}/?seed=11`)
+  await page.goto(`http://localhost:${PORT}/?seed=11&rank=3`)
+  await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break at rank 3: its lesson would pause the keys)
   await startShift(page)
   await page.waitForTimeout(200)
   const get = (f, arg) => page.evaluate(f, arg)
@@ -41,7 +43,7 @@ try {
   check('tap right half rotates', rot1 !== rot0, `rotation ${rot0} → ${rot1}`)
 
   // keys — one job each (GDD §4 table)
-  const st = () => get(() => { const s = window.__goops.engine.state; return { spin: s.spin, rot: s.piece?.rotation, held: JSON.stringify(s.held), next: JSON.stringify(s.next) } })
+  const st = () => get(() => { const s = window.__goops.engine.state; return { spin: s.spin, rot: s.piece?.rotation, next: JSON.stringify(s.next) } })
   const turn = (a, b) => ((b - a) % 30 + 30) % 30
   for (const [key, want] of [['KeyA', 29], ['ArrowLeft', 29], ['KeyD', 1], ['ArrowRight', 1]] /* keys move the view (2026-10-18) */) {
     const a = await st(); await page.keyboard.press(key); await page.waitForTimeout(60); const b = await st()
@@ -53,7 +55,7 @@ try {
   }
   for (const key of ['Space']) {
     const a = await st(); await page.keyboard.press(key); await page.waitForTimeout(60); const b = await st()
-    check(`${key} does nothing`, a.spin === b.spin && a.rot === b.rot && a.held === b.held, '')
+    check(`${key} does nothing`, a.spin === b.spin && a.rot === b.rot && a.next === b.next, '')
   }
   // count swap actions (a swap between two identical pieces looks like nothing happened)
   await get(() => { const e = window.__goops.engine, act = e.act.bind(e); window.__swaps = 0; e.act = (a) => { if (a.type === 'hold') window.__swaps++; return act(a) } })

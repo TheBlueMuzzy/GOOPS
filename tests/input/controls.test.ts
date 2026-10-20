@@ -78,3 +78,40 @@ describe('held spin with broken controls', () => {
     }
   })
 })
+
+// F59: swap unlocks by rank. Locked, holding Right Shift / R or holding still on the tank does nothing — no charging
+// ring (holdProgress) and no swap.
+describe('hold to swap', () => {
+  function swapSetup(canSwap: boolean) {
+    const el = Object.assign(new EventTarget(), {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }),
+    }) as unknown as HTMLElement
+    const seen = { holds: 0, rings: [] as (number | null)[], rotates: 0 }
+    detach = attachControls(el, {
+      spin: () => {}, rotate: () => { seen.rotates++ }, softDrop: () => {}, tapCell: () => false, console: () => {},
+      hold: () => { seen.holds++ }, holdProgress: (p) => { seen.rings.push(p) }, canSwap: () => canSwap,
+    }, () => true)
+    const key = (type: 'keydown' | 'keyup', code: string) => (window as unknown as EventTarget).dispatchEvent(event(type, { code, repeat: false }))
+    const pointer = (type: string) => el.dispatchEvent(event(type, { pointerId: 1, clientX: 200, clientY: 400 }))
+    return { seen, key, pointer }
+  }
+  const holdFor = tank.holdToSwapMs + 200
+
+  it('unlocked: Right Shift, R and holding still each swap once, with the charging ring', () => {
+    const { seen, key, pointer } = swapSetup(true)
+    for (const code of ['ShiftRight', 'KeyR']) { key('keydown', code); vi.advanceTimersByTime(holdFor); key('keyup', code) }
+    pointer('pointerdown'); vi.advanceTimersByTime(holdFor); pointer('pointerup')
+    expect(seen.holds).toBe(3)
+    expect(seen.rings.some((p) => p !== null && p > 0)).toBe(true)
+  })
+
+  it('locked: none of them do anything — no swap, no ring, and a long press is not a tap either', () => {
+    const { seen, key, pointer } = swapSetup(false)
+    for (const code of ['ShiftRight', 'KeyR']) { key('keydown', code); vi.advanceTimersByTime(holdFor); key('keyup', code) }
+    pointer('pointerdown'); vi.advanceTimersByTime(holdFor); pointer('pointerup')
+    expect(seen.holds).toBe(0)
+    expect(seen.rings).toEqual([])
+    expect(seen.rotates).toBe(0)
+  })
+})

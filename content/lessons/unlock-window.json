@@ -1,0 +1,15 @@
+{
+  "_about": "F59 unlock lesson: the start of the first shift at rank 1 or more (the next-piece window unlocks at progression.json unlocks.nextPiece). An interrupt: the shift waits under it, the window outlined, until Got it. Once per device (Settings → Replay lessons plays it again); one unlock lesson per shift start (src/game/lessons/unlockLessons.ts). Words: content/text/en.json → lessons.unlock-window.",
+  "id": "unlock-window",
+  "steps": [
+    {
+      "id": "window",
+      "pattern": "pauseShowDismiss",
+      "message": "window",
+      "dim": true,
+      "pointer": {
+        "tag": "next-window"
+      }
+    }
+  ]
+}

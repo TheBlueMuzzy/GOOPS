@@ -24,7 +24,8 @@
 //           "breakdownLessonsSeen" (how many first-breakdown lessons this device has finished)
 //   events  every engine event by its type (lock, pop, plug, crack, ready, merge, quotaMet, rupture, breakdown, repaired…),
 //           with its details for `where` (e.g. pop → sealed, repaired → machine); plus the screen events "shiftStarted",
-//           "consoleOpened" (W / ↑ / flick up, mid-shift), "consoleClosed" (back in the tank), "pauseOpened", "pauseClosed"
+//           "consoleOpened" (W / ↑ / flick up, mid-shift), "consoleClosed" (back in the tank), "pauseOpened", "pauseClosed",
+//           F59: "upgradesOpened" (the console's Upgrades button, between shifts)
 //   actions spin, rotate, softDrop, hold, pop, repair, console
 //   pointer { "piece": true } · { "cell": [col, row] } (follows the tank as it spins) · { "tag": "readout" } (an element
 //           with that data-tag; F32 tags: "bar-<machine>" the HUD's machine bar, "repair-<machine>" the part of its
@@ -179,7 +180,7 @@ export const lessonPlay = {
    *  lesson's own timers — hints, "Got it" — keep their time while the tank stands still.) */
   consoleFrozen: () => consoleFrozen && !!runner.view().lessonId,
   /** F32: a screen event — App says what the player did (the console opened / closed mid-shift, the pause menu). */
-  screen(name: 'consoleOpened' | 'consoleClosed' | 'pauseOpened' | 'pauseClosed') {
+  screen(name: 'consoleOpened' | 'consoleClosed' | 'pauseOpened' | 'pauseClosed' | 'upgradesOpened') {
     if (name === 'consoleOpened') atConsole = true
     if (name === 'consoleClosed') atConsole = false
     runner.event(name)
@@ -225,6 +226,13 @@ export const lessonPlay = {
     const at = typeof step === 'string' ? Math.max(0, lesson.steps.findIndex((x) => x.id === step)) : Math.max(1, step) - 1
     runner.start(() => lessonNow(id)!, at)
     runner.event('shiftStarted')
+    return true
+  },
+  /** F59: a lesson at the console BETWEEN shifts (no shift running: nothing to set up or pause — its line goes on the
+   *  monitor, LessonView outlines what it points at). Starting a shift stops it. */
+  startAtConsole(id: string): boolean {
+    if (!lessonNow(id)) return false
+    runner.start(() => lessonNow(id)!, 0)
     return true
   },
   /** The lesson is over (back to the console, a new shift): stop it, nothing paused. */

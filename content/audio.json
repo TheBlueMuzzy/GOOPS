@@ -67,7 +67,7 @@
     "sounds.crack.form": "A new crack appears in the tank wall (a glassy tick).",
     "sounds.piece.rotate": "The falling piece turns.",
     "sounds.tank.spin": "The tank turns one column (a quiet ratchet tick; held turns are thinned by the cooldown).",
-    "sounds.piece.swap": "The falling piece is swapped with the held one.",
+    "sounds.piece.swap": "The falling piece is swapped with the next one.",
     "sounds.piece.fastDrop": "Fast drop starts (a short downward whoosh).",
     "sounds.machine.laser.break": "The laser breaks (powers down with a fizz).",
     "sounds.machine.visor.break": "The visor breaks (a burst of static).",
