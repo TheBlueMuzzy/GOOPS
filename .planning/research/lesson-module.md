@@ -138,6 +138,8 @@ Each well-known pattern is just a mix of the choices in §1, so the module needs
 | Bubble surface (kit Callout) | ✅; F32 task 7: fixed size, one text, inside the column |
 | Game panel surface (the CRT monitor + toaster) | 🔨 F32 task 7 (Muzzy's call, 2026-10-19) |
 | Progressive → interrupt chain, spotlight with cut-outs, whole-target highlight | 🔨 F32 task 7 |
+| Unlock trigger (F59) | ✅ `isUnlocked(what, rank)` + "the start of the first shift after it" as the calm moment; ONE per calm moment (several pending unlocks wait for the next shift start, earliest first — never a stack before the first piece falls); finding: the module's `isCalm()` wants a "one per calm moment" option |
+| A lesson with no play running (F59) | ✅ the console between shifts: a one-step lesson with no set-up, nothing to pause, no Got it (game panel surface + outline on a menu button), finished by a screen event (`upgradesOpened`); finding: the runner needs no game at all for this — the module should allow a lesson outside play |
 | Failure explainer (why the tank ruptured) | planned: F31's rupture ending |
 | Unlock announcement + gradual reveal | planned: F59 rank unlocks |
 | Device-aware words | partly (the lesson picks its mouse/keys/touch line); tokens are for the module |
