@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 84.62 73.62">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #cb8abc;
+      }
+
+      .cls-2 {
+        fill: #803d83;
+        fill-rule: evenodd;
+      }
+
+      .cls-3 {
+        fill: #0d1a19;
+      }
+    </style>
+  </defs>
+  <g id="MainMenu">
+    <g id="Reset_Lights" data-name="Reset Lights">
+      <g id="Purple_Button_Up" data-name="Purple Button Up">
+        <g>
+          <path class="cls-3" d="M42.31,73.62C18.58,73.62,0,59.79,0,42.13S18.58,10.65,42.31,10.65s42.31,13.83,42.31,31.48-18.59,31.48-42.31,31.48Z"/>
+          <path class="cls-2" d="M74.5,41.03c0,11.84-14.45,21.44-32.27,21.44S9.97,52.87,9.97,41.03c0-8.74.25-20.68.25-20.68h64.43s-.15,13.21-.15,20.68Z"/>
+          <ellipse class="cls-1" cx="42.31" cy="21.44" rx="32.27" ry="21.44"/>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

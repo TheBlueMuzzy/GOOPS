@@ -1,0 +1,18 @@
+{
+  "id": "/GOOPS/alpha/",
+  "short_name": "Goops",
+  "name": "Goops: Filtration Defense",
+  "icons": [
+    { "src": "icons/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "icons/icon-maskable-192.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable" },
+    { "src": "icons/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ],
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "theme_color": "#05070d",
+  "background_color": "#05070d",
+  "orientation": "portrait"
+}
