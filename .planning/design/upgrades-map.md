@@ -36,9 +36,9 @@
 | Upgrade | What v1's code did | Touches | New loop | PROPOSAL | Plugs in |
 |---|---|---|---|---|---|
 | **Active Expansion Slot** (feature · 20 · 1) | 2 abilities equipped. | 🖥 | Unchanged | Keep: `features.abilitySlots`. | F |
-| **Goop Hold Viewer** (feature · 22 · 1) | Shows the held piece. | 🖥 | Unchanged — the engine already exposes `held`/`heldCells`; the remake's HUD shows neither yet | Keep. | F · needs hold viewer UI |
+| ~~**Goop Hold Viewer**~~ (feature · 22 · 1) | Shows the held piece. | 🖥 | **Retired by F59 (Muzzy, 2026-10-19):** there is no held piece any more — swap trades with the next piece, and the next-piece window is free from rank 1 | **Slot 22 to refill in beta** with a new upgrade for the new pacing. | — |
 | **Goop Colorizer** (active · 25 · 3) | On fire: the next 6/7/8 pieces take the falling piece's colour (the preview too). No falling piece → charge wasted. Charges in 25 s. | 🧩 | Unchanged | Keep; fire is rejected (charge kept) when there's no falling piece. | A |
-| **Goop Window** (feature · 28 · 1) | Shows the next piece. | 🖥 | Unchanged — engine exposes `next`/`nextCells` | Keep. | F · needs next-piece window UI |
+| ~~**Goop Window**~~ (feature · 28 · 1) | Shows the next piece. | 🖥 | **Retired by F59 (Muzzy, 2026-10-19):** the next-piece window is a rank-1 unlock (progression.json `unlocks.nextPiece`), not an upgrade | **Slot 28 to refill in beta** with a new upgrade for the new pacing. | — |
 
 ## Cracked band (ranks 30–38)
 | Upgrade | What v1's code did | Touches | New loop | PROPOSAL | Plugs in |
@@ -56,5 +56,5 @@
 ## Needs other work first
 - **Quick Fix (future, Muzzy 2026-10-18):** every console repair is about 4 steps (laser 4 sliders · visor slide + 3 buttons + slide · controls 4 corners), so an upgrade can take steps off: −1 at level 1, −2 at level 2 ("awesome for later game runs"). **The hook exists:** upgrades.json effects named `laserRepairFewerSteps` / `visorRepairFewerSteps` / `controlsRepairFewerSteps` (op `add`, e.g. `byLevel: [1, 2]`) → `resolveUpgrades().fewerRepairSteps` → the console's `midShift.fewerRepairSteps` → `repairSteps(machine, fewer)` in src/game/repairs.ts = max(1, tuning − fewer). One per machine or one for all three is a taste call. It could also be what the max levels of Circuit Stabilizer / Capacitor Efficiency / Gear Lubrication give (v1's "easier repair at max").
 - **Breakdowns (F06 decided, F23 built in the engine):** Circuit Stabilizer, Capacitor Efficiency and Gear Lubrication plug in now (modifiers above); `breakdownCooldownMult` is ready for a cooldown upgrade. Still waiting: Cooldown Booster's fire effect, Focus Mode (the game's console time scale, `consoleTimeScale` in breakdowns.json × its level), the easier repairs at max level (F24).
-- **New UI:** Goop Hold Viewer (held piece), Goop Window (next piece), Active Expansion Slots (ability bar), every active (charge circle), the console's upgrade/equip screen.
+- **New UI:** Active Expansion Slots (ability bar), every active (charge circle), the console's upgrade/equip screen (F59 built its door: the Upgrades button + an empty screen that opens from rank 5). (Goop Hold Viewer and Goop Window are retired — F59 — two slots, 22 and 28, to refill in beta.)
 - **Ready in the engine today:** Muzzy's two, Dense Goop, Pressure Control (either version), Auto-Popper (either version), Slow Cracks, Crack Down (as the test ability).
