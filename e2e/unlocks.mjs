@@ -172,6 +172,27 @@ try {
     await close()
   }
 
+  // ---------------- F28 task 7: on a phone (a touch screen, started by a tap) the swap lesson says it in fingers ----------------
+  {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+    const page = await context.newPage()
+    const errors = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=3`)
+    await page.getByRole('button', { name: 'Start shift' }).waitFor()
+    await page.evaluate(() => window.__goopsSeen(['lesson:unlock-window', 'lesson:visor']))
+    await page.getByRole('button', { name: 'Start shift' }).tap() // (a touch: the lesson words follow it)
+    await page.locator('.kit-art-stage').waitFor({ state: 'detached', timeout: 5000 })
+    await page.waitForTimeout(800)
+    check('phone: the swap lesson starts the shift', (await lessonId(page)) === 'unlock-swap', String(await lessonId(page)))
+    const said = await page.locator('.kit-callout').textContent()
+    check('phone: it says the phone wording (hold your finger still), not the keys\' or the mouse\'s',
+      said.includes(en.lessons['unlock-swap'].swap.phone) && !said.includes('Right Shift'), said)
+    await page.screenshot({ path: `${OUT}/rank3-swap-lesson-phone-390x844.png` })
+    check('phone swap lesson: no page errors', errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
   // ---------------- rank 5: upgrading opens ----------------
   {
     const { page, errors, close } = await device(5)

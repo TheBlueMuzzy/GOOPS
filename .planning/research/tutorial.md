@@ -250,14 +250,14 @@ Rules for all three: the lesson message replaces the game's own "broken" message
 | | Set up | Says | To move on | Hint / else | Pattern |
 |---|---|---|---|---|---|
 | V1 | The visor just broke. Paused. Pointer on the flashing VISOR bar. | "Your visor broke. The view will glitch until you fix it." | dismiss | — | P10 + P1 |
-| V2 *(shared: go to the console)* | Running (the glitch starts building). | Keys: "Press W or ↑ for the console." · Mouse: "Flick up for the console." · Phone: ⟨slot⟩ | console opens | Hint 3 s: pointer pulses. Clicked the HUD "Console" button → pause menu: "That's the pause menu. Use W or ↑ for the console." | P2 + P3 |
+| V2 *(shared: go to the console)* | Running (the glitch starts building). | Keys: "Press W or ↑ for the console." · Mouse: "Flick up for the console." · Phone: "Flick up for the console." | console opens | Hint 3 s: pointer pulses. Clicked the HUD "Console" button → pause menu: "That's the pause menu. Use W or ↑ for the console." | P2 + P3 |
 | V3 | At the console. **The tank is frozen** for this first repair (Q4). Pointer on the visor panel's blinking top light. | "Follow the lights: slide up, press the lit buttons, slide down." | `repaired` | Hint 5 s: the pointer moves to whatever is lit now. Wrong button = the panel shakes, nothing resets. | P2 + P3 |
 | V4 *(shared: back to the tank)* | At the console. Paused. | "Fixed! Fast drops keep the visor charged. Pull the periscope to go back." | back in the tank → lesson seen | Hint 3 s: pointer on the periscope. | P1 → P2 |
 
 ### Laser (rank 4+)
 | | Set up | Says | To move on | Hint / else | Pattern |
 |---|---|---|---|---|---|
-| L1 | The laser just broke. Paused. Pointer on the flashing LASER bar. | "Your laser broke. Each zap now takes two clicks: prime, then zap." | dismiss | — | P10 + P1 |
+| L1 | The laser just broke. Paused. Pointer on the flashing LASER bar. | "Your laser broke. Each zap now takes two clicks: prime, then zap." (Phone: "…two taps…") | dismiss | — | P10 + P1 |
 | L2 | = V2 | | | | |
 | L3 | At the console, tank frozen. Pointer on the first lit slider. | "Slide each lit slider to its blinking light." | `repaired` | Hint 5 s: pointer on the next unsolved slider. | P2 + P3 |
 | L4 | = V4, with: "Fixed! Zapping drains the laser; every landed piece recharges it." | | | | P1 → P2 |

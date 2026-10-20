@@ -164,7 +164,11 @@
       "broke": "Your visor broke. The view will glitch until you fix it.",
       "fix": "Drag the slider toward the light.",
       "fixSlide": "Drag the slider toward the light.",
-      "fixButton": "Press the lit button.",
+      "fixButton": {
+        "keys": "Press the lit button.",
+        "mouse": "Press the lit button.",
+        "phone": "Tap the lit button."
+      },
       "fixed": "Fixed!\nDropping the Goop faster keeps the Visor charged."
     },
     "laser": {

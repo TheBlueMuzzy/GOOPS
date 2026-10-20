@@ -601,6 +601,36 @@ try {
     }
   }
 
+  // ---------------- F28 task 7: a breakdown lesson on a touch phone says it in fingers ----------------
+  {
+    const en = JSON.parse(readFileSync('content/text/en.json', 'utf8')).lessons
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+    const page = await context.newPage()
+    const errors = []
+    page.on('pageerror', (e) => errors.push(e.message))
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=6`)
+    await page.getByRole('button', { name: 'Start shift' }).waitFor()
+    await page.evaluate(() => window.__goopsSeen?.(['lesson:unlock-window', 'lesson:unlock-swap']))
+    await page.getByRole('button', { name: 'Start shift' }).tap() // (a touch: the lesson words follow it)
+    await page.locator('.kit-art-stage').waitFor({ state: 'detached', timeout: 5000 })
+    await page.waitForFunction(() => window.__goops?.engine.state.status === 'playing')
+    await page.evaluate(() => window.__goops.breakMachine('laser', true))
+    await stepIs(page, 'broke')
+    await bubble(page).waitFor()
+    await page.waitForTimeout(500)
+    const broke = await bubble(page).textContent()
+    check('phone: the laser\'s breakdown lesson says "two taps" (its phone wording), not "two clicks"',
+      broke.includes(en.laser.broke.phone) && !broke.includes('clicks'), broke)
+    await page.screenshot({ path: `${OUT}/f28-laser-broke-phone-390x844.png` })
+    await page.waitForFunction(() => window.__goops.lessonView().message?.armed === true)
+    await gotIt(page).tap()
+    await stepIs(page, 'toConsole')
+    await page.waitForTimeout(400)
+    check('phone: go to the console says "Flick up" (its phone wording)', (await bubble(page).textContent()).includes(en.shared.toConsole.phone))
+    check('phone laser lesson: no page errors', errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
   // ---------------- F32: the console-visit note on a phone: on the monitor ----------------
   {
     const { page, errors } = await open(390, 844, '?seed=7')
