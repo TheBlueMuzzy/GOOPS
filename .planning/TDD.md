@@ -132,7 +132,9 @@ flowchart LR
 | `content/tuning/goo-colors.json` | colour name → hex (red, blue, green, yellow, purple, white, black); `shift.json` `colors` sets their order | same — the goo, cracks and ghost change at once |
 | `content/tuning/cracks-look.json` | F36 readable cracks, looks only: `bubbles` (open cracks leak air — rate, gusts, size, speed, sway, life, alpha, colour, calm for reduce motion, max), `xray` (the dotted box round a covered crack + `gooAlpha`: how solid the goo stays inside it), `sealed` (the mended scar). The rule half (no crack on a sealed spot) is the engine's: `state.sealedCracks`, in snapshots | Dev Kit Tuning (live) |
 | `content/tuning/pause.json` | `halfPauseGooMoves` (off) — does the goo keep moving in the Dev Kit's ◐ half pause | Dev Kit Tuning |
-| `content/text/en.json` | player-facing words | Obsidian |
+| `content/text/en.json` | player-facing words · F38: a message whose words depend on the input (`messages.brokeLaser` / `brokeVisor` / `brokeControls`) is a `{ keys, mouse, phone }` entry like the lessons' lines — `messageWords(key, input)` in src/game/messages.ts picks one by the input used last (`lessonPlay.inputKind()`) · `console.version` "v{v}" = how the version reads everywhere | Obsidian / Dev Kit Text |
+| `content/tuning/perf.json` | F38: the frame-rate readout's update rate (`meterEveryMs`) and the speed test's pass line (`targetFps` 60, `passMedianFps` 55, `passWorstFrameMs` 50, `sampleMs`) — e2e/perf.mjs judges a full tank in both goo styles at 390x844@3x by it | Dev Kit Tuning (live) |
+| `version.json` (repo root) | F38: the version, BMUZ shape `{ name, version: "X.Y.Z", build, history }` — /save bumps `build`, /deliver bumps `version`. vite.config.ts bakes "X.Y.Z.B" into the code + `<meta name="app-version" content="vX.Y.Z.B">`; src/version.ts `versionLabel` is what the console footer, Settings → About → Version and the Dev Kit's snapshots / bug files show. e2e/start.mjs `checkVersion` fails a test on a page whose meta isn't version.json's | /save, /deliver |
 | `content/lessons/<id>.json` | F30: one lesson per file — `start` / `finish` set-up, `steps` (setup, message id, pointer, while, showAfter, advance, hint, retry, skipIf, checkpoint, pattern), `interrupts`. Words in en.json → `lessons.<id>`. Format: src/game/lessons/lessonTypes.ts; what Goops understands: goopsLessons.ts | Dev Kit Lessons tab (▶ any step, timings live, Save) / Obsidian |
 | `content/tuning/lessons.json` | F30: timings shared by every lesson — Got it delay, pause between steps, slow speed, gate check rate · F32 `consoleNoteVisits` (5: how many console visits get the "25% speed" note) | Dev Kit Tuning (live) |
 | `content/tuning/crt.json` | F32 → F60: the CRT look as presets any panel can take (`<CrtLook preset="dos">` / `<CrtLook place="monitor">`, src/game/CrtLook.tsx + crt.ts + crt.css). `use.monitor` = the preset the console monitor wears (a dropdown); `presets.dos` (= the F32 look) · `amber` · `off`, each with layer switches (tint, glow, scanLines, wobble, typing) and knobs: typing speed, cursor blink + width, text + glow colour, glow size/strength, scanGap/scanWidth/scanAlpha/scanSpeed (same names + meaning as cracks-look.json xray.scan*; monitor units = its art units), wobbleSize/wobbleSeconds. Reduce motion = no typing, blink, wobble or roll; Dev Kit full pause holds them | Dev Kit Tuning (live) |
@@ -168,7 +170,7 @@ flowchart LR
 ## 5. Budgets
 | | Target | How it's checked |
 |---|---|---|
-| Frame rate | 60 fps on a mid-range phone, full tank, either goo style | fps counter + Playwright |
+| Frame rate | 60 fps on a mid-range phone, full tank, either goo style | `?fps` / Dev Kit Perf readout on real phones (playtest log) + e2e/perf.mjs pass line (content/tuning/perf.json; headless Chromium is vsync-capped at 60, so it catches big drops, not phone speed) |
 | First load | < 3 s on 4G | /deliver quick check |
 
 ## 6. Security & fairness
@@ -176,6 +178,29 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D17 · 2026-10-20 · The alpha's release kit: its own service worker at /GOOPS/alpha/, auto-update, deploy beside v1 (F38)
+  Proposed by: Claude (BMUZ GitHub Pages recipe + the Sprint 11 plan call)
+  Chose: vite-plugin-pwa (generateSW) — base /GOOPS/alpha/ in production, so its sw.js lives at /GOOPS/alpha/sw.js with
+  scope /GOOPS/alpha/: narrower than v1's /GOOPS/ worker, so it runs the alpha. Precaches the whole build (js, css, html,
+  png, svg, mp3, ttf, woff2, json — woff2 added when offline missed the kit's fonts). UPDATES: registerType autoUpdate +
+  registerSW({ immediate }) per the recipe (a returning player's page swaps to the new version as it opens) — NOT a
+  "new version — refresh" prompt: a player opens the link, it's already new; mid-shift swaps can't happen because the
+  browser only looks for a new worker when a page opens. Needed on top: workbox skipWaiting + clientsClaim (else the new
+  worker sat "waiting"), and main.tsx reloads on controllerchange / onNeedReload ONLY when the page already ran under
+  our own worker (else a v1 player's first alpha visit, which starts under v1's worker, reloaded once). public/manifest.json
+  stays the manifest (manifest: false): id + scope + start_url resolve to /GOOPS/alpha/, display fullscreen (standalone
+  fallback), portrait, #05070d (index.html's theme-color), maskable icons made from the existing logo
+  (scripts/make-maskable-icon.mjs). No worker in dev (the Dev Kit's Save keeps working). e2e/sw-update.mjs proves it
+  against a v1 stand-in on a static server laid out like gh-pages.
+  Deploy: scripts/deploy.js → `gh-pages -d dist --dest alpha --add` (writes only inside alpha/, v1's root untouched; old
+  alpha files stay so an open old page can still load its chunks), refuses a build not made for /GOOPS/alpha/,
+  `--dry-run` reads gh-pages with git ls-tree (nothing checked out or pushed) and lists what would change.
+  Also: version.json → one version everywhere (vX.Y.Z.B, src/version.ts; Muzzy mid-sprint); `?fps` / Dev Kit Perf tab
+  frame-rate readout (src/game/fpsMeter.ts, textContent only); .github/workflows/checks.yml from the BMUZ template;
+  check:framework = check:ui + check:devkit (Dev Kit 0.18.0 has no check-framework.mjs yet).
+  Not chosen: a GitHub Actions Pages deploy (it replaces the whole site — v1 down); registerType 'prompt' with a kit
+  "refresh" toast (an extra tap for a friend testing; the recipe's way is proven in Roll Better); a hand-written sw.js
+  (no precache manifest, easy to leave stale).
 D16 · 2026-10-20 · The first day is ONE lesson that crosses the console, the shift and the report (F31 task 11)
   Proposed by: Claude (tutorial.md §3 + §9's "left for App")
   Chose: content/lessons/first-day.json is one lesson; a design step can be 2–3 runner steps (a no-message wait, then the

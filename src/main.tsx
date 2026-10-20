@@ -6,6 +6,7 @@ import style from '../content/ui/style.json'
 import fonts from '../content/ui/fonts.json'
 import settings from '../content/ui/settings.json'
 import { startSound } from './game/sound'
+import { fpsMeter } from './game/fpsMeter'
 import { registerSW } from 'virtual:pwa-register'
 import './ui/app.css'
 
@@ -14,15 +15,15 @@ import './ui/app.css'
 // The browser itself checks for a new worker when the page opens; when that one takes over before registerSW is
 // listening (e2e/sw-update.mjs caught it: the new worker ran, the page stayed old), the plain controllerchange
 // still swaps the page. Only for a page that already ran under OUR worker — a first visit never reloads (not even
-// under v1's /GOOPS/ worker, which runs a v1 player's first alpha visit until ours takes over).
+// under v1's /GOOPS/ worker, which runs a v1 player's first alpha visit until ours takes over — registerSW's own
+// reload fired there now and then, so it asks the same question through onNeedReload).
 if (import.meta.env.PROD) {
-  registerSW({ immediate: true })
   const ourWorker = new URL(`${import.meta.env.BASE_URL}sw.js`, location.origin).href
   const hadWorker = navigator.serviceWorker?.controller?.scriptURL === ourWorker
   let swapped = false
-  navigator.serviceWorker?.addEventListener('controllerchange', () => {
-    if (hadWorker && !swapped) { swapped = true; location.reload() }
-  })
+  const swap = () => { if (hadWorker && !swapped) { swapped = true; location.reload() } }
+  registerSW({ immediate: true, onNeedReload: swap })
+  navigator.serviceWorker?.addEventListener('controllerchange', swap)
 }
 
 // The game's own fonts (public/fonts/, listed in content/ui/fonts.json) — style.json's font tweaks may name them
@@ -31,6 +32,7 @@ applyStyle(style)
 const saved = loadSettings(settings as SettingsSchema)
 applyAccessibility(saved)
 startSound(saved) // the audio engine (src/game/sound.ts); it unlocks itself on the first tap
+fpsMeter.startIfAsked() // the frame-rate readout: ?fps, or switched on in the Dev Kit's Perf tab
 
 // Dev Kit (` key or triple-tap) — always in local dev; in release builds only while content/devkit.json
 // "inReleaseBuilds" is true (until 1.0). When both are false this import is dead code and never ships.

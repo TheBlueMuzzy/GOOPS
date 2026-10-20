@@ -22,11 +22,12 @@ const FAST = [
   // (Goops' Dev Kit has no check-framework.mjs yet — add 'framework (code)' when it does)
 ]
 // e2e: [name, script, args] — every one on its own port, fixed in its own header (slowest first)
-// Not here: art-shots / fonts-shots / art-sheet / perf (picture and timing tools, not pass/fail checks) and console-shots
+// Not here: art-shots / fonts-shots / art-sheet (picture tools, not pass/fail checks) and console-shots
 // (red on a short desktop window: the kit's swipe rule — SPRINT 08 Notes; add it back once that's fixed).
 const E2E = [
   ['first-day', 'e2e/first-day.mjs', ''],      // 5347
   ['sw-update', 'e2e/sw-update.mjs', ''],      // 5462 (two release builds, served like GitHub Pages; + the Dev Kit in it)
+  ['perf', 'e2e/perf.mjs', ''],                // 5464 (pass line: content/tuning/perf.json — same result 3 runs + beside sw-update)
   ['lessons', 'e2e/lessons.mjs', ''],          // 5341
   ['unlocks', 'e2e/unlocks.mjs', ''],          // 5344
   ['devkit-live', 'e2e/devkit-live.mjs', ''],  // 5282

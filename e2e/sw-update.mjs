@@ -59,7 +59,10 @@ const server = createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': TYPES[extname(path)] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' })
   res.end(readFileSync(path))
 })
-await new Promise((ok) => server.listen(PORT, ok))
+await new Promise((ok) => {
+  server.once('error', (e) => { console.log(`FAIL — port ${PORT} is busy (${e.code}): another sw-update run still going? node ~/.claude/config/bmuz/scripts/stop-servers.mjs ${PORT}`); process.exit(1) })
+  server.listen(PORT, ok)
+})
 
 const browser = await chromium.launch()
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2,
@@ -121,9 +124,11 @@ try {
   build(9999)
   await page.goto(ALPHA)
   let shown = await version(page)
-  for (let i = 0; i < 30 && shown !== next; i++) { await page.waitForTimeout(500); shown = await version(page) }
-  if (shown !== next) console.log('debug', await page.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return JSON.stringify({ a: r?.active?.state, w: r?.waiting?.state, i: r?.installing?.state, c: navigator.serviceWorker.controller?.scriptURL }) }))
-  check(`returning player gets the new build on their first visit (${first} → ${next})`, shown === next, shown)
+  const t0 = Date.now()
+  for (let i = 0; i < 40 && shown !== next; i++) { await page.waitForTimeout(500); shown = await version(page) }
+  // (a worker still "waiting" = the new one never took over: workbox skipWaiting / clientsClaim in vite.config.ts)
+  const workers = await page.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return `active ${r?.active?.state}, waiting ${r?.waiting?.state ?? 'none'}` }).catch(() => '?')
+  check(`returning player gets the new build on their first visit (${first} → ${next})`, shown === next, `${shown} after ${((Date.now() - t0) / 1000).toFixed(1)} s; ${workers}`)
   await page.locator('.kit-art-stage').waitFor({ timeout: 15000 })
 
   // ---- the Dev Kit in the release build (no dev server) ----
@@ -141,7 +146,14 @@ try {
     if (await tabs.nth(i).getAttribute('aria-selected') !== 'true') check(`Dev Kit tab "${names[i].trim()}" opens`, false)
   }
   check(`every Dev Kit tab opens (${names.length}: ${names.map((n) => n.trim()).join(', ')})`, names.length >= 5)
+  // the Perf tab switches the frame-rate readout on (F38)
+  await tabs.filter({ hasText: 'Perf' }).evaluate((tab) => { tab.scrollIntoView({ inline: 'center' }); tab.click() })
+  await kit.getByRole('button', { name: 'Show frame rate' }).click()
+  await page.waitForTimeout(1200)
+  const fps = await page.locator('.fps-meter').textContent().catch(() => null)
+  check('Dev Kit Perf tab shows the frame-rate readout', /\d+ fps · worst \d+ ms/.test(fps ?? ''), fps)
   await page.screenshot({ path: `${OUT}-devkit.png` })
+  await kit.getByRole('button', { name: 'Hide frame rate' }).click()
 
   // bug capture: Record → Mark → note → Copy for Claude → the clipboard has the bug file
   await tabs.filter({ hasText: /bug/i }).first().click()
@@ -162,7 +174,7 @@ try {
   check('Dev Kit: no failed requests', newRequests.length === 0, newRequests.join(' · '))
   check('Dev Kit: no console errors', newErrors.length === 0, newErrors.join(' · '))
 } catch (e) {
-  check('ran to the end', false, e.message.split('\n')[0])
+  check('ran to the end', false, `${e.message.split('\n')[0]} (${e.stack?.match(/sw-update\.mjs:\d+/)?.[0] ?? '?'})`)
 } finally {
   await browser.close()
   server.close()
