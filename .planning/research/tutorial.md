@@ -1,6 +1,6 @@
 # "Your first day" — the tutorial step list (F12, Sprint 08 task 1)
 
-*Written 2026-10-19 from v1's Tutorial v3 (`research/v1/Tutorial3.md`), the new rules (GDD §4–§5) and the code on `dev/m1-core-shift`. Design only: nothing here is built yet. The lesson runner (F30) is built from this list; the first day itself is F31; the breakdown lessons are F32.*
+*Written 2026-10-19 from v1's Tutorial v3 (`research/v1/Tutorial3.md`), the new rules (GDD §4–§5) and the code on `dev/m1-core-shift`. The lesson runner (F30) is built from this list; the first day itself is F31; the breakdown lessons are F32. **Built 2026-10-20: §10 has the day as it runs now and what changed from this plan.***
 
 **Decided (Muzzy, 2026-10-19):** v1 style, fully scripted. A staged day: every step is set up for you, you can't fail (if you do something unexpected, the tutorial handles it), and it ends in free play. Plain how-to-play for alpha: no story voice, no garbled intercom (that layers on in beta — see §7). Taught on PC first: every message has a **Keys** and a **Mouse** wording; the **Phone** wording is a marked slot until the phone check (F10, `research/gestures.md`).
 
@@ -420,3 +420,43 @@ b) The real 25% speed from the start.
 | F3 | none (the report) | ⏳ a screen event for "Back to the console" / "Next shift" | 6 s pulse | — | ⏳ task 11: the event, the report button's tag, rank 0 → 1, the lesson running with no engine after the shift ended (the F59 console lessons already prove the runner needs none) |
 
 **Still missing, and why it waits:** all of it is App wiring, which is task 11 — per-step console / pause switches, A1 → B1 across the periscope, the report's screen event + tag, the CRACKS tag, "first day done" + rank 0 → 1, and saving the reached checkpoint. Nothing missing in the engine or the runner.
+
+---
+
+## 10. Built (F31, Sprint 10 tasks 10–12, 2026-10-20)
+
+*The day as it runs now: `content/lessons/first-day.json` (words: `content/text/en.json` → lessons.first-day), wired by `src/game/lessons/firstDay.ts` + `src/ui/App.tsx` (TDD D16), proven end to end by `e2e/first-day.mjs` (keys A1→F3, a real finger A–D, leaving mid-phase, shots at 390x844 · 360x780 · 1440x900 in `e2e-shots/first-day/`). A design step can be 2–3 runner steps (a no-message wait, then the line) — their ids are shown.*
+
+| Step | Built | Says (Keys · Phone, where they differ) | Moves on when |
+|---|---|---|---|
+| A1 | ✅ on the console's monitor | "Your first day! Press ↓ or Enter to pull the periscope." · "…Pull the periscope down to start." (Mouse: "Drag the periscope down to start."); hint 6 s | the pull (drag, tap, ↓ / Enter) — the day's shift starts at the phase reached |
+| B1 | ✅ | "Goop drops into the tank from the top." | the piece is 7 rows in (a third of the way) |
+| B2 | ✅ | "Slow, right? Hold S or ↓ to fast drop." · "…Drag down on the tank to fast drop."; hint 3 s unless fast-dropping | it lands |
+| B3 | ✅ paused line after 1.2 s | "Q or E turns the piece. Turn it, then drop it." · "Tap left or right of the piece to turn it."; hint when halfway down, unless turned | it lands |
+| C1 · C1-rise · C1-zap | ✅ | "Pressure rises over time. Goop under the line can be zapped." (paused, on the PSI readout) → no line (×4 rise; the game's own "Above the pressure line" on an early zap) → "Now click the yellow goop to zap it." · "Now tap…" (pressure held; hint 3 s) | the yellow is zapped |
+| C2 · C2-join | ✅ | (blue O lands) → "Same colours join into one blob. Fresh goop fills up first." (paused, on the blob) | Got it |
+| C3 · C3-vent | ✅ | "Zap the blue blob once it's full." (a zap while it fills: "Still filling. Wait until it's full.") → "Zapping lets out a little pressure. Big blobs let out more." (paused, on the readout) | the zap, then Got it |
+| D1 · D1-integrity | ✅ | "A crack! Cover it with goop of the same colour." → "Open cracks wear down the tank. This bar is its health." (on INTEGRITY) | Got it × 2 |
+| D2 · D2-spin | ✅ | (a third of the way down, paused) "The piece always falls down the middle. A / D or ← / → spins the tank." · "The piece falls down the middle. Drag sideways to spin the tank."; hint 3 s unless spinning; a miss: another crack + "Try again. Spin until the shadow is over the crack." | the crack is plugged |
+| D3 · D3-sealed | ✅ | "The crack shows through the goop. Zap that goop to seal it." → "Sealed! Seal 4 cracks a day to meet your quota." (on CRACKS n / 4) | the seal, then Got it |
+| D4 | ✅ interrupt, from D2, once per device | "You only see part of the tank. Arrows point to cracks out of view." (on the arrow) | Got it → back where it was |
+| E1 · E1-build · E1-seal | ✅ | "Cracks form up high too. Stack goop under them to reach." → (blue I, green O, then green O's with a blue I first while too low; hint 8 s after the 2nd landing) → "Now zap the green goop to seal it."; red X: "Wrong colour. See the red X? Zap that goop to uncover it." | plugged, then sealed |
+| F1 · F1-quota · F1-work | ✅ | "Cracks come faster as pressure rises. Zap goop to keep it down." → "Seal {left} more to meet the quota." (on CRACKS) → free play: hint 20 s without a seal; "Too full! I've cleared some. Zap more often." (the overflow rail); "Zap goop to let pressure out." (at the 90 % cap) | the quota is met (the game's own "Quota met!" shows) |
+| F2 · F2-drain · F2-end | ✅ | (the game's own "Rupture!") → "The tank broke! Zap all the goop you can before pressure hits zero." (paused, 1 s after) | the shift ends |
+| F3 | ✅ on the report | "Day one done! Back to the console to clock out." (under the button) | Back to the console / Next shift / the swipe up → the day remembered, rank 1 |
+
+**What changed from the plan (§3), and why**
+- **Phone words** written for every input-dependent line (§3 had slots), from GDD §4's touch. A phone shows its Phone words from the very first line (a touch screen with no mouse counts as a phone before anything is touched).
+- **A1's keys are true now:** ↓ / Enter pull the periscope from anywhere on the console between shifts (before, only once the grip had the keyboard's focus — a Tab away).
+- **The console and the pause button per step:** the pause button works the whole day (it's the way out: End shift = leaving mid-day); W / ↑ / flick up only from free play — there the tank stands still while you're at the console (§3's rule).
+- **C2 moves on when the O lands** (its join happens in the same moment), not on the merge event alone — can't get stuck if it somehow doesn't touch the blue.
+- **C3's "Still filling" is the lesson's own reaction:** the step's line is up, which keeps the game's own messages quiet (the spike's note).
+- **D2 has a most-tries (8):** after 8 misses it moves on; D3 and its "Sealed!" line skip themselves when nothing is plugged (E1 teaches the seal again). Not stuck, ever.
+- **E1-seal stops the pieces and lets pressure rise** (found by the e2e): pieces kept landing on the plugged green, the group grew over the held line and could never be zapped — stuck. Now no more pieces come once it's plugged, and the line rises at the normal rate until the goop is under it.
+- **F1's quota line shows once (Got it), then free play runs with no line up** — a line up for the whole of free play would hide the game's own warnings ("Tank weak", "Pressure near max") all the time. The quota counts as met by the event OR the count (seals piled up in D could meet it early → its steps skip).
+- **F2's end waits on "the shift is over", not only on its event** — a short drain (an overflow at low pressure) can end the shift before the waiting step starts. Its line skips itself if the drain already ended.
+- **F3:** no 6 s pulse hint (the outline already pulses). The line sits under the button — above it, it covered "Next shift" and the rank-up on the report.
+- **Rank 1 comes with the report, not on the console:** the shift's XP is topped up to the first rank-up when the day's shift ends, so the report already says "Rank up! 1 · New: next piece" and the console's meter fills on the way back. Closing the page on the report still leaves rank 1.
+- **The rails:** pressure capped at 90 %, integrity floor 20 %, no rupture, the overflow rail clears the top — proven by 10 minutes of sped-up free play in the e2e.
+
+**Logged, not changed:** the bubble is see-through glass (the kit's Callout look): where it sits over the pressure line, the PSI readout and the dashed line show through its words (D1, E1 at 1440). A taste call for Muzzy (see SPRINT Notes).
