@@ -6,6 +6,7 @@
 //      would load nothing once it's online
 //   3. publishes dist/ as alpha/ on gh-pages with `--dest alpha --add`: nothing outside alpha/ is touched (v1's root
 //      stays), and earlier alpha files stay too (an old page still open can load its chunks while it swaps itself)
+//   (0. first it refuses while there are uncommitted changes — a dry run only warns)
 // --dry-run: steps 1–2, then reads gh-pages (read only: git fetch + git ls-tree, nothing checked out or pushed) and
 // prints exactly what would go where — v1's root untouched, what alpha/ gains, changes and keeps. gh-pages itself has
 // no dry run. Going online (no --dry-run) is /deliver's job, with Muzzy.
@@ -20,6 +21,14 @@ const BRANCH = 'gh-pages'
 const LIVE = 'https://thebluemuzzy.github.io/GOOPS/alpha/'
 const dryRun = process.argv.includes('--dry-run')
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+
+// 0. only committed work goes online: half-finished edits would ship under the committed version number
+const dirty = git('status', '--porcelain').trim()
+if (dirty && !dryRun) {
+  console.error(`\nREFUSED: uncommitted changes — commit (or /save) first, then deploy. Nothing published.\n${dirty}`)
+  process.exit(1)
+}
+if (dirty) console.log('(dry run with uncommitted changes — a real deploy would refuse)')
 
 console.log('Building (npm run build)...')
 execSync('npm run build', { stdio: 'inherit' })

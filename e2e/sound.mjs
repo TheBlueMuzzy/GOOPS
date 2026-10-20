@@ -47,6 +47,12 @@ try {
   check('the audio log is there (window.__audioLog)', !!(await log(page)))
 
   // ---- 1. the console ----
+  // a neutral click first unlocks the audio and starts the files loading; wait for the clunk's file before the pull
+  // (with the pull as the visit's first gesture its own file can still be loading on a busy PC — check:full, F38)
+  const clunkLoaded = page.waitForResponse((r) => r.url().includes('ui_periscope_pull'), { timeout: 15000 })
+  await page.mouse.click(5, 5)
+  await clunkLoaded
+  await page.waitForTimeout(300) // (decoded after it arrives)
   await startShift(page)
   await page.waitForTimeout(300)
   {

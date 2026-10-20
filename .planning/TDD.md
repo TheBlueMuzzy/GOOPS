@@ -355,5 +355,6 @@ D01 · 2026-10-17 · Plain WebGL2 + React, no R3F / no game engine
 ## 10. Risks & open questions
 - Goo across the wrap seam (a group spanning column 29 → 0): handled — groups are unwrapped into one piece (`unwrapCells`, tested in `tests/goo/tank.test.ts`); a ring all the way round is cut on the far side.
 - Particle goo on a full tank: already simulates only near the screen (`margin`) with caps (9,000 particles); past the cap, new cells quietly get fewer particles.
-- Jelly simulates every body all the way round the tank, even off-screen ones; a very full tank on a slow phone is the case to watch (`node e2e/perf.mjs`; no pass/fail line yet).
+- Jelly simulates every body all the way round the tank, even off-screen ones; a very full tank on a slow phone is the case to watch (`node e2e/perf.mjs`, pass line in content/tuning/perf.json since F38 — headless is capped at 60 fps, so real phones decide).
+- v1's service worker (gh-pages root `sw.js`) deletes every cache but its own when it activates — caches are per site, so a player who installed the alpha and then opens v1 at /GOOPS/ for the first time loses the alpha's offline copy (online still works; the next alpha deploy re-caches). Rare; gone when the remake replaces v1 (F54). Found in the F38 review.
 - The pop look is a placeholder in both styles until the laser "explode/harden" look is designed.
