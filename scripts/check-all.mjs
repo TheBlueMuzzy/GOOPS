@@ -36,6 +36,7 @@ const E2E = [
   ['hud-shots', 'e2e/hud-shots.mjs', ''],      // 5254
   ['poke', 'e2e/poke.mjs', ''],                // 5268
   ['visor', 'e2e/visor.mjs', ''],              // 5265
+  ['gestures', 'e2e/gestures.mjs', ''],        // 5391
   ['controls', 'e2e/controls.mjs', ''],        // 5251
   ['shift-smoke', 'e2e/shift-smoke.mjs', ''],  // 5250
   ['portrait', 'e2e/portrait.mjs', ''],        // 5343
