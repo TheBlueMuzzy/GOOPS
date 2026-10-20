@@ -1,0 +1,327 @@
+{
+  "_about": "F31 YOUR FIRST DAY — the guided how-to-play a fresh save (rank 0) plays (src/game/lessons/firstDay.ts says when; App wires it). Design: .planning/research/tutorial.md §3 (15 steps, phases A–F); here a design step can be 2–3 runner steps (a no-message wait, then the line). Phase A is on the console; the periscope pull starts the day's training shift at the phase reached. Each phase's first step is a checkpoint: leaving mid-day restarts there, and its restartSetup puts back what earlier phases left. Controls not taught yet are off (rules.allow — 'pause' = the HUD's pause button, always on as the way out; 'console' only from free play). Words: content/text/en.json → lessons.first-day (Keys / Mouse / Phone). Cells: [column from the middle of the view (0 = where pieces fall), row from the floor (0 = the floor row), colour]. Times in seconds.",
+  "id": "first-day",
+  "start": {
+    "console": "frozen"
+  },
+  "finish": {
+    "console": "normal"
+  },
+  "steps": [
+    {
+      "id": "A1",
+      "checkpoint": true,
+      "pattern": "waitThenHint",
+      "message": "pull",
+      "pointer": { "tag": "periscope", "or": { "tag": "backToTank", "placement": "top" } },
+      "advance": { "on": "event", "event": "shiftStarted" },
+      "hint": { "after": 6, "message": "pullHint" }
+    },
+    {
+      "id": "B1",
+      "checkpoint": true,
+      "pattern": "positionGated",
+      "setup": {
+        "clear": true,
+        "pressure": 0,
+        "rules": { "pressureRise": 0, "cracks": false, "integrity": false, "autoSpawn": false, "falling": true, "zapColors": null, "allow": ["pause"] },
+        "pieces": [{ "shape": "T_I", "color": "blue", "turns": 1 }],
+        "spawn": true
+      },
+      "message": "falls",
+      "pointer": { "piece": true },
+      "showAfter": 0.4,
+      "advance": { "atLeast": 7 }
+    },
+    {
+      "id": "B2",
+      "pattern": "waitThenHint",
+      "setup": { "rules": { "allow": ["softDrop", "pause"] } },
+      "message": "fastDrop",
+      "pointer": { "piece": true },
+      "advance": { "on": "event", "event": "lock" },
+      "hint": { "after": 3, "message": "fastDropHint", "unless": { "on": "action", "action": "softDrop" } }
+    },
+    {
+      "id": "B3",
+      "pattern": "pauseShowDismiss",
+      "setup": {
+        "rules": { "allow": ["rotate", "softDrop", "pause"] },
+        "pieces": [{ "shape": "T_T", "color": "yellow" }],
+        "spawn": true
+      },
+      "message": "turn",
+      "pointer": { "piece": true },
+      "showAfter": 1.2,
+      "advance": { "on": "event", "event": "lock" },
+      "hint": {
+        "after": 0,
+        "from": { "on": "gate", "gate": "position", "atLeast": 10 },
+        "unless": { "on": "action", "action": "rotate" },
+        "message": "turnHint",
+        "pointer": { "piece": true }
+      }
+    },
+    {
+      "id": "C1",
+      "checkpoint": true,
+      "pattern": "pauseShowDismiss",
+      "restartSetup": {
+        "clear": true,
+        "goop": [[-1, 0, "blue"], [0, 0, "blue"], [1, 0, "blue"], [2, 0, "blue"], [-1, 1, "yellow"], [0, 1, "yellow"], [1, 1, "yellow"], [0, 2, "yellow"]]
+      },
+      "setup": { "pressure": 0, "rules": { "pressureRise": 0, "autoSpawn": false, "allow": ["pause"] } },
+      "message": "pressureLine",
+      "pointer": { "tag": "readout" }
+    },
+    {
+      "id": "C1-rise",
+      "pattern": "runActAdvance",
+      "setup": { "rules": { "pressureRise": 4, "zapColors": ["yellow"], "allow": ["pop", "pause"] } },
+      "advance": { "on": "gate", "gate": "ready:yellow", "atLeast": 1 }
+    },
+    {
+      "id": "C1-zap",
+      "pattern": "waitThenHint",
+      "setup": { "rules": { "pressureRise": 0 } },
+      "message": "zapYellow",
+      "pointer": { "goop": "yellow" },
+      "advance": { "on": "event", "event": "pop" },
+      "hint": { "after": 3, "message": "zapYellowHint", "pointer": { "goop": "yellow" } }
+    },
+    {
+      "id": "C2",
+      "pattern": "runActAdvance",
+      "setup": {
+        "pressure": 15,
+        "rules": { "pressureRise": 0, "zapColors": null, "allow": ["rotate", "softDrop", "pause"] },
+        "pieces": [{ "shape": "T_O", "color": "blue" }],
+        "spawn": true
+      },
+      "advance": { "on": "event", "event": "lock" }
+    },
+    {
+      "id": "C2-join",
+      "pattern": "pauseShowDismiss",
+      "message": "join",
+      "pointer": { "goop": "blue" }
+    },
+    {
+      "id": "C3",
+      "pattern": "waitThenHint",
+      "setup": { "rules": { "zapColors": ["blue"], "allow": ["pop", "pause"] } },
+      "message": "zapBlob",
+      "pointer": { "goop": "blue" },
+      "advance": { "on": "event", "event": "pop" },
+      "hint": { "after": 3, "from": { "on": "gate", "gate": "ready:blue", "atLeast": 1 }, "message": "zapBlobHint", "pointer": { "goop": "blue" } },
+      "reactions": [
+        {
+          "when": { "on": "event", "event": "reject", "where": { "reason": "filling" } },
+          "message": "stillFilling",
+          "pointer": { "goop": "blue" },
+          "until": { "on": "gate", "gate": "ready:blue", "atLeast": 1 }
+        }
+      ]
+    },
+    {
+      "id": "C3-vent",
+      "pattern": "pauseShowDismiss",
+      "message": "vent",
+      "pointer": { "tag": "readout" }
+    },
+    {
+      "id": "D1",
+      "checkpoint": true,
+      "pattern": "pauseShowDismiss",
+      "setup": {
+        "clear": true,
+        "pressure": 15,
+        "rules": { "pressureRise": 0, "integrity": true, "autoSpawn": false, "zapColors": null, "allow": ["pause"] },
+        "cracks": [[3, 0, "green"]]
+      },
+      "message": "crack",
+      "pointer": { "crack": "open" },
+      "showAfter": 1.5
+    },
+    {
+      "id": "D1-integrity",
+      "pattern": "pauseShowDismiss",
+      "message": "integrity",
+      "pointer": { "tag": "bar-integrity" }
+    },
+    {
+      "id": "D2",
+      "pattern": "positionGated",
+      "setup": { "pieces": [{ "shape": "T_O", "color": "green" }], "spawn": true },
+      "advance": { "atLeast": 7 }
+    },
+    {
+      "id": "D2-spin",
+      "pattern": "pauseShowDismiss",
+      "setup": { "rules": { "allow": ["spin", "rotate", "softDrop", "pause"] } },
+      "message": "spin",
+      "pointer": { "crack": "open" },
+      "advance": { "on": "event", "event": "plug", "where": { "plugged": true } },
+      "hint": { "after": 3, "message": "spinHint", "pointer": { "crack": "open" }, "unless": { "on": "action", "action": "spin" } },
+      "retry": {
+        "when": { "on": "event", "event": "lock", "if": { "on": "gate", "gate": "plugged", "atMost": 0 } },
+        "setup": { "cracks": [["inView", 0, "green"]], "pieces": [{ "shape": "T_O", "color": "green" }], "spawn": true },
+        "message": "tryAgain",
+        "max": 8
+      }
+    },
+    {
+      "id": "D3",
+      "pattern": "waitThenHint",
+      "setup": { "rules": { "allow": ["pop", "spin", "pause"] } },
+      "skipIf": { "on": "gate", "gate": "plugged", "atMost": 0 },
+      "message": "seal",
+      "pointer": { "crack": "plugged" },
+      "advance": { "on": "event", "event": "pop", "where": { "sealed": 1 } },
+      "hint": { "after": 3, "from": { "on": "gate", "gate": "ready:green", "atLeast": 1 }, "message": "sealHint", "pointer": { "crack": "plugged" } },
+      "reactions": [
+        {
+          "when": { "on": "event", "event": "reject", "where": { "reason": "filling" } },
+          "message": "stillFilling",
+          "pointer": { "crack": "plugged" },
+          "until": { "on": "gate", "gate": "ready:green", "atLeast": 1 }
+        }
+      ]
+    },
+    {
+      "id": "D3-sealed",
+      "pattern": "pauseShowDismiss",
+      "skipIf": { "on": "gate", "gate": "sealed", "atMost": 0 },
+      "message": "sealed",
+      "pointer": { "tag": "cracks" }
+    },
+    {
+      "id": "E1",
+      "checkpoint": true,
+      "pattern": "pauseShowDismiss",
+      "setup": {
+        "clear": true,
+        "pressure": 35,
+        "rules": { "pressureRise": 0, "integrity": true, "autoSpawn": false, "zapColors": null, "allow": ["pause"] },
+        "cracks": [[-2, 4, "green"]]
+      },
+      "message": "high",
+      "pointer": { "crack": "open" },
+      "showAfter": 0.6
+    },
+    {
+      "id": "E1-build",
+      "pattern": "runActAdvance",
+      "setup": {
+        "rules": { "autoSpawn": true, "allow": ["spin", "rotate", "softDrop", "pop", "pause"] },
+        "pieces": [{ "shape": "T_I", "color": "blue" }, { "shape": "T_O", "color": "green" }],
+        "then": { "pieces": [{ "shape": "T_O", "color": "green" }], "buildUp": { "cell": [-2, 4], "piece": { "shape": "T_I", "color": "blue" } } },
+        "spawn": true
+      },
+      "advance": { "on": "event", "event": "plug", "where": { "plugged": true } },
+      "hint": { "after": 8, "from": { "on": "event", "event": "lock", "count": 2 }, "message": "highHint", "pointer": { "crack": "open" } }
+    },
+    {
+      "id": "E1-seal",
+      "pattern": "waitThenHint",
+      "setup": { "rules": { "autoSpawn": false, "pressureRise": 1 } },
+      "message": "sealHigh",
+      "pointer": { "crack": "plugged" },
+      "advance": { "on": "event", "event": "pop", "where": { "sealed": 1 } },
+      "hint": { "after": 3, "from": { "on": "gate", "gate": "ready:green", "atLeast": 1 }, "message": "sealHint", "pointer": { "crack": "plugged" } },
+      "reactions": [
+        {
+          "when": { "on": "event", "event": "reject", "where": { "reason": "filling" } },
+          "message": "stillFilling",
+          "pointer": { "crack": "plugged" },
+          "until": { "on": "gate", "gate": "ready:green", "atLeast": 1 }
+        }
+      ]
+    },
+    {
+      "id": "F1",
+      "checkpoint": true,
+      "pattern": "pauseShowDismiss",
+      "setup": {
+        "play": "normal",
+        "rules": { "zone": "tetra", "pressureCap": 0.9, "integrityFloor": 0.2, "rupture": false, "overflowRail": true },
+        "pieces": [],
+        "spawn": true
+      },
+      "ensure": { "interrupt": "outOfView", "setup": { "cracks": [["outOfView", 0, "red"]] } },
+      "message": "freePlay",
+      "pointer": { "tag": "readout" }
+    },
+    {
+      "id": "F1-quota",
+      "pattern": "pauseShowDismiss",
+      "skipIf": { "on": "gate", "gate": "quotaLeft", "atMost": 0 },
+      "message": "quota",
+      "pointer": { "tag": "cracks" }
+    },
+    {
+      "id": "F1-work",
+      "pattern": "runActAdvance",
+      "advance": { "on": "any", "of": [{ "on": "event", "event": "quotaMet" }, { "on": "gate", "gate": "quotaLeft", "atMost": 0 }] },
+      "hint": { "after": 20, "again": { "on": "event", "event": "pop", "where": { "sealed": 1 } }, "message": "quotaHint", "pointer": { "crack": "open" } },
+      "reactions": [
+        {
+          "when": { "on": "event", "event": "overflowRail" },
+          "message": "tooFull",
+          "until": { "on": "event", "event": "lock" }
+        },
+        {
+          "when": { "on": "gate", "gate": "pressure", "atLeast": 90 },
+          "message": "capped",
+          "pointer": { "tag": "readout" },
+          "until": { "on": "gate", "gate": "pressure", "atMost": 88 }
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "pattern": "runActAdvance",
+      "setup": { "rules": { "pressureCap": 1, "integrityFloor": 0, "rupture": true, "overflowRail": false, "ruptureDrainSpeed": 0.5 } },
+      "advance": { "on": "event", "event": "rupture" },
+      "retry": { "when": { "on": "time", "after": 60 }, "setup": { "rules": { "pressureRise": 3 } }, "max": 1 }
+    },
+    {
+      "id": "F2-drain",
+      "pattern": "pauseShowDismiss",
+      "skipIf": { "on": "gate", "gate": "ended", "atLeast": 1 },
+      "message": "rupture",
+      "pointer": { "tag": "readout" },
+      "showAfter": 1
+    },
+    {
+      "id": "F2-end",
+      "pattern": "runActAdvance",
+      "advance": { "on": "gate", "gate": "ended", "atLeast": 1 }
+    },
+    {
+      "id": "F3",
+      "pattern": "runActAdvance",
+      "message": "clockOut",
+      "pointer": { "tag": "reportBack", "placement": "bottom" },
+      "advance": { "on": "event", "event": "reportClosed" }
+    }
+  ],
+  "interrupts": [
+    {
+      "id": "outOfView",
+      "from": "D2",
+      "when": { "on": "gate", "gate": "cracksOutOfView", "atLeast": 1 },
+      "message": "outOfView",
+      "pointer": { "crack": "outOfView" },
+      "remember": true
+    },
+    {
+      "id": "redX",
+      "from": "E1-build",
+      "to": "E1-seal",
+      "when": { "on": "gate", "gate": "wrongCover", "atLeast": 1 },
+      "message": "redX",
+      "pointer": { "crack": "wrongCover" }
+    }
+  ]
+}
