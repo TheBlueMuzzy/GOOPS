@@ -12,7 +12,7 @@ Checked: check:full at db82d88 — 21/22 PASS (incl. sw-update: own worker at /G
 - [x] 🤖 5. Release plumbing: GitHub checks on every push, check:framework, the alpha release checklist — package.json, scripts/check-all.mjs
 - [x] 🤖 6. Frame-rate counter (Dev Kit / ?fps) and a pass line in the speed test, full tank, both goo styles — e2e/perf.mjs
 - [x] 🤖 7. Broken-machine messages in PC wording on PC ("swipe up to fix" logged in Sprint 10) — content/text/en.json
-- [ ] 🙋 8. Install it on two real phones, fill the tank in both goo styles, read the fps (playtest log) — .planning/research/
+- [x] 🙋 8. (Muzzy approved F38 2026-10-20; moved to /deliver: on the LIVE alpha, since install needs https) Install it on two real phones, fill the tank in both goo styles, read the fps (playtest log) — .planning/research/
 
 ## Notes
 - Plan calls (Claude, 2026-10-20): v1's service worker is registered at /GOOPS/ (network-first, caches everything), so it would also control /GOOPS/alpha/ → alpha gets its own SW scoped to /GOOPS/alpha/ (the narrower scope wins) and a manifest scope/id of /GOOPS/alpha/. Deploy stays on the gh-pages branch (`--dest alpha --add`), not a GitHub Actions Pages deploy — that would replace the whole site and take v1 down. Going online waits for /deliver (Muzzy).
