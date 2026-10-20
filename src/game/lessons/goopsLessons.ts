@@ -5,29 +5,37 @@
 // What a Goops lesson step can use (content/lessons/*.json):
 //   setup   (done in this order)
 //     "clear": true                        empty the tank and drop the falling piece
+//     "play": "normal"                     every rule back to a normal shift (free play) — before "rules", so a step can
+//                                          say "normal play with these safety rails" (F31)
 //     "rules": { … }                       src/engine/training.ts TrainingRules: pressureRise, cracks, integrity, breakdowns,
 //                                          falling, autoSpawn, allow (["spin","rotate","softDrop","pop","hold"]), zone,
 //                                          pressureCap, integrityFloor, rupture, overflowRail, ruptureDrainSpeed,
 //                                          zapColors (colour names)
-//     "play": "normal"                     every rule back to a normal shift (free play)
 //     "pressure": 40                       set the pressure, in percent
 //     "goop": [[col, row, colour], …]      goop placed (already full); col = from the middle of the view, row = from the floor
-//     "cracks": [[col, row, colour], …]    cracks placed · "removeCracks": [[col, row], …]
+//     "cracks": [[col, row, colour], …]    cracks placed · "removeCracks": [[col, row], …] · F31: col "inView" / "outOfView"
+//                                          = the first free cell on that row, from the middle out / just past the view's edge
 //     "pieces": [{ "shape": "T_I", "color": "blue", "turns": 1 }, …]   the next pieces, in order
+//     "then": { "pieces": [ … ], "buildUp": { "cell": [col, row], "piece": { … } } }   F31: when "pieces" run out, these
+//                                          come round and round (not random ones); buildUp's piece comes first while the
+//                                          stack under that cell is too low for the due piece to reach it
 //     "spawn": true                        bring the next piece in now
 //     "console": "frozen" / "normal"       F32: at the console mid-shift the tank stands still (a first repair) / runs at
 //                                          content/tuning/breakdowns.json consoleTimeScale as usual (also back to normal
 //                                          whenever a lesson ends)
-//   gates   "position" (rows the falling piece's bottom has come into the tank) · "pressure" / "integrity" (percent) ·
-//           "sealed" (cracks sealed) · "cracksOutOfView" · "wrongCover" (cracks covered by another colour's goop) ·
+//   gates   the tank's own (goopsGates.ts): "position", "pressure", "integrity", "sealed", "cracksOutOfView", "wrongCover",
+//           F31: "plugged", "openCracks", "ready:<colour>", "full:<colour>", "underLine:<colour>" ·
 //           F32: "atConsole" (1 = the console is over the tank mid-shift) · "broken:<machine>" (1 = broken) ·
 //           "breakdownLessonsSeen" (how many first-breakdown lessons this device has finished)
-//   events  every engine event by its type (lock, pop, plug, crack, ready, merge, quotaMet, rupture, breakdown, repaired…),
+//   events  every engine event by its type (lock, pop, plug, crack, ready, merge, quotaMet, rupture, breakdown, repaired,
+//           F31: overflowRail…),
 //           with its details for `where` (e.g. pop → sealed, repaired → machine); plus the screen events "shiftStarted",
 //           "consoleOpened" (W / ↑ / flick up, mid-shift), "consoleClosed" (back in the tank), "pauseOpened", "pauseClosed",
 //           F59: "upgradesOpened" (the console's Upgrades button, between shifts)
 //   actions spin, rotate, softDrop, hold, pop, repair, console
-//   pointer { "piece": true } · { "cell": [col, row] } (follows the tank as it spins) · { "tag": "readout" } (an element
+//   pointer { "piece": true } · { "cell": [col, row] } (follows the tank as it spins) · F31: { "crack": "open" | "plugged" |
+//           "wrongCover" | "outOfView" | "any" } (the nearest; out of view = its arrow on the edge) · { "goop": "blue" }
+//           (the biggest blue group) · "bar-integrity" tag · { "tag": "readout" } (an element
 //           with that data-tag; F32 tags: "bar-<machine>" the HUD's machine bar, "repair-<machine>" the part of its
 //           repair panel that wants doing next, "panel-<machine>", "periscope", "monitor", "pauseResume") ·
 //           { "selector": "…" } · none = where pieces drop in. The message goes on the side the target's data-placement
@@ -36,7 +44,7 @@
 //   words   a text id in content/text/en.json → lessons.<lesson id>; a { keys, mouse, phone } entry picks by the input used
 //           last; {left} {total} {sealed} {pressure} {integrity} {tries} {consoleSpeed} are filled from the live shift
 import type { MachineId, PieceChoice, ShiftAction, ShiftEngine, ShiftState, TrainingRules } from '../../engine'
-import { isOnScreen } from '../../engine/tank'
+import { colourOf, pointerCells, tankGate } from './goopsGates'
 import { liveTuning } from '../../devkit/tuning/liveTuning'
 import { rulesClock } from '../../devkit/gameClock'
 import { fill, tipsMemory } from '../../ui/kit'
@@ -47,7 +55,6 @@ import { session } from '../session'
 import { createLessonRunner } from './runner'
 import type { Lesson } from './lessonTypes'
 import lessonTimingFile from '../../../content/tuning/lessons.json'
-import shiftConfig from '../../../content/tuning/shift.json'
 import breakdowns from '../../../content/tuning/breakdowns.json'
 import text from '../../../content/text/en.json'
 
@@ -81,7 +88,7 @@ const NORMAL_PLAY: Partial<TrainingRules> = { pressureRise: 1, cracks: true, int
   autoSpawn: true, allow: null, zone: null, pressureCap: 1, integrityFloor: 0, rupture: true, overflowRail: false, ruptureDrainSpeed: 1, zapColors: null }
 
 // a colour by its name in shift.json ("blue") or its number (1 = the first colour)
-const colour = (c: unknown) => (typeof c === 'number' ? c : shiftConfig.colors.indexOf(String(c)) + 1)
+const colour = colourOf
 const wrap = (x: number, w: number) => ((x % w) + w) % w
 // lesson [col, row] → tank [x, y]
 const toTank = (s: ShiftState, col: number, row: number): [number, number] => [wrap(anchorSpin + col, s.width), s.height - 1 - row]
@@ -97,23 +104,30 @@ function setup(setup: Record<string, unknown>) {
   anchorSpin = s.spin
   const train = (what: string, cmd: Parameters<ShiftEngine['train']>[0]) => { if (!e.train(cmd)) warn(what, setup) }
   if (setup.clear) train('clear', { type: 'clear' })
+  // (play first, then rules: F31's free play is "normal play, with these safety rails" in one set-up)
+  if (setup.play === 'normal') train('play normal', { type: 'rules', rules: NORMAL_PLAY })
   if (setup.rules) {
     const rules = { ...(setup.rules as Record<string, unknown>) }
     if (Array.isArray(rules.zapColors)) rules.zapColors = rules.zapColors.map(colour)
     train('rules', { type: 'rules', rules: rules as Partial<TrainingRules> })
   }
-  if (setup.play === 'normal') train('play normal', { type: 'rules', rules: NORMAL_PLAY })
   if (typeof setup.pressure === 'number') train('pressure', { type: 'pressure', value: setup.pressure / 100 })
   if (Array.isArray(setup.goop)) {
     train('goop', { type: 'goop', cells: (setup.goop as unknown[][]).map(([col, row, c]) => [...toTank(s, Number(col), Number(row)), colour(c)] as [number, number, number]) })
   }
   for (const [col, row] of (setup.removeCracks as number[][] | undefined) ?? []) train('removeCracks', { type: 'removeCrack', x: toTank(s, col, row)[0], y: toTank(s, col, row)[1] })
   for (const [col, row, c] of (setup.cracks as unknown[][] | undefined) ?? []) {
-    const [x, y] = toTank(s, Number(col), Number(row))
-    train('cracks', { type: 'crack', x, y, color: colour(c) })
+    const y = toTank(s, 0, Number(row))[1]
+    // F31: "inView" / "outOfView" instead of a column = the engine picks the first free spot on that row
+    if (col === 'inView' || col === 'outOfView') train('cracks', { type: 'freeCrack', where: col, y, color: colour(c) })
+    else train('cracks', { type: 'crack', x: toTank(s, Number(col), Number(row))[0], y, color: colour(c) })
   }
-  if (Array.isArray(setup.pieces)) {
-    train('pieces', { type: 'queue', pieces: (setup.pieces as PieceChoice[]).map((p) => ({ ...p, color: colour(p.color) })) })
+  if (Array.isArray(setup.pieces) || setup.then) {
+    const piece = (p: PieceChoice) => ({ ...p, color: colour(p.color) })
+    const then = setup.then as { pieces?: PieceChoice[]; buildUp?: { cell: [number, number]; piece: PieceChoice } } | undefined
+    const fallback = then && { pieces: (then.pieces ?? []).map(piece),
+      ...(then.buildUp ? { buildUp: { x: toTank(s, ...then.buildUp.cell)[0], y: toTank(s, ...then.buildUp.cell)[1], piece: piece(then.buildUp.piece) } } : {}) }
+    train('pieces', { type: 'queue', pieces: ((setup.pieces ?? []) as PieceChoice[]).map(piece), ...(fallback ? { then: fallback } : {}) })
   }
   if (setup.spawn) train('spawn', { type: 'spawn' })
   if (setup.console === 'frozen' || setup.console === 'normal') consoleFrozen = setup.console === 'frozen'
@@ -127,13 +141,9 @@ export const lessonSeen = (id: string) => tipsMemory().seen(`lesson:${id}`)
 function gate(name: string): number | null {
   const s = engine?.state
   if (!s) return null
+  const fromTank = tankGate(s, name) // (the tank's own numbers: goopsGates.ts)
+  if (fromTank !== null) return fromTank
   switch (name) {
-    case 'position': return s.piece ? Math.max(...s.piece.cells.map(([, y]) => y)) - s.bufferRows + 1 : null
-    case 'pressure': return Math.round(s.pressure * 100)
-    case 'integrity': return Math.round(s.integrity * 100)
-    case 'sealed': return s.cracksSealed
-    case 'cracksOutOfView': return s.cracks.filter((c) => !isOnScreen(c.x, s.spin, s.width, s.visibleWidth)).length
-    case 'wrongCover': return s.cracks.filter((c) => { const g = s.grid[c.y * s.width + c.x]; return g !== 0 && g !== c.color }).length
     case 'atConsole': return atConsole ? 1 : 0
     case 'breakdownLessonsSeen': return BREAKDOWN_LESSONS.filter(lessonSeen).length
   }
@@ -289,6 +299,7 @@ const barOf = (name: string) => `.kit-bar:has([role="progressbar"][aria-label="$
 const TAG_TARGETS: Record<string, string> = {
   readout: '[data-tag="readout"] .kit-pinned',
   'bar-visor': barOf(text.hud.visor), 'bar-laser': barOf(text.hud.laser), 'bar-controls': barOf(text.hud.controls),
+  'bar-integrity': barOf(text.hud.integrity), // F31: day one's D1 "this bar is its health"
   pauseResume: '.kit-pause .kit-menu > button:first-child', // the pause menu's "Back to the tank" (the kit's Pause)
   // the console's periscope: the part you grab (the kit's PullHandle) — while it works (a phone on its side switches it
   // off: the "or" pointer, Back to the tank, takes over)
@@ -301,6 +312,7 @@ const TAG_TARGETS: Record<string, string> = {
  *  the slider it asks for); every element carrying a tag counts (the visor's "repair-visor" = the lit lamp AND its
  *  control). or = where to point when none of this is on screen. */
 export type LessonPointer = { tag?: string; tags?: string[]; selector?: string; piece?: boolean; cell?: [number, number]
+  crack?: string; goop?: string // F31: the nearest crack of a kind / the biggest group of a colour (goopsGates.ts)
   placement?: string; or?: LessonPointer; show?: LessonPointer } // show (F32): also kept out of the dim, not outlined
 export type Box = { left: number; top: number; right: number; bottom: number }
 
@@ -392,6 +404,10 @@ export function placeLessonMark(el: HTMLElement | null, s: ShiftState, view: Goo
   if (!runner.view().message || p.tag || p.tags || p.selector) box = null
   else if (p.cell) box = cellBox(...toTank(s, p.cell[0], p.cell[1]))
   else if (p.piece && s.piece) box = around(s.piece.cells)
+  else if (p.crack || p.goop) { // F31: a crack / a goop group picked live (goopsGates.ts) — none right now: no box
+    const cells = pointerCells(s, p) ?? []
+    box = cells.length ? around(cells) : null
+  }
   else box = cellBox(wrap(s.spin, s.width), s.bufferRows) // where pieces drop in
   if (!box) { if (el.style.display !== 'none') el.style.display = 'none'; return }
   const [l, t, r, b] = box.map(Math.round)

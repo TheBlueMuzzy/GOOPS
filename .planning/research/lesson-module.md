@@ -144,6 +144,21 @@ Each well-known pattern is just a mix of the choices in §1, so the module needs
 | Unlock announcement + gradual reveal | planned: F59 rank unlocks |
 | Device-aware words | partly (the lesson picks its mouse/keys/touch line); tokens are for the module |
 | Ghost hand | candidate: the visor slider drag, the flick up |
+| Hint timing: from / unless / again (F31 spike) | ✅ runner (see §5) |
+| "Event while a state holds" conditions (F31) | ✅ runner: `if` on an event / action condition |
+| Interrupt armed for a range of steps + "make sure it happens" (F31) | ✅ runner: interrupt `from` / `to`, step `ensure` |
+| Live pointers by kind (nearest open crack, biggest group, an off-screen thing's arrow) (F31) | ✅ Goops (`goopsGates.ts`); the module needs the idea, not the code |
+
+## 5. Findings from the first-day spike (F31, 2026-10-20)
+Checking a whole 15-step scripted day against the runner (tutorial.md §9) turned up these general needs — none Goops-only:
+- **A hint has three clocks, not one.** "N s after the step starts" isn't enough: *from* (the wait starts when something happens — "3 s after the goop is ready"), *unless* (doing the thing means no hint for the rest of the step; one already up goes and the step's own words come back — "3 s without fast-dropping"), *again* (each time this happens the wait starts over — "20 s without a seal", which is also how the Idle trigger in §1.D works). Before this, only the step moving on stopped a hint, so a player who'd already done the thing still got told to.
+- **A miss is an event plus a state.** "The piece landed AND the crack is still open" can't be one event or one gate. Conditions need `if`: an event that only counts while a gate holds. (The game's events must arrive after the state they changed — Goops' do, as a batch after each tick.)
+- **Discoveries need a range and a guarantee.** A discovery lesson ("cracks out of view") is armed only from the step that sets it up (`from` / `to` step ids), and one that MUST be taught before the lesson ends gets a staged fallback: a later step's `ensure` makes it happen if it hasn't (and skips if it was seen on this device before).
+- **Safety rails = normal play + holds, in that order.** "Free play, but you can't lose yet" is one set-up: normal rules first, then the holds on top. A set-up applied in a fixed order where "normal" comes last silently undoes the rails.
+- **Point at things by kind, picked live.** Where goop and cracks end up is the player's doing, so pointers name a kind ("the nearest open crack", "the biggest blue group", "the arrow of the off-screen crack") and the game picks it each frame — fixed cells only work for things the lesson placed.
+- **A scripted piece order needs a rule for when it runs out,** decided as each piece comes in (it sees what the last piece built), not when it's queued. Goops: "green O's, with a blue I first while the column under the crack is too low".
+- **The game's own feedback can BE the lesson** ("Above the pressure line" when you zap too early). The rule "the game's messages keep quiet while a lesson message is up" silences it, so such a step must show no lesson message (or repeat the line as a reaction). Module option worth adding: a step flag that lets the game's own short feedback through.
+- **One lesson can span screens with no game running at its ends** (day one starts at the console and ends on the report): the runner already copes without an engine (F59); what's needed is the game handing the lesson from screen to screen without stopping it.
 
 ## Sources
 [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/basic/) · [GAG: replay instructions](https://gameaccessibilityguidelines.com/?p=3102) · [Roblox onboarding techniques](https://create.roblox.com/docs/en-us/production/game-design/onboarding-techniques) · [Xbox accessibility guideline 116: time limits](https://devdocs.xbox.com/build/game-principles/accessibility/xag-deep-dives/xag-116-time-limits.md) · Celia Hodent, *The Gamer's Brain* (2017). The game examples come from general knowledge and weren't checked online.

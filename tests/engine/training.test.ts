@@ -219,3 +219,99 @@ describe('placed goop and cracks, pressure, rules', () => {
     expect(copy.state.piece!.colors[0]).toBe(1)
   })
 })
+
+// F31 (day one, the Sprint 10 spike): what the first day's steps need that F30 didn't have.
+describe('day one: fallback pieces, free crack spots, the overflow rail says so', () => {
+  const O = (color: number) => ({ shape: 'T_O', color })
+  const I = (color: number) => ({ shape: 'T_I', color })
+
+  it('when the chosen pieces run out, the fallback rule\'s pieces come round and round (not random ones)', () => {
+    const { shift, config } = training()
+    shift.train({ type: 'queue', pieces: [I(2)], then: { pieces: [O(3), O(1)] } })
+    shift.train({ type: 'spawn' })
+    const colours: number[] = []
+    for (let i = 0; i < 5; i++) {
+      colours.push(shift.state.piece!.colors[0])
+      shift.act({ type: 'spin', dir: 1 }) // (spread them out: the tank mustn't fill)
+      shift.act({ type: 'spin', dir: 1 })
+      dropPiece(shift, config)
+    }
+    expect(colours).toEqual([2, 3, 1, 3, 1])
+  })
+
+  it('buildUp: the build-up piece comes first while the column is too low to reach the cell — decided as each piece comes in', () => {
+    const { shift, config } = training()
+    const s = shift.state
+    shift.train({ type: 'crack', x: 0, y: 19, color: 3 }) // row 4 from the floor, in an empty column
+    shift.train({ type: 'queue', pieces: [], then: { pieces: [O(3)], buildUp: { x: 0, y: 19, piece: I(2) } } })
+    shift.train({ type: 'spawn' })
+    expect(s.piece!.colors[0]).toBe(2) // an O dropped in the empty column would land on rows 0–1: too low → a blue I
+    dropPiece(shift, config) // the I stands in column 0: rows 0–3
+    expect(s.piece!.colors[0]).toBe(3) // now an O reaches row 4
+    dropPiece(shift, config)
+    expect(s.cracks[0].plugged).toBe(true)
+  })
+
+  it('a new queue without `then` goes back to random pieces after it', () => {
+    const { shift, config } = training()
+    shift.train({ type: 'queue', pieces: [], then: { pieces: [O(3)] } })
+    shift.train({ type: 'queue', pieces: [O(1)] })
+    shift.train({ type: 'spawn' })
+    dropPiece(shift, config)
+    const colours = new Set<number>()
+    for (let i = 0; i < 12; i++) {
+      colours.add(shift.state.piece!.colors[0])
+      for (let k = 0; k < 3; k++) shift.act({ type: 'spin', dir: 1 }) // (spread them out round the tank)
+      dropPiece(shift, config)
+    }
+    expect(colours.size).toBeGreaterThan(1)
+  })
+
+  it('a fallback rule with a typo is refused whole', () => {
+    const { shift } = training()
+    expect(shift.train({ type: 'queue', pieces: [], then: { pieces: [{ shape: 'NOPE', color: 1 }] } })).toBe(false)
+  })
+
+  it('freeCrack: in view = from the middle out; out of view = just past the edges; never on goop', () => {
+    const { shift } = training()
+    const s = shift.state
+    shift.train({ type: 'goop', cells: [[0, 23, 1]] }) // goop where pieces fall
+    expect(shift.train({ type: 'freeCrack', where: 'inView', y: 23, color: 3 })).toBe(true)
+    expect(shift.train({ type: 'freeCrack', where: 'inView', y: 23, color: 3 })).toBe(true)
+    expect(s.cracks.map((c) => c.x)).toEqual([1, 29]) // one right of the middle, then one left
+    expect(shift.train({ type: 'freeCrack', where: 'outOfView', y: 23, color: 3 })).toBe(true)
+    expect(s.cracks[2].x).toBe(7) // the view is spin-5 .. spin+6: the first column past its right edge
+    shift.act({ type: 'spin', dir: 1 }) // (rule-free: spin works) the view moves with the tank
+    shift.train({ type: 'freeCrack', where: 'outOfView', y: 23, color: 3 })
+    expect(s.cracks[3].x).toBe(8)
+  })
+
+  it('freeCrack is refused when the row has no free cell', () => {
+    const { shift } = training()
+    const row: [number, number, number][] = []
+    for (let x = 0; x < 30; x++) row.push([x, 23, 1 + (x % 2)])
+    shift.train({ type: 'goop', cells: row })
+    expect(shift.train({ type: 'freeCrack', where: 'inView', y: 23, color: 1 })).toBe(false)
+    expect(shift.state.cracks).toHaveLength(0)
+  })
+
+  it('the overflow rail tells the lesson: an overflowRail event with how many cells it cleared', () => {
+    const { shift } = training({ autoSpawn: false })
+    const s = shift.state
+    const column: [number, number, number][] = []
+    for (let y = 0; y < s.height; y++) column.push([0, y, 1 + (y % 2)])
+    shift.train({ type: 'goop', cells: column })
+    shift.takeEvents()
+    shift.train({ type: 'spawn' })
+    expect(ofType(shift.takeEvents(), 'overflowRail')[0].cells).toBe(s.bufferRows + 4)
+  })
+
+  it('a snapshot keeps the fallback rule and where it is round it', () => {
+    const { shift, config } = training()
+    shift.train({ type: 'queue', pieces: [], then: { pieces: [O(3), O(1)] } })
+    shift.train({ type: 'spawn' }) // the first O(3) is falling: O(1) is due next
+    const copy = restoreShift(config, shift.snapshot(), breakdowns)
+    dropPiece(copy, config)
+    expect(copy.state.piece!.colors[0]).toBe(1)
+  })
+})

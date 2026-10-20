@@ -176,6 +176,17 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D14 · 2026-10-20 · Day one's missing lesson pieces are small additions to the F30 format, not a tutorial mode (F31 spike)
+  Proposed by: Claude (Sprint 10 task 9: tutorial.md §6 checked line by line → §9)
+  Chose: extend what's there. Engine (training.ts): a queue's `then` fallback rule (pieces round and round + a build-up
+  piece while a column is too low), decided again as each piece comes in (it must see where the last one landed — deciding
+  when the piece is queued lags one piece); `freeCrack` (first free cell in view from the middle out / just out of view);
+  an `overflowRail` event. Runner (game-agnostic): `if` on event/action conditions, hint `from` / `unless` / `again`,
+  interrupt `from` / `to`, step `ensure`. Goops: gates + tank pointers moved to a pure `goopsGates.ts` (unit-testable on a
+  real shift — goopsLessons.ts pulls in the Dev Kit and kit); colour gates; `{ crack }` / `{ goop }` pointers;
+  `bar-integrity`; "play" now runs before "rules" (normal play + rails in one set-up — before, normal play wiped them).
+  Not chosen: a special first-day engine mode or Goops-only runner code — the framework's lesson module would lose them.
+  Everything still missing is App wiring (task 11): see tutorial.md §9.
 D13 · 2026-10-19 · Swap trades with the NEXT piece; no held piece (F59)
   Proposed by: Muzzy (the held piece is "basically just the 'next piece' now"; swap unlocks at rank 3, the window at 1)
   Chose: engine `hold()` builds the next piece where the falling one is (blocked → refused, as before) and makes the
