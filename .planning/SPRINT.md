@@ -4,7 +4,7 @@ What changes for Muzzy: the console shows a version number, the phone offers to 
 
 ## F38 🧱 Alpha release kit
 Check: version.json shown on the console · a release build at /GOOPS/alpha/ installs as a full-screen app with its own service worker (scope /GOOPS/alpha/, wins over v1's /GOOPS/ one) and an update test · the deploy script adds alpha/ and leaves v1's root untouched (dry run) · the Dev Kit works in the release build with no dev server (no failed requests; bug files copy / download) · GitHub checks run on push · perf.mjs reports fps with a pass line · Muzzy reads the fps on two real phones
-- [ ] 🤖 1. version.json (0.0.0, build 0) read by the build, shown on the console as vX.Y.Z.B; STATE's Version line fixed — vite.config.ts, src/ui/Console.tsx
+- [x] 🤖 1. version.json (0.0.0, build 0) read by the build, shown on the console as vX.Y.Z.B; STATE's Version line fixed — vite.config.ts, src/ui/Console.tsx
 - [ ] 🤖 2. Installable full-screen app at /GOOPS/alpha/: base path, manifest scope / id / matching colours / maskable icon, apple tags, a service worker scoped to /GOOPS/alpha/ with a "new version" refresh, e2e update test — public/manifest.json, index.html, src/main.tsx
 - [ ] 🤖 3. Deploy script: build, then add the build as alpha/ on gh-pages keeping v1's root (dry run only — going online is /deliver) — scripts/deploy.js
 - [ ] 🤖 4. Dev Kit ON in the release build: audit calls that need the dev server (kit-copy problems go to the framework session, never edited here), bug files work offline, check on a release build — src/devkit-game/
