@@ -29,15 +29,19 @@ export interface ControlCallbacks {
   spinSlowdown?(): number
 }
 
-const DRAG_LOCK = 10 // px before a touch counts as a drag
-const DRAG_DEADZONE = 20 // px sideways before the tank starts spinning
-const SWIPE_MS = 300
-const SWIPE_PX = 50
+// F28: the touch distances live in tank.json in rem (dragLockRem, dragDeadZoneRem, flickRem) so they feel the same on
+// every phone: 1 rem = the page's root font size (16 px today, so 0.625 rem = the old 10 px). Read at each press, so
+// a Dev Kit edit counts from the next touch. (No page in the node tests: 16 px.)
+const remPx = (): number => {
+  if (typeof document === 'undefined') return 16
+  return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+}
 
 // consoleOnly (F32): while isActive() is false, the console control (W / ↑ / a quick flick up) may still work — a
 // lesson insisting "go to the console" pauses everything else
 export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: () => boolean, consoleOnly: () => boolean = () => false) {
-  let ptr: { id: number; x: number; y: number; t: number; locked: 'H' | 'V' | null; consumed: boolean } | null = null
+  // rem = px per rem at the press · lowest = the furthest DOWN the finger has been (screen y grows downward)
+  let ptr: { id: number; x: number; y: number; t: number; locked: 'H' | 'V' | null; consumed: boolean; rem: number; lowest: number } | null = null
   let dragDir: -1 | 0 | 1 = 0
   const keys = new Set<string>()
   let nextSpinAt = -Infinity
@@ -88,23 +92,24 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     const full = isActive()
     if (ptr || holdKey || !(full || consoleOnly())) return
     el.setPointerCapture(e.pointerId)
-    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: clock(), locked: null, consumed: false }
+    ptr = { id: e.pointerId, x: e.clientX, y: e.clientY, t: clock(), locked: null, consumed: false, rem: remPx(), lowest: e.clientY }
     holdStart = clock()
     if (full && swapOn()) holdTimer = requestAnimationFrame(tickHold) // (console only, or swap still locked: no hold-to-swap)
   }
   const move = (e: PointerEvent) => {
     if (!ptr || e.pointerId !== ptr.id) return
+    const dragLock = tank.dragLockRem * ptr.rem, deadZone = tank.dragDeadZoneRem * ptr.rem // (px)
     if (!isActive() && consoleOnly()) { // console only: just watch for the flick (no spin, no fast drop)
-      if (!ptr.locked && Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > DRAG_LOCK) ptr.locked = 'V'
+      if (!ptr.locked && Math.hypot(e.clientX - ptr.x, e.clientY - ptr.y) > dragLock) ptr.locked = 'V'
       return
     }
     const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y
-    if (!ptr.locked && (Math.abs(dx) > DRAG_LOCK || Math.abs(dy) > DRAG_LOCK)) {
+    if (!ptr.locked && (Math.abs(dx) > dragLock || Math.abs(dy) > dragLock)) {
       clearHold()
       ptr.locked = Math.abs(dx) > Math.abs(dy) ? 'H' : 'V'
     }
     if (ptr.locked === 'H') {
-      const dir = dx < -DRAG_DEADZONE ? 1 : dx > DRAG_DEADZONE ? -1 : 0
+      const dir = dx < -deadZone ? 1 : dx > deadZone ? -1 : 0
       if (dir !== dragDir) { dragDir = dir; if (dir) { nextSpinAt = -Infinity; startLoop() } }
     } else if (ptr.locked === 'V') cb.softDrop(dy > 0)
   }
@@ -117,8 +122,9 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     dragDir = 0
     const dt = clock() - p.t, dx = e.clientX - p.x, dy = e.clientY - p.y
     if (p.consumed) return
+    const flick = dt < tank.flickMs && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > tank.flickRem * p.rem
     if (!isActive()) { // console only: a quick flick up is the one thing that works
-      if (consoleOnly() && dt < SWIPE_MS && dy < 0 && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_PX) cb.console()
+      if (consoleOnly() && flick && dy < 0) cb.console()
       return
     }
     if (!p.locked) {
@@ -126,9 +132,9 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
       if (cb.tapCell(e.clientX, e.clientY)) return
       const r = el.getBoundingClientRect()
       cb.rotate(e.clientX - r.left < r.width / 2 ? -1 : 1)
-    } else if (dt < SWIPE_MS && Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > SWIPE_PX) {
+    } else if (flick) {
       if (dy < 0) cb.console()
-      else { cb.softDrop(true); stopShortDrop(); stopShortDrop = rulesClock.after(150, () => cb.softDrop(false)) } // quick swipe down = a short fast-drop
+      else { cb.softDrop(true); stopShortDrop(); stopShortDrop = rulesClock.after(tank.flickDropMs, () => cb.softDrop(false)) } // quick swipe down = a short fast-drop
     }
   }
   const cancel = (e: PointerEvent) => { if (ptr && e.pointerId === ptr.id) { ptr = null; clearHold(); cb.softDrop(false); dragDir = 0 } }

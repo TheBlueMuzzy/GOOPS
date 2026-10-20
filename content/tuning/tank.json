@@ -1,4 +1,11 @@
 {
+  "_help": {
+    "dragLockRem": "Touch: how far a finger moves before a press counts as a drag (sideways = spin, up/down = fast drop) instead of a tap or a hold. In rem (1 rem = 16 px today) so it feels the same on every phone.",
+    "dragDeadZoneRem": "Touch: how far sideways a drag goes before the tank starts spinning (hold past it to keep spinning, like a joystick). In rem (1 rem = 16 px today).",
+    "flickMs": "Touch: a quick flick up (console) or down (a short fast drop) must be over within this many ms, finger down to finger up.",
+    "flickRem": "Touch: how far up or down a quick flick must travel. In rem (1 rem = 16 px today).",
+    "flickDropMs": "Touch: how long a quick flick down fast-drops for (ms, on the rules clock — it stands still under a pause)."
+  },
   "background": "#05070d",
   "tank": "#0a0f1c",
   "grid": "#16203a",
@@ -14,6 +21,11 @@
   "spinFirstDelayMs": 250,
   "holdToSwapMs": 1500,
   "holdDelayMs": 250,
+  "dragLockRem": 0.625,
+  "dragDeadZoneRem": 1.25,
+  "flickMs": 300,
+  "flickRem": 3.125,
+  "flickDropMs": 150,
   "offscreenArrowSize": 0.32,
   "offscreenArrowAlpha": 0.7,
   "primedColor": "#fff2b3",
