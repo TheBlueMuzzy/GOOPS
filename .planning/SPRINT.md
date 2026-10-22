@@ -1,0 +1,20 @@
+# Sprint 12 — the console's Upgrades screen, and the first 8 upgrades really work
+Started 2026-10-22 · Milestone M5 Beta · Features: F34
+What changes for Muzzy: from rank 5 the console's Upgrades button opens a real shop. You can see every upgrade for ranks 2–9 (the ones above your rank are shown locked, with their rank), buy a level for 1 scrap, take one back for free, and switch the first active on. What you own changes the next shift (the tank wears slower, pressure rises slower…), and Cooldown Booster gets a charge button in the HUD. Stays the same: the shift itself when you own nothing, the first day, the live alpha (nothing goes online — that's /deliver).
+Mode: auto (Muzzy, 2026-10-22: "go auto for this sprint"). Order (Muzzy): the screen first, then the upgrades.
+
+## F34 🎮 Upgrade screen at the console + the early upgrades
+Done when: at rank 5+ the Upgrades screen lists the 8 ranks 2–9 upgrades with level pips and a cost, buying / taking back moves scraps and survives a reload, an owned upgrade changes the next shift (each one measured), Cooldown Booster can be equipped, charges in the HUD and fires, max level of a machine fix makes its repair 1 step shorter.
+Check: unit tests for the save change (old saves keep their XP + scraps), buying / take-back rules, each upgrade's effect reaching the shift (resolveUpgrades → createShift) · e2e/upgrades.mjs: rank 5 save → open the screen → buy → reload → still owned → start a shift → the change is there · screenshots at 390x844, 360x740 and 1440x900 (portrait only — D11) looked at first-hand · check:full green
+- [ ] 🤖 1. Bring the framework pieces up to date first (UI kit 0.17.1 → 0.26.0, Dev Kit 0.18.0 → 0.22.0, audio 0.2.1 → 0.4.0; dry run, then install; set `"orientation": "portrait"` in style.json; drop app.css workarounds the kit now covers; check:full) — src/ui/kit/VERSION
+- [ ] 🤖 2. Save what you own: upgrade levels + equipped actives in the progress save (version 2, old saves carried over, not wiped), buy / take-back rules (1 scrap a level, free take-back, can't go below 0 scraps) — src/progress/save.ts
+- [ ] 🤖 3. The 8 upgrades in the tuning file with v1's names, descriptions and per-level steps (decided in design/upgrades-map.md "F33 decisions") — content/tuning/upgrades.json
+- [ ] 🤖 4. The Upgrades screen (kit parts only): one card per upgrade — name, what it does, level pips, cost, buy / take back; locked ones show "rank N"; actives get an equip switch; scraps at the top; the words in en.json — src/ui/App.tsx
+- [ ] 🤖 5. What you own reaches the shift: resolveUpgrades → createShift (modifiers + abilities), the repair panels' fewer steps, Focus Mode slows the console's time scale — src/ui/App.tsx
+- [ ] 🤖 6. Cooldown Booster: its fire effect (running machine calm times +25/35/50 %) + a charge button in the HUD (tap, or a key) — src/engine/abilities.ts
+- [ ] 🤖 7. Proof: e2e/upgrades.mjs (buy → reload → shift changed, each upgrade measured) + screenshots at three sizes — e2e/unlocks.mjs
+- [ ] 🤖 8. Docs: GDD §5 + upgrades-map "built" notes, TDD decision for the save change (tuning: per-level steps start at v1's) — .planning/GDD.md
+
+## Notes
+- Plan calls (Claude, 2026-10-22): kit update first so the new screen is built on today's kit, not an 8-version-old one (the planner already flagged it). One feature, tasks in Muzzy's order (screen, then the upgrades working). The engine already reads every passive's number (shift.ts, machines.ts) — the gap is that nothing calls resolveUpgrades yet; Focus Mode and Cooldown Booster need new hooks. Next free TDD decision: D18.
+- No open P0/P1 bugs (B001–B003 are P3, not in these files).

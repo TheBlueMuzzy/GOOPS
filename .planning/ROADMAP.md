@@ -124,7 +124,7 @@ flowchart LR
 ## M5 — Beta: the whole job, rank 0 to the takeover
 Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every v1 system are in; numbers can still be rough.
 - ✅ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · decided 2026-10-22 (design/upgrades-map.md "F33 decisions": store at 5 shelf-ready, 1 scrap a level + free take-backs, rank 3 slower depressurise, rank 9 pressure slower, tougher tank at 22) · needs: F08
-- 🟢 F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
+- 🔨 F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
 - ⏳ F35 🎮 Story ranks 0–9: rank titles, Employer beats, the intercom voice — must:beta · needs: F09, F30
 - ⏳ F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
   note: Muzzy (2026-10-19): keep all three
