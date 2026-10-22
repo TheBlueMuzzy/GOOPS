@@ -336,6 +336,55 @@ async function boosterKey() {
 }
 
 // the Upgrades card's level as a number beside the pips ("2/4")
+// The top row's WORST case with the charge button in it (game-ui: HUD checks use the widest text a real game shows):
+// the biggest quota (every colour in play + progression.json maxRank 50 = 57) with two-digit seals, quota met with 99
+// seals, the rupture word — each with a 5-digit score (hud-shots' worst case: a shift's score is its XP, ~16k a rank at
+// rank 50) — at the two phone sizes. The crack count's visible ink (a Range round its
+// words) must stay ≥ 6 px from the score badge and from the charge button's visible edge (its border box), on one line.
+const shiftJson = JSON.parse(readFileSync('content/tuning/shift.json', 'utf8'))
+const MAX_QUOTA = shiftJson.colors.length + 50
+async function widestTopRow() {
+  const cases = [
+    ['count', { sealed: MAX_QUOTA - 1, needed: MAX_QUOTA }], ['quota', { sealed: 99, needed: MAX_QUOTA }], ['rupture', { sealed: 8, needed: MAX_QUOTA, rupture: true }],
+  ]
+  for (const [width, height] of [[360, 740], [390, 844]]) {
+    const tag = `${width}x${height}`
+    for (const [name, c] of cases) {
+      const { page, errors, close } = await inShift(ALL, { width, height })
+      await page.evaluate((c) => {
+        const s = window.__goops.engine.state
+        Object.assign(s, { cracksSealed: c.sealed, cracksNeeded: c.needed, score: 99999, quotaMet: c.sealed >= c.needed })
+        if (c.rupture) s.phase = 'rupture'
+      }, c)
+      await page.waitForTimeout(600) // (the HUD's 10-a-second update, and the text fitting itself)
+      const m = await page.evaluate(() => {
+        // the words' own ink: a Range round each TEXT node (a Range round an element counts its whole block box)
+        const ink = (el) => {
+          const boxes = [], walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+          for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.textContent.trim()) { const r = document.createRange(); r.selectNodeContents(n); boxes.push(r.getBoundingClientRect()) }
+          return { left: Math.min(...boxes.map((b) => b.left)), right: Math.max(...boxes.map((b) => b.right)), top: Math.min(...boxes.map((b) => b.top)), bottom: Math.max(...boxes.map((b) => b.bottom)) }
+        }
+        const status = document.querySelector('.kit-hud-slot[data-one-row] .kit-hud-text') ?? document.querySelector('.kit-hud-slot[data-one-row]').firstElementChild
+        // (the count's line, and its name's small line under it when stacked: the ink of both)
+        const textEl = status.querySelector('.kit-text') ?? status
+        const words = ink(status), button = document.querySelector('[data-tag="ability"]').getBoundingClientRect()
+        const consoleBtn = [...document.querySelectorAll('.kit-hud-slot button')].find((x) => x.dataset.tag !== 'ability').getBoundingClientRect()
+        const score = document.querySelector('.kit-hud-chip').getBoundingClientRect()
+        const textNode = document.createTreeWalker(textEl, NodeFilter.SHOW_TEXT).nextNode()
+        const range = document.createRange(); range.selectNodeContents(textNode)
+        const lines = new Set([...range.getClientRects()].map((x) => Math.round(x.top))).size // (one line = one top)
+        return { text: status.textContent, toButton: Math.round(button.left - words.right), toScore: Math.round(words.left - score.right), lines,
+          scoreText: document.querySelector('.kit-hud-chip .kit-float-anchor > .kit-text')?.textContent, within: words.top >= consoleBtn.top - 1 && words.bottom <= consoleBtn.bottom + 1 }
+      })
+      check(`${tag} widest top row (${name}: "${m.text}", score ${m.scoreText}): the crack count ≥ 6 px from the charge button and the score, its line unbroken, no taller than the Console button`,
+        m.toButton >= 6 && m.toScore >= 6 && m.lines === 1 && m.within, `${m.toButton} px to the button · ${m.toScore} px to the score · ${m.lines} line(s) · within the button's height: ${m.within}`)
+      await shot(page, `widest-${name}-${tag}`)
+      check(`${tag} widest (${name}): no page errors`, errors.length === 0, errors.join(' | '))
+      await close()
+    }
+  }
+}
+
 async function levelNumbers() {
   for (const [width, height] of [[360, 740], [390, 844], [1440, 900]]) {
     const tag = `${width}x${height}`
@@ -358,6 +407,7 @@ try {
     await measureShift()
     for (const [width, height] of [[360, 740], [390, 844], [1440, 900]]) await boosterAt(width, height)
     await boosterKey()
+    await widestTopRow()
     await levelNumbers()
   }
   if (part !== 'shift') {

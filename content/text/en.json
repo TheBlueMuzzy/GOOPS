@@ -112,6 +112,7 @@
   "hud": {
     "cracks": "CRACKS {n} / {total}",
     "cracksDone": "QUOTA MET · {n}",
+    "cracksShort": "{n} / {total}",
     "pause": "Console",
     "swap": "Swapping piece",
     "next": "Next piece",

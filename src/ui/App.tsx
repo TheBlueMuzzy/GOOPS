@@ -371,7 +371,13 @@ export function App() {
   const integrityAlert = ruptured ? 'flash' : hud && hud.integrity < low ? 'pulse' : undefined
   const integrityBar = hud && <Bar plain label={text.hud.integrity} labelAt="inside" width={short ? 1 : hudTuning.bars.integrityWidth} thickness="l"
     value={Math.round(hud.integrity * 100)} variant={integrityAlert ? 'danger' : 'primary'} alert={integrityAlert} />
-  const status = <HudText size="l" fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>{statusText}</HudText>
+  // F34: with an active equipped its charge button takes ~50 px of the top row, and the widest count a real game shows
+  // ("CRACKS 56 / 57", "QUOTA MET · 99" beside a 5-digit score) no longer fits a 360 / 390 phone even shrunk to the
+  // body-text floor (kit HudText fit) — so then the count drops its name: "56 / 57", and past the quota the same count in
+  // the accent colour ("61 / 57"). Known when the shift starts, so it never switches mid-shift. (Ask Muzzy in SPRINT Notes.)
+  const shortCount = !short && !!engine?.state.abilities?.length && !ruptured && !!hud
+  const status = <HudText size="l" fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>
+    {shortCount ? fill(text.hud.cracksShort, { n: hud.cracksSealed, total: hud.cracksNeeded }) : statusText}</HudText>
   // F59: the next-piece window, from its rank (known when the shift starts, like the machines)
   const showNext = !!engine && isUnlocked('nextPiece', engine.state.rank)
   const nextWindow = hud && showNext ? <NextWindow piece={hud.next} label={text.hud.next} /> : undefined
