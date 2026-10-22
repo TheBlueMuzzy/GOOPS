@@ -106,7 +106,7 @@ flowchart LR
 - **F32 first-breakdown lessons (runner pieces added):** core — `skipIf` takes a list (any holds), step `reactions` (say something else until `until`, then the step's message comes back: "That's the pause menu…"), an `any` condition (whichever comes first; "Got it" counts when it holds `dismiss`), no breath after the last step, nothing left "running" after a finish (a queued lesson starts at once). Goops side — lessons in a REAL shift (`lessonPlay.watch(engine)`; the engine isn't wrapped), `firstBreakdowns.ts` queues `content/lessons/<machine>.json` on the first `breakdown` of each machine (once per device: kit tips memory `lesson:<machine>`, marked at the repair; leaving before it → plays again), screen events from App (`consoleOpened` / `consoleClosed` / `pauseOpened` / `pauseClosed`), setup `"console": "frozen"` (the lesson holds the tank still at the console while App runs the rules clock at full speed there, so the lesson's own timers keep time), gates `atConsole`, `broken:<machine>`, `breakdownLessonsSeen`, `{consoleSpeed}` in words, `lessons.shared` words. Pointers: HUD bars by name, console parts by `data-tag` (`repair-<machine>` = the part to do next, `panel-<machine>`, `monitor`; `periscope` = the PullHandle grip, `backToTank`, `pauseResume`), the side the message goes from the target's `data-placement` (never over the parts still to use) or the pointer's `placement`, an `or` pointer when the first isn't on screen, else the screen's middle. The console-visit note (`console-note.json`, first `consoleNoteVisits` visits outside a lesson, skipped on the cramped phone-on-its-side console). Settings → Replay lessons (`replayLessons` button row) clears the device's seen marks. Dev: `__goops.breakMachine(id, true)` also announces the break (lessons hear it).
 - **F32 from Muzzy's first try (D10):** runner — a step's `insist` (`when` → the SAME message again with the game paused, the dim on and only `only` controls working — `setSpeed(speed, input, only)`; no Got it; once per step) and pointer-only steps (a pointer, no message: just the spotlight). Look — `Spotlight.tsx` (+ `spotlightMath.ts`: the dim = the screen minus the holes as non-overlapping rectangles, also the tap blocker's clip-path): holes (undimmed, tappable), pass-through (dimmed, tappable: the tank under an insisting go-to-console message, below the HUD row), one outline round all the elements carrying the pointer's tag(s) (`tags: [...]`, or several elements with one tag: the lit lamp + its slider / button / dial), `show` = more holes, the bubble inside `gameColumn()` (console screen's column, else ShiftStage's `--kit-hud-w`), its words and Got it from the first frame (Got it works after dismissArmSeconds). At the console (not a phone on its side) no bubble: `useCrtLesson` → Console.tsx's `Crt` draws the monitor's screen with the line (and Got it) and grows down like a toaster; the monitor + screen are holes. A tagged part's `data-say` swaps in its own words ("Drag the slider toward the light" / "Press the lit button"). A panel a lesson points at by `panel-<machine>` is shown lit (`showcase`). Tank input: `attachControls(…, consoleOnly)` — under an insisting message only W / ↑ / a quick flick up work. Gate `insist:<machine>` = broken for `insistSeconds` (lessons.json, 4 = the visor glitch at full strength); lessons.json `dimAmount`. Repair sliders are a real drag (`useDragOnly` wraps the kit SnapControl: a press that didn't move isn't a move); the visor slider touched at the buttons' turn shakes the panel (the buttons' wrong-press shake).
 
-## 2c. Upgrades & abilities  (F22 — plumbing only; no real upgrade is in the game yet)
+## 2c. Upgrades & abilities  (F22 plumbing; F34 2026-10-22: the 8 ranks 2–9 upgrades are in the game — save + shop D18, Cooldown Booster D19)
 Every v1 upgrade has a home: `design/upgrades-map.md`. Three kinds, three plugs — the engine stays pure and seeded, and with no upgrades it plays **exactly** as before (tested: same events, score and tank on seeded shifts).
 ```mermaid
 flowchart LR
@@ -126,7 +126,7 @@ flowchart LR
 |---|---|---|
 | `content/tuning/shift.json` | tank size, shift length, fall speed, lock delay, fill time, refunds, crack rules | Obsidian (Dev Kit later) |
 | `content/tuning/breakdowns.json` | the three machines' meters (v1 numbers), unlock ranks, repair cooldown, `consoleTimeScale` (F23) | Obsidian |
-| `content/tuning/upgrades.json` | upgrade definitions: type, rank, max level, per-level effects / ability charge + numbers (only the two test-only ones so far) | Obsidian |
+| `content/tuning/upgrades.json` | upgrade definitions: type, rank, max level, per-level effects / ability charge + numbers (the 8 ranks 2–9 upgrades + the two test-only ones; players' words in en.json `upgrades.items`) | Obsidian |
 | `content/tuning/goo-jelly.json` | Jelly's knobs (started as Muzzy's Preset 2; plain-English help for each under `_help`) | Dev Kit Tuning (live) / Obsidian |
 | `content/tuning/goo-particle.json` | Particle's knobs (started as Muzzy's Preset 1; `_help` too) | same |
 | `content/tuning/goo-colors.json` | colour name → hex (red, blue, green, yellow, purple, white, black); `shift.json` `colors` sets their order | same — the goo, cracks and ghost change at once |
@@ -184,6 +184,21 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D18 · 2026-10-22 · Upgrades you own live in the progress save (v2, old saves carried over); the shop rules are pure functions (F34)
+  Proposed by: Claude   Options: a separate upgrades save / extend goops-progress
+  Chose: goops-progress version 2 = { totalXp, scrapsSpent, owned: id → level, equipped: ids }, one upgrade step per
+  version (v1 → v2 keeps XP + scraps, empty owned) — the alpha wiped any save whose version differed, so without the
+  step this release would have wiped every alpha player. A save from a newer build is never overwritten; a broken
+  upgrade entry is dropped alone. Buy / take back / equip = pure functions in src/progress/upgradeShop.ts (1 scrap a
+  level from the data, free take-back, active slots from progression.json); upgradesForShift() feeds createShift.
+  Lesson training shifts get no upgrades (they play the same for everyone). Golden saves: tests/saves/.
+D19 · 2026-10-22 · Cooldown Booster fires on the machines; its button sits in the HUD top row (F34)
+  Proposed by: Claude   Options: button in the bottom panel / top row
+  Chose: ability fire functions also get the machines (changed in place, engine stays pure + seeded); boostCooldowns
+  adds boost × remaining calm time to every running cooldown, refused (charge kept) when not full, nothing running, or
+  in a rupture. The bottom panel lets taps through to the tank and has no width at 360, so the charge button sits in
+  the top row left of the console button; key F / Numpad . (skipped in text boxes). Kit gap: TimerRing has one size
+  and always prints its number — 2 app.css lines shrink it (framework request).
 D17 · 2026-10-20 · The alpha's release kit: its own service worker at /GOOPS/alpha/, auto-update, deploy beside v1 (F38)
   Proposed by: Claude (BMUZ GitHub Pages recipe + the Sprint 11 plan call)
   Chose: vite-plugin-pwa (generateSW) — base /GOOPS/alpha/ in production, so its sw.js lives at /GOOPS/alpha/sw.js with

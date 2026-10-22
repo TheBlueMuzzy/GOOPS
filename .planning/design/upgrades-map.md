@@ -93,3 +93,6 @@
 | 8 | Dense Goop | passive · 4 | pieces fall faster (self-chosen challenge) | `fallSpeedMult` ready |
 | 9 | Pressure Control | passive · 8 | pressure rises slower | `pressureRiseTimeMult` ready |
 All bought from rank 5 (the store opens then). Per-level steps start at v1's (≈ +12.5–15 % a level) and get checked by the bots/economy sim (F51) — tuning, not taste. Claude's calls (change any): actives keep charging at the console's slowed speed (same clock as the shift) and stop during a rupture (already built).
+
+### Built (F34, 2026-10-22)
+All 8 ranks 2–9 upgrades are in `content/tuning/upgrades.json` (players' words in en.json `upgrades.items`) and measured in a real shift (e2e/upgrades.mjs, level 4 vs none): Pressure Control pressure rise ×1/1.2 · Dense Goop fall ×1.5 faster · Auto-Popper rupture drain ×1.6 longer · Circuit Stabilizer visor grace 5.05 → 8.05 s · Capacitor Efficiency laser drain ×0.75 · Gear Lubrication cooling ×1.5 · Focus Mode console speed 0.25 → 0.15 · max machine fixes: repairs 4/3/4 → 3/2/3 steps · Cooldown Booster 3: a visor calm time 7.3 → 10.9 s on fire. Save + shop: TDD D18; the active's button: TDD D19. Still to build: Focus Mode-style console hooks for later upgrades, the other actives' effects (Goop Dump, Colorizer, Crack Down), ability slots 2 and 3 (F42).
