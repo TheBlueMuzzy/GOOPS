@@ -199,6 +199,7 @@ D19 · 2026-10-22 · Cooldown Booster fires on the machines; its button sits in 
   in a rupture. The bottom panel lets taps through to the tank and has no width at 360, so the charge button sits in
   the top row left of the console button; key F / Numpad . (skipped in text boxes). Kit gap: TimerRing has one size
   and always prints its number — 2 app.css lines shrink it (framework request).
+  Review note (2026-10-22): taking a level back refunds the upgrade's CURRENT price — only a Dev Kit price edit after buying makes that differ from what was paid; accepted (all prices are 1). The shift never gets more actives than slots (newest kept).
 D17 · 2026-10-20 · The alpha's release kit: its own service worker at /GOOPS/alpha/, auto-update, deploy beside v1 (F38)
   Proposed by: Claude (BMUZ GitHub Pages recipe + the Sprint 11 plan call)
   Chose: vite-plugin-pwa (generateSW) — base /GOOPS/alpha/ in production, so its sw.js lives at /GOOPS/alpha/sw.js with
