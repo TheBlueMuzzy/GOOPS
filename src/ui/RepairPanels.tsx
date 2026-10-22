@@ -24,8 +24,10 @@ const offLabel = (name: string) => fill(t.unavailable, { name })
 // the console's words are on its monitor). say = the words this part asks for (en.json lessons.<machine>.<say>), so the
 // message says what to do with the part that's outlined
 type Side = 'top' | 'bottom' | 'left' | 'right'
-export const LessonTag = ({ tag, placement, say }: { tag: string; placement?: Side; say?: string }) =>
-  <span className="lesson-tag" data-tag={tag} data-placement={placement} data-say={say} aria-hidden />
+// steps (F34): on a panel's own tag, how many steps this repair puzzle has (e2e/upgrades.mjs: a max-level machine fix
+// makes it 1 shorter)
+export const LessonTag = ({ tag, placement, say, steps }: { tag: string; placement?: Side; say?: string; steps?: number }) =>
+  <span className="lesson-tag" data-tag={tag} data-placement={placement} data-say={say} data-steps={steps} aria-hidden />
 // the laser's top row of sliders (its message goes above them; the bottom row's below)
 const laserTopRow = (at: [number, number, number, number]) => {
   const ys = r.laser.sliders.map((s) => s[1])
@@ -107,7 +109,7 @@ export function LaserPanel({ live, onRepair, fewerSteps, showcase, outlined = []
   const on = live || !!showcase
   return (
     <>
-      <ArtLayer {...a.laser} off={!on} shake={shake} label={on ? undefined : offLabel(t.laser)}><LessonTag tag="panel-laser" /></ArtLayer>
+      <ArtLayer {...a.laser} off={!on} shake={shake} label={on ? undefined : offLabel(t.laser)}><LessonTag tag="panel-laser" steps={want.filter((w) => w !== null).length} /></ArtLayer>
       <ArtLayer {...a.words.laser} tone="primary" off={!on} shake={shake}>{t.laser}</ArtLayer>
       {r.laser.sliders.map((at, i) => (
         <SliderRow key={i} at={at} lamps={r.laser.lamps[i]} live={live} on={on} want={live ? want[i] : null} value={pos[i]} next={i === next}
@@ -174,7 +176,7 @@ export function VisorPanel({ live, onRepair, fewerSteps, showcase, outlined = []
   const on = live || !!showcase
   return (
     <>
-      <ArtLayer {...a.lights} off={!on} shake={shake} label={on ? undefined : offLabel(t.lights)}><LessonTag tag="panel-visor" /></ArtLayer>
+      <ArtLayer {...a.lights} off={!on} shake={shake} label={on ? undefined : offLabel(t.lights)}><LessonTag tag="panel-visor" steps={v.order.length} /></ArtLayer>
       <ArtLayer {...a.words.lights} tone="primary" off={!on} shake={shake}>{t.lights}</ArtLayer>
       {/* (a bubble, on a phone on its side: left of the top lamp, under the bottom one, right of the buttons' lamps —
           never over the slider or buttons still to use) */}
@@ -215,7 +217,7 @@ export function ControlsPanel({ live, onRepair, fewerSteps, showcase, outlined =
   const locked = live && !controlAnswers(outlined, target !== null ? 'repair-controls' : undefined) // (a lesson outlines another part)
   return (
     <>
-      <ArtLayer {...a.controls} off={!on} shake={shake} label={on ? undefined : offLabel(t.controls)}><LessonTag tag="panel-controls" /></ArtLayer>
+      <ArtLayer {...a.controls} off={!on} shake={shake} label={on ? undefined : offLabel(t.controls)}><LessonTag tag="panel-controls" steps={c.targets.length} /></ArtLayer>
       <ArtLayer {...a.words.controls} tone="primary" off={!on} shake={shake}>{t.controls}</ArtLayer>
       {/* (a bubble, on a phone on its side: above the top corners, below the bottom ones — never over the dial) */}
       {r.controls.lamps.map((at, k) => <Lamp key={k} at={at} live={on} lit={target === k} blink="fast"
