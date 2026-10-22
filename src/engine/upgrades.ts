@@ -19,6 +19,9 @@ export interface Modifiers {
   visorGraceMult: number // × visor.graceMs — 1.15 = the visor holds 15% longer before fading (Circuit Stabilizer)
   controlsCoolMult: number // × controls.coolPerSec — 1.125 = the controls cool 12.5% faster (Gear Lubrication)
   breakdownCooldownMult: number // × the cooldown after a repair — 1.25 = machines stay safe 25% longer
+  // Read by the GAME, not the engine (F34, Focus Mode): × breakdowns.json consoleTimeScale, how fast the shift runs
+  // while you're at the console mid-shift — 0.8 = 20% slower there (the App passes it to the shift's speed)
+  consoleTimeScaleMult: number
 }
 
 export type ModifierName = keyof Modifiers
@@ -48,6 +51,7 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   visorGraceMult: 1,
   controlsCoolMult: 1,
   breakdownCooldownMult: 1,
+  consoleTimeScaleMult: 1,
 })
 
 // Safety rails, not tuning: whatever the upgrades add up to, each modifier stays in this range.
@@ -64,6 +68,7 @@ const LIMITS: Record<ModifierName, [min: number, max: number]> = {
   visorGraceMult: [0, 10],
   controlsCoolMult: [0, 10],
   breakdownCooldownMult: [0, 10],
+  consoleTimeScaleMult: [0.1, 1], // never stops the shift, never speeds it up
 }
 
 export function isModifierName(name: string): name is ModifierName {

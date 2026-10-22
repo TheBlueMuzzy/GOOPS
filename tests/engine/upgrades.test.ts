@@ -2,6 +2,7 @@
 // proven by the two test-only upgrades in content/tuning/upgrades.json.
 import { describe, expect, it } from 'vitest'
 import upgradesJson from '../../content/tuning/upgrades.json'
+import en from '../../content/text/en.json'
 import { NEUTRAL_MODIFIERS, NO_FEWER_REPAIR_STEPS, clampModifiers, createShift, playableUpgrades, resolveUpgrades } from '../../src/engine'
 import type { AbilitySpec, ShiftConfig, ShiftEngine, ShiftEvent, ShiftOptions, UpgradeBook } from '../../src/engine'
 import { ABILITY_EFFECTS } from '../../src/engine/abilities'
@@ -132,10 +133,72 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
         expect(['mul', 'add']).toContain(e.op)
         expect(e.byLevel.length).toBeGreaterThan(0)
       }
-      if (u.type === 'active') expect(ABILITY_EFFECTS[u.ability!.effect], u.id).toBeTypeOf('function')
+      // (an effect still being built is named in COMING, so it can't be forgotten)
+      if (u.type === 'active') expect(typeof ABILITY_EFFECTS[u.ability!.effect] === 'function' || COMING.includes(u.ability!.effect), u.id).toBe(true)
     }
     expect(playableUpgrades(book).map((u) => u.id)).not.toContain(STURDY)
     expect(playableUpgrades(book).map((u) => u.id)).not.toContain(LOW)
+  })
+})
+
+// F34 task 6 builds Cooldown Booster's fire effect; then this list is empty
+const COMING = ['boostCooldowns']
+
+describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 decisions")', () => {
+  const shop = playableUpgrades(book)
+  it('one upgrade for each rank 2–9, in that order, with v1’s max levels', () => {
+    expect(shop.map((u) => [u.id, u.rank, u.maxLevel])).toEqual([
+      ['circuitStabilizer', 2, 4], ['autoPopper', 3, 4], ['capacitorEfficiency', 4, 4], ['cooldownBooster', 5, 3],
+      ['gearLubrication', 6, 4], ['focusMode', 7, 4], ['denseGoop', 8, 4], ['pressureControl', 9, 8],
+    ])
+  })
+
+  it('every modifier is a name the shift (or the game, for Focus Mode) reads, with a value for every level', () => {
+    for (const u of shop) {
+      for (const e of u.effects ?? []) {
+        expect(isModifierName(e.modifier) || isFewerStepsName(e.modifier), `${u.id}: ${e.modifier}`).toBe(true)
+        expect(e.byLevel.length, u.id).toBe(u.maxLevel)
+      }
+      if (u.ability) expect(u.ability.byLevel.length, u.id).toBe(u.maxLevel)
+    }
+  })
+
+  it('each level helps a little more than the last (Dense Goop: pieces fall faster — the self-chosen challenge)', () => {
+    const at = (level: number) => (id: string) => resolveUpgrades(book, { [id]: level })
+    const grows = (id: string, read: (r: ReturnType<typeof resolveUpgrades>) => number, dir: 1 | -1) => {
+      const values = Array.from({ length: shop.find((u) => u.id === id)!.maxLevel + 1 }, (_, level) => read(at(level)(id)))
+      for (let i = 1; i < values.length; i++) expect(dir * (values[i] - values[i - 1]), `${id} level ${i}`).toBeGreaterThan(0)
+    }
+    grows('circuitStabilizer', (r) => r.modifiers.visorGraceMult, 1)
+    grows('autoPopper', (r) => r.modifiers.ruptureDrainTimeMult, 1)
+    grows('capacitorEfficiency', (r) => r.modifiers.laserDrainMult, -1)
+    grows('gearLubrication', (r) => r.modifiers.controlsCoolMult, 1)
+    grows('focusMode', (r) => r.modifiers.consoleTimeScaleMult, -1)
+    grows('denseGoop', (r) => r.modifiers.fallSpeedMult, 1)
+    grows('pressureControl', (r) => r.modifiers.pressureRiseTimeMult, 1)
+  })
+
+  it('max level of each machine fix = its repair takes 1 step less (and only at max)', () => {
+    const fix = { circuitStabilizer: 'visor', capacitorEfficiency: 'laser', gearLubrication: 'controls' } as const
+    for (const [id, machine] of Object.entries(fix)) {
+      expect(resolveUpgrades(book, { [id]: 3 }).fewerRepairSteps[machine], id).toBe(0)
+      expect(resolveUpgrades(book, { [id]: 4 }).fewerRepairSteps).toEqual({ ...NO_FEWER_REPAIR_STEPS, [machine]: 1 })
+    }
+  })
+
+  it('Cooldown Booster: equipped, it goes into the shift with its level’s boost (+25 / 35 / 50%) and v1’s charging', () => {
+    const boosts = [1, 2, 3].map((level) => resolveUpgrades(book, { cooldownBooster: level }, ['cooldownBooster']).abilities[0])
+    expect(boosts.map((a) => a.params.boost)).toEqual([0.25, 0.35, 0.5])
+    expect(boosts[0]).toMatchObject({ effect: 'boostCooldowns', chargePerSecond: 0.05, chargePerSeal: 0.25 })
+    expect(resolveUpgrades(book, { cooldownBooster: 1 }).abilities).toEqual([]) // owned but not equipped: stays home
+  })
+
+  it('every shop upgrade has a name and a description players read (content/text/en.json upgrades.items)', () => {
+    const items = en.upgrades.items as Record<string, { name: string; desc: string }>
+    for (const u of shop) {
+      expect(items[u.id]?.name, u.id).toBeTruthy()
+      expect(items[u.id]?.desc, u.id).toBeTruthy()
+    }
   })
 })
 

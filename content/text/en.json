@@ -61,7 +61,53 @@
     "title": "Upgrades",
     "scraps": "Scraps: {n}",
     "soon": "The first upgrades arrive in the next update.",
-    "back": "Back"
+    "list": "Upgrades for sale",
+    "back": "Back",
+    "level": "Level {n} of {max}",
+    "cost": "{n} scrap a level",
+    "costMany": "{n} scraps a level",
+    "buy": "+",
+    "buyLabel": "Buy a level of {name}",
+    "takeBack": "−",
+    "takeBackLabel": "Take back a level of {name}",
+    "equip": "Take into the shift",
+    "equipLabel": "Take {name} into the shift",
+    "swapped": "{name} stays behind: one active at a time.",
+    "locked": "Opens at rank {rank}",
+    "items": {
+      "circuitStabilizer": {
+        "name": "Circuit Stabilizer",
+        "desc": "The visor holds its picture longer before it starts to fade. Max level: fixing it takes 1 step less."
+      },
+      "autoPopper": {
+        "name": "Auto-Popper",
+        "desc": "After a rupture the pressure drains slower, so you get more time to pop the goop that's left."
+      },
+      "capacitorEfficiency": {
+        "name": "Capacitor Efficiency",
+        "desc": "Each pop drains the laser less. Max level: fixing it takes 1 step less."
+      },
+      "cooldownBooster": {
+        "name": "Cooldown Booster",
+        "desc": "An active: it charges during the shift. Fire it to keep every running machine calm for longer before it can break again."
+      },
+      "gearLubrication": {
+        "name": "Gear Lubrication",
+        "desc": "The controls cool down faster. Max level: fixing them takes 1 step less."
+      },
+      "focusMode": {
+        "name": "Focus Mode",
+        "desc": "The tank runs slower while you're at the console during a shift."
+      },
+      "denseGoop": {
+        "name": "Dense Goop",
+        "desc": "Goop falls faster: a harder shift, but more drops to seal cracks with. Take it back any time."
+      },
+      "pressureControl": {
+        "name": "Pressure Control",
+        "desc": "Pressure rises slower, so new cracks come slower too."
+      }
+    }
   },
   "hud": {
     "cracks": "CRACKS {n} / {total}",
