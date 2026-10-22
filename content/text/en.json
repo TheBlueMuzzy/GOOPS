@@ -63,6 +63,7 @@
     "list": "Upgrades for sale",
     "back": "Back",
     "level": "Level {n} of {max}",
+    "levelShort": "{n}/{max}",
     "cost": "{n} scrap",
     "costMany": "{n} scraps",
     "buy": "+",
@@ -119,7 +120,9 @@
     "laser": "LASER",
     "visor": "VISOR",
     "controls": "CONTROLS",
-    "pressureReadout": "{n}% PSI"
+    "pressureReadout": "{n}% PSI",
+    "abilityCharging": "{name}: charging, {n}%",
+    "abilityReady": "{name}: ready — tap or press F"
   },
   "messages": {
     "refusedAboveLine": "Above the pressure line",

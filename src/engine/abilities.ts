@@ -1,7 +1,7 @@
 // Active abilities (F22): charge up during the shift, fire with act({ type: 'ability', id }).
 // Each ability names an EFFECT. An effect's fire function starts it and says whether it could;
 // a lasting effect keeps its state in ShiftState.effects, and the engine reads it at the exact spot it changes.
-import type { ShiftPhase } from './types'
+import type { MachineId, MachineState, ShiftPhase } from './types'
 
 // One equipped ability, as resolveUpgrades() works it out from upgrades.json.
 export interface AbilitySpec {
@@ -18,9 +18,28 @@ export interface ActiveEffects {
 }
 
 // Start an effect. Returns false if it can't do anything right now (the charge is then kept).
-type FireEffect = (shift: { phase: ShiftPhase; effects: ActiveEffects }, params: Record<string, number>, id: string) => boolean
+// It gets the parts of the shift an effect may change (F34: the machines too — the engine's own state objects, so an
+// effect changes them in place; still pure: no time, no randomness, only the numbers it's given).
+export interface FireTarget {
+  phase: ShiftPhase
+  effects: ActiveEffects
+  machines: Record<MachineId, MachineState>
+}
+type FireEffect = (shift: FireTarget, params: Record<string, number>, id: string) => boolean
 
 export const ABILITY_EFFECTS: Record<string, FireEffect> = {
+  // F34 Cooldown Booster (v1): every machine whose calm time is running (the cooldown after a repair, when it can't
+  // break) gets boost × what's left of it on top — +25 / 35 / 50 %. Nothing running (or a rupture: the machines are
+  // frozen then) → refused, and the charge is kept for when it helps.
+  boostCooldowns: (shift, params) => {
+    if (shift.phase !== 'playing') return false
+    const boost = Number(params.boost)
+    if (!(Number.isFinite(boost) && boost > 0)) return false // a number missing from upgrades.json: nothing to do
+    const running = Object.values(shift.machines).filter((m) => m.unlocked && m.cooldownMs > 0)
+    if (!running.length) return false
+    for (const m of running) m.cooldownMs += m.cooldownMs * boost
+    return true
+  },
   // Next N cracks form low in the tank (v1 Crack Down: bottom 4 rows). No new cracks during a rupture, so not then.
   lowCracks: (shift, params, id) => {
     if (shift.phase !== 'playing') return false

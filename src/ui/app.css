@@ -13,3 +13,10 @@ html, body, #root { margin: 0; height: 100%; }
 /* the machine bars: one row, never wrapping (each bar's "at most its share" and the dock's tight sides are kit options
    now — Bar atMost, Hud dockTight, UI kit 0.25.0) */
 .hud-machines { flex-wrap: nowrap; }
+
+/* F34: the HUD's charge button for the equipped active (Cooldown Booster) — the kit's TimerRing (3.5rem) inside an icon
+   button, made small enough to sit inside the button at the Console button's size, and without its number (the
+   button's label reads the % out; at this size the number wrapped out of the ring). KIT GAP (framework request in
+   SPRINT Notes): a TimerRing size + "no number" option, or a "charge button" part; then these lines go. */
+.hud-ability .kit-timer { flex: none; inline-size: 2rem; block-size: 2rem; }
+.hud-ability .kit-timer > * { visibility: hidden; }

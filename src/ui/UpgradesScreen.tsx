@@ -61,7 +61,11 @@ function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {
       )}
       {/* the level (pips) and the price of one more; then − / + at the right (or the rank it opens at) */}
       <Row gap="s" justify="between">
-        <Pips count={max} filled={level} label={fill(w.level, { n: level, max })} />
+        {/* (the pips' owned / empty differ only by brightness: the level as a plain number beside them too — "2/4") */}
+        <Row gap="s">
+          <Pips count={max} filled={level} label={fill(w.level, { n: level, max })} />
+          <Text kind="label">{fill(w.levelShort, { n: level, max })}</Text>
+        </Row>
         <Text kind="caption">{fill(cost === 1 ? w.cost : w.costMany, { n: cost })}</Text>
       </Row>
       <Row gap="s" justify="end">

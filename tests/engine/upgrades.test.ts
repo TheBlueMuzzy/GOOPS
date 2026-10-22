@@ -133,16 +133,12 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
         expect(['mul', 'add']).toContain(e.op)
         expect(e.byLevel.length).toBeGreaterThan(0)
       }
-      // (an effect still being built is named in COMING, so it can't be forgotten)
-      if (u.type === 'active') expect(typeof ABILITY_EFFECTS[u.ability!.effect] === 'function' || COMING.includes(u.ability!.effect), u.id).toBe(true)
+      if (u.type === 'active') expect(typeof ABILITY_EFFECTS[u.ability!.effect], u.id).toBe('function')
     }
     expect(playableUpgrades(book).map((u) => u.id)).not.toContain(STURDY)
     expect(playableUpgrades(book).map((u) => u.id)).not.toContain(LOW)
   })
 })
-
-// F34 task 6 builds Cooldown Booster's fire effect; then this list is empty
-const COMING = ['boostCooldowns']
 
 describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 decisions")', () => {
   const shop = playableUpgrades(book)

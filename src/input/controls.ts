@@ -11,7 +11,8 @@
 //   · only ONE hold charges a swap at a time (the first finger to hold still, or a held key — never both).
 // F59: swap unlocks by rank — before that (canSwap false) holding does nothing: no charging ring, no swap.
 // Keys (GDD §4, one set, same timing as touch): A D / ← → spin · Q / Right Ctrl ↺, E / Numpad 0 ↻
-// · S / ↓ (hold) fast drop · hold R / Right Shift 1.5 s = swap · W / ↑ console/pause.
+// · S / ↓ (hold) fast drop · hold R / Right Shift 1.5 s = swap · W / ↑ console/pause
+// · F / Numpad . = fire the equipped active (F34, Cooldown Booster; refused unless it's charged).
 import tank from '../../content/tuning/tank.json'
 import { rulesClock } from '../devkit/gameClock'
 
@@ -27,6 +28,9 @@ export interface ControlCallbacks {
   tapCell(px: number, py: number): boolean // true if there was goop there (it tried to pop)
   hold(): void
   console(): void
+  // F34: fire the equipped active ability (F / Numpad . — the HUD's charge button does the same). Left out = the keys
+  // are left alone.
+  ability?(): void
   // 0..1 while a hold-to-swap is charging, null when it ends. at = where the holding finger (or mouse) is, in page px —
   // the swap timer is drawn beside it (F28); no `at` = a held key (the HUD's Swap bar shows it).
   holdProgress?(p: number | null, at?: { x: number; y: number }): void
@@ -208,6 +212,7 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
       // (swap still locked, or a finger already charging: the key does nothing)
       if (!holdKey && holdFinger === null && swapOn()) startHold({ key: k })
     } else if (k === 'KeyW' || k === 'ArrowUp') cb.console()
+    else if ((k === 'KeyF' || k === 'NumpadDecimal') && cb.ability) cb.ability() // F34: fire the equipped active
     else return
     e.preventDefault()
   }

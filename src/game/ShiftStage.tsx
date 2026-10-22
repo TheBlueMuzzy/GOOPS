@@ -49,6 +49,8 @@ export interface HudSnapshot {
   // breaks = how many times each has broken this shift (a new repair puzzle each time)
   machines: Record<MachineId, { unlocked: boolean; health: number; broken: boolean }>
   breaks: Record<MachineId, number>
+  // F34: the equipped active (Cooldown Booster): its charge 0..1 and whether it's full — the HUD's charge button
+  ability: { id: string; charge: number; ready: boolean } | null
 }
 
 interface Props {
@@ -202,7 +204,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
           integrity: s.integrity, phase: s.phase, holdProgress, machines: machinesNow(s.machines), breaks: { ...breaks },
-          next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0] } : null })
+          next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0] } : null,
+          ability: s.abilities?.[0] ? { id: s.abilities[0].id, charge: s.abilities[0].charge, ready: s.abilities[0].ready } : null })
         still = reduceMotion()
         const box = readoutEl.current?.querySelector('.kit-pinned')?.getBoundingClientRect()
         if (box?.width) { readoutSize.w = box.width; readoutSize.h = box.height }
@@ -272,6 +275,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       softDrop,
       hold: () => engine.act({ type: 'hold' }),
       console: () => live.current.onConsole(),
+      // F34: F / Numpad . fire the equipped active (refused unless it's full — the engine says no); none equipped: no key
+      ...(s.abilities?.length ? { ability: () => engine.act({ type: 'ability', id: s.abilities![0].id }) } : {}),
       // F28: a held key's swap timer is the HUD's Swap bar; a finger's (or the mouse's) is the ring beside it
       holdProgress: (p, at) => {
         holdProgress = at ? null : p

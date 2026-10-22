@@ -373,3 +373,42 @@ describe('two fingers', () => {
     expect(seen.holds).toBe(1)
   })
 })
+
+describe('F34: the active ability key (F / Numpad .)', () => {
+  function abilitySetup(withAbility: boolean, active = true) {
+    const el = Object.assign(new EventTarget(), { setPointerCapture: () => {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }) }) as unknown as HTMLElement
+    const seen = { fired: 0, prevented: 0 }
+    detach = attachControls(el, {
+      spin: () => {}, rotate: () => {}, softDrop: () => {}, tapCell: () => false, hold: () => {}, console: () => {},
+      ...(withAbility ? { ability: () => { seen.fired++ } } : {}),
+    }, () => active)
+    const key = (code: string, target?: object) => {
+      const e = event('keydown', { code, repeat: false, preventDefault: () => { seen.prevented++ } })
+      if (target) Object.defineProperty(e, 'target', { value: target })
+      ;(window as unknown as EventTarget).dispatchEvent(e)
+    }
+    return { seen, key }
+  }
+
+  it('F and Numpad . fire it (once per press)', () => {
+    const { seen, key } = abilitySetup(true)
+    key('KeyF'); key('NumpadDecimal')
+    expect(seen).toEqual({ fired: 2, prevented: 2 })
+  })
+
+  it('typing an F into a text box is a letter, not the ability', () => {
+    const { seen, key } = abilitySetup(true)
+    key('KeyF', { tagName: 'INPUT' })
+    expect(seen.fired).toBe(0)
+  })
+
+  it('no ability equipped (no callback) or the tank paused: the key does nothing and is left to the page', () => {
+    const none = abilitySetup(false)
+    none.key('KeyF')
+    expect(none.seen).toEqual({ fired: 0, prevented: 0 })
+    detach!(); detach = null
+    const paused = abilitySetup(true, false)
+    paused.key('KeyF')
+    expect(paused.seen.fired).toBe(0)
+  })
+})

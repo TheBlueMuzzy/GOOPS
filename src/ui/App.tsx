@@ -5,7 +5,7 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, GameOver, Hud, HudText, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
+import { Bar, Button, GameOver, Hud, HudText, Pause, Row, Score, ScreenStack, Settings, Stack, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema } from './kit'
 import { clampModifiers, createShift, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
 import { upgradesForShift } from '../progress/upgradeShop'
@@ -382,6 +382,19 @@ export function App() {
     : <>{unlocked.length > 0 && <Row gap="s" justify="center" className="hud-machines">{machineBars}</Row>}{integrityBar}</>
   const panelRow = <Row gap="s" className="hud-panel">{nextWindow}<Stack gap="s" className="hud-panel-bars">{bars}</Stack></Row>
   const panel = hud && (short ? <Stack gap="s">{status}{panelRow}</Stack> : panelRow)
+  // F34: the equipped active's charge button (Cooldown Booster) — in the top row beside the Console button, so it never
+  // covers the tank or the bars. A ring that fills as it charges, on a grey button; full = the bright (primary) button,
+  // which glows in the style. Tap it (or F / Numpad .) to fire; not full = the engine refuses, nothing happens.
+  const ability = hud?.ability
+  const abilityName = ability ? (text.upgrades.items as Record<string, { name: string }>)[ability.id]?.name ?? ability.id : ''
+  const abilityPct = ability ? Math.floor(ability.charge * 100) : 0
+  const abilityWords = ability && fill(ability.ready ? text.hud.abilityReady : text.hud.abilityCharging, { name: abilityName, n: abilityPct })
+  const abilityButton = ability && (
+    <Button variant={ability.ready ? 'primary' : 'secondary'} icon aria-label={abilityWords || ''} title={abilityWords || ''} sound={ability.ready ? 'tap' : false}
+      className="hud-ability" data-tag="ability" data-ready={ability.ready || undefined} onClick={() => engineRef.current?.act({ type: 'ability', id: ability.id })}>
+      <TimerRing seconds={abilityPct} total={100} warnAt={-1} label={abilityWords || ''} />
+    </Button>
+  )
   const readout = hud && <HudText size="s" live numbers>{fill(text.hud.pressureReadout, { n: Math.round(hud.pressure * 100) })}</HudText>
   return (
     <>
@@ -395,7 +408,7 @@ export function App() {
         <ScreenStack overlay screens={screenMap}>
           {hud && (
             <Hud words={{ pause: text.hud.pause }} onPause={() => { if (lessonPlay.pauseOn()) screens.push('pause') }} oneRow
-              vitals={<Score value={hud.score} compact />} status={short ? undefined : status}
+              vitals={<Score value={hud.score} compact />} status={short ? undefined : status} currency={abilityButton || undefined}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
               dock={panel} dockSide={short ? 'right' : 'bottom'} dockTight />
           )}

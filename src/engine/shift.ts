@@ -577,7 +577,7 @@ class Shift implements ShiftEngine {
     const a = this.abilities.find((x) => x.id === id)
     if (!a || !a.ready) return false
     const fire = ABILITY_EFFECTS[a.effect]
-    if (!fire || !fire({ phase: this.state.phase, effects: this.effects }, this.abilitySpecs.get(id)!.params, id)) return false
+    if (!fire || !fire({ phase: this.state.phase, effects: this.effects, machines: this.machines.state }, this.abilitySpecs.get(id)!.params, id)) return false
     a.charge = 0
     a.ready = false
     this.events.push({ type: 'ability', id })
