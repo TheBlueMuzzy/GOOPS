@@ -99,5 +99,7 @@ export function setEquipped(p: Progress, id: string, on: boolean, book: UpgradeB
  */
 export function upgradesForShift(p: Progress, training = false, book: UpgradeBook = upgradeBook): ResolvedUpgrades {
   const playable = { upgrades: playableUpgrades(book) }
-  return training ? resolveUpgrades(playable, {}) : resolveUpgrades(playable, p.owned, p.equipped)
+  // never more actives than slots (a hand-edited save, or fewer slots after equipping): keep the newest, as setEquipped does
+  const equipped = p.equipped.slice(-activeSlots())
+  return training ? resolveUpgrades(playable, {}) : resolveUpgrades(playable, p.owned, equipped)
 }

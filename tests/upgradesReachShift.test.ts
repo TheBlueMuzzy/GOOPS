@@ -93,4 +93,11 @@ describe('upgrades reach the shift (F34 task 5)', () => {
     expect(upgradesForShift(owning({ denseGoop: 1 }), false, edited).modifiers.fallSpeedMult).toBe(2)
     expect(upgradesForShift(owning({ denseGoop: 1 })).modifiers.fallSpeedMult).toBe(1.125)
   })
+
+  it('never more actives than slots reach the shift (a hand-edited save): the newest equipped one is kept', () => {
+    const second = { ...structuredClone(book.upgrades.find((u) => u.id === 'cooldownBooster')!), id: 'secondActive' }
+    const twoActives: UpgradeBook = { upgrades: [...book.upgrades, second] }
+    const up = upgradesForShift(owning({ cooldownBooster: 1, secondActive: 1 }, ['cooldownBooster', 'secondActive']), false, twoActives)
+    expect(up.abilities.map((a) => a.id)).toEqual(['secondActive'])
+  })
 })
