@@ -1,0 +1,112 @@
+// F34: the upgrade shop's rules — buy (1 scrap a level by default), take back (free, refunds), equip (active slots).
+import { describe, expect, it } from 'vitest'
+import tuning from '../content/tuning/progression.json'
+import { freshProgress, scrapsAt, xpToNext, type Progress } from '../src/progress/progression'
+import { activeSlots, buyLevel, costOf, levelOf, setEquipped, takeBackLevel, whyNotBuy } from '../src/progress/upgradeShop'
+import type { UpgradeBook } from '../src/engine/upgrades'
+
+const book: UpgradeBook = { upgrades: [
+  { id: 'cheap', name: 'Cheap', type: 'passive', rank: 2, maxLevel: 2, effects: [] },
+  { id: 'pricey', name: 'Pricey', type: 'passive', rank: 2, maxLevel: 4, cost: 3, effects: [] },
+  { id: 'late', name: 'Late', type: 'passive', rank: 9, maxLevel: 4, effects: [] },
+  { id: 'zap', name: 'Zap', type: 'active', rank: 5, maxLevel: 3, ability: { effect: 'x', chargePerSecond: 0, chargePerSeal: 0, byLevel: [] } },
+  { id: 'zap2', name: 'Zap 2', type: 'active', rank: 5, maxLevel: 3, ability: { effect: 'x', chargePerSecond: 0, chargePerSeal: 0, byLevel: [] } },
+  { id: 'hidden', name: 'Test', type: 'passive', rank: 0, maxLevel: 1, testOnly: true, effects: [] },
+] }
+const at = (rank: number): Progress => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return { ...freshProgress(), totalXp: xp } }
+const scraps = (p: Progress, rank: number) => scrapsAt(rank, p)
+
+describe('buying a level', () => {
+  it('costs the upgrade’s cost (1 when the data says none) and raises the level', () => {
+    expect(costOf(book.upgrades[0])).toBe(1)
+    expect(costOf(book.upgrades[1])).toBe(3)
+    const p = buyLevel(at(5), 'cheap', 5, book)
+    expect(levelOf(p, 'cheap')).toBe(1)
+    expect(scraps(p, 5)).toBe(4)
+    const q = buyLevel(p, 'pricey', 5, book)
+    expect(levelOf(q, 'pricey')).toBe(1)
+    expect(scraps(q, 5)).toBe(1)
+  })
+
+  it('is refused (progress unchanged) without enough scraps, at max level, above your rank, or for an unknown / test-only upgrade', () => {
+    const p = at(5)
+    expect(whyNotBuy(p, 'late', 5, book)).toBe('locked')
+    expect(buyLevel(p, 'late', 5, book)).toBe(p)
+    let maxed = buyLevel(buyLevel(p, 'cheap', 5, book), 'cheap', 5, book)
+    expect(levelOf(maxed, 'cheap')).toBe(2)
+    expect(whyNotBuy(maxed, 'cheap', 5, book)).toBe('maxed')
+    expect(buyLevel(maxed, 'cheap', 5, book)).toBe(maxed)
+    maxed = buyLevel(maxed, 'zap', 5, book) // 2 scraps left
+    expect(whyNotBuy(maxed, 'pricey', 5, book)).toBe('scraps')
+    expect(buyLevel(maxed, 'pricey', 5, book)).toBe(maxed)
+    expect(whyNotBuy(p, 'nope', 5, book)).toBe('unknown')
+    expect(whyNotBuy(p, 'hidden', 5, book)).toBe('unknown')
+    expect(whyNotBuy(p, 'cheap', 5, book)).toBeNull()
+  })
+
+  it('can never spend below 0 scraps', () => {
+    let p = at(5)
+    for (let i = 0; i < 20; i++) for (const id of ['cheap', 'pricey', 'zap', 'zap2']) p = buyLevel(p, id, 5, book)
+    expect(scraps(p, 5)).toBeGreaterThanOrEqual(0)
+    expect(p.scrapsSpent).toBe(5)
+  })
+})
+
+describe('taking a level back', () => {
+  it('is free and refunds its cost; at 0 the upgrade is gone from the save', () => {
+    const bought = buyLevel(buyLevel(at(5), 'pricey', 5, book), 'cheap', 5, book)
+    expect(scraps(bought, 5)).toBe(1)
+    const back = takeBackLevel(bought, 'pricey', book)
+    expect(scraps(back, 5)).toBe(4)
+    expect(back.owned).toEqual({ cheap: 1 })
+  })
+
+  it('nothing owned → unchanged', () => {
+    const p = at(5)
+    expect(takeBackLevel(p, 'cheap', book)).toBe(p)
+    expect(takeBackLevel(p, 'nope', book)).toBe(p)
+  })
+
+  it('taking an active to level 0 unequips it; a level still left keeps it equipped', () => {
+    let p = buyLevel(buyLevel(at(5), 'zap', 5, book), 'zap', 5, book)
+    p = setEquipped(p, 'zap', true, book).progress
+    expect(p.equipped).toEqual(['zap'])
+    p = takeBackLevel(p, 'zap', book)
+    expect(p.equipped).toEqual(['zap'])
+    p = takeBackLevel(p, 'zap', book)
+    expect(p.equipped).toEqual([])
+    expect(scraps(p, 5)).toBe(5)
+  })
+})
+
+describe('equipping actives', () => {
+  it('one slot for now (content/tuning/progression.json activeSlots)', () => {
+    expect(tuning.activeSlots).toBe(1)
+    expect(activeSlots()).toBe(1)
+  })
+
+  it('only an owned active can be equipped', () => {
+    const p = buyLevel(at(5), 'cheap', 5, book)
+    expect(setEquipped(p, 'zap', true, book).progress).toBe(p) // not owned
+    expect(setEquipped(p, 'cheap', true, book).progress).toBe(p) // not an active
+  })
+
+  it('equipping into a full slot swaps: the one equipped longest comes off, and is named', () => {
+    let p = buyLevel(buyLevel(at(5), 'zap', 5, book), 'zap2', 5, book)
+    p = setEquipped(p, 'zap', true, book).progress
+    const swap = setEquipped(p, 'zap2', true, book)
+    expect(swap.progress.equipped).toEqual(['zap2'])
+    expect(swap.swappedOut).toBe('zap')
+    // with 2 slots both fit
+    const two = setEquipped(p, 'zap2', true, book, { ...tuning, activeSlots: 2 })
+    expect(two.progress.equipped).toEqual(['zap', 'zap2'])
+    expect(two.swappedOut).toBeNull()
+  })
+
+  it('switching off unequips; equipping twice changes nothing', () => {
+    let p = setEquipped(buyLevel(at(5), 'zap', 5, book), 'zap', true, book).progress
+    expect(setEquipped(p, 'zap', true, book).progress).toBe(p)
+    p = setEquipped(p, 'zap', false, book).progress
+    expect(p.equipped).toEqual([])
+  })
+})

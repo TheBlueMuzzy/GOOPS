@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
 import { freshProgress, isUnlocked, meterSteps, rankInfo, rewardFirstDay, rewardShift, unlocksBetween, xpToNext } from '../src/progress/progression'
-import { loadProgress, saveProgress } from '../src/progress/save'
+import { SAVE_VERSION, loadProgress, saveProgress } from '../src/progress/save'
+import goldenV1 from './saves/goops-progress-v1.json'
+import goldenV2 from './saves/goops-progress-v2.json'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
@@ -33,7 +35,7 @@ describe('rewardShift', () => {
 
   it('never less than the floor: max(100, 100 × rank)', () => {
     expect(rewardShift(freshProgress(), 0).xp).toBe(100)
-    const rank10 = { totalXp: cumulative(10), scrapsSpent: 0 }
+    const rank10 = { ...freshProgress(), totalXp: cumulative(10) }
     expect(rewardShift(rank10, 50).xp).toBe(1000)
   })
 
@@ -65,7 +67,7 @@ describe('rewardFirstDay (F31)', () => {
   })
 
   it('a replay at a higher rank earns what any shift earns (no top-up)', () => {
-    const rank3 = { totalXp: cumulative(3) + 5, scrapsSpent: 0 }
+    const rank3 = { ...freshProgress(), totalXp: cumulative(3) + 5 }
     expect(rewardFirstDay(rank3, 200)).toEqual(rewardShift(rank3, 200))
   })
 })
@@ -73,20 +75,57 @@ describe('rewardFirstDay (F31)', () => {
 describe('save', () => {
   const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m } }
 
-  it('round-trips', () => {
+  // tests/saves/: one golden save per version, kept forever (a new version adds its own)
+  const golden = (v: number) => JSON.stringify(v === 1 ? goldenV1 : goldenV2)
+
+  it('round-trips (with what the scraps bought, F34)', () => {
     const s = memory()
-    saveProgress({ totalXp: 12345, scrapsSpent: 2 }, s)
-    expect(loadProgress(s)).toEqual({ totalXp: 12345, scrapsSpent: 2 })
+    const p = { totalXp: 12345, scrapsSpent: 2, owned: { circuitStabilizer: 1, cooldownBooster: 1 }, equipped: ['cooldownBooster'] }
+    saveProgress(p, s)
+    expect(loadProgress(s)).toEqual(p)
+    expect(JSON.parse(s.m.get('goops-progress')!).v).toBe(SAVE_VERSION)
   })
 
-  it('a missing, broken, wrong-version or nonsense save starts fresh instead of crashing', () => {
+  it('golden version-1 save (the alpha) → version 2: XP and scraps spent KEPT, nothing owned yet', () => {
+    const s = memory()
+    s.m.set('goops-progress', golden(1))
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [] })
+    // saving it again writes version 2, and it still loads the same
+    saveProgress(loadProgress(s), s)
+    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 2, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [] })
+  })
+
+  it('golden version-2 save loads as it was', () => {
+    const s = memory()
+    s.m.set('goops-progress', golden(2))
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
+  })
+
+  it('a missing, broken, unknown-version or nonsense save starts fresh instead of crashing', () => {
     const s = memory()
     expect(loadProgress(s)).toEqual(freshProgress())
-    for (const bad of ['{not json', '{"v":99,"totalXp":5,"scrapsSpent":0}', '{"v":1,"totalXp":-5,"scrapsSpent":0}', '{"v":1,"totalXp":"lots"}']) {
+    for (const bad of ['{not json', 'null', '7', '{"v":99,"totalXp":5,"scrapsSpent":0}', '{"v":0,"totalXp":5,"scrapsSpent":0}',
+      '{"v":1,"totalXp":-5,"scrapsSpent":0}', '{"v":1,"totalXp":"lots"}']) {
       s.m.set('goops-progress', bad)
-      expect(loadProgress(s)).toEqual(freshProgress())
+      expect(loadProgress(s), bad).toEqual(freshProgress())
     }
     expect(loadProgress(null)).toEqual(freshProgress())
+  })
+
+  it('broken upgrade entries are dropped, not the whole save', () => {
+    const s = memory()
+    s.m.set('goops-progress', JSON.stringify({ v: 2, totalXp: 9000, scrapsSpent: 1, owned: { a: 2, b: -1, c: 'x', d: 0, e: 2.7 }, equipped: ['a', 'a', 5, null] }))
+    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: { a: 2, e: 2 }, equipped: ['a'] })
+    s.m.set('goops-progress', JSON.stringify({ v: 2, totalXp: 9000, scrapsSpent: 1, owned: [1, 2], equipped: 'a' }))
+    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: {}, equipped: [] })
+  })
+
+  it('never writes over a newer build’s save', () => {
+    const s = memory()
+    const newer = JSON.stringify({ v: 3, totalXp: 99999, scrapsSpent: 4, somethingNew: true })
+    s.m.set('goops-progress', newer)
+    saveProgress(freshProgress(), s)
+    expect(s.m.get('goops-progress')).toBe(newer)
   })
 })
 

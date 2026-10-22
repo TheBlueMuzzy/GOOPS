@@ -106,6 +106,7 @@ export interface UpgradeDef {
   type: string // 'passive' | 'active' | 'feature'
   rank: number // unlocks at this rank
   maxLevel: number
+  cost?: number // scraps per level (F34; missing = 1, v1's price for every level)
   testOnly?: boolean // for tests only: the game never lists or grants it
   effects?: UpgradeEffect[] // passive
   ability?: AbilityDef // active

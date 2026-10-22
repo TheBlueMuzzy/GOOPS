@@ -1,6 +1,7 @@
 // Ranks and XP (v1 rules, numbers in content/tuning/progression.json).
-// Only two numbers are saved — all the XP ever earned and the scraps spent — and rank, XP-into-rank and scraps
-// are worked out from them, so they can never disagree.
+// Two numbers are saved for ranks — all the XP ever earned and the scraps spent — and rank, XP-into-rank and scraps
+// are worked out from them, so they can never disagree. F34 adds what the scraps bought: each upgrade's level and the
+// actives taken into the shift (the rules for buying: src/progress/upgradeShop.ts).
 import tuning from '../../content/tuning/progression.json'
 
 export type ProgressionTuning = typeof tuning
@@ -8,7 +9,11 @@ export type ProgressionTuning = typeof tuning
 export interface Progress {
   totalXp: number
   scrapsSpent: number
+  owned: Record<string, number> // F34: upgrade id → the level bought (missing = 0)
+  equipped: string[] // F34: ids of the actives taken into the shift (at most the active slots)
 }
+// The rank part of the progress — all that ranks, XP and scraps-in-hand need
+export type XpProgress = Pick<Progress, 'totalXp' | 'scrapsSpent'>
 
 export interface RankInfo {
   rank: number
@@ -17,14 +22,14 @@ export interface RankInfo {
   scraps: number // scraps earned by ranking up, minus those spent
 }
 
-export const freshProgress = (): Progress => ({ totalXp: 0, scrapsSpent: 0 })
+export const freshProgress = (): Progress => ({ totalXp: 0, scrapsSpent: 0, owned: {}, equipped: [] })
 
 // XP needed to go from `rank` to rank + 1
 export function xpToNext(rank: number, t: ProgressionTuning = tuning): number {
   return t.xpBase + t.xpPerRank * rank
 }
 
-export function rankInfo(p: Progress, t: ProgressionTuning = tuning): RankInfo {
+export function rankInfo(p: XpProgress, t: ProgressionTuning = tuning): RankInfo {
   let rank = 0, left = p.totalXp
   while (rank < t.maxRank && left >= xpToNext(rank, t)) { left -= xpToNext(rank, t); rank++ }
   const atMax = rank >= t.maxRank
@@ -32,7 +37,7 @@ export function rankInfo(p: Progress, t: ProgressionTuning = tuning): RankInfo {
 }
 
 // Scraps in hand at a rank: earned by ranking up to it, minus those spent (F59: the console's Upgrades button shows it).
-export function scrapsAt(rank: number, p: Progress, t: ProgressionTuning = tuning): number {
+export function scrapsAt(rank: number, p: XpProgress, t: ProgressionTuning = tuning): number {
   return rank * t.scrapsPerRank - p.scrapsSpent
 }
 
@@ -67,7 +72,7 @@ export interface ShiftReward {
 // The rank meter's steps from one progress to another (F21): one per rank the XP passes through, each
 // { level: rank, from, to, max: XP that rank needs } — what the console's meter plays when you come back to it.
 // Ending exactly on a rank-up adds the new rank's empty bar, so the rank-up still shows. No XP gained: no steps.
-export function meterSteps(before: Progress, after: Progress, t: ProgressionTuning = tuning) {
+export function meterSteps(before: XpProgress, after: XpProgress, t: ProgressionTuning = tuning) {
   const steps: { level: number; from: number; to: number; max: number }[] = []
   let at = before.totalXp
   while (at < after.totalXp) {

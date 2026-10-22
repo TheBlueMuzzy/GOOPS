@@ -1,0 +1,91 @@
+// THE UPGRADE SHOP'S RULES (F34) — pure: a progress in, a new progress out (the caller saves it).
+// v1's money (design/upgrades-map.md "F33 decisions" 4): every level costs its upgrade's `cost` scraps (1 unless the data
+// says otherwise), taking a level back is free and refunds what it cost, as often as you like — upgrades are a loadout
+// you re-shape between shifts. Actives are also EQUIPPED: only equipped ones go into the shift, at most `activeSlots`
+// (content/tuning/progression.json) at once.
+import upgradesJson from '../../content/tuning/upgrades.json'
+import tuning from '../../content/tuning/progression.json'
+import { playableUpgrades, type UpgradeBook, type UpgradeDef } from '../engine/upgrades'
+import { scrapsAt, type Progress, type ProgressionTuning } from './progression'
+
+export const upgradeBook = upgradesJson as UpgradeBook
+
+// Why a buy was refused (the screen greys the button out; the words are in en.json upgrades.refused)
+export type BuyRefusal = 'unknown' | 'locked' | 'maxed' | 'scraps'
+
+/** Scraps one level costs (v1: 1). A missing or broken cost counts as 1. */
+export function costOf(def: UpgradeDef): number {
+  const cost = Number(def.cost ?? 1)
+  return Number.isFinite(cost) && cost >= 0 ? Math.floor(cost) : 1
+}
+
+/** The highest level this upgrade can have (a broken maxLevel counts as 1, as resolveUpgrades does). */
+export function maxLevelOf(def: UpgradeDef): number {
+  return Number.isFinite(def.maxLevel) && def.maxLevel > 0 ? Math.floor(def.maxLevel) : 1
+}
+
+/** The level the player owns (0 = not bought). */
+export function levelOf(p: Progress, id: string): number {
+  const level = Math.floor(Number(p.owned[id] ?? 0))
+  return Number.isFinite(level) && level > 0 ? level : 0
+}
+
+// The upgrades the shop may sell (never the test-only ones), by id
+function findUpgrade(id: string, book: UpgradeBook): UpgradeDef | undefined {
+  return playableUpgrades(book).find((u) => u.id === id)
+}
+
+/** Can the player buy the next level right now? null = yes, otherwise why not. */
+export function whyNotBuy(p: Progress, id: string, rank: number, book: UpgradeBook = upgradeBook, t: ProgressionTuning = tuning): BuyRefusal | null {
+  const def = findUpgrade(id, book)
+  if (!def) return 'unknown'
+  if (def.rank > rank) return 'locked'
+  if (levelOf(p, id) >= maxLevelOf(def)) return 'maxed'
+  if (scrapsAt(rank, p, t) < costOf(def)) return 'scraps'
+  return null
+}
+
+/** Buy one level: the level goes up, its cost is spent. Refused → the same progress back, unchanged. */
+export function buyLevel(p: Progress, id: string, rank: number, book: UpgradeBook = upgradeBook, t: ProgressionTuning = tuning): Progress {
+  if (whyNotBuy(p, id, rank, book, t)) return p
+  const def = findUpgrade(id, book)!
+  return { ...p, scrapsSpent: p.scrapsSpent + costOf(def), owned: { ...p.owned, [id]: levelOf(p, id) + 1 } }
+}
+
+/** Take one level back: free, its cost comes back. At level 0 an active is unequipped. Nothing owned → unchanged. */
+export function takeBackLevel(p: Progress, id: string, book: UpgradeBook = upgradeBook): Progress {
+  const level = levelOf(p, id)
+  const def = findUpgrade(id, book)
+  if (!def || level === 0) return p
+  const owned = { ...p.owned }
+  if (level === 1) delete owned[id]
+  else owned[id] = level - 1
+  return {
+    ...p,
+    scrapsSpent: Math.max(0, p.scrapsSpent - costOf(def)),
+    owned,
+    equipped: level === 1 ? p.equipped.filter((e) => e !== id) : p.equipped,
+  }
+}
+
+/** How many actives can go into a shift at once. */
+export const activeSlots = (t: ProgressionTuning = tuning) => Math.max(1, Math.floor(t.activeSlots))
+
+export interface EquipResult {
+  progress: Progress
+  swappedOut: string | null // equipping into full slots: the one taken off to make room (the one equipped longest)
+}
+
+/**
+ * Equip (on) or unequip (off) an owned active. With every slot full, equipping SWAPS: the one equipped longest comes
+ * off (swappedOut names it, so the screen can say so). Not an owned active → unchanged.
+ */
+export function setEquipped(p: Progress, id: string, on: boolean, book: UpgradeBook = upgradeBook, t: ProgressionTuning = tuning): EquipResult {
+  const def = findUpgrade(id, book)
+  const has = p.equipped.includes(id)
+  if (!on) return { progress: has ? { ...p, equipped: p.equipped.filter((e) => e !== id) } : p, swappedOut: null }
+  if (has || !def || def.type !== 'active' || levelOf(p, id) === 0) return { progress: p, swappedOut: null }
+  const equipped = [...p.equipped, id]
+  const swappedOut = equipped.length > activeSlots(t) ? equipped.shift()! : null
+  return { progress: { ...p, equipped }, swappedOut }
+}
