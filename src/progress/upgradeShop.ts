@@ -5,7 +5,7 @@
 // (content/tuning/progression.json) at once.
 import upgradesJson from '../../content/tuning/upgrades.json'
 import tuning from '../../content/tuning/progression.json'
-import { playableUpgrades, type UpgradeBook, type UpgradeDef } from '../engine/upgrades'
+import { playableUpgrades, resolveUpgrades, type ResolvedUpgrades, type UpgradeBook, type UpgradeDef } from '../engine/upgrades'
 import { scrapsAt, type Progress, type ProgressionTuning } from './progression'
 
 export const upgradeBook = upgradesJson as UpgradeBook
@@ -88,4 +88,16 @@ export function setEquipped(p: Progress, id: string, on: boolean, book: UpgradeB
   const equipped = [...p.equipped, id]
   const swappedOut = equipped.length > activeSlots(t) ? equipped.shift()! : null
   return { progress: { ...p, equipped }, swappedOut }
+}
+
+/**
+ * F34 task 5 — what the player's upgrades do to the NEXT shift: their owned levels and equipped actives, worked out by
+ * resolveUpgrades → createShift's modifiers + abilities, the console's fewer repair steps, Focus Mode's console speed.
+ * Read from the book when the shift starts, so a Dev Kit edit of upgrades.json counts from the next shift.
+ * A lesson's training shift (the first day, a replayed lesson) gets none: its steps are set up to play the same for
+ * everyone (and at rank 0 nothing is owned anyway). Test-only upgrades never count, even in a hand-edited save.
+ */
+export function upgradesForShift(p: Progress, training = false, book: UpgradeBook = upgradeBook): ResolvedUpgrades {
+  const playable = { upgrades: playableUpgrades(book) }
+  return training ? resolveUpgrades(playable, {}) : resolveUpgrades(playable, p.owned, p.equipped)
 }

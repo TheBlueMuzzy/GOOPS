@@ -7,7 +7,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Bar, GameOver, Hud, HudText, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema } from './kit'
-import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
+import { clampModifiers, createShift, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
+import { upgradesForShift } from '../progress/upgradeShop'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
 import { looksClock, rulesClock } from '../devkit/gameClock'
@@ -23,7 +24,7 @@ import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
+import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
@@ -61,12 +62,17 @@ const dayDue = (progress: Progress) => firstDay.due(playerRank(progress), forced
 // ?seed=123 fixes the shift's random pieces (tests); otherwise every shift is new.
 // training = a lesson's shift (F30, src/engine/training.ts): empty, held still, the lesson sets it up step by step.
 // Swap works only from its rank, and never in a lesson's shift (F59).
-function newEngine(progress: Progress, training = false): ShiftEngine {
+// F34: what the player owns goes in — the upgrades' modifiers and equipped actives (upgradesForShift; a lesson's
+// training shift gets none). The App keeps the rest (the repairs' fewer steps, Focus Mode's console speed).
+function newEngine(progress: Progress, training = false): { engine: ShiftEngine; upgrades: ResolvedUpgrades } {
   const seed = Number(new URLSearchParams(location.search).get('seed')) || Math.floor(Math.random() * 1e9)
   const rank = playerRank(progress)
-  return createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, swap: !training && isUnlocked('swap', rank),
-    ...(training ? { training: {} } : {}) })
+  const upgrades = upgradesForShift(progress, training)
+  const engine = createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, swap: !training && isUnlocked('swap', rank),
+    modifiers: upgrades.modifiers, abilities: upgrades.abilities, ...(training ? { training: {} } : {}) })
+  return { engine, upgrades }
 }
+const NO_UPGRADES = upgradesForShift(freshProgress(), true)
 type LessonStart = { id: string; step: number | string }
 
 // (Replay lessons, F32: the device forgets which lessons it has seen — each machine's plays again at its next break;
@@ -135,6 +141,8 @@ export function App() {
   const [meterFrom, setMeterFrom] = useState<Progress | null>(null)
   const modeRef = useRef(mode)
   useEffect(() => { modeRef.current = mode }, [mode])
+  // F34: the running shift's upgrades (set with its engine): the repair panels' fewer steps, Focus Mode's console speed
+  const [upgrades, setUpgrades] = useState<ResolvedUpgrades>(NO_UPGRADES)
 
   // F30 lessons: the lesson to start once the tank is on screen (a training shift is made for it); ?lesson=<id>&step=<n>
   // (dev) makes the first "Start shift" play that lesson
@@ -143,7 +151,9 @@ export function App() {
   const freshShift = useRef(false) // F59: a real shift just started — its unlock lesson (if any) plays once the tank shows
   const start = useCallback((lesson?: LessonStart) => {
     lessonPlay.stop()
-    const e = lesson ? lessonPlay.attach(newEngine(progressRef.current, true)) : newEngine(progressRef.current)
+    const made = newEngine(progressRef.current, !!lesson)
+    const e = lesson ? lessonPlay.attach(made.engine) : made.engine
+    setUpgrades(made.upgrades)
     // a real shift: its machines' first breakdowns may start their lessons (F32)
     if (!lesson) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     pendingLesson.current = lesson ?? null
@@ -222,6 +232,9 @@ export function App() {
     endPending.current = false
     setMeterFrom(null)
     if (!e) { setMode('console'); return }
+    // (its upgrades: the modifiers it was saved with; the repairs' fewer steps from what's owned now — a lesson's: none)
+    const owned = upgradesForShift(progressRef.current, !!o?.training)
+    setUpgrades({ ...owned, modifiers: clampModifiers(o?.modifiers) })
     engineRef.current = e
     setResult(null); setHud(null); setEngine(e); setMode('shift')
   }, [])
@@ -330,7 +343,8 @@ export function App() {
   // (F31: the end report isn't a menu that pauses: the shift has ended, so the rules clock running changes nothing in
   // the tank — but a lesson on the report, day one's "back to the console", keeps its own timers)
   const menuOpen = open.some((id) => id !== 'end')
-  const speed = menuOpen || sideways ? 0 : mode === 'shift' ? 1 : peeking ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale) : 0
+  const speed = menuOpen || sideways ? 0 : mode === 'shift' ? 1 : peeking
+    ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale * upgrades.modifiers.consoleTimeScaleMult) : 0 // (F34: × Focus Mode)
   // The HUD (F26, Muzzy's mock-up 2026-10-18; F59 his second, 2026-10-19): ONE top row — score · CRACKS x / y (big,
   // shrinking to fit) · Console button — then the tank, then ONE panel under it: at its left the next-piece window (from
   // its rank; tall, big cells), and to its right the unlocked machines' bars in a row with big names above (centred),
@@ -393,7 +407,7 @@ export function App() {
           <Console progress={progress} shownFrom={peeking ? null : meterFrom} onSlideEnd={consoleSlid}
             phase={mode === 'console' || mode === 'peek' ? 'idle' : mode === 'leaving' || mode === 'peekOut' ? 'leaving' : 'arriving'}
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
-            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined}
+            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair, fewerRepairSteps: upgrades.fewerRepairSteps } : undefined}
             upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }} />
         </ScreenStack>
         </UpgradeShopContext.Provider>

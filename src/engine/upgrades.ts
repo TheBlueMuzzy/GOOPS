@@ -77,11 +77,11 @@ export function isModifierName(name: string): name is ModifierName {
 
 // A full, safe set of modifiers from a partial (or missing) one: unknown names dropped, broken numbers
 // (NaN, Infinity, not a number) back to neutral, everything clamped to its safety range.
-export function clampModifiers(partial?: Partial<Record<string, unknown>>): Modifiers {
+export function clampModifiers(partial?: Partial<Modifiers> | Partial<Record<string, unknown>>): Modifiers {
   const out: Modifiers = { ...NEUTRAL_MODIFIERS }
   if (!partial) return out
   for (const name of Object.keys(out) as ModifierName[]) {
-    const value = partial[name]
+    const value: unknown = (partial as Partial<Record<string, unknown>>)[name]
     if (typeof value !== 'number' || !Number.isFinite(value)) continue
     const [min, max] = LIMITS[name]
     out[name] = Math.min(max, Math.max(min, value))
