@@ -166,6 +166,28 @@ export function Reconnecting({ failed, message, onRetry, onQuit, words }: Reconn
   )
 }
 
+// REJOIN — getting back into an online match after closing the tab (with the rooms module's lastRoom.ts + useRoom).
+// No screen of its own — it's words for parts the game already has:
+//   main menu:  { label: rejoinWords.rejoin, onClick } as a MainMenu item, only while rooms' matchToRejoin() has one
+//   joining:    <Reconnecting words={{ title: rejoinWords.joiningTitle }} message={rejoinWords.joining} onQuit={…} />
+//   back in:    toast(welcomeBackLine(online.cameBack.botTurns)) — or the game's results, if the match ended meanwhile
+//   gone:       online.matchEnded → toast(rejoinWords.ended), back to the menu (never the join error)
+export const rejoinWords = {
+  rejoin: 'Rejoin match',
+  joiningTitle: 'Rejoining…', joining: 'Getting you back into your match.',
+  back: 'You’re back',
+  backOneTurn: 'You’re back — a bot played 1 turn for you',
+  backTurns: 'You’re back — a bot played {n} turns for you',
+  ended: 'That match has ended',
+}
+
+/** The "you're back" line for how many turns a bot played for the player while they were away (0 = just "You're back"). */
+export function welcomeBackLine(botTurns: number, words?: Partial<typeof rejoinWords>): string {
+  const w = { ...rejoinWords, ...words }
+  if (botTurns <= 0) return w.back
+  return botTurns === 1 ? w.backOneTurn : fill(w.backTurns, { n: botTurns })
+}
+
 // SEAT PICKER — join a game that's already going: pick a seat (often a bot's) to take over.
 // The game says which seats are free; this screen shows them and reports the pick.
 // After a pick the game passes waiting (spinner + Cancel) until it's in, or an error if it didn't work.

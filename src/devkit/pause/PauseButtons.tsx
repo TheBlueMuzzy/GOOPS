@@ -1,6 +1,7 @@
 // The Pause tool's buttons (left of the DEV KIT title) and its badges — see pause.ts.
 import { useEffect, useRef, useState } from 'react'
 import { useDevKitGame } from '../devkitGame'
+import { badgeSpot } from './badgeSpot'
 import { canHalfPause, pauseBlocked, setDevPause, usePause, type PauseMode } from './pause'
 
 const LABEL: Record<'full' | 'half', string> = { full: 'PAUSED', half: 'HALF-PAUSED' }
@@ -45,7 +46,8 @@ export function PauseBadge({ mode }: { mode: PauseMode }) {
   return <span className="devkit-pause-tag" data-mode={mode} role="status">{LABEL[mode]}</span>
 }
 
-/** With the panel closed: a small badge stays on screen while paused; tapping it resumes. */
+/** With the panel closed: a small badge stays on screen while paused; tapping it resumes.
+ *  Where: content/devkit.json "pauseBadgeSpot" (badgeSpot.ts) — middle of the left edge unless the game says otherwise. */
 export function PauseBadgeClosed({ panelOpen }: { panelOpen: boolean }) {
   const mode = usePause()
   const shown = !!mode && !panelOpen
@@ -57,9 +59,9 @@ export function PauseBadgeClosed({ panelOpen }: { panelOpen: boolean }) {
   }, [shown])
   if (!shown) return null
   return (
-    <button ref={ref} {...{ popover: 'manual' }} type="button" className="devkit-pause-badge" data-mode={mode} onClick={() => setDevPause(null)}
+    <button ref={ref} {...{ popover: 'manual' }} type="button" className="devkit-pause-badge" data-mode={mode} data-spot={badgeSpot} onClick={() => setDevPause(null)}
       title="Tap to resume" aria-label={`${LABEL[mode]} — tap to resume`}>
-      {mode === 'full' ? '⏸' : '◐'} {LABEL[mode]} · tap to resume
+      {mode === 'full' ? '⏸' : '◐'} {LABEL[mode]}
     </button>
   )
 }

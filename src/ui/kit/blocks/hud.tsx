@@ -5,6 +5,7 @@ import { Panel, Row, Screen, Stack } from '../layout'
 import { Avatar, Badge, Button, ProgressBar, Text } from '../controls'
 import { screens } from '../screens'
 import { askConfirm, Modal } from './dialogs'
+import { useFixedSize } from '../fixedSize'
 import { useCountUp } from './motion'
 import { fill } from './words'
 
@@ -47,15 +48,16 @@ export function Pause({ onResume = () => screens.pop(), onSettings, onHowToPlay,
 // game sets it, like --kit-hud-w, so it can keep its play area clear of it; default 6rem); it grows only if its
 // contents need more. dockSide="right": a column in the bottom-right corner instead, --kit-hud-dock-size wide, as
 // tall as its contents (a phone on its side has no height to spare). The dock shows meters only: it lets taps
-// through to the game, like the HUD's slots.
+// through to the game, like the HUD's slots. dockTight (0.25.0, Goops): the dock panel's sides get the small gap
+// instead of the medium one, for a row that needs the width on a narrow phone (still clear of the edge).
 export const hudWords = { label: 'Game HUD', pause: 'Pause' }
 type HudProps = {
   vitals?: ReactNode; status?: ReactNode; currency?: ReactNode; onPause?: () => void
   actions?: ReactNode; banner?: ReactNode; bottomLeft?: ReactNode; bottomRight?: ReactNode
-  oneRow?: boolean; dock?: ReactNode; dockSide?: 'bottom' | 'right'
+  oneRow?: boolean; dock?: ReactNode; dockSide?: 'bottom' | 'right'; dockTight?: boolean
   words?: Partial<typeof hudWords>
 }
-export function Hud({ vitals, status, currency, onPause, actions, banner, bottomLeft, bottomRight, oneRow, dock, dockSide = 'bottom', words }: HudProps) {
+export function Hud({ vitals, status, currency, onPause, actions, banner, bottomLeft, bottomRight, oneRow, dock, dockSide = 'bottom', dockTight, words }: HudProps) {
   const w = { ...hudWords, ...words }
   // Each slot's contents sit in kit-hud-slot, which lets taps through to the game (blocks.css)
   const slot = (content: ReactNode, one?: boolean) => content && <div className="kit-hud-slot" data-one-row={one || undefined}>{content}</div>
@@ -71,7 +73,7 @@ export function Hud({ vitals, status, currency, onPause, actions, banner, bottom
   return (
     <>
       {screen}
-      <div className="kit-hud-dock kit-scope" data-side={dockSide}><Panel gap="s">{dock}</Panel></div>
+      <div className="kit-hud-dock kit-scope" data-side={dockSide} data-tight={dockTight || undefined}><Panel gap="s">{dock}</Panel></div>
     </>
   )
 }
@@ -97,6 +99,8 @@ export function Pips({ count, filled, label }: { count: number; filled: number; 
 // showLabel: print the label beside the bar (two bars with no icons look the same — Goops pressure + tank, 0.11.1).
 // 0.17.0 (Goops' bottom panel):
 //   width can also be a share of the row it sits in (0.24 = 24%); the bar never gets narrower than its label above.
+//   atMost (0.25.0, Goops): with a share, the bars in a row share its room evenly, each AT MOST its share — so three
+//     named bars fit a narrow phone instead of each taking exactly its share.
 //   labelAt: where the label prints — 'beside' (= showLabel), 'above' (big, centred over the bar) or 'inside'
 //     (centred on the bar itself, readable over the fill and the empty part alike).
 //   thickness: s (default, as before) · m · l — a thick bar reads at a glance.
@@ -107,10 +111,10 @@ export function Pips({ count, filled, label }: { count: number; filled: number; 
 type BarProps = {
   label: string; value: number; max?: number; variant?: 'primary' | 'accent' | 'danger'; pips?: boolean; icon?: ReactNode
   width?: 's' | 'm' | 'l' | number; showLabel?: boolean; labelAt?: 'beside' | 'above' | 'inside'
-  thickness?: 's' | 'm' | 'l'; plain?: boolean; alert?: 'pulse' | 'flash'
+  thickness?: 's' | 'm' | 'l'; plain?: boolean; alert?: 'pulse' | 'flash'; atMost?: boolean
 }
 export function Bar({ label, value, max = 100, variant = 'primary', pips, icon, width, showLabel, labelAt = showLabel ? 'beside' : undefined,
-  thickness, plain, alert }: BarProps) {
+  thickness, plain, alert, atMost }: BarProps) {
   const share = typeof width === 'number' ? width : undefined
   const meter = pips ? <Pips count={max} filled={value} label={label} /> : <ProgressBar label={label} value={value / max} variant={variant} />
   // the label inside: the bar and its words share one grid cell, the words on top
@@ -118,7 +122,7 @@ export function Bar({ label, value, max = 100, variant = 'primary', pips, icon, 
     ? <div className="kit-bar-inside">{meter}<span className="kit-bar-label-inside" aria-hidden="true">{label}</span></div>
     : meter
   const attrs = {
-    'data-width': share !== undefined ? 'share' : width as string | undefined, 'data-thickness': thickness, 'data-alert': alert,
+    'data-width': share !== undefined ? (atMost ? 'at-most' : 'share') : width as string | undefined, 'data-thickness': thickness, 'data-alert': alert,
     'data-label-at': labelAt, style: share !== undefined ? { '--kit-bar-share': share } as CSSProperties : undefined,
   }
   const parts = (
@@ -292,15 +296,18 @@ export function PlayerSeats({ players, activeId }: { players: Seat[]; activeId?:
 //   avatar: a picture; avatar={false} hides it — with icon, that makes a goal/target chip.
 // The score counts up when it rises (and floats up "+N" — floatUps={false} when the game already flies the points
 // in itself); with reduce motion on it just changes.
+//   scoreDigits (0.21.0): room for a score this many digits long from the start (default 2, i.e. up to 99) — give the
+//         biggest score the game can reach, so 99 → 100 never widens the chip.
 // Like every HUD piece it never catches taps: the game underneath gets them.
+// It keeps its size once it's on screen (0.21.0, useFixedSize): a score going from 9 to 10 mustn't shove its neighbours.
 export const playerChipWords = { score: '{n} points' }
 export type PlayerChipProps = {
   name: string; showName?: boolean; color?: string; avatar?: string | false; icon?: ReactNode
-  score?: number; scoreIcon?: ReactNode; detail?: ReactNode; badge?: ReactNode
+  score?: number; scoreDigits?: number; scoreIcon?: ReactNode; detail?: ReactNode; badge?: ReactNode
   active?: boolean; dim?: boolean; size?: 'xs' | 's' | 'm'; floatUps?: boolean; words?: Partial<typeof playerChipWords>
 }
 export function PlayerChip({
-  name, showName = true, color, avatar, icon, score, scoreIcon = '★', detail, badge,
+  name, showName = true, color, avatar, icon, score, scoreDigits = 2, scoreIcon = '★', detail, badge,
   active, dim, size = 'm', floatUps = true, words,
 }: PlayerChipProps) {
   const w = { ...playerChipWords, ...words }
@@ -308,8 +315,10 @@ export function PlayerChip({
   const floats = useFloatUps(score ?? 0)
   const oneLine = size === 'xs' // the detail sits beside the name and badge instead of on a line below
   const hasNameLine = showName || badge || (oneLine && detail)
+  const fixed = useFixedSize()
   return (
-    <Row gap={size === 'm' ? 's' : 'xs'} className="kit-hud-chip kit-player-chip kit-nowrap" role="group" aria-label={name}
+    // (a plain kit-row div, not <Row>: React 18 hands a ref only to real elements)
+    <div ref={fixed} className="kit-row kit-hud-chip kit-player-chip kit-nowrap" data-gap={size === 'm' ? 's' : 'xs'} role="group" aria-label={name}
       data-state={active ? 'active' : undefined} data-dim={dim || undefined} data-size={size}>
       {icon && <span className="kit-player-chip-icon" aria-hidden="true">{icon}</span>}
       {!icon && avatar !== false && <Avatar name={name} src={avatar || undefined} color={color} active={active} />}
@@ -328,12 +337,12 @@ export function PlayerChip({
       {score !== undefined && (
         <span className="kit-player-chip-score" role="img" aria-label={fill(w.score, { n: score })}>
           <span className="kit-player-chip-star" aria-hidden="true">{scoreIcon}</span>
-          <span className="kit-float-anchor" aria-hidden="true">
+          <span className="kit-float-anchor" aria-hidden="true" style={{ '--kit-digits': Math.max(scoreDigits, String(score).length) } as CSSProperties}>
             <Text kind={size === 'm' ? 'heading' : 'label'}>{shownScore}</Text>{floatUps && floats}
           </span>
         </span>
       )}
-    </Row>
+    </div>
   )
 }
 

@@ -92,6 +92,9 @@
   /* An open screen with another one on top is hidden (ScreenStack sets data-covered): only the top screen shows.
      visibility (not display: none) keeps its scroll position; !important so no game rule can make it peek through */
   .kit-layer[data-covered], .kit-layer[data-covered] * { visibility: hidden !important; }
+  /* The main menu's version line hides while a screen is open over the menu (0.24.0): Settings shows its own, and the
+     dimmed menu's line peeked out just under the Settings card — the same number twice, one half-hidden */
+  .kit-layer[inert] .kit-menu-version { visibility: hidden; }
   /* <ScreenStack overlay>: open screens cover the whole window above a game that isn't built from Screens */
   .kit-overlay { position: fixed; inset: 0; z-index: var(--kit-overlay-z, 100); pointer-events: none; }
   .kit-overlay[data-open] { pointer-events: auto; }
@@ -137,7 +140,7 @@
   .kit-button { display: inline-flex; align-items: center; justify-content: center; gap: var(--gap-s);
     padding: var(--gap-s) var(--gap-l); border-style: solid; font-weight: 600; text-align: center; user-select: none; }
   /* Icon-only: the glyph is title-sized so it fills the (at least 44px) button instead of floating small in it */
-  .kit-button[data-icon] { padding: 0; aspect-ratio: 1; font-size: var(--text-title); line-height: 1; }
+  .kit-button[data-icon] { padding: 0 0.15em; aspect-ratio: 1; font-size: var(--text-title); line-height: 1; } /* 0.21.0: a little room each side, so a wide glyph at a big text size never touches the edge */
   /* size="…px": as tall as the game asks (e.g. a board hex), and at least that wide — never below target-min */
   .kit-button[data-sized] { min-block-size: max(var(--target-min), var(--kit-button-size)); min-inline-size: max(var(--target-min), var(--kit-button-size)); }
   /* compact: a gap-m each side of the label instead of gap-l (a row of big buttons on one line on a narrow phone) */
@@ -338,6 +341,12 @@
 
   /* Initials always in the body font at semibold, whatever they sit in: small, heavy display letters turn to blobs */
   .kit-avatar { background: var(--kit-avatar-color, var(--primary)); color: var(--on-primary); font-family: var(--font-body); text-transform: none; }
+  /* A player's own colour (0.21.0): initials in white on a dark colour, black on a light one — whichever reads
+     (on-primary was made for the style's primary, not for every player colour; the contrast check caught it) */
+  /* (older browsers — Safari before 18, Firefox before 128 — skip it and keep on-primary, instead of losing the colour) */
+  @supports (color: oklch(from red l c h)) {
+    .kit-avatar[data-color] { color: oklch(from var(--kit-avatar-color) clamp(0, (0.65 - l) * 1000, 1) 0 0); }
+  }
   .kit-avatar[data-state="active"] { outline: 0.1875rem solid var(--accent); outline-offset: 0.125rem; }
 
   .kit-progress { background: var(--border); }

@@ -16,3 +16,4 @@ export { firstFontName, fontValue, gameFontFaceCss, kitFonts, licenceLight, load
 export * from './blocks'
 export * from './views'
 export * from './drag'
+export { useFixedSize, watchFixedSize, type Growth } from './fixedSize'

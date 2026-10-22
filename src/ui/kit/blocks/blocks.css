@@ -66,6 +66,13 @@
   /* A section heading row ("type": "heading"): breathing room above it, except at the very top */
   .kit-settings-heading { padding-block: var(--gap-l) var(--gap-xs); }
   .kit-settings-heading:first-child { padding-block-start: 0; }
+  /* The version (0.24.0): one line under the pages, the same on every tab — and on a short screen at the right of the
+     header instead, so a phone on its side keeps its rows (the line under the pages would cost one) */
+  .kit-settings-version-top { display: none; }
+  @media (max-height: 30rem) {
+    .kit-settings-version-top { display: inline; }
+    .kit-settings-version { display: none; }
+  }
 
   /* Pips: little segments (lives, hearts, page dots) */
   .kit-pip { inline-size: 0.875rem; block-size: 0.875rem; }
@@ -88,7 +95,7 @@
      card's edge (Muzzy, 2026-10-03: "there should always be breathing room around the edge of cards/containers so that
      nothing touches the edges"); the text side a little more. The tightest size (xs, rows close together) keeps less. */
   .kit-hud-chip:has(> :is(.kit-avatar, .kit-player-chip-icon):first-child) { padding: var(--gap-s) var(--gap-m) var(--gap-s) var(--gap-s); }
-  .kit-hud-chip[data-size="xs"]:has(> :is(.kit-avatar, .kit-player-chip-icon):first-child) { padding: var(--gap-xs) var(--gap-s) var(--gap-xs) var(--gap-xs); }
+  .kit-hud-chip[data-size="xs"]:has(> :is(.kit-avatar, .kit-player-chip-icon):first-child) { padding: var(--gap-s); } /* 0.21.0: was gap-xs — the avatar and badge touched its edge in Cartoon */
   /* HUD text: plain words on the game, no plate. Never catches taps. */
   .kit-hud-text { pointer-events: none; text-align: center; }
   .kit-hud-text .kit-stack { align-items: center; }
@@ -119,7 +126,10 @@
   .kit-hud-chip[data-width="l"] { --kit-bar-w: 14rem; }
   /* Bar 0.17.0. A share of its row (width={0.24}): that much of the row, never narrower than its label above */
   :is(.kit-hud-chip, .kit-bar)[data-width="share"] { flex: none; inline-size: calc(var(--kit-bar-share) * 100%); min-inline-size: max-content; max-inline-size: 100%; }
-  .kit-hud-chip[data-width="share"] > .kit-progress { flex: 1 1 auto; inline-size: auto; }
+  .kit-hud-chip:is([data-width="share"], [data-width="at-most"]) > .kit-progress { flex: 1 1 auto; inline-size: auto; }
+  /* 0.25.0 (Goops): width={0.3} atMost — the bars in a row share its room evenly, each at most its share (and never
+     narrower than its label), instead of exactly its share: three named bars fit a narrow phone */
+  :is(.kit-hud-chip, .kit-bar)[data-width="at-most"] { flex: 1 1 0; inline-size: auto; min-inline-size: max-content; max-inline-size: min(100%, calc(var(--kit-bar-share) * 100%)); }
   /* plain (no plate): the same row of icon · label · bar, on whatever it sits on */
   .kit-bar { display: flex; align-items: center; gap: var(--gap-s); min-inline-size: 0; }
   .kit-bar > :is(.kit-progress, .kit-bar-inside) { flex: 1 1 6rem; min-inline-size: 2rem; }
@@ -169,12 +179,18 @@
   /* right: a column in the bottom-right corner, as tall as its contents (a phone on its side) */
   .kit-hud-dock[data-side="right"] { inset-inline-end: var(--gap-m); inset-block-end: var(--gap-m); inline-size: var(--kit-hud-dock-size, 12rem); }
   .kit-hud-dock > .kit-panel { padding: var(--gap-s) var(--gap-m); justify-content: center; min-block-size: 0; }
+  /* dockTight (0.25.0, Goops): the panel's sides get the small gap instead of the medium one — still clear of the edge */
+  .kit-hud-dock[data-tight] > .kit-panel { padding-inline: var(--gap-s); }
   .kit-screen:has(+ .kit-hud-dock[data-side="bottom"]) { padding-block-end: calc(var(--kit-hud-dock-size, 6rem) + var(--gap-m)); }
   .kit-banner { align-items: center; text-align: center; }
   /* +N float-up: stacked on top of its number (same grid cell), so no positioning needed */
   .kit-float-anchor { display: inline-grid; }
   .kit-float-anchor > * { grid-area: 1 / 1; justify-self: center; }
   .kit-float-up { font-weight: 800; white-space: nowrap; }
+  /* 0.21.0: a number that counts up never widens its chip — the +N floats over it without taking room (no width,
+     centred over the number), and a PlayerChip's score slot is as wide as its final number from the start (--kit-digits) */
+  .kit-float-anchor > .kit-float-up { inline-size: 0; display: flex; justify-content: center; }
+  .kit-player-chip-score .kit-float-anchor > .kit-text { min-inline-size: calc(var(--kit-digits, 1) * 1ch); font-variant-numeric: tabular-nums; text-align: end; }
   .kit-combo { display: inline-block; }
   .kit-timer { display: inline-grid; place-items: center; inline-size: 3.5rem; aspect-ratio: 1; border-radius: 50%; }
   /* Flow: the countdown number on a round plate, and the end-screen title */
@@ -225,11 +241,14 @@
   }
   /* Main menu: extra buttons (children) sit in the button column like the others */
   .kit-main-menu-extra { display: contents; }
-  /* Main menu on a short, wide screen (a phone on its side): the title on the left, the buttons on the right.
+  /* A button's second line (Continue's "Turn 7 · 5 min ago", 0.23.0): under the label, inside the button — so the menu
+     doesn't jump when it appears — a little smaller and lighter; the button's own padding keeps it off the edges */
+  .kit-main-menu-buttons > .kit-button:has(> .kit-button-detail) { flex-direction: column; gap: 0; }
+  .kit-button-detail { display: block; font-size: 0.85em; font-weight: 400; text-transform: none; }  /* Main menu on a short, wide screen (a phone on its side): the title on the left, the buttons on the right.
      With six or more buttons they go in two columns (main one(s) and extra buttons across both), so they still fit. */
   @media (max-height: 30rem) and (min-width: 40rem) {
     .kit-main-menu { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); align-items: center; }
-    .kit-main-menu-buttons:has(> .kit-button:nth-child(6)) { display: grid; grid-template-columns: 1fr 1fr; }
+    .kit-main-menu-buttons[data-many] { display: grid; grid-template-columns: 1fr 1fr; } /* 6+ buttons, extras counted (0.24.0) */
     .kit-main-menu-buttons > .kit-button[data-variant="primary"], .kit-main-menu-extra > * { grid-column: 1 / -1; }
   }
   .kit-end-title { display: inline-block; }
@@ -250,7 +269,8 @@
   /* xs: one line, as short as the text — a smaller avatar (smaller initials, which are only a picture: the name is read out)
      and a badge no taller than the words beside it */
   .kit-player-chip[data-size="xs"] :is(.kit-avatar, .kit-player-chip-icon) { inline-size: 1.5rem; block-size: 1.5rem; font-size: calc(var(--text-body) * 0.7); }
-  .kit-player-chip[data-size="xs"] .kit-badge { line-height: 1.2; }
+  /* 0.21.0: room inside it too (the edge check) — a slightly smaller word with its line, and half the outline */
+  .kit-player-chip[data-size="xs"] .kit-badge { font-size: 0.75em; line-height: 1.8; padding-block: 0.1em; border-width: calc(var(--border-width) / 2); }
 
   /* PinnedBox: a piece stuck to a point in the game world. Scaled first (--kit-pin-scale, set by PinnedBox to fit
      its box on the table), then shifted so the point lands on its right-middle / middle / left-middle.

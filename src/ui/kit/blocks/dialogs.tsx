@@ -68,7 +68,7 @@ export function Confirm({ title, message, danger, onConfirm, onCancel, words }: 
 }
 
 // askConfirm({ title, onConfirm }) opens a Confirm from anywhere (Settings and Pause use it).
-// It needs the kit's own screens in your stack, once:  <ScreenStack screens={{ ...kitScreens, … }}>
+// ScreenStack always has the kit's own screens (0.25.0), so nothing to add; `...kitScreens` in a game's list still works.
 let pendingConfirm: ConfirmProps | null = null
 export function askConfirm(props: ConfirmProps) {
   pendingConfirm = props
