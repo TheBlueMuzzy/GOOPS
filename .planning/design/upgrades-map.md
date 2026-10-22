@@ -71,3 +71,8 @@
 - **Never built in v1:** announcing a new upgrade (intro lessons, journal pages, the Veteran's contraband were all stubs) · ranks 40–50 upgrades · nothing on ranks 11, 13, 14, 16, 17, 19 (and the same gaps in later bands).
 - **v1 bugs not to copy:** purchases likely reached the engine only after a page reload · Sealing Bonus brought breakdowns back *sooner* · Auto-Popper jumped from 0 % to 84 % at level 1 (and wasn't seeded) · active cards always showed the level-1 numbers.
 - **Remake check (2026-10-21):** Focus Mode is NOT obsolete — the shift still runs at 0.25 speed at the console mid-shift (`breakdowns.json consoleTimeScale`), so it can slow that further.
+
+## F33 decisions (Muzzy, 2026-10-22)
+1. **Store stays at rank 5, shelf ready:** the Upgrades button still opens at 5 (F59). When it opens, Circuit Stabilizer (lights, 2) and Capacitor Efficiency (laser, 4) are already on the shelf with 4 scraps banked — a "finally, relief" moment. From rank 6 on, problem + fix arrive together again (controls + Gear Lubrication).
+2. **Rank 9 Pressure Control = pressure rises slower** (`pressureRiseTimeMult`, + per level, cracks follow pressure so they slow too). Keeps 8 levels as the scrap sink.
+3. **Rank 3 Auto-Popper = slower depressurise** (Muzzy's idea, `ruptureDrainTimeMult`): after a rupture the drain lasts longer, more time to zap leftovers. Same role as v1: forgiveness at the end of a shift. (Bought from rank 5, like everything.)
