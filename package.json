@@ -22,7 +22,7 @@
     "e2e:sound": "node e2e/sound.mjs",
     "e2e:update": "node e2e/sw-update.mjs",
     "check:devkit": "node src/devkit/check-devkit.mjs",
-    "check:framework": "npm run check:ui && npm run check:devkit",
+    "check:framework": "node src/devkit/check-framework.mjs",
     "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs",
     "audio:check": "node src/audio/audio-check.mjs"
   },

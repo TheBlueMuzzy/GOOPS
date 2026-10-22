@@ -10,10 +10,6 @@ html, body, #root { margin: 0; height: 100%; }
    machine bars over the integrity bar taking the rest of the width; one line, never wrapping */
 .hud-panel { flex-wrap: nowrap; align-items: center; }
 .hud-panel-bars { flex: 1 1 0; min-inline-size: 0; }
-/* the machine bars: one row, the room shared out evenly, each at most its kit share (hud.json bars.machineWidth) and
-   never narrower than its name — instead of exactly its share, so three fit a 360 px phone at the body text size */
+/* the machine bars: one row, never wrapping (each bar's "at most its share" and the dock's tight sides are kit options
+   now — Bar atMost, Hud dockTight, UI kit 0.25.0) */
 .hud-machines { flex-wrap: nowrap; }
-.hud-machines > .kit-bar { flex: 1 1 0; inline-size: auto; max-inline-size: calc(var(--kit-bar-share) * 100%); }
-/* the panel's sides: the kit dock's gap-s instead of gap-m, so the window + three machine names fit a 360 px phone
-   (still clear of the edge) */
-.kit-hud-dock > .kit-panel:has(.hud-panel) { padding-inline: var(--gap-s); }

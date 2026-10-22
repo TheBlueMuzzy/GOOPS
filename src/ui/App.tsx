@@ -5,7 +5,7 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, GameOver, Hud, HudText, kitScreens, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
+import { Bar, GameOver, Hud, HudText, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
@@ -246,7 +246,6 @@ export function App() {
   }, [])
 
   const screenMap = useMemo(() => ({
-    ...kitScreens, // (Pause's End shift asks first)
     settings: SettingsScreen,
     pause: () => (
       <Pause words={text.pause} onSettings={() => screens.push('settings')} onQuit={toConsole} />
@@ -277,7 +276,6 @@ export function App() {
   const rank = playerRank(progress)
   const scraps = Math.max(0, scrapsAt(rank, progress))
   const idleScreens = useMemo(() => ({
-    ...kitScreens, // (Settings' buttons ask first: Replay lessons)
     settings: SettingsScreen,
     upgrades: () => (
       <Modal title={text.upgrades.title} onBack={() => screens.pop()} backLabel={text.upgrades.back}>
@@ -300,7 +298,6 @@ export function App() {
 
   // the console mid-shift: Settings and the pause menu (End shift throws the run away)
   const consoleScreens = useMemo(() => ({
-    ...kitScreens,
     settings: SettingsScreen,
     pause: () => <Pause words={text.pause} onSettings={() => screens.push('settings')} onQuit={endAtConsole} />,
   }), [endAtConsole])
@@ -348,7 +345,7 @@ export function App() {
   const low = hudTuning.bars.lowAt
   const machineBars = hud && unlocked.map((id) => {
     const m = hud.machines[id], alert = m.broken ? 'flash' : m.health < low ? 'pulse' : undefined
-    return <Bar key={id} plain label={text.hud[id]} labelAt="above" width={short ? 1 : hudTuning.bars.machineWidth} thickness="m"
+    return <Bar key={id} plain label={text.hud[id]} labelAt="above" width={short ? 1 : hudTuning.bars.machineWidth} atMost={!short} thickness="m"
       value={Math.round(m.health * 100)} variant={alert ? 'danger' : 'primary'} alert={alert} />
   })
   const quotaMet = hud && hud.cracksSealed >= hud.cracksNeeded
@@ -364,7 +361,7 @@ export function App() {
   const showNext = !!engine && isUnlocked('nextPiece', engine.state.rank)
   const nextWindow = hud && showNext ? <NextWindow piece={hud.next} label={text.hud.next} /> : undefined
   // The panel: the window at the left, the bars to its right — the machines in a row (each at most bars.machineWidth of
-  // that room, never narrower than its name; app.css) over the integrity bar. (A short window: the crack count heads the
+  // that room, never narrower than its name: the kit Bar's atMost) over the integrity bar. (A short window: the crack count heads the
   // panel column, the machine bars stack beside the window, and the tank takes the whole height.)
   const bars = short ? <>{machineBars}{integrityBar}</>
     : <>{unlocked.length > 0 && <Row gap="s" justify="center" className="hud-machines">{machineBars}</Row>}{integrityBar}</>
@@ -385,7 +382,7 @@ export function App() {
             <Hud words={{ pause: text.hud.pause }} onPause={() => { if (lessonPlay.pauseOn()) screens.push('pause') }} oneRow
               vitals={<Score value={hud.score} compact />} status={short ? undefined : status}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
-              dock={panel} dockSide={short ? 'right' : 'bottom'} />
+              dock={panel} dockSide={short ? 'right' : 'bottom'} dockTight />
           )}
         </ScreenStack>
       )}

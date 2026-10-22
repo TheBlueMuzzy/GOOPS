@@ -78,7 +78,8 @@
   },
   {
     "paths": [
-      "public/fonts/after_burner_neue/After Burner Neue.ttf"
+      "public/fonts/after_burner_neue/After Burner Neue.ttf",
+      "public/fonts/after_burner_neue/After Burner Neue.png"
     ],
     "source": "Muzzy's font library (After Burner Neue - Read Me.txt + PNG kept beside it, as its licence asks)",
     "author": "daaams (sweeep.fr)",
@@ -201,6 +202,24 @@
     "licence": "CC0",
     "light": "🟢",
     "url": "https://opengameart.org/content/swishes-sound-pack",
+    "credit": ""
+  },
+  {
+    "paths": ["public/art/"],
+    "source": "Muzzy's own art (the art/ SVGs: console, buttons, title, end frame, background)",
+    "author": "Muzzy",
+    "licence": "own work",
+    "light": "🟢",
+    "url": "",
+    "credit": ""
+  },
+  {
+    "paths": ["public/icons/"],
+    "source": "Made from Muzzy's title art (scripts/make-maskable-icon.mjs)",
+    "author": "Muzzy",
+    "licence": "own work",
+    "light": "🟢",
+    "url": "",
     "credit": ""
   }
 ]

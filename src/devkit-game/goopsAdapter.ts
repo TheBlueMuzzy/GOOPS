@@ -11,6 +11,7 @@ import type { ShiftEvent, ShiftState } from '../engine'
 import { readSnapshot, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
 import { versionLabel } from '../version'
+import en from '../../content/text/en.json'
 
 type GoopsMoment = { shift: ShiftSnapshot | null }
 
@@ -70,4 +71,29 @@ export const goopsAdapter: DevKitGame = {
     return describeShift({ ...st, rank: shift.options.rank })
   },
   pauseModes: ['full', 'half'], // (the clocks do the work — see the top)
+  // check:framework's play checks (Dev Kit 0.19+): from the console to a running shift, as e2e/start.mjs does it —
+  // rank 6 (all three machines), lessons already seen on this device, tap the periscope, wait for the console to slide away
+  conformance: {
+    query: '?rank=6&seed=7',
+    async startPlay() {
+      const w = window as unknown as { __goopsSeen?: (ids: string[]) => void }
+      const until = async (ok: () => boolean, what: string, ms = 25000) => {
+        const end = Date.now() + ms
+        while (!ok()) {
+          if (Date.now() > end) throw new Error(`Goops startPlay: ${what} didn't happen in ${ms / 1000} s`)
+          await new Promise((r) => requestAnimationFrame(r))
+        }
+      }
+      await until(() => !!startButton(), 'the console with its Start shift button')
+      w.__goopsSeen?.( // (dev builds only — the checks run on the dev server)
+['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:first-day'])
+      startButton()?.click()
+      await until(() => session.inShift && session.engine?.state.status === 'playing' && !document.querySelector('.kit-art-stage'), 'a running shift')
+    },
+  },
+}
+
+/** The console's periscope ("Start shift") — the same button a player taps. */
+function startButton(): HTMLButtonElement | null {
+  return [...document.querySelectorAll('button')].find((b) => !b.disabled && b.getAttribute('aria-label') === en.console.periscope) ?? null
 }
