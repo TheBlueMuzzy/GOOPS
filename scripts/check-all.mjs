@@ -30,6 +30,7 @@ const E2E = [
   ['perf', 'e2e/perf.mjs', ''],                // 5464 (pass line: content/tuning/perf.json — same result 3 runs + beside sw-update)
   ['lessons', 'e2e/lessons.mjs', ''],          // 5341
   ['unlocks', 'e2e/unlocks.mjs', ''],          // 5344
+  ['upgrades', 'e2e/upgrades.mjs', ''],        // 5345 (F34: the Upgrades screen — buy, reload, take back, equip; shots at 3 sizes)
   ['devkit-live', 'e2e/devkit-live.mjs', ''],  // 5282
   ['day', 'e2e/day.mjs', ''],                  // 5263
   ['repairs', 'e2e/repairs.mjs', ''],          // 5267

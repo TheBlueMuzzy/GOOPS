@@ -5,7 +5,7 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, GameOver, Hud, HudText, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
+import { Bar, GameOver, Hud, HudText, Pause, Row, Score, ScreenStack, Settings, Stack, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema } from './kit'
 import { createShift, type MachineId, type ShiftEngine, type ShiftStatus } from '../engine'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
@@ -27,6 +27,8 @@ import { isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank
 import { loadProgress, saveProgress } from '../progress/save'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
+import { UpgradesScreen } from './UpgradesScreen'
+import { UpgradeShopContext } from './upgradeShopContext'
 import { versionLabel } from '../version'
 import { art } from './art'
 import { useShort } from './useShort'
@@ -82,6 +84,8 @@ const SettingsScreen = () => (
     soundSettingsChanged(values)
   }} />
 )
+// the console between shifts: Settings and the Upgrades shop (one fixed map, so a screen stays mounted while it's used)
+const IDLE_SCREENS = { settings: SettingsScreen, upgrades: UpgradesScreen }
 // in-shift messages (F26, src/game/messages.ts decides which): kit toasts just above the goop. How long one stays is
 // LOOKS time (src/devkit/gameClock.ts): the Dev Kit's full pause holds it on screen, so the frozen picture stays whole.
 const ONE_DAY_S = 86_400 // (the kit's own timer, never reached: the looks clock takes it away)
@@ -271,19 +275,16 @@ export function App() {
     },
   }), [result, start, toConsole])
 
-  // the console between shifts: Settings, and the Upgrades screen (F59, from its rank: the scraps in hand — alpha has no
-  // upgrades to buy yet, so it says when they come)
+  // the console between shifts: Settings, and the Upgrades screen (F59 opens it from its rank; F34 the shop: buy, take
+  // back, equip — src/ui/UpgradesScreen.tsx). What it changes is saved at once.
   const rank = playerRank(progress)
   const scraps = Math.max(0, scrapsAt(rank, progress))
-  const idleScreens = useMemo(() => ({
-    settings: SettingsScreen,
-    upgrades: () => (
-      <Modal title={text.upgrades.title} onBack={() => screens.pop()} backLabel={text.upgrades.back}>
-        <Text kind="heading">{fill(text.upgrades.scraps, { n: scraps.toLocaleString('en') })}</Text>
-        <Text>{text.upgrades.soon}</Text>
-      </Modal>
-    ),
-  }), [scraps])
+  const changeUpgrades = useCallback((p: Progress) => {
+    progressRef.current = p
+    setProgress(p)
+    saveProgress(p)
+  }, [])
+  const shop = useMemo(() => ({ progress, rank, onChange: changeUpgrades }), [progress, rank, changeUpgrades])
   const openUpgrades = useCallback(() => { screens.push('upgrades'); lessonPlay.screen('upgradesOpened') }, [])
   // F59: on the console between shifts at upgrading's rank, its unlock lesson (once per device: unlockLessons.ts)
   // F31: while the first day is due, its first step instead (pull the periscope) — again after Replay lessons (tips).
@@ -387,13 +388,15 @@ export function App() {
         </ScreenStack>
       )}
       {mode !== 'shift' && (
-        <ScreenStack screens={peeking ? consoleScreens : idleScreens}>
+        <UpgradeShopContext.Provider value={shop}>
+        <ScreenStack screens={peeking ? consoleScreens : IDLE_SCREENS}>
           <Console progress={progress} shownFrom={peeking ? null : meterFrom} onSlideEnd={consoleSlid}
             phase={mode === 'console' || mode === 'peek' ? 'idle' : mode === 'leaving' || mode === 'peekOut' ? 'leaving' : 'arriving'}
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
             midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair } : undefined}
             upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }} />
         </ScreenStack>
+        </UpgradeShopContext.Provider>
       )}
       <ToastStack place="at" variant="plain" /* just above the goop; words, not button-like plates (Muzzy 2026-10-18) */ />
       {/* F30: a lesson's message — in the tank a bubble in the kit Callout look; at the console mid-shift (F32) its words

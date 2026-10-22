@@ -106,7 +106,9 @@ function UpgradesButton({ scraps, open, opensAt, onOpen }: NonNullable<Props['up
 
 export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades }: Props) {
   const now = rankInfo(progress)
-  const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, progress) : []), [shownFrom, progress])
+  // (only the XP moves the meter: buying an upgrade changes the progress but must not replay the fill — F34)
+  const totalXp = progress.totalXp
+  const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, { totalXp, scrapsSpent: 0 }) : []), [shownFrom, totalXp])
   const short = useShort()
   const leaving = phase === 'leaving'
   const broken = MACHINES.filter((id) => midShift?.machines[id].broken)
