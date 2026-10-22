@@ -89,7 +89,7 @@ Goal: machines break from your own play and you fix them at the console while th
 - ✅ F23 Breakdowns in the engine — must:alpha · needs: F06
 - ✅ F24 Repairs at the console — must:alpha · needs: F23, F21
 - ✅ F25 Visor glitch (sketch first) — must:alpha · needs: F23
-- ✅ F26 HUD + messages rethink (from the parking lot) — must:alpha · needs: F24 · approved 2026-10-19 (message timing waits for Muzzy's dedicated playtest — sprint task 6)
+- ✅ F26 HUD + messages rethink (from the parking lot) — must:alpha · needs: F24 · approved 2026-10-19 (message timing waits for Muzzy's dedicated playtest: sprint task 6)
 - ✅ F27 ❓ Integrity / crack balance talk — must:alpha · needs: F26 · approved 2026-10-19 (crack hill, drain 0.0005, seal +2%, hockey-stick crack rate)
 
 ## M4 — Alpha: the playable game, for you + friends  ✅ released 2026-10-20 (v0.1.0)
@@ -123,8 +123,8 @@ flowchart LR
 
 ## M5 — Beta: the whole job, rank 0 to the takeover
 Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every v1 system are in; numbers can still be rough.
-- ⏳ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · needs: F08
-- ⏳ F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
+- ✅ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · decided 2026-10-22 (design/upgrades-map.md "F33 decisions": store at 5 shelf-ready, 1 scrap a level + free take-backs, rank 3 slower depressurise, rank 9 pressure slower, tougher tank at 22) · needs: F08
+- 🟢 F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
 - ⏳ F35 🎮 Story ranks 0–9: rank titles, Employer beats, the intercom voice — must:beta · needs: F09, F30
 - ⏳ F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
   note: Muzzy (2026-10-19): keep all three
@@ -136,14 +136,14 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - 🟢 F46 🎮 Operator Journal — should:beta · needs: F30
 - ⏳ F47 ✨ The zap look (sketch first) — should:beta
 - ⏳ F48 🎮 Quick Fix upgrade (fewer repair steps) — should:beta · needs: F34
-- ⏳ F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
+- 🟢 F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
 - ⏳ F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
 - ⏳ F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
 
 ## M6 — 1.0: polished, balanced, replaces v1
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
 - ⏳ F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
-- ⏳ F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
+- 🟢 F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
   what: step 1 = swap in the sounds Muzzy finds for the 26 placeholder moments (he hunts; Claude trims, matches loudness, credits — Muzzy 2026-10-19: "add a step during polish to update sounds")
 - 🟢 F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
 - ⏳ F55 🎮 Credits screen — must:1.0

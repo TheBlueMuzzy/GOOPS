@@ -76,3 +76,20 @@
 1. **Store stays at rank 5, shelf ready:** the Upgrades button still opens at 5 (F59). When it opens, Circuit Stabilizer (lights, 2) and Capacitor Efficiency (laser, 4) are already on the shelf with 4 scraps banked — a "finally, relief" moment. From rank 6 on, problem + fix arrive together again (controls + Gear Lubrication).
 2. **Rank 9 Pressure Control = pressure rises slower** (`pressureRiseTimeMult`, + per level, cracks follow pressure so they slow too). Keeps 8 levels as the scrap sink.
 3. **Rank 3 Auto-Popper = slower depressurise** (Muzzy's idea, `ruptureDrainTimeMult`): after a rupture the drain lasts longer, more time to zap leftovers. Same role as v1: forgiveness at the end of a shift. (Bought from rank 5, like everything.)
+4. **Money stays v1's:** every level costs 1 scrap, 1 scrap per rank, free unlimited take-backs (a loadout). The bots check later whether it feels tight (F51).
+5. **Easier repairs, both ways:** max level of each machine fix (Circuit Stabilizer, Capacitor Efficiency, Gear Lubrication) = that repair takes 1 fewer step (v1). Quick Fix (F48) comes later at a 30s+ rank and takes 1 step off all three.
+6. **Tougher tank → rank 22** (`integrityDrainMult`): fills a slot freed by F59; arrives with split two-colour pieces (20).
+7. **Dense Goop stays at rank 8:** a self-chosen speed-up you can take back; pressure climbs with time, so faster pieces = more sealing chances.
+
+### Ranks 2–9 as decided (F33 ✅)
+| Rank | Upgrade | Type · max | New-loop version | Engine |
+|---|---|---|---|---|
+| 2 | Circuit Stabilizer | passive · 4 | visor (lights) breaks later; max = 1 fewer repair step | `visorGraceMult` ready |
+| 3 | Auto-Popper | passive · 4 | slower depressurise after a rupture | `ruptureDrainTimeMult` ready |
+| 4 | Capacitor Efficiency | passive · 4 | laser drains less per pop; max = 1 fewer repair step | `laserDrainMult` ready |
+| 5 | Cooldown Booster | active · 3 | on fire, every machine's calm time +25/35/50 % | fire effect to build (F34) |
+| 6 | Gear Lubrication | passive · 4 | controls cool faster; max = 1 fewer repair step | `controlsCoolMult` ready |
+| 7 | Focus Mode | passive · 4 | shift runs slower while you're at the console (× `consoleTimeScale`) | screen-side, to build (F34) |
+| 8 | Dense Goop | passive · 4 | pieces fall faster (self-chosen challenge) | `fallSpeedMult` ready |
+| 9 | Pressure Control | passive · 8 | pressure rises slower | `pressureRiseTimeMult` ready |
+All bought from rank 5 (the store opens then). Per-level steps start at v1's (≈ +12.5–15 % a level) and get checked by the bots/economy sim (F51) — tuning, not taste. Claude's calls (change any): actives keep charging at the console's slowed speed (same clock as the shift) and stop during a rupture (already built).
