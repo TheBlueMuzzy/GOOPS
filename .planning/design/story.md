@@ -37,6 +37,7 @@ Management, the Veteran and the Goop each hint at a different answer, so players
 5. **The truth (40s):** the goop is people — former workers, broken down. Under pressure goop gives off energy, and that power is what Management harvests (the Matrix part). The cracks are the goop pushing to get out. Your job keeps them in.
 
 ## Credits, payday and fines (the trap) — worked out 2026-10-23
+> Play it: sketch `research/sketches/credits-payday.html` (the planner's Sketches tab, "S8: Credits & payday").
 Muzzy's worry: fines mustn't hold players back from ranking up. His idea: credits fill up to a cap, then the Company takes nearly all of it for lodging, food "and other funny things" — that's why the meter starts over each rank. Small fines every shift; one big payment at each rank-up; the credits line goes up and down instead of just climbing.
 
 **The trick: credits ARE the XP we already have — the Company just puts on a show around it.**
@@ -80,7 +81,7 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | Rank 20 | Multi-colour pieces | "Increased goop clumping is normal and expected." | The goop has started **holding together** (each other's hands). |
 | Rank 30 | Cracks spread | "Hairline fractures are within policy tolerance. You will be fined for them." | The goop is pushing harder — it's waking up. The tank is older than anyone says. |
 | Rank 40 | Wild goop (seals any crack) | "Report any goop that seems helpful. Goop is not helpful." | Goop that has heard you **is helping you**. |
-| ❓ Black goop | — | "Residue. Do not engage." | Claude's pick: the oldest goop, pressed so long it's forgotten who it was — it doesn't talk, doesn't merge, and only wild goop can wake it (clear it). |
+| Rank 31: black goop | One black clump in the tank | "Residue. Do not engage." | **It's the Veteran** (Muzzy 2026-10-23). ❓ What it does in play — Claude's pick: it never merges or pops (the laser passes through: "ow"), drifts toward the crack in most danger and sits on it, sealing it slowly — he's still helping. |
 
 ## The arc, rank by rank
 | Ranks | Title band (❓ names) | Beats | Voices |
@@ -90,23 +91,36 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | **5–9** | Tank Associate | **The speaker crackles at rank 5** — the Veteran's first words, and the upgrade store opens: "Found some scraps. Left 'em in your panel. Don't tell the screen." | + Veteran (fragments). |
 | **10–19** | Goop Technician → Senior | Eyes appear. Whispers become words ("…don't…", "…heavy…"). The Veteran: "Don't trust everything the screen says." Management "reminds you" there's no such thing as voices. | All three. |
 | **20–29** | Pressure Specialist → Lead | Fines go up. Goop holds together. The Veteran tells the station's history: how many operators there have been (a lot), where they "retired" to. The goop says its first name. | All three; Veteran clearer. |
-| **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. The Veteran admits he's never seen the outside — then **gets caught (~32)** and the speaker goes dead; you're on your own (you're the veteran now). You find your own name in a list of "pending retirements". | Goop sentences; Veteran in full. |
-| **40–49** | Assistant to the Department Head → Acting Deputy (Interim) | The full picture: the goop is people; the pressure is Management's power; the debt is how they keep operators coming. **The speaker crackles again — the Veteran, from inside the tank** (caught and gooped at ~32; see The Veteran's arc). Management slips: it isn't human. | Everything. Mouths open. |
+| **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. **The Veteran gets caught at 30** and the speaker goes dead; you're the veteran now. **The goop takes over at once** (a moment every rank); the black goop (him) is in the tank from 31 and speaks in your head at ~35. You find your own name in a list of "pending retirements". | Goop sentences; the black goop. |
+| **40–49** | Assistant to the Department Head → Acting Deputy (Interim) | The full picture: the goop is people; the pressure is Management's power; the debt is how they keep operators coming. **The speaker crackles again — the Veteran, from inside the tank** (caught and gooped at 30; see The Veteran's arc). Management slips: it isn't human. | Everything. Mouths open. |
 | **50** | **Department Head, G.O.O.P.S.** | The takeover — see **The ending**. | — |
 
 ## The Veteran's arc — he gets caught (Muzzy 2026-10-23)
 Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned into goop at some later level … when we become high enough level, we don't need a veteran anymore… we're the veteran. but I don't want to lose touch with the speaker … we can lose touch with it much later."
-- **5–29:** the speaker crackles; he leaves scraps and warnings, clearer as he trusts you.
-- **~32 (❓ rank): caught.** Mid-transmission the monitor cuts in: "UNAUTHORISED BROADCAST LOCATED. OPERATOR #0001 HAS BEEN SCHEDULED FOR RETIREMENT." The speaker goes dead. Next shift's report has a fine for *you*: "Association with a retired employee". A new clump in the tank has his eyes (the same squint) ❓.
-- **~33–39: silence — and you're the veteran now.** No more scraps from him; scraps keep coming, but now you're "salvaging them yourself" (the report words change; the economy doesn't).
-- **~40: the speaker crackles again.** It's him — from inside the tank. Goop can reach the speaker's wire through the cracks (that's what the cracks are for). He's goop now, so he talks like goop, but better than the others (he's newest). He teaches the goop to use the speaker.
-- **40–49:** the speaker becomes the goop's way to talk out loud before the mouths do — the Veteran and the goop share it, breaking up more and more as the pressure rises.
+**Pacing (Muzzy 2026-10-23: "why rank 32? 33–39 = 7 levels of nothing … the goop themselves [must] ramp up at the time the veteran is 'retired' so we don't have a weird gap"; "the black goop IS the veteran").** Rule: **every rank-up has exactly one story moment**, and the voice that carries it hands over with no gap:
+
+| Ranks | Who carries the rank-up moment | In-shift (no tap) |
+|---|---|---|
+| 0–4 | Management (monitor) | — · first whisper at 3 |
+| 5–29 | **The Veteran** (speaker), one line every rank — 25 lines, cryptic → clear | whispers grow: feelings → words |
+| **30** | **Caught.** The rank-30 moment IS his capture (same rank as the cracks-spread twist — the crackdown after his leak) | — |
+| 31–39 | **The goop** (in your head) takes over at once: one moment every rank, broken sentences → whole sentences. The **black goop** is in the tank from 31 — it's him | the black goop's eyes follow you |
+| ~35 | **The black goop speaks in your head** — his voice, from inside, learning to talk like goop | — |
+| 40–49 | **The speaker crackles again**: he's reached its wire through the cracks and teaches the goop to use it — the speaker carries him + the goop, the monitor carries Management slipping | mouths open |
+| 50 | The ending — you beat the game | — |
+
+- **5–29:** the speaker crackles every rank-up; he leaves scraps and warnings, clearer as he trusts you.
+- **30: caught.** Mid-sentence the monitor cuts in: "UNAUTHORISED BROADCAST LOCATED. OPERATOR #0001 HAS BEEN SCHEDULED FOR RETIREMENT." The speaker goes dead. That shift's report has a fine for *you*: "Association with a retired employee". From now on you salvage your own scraps — you're the veteran now (report words change; the economy doesn't).
+- **31: the black goop.** A single black clump in the tank, with his squint. **The black goop IS the Veteran** (Muzzy). It's black because he's newest and "unprocessed" ❓. What it does in play: ❓ (below).
+- **31–39: the goop ramps up** to fill his place: a goop moment every rank-up, getting better at talking each time.
+- **~35:** the black goop's first words in your head — him, still him.
+- **40: the speaker crackles again** — he got to its wire through the cracks (that's what cracks are for, he says). He teaches the rest of the goop to use it.
+- **40–49:** the speaker is shared by him and the goop, breaking up more as the pressure rises.
 - **The ending:** when the tank opens, the speaker gives one last clear line in his voice, then goes quiet for good — that's where you finally lose touch with it.
-- (This replaces Draft 2's "he's the black goop at the bottom": black goop stays the oldest, forgotten goop.)
 
 ## How story moments play (Muzzy 2026-10-23: "short cut scenes — just text and attention calling in the console/tank, not actual cut scenes")
 - A story moment = text in one of the three places (monitor · speaker subtitles · words in the tank) plus **attention calling** on the console or tank: a light blinks, the monitor flickers, the speaker grille buzzes, eyes in the goop all turn to look, the visor dims for a beat. The same spotlight/outline the lessons already use.
-- Short: a few lines, tap to move on, always skippable; never mid-shift unless it's a whisper that needs no tap.
+- **Not skippable — short instead** (Muzzy 2026-10-23: "not skippable. if they're short. they'll be over soon."): a few lines, tap to move on; never mid-shift unless it's a whisper that needs no tap.
 - Built on the lesson runner (F30) — a story beat is a lesson step with a different voice.
 
 ## The ending (rank 50) — save the goop
@@ -118,7 +132,7 @@ Muzzy: "we'll need an ending where we save the goop instead of zapping it." Clau
 5. **The last line**, on the monitor, back to cheerful: "Position available: G.O.O.P.S. Operator. No experience necessary. Apply today." ❓ — or something kinder.
 - ❓ **Is the ending a choice?** Claude's pick: **no choice, one ending.** The whole game earns it; a "stay loyal" ending would undo it. (A second, bleak ending could be a secret later — e.g. finishing the last shift by zapping.)
 - ❓ **What happens to you?** Options: you walk away (debt and all) · you stay as the new Veteran for the next operator · you step into the goop and join them. Claude's pick: **you stay at the console, and the last whisper is in your own voice** — ambiguous, as v1 wanted ("you become the boss — but what does that mean?").
-- ❓ **After the ending:** endless shifts continue (rank 50+) with the goop free and a new tank? Or the game is done and the console shows the end-game screen (Muzzy already has end-game art in `art/`)?
+- **Rank 50 = you beat the game** (Muzzy 2026-10-23: "you can beat this game. level 50 is beating the game."). After the ending the console shows the end-game screen (Muzzy's end-game art in `art/`). ❓ Can you start a new career afterwards (a fresh save, maybe with something to show you've won)?
 
 ## Rank titles (draft — ❓ Muzzy's call)
 | Ranks | Title |
@@ -150,7 +164,7 @@ Muzzy: "we'll need an ending where we save the goop instead of zapping it." Clau
 - Management never seems evil directly — always "policy", "procedure", "for your comfort".
 - The Veteran starts brief and cryptic and becomes clearer as trust builds.
 - The goop's voice is the only one without a box or frame — it's in your head.
-- The story is additive and never blocks play — skippable, but good enough that players want to read it.
+- Story moments are short and **not skippable** — over before they're in the way (Muzzy 2026-10-23); one per rank-up, never a gap in who's talking.
 - Every new difficulty has a story reason (Management making your job harder, never "the game gets harder").
 - The tank's purpose is never stated outright before the 40s; the rumours contradict each other on purpose.
 
