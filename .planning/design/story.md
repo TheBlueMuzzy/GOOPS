@@ -1,5 +1,5 @@
 # Goops — Story
-> Living design doc, linked from GDD §1 and §5. **Draft 2 (2026-10-23)** — Claude's write-up of Muzzy's direction (his words below). Everything marked **❓** is open for Muzzy. The v1 PRD's version is kept at the bottom for reference.
+> Living design doc, linked from GDD §1 and §5. **Draft 3 (2026-10-23, Sprint 13)** — Claude's write-up of Muzzy's direction (his words below). Everything marked **❓** is open for Muzzy. The v1 PRD's version is kept at the bottom for reference.
 
 ## Muzzy's direction (2026-10-23, his words, trimmed)
 - "the company's purpose should be obfuscated — we don't know why we're cleaning a pressurized tank of goop… but it feels important. very vague. … maybe the goop is the actual product? maybe it's an invasive species? maybe it's the alien life on this planet and we're being an evil corp killing it all?"
@@ -94,7 +94,7 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | **20–29** | Pressure Specialist → Lead | Fines go up. Goop holds together. The Veteran tells the station's history: how many operators there have been (a lot), where they "retired" to. The goop says its first name. | All three; Veteran clearer. |
 | **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. **The Veteran gets caught at 30** and the speaker goes dead; you're the veteran now. **The goop takes over at once** (a moment every rank); the white goop (him) is in the tank from 31 and speaks in your head at ~35. You find your own name in a list of "pending retirements". | Goop sentences; the white goop. |
 | **40–49** | Assistant to the Department Head → Acting Deputy (Interim) | The full picture: the goop is people; the pressure is Management's power; the debt is how they keep operators coming. **The speaker crackles again — the Veteran, from inside the tank** (caught and gooped at 30; see The Veteran's arc). Management slips: it isn't human. | Everything. Mouths open. |
-| **50** | **Department Head, G.O.O.P.S.** | The takeover — see **The ending**. | — |
+| **50** | Acting Deputy Department Head (Interim) | **The final shift** (all galaxy black, the Veteran drops in), then **The ending** — Department Head is given at the win. | Everything. |
 
 ## The Veteran's arc — he gets caught (Muzzy 2026-10-23)
 Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned into goop at some later level … when we become high enough level, we don't need a veteran anymore… we're the veteran. but I don't want to lose touch with the speaker … we can lose touch with it much later."
@@ -118,6 +118,85 @@ Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned i
 - **40: the speaker crackles again** — he got to its wire through the cracks (that's what cracks are for, he says). He teaches the rest of the goop to use it.
 - **40–49:** the speaker is shared by him and the goop, breaking up more as the pressure rises.
 - **The ending:** when the tank opens, the speaker gives one last clear line in his voice, then goes quiet for good — that's where you finally lose touch with it.
+
+## Story moments, rank by rank (0–50) — Sprint 13 draft
+One moment per rank-up, shown at the console before the next shift (not skippable, so each is short: 1–3 lines, tap to move on). It plays in the voice's own place: **MON** = the top monitor (capitals, typed out) · **SPK** = the speaker (the talking bubble; `──` = static) · **HEAD** = in your head (the blobby bubble, lower case). **Look** = the attention call. Rank titles show on the end report when they change ("New title: …"), not in the moment.
+
+| Rank | Voice | Lines | Look |
+|---|---|---|---|
+| 0 | MON | WELCOME, OPERATOR #4471. YOUR PASSAGE DEBT HAS BEEN PRE-APPROVED. · PLEASE KEEP THE TANK FROM EXPLODING. | The monitor flickers on (then the first day's lessons) |
+| 1 | MON | CONGRATULATIONS ON YOUR FIRST PAYDAY. · A NEXT-PIECE WINDOW HAS BEEN INSTALLED. ITS RENTAL IS ON YOUR BILL. | The next-piece window lights |
+| 2 | MON | YOUR PERISCOPE IS ON BACKORDER. ESTIMATED ARRIVAL: SOON. · THE OLD ONE WILL DO. | The visor flickers |
+| 3 | MON | SWAPPING PIECES IS NOW PERMITTED. · G.O.O.P.S. = GENERAL OVERFLOW & ORGANIC PRESSURE SERVICES. | The swap key glows |
+| 4 | MON | LASER POWER IS NOW RATIONED FOR YOUR SAFETY. · PLEASE ZAP RESPONSIBLY. | The laser meter blinks |
+| 5 | SPK | —you the new one? ── scraps in your panel. ── don't tell the screen. | The speaker grille buzzes for the first time; the Upgrades button lights |
+| 6 | SPK | Controls run hot. ── goop gets in the gears. ── easy on the turning. | The controls meter blinks |
+| 7 | SPK | Screen fine you yet? ── fines everybody. ── pay it no mind. | The report's fines line glows |
+| 8 | SPK | You hear it too? ── the cold voice. ── ...thought so. | The tank dims for a beat |
+| 9 | SPK | Got you a pressure part. ── fell off a cart. ── don't ask which cart. | The Upgrades button lights |
+| 10 | SPK | Look close at the big clumps. ── ...they look back, don't they. | Eyes open in the tank, all at once, then close |
+| 11 | SPK | Don't let the eyes get to you. ── zap 'em anyway. ── gotta eat. | One eye follows the falling piece |
+| 12 | SPK | Screen says there's no voices. ── screen says a lot of things. | The monitor flickers (it heard that) |
+| 13 | SPK | How long you signed for? ── ...yeah. me too. ── long time ago. | — |
+| 14 | SPK | Ever count the operators before you? ── don't. ── numbers get big. | — |
+| 15 | SPK | Words now, right? ── in your head. ── that's them learning. | The tank dims; a whisper drifts up |
+| 16 | SPK | Ask the screen what the tank's for. ── go on. ── different answer every time. | The monitor shows a new acronym |
+| 17 | SPK | Found a manual. ── half the pages are fines. ── other half's blank. | — |
+| 18 | SPK | Pressure's not a side effect, kid. ── ...forget I said that. | The pressure line glows |
+| 19 | SPK | Keep your head down this week. ── they're counting watts. | The monitor flickers |
+| 20 | SPK | See 'em clumping? ── different colours, holding on. ── like hands. | A multi-colour piece glows as it falls |
+| 21 | SPK | Where'd the last operator go? ── "retired." ── ask where. | — |
+| 22 | SPK | Tank's older than the Company says. ── older than me. ── and I'm old. | Cracks glint |
+| 23 | SPK | Screen fined me for coughing. ── 40 cr. ── I cough a lot now. | — |
+| 24 | SPK | You hear 'em say a name yet? ── ...listen tonight. | Eyes in the tank turn to you |
+| 25 | SPK | Nobody pays it off, kid. ── nobody leaves. ── think about where they go. | The speaker crackles longer than usual |
+| 26 | SPK | Operator list goes back 900 names. ── every one "retired." ── not one left on a ship. | — |
+| 27 | SPK | They tell you names yet? ── write 'em down. ── somebody should. | A whisper: "…Odile…" |
+| 28 | SPK | Gonna show you something. ── next shift. ── if the screen don't catch me first. | The monitor flickers |
+| 29 | SPK | The goop is us. ── every operator who couldn't pay. ── they don't retire you, they ── | The speaker cuts out mid-word |
+| 30 | SPK → MON | ── kid, they're onto ── · UNAUTHORISED BROADCAST LOCATED. OPERATOR #0001 HAS BEEN SCHEDULED FOR RETIREMENT. | The monitor flashes red; the speaker dies in one last squelch. The report fines YOU: "Association with a retired employee" |
+| 31 | HEAD | …new… one… white… · …he is… here… | A white clump drops in; every eye turns to it |
+| 32 | HEAD | …he helps… · …we help… too… | The white goop drifts to a crack |
+| 33 | HEAD | …tight… so tight… · …you feel it… | The pressure line wobbles |
+| 34 | HEAD | …we were… operators… · …like you… | Eyes blink, slowly, together |
+| 35 | HEAD (him) | …kid… it's me… · …keep working… just… listen… | The white goop looks up at you; its squint |
+| 36 | HEAD | …he says… you have… a name… · …what is… your name… | — |
+| 37 | HEAD (him) | …it's warm in here… · …warmer than the bunk… | The white goop glows a little |
+| 38 | HEAD | …please… not the laser… · …just… hold us… | The laser meter dims |
+| 39 | HEAD | …your name… is on a list… · …we saw it… | The report shows "Pending retirements: Operator #4471" |
+| 40 | SPK | ── can you hear me? ── got to the wire through a crack. ── that's what cracks are for. | The speaker crackles back to life; mouths appear in the tank |
+| 41 | SPK (the goop) | …we… can talk… here too… · …LOUD… | The grille buzzes in time with the mouths |
+| 42 | SPK | The pressure's power, kid. ── runs the whole station. ── runs something above it too. | The pressure line glows |
+| 43 | SPK (the goop) | …the screen… is not… people… · …we have… seen them… | The monitor flickers |
+| 44 | SPK | Ever seen who reads your reports? ── nobody has. ── ask yourself why. | — |
+| 45 | MON | CONGRATULATIONS, HUMAN RESOURCE. · *OPERATOR. YOUR MANDATORY AIR ALLOWANCE HAS BEEN ADJUSTED. | The monitor glitches: for one frame, something that isn't a face |
+| 46 | SPK | There's a valve. ── under your console. ── they never let anyone near it. | A panel on the console rattles |
+| 47 | MON | THERE IS NO RELEASE VALVE. · PLEASE DO NOT LOOK UNDER YOUR CONSOLE. | The same panel rattles again |
+| 48 | SPK (the goop) | …when you open it… · …we go… home… | Every mouth in the tank opens at once |
+| 49 | SPK | Last stretch, kid. ── they know you know. ── next shift they come at you with everything. | The speaker and the monitor both flicker |
+| 50 | MON → him | FINAL PERFORMANCE REVIEW IN PROGRESS. PRESSURE INCREASED 400%. · (a white clump falls) oh! hi! · it's me! · …oof. · glad you're not goop yet. I'll help how I can. | The final shift starts (see **The final shift**); at each valve stage: "valve's open on your console — go!" |
+
+Checks on this table: 51 rows, one voice each; the hand-overs have no gap (5 MON→SPK · 30 SPK→MON cut-in · 31 HEAD at once · 40 SPK back · 50 everything); the machines and twists line up with their unlocks (1 next piece · 2 visor · 3 swap · 4 laser · 5 upgrades · 6 controls · 10 eyes · 20 multi-colour · 30 cracks spread + white · 40 wild goop + mouths).
+
+**In-shift whispers (no tap, the blobby bubble drifts up and fades):** 3 "…cold…" · 8+ one feeling a shift ("…warm…", "…tight…", "…nnn…") · 15+ single words ("…don't…", "…heavy…", "…hold…") · 24+ names ("…Odile…", "…Bram…") · 31+ sentences. **Monitor in-shift:** a new G.O.O.P.S. guess on the report every ~5 ranks; rank 12+: "THERE ARE NO VOICES IN THE TANK. HEARING VOICES IS A FINEABLE OFFENCE." when a whisper shows.
+
+## Fines and payday — the lines (Sprint 13 draft)
+**Fines from what really happened** (picked first, when the shift had one):
+| Event | Fine line |
+|---|---|
+| A rupture | Unscheduled pressure event |
+| The laser broke | Unauthorised wear on Company laser |
+| The visor broke | Periscope misuse |
+| The controls overheated | Excessive tank rotation |
+| Cracks still open at the end | Hairline fracture negligence |
+| Goop left at the end | Goop residue on Company property |
+| A long time at the console | Unscheduled console loitering |
+| Poking goop that can't pop | Premature zapping |
+| (rank 30, once) | Association with a retired employee |
+
+**Silly fines** (top up the rest; some only from a rank on): Excessive blinking · Picking nose on camera · Unapproved facial expression · Periscope fingerprints · Humming · Sighing above approved volume · Unlicensed whistling · Breathing above allowance · Looking at the clock · Leaning · Smiling sarcastically · Unauthorised optimism · Dream overage (bunk) · Excess gravity usage · Thinking on Company time · 12+ Hearing voices · 15+ Talking to the goop · 40+ Talking back to the speaker.
+
+**Payday — the 5 deductions** (shares of the payment due; tunable): Lodging (0.8 m bunk) 40% · Meals (nutrient paste) 30% · Air 15% · Periscope rental 10% · one rotating extra 5%: Uniform laundering (you have no uniform) · Window fee (there is no window) · Dental plan (there is no dentist) · Light rental · Gravity surcharge. Then the story-only line: "Remaining passage debt: 48,219 cr — interest applied" (it barely moves, and at 30+ it goes UP).
 
 ## The speaker bubble (the Veteran) — Muzzy 2026-10-23, likely a framework piece
 Muzzy: "it has an outline - it's a static outline, doesn't move. then while the text is 'typing out' in the speech bubble, the outline 'frizzes' like a spikey signwave, and does small scale pops to mimic words or syllables … a spikey sign wave that acts like a speech wave to indicate speaker static and talking." Reference strip: `.planning/design/refs/speaker-bubble-strip.png`.
@@ -151,16 +230,20 @@ Muzzy: "i removed colors because this final rush is more intense, less methodica
 - **How it plays as one colour** (Muzzy): you use the tank's **rotation to build separate towers** so you can reach the high cracks; and since every crack is black, one wide clump can seal **several cracks at once** (already true today: a wide red clump seals every red crack it covers).
 - ⚠ **To prove:** that "slightly overwhelming" pace — a sketch or a bot run before it's built.
 
-## The ending (rank 50) — save the goop
-Muzzy: "we'll need an ending where we save the goop instead of zapping it." Claude's draft:
-1. **Promotion.** The monitor congratulates you: Department Head. Your debt is "restructured" (it goes up). You now have the **release valve key**.
-2. **The last shift is played backwards** (the same tank, the same controls, new goal): don't zap. Merge goop instead — every colour, every clump — so the goop can hold together. Pressure is no longer the enemy: you let it rise on purpose. Management types faster and faster on the monitor, fining you live ("UNAUTHORISED MERCY: 9,999 cr").
-3. **The valve.** When the goop is one big piece, you pull the periscope one last time — but this time it opens the tank. The goop pours out (the console shakes; the screen fills).
-4. **The goop speaks** — out loud, through every mouth: thank you, and its names. The Veteran's speaker goes quiet (he's free).
-5. **The last line**, on the monitor, back to cheerful: "Position available: G.O.O.P.S. Operator. No experience necessary. Apply today." ❓ — or something kinder.
-- ❓ **Is the ending a choice?** Claude's pick: **no choice, one ending.** The whole game earns it; a "stay loyal" ending would undo it. (A second, bleak ending could be a secret later — e.g. finishing the last shift by zapping.)
-- **What happens to you: later** (Muzzy 2026-10-23: "let's cross that bridge after the story is built and we discuss the final levels"). Options so far: you walk away (debt and all) · you stay as the new Veteran for the next operator · you step into the goop and join them. Claude's pick: **you stay at the console, and the last whisper is in your own voice** — ambiguous, as v1 wanted ("you become the boss — but what does that mean?").
-- **Rank 50 = you beat the game** (Muzzy 2026-10-23: "you can beat this game. level 50 is beating the game."). After the ending the console shows the end-game screen (Muzzy's end-game art in `art/`). **Afterwards: a new career** (Muzzy: "sure. same exact flow, but with a visual upgrade to the console/periscope/vat or something. we can sort that out much later") — the same game from rank 0, with a changed-looking console / periscope / vat to show you've won. Which upgrade: later.
+## The ending — save the goop (rewritten 2026-10-23 to follow the final shift)
+Muzzy: "we'll need an ending where we save the goop instead of zapping it." The final shift IS the saving (the 3 valve stages); the ending is what plays after the third one. All text, on the console and the tank:
+1. **The tank opens.** The console shakes; the goop pours out of the tank and out of every tank on the station (the periscope view fills).
+2. **The goop speaks out loud**, through its mouths (the blobby bubble, now from the goop itself): thank you, and its names.
+3. **The speaker's last line**, clear for the first time, in the Veteran's voice: "told you you'd make a good veteran, kid." Then it goes quiet for good.
+4. **The badge.** The monitor glitches; the goop rewrites it: **Department Head, G.O.O.P.S.** — and under it the real acronym: **GRADUAL ONBOARDING OF PERMANENT STAFF.**
+5. **The last payday:** "Remaining passage debt: 0 cr — paid by: 1,312 former employees."
+6. **What happens to you** — ❓ Muzzy's pick (task 2):
+   - **A. You stay — as the next Veteran.** ← Claude's pick. The console is yours now. The goop rewrites the monitor's last ad: "Position available: G.O.O.P.S. Operator. Ask for the Department Head." The new career is the next operator's story — and the upgraded console / periscope / vat is *yours*, so the visual upgrade has a reason. Hopeful, and it explains the new career.
+   - **B. You leave.** The goop carries you out through the open tank; the last screen is the empty console. The new career is a new operator at that empty console. Clean and kind, but the new career has no link to you.
+   - **C. You join them.** You climb into the goop; the last whisper is in your own voice: "…warm…". The new career's operator hears it at rank 3. Bittersweet and ambiguous (v1 wanted "what does that mean?"); some players will read it as a bad end.
+7. **Then the end-game screen** (Muzzy's art in `art/`), and the new career: the same game from rank 0 with the console / periscope / vat upgraded (which upgrade: later).
+- **One ending, no choice** (Claude's pick kept): the whole game earns it. A secret bleak ending could come later.
+- The old draft's "last shift played backwards" is replaced by **The final shift** (Muzzy's design).
 
 ## Rank titles — 12, in bands (Muzzy 2026-10-23: "12 titles, but the final title is only given out at the end. make that make sense and the banding should work with it")
 How it works:
@@ -176,7 +259,7 @@ How it works:
 | 10–14 | Goop Technician | The goop grows eyes |
 | 15–19 | Senior Goop Technician | Whispers become words |
 | 20–24 | Pressure Specialist | Goop starts holding together (multi-colour pieces) |
-| 25–29 | Lead Pressure Specialist | The Veteran tells you what the goop is |
+| 25–29 | Lead Pressure Specialist | The Veteran starts telling the truth — it gets him caught |
 | 30–34 | Containment Supervisor | The Veteran is caught; white goop arrives; the cracks spread |
 | 35–39 | Senior Containment Supervisor | The white goop (him) speaks in your head |
 | 40–44 | Assistant to the Department Head | The speaker comes back: him and the goop; mouths open |
@@ -187,7 +270,7 @@ How it works:
 - Monitor, rank 0: "WELCOME, OPERATOR. YOUR COMFORT IS OUR POLICY. YOUR BUNK IS 0.8 m WIDE. YOUR DEBT HAS BEEN PRE-APPROVED."
 - Monitor, rank 12: "THERE ARE NO VOICES IN THE TANK. HEARING VOICES IN THE TANK IS A FINEABLE OFFENCE."
 - Speaker, rank 5: "—you the new one? ──── scraps in your panel. ─── don't tell the screen."
-- Speaker, rank 33: "I been here… a long time. Never seen a window. Don't think there are any."
+- White goop in your head, rank 37: "…it's warm in here… warmer than the bunk…"
 - In your head, rank 3: "…cold…"
 - In your head, rank 27: "…we had names… do you have a name…"
 - In your head, rank 38: "…please… not the laser… just… hold us…"
