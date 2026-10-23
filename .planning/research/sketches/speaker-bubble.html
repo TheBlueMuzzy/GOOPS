@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch starter (BMUZ). The planner's Sketches tab uses the title as the tab name and the description as its blurb. -->
+<title>S9: Speaker bubble</title>
+<meta name="description" content="The Veteran's speech bubble: it grows open, types his line while part of its outline fizzes as a spiky speech wave with small pops, relaxes at pauses, and squelches with static while it waits for you. Move where the wave starts and ends.">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  #bottom button { min-height: 56px; font-size: 20px; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 6px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 84px; }
+  #panel label b { flex: 0 0 44px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
+  #panel input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+  #notes { position: fixed; z-index: 2; left: 16px; right: 16px; top: 64px; margin: 0 auto; max-width: 520px; font-size: 12px; line-height: 1.4; color: var(--dim); }
+  body.side #notes { right: 316px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bReset">Replay</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="notes">Tap the view (or Next) to confirm a line. The two faint ticks show where the wave starts and ends while you move those knobs.</div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <button id="bNext">Next</button>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+const GOO = {
+  waveStart: 0.06,   // where the wave starts, as a share of the outline (0 = top-left corner, going clockwise)
+  waveEnd: 0.3,      // where it ends; start = end (or 0 → 1) = all the way round, seamless
+  spikeGap: 9,       // px between spikes
+  talkHeight: 12,    // px: how tall the spikes get while he talks
+  popSize: 0.04,     // how much the bubble swells on each syllable (0.04 = 4%)
+  typeSpeed: 22,     // letters per second
+  pauseMs: 380,      // rest after . ! ? … (half after , and —)
+  squelchEvery: 2.5, // seconds (average) between static squelches while it waits for you; 0 = never
+};
+// [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
+const KNOBS = [['The wave'], ['waveStart', 0, 1, 0.01], ['waveEnd', 0, 1, 0.01], ['spikeGap', 4, 30, 1], ['talkHeight', 2, 30, 1],
+  ['Talking'], ['popSize', 0, 0.12, 0.005], ['typeSpeed', 5, 60, 1], ['pauseMs', 0, 1000, 10],
+  ['Waiting'], ['squelchEvery', 0, 8, 0.1]];
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
+const KNOB_HELP = {
+  waveStart: 'Where the wave begins on the outline (0 = top-left corner, going clockwise round the bubble).',
+  waveEnd: 'Where it ends. Set start and end equal (or 0 and 1) and it goes all the way round with no seam.',
+  spikeGap: 'Space between spikes. Small = fine fizz; big = a few slow bumps.',
+  talkHeight: 'How tall the spikes get while he talks (and during a squelch).',
+  popSize: 'How much the whole bubble swells on each syllable. 0 = no pops.',
+  typeSpeed: 'How fast his line types out, in letters per second.',
+  pauseMs: 'How long he rests after . ! ? and … (half that after , and —). The wave goes flat while he rests.',
+  squelchEvery: 'While the line waits for you: about how often the outline bursts with static. 0 = never.',
+};
+
+// ===== The sketch: the Veteran's speaker bubble =====
+const LINES = [
+  'Found some scraps. Left \'em in your panel. Don\'t tell the screen.',
+  'Listen — don\'t trust the — ... they\'re not— ... Hold on. Bad wire.',
+  'Oh! Hi! It\'s me! ... Oof. Glad you\'re not goop yet.',
+];
+const canvas = $('c'), ctx = canvas.getContext('2d');
+let dpr = 1, viewW = 0, viewH = 0;
+const GROW_MS = 320;
+// state
+const S = { line: 0, phase: 'grow', t: 0, shown: 0, wait: 0, level: 0, levelTarget: 0, pop: 0, popV: 0,
+  squelch: 0, nextSquelch: 0, flickerT: 0, marks: 0 };
+let heights = [], heightTargets = [];
+function rnd() { return Math.random(); }
+function reset() { S.line = 0; startLine(); }
+function startLine() { Object.assign(S, { phase: 'grow', t: 0, shown: 0, wait: 0.2, level: 0, levelTarget: 0, pop: 0, popV: 0, squelch: 0 }); }
+function next() {
+  if (S.phase === 'type') { S.shown = LINES[S.line].length; S.phase = 'wait'; armSquelch(); return; }
+  if (S.phase === 'wait') { S.line = (S.line + 1) % LINES.length; startLine(); }
+}
+function armSquelch() { S.nextSquelch = GOO.squelchEvery > 0 ? GOO.squelchEvery * (0.4 + rnd() * 1.2) : Infinity; }
+const isVowel = c => 'aeiouyAEIOUY'.includes(c);
+
+function update(dt) {
+  S.t += dt;
+  if (S.marks > 0) S.marks -= dt;
+  const text = LINES[S.line];
+  if (S.phase === 'grow' && S.t * 1000 >= GROW_MS) { S.phase = 'pre'; S.t = 0; }
+  if (S.phase === 'pre' && S.t >= 0.15) { S.phase = 'type'; S.wait = 0; }
+  if (S.phase === 'type') {
+    S.wait -= dt;
+    while (S.wait <= 0 && S.shown < text.length) {
+      const c = text[S.shown], prev = text[S.shown - 1] || ' ';
+      S.shown++;
+      let gap = 1 / GOO.typeSpeed;
+      if ('.!?…'.includes(c) && text[S.shown] !== '.') { gap += GOO.pauseMs / 1000; S.levelTarget = 0; }
+      else if (',—'.includes(c)) { gap += GOO.pauseMs / 2000; S.levelTarget = 0; }
+      else if (c === ' ') S.levelTarget *= 0.5;
+      else S.levelTarget = 0.65 + rnd() * 0.35;
+      // a syllable starts at a vowel after a non-vowel → a small pop
+      if (isVowel(c) && !isVowel(prev)) S.popV += GOO.popSize * 40;
+      S.wait += gap;
+    }
+    if (S.shown >= text.length && S.wait <= 0) { S.phase = 'wait'; S.levelTarget = 0; armSquelch(); }
+  }
+  if (S.phase === 'wait') {
+    S.nextSquelch -= dt;
+    if (S.nextSquelch <= 0) { S.squelch = 0.25 + rnd() * 0.2; armSquelch(); }
+    if (S.squelch > 0) { S.squelch -= dt; S.levelTarget = 0.6 + rnd() * 0.6; } else S.levelTarget = 0;
+  }
+  // voice level eases toward its target (fast up, slower down = relaxing)
+  const k = S.levelTarget > S.level ? 40 : 10;
+  S.level += (S.levelTarget - S.level) * Math.min(1, k * dt);
+  // pop spring
+  S.popV += (-300 * S.pop - 18 * S.popV) * dt; S.pop += S.popV * dt;
+  // spikes re-pick their heights ~25 times a second, then glide there
+  S.flickerT -= dt;
+  if (S.flickerT <= 0) { S.flickerT = 0.04; for (let i = 0; i < heightTargets.length; i++) heightTargets[i] = Math.pow(rnd(), 1.6); } // uneven: a few tall spikes, many small
+  for (let i = 0; i < heights.length; i++) heights[i] += (heightTargets[i] - heights[i]) * Math.min(1, 30 * dt);
+}
+
+// --- the bubble's outline as a list of points (x, y, outward normal), 1 px apart, clockwise from the top-left corner
+function bubbleBox() {
+  const w = Math.min(viewW - 32, 360), h = 120;
+  const x = (viewW - w) / 2, y = viewH * 0.42 - h / 2;
+  return { x, y, w, h, r: 14 };
+}
+function outline(b) {
+  const pts = [];
+  const add = (x, y) => pts.push([x, y]);
+  const line = (x0, y0, x1, y1) => { const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0))); for (let i = 0; i < n; i++) add(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n); };
+  const arc = (cx, cy, a0, a1) => { const n = Math.max(2, Math.round(b.r * Math.abs(a1 - a0))); for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / n; add(cx + Math.cos(a) * b.r, cy + Math.sin(a) * b.r); } };
+  const { x, y, w, h, r } = b, P = Math.PI;
+  const tailX = x + w - 52;                      // the tail sits near the bottom-right, tip pointing down-right
+  line(x + r, y, x + w - r, y);                  // top
+  arc(x + w - r, y + r, -P / 2, 0);              // top-right corner
+  line(x + w, y + r, x + w, y + h - r);          // right
+  arc(x + w - r, y + h - r, 0, P / 2);           // bottom-right corner
+  line(x + w - r, y + h, tailX + 14, y + h);     // bottom, to the tail
+  const t0 = pts.length;
+  line(tailX + 14, y + h, tailX + 22, y + h + 16); // tail out
+  line(tailX + 22, y + h + 16, tailX, y + h);    // tail back
+  const t1 = pts.length;
+  line(tailX, y + h, x + r, y + h);              // bottom
+  arc(x + r, y + h - r, P / 2, P);               // bottom-left corner
+  line(x, y + h - r, x, y + r);                  // left
+  arc(x + r, y + r, P, P * 1.5);                 // top-left corner
+  // outward normals (clockwise on screen → (ty, −tx))
+  const n = pts.length, out = [];
+  for (let i = 0; i < n; i++) {
+    const a = pts[(i - 2 + n) % n], c = pts[(i + 2) % n];
+    let tx = c[0] - a[0], ty = c[1] - a[1]; const l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l;
+    // the tail stays clean: no wave on it, fading in over 10 px either side
+    const dist = i < t0 ? Math.min(t0 - i, n - t1 + i) : i >= t1 ? Math.min(i - t1 + 1, n - i + t0) : 0;
+    out.push({ x: pts[i][0], y: pts[i][1], nx: ty, ny: -tx, keep: smooth01(dist / 10) });
+  }
+  return out;
+}
+function smooth01(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#05070d'; ctx.fillRect(0, 0, innerWidth, innerHeight);
+  // a hint of the console behind it
+  ctx.fillStyle = '#0d1424'; ctx.fillRect(0, viewH * 0.62, viewW, viewH * 0.38);
+  const b = bubbleBox(), pts = outline(b), N = pts.length;
+  // the wave's stretch of the outline
+  let a = GOO.waveStart, e = GOO.waveEnd; let span = e - a; if (span <= 0.0001) span += 1;
+  const full = span >= 0.999;
+  const spanPx = span * N;
+  const waves = Math.max(1, Math.round(spanPx / GOO.spikeGap)); // whole number of spikes → a full loop closes with no seam
+  if (heights.length !== waves) { heights = Array.from({ length: waves }, () => 0.5); heightTargets = heights.slice(); }
+  const taper = Math.min(spanPx * 0.2, 24);
+  const amp = GOO.talkHeight * S.level;
+  const P = new Array(N);
+  for (let i = 0; i < N; i++) {
+    let d = 0;
+    let s = (i / N - a) % 1; if (s < 0) s += 1;          // position inside the stretch, 0..1 of the outline
+    if (s <= span && amp > 0.05) {
+      const u = (s / span) * waves;                       // which spike, and where in it
+      const k = Math.min(waves - 1, Math.floor(u)), f = u - k;
+      const tri = 1 - Math.abs(2 * f - 1);                // 0 → 1 → 0: a sharp spike
+      const env = full ? 1 : smooth01(s * N / taper) * smooth01((span - s) * N / taper);
+      d = amp * heights[k] * tri * env * pts[i].keep;
+    }
+    P[i] = [pts[i].x + pts[i].nx * d, pts[i].y + pts[i].ny * d];
+  }
+  // grow from the tail tip, then syllable pops
+  const tip = { x: b.x + b.w - 52 + 22, y: b.y + b.h + 16 };
+  let sc = 1;
+  if (S.phase === 'grow') { const t = Math.min(1, S.t * 1000 / GROW_MS); const c1 = 1.7; sc = 0.15 + 0.85 * (1 + (c1 + 1) * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)); }
+  sc *= 1 + S.pop;
+  ctx.save();
+  ctx.translate(tip.x, tip.y); ctx.scale(sc, sc); ctx.translate(-tip.x, -tip.y);
+  ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < N; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath();
+  ctx.fillStyle = '#f4f4f2'; ctx.fill();
+  ctx.lineJoin = 'miter'; ctx.lineWidth = 1.6; ctx.strokeStyle = '#555'; ctx.stroke();
+  // text
+  if (S.phase !== 'grow') {
+    ctx.fillStyle = '#222'; ctx.font = '500 18px system-ui, Segoe UI, sans-serif'; ctx.textBaseline = 'top';
+    const words = LINES[S.line].slice(0, S.shown).split(' '), maxW = b.w - 36; let ln = '', y = b.y + 18;
+    for (const wd of words) { const t = ln ? ln + ' ' + wd : wd; if (ctx.measureText(t).width > maxW && ln) { ctx.fillText(ln, b.x + 18, y); ln = wd; y += 24; } else ln = t; }
+    ctx.fillText(ln, b.x + 18, y);
+    if (S.phase === 'wait' && Math.floor(performance.now() / 450) % 2) { ctx.fillStyle = '#888'; ctx.fillText('▼', b.x + b.w - 30, b.y + b.h - 28); }
+  }
+  // where the wave starts / ends (faint ticks, shown while you move those knobs)
+  if (S.marks > 0) {
+    ctx.globalAlpha = Math.min(1, S.marks);
+    for (const [v, col] of [[a, '#22c55e'], [e, '#ef4444']]) {
+      const p = pts[Math.floor(((v % 1) + 1) % 1 * N) % N];
+      ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p.x - p.nx * 6, p.y - p.ny * 6); ctx.lineTo(p.x + p.nx * 22, p.y + p.ny * 22); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+  ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui, sans-serif'; ctx.textBaseline = 'top';
+  ctx.fillText('THE VETERAN · speaker · ' + S.phase, b.x, b.y + b.h + 28);
+}
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  viewW = playW(); viewH = innerHeight; // the view lives left of the docked knobs, at full size
+}
+$('bReset').onclick = reset; $('bNext').onclick = next;
+canvas.addEventListener('pointerdown', next);
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) => lo === undefined ? `<h4>${k}</h4>` :
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : '')).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+for (const [k, lo] of KNOBS) if (lo !== undefined) $('k_' + k).oninput = e => {
+  GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k];
+  if (k === 'waveStart' || k === 'waveEnd') { S.marks = 2; if (S.phase === 'wait') { S.squelch = 0.3; } }
+  if (k === 'spikeGap' || k === 'talkHeight') { if (S.phase === 'wait') S.squelch = 0.3; }
+  if (k === 'squelchEvery') armSquelch();
+};
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; $('k_' + k).value = v[k]; $('v_' + k).textContent = v[k]; } }
+const DEFAULTS = readKnobs();
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ now: readKnobs(), presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+layout();
+startLine();
+// fixed-step loop + fps (one-second average)
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  acc += dt; while (acc >= STEP) { update(STEP); acc -= STEP; }
+  draw();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.sketch = { GOO, readKnobs, setKnobs, S, next, reset }; // for Playwright checks
+</script>
+</body>
+</html>
