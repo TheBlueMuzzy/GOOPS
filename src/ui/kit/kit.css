@@ -202,6 +202,10 @@
 
   .kit-card { display: flex; flex-direction: column; gap: var(--gap-s); padding: var(--gap-l); text-align: start; border-style: solid; }
   .kit-card-title { font-size: var(--text-heading); font-weight: 700; }
+  /* Words only a screen reader hears (0.27.0: a locked Card's "Locked", at the end of its title) — a clipped line of
+     its own, 1 px tall and pulled back by 1 px, so it never moves a word of the title or grows the card */
+  .kit-sr-only { display: block; inline-size: 0.0625rem; block-size: 0.0625rem; margin-block-end: -0.0625rem;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   .kit-badge { display: inline-flex; align-items: center; white-space: nowrap; padding: 0 var(--gap-s); font-weight: 700; line-height: 1.6; border-style: solid; }
   .kit-avatar { display: inline-grid; place-items: center; flex: none; inline-size: var(--target-min); block-size: var(--target-min); overflow: hidden; font-weight: 600; }
@@ -298,7 +302,8 @@
   .kit-button[data-variant="primary"] { background: var(--primary); color: var(--on-primary); border-color: var(--ink); filter: var(--glow); }
   .kit-button[data-variant="secondary"] { background: var(--surface); color: var(--on-surface); }
   .kit-button[data-variant="ghost"] { background: transparent; border-color: transparent; box-shadow: none; }
-  .kit-button[data-variant="danger"] { background: var(--danger); color: var(--on-danger); border-color: var(--ink); }
+  /* glow-danger (0.27.0): lit like primary, in red — so a − / + pair (danger / primary) glows alike in Neon */
+  .kit-button[data-variant="danger"] { background: var(--danger); color: var(--on-danger); border-color: var(--ink); filter: var(--glow-danger); }
   .kit-spinner { border-color: currentColor; border-inline-end-color: transparent; }
 
   .kit-toggle-track { background: var(--muted); transition: background-color var(--motion-fast) var(--ease); }
@@ -333,7 +338,14 @@
       black calc(100% - min(var(--kit-scroll-fade, 2rem), var(--kit-more-end, 2rem))), var(--kit-fade-end)); }
 
   .kit-card { background: var(--surface) var(--panel-texture); color: var(--on-surface); }
+  /* success (0.27.0): the same inset ring as selected, in the success colour — an outline takes no room, so the card
+     stays exactly its size; the shadow is the style's depth-success (Neon glows green). Selected wins its ring. */
+  .kit-card[data-tone="success"] { border-color: var(--success); outline: 0.1875rem solid var(--success); outline-offset: -0.1875rem; box-shadow: var(--depth-success); }
   .kit-card[data-state="selected"] { border-color: var(--primary); outline: 0.1875rem solid var(--primary); outline-offset: -0.1875rem; }
+  /* locked (0.27.0): greyed but readable — quiet text (muted on surface is contrast-tested, 4.5:1), a dashed edge of the
+     same width, a flat shadow, pictures and lit bits in grey. Nothing changes its size. */
+  .kit-card[data-locked] { color: var(--muted); border-style: dashed; box-shadow: var(--depth-0); cursor: default; }
+  .kit-card[data-locked] :is(img, svg, .kit-badge, .kit-avatar, .kit-progress, .kit-pip) { filter: grayscale(1); }
 
   .kit-badge[data-variant="neutral"] { background: var(--surface); color: var(--on-surface); }
   .kit-badge[data-variant="primary"] { background: var(--primary); color: var(--on-primary); border-color: var(--ink); }

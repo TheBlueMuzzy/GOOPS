@@ -8,10 +8,10 @@
 // The App passes its state through UpgradeShopContext, so this screen stays mounted while you buy (the list keeps its
 // scroll); each card holds the same parts whatever you buy, so it never changes size (kit Card: fixed size).
 import { useContext } from 'react'
-import { Button, Card, MenuHeader, Panel, Pips, Row, Screen, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
+import { Button, Card, Modal, Pips, Row, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
 import { playableUpgrades, type UpgradeDef } from '../engine'
 import { scrapsAt } from '../progress/progression'
-import { buyLevel, costOf, levelOf, levelPercent, maxLevelOf, ownsAny, respec, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
+import { buyLevel, costOf, isActive, levelOf, levelPercent, maxLevelOf, ownsAny, respec, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
 import { UpgradeShopContext, type UpgradeShop } from './upgradeShopContext'
 import text from '../../content/text/en.json'
 
@@ -38,23 +38,17 @@ export function UpgradesScreen() {
     shop.onChange(next)
     toast(fill(w.respecDone, { n: Math.max(0, scrapsAt(shop.rank, next)).toLocaleString('en') }))
   }
-  // (the word, Muzzy 2026-10-22: "Respec, not cycle arrow". On a 360/390 phone it squeezes the kit title into
-  // "UPGRAD / ES" until the kit's MenuHeader title fits itself — framework request in SPRINT Notes)
+  // (the word, Muzzy 2026-10-22: "Respec, not cycle arrow" — on the title's line; the kit title fits itself beside it)
   const respecButton = ownsAny(shop.progress) && <Button variant="secondary" compact aria-label={w.respecLabel} onClick={doRespec}>{w.respec}</Button>
-  // (the kit Modal's own parts — Screen + menu Panel + MenuHeader — because Modal doesn't pass a header action yet)
-  // F108: back to <Modal title onBack backLabel headerAction={respecButton}> (UI kit 0.27.0)
   return (
-    <Screen dialog label={w.title} grow="down">
-      <Panel depth={2} gap="m" className="kit-modal">
-        <MenuHeader title={w.title} onBack={() => screens.pop()} backLabel={w.back} action={respecButton || undefined} />
-        <Text kind="heading">{fill(w.scraps, { n: scraps.toLocaleString('en') })}</Text>
-        <ScrollArea label={w.list}>
-          <Stack gap="m">
-            {SHOP.map((def) => <UpgradeCard key={def.id} def={def} shop={shop} />)}
-          </Stack>
-        </ScrollArea>
-      </Panel>
-    </Screen>
+    <Modal title={w.title} onBack={() => screens.pop()} backLabel={w.back} headerAction={respecButton || undefined}>
+      <Text kind="heading">{fill(w.scraps, { n: scraps.toLocaleString('en') })}</Text>
+      <ScrollArea label={w.list}>
+        <Stack gap="m">
+          {SHOP.map((def) => <UpgradeCard key={def.id} def={def} shop={shop} />)}
+        </Stack>
+      </ScrollArea>
+    </Modal>
   )
 }
 
@@ -71,9 +65,9 @@ function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {
     const other = swappedOut && SHOP.find((d) => d.id === swappedOut)
     if (other) toast(fill(w.swapped, { name: nameOf(other) }))
   }
-  // F108: <Card title={name} tone={isActive(progress, def.id) ? 'success' : undefined} locked={locked}> (UI kit 0.27.0)
+  // green when it has a level in it (Muzzy, 2026-10-22: "noticeably green"); greyed out while above your rank
   return (
-    <Card title={name}>
+    <Card title={name} tone={isActive(progress, def.id) ? 'success' : undefined} locked={locked} lockedLabel={w.lockedLabel}>
       <Text>{items[def.id]?.desc ?? def.desc ?? ''}</Text>
       {active && !locked && (
         <Row gap="s">

@@ -13,6 +13,8 @@ export const colourTokens = {
   'accent': 'Highlights: fills, active rings (never behind text)',
   'danger': 'Destructive buttons, errors',
   'on-danger': 'Text on danger',
+  'success': 'Good / done / owned: a bought upgrade\'s card edge (Card tone="success"), a success badge. Reads as green in every style (0.27.0)',
+  'on-success': 'Text on success',
   'muted': 'Quiet text: hints, captions',
   'border': 'Outlines, dividers, empty tracks',
   'focus': 'Keyboard/gamepad focus ring',
@@ -53,6 +55,8 @@ export const otherTokens = {
 export const optionalTokens = {
   'glow': 'none', // a CSS filter on lit things (primary buttons, on-switches, bars, focus), e.g. drop-shadow(…)
   'panel-texture': 'none',
+  'glow-danger': 'none', // the same, in the danger colour, on danger buttons (0.27.0) — Neon: − glows red as + glows cyan
+  'depth-success': 'var(--depth-1)', // a success card's shadow (Card tone="success", 0.27.0) — Neon: its glow in green
 } as const
 
 // The three text roles (0.16.0) — like a web page: a title font, a heading font and a body font (font-body, above).

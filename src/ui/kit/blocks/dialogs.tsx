@@ -16,12 +16,17 @@ import { MenuHeader } from './MenuHeader'
 // middle and then only grows downward (Screen grow="down"). Put a ScrollArea in it for anything long.
 // onBack: a ‹ in the header (0.10.1) — for a modal that is a sub-menu (the game's Submit a word), instead of a Back
 // button in `actions`; backLabel = how a screen reader says it.
-type ModalProps = { title: string; children?: ReactNode; actions?: ReactNode; className?: string; onBack?: () => void; backLabel?: string }
-export function Modal({ title, children, actions, className, onBack, backLabel }: ModalProps) {
+// headerAction (0.27.0): one control on the RIGHT of the header row (MenuHeader's `action`), e.g. a compact Respec on
+// an Upgrades dialog — `actions` stays the bottom buttons.
+type ModalProps = {
+  title: string; children?: ReactNode; actions?: ReactNode; headerAction?: ReactNode; className?: string
+  onBack?: () => void; backLabel?: string
+}
+export function Modal({ title, children, actions, headerAction, className, onBack, backLabel }: ModalProps) {
   return (
     <Screen dialog label={title} grow="down">
       <Panel depth={2} gap="m" className={className ? `kit-modal ${className}` : 'kit-modal'}>
-        <MenuHeader title={title} onBack={onBack} backLabel={backLabel} />
+        <MenuHeader title={title} onBack={onBack} backLabel={backLabel} action={headerAction} />
         {children}
         {actions && <Row gap="s" justify="end">{actions}</Row>}
       </Panel>

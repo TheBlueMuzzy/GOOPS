@@ -66,7 +66,8 @@ const openShop = async (page) => {
   await page.waitForTimeout(500) // (the cards' entrance)
   return modal
 }
-const card = (page, id) => page.locator('.kit-card').filter({ has: page.getByText(items[id].name, { exact: true }) })
+// (a locked card's title also holds a hidden "Locked" for screen readers — kit Card locked, UI kit 0.27.0)
+const card = (page, id) => page.locator('.kit-card').filter({ has: page.locator('.kit-card-title', { hasText: new RegExp(`^${items[id].name}( ${w.lockedLabel})?$`) }) })
 const pips = (page, id) => card(page, id).getByRole('meter')
 const level = async (page, id) => Number(await pips(page, id).getAttribute('aria-valuenow'))
 const scrapsShown = (page, n) => page.getByRole('dialog', { name: w.title }).getByText(fill(w.scraps, { n }), { exact: true }).count()
@@ -418,11 +419,17 @@ try {
     await openShop(page)
     check('the shop: "Scraps: 5"', await scrapsShown(page, 5) === 1)
     const titles = await page.locator('.kit-modal .kit-card-title').allTextContents()
-    check('one card per upgrade, ranks 2–9 in rank order', JSON.stringify(titles) === JSON.stringify(ORDER.map((id) => items[id].name)), titles.join(', '))
+    const LOCKED5 = ['gearLubrication', 'focusMode', 'denseGoop', 'pressureControl']
+    const want = ORDER.map((id) => LOCKED5.includes(id) ? `${items[id].name} ${w.lockedLabel}` : items[id].name)
+    check('one card per upgrade, ranks 2–9 in rank order (the locked ones read out "… Locked")', JSON.stringify(titles) === JSON.stringify(want), titles.join(', '))
     for (const [id, rank] of [['gearLubrication', 6], ['focusMode', 7], ['denseGoop', 8], ['pressureControl', 9]]) {
-      check(`${items[id].name}: locked, "Opens at rank ${rank}", no buttons`, await card(page, id).getByText(fill(w.locked, { rank })).count() === 1
-        && await card(page, id).getByRole('button').count() === 0)
+      check(`${items[id].name}: locked (kit greyed card), "Opens at rank ${rank}", no buttons`, await card(page, id).getByText(fill(w.locked, { rank })).count() === 1
+        && await card(page, id).getByRole('button').count() === 0 && await card(page, id).getAttribute('data-locked') !== null)
     }
+    check('nothing owned: no card is green', await page.locator('.kit-modal .kit-card[data-tone="success"]').count() === 0)
+    await scrollList(page, 'end')
+    await shot(page, 'locked-cards-390x844')
+    await scrollList(page, 'top')
     check('Pressure Control shows 8 pips, the others 4 (Cooldown Booster 3)', await pips(page, 'pressureControl').getAttribute('aria-valuemax') === '8'
       && await pips(page, 'circuitStabilizer').getAttribute('aria-valuemax') === '4' && await pips(page, 'cooldownBooster').getAttribute('aria-valuemax') === '3')
     check('nothing owned: every − is greyed out', await takeBack(page, 'circuitStabilizer').isDisabled() && await takeBack(page, 'cooldownBooster').isDisabled())
@@ -432,6 +439,9 @@ try {
     await page.waitForTimeout(200)
     check('buy a level of Circuit Stabilizer → scraps 4, its pips 1 of 4', await scrapsShown(page, 4) === 1 && await level(page, 'circuitStabilizer') === 1)
     check('the card kept its size', (await size(card(page, 'circuitStabilizer'))) === before, `${before} → ${await size(card(page, 'circuitStabilizer'))}`)
+    check('a level in it → its card is green (kit tone success), the others not', await card(page, 'circuitStabilizer').getAttribute('data-tone') === 'success'
+      && await page.locator('.kit-modal .kit-card[data-tone="success"]').count() === 1)
+    await shot(page, 'green-card-390x844')
     const s1 = await saved(page)
     check('saved at once, as version 2 (XP kept)', s1.v === 2 && s1.owned.circuitStabilizer === 1 && s1.scrapsSpent === 1 && s1.totalXp === xpFor(5), JSON.stringify(s1))
     check('the console button says 4 scraps too', (await page.locator('[data-tag="upgrades"]').textContent()).includes('4'))

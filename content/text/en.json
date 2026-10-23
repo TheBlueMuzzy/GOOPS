@@ -74,6 +74,7 @@
     "equipLabel": "Equip {name}: take it into the shift",
     "swapped": "{name} stays behind: one active at a time.",
     "locked": "Opens at rank {rank}",
+    "lockedLabel": "Locked",
     "amount": "{now} → {next}",
     "amountMax": "{now} (max)",
     "respec": "Respec",

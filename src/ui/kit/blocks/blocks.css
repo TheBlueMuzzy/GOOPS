@@ -29,7 +29,18 @@
   /* MenuHeader: ‹ · title · action on one line. The title takes what's left (and wraps on a narrow phone); the ‹ and
      the action never shrink. Its gaps are inside the card's padding, so nothing touches the card's edge. */
   .kit-menu-header { display: flex; align-items: center; gap: var(--gap-s); min-inline-size: 0; }
-  .kit-menu-header-title { flex: 1 1 auto; min-inline-size: 0; }
+  .kit-menu-header-title { flex: 1 1 0; min-inline-size: 0; }
+  /* Beside an action (0.27.0): words never split; MenuHeader's fitMenuTitle first drops the title a step (heading size)
+     when it won't fit on one line ("measure" = how it's measured: title size, one line) */
+  .kit-menu-header[data-action] > .kit-menu-header-title > .kit-text { overflow-wrap: normal; }
+  .kit-menu-header-title[data-fit="measure"] > .kit-text { white-space: nowrap; }
+  .kit-menu-header-title:is([data-fit="small"], [data-fit="tight"]) > .kit-text { font-size: var(--text-heading); }
+  .kit-menu-header-title[data-fit="smaller"] > .kit-text { font-size: var(--text-body); }
+  /* tight: a word too wide even at body size — the action moves under the title (right-aligned), so the word gets the
+     row instead of splitting */
+  .kit-menu-header:has(> .kit-menu-header-title[data-fit="tight"]) { flex-wrap: wrap; }
+  .kit-menu-header-title[data-fit="tight"] { min-inline-size: min-content; }
+  .kit-menu-header-title[data-fit="tight"] ~ .kit-menu-header-action { margin-inline-start: auto; }
   .kit-menu-header > .kit-button, .kit-menu-header-action { flex: none; }
   /* ‹ is a small, low glyph in most fonts: drawn bigger, so it reads as an arrow and not a speck (the button stays
      square and at least 44px) */

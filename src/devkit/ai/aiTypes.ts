@@ -109,6 +109,7 @@ export interface DevKitAi {
   validate?: (p: AiPersonality) => string[]
   /** Optional: start a local all-AI game on the real board; call onEvent for every decision. Returns "stop". */
   watch?: (seats: AiWatchSeat[], onEvent: (e: AiWatchEvent) => void) => () => void
-  /** Optional: play `games` AI-vs-AI games with these personalities + skills and return the report page (HTML). */
+  /** Optional: play `games` AI-vs-AI games with these personalities + skills and return the report page (HTML).
+   *  Play them in a Web Worker so the page never freezes: runCheckInWorker + serveCheck (checkWorker.ts). */
   runCheck?: (options: { games: number; personalities: AiPersonality[]; skills: AiSkill[]; onProgress: (done: number, total: number) => void }) => Promise<string>
 }

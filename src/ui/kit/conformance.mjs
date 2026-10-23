@@ -167,12 +167,16 @@ async function checkCredits(t) {
 // Rows the kit or the audio module handle are skipped: headings · text size + reduce motion (the kit applies them) ·
 // link rows (the kit opens them — but a placeholder example.com address fails) · info rows with their own text (except
 // version, whose text must come from the game: info={{ version }}) · the Audio rows once the game passes the values to
-// the audio module (applyAudioSettings / useAudioSettings / readAudioSettings).
+// the audio module (applyAudioSettings / useAudioSettings / readAudioSettings) · the crashes switch once the game
+// passes it on (applyCrashSetting / setOn).
 export const SETTINGS_FILE = 'content/ui/settings.json'
 export const SETTINGS_CHECK = 'every Settings row that\'s switched on is read by the game'
 export const KIT_ROWS = ['textSize', 'reduceMotion']
 export const AUDIO_ROWS = ['masterVolume', 'musicVolume', 'ambienceVolume', 'sfxVolume', 'uiVolume', 'sound', 'muteInBackground', 'mono']
 const AUDIO_WIRING = /\b(applyAudioSettings|useAudioSettings|readAudioSettings)\s*\(/
+// The crashes module's switch (framework F89): read inside src/crashes once the game passes the values on
+export const CRASH_ROWS = ['crashReports']
+const CRASH_WIRING = /\b(applyCrashSetting|setOn)\s*\(/
 const VALUE_TYPES = ['slider', 'toggle', 'selector', 'stepper']
 
 /** The rows a player can see: switched on ("on" isn't false) and not headings — [{ id, type, label, tab, url, default }]. */
@@ -335,6 +339,7 @@ export function fileFeedsInfo(text, id) {
 /** Which rows nothing reads → { dead: [rows], placeholder: [rows], read, kit } (code = [{ path, text }]). */
 export function settingsProblems(schema, code) {
   const audioWired = code.some((f) => AUDIO_WIRING.test(stripComments(f.text)))
+  const crashWired = code.some((f) => CRASH_WIRING.test(stripComments(f.text)))
   const dead = []
   const placeholder = []
   let read = 0
@@ -348,6 +353,7 @@ export function settingsProblems(schema, code) {
     const handled = KIT_ROWS.includes(row.id)
       || (row.type === 'info' && row.id !== 'version' && String(row.default ?? '').trim() !== '')
       || (audioWired && AUDIO_ROWS.includes(row.id))
+      || (crashWired && CRASH_ROWS.includes(row.id))
     if (handled) { kit++; continue }
     const reads = row.type === 'info' ? fileFeedsInfo : fileReadsRow // an info row's text only comes in through info={{ … }}
     if (code.some((f) => reads(f.text, row.id))) read++

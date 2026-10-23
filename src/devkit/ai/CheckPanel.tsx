@@ -1,6 +1,7 @@
 // RUN THE PERSONALITY CHECK — plays N AI-vs-AI games with the personalities and skills as they are in the tab right
 // now (unsaved changes too) and opens the report page in a new browser tab. The game does the playing (its runCheck
-// callback — Glyphtender runs it in a Web Worker so the screen stays alive); this shows progress and the link.
+// callback, played in a Web Worker so the screen stays alive — checkWorker.ts does both ends); this shows progress and
+// the link.
 import { useEffect, useState } from 'react'
 import type { AiPersonality, AiSkill, DevKitAi } from './aiTypes'
 
