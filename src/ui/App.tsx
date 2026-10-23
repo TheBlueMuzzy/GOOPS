@@ -399,6 +399,8 @@ export function App() {
     <Button variant={ability.ready ? 'primary' : 'secondary'} icon aria-label={abilityWords || ''} title={abilityWords || ''} sound={ability.ready ? 'tap' : false}
       className="hud-ability" data-tag="ability" data-ready={ability.ready || undefined} onClick={() => engineRef.current?.act({ type: 'ability', id: ability.id })}>
       <TimerRing seconds={abilityPct} total={100} warnAt={-1} label={abilityWords || ''} />
+      {/* a lightning bolt (Muzzy, 2026-10-22), drawn in the button's colour */}
+      <svg className="hud-ability-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.5L9 22l10-12.5h-6.5L13.5 2z" /></svg>
     </Button>
   )
   const readout = hud && <HudText size="s" live numbers>{fill(text.hud.pressureReadout, { n: Math.round(hud.pressure * 100) })}</HudText>

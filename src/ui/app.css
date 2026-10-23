@@ -20,3 +20,9 @@ html, body, #root { margin: 0; height: 100%; }
    SPRINT Notes): a TimerRing size + "no number" option, or a "charge button" part; then these lines go. */
 .hud-ability .kit-timer { flex: none; inline-size: 2rem; block-size: 2rem; }
 .hud-ability .kit-timer > * { visibility: hidden; }
+/* its picture (Muzzy, 2026-10-22: a lightning bolt) in the ring's middle: the button's own ink while charging, the bright
+   colour on the ring's dark middle when ready */
+.hud-ability { display: inline-grid; place-items: center; }
+.hud-ability > * { grid-area: 1 / 1; } /* (ring and bolt in the same cell: one on top of the other) */
+.hud-ability-icon { inline-size: 1.1rem; block-size: 1.1rem; pointer-events: none; }
+.hud-ability[data-ready] .hud-ability-icon { color: var(--primary); }
