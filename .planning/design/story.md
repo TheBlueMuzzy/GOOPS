@@ -143,8 +143,12 @@ Muzzy: "i removed colors because this final rush is more intense, less methodica
 - **You:** place and pop, place and pop, getting overrun.
 - **The Veteran:** goops around the tank sealing the cracks **you can't reach**. He's efficient, but **he loses a little of himself with every crack he seals** — he's sacrificing himself for you (he shrinks).
 - **You lose if:** the Veteran is used up completely · the goop goes over the top of the tank · integrity drains to 0.
-- ❓ **How you win** — not settled (Muzzy: "your goal is not clear yet"). Options in the chat 2026-10-23; Claude's pick: **seal X cracks to open the release valve**, where his seals count too — so you choose between leaning on him (fast, but it costs him) and doing it yourself.
-- ⚠ **To prove:** one colour = one big merging mass. Whether that plays well (and how hard "slightly overwhelming" is) needs a sketch or a bot run before it's built.
+- **How you win — 3 valve stages** (Muzzy 2026-10-23): seal **X** cracks → the Veteran tells you to head to the console: a **new panel** has popped up, a mini-game that opens the release valve one stage. The shift keeps going while you're there, and **crack seals stop counting until you've done the current stage**. Then **Y** cracks → stage 2, then **Z** cracks → stage 3. The third release opens it entirely and **releases all the goop from their tanks** → victory → **The ending**.
+  - The release valve is new to the player here: it's the panel Management never let you see. Its first stage is the first time it's named.
+  - It works like the machine repairs you already do at the console mid-shift (`content/tuning/breakdowns.json`: the shift runs slower there, `consoleTimeScale`) — same intention, same motion.
+  - ❓ X / Y / Z, whether his seals count toward them, and what the valve mini-game is — open.
+- **How it plays as one colour** (Muzzy): you use the tank's **rotation to build separate towers** so you can reach the high cracks; and since every crack is black, one wide clump can seal **several cracks at once** (already true today: a wide red clump seals every red crack it covers).
+- ⚠ **To prove:** that "slightly overwhelming" pace — a sketch or a bot run before it's built.
 
 ## The ending (rank 50) — save the goop
 Muzzy: "we'll need an ending where we save the goop instead of zapping it." Claude's draft:
