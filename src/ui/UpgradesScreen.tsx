@@ -38,8 +38,9 @@ export function UpgradesScreen() {
     shop.onChange(next)
     toast(fill(w.respecDone, { n: Math.max(0, scrapsAt(shop.rank, next)).toLocaleString('en') }))
   }
-  // (an icon button: the word beside the title broke "UPGRADES" in two on a phone; the word is its tooltip + read-out)
-  const respecButton = ownsAny(shop.progress) && <Button variant="secondary" icon aria-label={w.respecLabel} title={w.respec} onClick={doRespec}>{w.respecIcon}</Button>
+  // (the word, Muzzy 2026-10-22: "Respec, not cycle arrow". On a 360/390 phone it squeezes the kit title into
+  // "UPGRAD / ES" until the kit's MenuHeader title fits itself — framework request in SPRINT Notes)
+  const respecButton = ownsAny(shop.progress) && <Button variant="secondary" compact aria-label={w.respecLabel} onClick={doRespec}>{w.respec}</Button>
   // (the kit Modal's own parts — Screen + menu Panel + MenuHeader — because Modal doesn't pass a header action yet:
   // KIT GAP, framework request in SPRINT Notes; then this goes back to <Modal action={…}>)
   return (

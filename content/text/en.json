@@ -77,7 +77,6 @@
     "amount": "{now} → {next}",
     "amountMax": "{now} (max)",
     "respec": "Respec",
-    "respecIcon": "↺",
     "respecLabel": "Respec: take back every level, all your scraps return",
     "respecDone": "All upgrades taken back: {n} scraps to spend.",
     "items": {
