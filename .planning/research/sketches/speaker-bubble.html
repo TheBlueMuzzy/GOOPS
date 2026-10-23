@@ -69,13 +69,16 @@ const GOO = {
   waveEnd: 0.3,      // where it ends; start = end (or 0 → 1) = all the way round, seamless
   spikeGap: 9,       // px between spikes
   talkHeight: 12,    // px: how tall the spikes get while he talks
+  roundness: 0,      // 0 = needle-sharp spikes … 10 = round bumps
+  variability: 0.5,  // 0 = every spike the same width … 1 = very uneven widths
   popSize: 0.04,     // how much the bubble swells on each syllable (0.04 = 4%)
   typeSpeed: 22,     // letters per second
   pauseMs: 380,      // rest after . ! ? … (half after , and —)
-  squelchEvery: 2.5, // seconds (average) between static squelches while it waits for you; 0 = never
+  squelchEvery: 2.5, // seconds between squelches while it waits for you, ± 1.5 s at random; 0 = never
 };
-// [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
+// [name, min, max, step] rows; a one-item row is a group heading. (Muzzy asked for more than 8 here.)
 const KNOBS = [['The wave'], ['waveStart', 0, 1, 0.01], ['waveEnd', 0, 1, 0.01], ['spikeGap', 4, 30, 1], ['talkHeight', 2, 30, 1],
+  ['roundness', 0, 10, 0.5], ['variability', 0, 1, 0.05],
   ['Talking'], ['popSize', 0, 0.12, 0.005], ['typeSpeed', 5, 60, 1], ['pauseMs', 0, 1000, 10],
   ['Waiting'], ['squelchEvery', 0, 8, 0.1]];
 // One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
@@ -84,10 +87,12 @@ const KNOB_HELP = {
   waveEnd: 'Where it ends. Set start and end equal (or 0 and 1) and it goes all the way round with no seam.',
   spikeGap: 'Space between spikes. Small = fine fizz; big = a few slow bumps.',
   talkHeight: 'How tall the spikes get while he talks (and during a squelch).',
-  popSize: 'How much the whole bubble swells on each syllable. 0 = no pops.',
+  roundness: 'Shape of each spike: 0 = needle-sharp, 5 = a sine bump, 10 = round as a bubble.',
+  variability: 'How uneven the spacing is. 0 = a regular saw; 1 = some spikes bunched, some stretched (they keep shifting while he talks).',
+  popSize: 'How much the outline swells on each syllable (the text stays still). 0 = no pops.',
   typeSpeed: 'How fast his line types out, in letters per second.',
   pauseMs: 'How long he rests after . ! ? and … (half that after , and —). The wave goes flat while he rests.',
-  squelchEvery: 'While the line waits for you: about how often the outline bursts with static. 0 = never.',
+  squelchEvery: 'While the line waits for you: seconds between static bursts. After each one the next comes this many seconds later, ± 1.5 s at random. 0 = never.',
 };
 
 // ===== The sketch: the Veteran's speaker bubble =====
@@ -102,7 +107,7 @@ const GROW_MS = 320;
 // state
 const S = { line: 0, phase: 'grow', t: 0, shown: 0, wait: 0, level: 0, levelTarget: 0, pop: 0, popV: 0,
   squelch: 0, nextSquelch: 0, flickerT: 0, marks: 0 };
-let heights = [], heightTargets = [];
+let heights = [], heightTargets = [], widths = [], widthTargets = [];
 function rnd() { return Math.random(); }
 function reset() { S.line = 0; startLine(); }
 function startLine() { Object.assign(S, { phase: 'grow', t: 0, shown: 0, wait: 0.2, level: 0, levelTarget: 0, pop: 0, popV: 0, squelch: 0 }); }
@@ -110,7 +115,7 @@ function next() {
   if (S.phase === 'type') { S.shown = LINES[S.line].length; S.phase = 'wait'; armSquelch(); return; }
   if (S.phase === 'wait') { S.line = (S.line + 1) % LINES.length; startLine(); }
 }
-function armSquelch() { S.nextSquelch = GOO.squelchEvery > 0 ? GOO.squelchEvery * (0.4 + rnd() * 1.2) : Infinity; }
+function armSquelch() { S.nextSquelch = GOO.squelchEvery > 0 ? Math.max(0.2, GOO.squelchEvery + (rnd() * 2 - 1) * 1.5) : Infinity; }
 const isVowel = c => 'aeiouyAEIOUY'.includes(c);
 
 function update(dt) {
@@ -149,6 +154,9 @@ function update(dt) {
   S.flickerT -= dt;
   if (S.flickerT <= 0) { S.flickerT = 0.04; for (let i = 0; i < heightTargets.length; i++) heightTargets[i] = Math.pow(rnd(), 1.6); } // uneven: a few tall spikes, many small
   for (let i = 0; i < heights.length; i++) heights[i] += (heightTargets[i] - heights[i]) * Math.min(1, 30 * dt);
+  // spike widths drift to new random widths while he talks (variability), slower than the heights
+  if (S.level > 0.05 && rnd() < dt * 8) for (let i = 0; i < widthTargets.length; i++) widthTargets[i] = 1 + GOO.variability * (rnd() * 2 - 1) * 0.85;
+  for (let i = 0; i < widths.length; i++) widths[i] += (widthTargets[i] - widths[i]) * Math.min(1, 12 * dt);
 }
 
 // --- the bubble's outline as a list of points (x, y, outward normal), 1 px apart, clockwise from the top-left corner
@@ -188,6 +196,12 @@ function outline(b) {
   }
   return out;
 }
+// one spike, f = 0..1 across it → 0..1 height. roundness 0 = needle (concave sides), 5 = sine bump, 10 = semicircle.
+function spikeShape(f) {
+  const tri = 1 - Math.abs(2 * f - 1), sine = Math.sin(Math.PI * f), circle = Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2));
+  const t = GOO.roundness / 10;
+  return t < 0.5 ? tri ** 2 + (sine - tri ** 2) * (t * 2) : sine + (circle - sine) * (t * 2 - 1);
+}
 function smooth01(t) { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); }
 
 function draw() {
@@ -200,19 +214,27 @@ function draw() {
   const full = span >= 0.999;
   const spanPx = span * N;
   const waves = Math.max(1, Math.round(spanPx / GOO.spikeGap)); // whole number of spikes → a full loop closes with no seam
-  if (heights.length !== waves) { heights = Array.from({ length: waves }, () => 0.5); heightTargets = heights.slice(); }
+  if (heights.length !== waves) {
+    heights = Array.from({ length: waves }, () => 0.5); heightTargets = heights.slice();
+    widths = Array.from({ length: waves }, () => 1 + GOO.variability * (rnd() * 2 - 1) * 0.85); widthTargets = widths.slice();
+  }
+  // where each spike starts: uneven widths, scaled so they still fill the stretch exactly (a full loop stays seamless)
+  let total = 0; for (const w of widths) total += w;
+  const edges = [0]; for (let k = 0; k < waves; k++) edges.push(edges[k] + widths[k] / total);
   const taper = Math.min(spanPx * 0.2, 24);
   const amp = GOO.talkHeight * S.level;
   const P = new Array(N);
+  let k = 0;
   for (let i = 0; i < N; i++) {
     let d = 0;
     let s = (i / N - a) % 1; if (s < 0) s += 1;          // position inside the stretch, 0..1 of the outline
     if (s <= span && amp > 0.05) {
-      const u = (s / span) * waves;                       // which spike, and where in it
-      const k = Math.min(waves - 1, Math.floor(u)), f = u - k;
-      const tri = 1 - Math.abs(2 * f - 1);                // 0 → 1 → 0: a sharp spike
+      const u = s / span;                                 // which spike, and where in it
+      if (edges[k] > u) k = 0;
+      while (k < waves - 1 && edges[k + 1] <= u) k++;
+      const f = (u - edges[k]) / (edges[k + 1] - edges[k]);
       const env = full ? 1 : smooth01(s * N / taper) * smooth01((span - s) * N / taper);
-      d = amp * heights[k] * tri * env * pts[i].keep;
+      d = amp * heights[k] * spikeShape(f) * env * pts[i].keep;
     }
     P[i] = [pts[i].x + pts[i].nx * d, pts[i].y + pts[i].ny * d];
   }
@@ -220,20 +242,13 @@ function draw() {
   const tip = { x: b.x + b.w - 52 + 22, y: b.y + b.h + 16 };
   let sc = 1;
   if (S.phase === 'grow') { const t = Math.min(1, S.t * 1000 / GROW_MS); const c1 = 1.7; sc = 0.15 + 0.85 * (1 + (c1 + 1) * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2)); }
-  sc *= 1 + S.pop;
   ctx.save();
-  ctx.translate(tip.x, tip.y); ctx.scale(sc, sc); ctx.translate(-tip.x, -tip.y);
+  ctx.translate(tip.x, tip.y); ctx.scale(sc, sc); ctx.translate(-tip.x, -tip.y);   // grows open from the tail tip
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2, ps = 1 + S.pop;                      // pops swell from the middle, around the still text
+  ctx.translate(cx, cy); ctx.scale(ps, ps); ctx.translate(-cx, -cy);
   ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < N; i++) ctx.lineTo(P[i][0], P[i][1]); ctx.closePath();
   ctx.fillStyle = '#f4f4f2'; ctx.fill();
   ctx.lineJoin = 'miter'; ctx.lineWidth = 1.6; ctx.strokeStyle = '#555'; ctx.stroke();
-  // text
-  if (S.phase !== 'grow') {
-    ctx.fillStyle = '#222'; ctx.font = '500 18px system-ui, Segoe UI, sans-serif'; ctx.textBaseline = 'top';
-    const words = LINES[S.line].slice(0, S.shown).split(' '), maxW = b.w - 36; let ln = '', y = b.y + 18;
-    for (const wd of words) { const t = ln ? ln + ' ' + wd : wd; if (ctx.measureText(t).width > maxW && ln) { ctx.fillText(ln, b.x + 18, y); ln = wd; y += 24; } else ln = t; }
-    ctx.fillText(ln, b.x + 18, y);
-    if (S.phase === 'wait' && Math.floor(performance.now() / 450) % 2) { ctx.fillStyle = '#888'; ctx.fillText('▼', b.x + b.w - 30, b.y + b.h - 28); }
-  }
   // where the wave starts / ends (faint ticks, shown while you move those knobs)
   if (S.marks > 0) {
     ctx.globalAlpha = Math.min(1, S.marks);
@@ -244,6 +259,14 @@ function draw() {
     ctx.globalAlpha = 1;
   }
   ctx.restore();
+  // text — drawn outside the pop/grow scaling, so it never moves
+  if (S.phase !== 'grow') {
+    ctx.fillStyle = '#222'; ctx.font = '500 18px system-ui, Segoe UI, sans-serif'; ctx.textBaseline = 'top';
+    const words = LINES[S.line].slice(0, S.shown).split(' '), maxW = b.w - 36; let ln = '', y = b.y + 18;
+    for (const wd of words) { const t = ln ? ln + ' ' + wd : wd; if (ctx.measureText(t).width > maxW && ln) { ctx.fillText(ln, b.x + 18, y); ln = wd; y += 24; } else ln = t; }
+    ctx.fillText(ln, b.x + 18, y);
+    if (S.phase === 'wait' && Math.floor(performance.now() / 450) % 2) { ctx.fillStyle = '#888'; ctx.fillText('▼', b.x + b.w - 30, b.y + b.h - 28); }
+  }
   ctx.fillStyle = '#64748b'; ctx.font = '12px system-ui, sans-serif'; ctx.textBaseline = 'top';
   ctx.fillText('THE VETERAN · speaker · ' + S.phase, b.x, b.y + b.h + 28);
 }
@@ -325,7 +348,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.sketch = { GOO, readKnobs, setKnobs, S, next, reset }; // for Playwright checks
+window.sketch = { GOO, readKnobs, setKnobs, S, next, reset, armSquelch }; // for Playwright checks
 </script>
 </body>
 </html>
