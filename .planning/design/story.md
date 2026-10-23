@@ -81,8 +81,8 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | Rank 20 | Multi-colour pieces | "Increased goop clumping is normal and expected." | The goop has started **holding together** (each other's hands). |
 | Rank 30 | Cracks spread | "Hairline fractures are within policy tolerance. You will be fined for them." | The goop is pushing harder — it's waking up. The tank is older than anyone says. |
 | Rank 40 | Wild goop (seals any crack) | "Report any goop that seems helpful. Goop is not helpful." | Goop that has heard you **is helping you**. |
-| Rank 31: white goop | One clump in the tank, plain white, with his squint | "Residue. Do not engage." | **It's the Veteran** (Muzzy 2026-10-23: first "galaxy goop", then: "the veteran being white goop might be really brilliant then. he'll stand out"). In play: it never merges or pops (the laser passes through: "ow"), drifts toward the crack in most danger and sits on it, sealing it slowly — he's still helping. ❓ White is also the 6th normal colour, joining at rank 30 (`progression.md`) — see the open question below. |
-| Rank 50: the final shift | **All the goop is galaxy black** — black with shimmering stars (a star shader) | — | The final boss of a level (Muzzy 2026-10-23: "the last game lvl 50 - our final boss of a level - is all galaxy black"). Black, the 7th colour, arrives here and only here. |
+| Rank 31: white goop | One clump in the tank, plain white, with his squint | "Residue. Do not engage." | **It's the Veteran** (Muzzy 2026-10-23: first "galaxy goop", then: "the veteran being white goop might be really brilliant then. he'll stand out"). In play: it never merges or pops (the laser passes through: "ow"), drifts toward the crack in most danger and sits on it, sealing it slowly — he's still helping. White, the 6th normal colour, joins at rank 30 — **because he's been retired** (Muzzy 2026-10-23: "i like that white turns up after he 'retires'. that's great."). |
+| Rank 50: the final shift | **All the goop is galaxy black** — black with shimmering stars (a star shader) | — | The final boss of a level (Muzzy 2026-10-23: "the last game lvl 50 - our final boss of a level - is all galaxy black"). Black, the 7th colour, arrives here and only here. See **The final shift** below. |
 
 ## The arc, rank by rank
 | Ranks | Title band (❓ names) | Beats | Voices |
@@ -125,7 +125,7 @@ Muzzy: "it has an outline - it's a static outline, doesn't move. then while the 
 - **Then the text types out.** While it types, part of the outline becomes a **spiky sine wave** — a speech wave. It fluctuates with the letters and does **small scale pops** for words / syllables.
 - **Pauses:** between sentences, at "…" and after some words, the wave **relaxes** back to the flat outline.
 - **Done, waiting for you to confirm:** the outline now and then **squelches** — a burst of static wave — to say it's a speaker with a shoddy connection.
-- **How much of the border:** his strip shows the wave on a stretch of the top edge; "it could also be the entirety of the bubble" → a knob (how much of the outline fizzes).
+- **How much of the border:** his strip shows the wave on a stretch of the top edge; "it could also be the entirety of the bubble" → **two knobs: where the wave starts and where it ends** along the outline (Muzzy: "that way I can adjust the length and placement by changing the starting/ending point"). Set to go all the way round, the two ends **meet seamlessly** — the wave's length is fitted to a whole number of waves round the outline, and it fades to flat at a start/end that isn't a full loop.
 - **The other two voices:** the goop gets a **blobby** bubble (telepathy and, later, mouths); Management speaks on its CRT monitor.
 - **Where it's built:** a general "talking bubble" piece (open / type / talk wave / pauses / idle squelch) belongs in the framework UI kit, so other games get it; Goops gives it the spiky-wave style. Sketch it first in Goops (S9), then hand the picks to the framework.
 
@@ -133,6 +133,18 @@ Muzzy: "it has an outline - it's a static outline, doesn't move. then while the 
 - A story moment = text in one of the three places (monitor · speaker subtitles · words in the tank) plus **attention calling** on the console or tank: a light blinks, the monitor flickers, the speaker grille buzzes, eyes in the goop all turn to look, the visor dims for a beat. The same spotlight/outline the lessons already use.
 - **Not skippable — short instead** (Muzzy 2026-10-23: "not skippable. if they're short. they'll be over soon."): a few lines, tap to move on; never mid-shift unless it's a whisper that needs no tap.
 - Built on the lesson runner (F30) — a story beat is a lesson step with a different voice.
+
+## The final shift (rank 50) — the boss level (Muzzy 2026-10-23, riffing)
+Muzzy: "i removed colors because this final rush is more intense, less methodical. it's a 'boss' level … the goal is to overwhelm (slightly) the player."
+- **The Veteran drops in first.** A white clump with eyes and a mouth: "oh! Hi!" "It's me!" It falls like a normal piece, lands — "oof" — then more talk: glad you're not goop yet; he'll help however he can.
+- **Management knows you know.** It ramps up the pressure and the goop: an onslaught. **It's trying to explode the tank.**
+- **All goop is black (galaxy black), all cracks are black** → every piece merges with every other and any goop seals any crack. No colour sorting: a different kind of challenge.
+- **Faster and more often:** goop falls more often and falls faster than any rank before.
+- **You:** place and pop, place and pop, getting overrun.
+- **The Veteran:** goops around the tank sealing the cracks **you can't reach**. He's efficient, but **he loses a little of himself with every crack he seals** — he's sacrificing himself for you (he shrinks).
+- **You lose if:** the Veteran is used up completely · the goop goes over the top of the tank · integrity drains to 0.
+- ❓ **How you win** — not settled (Muzzy: "your goal is not clear yet"). Options in the chat 2026-10-23; Claude's pick: **seal X cracks to open the release valve**, where his seals count too — so you choose between leaning on him (fast, but it costs him) and doing it yourself.
+- ⚠ **To prove:** one colour = one big merging mass. Whether that plays well (and how hard "slightly overwhelming" is) needs a sketch or a bot run before it's built.
 
 ## The ending (rank 50) — save the goop
 Muzzy: "we'll need an ending where we save the goop instead of zapping it." Claude's draft:
