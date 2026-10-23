@@ -74,6 +74,8 @@
     "equipLabel": "Equip {name}: take it into the shift",
     "swapped": "{name} stays behind: one active at a time.",
     "locked": "Opens at rank {rank}",
+    "amount": "{now} → {next}",
+    "amountMax": "{now} (max)",
     "items": {
       "circuitStabilizer": {
         "name": "Circuit Stabilizer",
@@ -105,7 +107,7 @@
       },
       "pressureControl": {
         "name": "Pressure Control",
-        "desc": "Pressure rises slower, so new cracks come slower too."
+        "desc": "Pressure takes longer to rise, so new cracks come slower too."
       }
     }
   },

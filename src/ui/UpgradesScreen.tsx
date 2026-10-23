@@ -11,13 +11,20 @@ import { useContext } from 'react'
 import { Button, Card, Modal, Pips, Row, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
 import { playableUpgrades, type UpgradeDef } from '../engine'
 import { scrapsAt } from '../progress/progression'
-import { buyLevel, costOf, levelOf, maxLevelOf, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
+import { buyLevel, costOf, levelOf, levelPercent, maxLevelOf, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
 import { UpgradeShopContext, type UpgradeShop } from './upgradeShopContext'
 import text from '../../content/text/en.json'
 
 const w = text.upgrades
 const items = w.items as Record<string, { name: string; desc: string }>
 const nameOf = (def: UpgradeDef) => items[def.id]?.name ?? def.name
+const percent = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(n)}%`
+// the card's numbers (Muzzy, 2026-10-22): what it does now → at the next level, from upgrades.json — "+30% → +45%"
+// (beside − / +, so it reads as what a buy does; short, so it never wraps and the card never grows)
+function amountLine(def: UpgradeDef, level: number, max: number) {
+  const now = percent(levelPercent(def, level))
+  return level >= max ? fill(w.amountMax, { now }) : fill(w.amount, { now, next: percent(levelPercent(def, level + 1)) })
+}
 // the shop's list: rank order (the JSON's order breaks ties)
 const SHOP = playableUpgrades(upgradeBook).map((def, i) => ({ def, i })).sort((a, b) => a.def.rank - b.def.rank || a.i - b.i).map(({ def }) => def)
 
@@ -68,18 +75,19 @@ function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {
         </Row>
         <Text kind="caption">{fill(cost === 1 ? w.cost : w.costMany, { n: cost })}</Text>
       </Row>
-      <Row gap="s" justify="end">
-        {locked
-          ? <Text kind="label">{fill(w.locked, { rank: def.rank })}</Text>
-          : (
-            <>
+      {locked
+        ? <Row gap="s" justify="end"><Text kind="label">{fill(w.locked, { rank: def.rank })}</Text></Row>
+        : (
+          <Row gap="s" justify="between">
+            <Text kind="label" data-tag="amount">{amountLine(def, level, max)}</Text>
+            <Row gap="s">
               <Button variant="secondary" icon disabled={level === 0} aria-label={fill(w.takeBackLabel, { name })}
                 onClick={() => onChange(takeBackLevel(progress, def.id))}>{w.takeBack}</Button>
               <Button variant="primary" icon disabled={whyNotBuy(progress, def.id, rank) !== null} aria-label={fill(w.buyLabel, { name })}
                 onClick={() => onChange(buyLevel(progress, def.id, rank))}>{w.buy}</Button>
-            </>
-          )}
-      </Row>
+            </Row>
+          </Row>
+        )}
     </Card>
   )
 }

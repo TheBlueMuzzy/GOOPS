@@ -103,3 +103,19 @@ export function upgradesForShift(p: Progress, training = false, book: UpgradeBoo
   const equipped = p.equipped.slice(-activeSlots())
   return training ? resolveUpgrades(playable, {}) : resolveUpgrades(playable, p.owned, equipped)
 }
+
+/**
+ * The number a level brings, as a % change from owning none: what the card's number line shows (Circuit Stabilizer
+ * level 2 → +30, Capacitor Efficiency level 4 → −25, Cooldown Booster level 3 → +50). Read from the book, so it never
+ * goes stale: a passive's first effect (not the max-level fewer repair steps), an active's first number. Level 0 → 0.
+ */
+export function levelPercent(def: UpgradeDef, level: number): number {
+  if (level < 1) return 0
+  const effect = def.effects?.find((e) => !e.modifier.endsWith('RepairFewerSteps'))
+  const value = effect
+    ? effect.byLevel[Math.min(level, effect.byLevel.length) - 1]
+    : Object.values(def.ability?.byLevel[Math.min(level, def.ability.byLevel.length) - 1] ?? {}).find((v) => typeof v === 'number')
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0
+  const pct = effect?.op === 'mul' ? (value - 1) * 100 : value * 100 // a multiplier's change, or a fraction added (an active's boost)
+  return Math.round(pct) // whole percents: "−6% → −13%" fits beside − / + on a 360 phone ("−6.3% → −12.5%" wrapped, the card grew)
+}

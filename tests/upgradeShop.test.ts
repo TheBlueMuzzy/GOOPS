@@ -2,8 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
 import { freshProgress, scrapsAt, xpToNext, type Progress } from '../src/progress/progression'
-import { activeSlots, buyLevel, costOf, levelOf, setEquipped, takeBackLevel, whyNotBuy } from '../src/progress/upgradeShop'
-import type { UpgradeBook } from '../src/engine/upgrades'
+import { activeSlots, buyLevel, costOf, levelOf, levelPercent, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../src/progress/upgradeShop'
+import { playableUpgrades, type UpgradeBook } from '../src/engine/upgrades'
+import text from '../content/text/en.json'
 
 const book: UpgradeBook = { upgrades: [
   { id: 'cheap', name: 'Cheap', type: 'passive', rank: 2, maxLevel: 2, effects: [] },
@@ -108,5 +109,28 @@ describe('equipping actives', () => {
     expect(setEquipped(p, 'zap', true, book).progress).toBe(p)
     p = setEquipped(p, 'zap', false, book).progress
     expect(p.equipped).toEqual([])
+  })
+})
+
+describe('the card number line (levelPercent): read from the real upgrades.json', () => {
+  const def = (id: string) => upgradeBook.upgrades.find((u) => u.id === id)!
+  it('a passive: its first effect as a % change, level 0 = 0, past the max = the max', () => {
+    expect([0, 1, 2, 3, 4].map((n) => levelPercent(def('circuitStabilizer'), n))).toEqual([0, 15, 30, 45, 60])
+    expect(levelPercent(def('capacitorEfficiency'), 4)).toBe(-25)
+    expect(levelPercent(def('gearLubrication'), 1)).toBe(13) // 12.5, in whole percents
+    expect(levelPercent(def('capacitorEfficiency'), 1)).toBe(-6)
+    expect(levelPercent(def('focusMode'), 4)).toBe(-40)
+    expect(levelPercent(def('pressureControl'), 8)).toBe(40)
+    expect(levelPercent(def('pressureControl'), 99)).toBe(40)
+  })
+  it('an active: its first number as a % (Cooldown Booster +25 / 35 / 50)', () => {
+    expect([1, 2, 3].map((n) => levelPercent(def('cooldownBooster'), n))).toEqual([25, 35, 50])
+  })
+  it('every shop upgrade has a number at every level (and its words)', () => {
+    const items = text.upgrades.items as Record<string, { desc?: string }>
+    for (const u of playableUpgrades(upgradeBook)) {
+      expect(items[u.id]?.desc, u.id).toBeTruthy()
+      for (let n = 1; n <= u.maxLevel; n++) expect(levelPercent(u, n), `${u.id} ${n}`).not.toBe(0)
+    }
   })
 })

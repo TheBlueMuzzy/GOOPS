@@ -13,8 +13,8 @@ Checked: check:full at 099ddb1 — 22/23 PASS (fast + 19 e2e, 11.2 min); shift-s
 - [x] 🤖 4. The Upgrades screen (kit parts only): one card per upgrade — name, what it does, level pips, cost, buy / take back; locked ones show "rank N"; actives get an equip switch; scraps at the top; the words in en.json — src/ui/App.tsx
 - [x] 🤖 5. What you own reaches the shift: resolveUpgrades → createShift (modifiers + abilities), the repair panels' fewer steps, Focus Mode slows the console's time scale — src/ui/App.tsx
 - [x] 🤖 6. Cooldown Booster: its fire effect (running machine calm times +25/35/50 %) + a charge button in the HUD (tap, or a key) — src/engine/abilities.ts
-- [x] 🤖 7. Proof: e2e/upgrades.mjs (buy → reload → shift changed, each upgrade measured) + screenshots at three sizes — e2e/unlocks.mjs
-- [x] 🤖 8. Docs: GDD §5 + upgrades-map "built" notes, TDD decision for the save change (tuning: per-level steps start at v1's) — .planning/GDD.md
+- [x] 🤖 7. Proof: e2e/upgrades.mjs (buy → reload → shift changed, each upgrade measured) + screenshots at three sizes; then the docs: GDD §5 + upgrades-map "built" notes, TDD decision for the save change (tuning: per-level steps start at v1's) — e2e/unlocks.mjs
+- [x] 🤖 8. Muzzy's review (2026-10-22, "sure"): a number line on each card, what it does now → at the next level ("+30% → +45%", beside − / +; whole percents so it never wraps and the card never grows — e2e/upgrades.mjs 105 ok), worked out from upgrades.json — src/ui/UpgradesScreen.tsx
 
 ## Notes
 - Plan calls (Claude, 2026-10-22): kit update first so the new screen is built on today's kit, not an 8-version-old one (the planner already flagged it). One feature, tasks in Muzzy's order (screen, then the upgrades working). The engine already reads every passive's number (shift.ts, machines.ts) — the gap is that nothing calls resolveUpgrades yet; Focus Mode and Cooldown Booster need new hooks. Next free TDD decision: D18.
