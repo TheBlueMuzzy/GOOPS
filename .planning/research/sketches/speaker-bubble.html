@@ -32,8 +32,13 @@
   #panel h4 { margin: 6px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
   #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
   #panel label span { flex: 0 0 84px; }
-  #panel label b { flex: 0 0 44px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
-  #panel input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  /* the value box: type any number, even past the slider's ends (the slider then sits at its end, the box turns amber) */
+  #panel input.num { flex: 0 0 52px; width: 52px; box-sizing: border-box; padding: 3px 4px; text-align: right; font: 600 12px ui-monospace, monospace;
+    color: #94a3b8; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; -moz-appearance: textfield; }
+  #panel input.num::-webkit-inner-spin-button, #panel input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #panel input.num:focus { outline: none; border-color: var(--accent); color: var(--ink); }
+  #panel input.num.over { color: #fbbf24; border-color: #fbbf2480; }
   #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
   #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
   #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
@@ -65,19 +70,19 @@ const $ = id => document.getElementById(id);
 
 // ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
 const GOO = {
-  waveStart: 0.06,   // where the wave starts, as a share of the outline (0 = top-left corner, going clockwise)
-  waveEnd: 0.3,      // where it ends; start = end (or 0 → 1) = all the way round, seamless
-  spikeGap: 9,       // px between spikes
-  talkHeight: 12,    // px: how tall the spikes get while he talks
-  roundness: 0,      // 0 = needle-sharp spikes … 10 = round bumps
-  variability: 0.5,  // 0 = every spike the same width … 1 = very uneven widths
-  popSize: 0.04,     // how much the bubble swells on each syllable (0.04 = 4%)
+  waveStart: 0,      // where the wave starts, as a share of the outline (0 = top-left corner, going clockwise)
+  waveEnd: 0.34,     // where it ends; start = end (or 0 → 1) = all the way round, seamless
+  spikeGap: 12,       // px between spikes
+  talkHeight: 30,    // px: how tall the spikes get while he talks
+  roundness: 2,      // 0 = needle-sharp spikes … 10 = round bumps
+  variability: 1,  // 0 = every spike the same width … 1 = very uneven widths
+  popSize: 0.025,     // how much the bubble swells on each syllable (0.04 = 4%)
   typeSpeed: 22,     // letters per second
   pauseMs: 380,      // rest after . ! ? … (half after , and —)
   squelchEvery: 2.5, // seconds between squelches while it waits for you, ± 1.5 s at random; 0 = never
 };
 // [name, min, max, step] rows; a one-item row is a group heading. (Muzzy asked for more than 8 here.)
-const KNOBS = [['The wave'], ['waveStart', 0, 1, 0.01], ['waveEnd', 0, 1, 0.01], ['spikeGap', 4, 30, 1], ['talkHeight', 2, 30, 1],
+const KNOBS = [['The wave'], ['waveStart', 0, 1, 0.01], ['waveEnd', 0, 1, 0.01], ['spikeGap', 4, 30, 1], ['talkHeight', 2, 60, 1],
   ['roundness', 0, 10, 0.5], ['variability', 0, 1, 0.05],
   ['Talking'], ['popSize', 0, 0.12, 0.005], ['typeSpeed', 5, 60, 1], ['pauseMs', 0, 1000, 10],
   ['Waiting'], ['squelchEvery', 0, 8, 0.1]];
@@ -289,11 +294,22 @@ function dockKnobs() {
 }
 function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
 $('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) => lo === undefined ? `<h4>${k}</h4>` :
-  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><input class="num" type="number" inputmode="decimal" id="v_${k}" step="${st}" value="${GOO[k]}" title="Type any value — even past the slider's ends"></label>`
   + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : '')).join('')
   + '<button id="bCopy">Copy values for Claude</button>';
-for (const [k, lo] of KNOBS) if (lo !== undefined) $('k_' + k).oninput = e => {
-  GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k];
+// show a value in both the slider (pinned at its end when past it) and the box (amber when past the slider's ends)
+function showKnob(k) {
+  const row = KNOBS.find(r => r[0] === k), v = GOO[k];
+  $('k_' + k).value = v; if (document.activeElement !== $('v_' + k)) $('v_' + k).value = v;
+  $('v_' + k).classList.toggle('over', v < row[1] || v > row[2]);
+}
+for (const [k, lo] of KNOBS) if (lo !== undefined) {
+  $('k_' + k).oninput = e => { GOO[k] = +e.target.value; showKnob(k); knobChanged(k); };
+  $('v_' + k).oninput = e => { const v = parseFloat(e.target.value); if (Number.isFinite(v)) { GOO[k] = v; showKnob(k); knobChanged(k); } };
+  $('v_' + k).onchange = () => { $('v_' + k).value = GOO[k]; };
+  $('v_' + k).onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
+}
+function knobChanged(k) {
   if (k === 'waveStart' || k === 'waveEnd') { S.marks = 2; if (S.phase === 'wait') { S.squelch = 0.3; } }
   if (k === 'spikeGap' || k === 'talkHeight') { if (S.phase === 'wait') S.squelch = 0.3; }
   if (k === 'squelchEvery') armSquelch();
@@ -305,7 +321,7 @@ $('bKnobs').onclick = () => {
 // Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
 const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
 function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
-function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; $('k_' + k).value = v[k]; $('v_' + k).textContent = v[k]; } }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
 const DEFAULTS = readKnobs();
 let presets = [], activePreset = 'd';
 try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}

@@ -1,0 +1,14 @@
+{
+  "_about": "S9 speaker bubble (the Veteran). Muzzy 2026-10-23: 'the best values so far' (pasted from Copy values, second paste: "actually these"). Not final: talkHeight was at the old slider max (30); the max is now 60 and values can be typed past the slider.",
+  "status": "best so far",
+  "waveStart": 0,
+  "waveEnd": 0.34,
+  "spikeGap": 12,
+  "talkHeight": 30,
+  "roundness": 2,
+  "variability": 1,
+  "popSize": 0.025,
+  "typeSpeed": 22,
+  "pauseMs": 380,
+  "squelchEvery": 2.5
+}
