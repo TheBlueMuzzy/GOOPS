@@ -36,13 +36,31 @@ Management, the Veteran and the Goop each hint at a different answer, so players
 4. **It's research** — "Pressure tolerance trials are proceeding on schedule. Thank you, subject." (then: "*operator. Thank you, operator.")
 5. **The truth (40s):** the goop is people — former workers, broken down. Under pressure goop gives off energy, and that power is what Management harvests (the Matrix part). The cracks are the goop pushing to get out. Your job keeps them in.
 
-## Debt, wages and fines (the trap)
-- Every end-of-shift report adds a **paycheque**: wages in, then lodging, meals and an itemised list of fines out, leaving your **passage debt** at the bottom. The debt is designed to grow slowly whatever you do: "Remaining passage debt: 48,219 cr (+112)".
-- **Fines are the joke engine:** small, petty, specific, from your actual shift where possible (❓ how many come from what you really did):
-  - Real (from the shift): ruptures ("Unscheduled pressure event"), missed cracks, machine breakdowns ("Unauthorised wear on Company laser"), quitting early.
-  - Silly (random): "Excessive blinking", "Unapproved facial expression", "Periscope fingerprints", "Lodging: air (premium)", "Use of the word 'help' near a microphone", "Late (time dilation is not an excuse)".
-- **Credits ≠ scraps.** Credits are the Company's money and you never have any. Scraps are the Veteran's parts — the only thing you can spend.
-- ❓ **Does the debt touch gameplay?** Claude's pick: **no** — it's story only, shown on the report. The economy stays scraps + XP, so tuning stays simple; the debt just makes every report a little sad and funny.
+## Credits, payday and fines (the trap) — worked out 2026-10-23
+Muzzy's worry: fines mustn't hold players back from ranking up. His idea: credits fill up to a cap, then the Company takes nearly all of it for lodging, food "and other funny things" — that's why the meter starts over each rank. Small fines every shift; one big payment at each rank-up; the credits line goes up and down instead of just climbing.
+
+**The trick: credits ARE the XP we already have — the Company just puts on a show around it.**
+- **Credits = XP.** A shift's score already becomes XP 1:1, and the rank meter already empties at each rank-up (`xpToNext(rank)` = 3,500 + 250 × rank). We only rename it: the rank meter becomes **CREDITS**, and its cap becomes **PAYMENT DUE**. No numbers change, so the balance work so far stays true.
+- **Fines are theatre, never a loss.** Each shift's report shows a made-up *gross* a bit higher than what you earned, then the fines that bring it down — and the *net* always lands exactly on the XP the shift really gives. So fines never slow you down, but they're always there.
+  - Fine total = a small share of the shift (start at ~8%, tunable in `content/tuning/` ❓ file name at build time), split over 2–4 lines, rounded to whole credits.
+  - Fines picked from what really happened when possible (a rupture → "Unscheduled pressure event", a broken laser → "Unauthorised wear on Company laser"), topped up with silly ones ("Excessive blinking", "Picking nose on camera", "Unapproved facial expression", "Periscope fingerprints").
+- **Payday = the rank-up.** When your credits reach PAYMENT DUE, the report rolls a **payday**: the Company takes exactly the payment due, itemised (lodging, meals, air, bunk rental, periscope rental, "uniform laundering (you have no uniform)"…). Anything left over carries into the new rank. Then RANK UP.
+  - So the credits line climbs over a few shifts, crashes to almost nothing on payday, and starts climbing again — exactly the "never get ahead" feeling, while you DO rank up every time.
+- **Passage debt** is a separate story-only line on payday: it barely moves ("Remaining passage debt: 48,219 cr — interest applied"). Never affects play.
+- **Credits ≠ scraps.** Credits are the Company's and you never keep them. Scraps are the Veteran's parts — the only thing you can spend.
+
+**Worked example — rank 3 (payment due 4,250 cr):**
+| | Shift A | Shift B |
+|---|---|---|
+| The shift's score (= real XP) | 1,800 | 2,900 |
+| Report: gross pay | 1,950 | 3,140 |
+| Report: fines | −150 (Excessive blinking 12 · Unscheduled pressure event 95 · Periscope fingerprints 43) | −240 (…) |
+| Report: net | **+1,800** | **+2,900** |
+| Credits | 1,800 / 4,250 | 4,700 → **PAYDAY** |
+| Payday | — | Lodging 2,100 · Meals 1,400 · Air 600 · Bunk rental 150 = −4,250 |
+| After | rank 3 | **rank 4**, credits 450 / 4,500 |
+
+**Edge cases:** two rank-ups in one shift (early ranks, a huge score) → two paydays in a row on the report. Rank 50 → the last payday is the "debt restructuring" of the ending. The first day (tutorial) has no fines — "Day one is on us. (Day one will be billed later.)"
 
 ## The Goop changes (the visual story)
 The tank is half of the whole game, so the goop itself tells the story, rank by rank (looks work for the goo look module; ranges ❓):
@@ -62,7 +80,7 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | Rank 20 | Multi-colour pieces | "Increased goop clumping is normal and expected." | The goop has started **holding together** (each other's hands). |
 | Rank 30 | Cracks spread | "Hairline fractures are within policy tolerance. You will be fined for them." | The goop is pushing harder — it's waking up. The tank is older than anyone says. |
 | Rank 40 | Wild goop (seals any crack) | "Report any goop that seems helpful. Goop is not helpful." | Goop that has heard you **is helping you**. |
-| ❓ Black goop | — | "Residue. Do not engage." | Claude's pick: the oldest goop, pressed so long it's forgotten who it was — it doesn't talk, doesn't merge, and only wild goop can wake it (clear it). The Veteran's own body is down there. |
+| ❓ Black goop | — | "Residue. Do not engage." | Claude's pick: the oldest goop, pressed so long it's forgotten who it was — it doesn't talk, doesn't merge, and only wild goop can wake it (clear it). |
 
 ## The arc, rank by rank
 | Ranks | Title band (❓ names) | Beats | Voices |
@@ -72,9 +90,24 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | **5–9** | Tank Associate | **The speaker crackles at rank 5** — the Veteran's first words, and the upgrade store opens: "Found some scraps. Left 'em in your panel. Don't tell the screen." | + Veteran (fragments). |
 | **10–19** | Goop Technician → Senior | Eyes appear. Whispers become words ("…don't…", "…heavy…"). The Veteran: "Don't trust everything the screen says." Management "reminds you" there's no such thing as voices. | All three. |
 | **20–29** | Pressure Specialist → Lead | Fines go up. Goop holds together. The Veteran tells the station's history: how many operators there have been (a lot), where they "retired" to. The goop says its first name. | All three; Veteran clearer. |
-| **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. The Veteran admits he's never seen the outside. You find your own name in a list of "pending retirements". | Goop sentences; Veteran in full. |
-| **40–49** | Assistant to the Department Head → Acting Deputy (Interim) | The full picture: the goop is people; the pressure is Management's power; the debt is how they keep operators coming. **The Veteran's signal is coming from inside the tank** — he's the black goop at the bottom (the v1 "brain in a jar", now literally in the goop). Management slips: it isn't human. | Everything. Mouths open. |
+| **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. The Veteran admits he's never seen the outside — then **gets caught (~32)** and the speaker goes dead; you're on your own (you're the veteran now). You find your own name in a list of "pending retirements". | Goop sentences; Veteran in full. |
+| **40–49** | Assistant to the Department Head → Acting Deputy (Interim) | The full picture: the goop is people; the pressure is Management's power; the debt is how they keep operators coming. **The speaker crackles again — the Veteran, from inside the tank** (caught and gooped at ~32; see The Veteran's arc). Management slips: it isn't human. | Everything. Mouths open. |
 | **50** | **Department Head, G.O.O.P.S.** | The takeover — see **The ending**. | — |
+
+## The Veteran's arc — he gets caught (Muzzy 2026-10-23)
+Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned into goop at some later level … when we become high enough level, we don't need a veteran anymore… we're the veteran. but I don't want to lose touch with the speaker … we can lose touch with it much later."
+- **5–29:** the speaker crackles; he leaves scraps and warnings, clearer as he trusts you.
+- **~32 (❓ rank): caught.** Mid-transmission the monitor cuts in: "UNAUTHORISED BROADCAST LOCATED. OPERATOR #0001 HAS BEEN SCHEDULED FOR RETIREMENT." The speaker goes dead. Next shift's report has a fine for *you*: "Association with a retired employee". A new clump in the tank has his eyes (the same squint) ❓.
+- **~33–39: silence — and you're the veteran now.** No more scraps from him; scraps keep coming, but now you're "salvaging them yourself" (the report words change; the economy doesn't).
+- **~40: the speaker crackles again.** It's him — from inside the tank. Goop can reach the speaker's wire through the cracks (that's what the cracks are for). He's goop now, so he talks like goop, but better than the others (he's newest). He teaches the goop to use the speaker.
+- **40–49:** the speaker becomes the goop's way to talk out loud before the mouths do — the Veteran and the goop share it, breaking up more and more as the pressure rises.
+- **The ending:** when the tank opens, the speaker gives one last clear line in his voice, then goes quiet for good — that's where you finally lose touch with it.
+- (This replaces Draft 2's "he's the black goop at the bottom": black goop stays the oldest, forgotten goop.)
+
+## How story moments play (Muzzy 2026-10-23: "short cut scenes — just text and attention calling in the console/tank, not actual cut scenes")
+- A story moment = text in one of the three places (monitor · speaker subtitles · words in the tank) plus **attention calling** on the console or tank: a light blinks, the monitor flickers, the speaker grille buzzes, eyes in the goop all turn to look, the visor dims for a beat. The same spotlight/outline the lessons already use.
+- Short: a few lines, tap to move on, always skippable; never mid-shift unless it's a whisper that needs no tap.
+- Built on the lesson runner (F30) — a story beat is a lesson step with a different voice.
 
 ## The ending (rank 50) — save the goop
 Muzzy: "we'll need an ending where we save the goop instead of zapping it." Claude's draft:
