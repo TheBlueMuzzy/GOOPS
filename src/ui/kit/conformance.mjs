@@ -8,6 +8,9 @@
 //            the screen, every tap target is 44 px, no focus ring without the keyboard (uiProblems.mjs) — and (0.21.0)
 //            text is easy to read, nothing touches its box's edge, cards keep their size while they fill in
 //   Settings: every row that's on is read by the game; reduce motion is on (and master volume, with the audio module)
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 export const title = 'UI kit'
 
 export const SIZES = [
@@ -167,17 +170,128 @@ async function checkCredits(t) {
 // Rows the kit or the audio module handle are skipped: headings · text size + reduce motion (the kit applies them) ·
 // link rows (the kit opens them — but a placeholder example.com address fails) · info rows with their own text (except
 // version, whose text must come from the game: info={{ version }}) · the Audio rows once the game passes the values to
-// the audio module (applyAudioSettings / useAudioSettings / readAudioSettings) · the crashes switch once the game
-// passes it on (applyCrashSetting / setOn).
+// the audio module (applyAudioSettings / useAudioSettings / readAudioSettings) · a module's own row (the crashes switch,
+// Hide emotes, Bot chatter…) once the game passes it on — what counts comes from the module's settings-rows.json (0.30.0).
 export const SETTINGS_FILE = 'content/ui/settings.json'
 export const SETTINGS_CHECK = 'every Settings row that\'s switched on is read by the game'
 export const KIT_ROWS = ['textSize', 'reduceMotion']
 export const AUDIO_ROWS = ['masterVolume', 'musicVolume', 'ambienceVolume', 'sfxVolume', 'uiVolume', 'sound', 'muteInBackground', 'mono']
 const AUDIO_WIRING = /\b(applyAudioSettings|useAudioSettings|readAudioSettings)\s*\(/
-// The crashes module's switch (framework F89): read inside src/crashes once the game passes the values on
-export const CRASH_ROWS = ['crashReports']
-const CRASH_WIRING = /\b(applyCrashSetting|setOn)\s*\(/
+// The modules' own rows (crashes, emotes, ai…) come from their settings-rows.json (0.30.0, F110) — see ROW_MANIFEST.
 const VALUE_TYPES = ['slider', 'toggle', 'selector', 'stepper']
+
+// ---- a module's own Settings rows (0.30.0, F110) ----
+// A module that adds a Settings row ships settings-rows.json in its kit/; its installer copies it into the game next to
+// the module's VERSION (src/crashes/, src/emotes/, src/ai/kit/ …). The shape:
+//   { "about": "…",
+//     "rows": [ { "id": "hideEmotes",                                  ← the row's id in content/ui/settings.json
+//                 "readBy": ["\\b(applyEmoteSetting|setHideAll)\\s*\\("], ← regex sources: a match in the game's own code
+//                                                                        (comments stripped) = the row is passed on
+//                 "hint": "pass it to the emotes module: …" } ] }       ← what to do when nothing matches (optional)
+// The Settings check reads every installed one, so a new module with a row needs no UI kit change. The patterns come
+// from a file, so each is compiled with a try/catch: a broken file or pattern is a plain-English failure naming the
+// module, never a crash.
+export const ROW_MANIFEST = 'settings-rows.json'
+const MAX_PATTERN = 300 // a pattern longer than this isn't a wiring call's name
+
+/** Could this regex source run for minutes on a long file? A repeated group with a repeat inside — (a+)+, (\w+\s?)*,
+ *  ((ab)*)+, (x|y+){2,} — is the classic case (JavaScript can't time a regex out, so the check would just hang).
+ *  Escapes and [classes] are skipped; a wiring pattern (a group of names, then \s*\() never has one. */
+export function slowPattern(source) {
+  const groups = [] // one per open ( : does it hold a repeat?
+  const quantifierAt = (j) => source[j] === '+' || source[j] === '*' || (source[j] === '{' && /\d/.test(source[j + 1] ?? ''))
+  for (let i = 0; i < source.length; i++) {
+    const c = source[i]
+    if (c === '\\') { i++; continue }
+    if (c === '[') { // to the class's closing ]
+      for (i++; i < source.length && source[i] !== ']'; i++) if (source[i] === '\\') i++
+      continue
+    }
+    if (c === '(') { groups.push(false); continue }
+    if (c === ')') {
+      const inner = groups.pop() ?? false
+      const repeated = quantifierAt(i + 1)
+      if (inner && repeated) return true
+      if (groups.length) groups[groups.length - 1] ||= inner || repeated || source[i + 1] === '?'
+      continue
+    }
+    const isRepeat = quantifierAt(i) || (c === '?' && source[i - 1] !== '(' && !'+*?}'.includes(source[i - 1] ?? '('))
+    if (isRepeat && groups.length) groups[groups.length - 1] = true
+  }
+  return false
+}
+
+/** One module's settings-rows.json text → { module, file, rows: [{ id, readBy: [RegExp], hint }], problems: [plain words] }. */
+export function readRowManifest(text, { module, file = `src/${module}/${ROW_MANIFEST}` }) {
+  const fix = `reinstall the module (node ~/.claude/config/bmuz/scripts/install-module.mjs ${module} .) — the game's copy isn't meant to be edited`
+  const broken = (why) => ({ module, file, rows: [], problems: [`${file} ${why}, so the ${module} module's Settings rows can't be checked — ${fix}`] })
+  let data
+  try { data = JSON.parse(text) } catch (e) { return broken(`isn't valid JSON (${String(e?.message ?? e).split('\n')[0]})`) }
+  if (!data || typeof data !== 'object' || !Array.isArray(data.rows)) return broken('has no "rows" list')
+  const rows = []
+  const problems = []
+  data.rows.forEach((row, i) => {
+    if (!row || typeof row.id !== 'string' || !row.id.trim()) {
+      problems.push(`${file} row ${i + 1} has no "id", so the ${module} module's row can't be matched to Settings — ${fix}`)
+      return
+    }
+    const sources = Array.isArray(row.readBy) ? row.readBy : []
+    if (!sources.length) problems.push(`${file} "${row.id}" has no "readBy" patterns, so the ${module} module can't say what passes it on — ${fix}`)
+    const readBy = []
+    for (const source of sources) {
+      if (typeof source !== 'string' || !source || source.length > MAX_PATTERN) {
+        problems.push(`${file} "${row.id}": a "readBy" entry isn't a short pattern (text, 1–${MAX_PATTERN} characters) — ${fix}`)
+        continue
+      }
+      if (slowPattern(source)) {
+        problems.push(`${file} "${row.id}": the pattern ${JSON.stringify(source)} could take minutes to check (a repeated group with a repeat inside), so it isn't run — ${fix}`)
+        continue
+      }
+      try { readBy.push(new RegExp(source)) } catch (e) {
+        problems.push(`${file} "${row.id}": the pattern ${JSON.stringify(source)} isn't one the check can use (${String(e?.message ?? e).split('\n')[0]}) — ${fix}`)
+      }
+    }
+    rows.push({ id: row.id, readBy, hint: typeof row.hint === 'string' ? row.hint : '' })
+  })
+  return { module, file, rows, problems }
+}
+
+// ONE-RELEASE FALLBACK (0.30.0, F110 — take it out in 0.31.0): module copies older than their settings-rows.json
+// (crashes ≤ 0.1.0, emotes ≤ 0.3.0, ai ≤ 0.7.0) still get their row counted, exactly as the kit's old hard-coded lists
+// did. Used ONLY for one of these folders installed (a VERSION) WITHOUT the file — updating the module makes it unused.
+// Don't add to it: a new module ships its own settings-rows.json instead.
+export const OLD_MODULE_ROWS = {
+  // (the hints are the ones each module's settings-rows.json gives, so an old copy's failure line names the right call)
+  crashes: [{ id: 'crashReports', readBy: [/\b(applyCrashSetting|setOn)\s*\(/], hint: 'pass it to the crashes module: applyCrashSetting(loadSettings(settingsJson)) at start-up and applyCrashSetting(values) in the Settings onChange (src/crashes/settingsRow.ts)' }], // F89
+  emotes: [{ id: 'hideEmotes', readBy: [/\b(applyEmoteSetting|setHideAll)\s*\(/], hint: 'pass it to the emotes module: applyEmoteSetting(emotes, loadSettings(settingsJson)) at start-up and applyEmoteSetting(emotes, values) in the Settings onChange (src/emotes/settingsRow.ts)' }], // F107
+  ai: [{ id: 'botChatter', readBy: [/\b(applyBanterSetting|setChatter)\s*\(/], hint: 'pass it to the bots\' voice: applyBanterSetting(banter, loadSettings(settingsJson)) when the banter is made and applyBanterSetting(banter, values) in the Settings onChange (src/ai/kit/settingsRow.ts)' }], // F22
+}
+const oldSource = (module) => ({ module, file: null, old: true, rows: OLD_MODULE_ROWS[module], problems: [] })
+
+/** Every installed module's Settings rows: src/<name>/ or src/<name>/kit/ with a VERSION (where install-module puts
+ *  module copies — the same places check-framework looks), reading its settings-rows.json — or, for an older copy of
+ *  crashes / emotes / ai without one, the fallback above. node_modules and links are never looked in. */
+export function findRowSources(root) {
+  const src = join(root, 'src')
+  if (!existsSync(src)) return []
+  const sources = []
+  for (const entry of readdirSync(src, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name === 'node_modules') continue
+    for (const sub of ['', 'kit']) {
+      const dir = join(src, entry.name, sub)
+      if (!existsSync(join(dir, 'VERSION'))) continue
+      const path = join(dir, ROW_MANIFEST)
+      const folder = ['src', entry.name, sub].filter(Boolean).join('/')
+      if (existsSync(path)) {
+        let text = ''
+        try { text = readFileSync(path, 'utf8') } catch { /* unreadable → "isn't valid JSON" below */ }
+        sources.push({ ...readRowManifest(text, { module: entry.name, file: `${folder}/${ROW_MANIFEST}` }), folder })
+      } else if (Object.hasOwn(OLD_MODULE_ROWS, entry.name)) sources.push({ ...oldSource(entry.name), folder })
+      break // src/x/VERSION wins over src/x/kit/VERSION (there's only ever one)
+    }
+  }
+  return sources
+}
 
 /** The rows a player can see: switched on ("on" isn't false) and not headings — [{ id, type, label, tab, url, default }]. */
 export function liveRows(schema) {
@@ -336,10 +450,13 @@ export function fileFeedsInfo(text, id) {
   return new RegExp(`\\binfo\\s*[=:]\\s*\\{\\{?[^}]*?(?<![\\w$.])${escapeRe(id)}(?![\\w$])`).test(code)
 }
 
-/** Which rows nothing reads → { dead: [rows], placeholder: [rows], read, kit } (code = [{ path, text }]). */
-export function settingsProblems(schema, code) {
-  const audioWired = code.some((f) => AUDIO_WIRING.test(stripComments(f.text)))
-  const crashWired = code.some((f) => CRASH_WIRING.test(stripComments(f.text)))
+/** Which rows nothing reads → { dead: [rows], placeholder: [rows], read, kit } (code = [{ path, text }]).
+ *  sources = the installed modules' rows (findRowSources); left out → the old modules' fallback rows (as before 0.30.0).
+ *  A dead row a module owns carries { module, hint } for the failure line. */
+export function settingsProblems(schema, code, sources = Object.keys(OLD_MODULE_ROWS).map(oldSource)) {
+  const stripped = code.map((f) => stripComments(f.text))
+  const audioWired = stripped.some((c) => AUDIO_WIRING.test(c))
+  const moduleRows = sources.flatMap((s) => s.rows.map((r) => ({ ...r, module: s.module })))
   const dead = []
   const placeholder = []
   let read = 0
@@ -350,20 +467,22 @@ export function settingsProblems(schema, code) {
       else kit++
       continue
     }
+    const owners = moduleRows.filter((r) => r.id === row.id)
     const handled = KIT_ROWS.includes(row.id)
       || (row.type === 'info' && row.id !== 'version' && String(row.default ?? '').trim() !== '')
       || (audioWired && AUDIO_ROWS.includes(row.id))
-      || (crashWired && CRASH_ROWS.includes(row.id))
+      || owners.some((r) => r.readBy.some((re) => stripped.some((c) => re.test(c))))
     if (handled) { kit++; continue }
     const reads = row.type === 'info' ? fileFeedsInfo : fileReadsRow // an info row's text only comes in through info={{ … }}
     if (code.some((f) => reads(f.text, row.id))) read++
-    else dead.push(row)
+    else dead.push(owners.length ? { ...row, module: owners[0].module, hint: owners.find((r) => r.hint)?.hint ?? '' } : row)
   }
   return { dead, placeholder, read, kit }
 }
 
 /** Where to wire a dead row, by its type — plain words for the failure. */
 function wireHint(row) {
+  if (row.module) return `it's the ${row.module} module's row: ${row.hint || wireHint({ ...row, module: undefined })}`
   if (VALUE_TYPES.includes(row.type)) return `read values.${row.id} in the Settings onChange (and loadSettings(…) at start-up)`
   if (row.type === 'button' || row.type === 'destructive') return `handle it in the Settings onAction: if (id === '${row.id}') …`
   if (row.type === 'info') return row.id === 'version' ? 'give it the version: <Settings version={versionLabel} /> (the version module)' : `give its text: <Settings info={{ ${row.id}: … }} />`
@@ -374,15 +493,24 @@ export function checkSettingsForTest(t) { return checkSettings(t) }
 function checkSettings(t) {
   const schema = t.json(SETTINGS_FILE)
   if (!schema) return t.pass(SETTINGS_CHECK, `no ${SETTINGS_FILE}`)
-  const { dead, placeholder, read, kit } = settingsProblems(schema, t.gameCode())
+  const sources = t.root ? findRowSources(t.root) : undefined // (a test's made-up tester may have no game folder)
+  // A module's own code never counts as the game passing its row on (its settingsRow.ts DEFINES applyXSetting(…)) —
+  // the Dev Kit's gameCode() leaves out only the modules it knows by name, so a new module's folder is left out here.
+  const inModule = (path) => (sources ?? []).some((s) => s.folder && path.startsWith(`${s.folder}/`))
+  const code = t.gameCode().filter((f) => !inModule(f.path))
+  const { dead, placeholder, read, kit } = settingsProblems(schema, code, sources)
   const where = (row) => `${row.tab} → ${row.label ?? row.id} ("${row.id}", a ${row.type})`
   const problems = [
     ...dead.map((row) => `${where(row)}: nothing in the game reads it — ${wireHint(row)}`),
     ...placeholder.map((row) => `${where(row)}: opens ${row.url ? `a placeholder address (${row.url})` : 'no address'} — give it the real url`),
   ]
-  if (problems.length) {
-    return t.fail(SETTINGS_CHECK, problems,
-      `Each row above shows in Settings but changes nothing. Wire it where the line says (the game's own code, not src/ui/kit), or switch it off with "on": false in ${SETTINGS_FILE} until it does something.`)
+  const broken = (sources ?? []).flatMap((s) => s.problems)
+  if (problems.length || broken.length) {
+    const fix = problems.length
+      ? `Each row above shows in Settings but changes nothing. Wire it where the line says (the game's own code, not src/ui/kit), or switch it off with "on": false in ${SETTINGS_FILE} until it does something.`
+      : ''
+    const fixBroken = broken.length ? `A module's ${ROW_MANIFEST} (how it tells this check what passes its rows on) is broken — reinstall that module; the line says which.` : ''
+    return t.fail(SETTINGS_CHECK, [...problems, ...broken], [fix, fixBroken].filter(Boolean).join(' '))
   }
   return t.pass(SETTINGS_CHECK, `${read + kit} rows on: ${read} read by the game, ${kit} handled by the kit / audio module`)
 }

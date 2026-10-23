@@ -1,8 +1,8 @@
 // IN GAME — Pause, the HUD frame, and the HUD pieces that go in it.
 // HUD pieces never catch taps (the game underneath gets them); only their buttons do.
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { Panel, Row, Screen, Stack } from '../layout'
-import { Avatar, Badge, Button, ProgressBar, Text } from '../controls'
+import { Avatar, Badge, Button, ProgressBar, Text, controlSound } from '../controls'
 import { screens } from '../screens'
 import { askConfirm, Modal } from './dialogs'
 import { useFixedSize } from '../fixedSize'
@@ -270,19 +270,46 @@ export function TurnBanner({ text, detail, variant = 'panel' }: { text: string; 
 }
 
 // PLAYER SEATS — everyone at the table; whoever's turn it is gets the highlight.
-export type Seat = { id: string; name: string; avatar?: string; score?: ReactNode }
-export function PlayerSeats({ players, activeId }: { players: Seat[]; activeId?: string }) {
+// 0.29.0 (F109, the tappable seat row) — all optional; without them it draws exactly as before:
+//   onSeatTap(seat): each seat becomes a real button (Tab reaches it, the focus ring shows, Enter / Space press it).
+//     Its screen-reader name is the seat's `tapLabel` ("Ada — send an emote"), else its name — the game (or the
+//     emotes module's <EmoteSeats>) passes the words, so they translate with the game's text.
+//   seat.badge: a small mark on the portrait's corner (the emotes module's MutedMark). It sits ON the portrait, so the
+//     chip is the same size with or without it — nothing shifts when a seat is muted.
+//   seat.seatProps: extra attributes for the seat's button (or chip): data-emote-seat tags, aria-expanded…
+//   seat.color: the portrait's colour (like PlayerChip's).   showNames={false}: portraits only (the names are read out).
+export type Seat = {
+  id: string; name: string; avatar?: string; color?: string; score?: ReactNode
+  badge?: ReactNode; tapLabel?: string; seatProps?: Record<string, string | boolean | undefined>
+}
+type PlayerSeatsProps = { players: Seat[]; activeId?: string; onSeatTap?: (seat: Seat) => void; showNames?: boolean }
+export function PlayerSeats({ players, activeId, onSeatTap, showNames = true }: PlayerSeatsProps) {
   return (
-    <Row gap="s">
-      {players.map((p) => (
-        <Chip key={p.id} active={p.id === activeId}>
-          <Avatar name={p.name} src={p.avatar} active={p.id === activeId} />
-          <Stack gap="xs">
-            <Text kind="label">{p.name}</Text>
-            {p.score !== undefined && <Text kind="caption">{p.score}</Text>}
-          </Stack>
-        </Chip>
-      ))}
+    <Row gap="s" className={onSeatTap ? 'kit-seats' : undefined}>
+      {players.map((p) => {
+        const active = p.id === activeId
+        const avatar = <Avatar name={p.name} src={p.avatar} color={p.color} active={active} />
+        const chip = (
+          <Chip active={active} {...(onSeatTap ? {} : p.seatProps)}>
+            {onSeatTap || p.badge !== undefined
+              ? <span className="kit-seat-avatar">{avatar}{p.badge !== undefined && <span className="kit-seat-badge">{p.badge}</span>}</span>
+              : avatar}
+            {showNames && (
+              <Stack gap="xs">
+                <Text kind="label">{p.name}</Text>
+                {p.score !== undefined && <Text kind="caption">{p.score}</Text>}
+              </Stack>
+            )}
+          </Chip>
+        )
+        if (!onSeatTap) return <Fragment key={p.id}>{chip}</Fragment>
+        return (
+          <button key={p.id} type="button" className="kit-seat-button kit-target" aria-label={p.tapLabel ?? p.name}
+            {...p.seatProps} onClick={() => { controlSound('tap'); onSeatTap(p) }}>
+            {chip}
+          </button>
+        )
+      })}
     </Row>
   )
 }

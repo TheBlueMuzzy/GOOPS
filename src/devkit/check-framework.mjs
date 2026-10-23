@@ -3,12 +3,12 @@
 //   node src/devkit/check-framework.mjs [--port 5197] [--static] [--only devkit,ui]
 //     --port:   where the checks serve the game (default 5197 — never the usual dev ports 5173 / 5199)
 //     --static: only the checks that read code (no browser)
-//     --only:   only these modules (their folder names: devkit, ui, audio, table, ai, rooms, saves, version, crashes)
+//     --only:   only these modules (their folder names: devkit, ui, audio, table, ai, rooms, saves, version, crashes, emotes)
 // Needs Playwright in the game for the browser checks: npm install -D playwright-core (Playwright's own Chromium —
 // never your installed Chrome).
 //
 // How it works: every framework module the game has installed sits in src/ with a VERSION file (src/devkit/VERSION,
-// src/ui/kit/VERSION, src/audio/VERSION, src/table/VERSION, src/ai/kit/VERSION, src/rooms/VERSION, src/saves/VERSION, src/version/VERSION, src/crashes/VERSION). Each module ships
+// src/ui/kit/VERSION, src/audio/VERSION, src/table/VERSION, src/ai/kit/VERSION, src/rooms/VERSION, src/saves/VERSION, src/version/VERSION, src/crashes/VERSION, src/emotes/VERSION). Each module ships
 // its OWN checks beside that file — conformance.mjs — written from what MODULE-CONTRACTS.md says a game must provide.
 // This file finds them, runs them, and prints one plain-English report: every failure says what to wire and where.
 // Browser checks share one Vite dev server (the game's own vite.config, so the Dev Kit's plugin is in) and one
@@ -66,6 +66,7 @@ export const UPDATE_HINT = {
   saves: 'node <framework>/saves/scripts/install-saves.mjs .',
   version: 'node <framework>/version/scripts/install-version.mjs .',
   crashes: 'node <framework>/crashes/scripts/install-crashes.mjs .',
+  emotes: 'node <framework>/emotes/scripts/install-emotes.mjs .',
 }
 
 /** Text files under the game's folders (forward-slash paths relative to the game), for checks that read code. */
@@ -87,7 +88,7 @@ export function sourceFiles(root, { dirs = ['src'], skip = [], exts = /\.(m?[jt]
 }
 
 /** The framework's own folders inside a game (code the game didn't write) — skipped when checking the game's code. */
-export const KIT_FOLDERS = ['src/devkit', 'src/ui/kit', 'src/audio', 'src/table', 'src/ai/kit', 'src/rooms', 'src/saves', 'src/version', 'src/crashes']
+export const KIT_FOLDERS = ['src/devkit', 'src/ui/kit', 'src/audio', 'src/table', 'src/ai/kit', 'src/rooms', 'src/saves', 'src/version', 'src/crashes', 'src/emotes']
 const isTestFile = (path) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(path) || /(^|\/)(tests?|e2e|__tests__)\//.test(path)
 /** The game's own code: src/ minus the framework's folders, the Dev Kit's game folder and tests. */
 export const gameCode = (root) => sourceFiles(root, { skip: [...KIT_FOLDERS, 'src/devkit-game'] }).filter((f) => !isTestFile(f.path))
