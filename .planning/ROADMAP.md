@@ -38,7 +38,7 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F06 Breakdowns: v1 meters, softer effects, the tank slows at the console, simplified repairs (GDD §5, 2026-10-18) — must:alpha · needs: F01
 - ✅ F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06 · decided 2026-10-19: alpha = the playable game (no upgrades, no story) for Muzzy + friends; beta = the whole job (story, upgrades, all three rank twists); 1.0 = polished, replaces v1 (research/release-scope.md, GDD §7)
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
-- 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
+- 🔨 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
   note: Muzzy (2026-10-19, F07): "story is beta. alpha is playable game"
 - ✅ F10 ❓ Phone gestures without conflicts — must:alpha · decided 2026-10-20: every finger is its own gesture (swap timer at the holding finger), taps contextual like a PC click (GDD §4, gestures.md §7)
   note: gesture list + 14-line phone checklist done (research/gestures.md); waits for Muzzy's phone session (2026-10-19: "developing fully on PC for now")

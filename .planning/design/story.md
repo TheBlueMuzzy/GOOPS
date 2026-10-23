@@ -162,21 +162,26 @@ Muzzy: "we'll need an ending where we save the goop instead of zapping it." Clau
 - **What happens to you: later** (Muzzy 2026-10-23: "let's cross that bridge after the story is built and we discuss the final levels"). Options so far: you walk away (debt and all) · you stay as the new Veteran for the next operator · you step into the goop and join them. Claude's pick: **you stay at the console, and the last whisper is in your own voice** — ambiguous, as v1 wanted ("you become the boss — but what does that mean?").
 - **Rank 50 = you beat the game** (Muzzy 2026-10-23: "you can beat this game. level 50 is beating the game."). After the ending the console shows the end-game screen (Muzzy's end-game art in `art/`). **Afterwards: a new career** (Muzzy: "sure. same exact flow, but with a visual upgrade to the console/periscope/vat or something. we can sort that out much later") — the same game from rank 0, with a changed-looking console / periscope / vat to show you've won. Which upgrade: later.
 
-## Rank titles (draft — ❓ Muzzy's call)
-| Ranks | Title |
-|---|---|
-| 0 | Probationary Intern (Unpaid) |
-| 1–4 | Junior Tank Associate |
-| 5–9 | Tank Associate |
-| 10–14 | Goop Technician |
-| 15–19 | Senior Goop Technician |
-| 20–24 | Pressure Specialist |
-| 25–29 | Lead Pressure Specialist |
-| 30–34 | Containment Supervisor |
-| 35–39 | Senior Containment Supervisor |
-| 40–44 | Assistant to the Department Head |
-| 45–49 | Acting Deputy Department Head (Interim) |
-| 50 | Department Head, G.O.O.P.S. |
+## Rank titles — 12, in bands (Muzzy 2026-10-23: "12 titles, but the final title is only given out at the end. make that make sense and the banding should work with it")
+How it works:
+- **Rank 0 has its own title** (the first day) and **the 12th title isn't a rank at all — it's the win.** Rank 50 (the final shift) still carries the 45–50 title; **Department Head** appears only when the third valve stage opens.
+- **Who gives it:** not Management — the goop. When the tank opens, the monitor glitches and the goop rewrites your badge. Management's titles were all "assistant", "acting", "interim": it never meant to promote anyone. The real acronym lands on the same screen (Gradual Onboarding Of Permanent Staff).
+- **Every title change lands on a story beat**, so a new title is a moment, not a number.
+
+| Ranks | Title | The beat it lands on |
+|---|---|---|
+| 0 | Probationary Intern (Unpaid) | Your first day — contract, debt, bunk |
+| 1–4 | Junior Tank Associate | Your first payday; the first machines break |
+| 5–9 | Tank Associate | The speaker crackles: the Veteran, and the scraps |
+| 10–14 | Goop Technician | The goop grows eyes |
+| 15–19 | Senior Goop Technician | Whispers become words |
+| 20–24 | Pressure Specialist | Goop starts holding together (multi-colour pieces) |
+| 25–29 | Lead Pressure Specialist | The Veteran tells you what the goop is |
+| 30–34 | Containment Supervisor | The Veteran is caught; white goop arrives; the cracks spread |
+| 35–39 | Senior Containment Supervisor | The white goop (him) speaks in your head |
+| 40–44 | Assistant to the Department Head | The speaker comes back: him and the goop; mouths open |
+| 45–50 | Acting Deputy Department Head (Interim) | Management slips — it isn't human; rank 50 = the final shift |
+| **the win** | **Department Head, G.O.O.P.S.** | Given by the goop when the valve opens — not a rank, the ending |
 
 ## Sample lines (tone check)
 - Monitor, rank 0: "WELCOME, OPERATOR. YOUR COMFORT IS OUR POLICY. YOUR BUNK IS 0.8 m WIDE. YOUR DEBT HAS BEEN PRE-APPROVED."
