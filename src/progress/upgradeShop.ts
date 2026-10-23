@@ -78,16 +78,12 @@ export const isActive = (p: Progress, id: string) => levelOf(p, id) > 0
 export const ownsAny = (p: Progress) => Object.keys(p.owned).some((id) => levelOf(p, id) > 0)
 
 /**
- * Respec (Muzzy, 2026-10-22): every level taken back at once — the scraps they cost come back (each at its current
- * price, as takeBackLevel does; an id no longer in the book refunds 1 a level) and every active comes off.
+ * Respec (Muzzy, 2026-10-22): every level taken back at once and every active comes off. Scraps are only ever spent
+ * on upgrades, so with nothing owned nothing is spent: every scrap comes back exactly, whatever the prices were when
+ * they were bought (a price changed in upgrades.json since, or an upgrade removed, loses nothing).
  */
-export function respec(p: Progress, book: UpgradeBook = upgradeBook): Progress {
-  let refund = 0
-  for (const id of Object.keys(p.owned)) {
-    const def = book.upgrades.find((u) => u.id === id)
-    refund += levelOf(p, id) * (def ? costOf(def) : 1)
-  }
-  return { ...p, scrapsSpent: Math.max(0, p.scrapsSpent - refund), owned: {}, equipped: [] }
+export function respec(p: Progress): Progress {
+  return { ...p, scrapsSpent: 0, owned: {}, equipped: [] }
 }
 
 /** How many actives can go into a shift at once. */

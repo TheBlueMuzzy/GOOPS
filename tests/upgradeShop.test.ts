@@ -121,7 +121,7 @@ describe('respec: every level back at once', () => {
     p = buyLevel(p, 'zap', 9, book); p = setEquipped(p, 'zap', true, book).progress
     expect(ownsAny(p)).toBe(true)
     expect(scrapsAt(9, p)).toBe(before - 1 - 3 - 3 - 1)
-    const r = respec(p, book)
+    const r = respec(p)
     expect(scrapsAt(9, r)).toBe(before)
     expect(r.owned).toEqual({})
     expect(r.equipped).toEqual([])
