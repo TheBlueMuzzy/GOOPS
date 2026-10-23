@@ -485,8 +485,20 @@ try {
     check('Respec: in the header, right of UPGRADES, on its line', !!respecBox && respecBox.x > titleBox.x + titleBox.width - 1
       && respecBox.y < titleBox.y + titleBox.height && respecBox.y + respecBox.height > titleBox.y, JSON.stringify({ titleBox, respecBox }))
     await shot(page, 'respec-shown-390x844')
+    // scraps coming back flash the number green, then it fades back (Muzzy, 2026-10-23: no toast); spending never flashes
+    const scrapsNum = page.locator('.kit-modal [data-tag="scraps"]')
+    const colourOf = () => scrapsNum.evaluate((el) => getComputedStyle(el).color)
+    const success = await page.evaluate(() => { const p = document.createElement('i'); p.style.color = 'var(--success)'; document.querySelector('.kit-modal').append(p); const c = getComputedStyle(p).color; p.remove(); return c })
+    await page.waitForTimeout(1500) // (the − a few steps back flashed it; let that finish)
+    const normal = await scrapsNum.evaluate((el) => getComputedStyle(el.parentElement).color) // the heading's own colour
+    check('spending scraps: the number is its normal colour (not green)', await colourOf() === normal && normal !== success, `${await colourOf()} vs ${normal}`)
     await respecBtn.click()
-    await page.waitForTimeout(250)
+    await page.waitForTimeout(120)
+    check('Respec: the scraps number turns green', await colourOf() === success, `${await colourOf()} vs ${success}`)
+    check('Respec: no toast message', await page.locator('.kit-toast').count() === 0)
+    await shot(page, 'respec-green-390x844')
+    await page.waitForTimeout(1500)
+    check('…then it goes back to its normal colour', await colourOf() === normal, `${await colourOf()} vs ${normal}`)
     const s3 = await saved(page)
     check('Respec → scraps 5, every level 0, nothing owned or equipped in the save', await scrapsShown(page, 5) === 1 && await level(page, 'circuitStabilizer') === 0
       && await level(page, 'capacitorEfficiency') === 0 && Object.keys(s3.owned).length === 0 && s3.equipped.length === 0 && s3.scrapsSpent === 0, JSON.stringify(s3))
