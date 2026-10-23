@@ -7,7 +7,7 @@
 // Every change is saved at once (the App's onChange). The rules: src/progress/upgradeShop.ts.
 // The App passes its state through UpgradeShopContext, so this screen stays mounted while you buy (the list keeps its
 // scroll); each card holds the same parts whatever you buy, so it never changes size (kit Card: fixed size).
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useState } from 'react'
 import { Button, Card, Modal, Pips, Row, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
 import { playableUpgrades, type UpgradeDef } from '../engine'
 import { scrapsAt } from '../progress/progression'
@@ -30,15 +30,26 @@ const SHOP = playableUpgrades(upgradeBook).map((def, i) => ({ def, i })).sort((a
 
 export function UpgradesScreen() {
   const shop = useContext(UpgradeShopContext)
+  // Respec flashes the scraps number green, then it fades back (Muzzy, 2026-10-23: instead of a toast; only Respec, not −).
+  // A new key replays the flash on every Respec.
+  const [respecs, setRespecs] = useState(0)
   if (!shop) return null
   const scraps = Math.max(0, scrapsAt(shop.rank, shop.progress))
   // Respec (Muzzy, 2026-10-22): top right, once a level is in anything — every level back at once, all scraps return
   // (the word, Muzzy 2026-10-22: "Respec, not cycle arrow" — on the title's line; the kit title fits itself beside it)
-  const respecButton = ownsAny(shop.progress) && <Button variant="secondary" compact aria-label={w.respecLabel} onClick={() => shop.onChange(respec(shop.progress))}>{w.respec}</Button>
+  const doRespec = () => {
+    shop.onChange(respec(shop.progress))
+    setRespecs((r) => r + 1)
+  }
+  const respecButton = ownsAny(shop.progress) && <Button variant="secondary" compact aria-label={w.respecLabel} onClick={doRespec}>{w.respec}</Button>
   const [before, after] = w.scraps.split('{n}')
   return (
     <Modal title={w.title} onBack={() => screens.pop()} backLabel={w.back} headerAction={respecButton || undefined}>
-      <Text kind="heading">{before}<ScrapsNumber n={scraps} />{after}</Text>
+      <Text kind="heading">
+        {before}
+        <span key={respecs} className="upgrades-scraps-n" data-gained={respecs > 0 || undefined} data-tag="scraps">{scraps.toLocaleString('en')}</span>
+        {after}
+      </Text>
       <ScrollArea label={w.list}>
         <Stack gap="m">
           {SHOP.map((def) => <UpgradeCard key={def.id} def={def} shop={shop} />)}
@@ -46,18 +57,6 @@ export function UpgradesScreen() {
       </ScrollArea>
     </Modal>
   )
-}
-
-// Scraps coming back (Respec, or − on a card) flash the number green, then it fades back (Muzzy, 2026-10-23: instead of
-// a toast). A new key replays the flash on every gain; spending doesn't flash.
-function ScrapsNumber({ n }: { n: number }) {
-  const last = useRef(n)
-  const [gains, setGains] = useState(0)
-  useEffect(() => {
-    if (n > last.current) setGains((g) => g + 1)
-    last.current = n
-  }, [n])
-  return <span key={gains} className="upgrades-scraps-n" data-gained={gains > 0 || undefined} data-tag="scraps">{n.toLocaleString('en')}</span>
 }
 
 function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {

@@ -27,6 +27,6 @@ html, body, #root { margin: 0; height: 100%; }
 .hud-ability-icon { inline-size: 1.1rem; block-size: 1.1rem; pointer-events: none; }
 .hud-ability[data-ready] .hud-ability-icon { color: var(--primary); }
 
-/* Upgrades: scraps coming back flash the number green, then fade to its normal colour (Muzzy, 2026-10-23, instead of a toast) */
+/* Upgrades: Respec flashes the scraps number green, then it fades to its normal colour (Muzzy, 2026-10-23, instead of a toast) */
 .upgrades-scraps-n[data-gained] { animation: upgrades-scraps-gain calc(var(--motion-normal) * 4) var(--ease); }
 @keyframes upgrades-scraps-gain { 0%, 40% { color: var(--success); } }

@@ -485,13 +485,15 @@ try {
     check('Respec: in the header, right of UPGRADES, on its line', !!respecBox && respecBox.x > titleBox.x + titleBox.width - 1
       && respecBox.y < titleBox.y + titleBox.height && respecBox.y + respecBox.height > titleBox.y, JSON.stringify({ titleBox, respecBox }))
     await shot(page, 'respec-shown-390x844')
-    // scraps coming back flash the number green, then it fades back (Muzzy, 2026-10-23: no toast); spending never flashes
+    // Respec flashes the scraps number green, then it fades back (Muzzy, 2026-10-23: no toast; only Respec, not −)
     const scrapsNum = page.locator('.kit-modal [data-tag="scraps"]')
     const colourOf = () => scrapsNum.evaluate((el) => getComputedStyle(el).color)
     const success = await page.evaluate(() => { const p = document.createElement('i'); p.style.color = 'var(--success)'; document.querySelector('.kit-modal').append(p); const c = getComputedStyle(p).color; p.remove(); return c })
-    await page.waitForTimeout(1500) // (the − a few steps back flashed it; let that finish)
     const normal = await scrapsNum.evaluate((el) => getComputedStyle(el.parentElement).color) // the heading's own colour
     check('spending scraps: the number is its normal colour (not green)', await colourOf() === normal && normal !== success, `${await colourOf()} vs ${normal}`)
+    await takeBack(page, 'capacitorEfficiency').click()
+    await page.waitForTimeout(120)
+    check('− gives a scrap back without the green flash', await scrapsShown(page, 1) === 1 && await colourOf() === normal, await colourOf())
     await respecBtn.click()
     await page.waitForTimeout(120)
     check('Respec: the scraps number turns green', await colourOf() === success, `${await colourOf()} vs ${success}`)
