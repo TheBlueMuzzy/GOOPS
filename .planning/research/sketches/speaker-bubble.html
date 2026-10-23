@@ -72,10 +72,10 @@ const $ = id => document.getElementById(id);
 const GOO = {
   waveStart: 0,      // where the wave starts, as a share of the outline (0 = top-left corner, going clockwise)
   waveEnd: 0.34,     // where it ends; start = end (or 0 → 1) = all the way round, seamless
-  spikeGap: 12,       // px between spikes
-  talkHeight: 30,    // px: how tall the spikes get while he talks
-  roundness: 2,      // 0 = needle-sharp spikes … 10 = round bumps
-  variability: 1,  // 0 = every spike the same width … 1 = very uneven widths
+  spikeGap: 19,       // px between spikes
+  talkHeight: 51,    // px: how tall the spikes get while he talks
+  roundness: 3,      // 0 = needle-sharp spikes … 10 = round bumps
+  variability: 0.45,  // 0 = every spike the same width … 1 = very uneven widths
   popSize: 0.025,     // how much the bubble swells on each syllable (0.04 = 4%)
   typeSpeed: 22,     // letters per second
   pauseMs: 380,      // rest after . ! ? … (half after , and —)
