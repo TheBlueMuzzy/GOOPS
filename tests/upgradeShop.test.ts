@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
 import { freshProgress, scrapsAt, xpToNext, type Progress } from '../src/progress/progression'
-import { activeSlots, buyLevel, costOf, levelOf, levelPercent, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../src/progress/upgradeShop'
+import { activeSlots, buyLevel, costOf, levelOf, levelPercent, ownsAny, respec, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../src/progress/upgradeShop'
 import { playableUpgrades, type UpgradeBook } from '../src/engine/upgrades'
 import text from '../content/text/en.json'
 
@@ -109,6 +109,24 @@ describe('equipping actives', () => {
     expect(setEquipped(p, 'zap', true, book).progress).toBe(p)
     p = setEquipped(p, 'zap', false, book).progress
     expect(p.equipped).toEqual([])
+  })
+})
+
+describe('respec: every level back at once', () => {
+  it('owning nothing → no Respec; after buying, respec gives every scrap back and unequips', () => {
+    let p: Progress = { ...freshProgress(), totalXp: 1e9 }
+    expect(ownsAny(p)).toBe(false)
+    const before = scrapsAt(9, p)
+    p = buyLevel(p, 'cheap', 9, book); p = buyLevel(p, 'pricey', 9, book); p = buyLevel(p, 'pricey', 9, book)
+    p = buyLevel(p, 'zap', 9, book); p = setEquipped(p, 'zap', true, book).progress
+    expect(ownsAny(p)).toBe(true)
+    expect(scrapsAt(9, p)).toBe(before - 1 - 3 - 3 - 1)
+    const r = respec(p, book)
+    expect(scrapsAt(9, r)).toBe(before)
+    expect(r.owned).toEqual({})
+    expect(r.equipped).toEqual([])
+    expect(ownsAny(r)).toBe(false)
+    expect(r.totalXp).toBe(p.totalXp)
   })
 })
 

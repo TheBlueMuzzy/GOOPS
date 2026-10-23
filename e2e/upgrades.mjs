@@ -468,6 +468,20 @@ try {
     const scrolls = await page.evaluate(() => document.querySelector('.kit-modal .kit-scroll').hasAttribute('data-scrolls'))
     check('390x844: the list scrolls (more cards than room)', scrolls)
     check('no card grew', (await growth(page)).length === 0, (await growth(page)).join(' | '))
+
+    // Respec (Muzzy, 2026-10-22): top right of the header once a level is in anything; every level back, all scraps return
+    const respecBtn = page.getByRole('dialog', { name: w.title }).locator('.kit-menu-header').getByRole('button', { name: w.respecLabel })
+    const titleBox = await page.locator('.kit-modal .kit-menu-header-title').boundingBox(), respecBox = await respecBtn.boundingBox()
+    check('Respec: in the header, right of UPGRADES, on its line', !!respecBox && respecBox.x > titleBox.x + titleBox.width - 1
+      && respecBox.y < titleBox.y + titleBox.height && respecBox.y + respecBox.height > titleBox.y, JSON.stringify({ titleBox, respecBox }))
+    await shot(page, 'respec-shown-390x844')
+    await respecBtn.click()
+    await page.waitForTimeout(250)
+    const s3 = await saved(page)
+    check('Respec → scraps 5, every level 0, nothing owned or equipped in the save', await scrapsShown(page, 5) === 1 && await level(page, 'circuitStabilizer') === 0
+      && await level(page, 'capacitorEfficiency') === 0 && Object.keys(s3.owned).length === 0 && s3.equipped.length === 0 && s3.scrapsSpent === 0, JSON.stringify(s3))
+    check('…and the Respec button is gone (nothing to take back)', await respecBtn.count() === 0)
+    check('the − buttons are the red (danger) kind', await takeBack(page, 'circuitStabilizer').getAttribute('data-variant') === 'danger')
     await page.keyboard.press('Escape')
     await page.waitForTimeout(300)
     check('Esc closes it, back on the console', await page.getByRole('dialog', { name: w.title }).count() === 0)

@@ -8,10 +8,10 @@
 // The App passes its state through UpgradeShopContext, so this screen stays mounted while you buy (the list keeps its
 // scroll); each card holds the same parts whatever you buy, so it never changes size (kit Card: fixed size).
 import { useContext } from 'react'
-import { Button, Card, Modal, Pips, Row, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
+import { Button, Card, MenuHeader, Panel, Pips, Row, Screen, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
 import { playableUpgrades, type UpgradeDef } from '../engine'
 import { scrapsAt } from '../progress/progression'
-import { buyLevel, costOf, levelOf, levelPercent, maxLevelOf, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
+import { buyLevel, costOf, levelOf, levelPercent, maxLevelOf, ownsAny, respec, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
 import { UpgradeShopContext, type UpgradeShop } from './upgradeShopContext'
 import text from '../../content/text/en.json'
 
@@ -32,15 +32,28 @@ export function UpgradesScreen() {
   const shop = useContext(UpgradeShopContext)
   if (!shop) return null
   const scraps = Math.max(0, scrapsAt(shop.rank, shop.progress))
+  // Respec (Muzzy, 2026-10-22): top right, once a level is in anything — every level back at once, all scraps return
+  const doRespec = () => {
+    const next = respec(shop.progress)
+    shop.onChange(next)
+    toast(fill(w.respecDone, { n: Math.max(0, scrapsAt(shop.rank, next)).toLocaleString('en') }))
+  }
+  // (an icon button: the word beside the title broke "UPGRADES" in two on a phone; the word is its tooltip + read-out)
+  const respecButton = ownsAny(shop.progress) && <Button variant="secondary" icon aria-label={w.respecLabel} title={w.respec} onClick={doRespec}>{w.respecIcon}</Button>
+  // (the kit Modal's own parts — Screen + menu Panel + MenuHeader — because Modal doesn't pass a header action yet:
+  // KIT GAP, framework request in SPRINT Notes; then this goes back to <Modal action={…}>)
   return (
-    <Modal title={w.title} onBack={() => screens.pop()} backLabel={w.back}>
-      <Text kind="heading">{fill(w.scraps, { n: scraps.toLocaleString('en') })}</Text>
-      <ScrollArea label={w.list}>
-        <Stack gap="m">
-          {SHOP.map((def) => <UpgradeCard key={def.id} def={def} shop={shop} />)}
-        </Stack>
-      </ScrollArea>
-    </Modal>
+    <Screen dialog label={w.title} grow="down">
+      <Panel depth={2} gap="m" className="kit-modal">
+        <MenuHeader title={w.title} onBack={() => screens.pop()} backLabel={w.back} action={respecButton || undefined} />
+        <Text kind="heading">{fill(w.scraps, { n: scraps.toLocaleString('en') })}</Text>
+        <ScrollArea label={w.list}>
+          <Stack gap="m">
+            {SHOP.map((def) => <UpgradeCard key={def.id} def={def} shop={shop} />)}
+          </Stack>
+        </ScrollArea>
+      </Panel>
+    </Screen>
   )
 }
 
@@ -81,7 +94,7 @@ function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {
           <Row gap="s" justify="between">
             <Text kind="label" data-tag="amount">{amountLine(def, level, max)}</Text>
             <Row gap="s">
-              <Button variant="secondary" icon disabled={level === 0} aria-label={fill(w.takeBackLabel, { name })}
+              <Button variant="danger" icon disabled={level === 0} aria-label={fill(w.takeBackLabel, { name })}
                 onClick={() => onChange(takeBackLevel(progress, def.id))}>{w.takeBack}</Button>
               <Button variant="primary" icon disabled={whyNotBuy(progress, def.id, rank) !== null} aria-label={fill(w.buyLabel, { name })}
                 onClick={() => onChange(buyLevel(progress, def.id, rank))}>{w.buy}</Button>

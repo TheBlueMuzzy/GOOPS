@@ -68,6 +68,22 @@ export function takeBackLevel(p: Progress, id: string, book: UpgradeBook = upgra
   }
 }
 
+/** Has the player put a level into anything? (the shop's Respec button shows only then) */
+export const ownsAny = (p: Progress) => Object.keys(p.owned).some((id) => levelOf(p, id) > 0)
+
+/**
+ * Respec (Muzzy, 2026-10-22): every level taken back at once — the scraps they cost come back (each at its current
+ * price, as takeBackLevel does; an id no longer in the book refunds 1 a level) and every active comes off.
+ */
+export function respec(p: Progress, book: UpgradeBook = upgradeBook): Progress {
+  let refund = 0
+  for (const id of Object.keys(p.owned)) {
+    const def = book.upgrades.find((u) => u.id === id)
+    refund += levelOf(p, id) * (def ? costOf(def) : 1)
+  }
+  return { ...p, scrapsSpent: Math.max(0, p.scrapsSpent - refund), owned: {}, equipped: [] }
+}
+
 /** How many actives can go into a shift at once. */
 export const activeSlots = (t: ProgressionTuning = tuning) => Math.max(1, Math.floor(t.activeSlots))
 
