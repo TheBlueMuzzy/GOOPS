@@ -68,6 +68,12 @@ export function takeBackLevel(p: Progress, id: string, book: UpgradeBook = upgra
   }
 }
 
+/**
+ * Is this upgrade "in use" — its card shows the green border (Muzzy, 2026-10-22: "if there is at least 1 point in
+ * something")? An active can only be equipped from level 1, so its switch adds nothing to the rule.
+ */
+export const isActive = (p: Progress, id: string) => levelOf(p, id) > 0
+
 /** Has the player put a level into anything? (the shop's Respec button shows only then) */
 export const ownsAny = (p: Progress) => Object.keys(p.owned).some((id) => levelOf(p, id) > 0)
 

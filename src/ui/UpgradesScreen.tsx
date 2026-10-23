@@ -41,8 +41,8 @@ export function UpgradesScreen() {
   // (the word, Muzzy 2026-10-22: "Respec, not cycle arrow". On a 360/390 phone it squeezes the kit title into
   // "UPGRAD / ES" until the kit's MenuHeader title fits itself — framework request in SPRINT Notes)
   const respecButton = ownsAny(shop.progress) && <Button variant="secondary" compact aria-label={w.respecLabel} onClick={doRespec}>{w.respec}</Button>
-  // (the kit Modal's own parts — Screen + menu Panel + MenuHeader — because Modal doesn't pass a header action yet:
-  // KIT GAP, framework request in SPRINT Notes; then this goes back to <Modal action={…}>)
+  // (the kit Modal's own parts — Screen + menu Panel + MenuHeader — because Modal doesn't pass a header action yet)
+  // F108: back to <Modal title onBack backLabel headerAction={respecButton}> (UI kit 0.27.0)
   return (
     <Screen dialog label={w.title} grow="down">
       <Panel depth={2} gap="m" className="kit-modal">
@@ -71,6 +71,7 @@ function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {
     const other = swappedOut && SHOP.find((d) => d.id === swappedOut)
     if (other) toast(fill(w.swapped, { name: nameOf(other) }))
   }
+  // F108: <Card title={name} tone={isActive(progress, def.id) ? 'success' : undefined} locked={locked}> (UI kit 0.27.0)
   return (
     <Card title={name}>
       <Text>{items[def.id]?.desc ?? def.desc ?? ''}</Text>
