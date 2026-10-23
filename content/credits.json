@@ -78,40 +78,6 @@
   },
   {
     "paths": [
-      "public/fonts/after_burner_neue/After Burner Neue.ttf",
-      "public/fonts/after_burner_neue/After Burner Neue.png"
-    ],
-    "source": "Muzzy's font library (After Burner Neue - Read Me.txt + PNG kept beside it, as its licence asks)",
-    "author": "daaams (sweeep.fr)",
-    "licence": "Free for personal and commercial use; no modifying or selling the font",
-    "light": "🟢",
-    "url": "http://www.sweeep.fr",
-    "credit": "After Burner Neue by daaams (sweeep.fr)"
-  },
-  {
-    "paths": [
-      "public/fonts/edit_undo/editundo.ttf"
-    ],
-    "source": "Muzzy's font library (editundo.txt kept beside it)",
-    "author": "Brian Kent (Ænigma Fonts)",
-    "licence": "Freeware: personal or commercial use; no selling or altering the font",
-    "light": "🟢",
-    "url": "http://www.aenigmafonts.com/",
-    "credit": "Edit Undo by Brian Kent (Ænigma Fonts)"
-  },
-  {
-    "paths": [
-      "public/fonts/gb_boot/gbb__.ttf"
-    ],
-    "source": "Muzzy's font library (gb_rm1.html readme kept beside it)",
-    "author": "Akihiro Oya (FontFamilyMart / WINNIE*ME)",
-    "licence": "Free to use; commercial use only after contacting the author",
-    "light": "🔴",
-    "url": "",
-    "credit": "G.B.BOOT by Akihiro Oya"
-  },
-  {
-    "paths": [
       "public/fonts/nokia_cellphone/nokiafc22.ttf"
     ],
     "source": "Muzzy's font library (nokiafc22.txt kept beside it)",
@@ -120,17 +86,6 @@
     "light": "🟢",
     "url": "http://www.zehfernando.com",
     "credit": "Nokia Cellphone FC by Zeh Fernando"
-  },
-  {
-    "paths": [
-      "public/fonts/press_start_dx/Press Start DX.ttf"
-    ],
-    "source": "Muzzy's font library (no licence or readme came with it)",
-    "author": "unknown",
-    "licence": "unknown — find its source / ask the author before shipping",
-    "light": "🔴",
-    "url": "",
-    "credit": ""
   },
   {
     "paths": ["public/audio/sfx/sfx_goop_land_01.mp3", "public/audio/sfx/sfx_goop_land_02.mp3", "public/audio/sfx/sfx_goop_land_03.mp3", "public/audio/sfx/sfx_crack_form_01.mp3", "public/audio/sfx/sfx_crack_form_02.mp3", "public/audio/sfx/sfx_crack_seal_01.mp3", "public/audio/sfx/sfx_visor_break_01.mp3", "public/audio/sfx/sfx_tank_rupture_01.mp3", "public/audio/ui/ui_periscope_pull_01.mp3", "public/audio/ui/ui_repair_wrong_01.mp3"],

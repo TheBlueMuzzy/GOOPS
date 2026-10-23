@@ -19,7 +19,8 @@ await new Promise((ok, fail) => {
 })
 
 // One font per role, to see them all at once in the game
-const PICKS = { Title: 'After Burner Neue', Heading: 'Press Start DX', Body: 'Nokia Cellphone FC', Numbers: 'Edit Undo' }
+// (the game ships only the font it uses — Muzzy 2026-10-22 — so the other roles try the kit's own fonts)
+const PICKS = { Title: 'Silkscreen', Heading: 'VT323', Body: 'Nokia Cellphone FC', Numbers: 'Orbitron' }
 
 const problems = []
 const browser = await chromium.launch()
