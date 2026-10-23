@@ -17,7 +17,7 @@ You signed a contract to get off a dying world: free passage to a far-off work c
 | Voice | Where it shows | How it reads | Rule |
 |---|---|---|---|
 | **Management** (the company) | The console's **top monitor** — the CRT screen it already "speaks" through (DOS-style typing, as the machine lessons use) | Clean, cheerful, typed out, corporate. Always "policy", "procedure", "for your comfort". Small slips that suggest they aren't human ("Remember to breathe your mandatory amount of air.") | Never openly cruel. Never explains what the tank is for — or explains it differently every time. |
-| **The Veteran** | A **speaker** — for now a **speech bubble**: square, with a random spiky sine-wave border (Muzzy 2026-10-23; he'll explain the border) | Scratchy, urgent, in fragments, static eats words: "—don't trust the — ── ── they're not—" | Brief and cryptic early; clearer as he trusts you. He's the one who leaves you **scraps** (the upgrade money) — upgrades are his smuggled parts. |
+| **The Veteran** | A **speaker** — for now a **speech bubble**: square, whose outline fizzes like a speech wave while he talks — see **The speaker bubble** below (Muzzy 2026-10-23) | Scratchy, urgent, in fragments, static eats words: "—don't trust the — ── ── they're not—" | Brief and cryptic early; clearer as he trusts you. He's the one who leaves you **scraps** (the upgrade money) — upgrades are his smuggled parts. |
 | **The Goop** | **In your head** — a **blobby speech bubble** (Muzzy 2026-10-23), the same one for telepathy and, at the end, for its real mouths; it drifts up inside the periscope view, over the tank | **Gets better at talking over time** (Muzzy 2026-10-23): feelings and broken sounds first ("…warm…", "…tight…", "…nnn…"), then single words, then broken sentences, then whole sentences and names — and by the end it talks out loud through its mouths | Only you can hear it. Management never mentions it — until very late. |
 
 ## G.O.O.P.S. — the acronym nobody agrees on
@@ -81,7 +81,8 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | Rank 20 | Multi-colour pieces | "Increased goop clumping is normal and expected." | The goop has started **holding together** (each other's hands). |
 | Rank 30 | Cracks spread | "Hairline fractures are within policy tolerance. You will be fined for them." | The goop is pushing harder — it's waking up. The tank is older than anyone says. |
 | Rank 40 | Wild goop (seals any crack) | "Report any goop that seems helpful. Goop is not helpful." | Goop that has heard you **is helping you**. |
-| Rank 31: galaxy goop | One clump in the tank: black with shimmering stars (a star shader) | "Residue. Do not engage." | **It's the Veteran** (Muzzy 2026-10-23: "maybe we make the veteran galaxy goop — black, but with a shimmering star shader"). In play (Muzzy: "Love this"): it never merges or pops (the laser passes through: "ow"), drifts toward the crack in most danger and sits on it, sealing it slowly — he's still helping. Not the same as **black goop**, the 7th normal colour (rank 50 in the colour schedule, `content/tuning/shift.json`). |
+| Rank 31: white goop | One clump in the tank, plain white, with his squint | "Residue. Do not engage." | **It's the Veteran** (Muzzy 2026-10-23: first "galaxy goop", then: "the veteran being white goop might be really brilliant then. he'll stand out"). In play: it never merges or pops (the laser passes through: "ow"), drifts toward the crack in most danger and sits on it, sealing it slowly — he's still helping. ❓ White is also the 6th normal colour, joining at rank 30 (`progression.md`) — see the open question below. |
+| Rank 50: the final shift | **All the goop is galaxy black** — black with shimmering stars (a star shader) | — | The final boss of a level (Muzzy 2026-10-23: "the last game lvl 50 - our final boss of a level - is all galaxy black"). Black, the 7th colour, arrives here and only here. |
 
 ## The arc, rank by rank
 | Ranks | Title band (❓ names) | Beats | Voices |
@@ -91,32 +92,42 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | **5–9** | Tank Associate | **The speaker crackles at rank 5** — the Veteran's first words, and the upgrade store opens: "Found some scraps. Left 'em in your panel. Don't tell the screen." | + Veteran (fragments). |
 | **10–19** | Goop Technician → Senior | Eyes appear. Whispers become words ("…don't…", "…heavy…"). The Veteran: "Don't trust everything the screen says." Management "reminds you" there's no such thing as voices. | All three. |
 | **20–29** | Pressure Specialist → Lead | Fines go up. Goop holds together. The Veteran tells the station's history: how many operators there have been (a lot), where they "retired" to. The goop says its first name. | All three; Veteran clearer. |
-| **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. **The Veteran gets caught at 30** and the speaker goes dead; you're the veteran now. **The goop takes over at once** (a moment every rank); the galaxy goop (him) is in the tank from 31 and speaks in your head at ~35. You find your own name in a list of "pending retirements". | Goop sentences; the galaxy goop. |
+| **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. **The Veteran gets caught at 30** and the speaker goes dead; you're the veteran now. **The goop takes over at once** (a moment every rank); the white goop (him) is in the tank from 31 and speaks in your head at ~35. You find your own name in a list of "pending retirements". | Goop sentences; the white goop. |
 | **40–49** | Assistant to the Department Head → Acting Deputy (Interim) | The full picture: the goop is people; the pressure is Management's power; the debt is how they keep operators coming. **The speaker crackles again — the Veteran, from inside the tank** (caught and gooped at 30; see The Veteran's arc). Management slips: it isn't human. | Everything. Mouths open. |
 | **50** | **Department Head, G.O.O.P.S.** | The takeover — see **The ending**. | — |
 
 ## The Veteran's arc — he gets caught (Muzzy 2026-10-23)
 Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned into goop at some later level … when we become high enough level, we don't need a veteran anymore… we're the veteran. but I don't want to lose touch with the speaker … we can lose touch with it much later."
-**Pacing (Muzzy 2026-10-23: "why rank 32? 33–39 = 7 levels of nothing … the goop themselves [must] ramp up at the time the veteran is 'retired' so we don't have a weird gap"; "the black goop IS the veteran" → galaxy goop, so it isn't mixed up with the black colour).** Rule: **every rank-up has exactly one story moment**, and the voice that carries it hands over with no gap:
+**Pacing (Muzzy 2026-10-23: "why rank 32? 33–39 = 7 levels of nothing … the goop themselves [must] ramp up at the time the veteran is 'retired' so we don't have a weird gap"; "the black goop IS the veteran" → galaxy goop → then white goop, so he stands out; the final shift is all galaxy black).** Rule: **every rank-up has exactly one story moment**, and the voice that carries it hands over with no gap:
 
 | Ranks | Who carries the rank-up moment | In-shift (no tap) |
 |---|---|---|
 | 0–4 | Management (monitor) | — · first whisper at 3 |
 | 5–29 | **The Veteran** (speaker), one line every rank — 25 lines, cryptic → clear | whispers grow: feelings → words |
 | **30** | **Caught.** The rank-30 moment IS his capture (same rank as the cracks-spread twist — the crackdown after his leak) | — |
-| 31–39 | **The goop** (in your head) takes over at once: one moment every rank, broken sentences → whole sentences. The **galaxy goop** is in the tank from 31 — it's him | the galaxy goop's eyes follow you |
-| ~35 | **The galaxy goop speaks in your head** — his voice, from inside, learning to talk like goop | — |
+| 31–39 | **The goop** (in your head) takes over at once: one moment every rank, broken sentences → whole sentences. The **white goop** is in the tank from 31 — it's him | the white goop's eyes follow you |
+| ~35 | **The white goop speaks in your head** — his voice, from inside, learning to talk like goop | — |
 | 40–49 | **The speaker crackles again**: he's reached its wire through the cracks and teaches the goop to use it — the speaker carries him + the goop, the monitor carries Management slipping | mouths open |
 | 50 | The ending — you beat the game | — |
 
 - **5–29:** the speaker crackles every rank-up; he leaves scraps and warnings, clearer as he trusts you.
 - **30: caught.** Mid-sentence the monitor cuts in: "UNAUTHORISED BROADCAST LOCATED. OPERATOR #0001 HAS BEEN SCHEDULED FOR RETIREMENT." The speaker goes dead. That shift's report has a fine for *you*: "Association with a retired employee". From now on you salvage your own scraps — you're the veteran now (report words change; the economy doesn't).
-- **31: the galaxy goop.** A single clump in the tank, black with shimmering stars, with his squint. **It IS the Veteran** (Muzzy). In play: never merges or pops, drifts to the most dangerous crack and slowly seals it (the "every difficulty" table).
+- **31: the white goop.** A single clump in the tank, plain white, with his squint — he stands out (Muzzy). **It IS the Veteran** (Muzzy). In play: never merges or pops, drifts to the most dangerous crack and slowly seals it (the "every difficulty" table).
 - **31–39: the goop ramps up** to fill his place: a goop moment every rank-up, getting better at talking each time.
-- **~35:** the galaxy goop's first words in your head — him, still him.
+- **~35:** the white goop's first words in your head — him, still him.
 - **40: the speaker crackles again** — he got to its wire through the cracks (that's what cracks are for, he says). He teaches the rest of the goop to use it.
 - **40–49:** the speaker is shared by him and the goop, breaking up more as the pressure rises.
 - **The ending:** when the tank opens, the speaker gives one last clear line in his voice, then goes quiet for good — that's where you finally lose touch with it.
+
+## The speaker bubble (the Veteran) — Muzzy 2026-10-23, likely a framework piece
+Muzzy: "it has an outline - it's a static outline, doesn't move. then while the text is 'typing out' in the speech bubble, the outline 'frizzes' like a spikey signwave, and does small scale pops to mimic words or syllables … a spikey sign wave that acts like a speech wave to indicate speaker static and talking." Reference strip: `.planning/design/refs/speaker-bubble-strip.png`.
+- **Opens:** the bubble grows from small to full size, tail (the arrow) included.
+- **Then the text types out.** While it types, part of the outline becomes a **spiky sine wave** — a speech wave. It fluctuates with the letters and does **small scale pops** for words / syllables.
+- **Pauses:** between sentences, at "…" and after some words, the wave **relaxes** back to the flat outline.
+- **Done, waiting for you to confirm:** the outline now and then **squelches** — a burst of static wave — to say it's a speaker with a shoddy connection.
+- **How much of the border:** his strip shows the wave on a stretch of the top edge; "it could also be the entirety of the bubble" → a knob (how much of the outline fizzes).
+- **The other two voices:** the goop gets a **blobby** bubble (telepathy and, later, mouths); Management speaks on its CRT monitor.
+- **Where it's built:** a general "talking bubble" piece (open / type / talk wave / pauses / idle squelch) belongs in the framework UI kit, so other games get it; Goops gives it the spiky-wave style. Sketch it first in Goops (S9), then hand the picks to the framework.
 
 ## How story moments play (Muzzy 2026-10-23: "short cut scenes — just text and attention calling in the console/tank, not actual cut scenes")
 - A story moment = text in one of the three places (monitor · speaker subtitles · words in the tank) plus **attention calling** on the console or tank: a light blinks, the monitor flickers, the speaker grille buzzes, eyes in the goop all turn to look, the visor dims for a beat. The same spotlight/outline the lessons already use.
