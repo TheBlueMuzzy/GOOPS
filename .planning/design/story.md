@@ -209,6 +209,10 @@ Muzzy: "it has an outline - it's a static outline, doesn't move. then while the 
 - **Approved in sketch S9** (Muzzy 2026-10-23: "approved"): `.planning/research/sketches/speaker-bubble.html`, values in `.planning/research/speaker-bubble/picks.json` — the wave runs along the first third of the outline from the top-left (0 → 0.34), spikes ~19 px apart and up to 51 px tall, fairly sharp (roundness 3 of 10), uneven spacing (0.45); 2.5% outline pop per syllable (text stays still); 22 letters/s; 380 ms rest at sentence ends; a squelch every 2.5 s ± 1.5 s while waiting. Sent to the framework as a "talking bubble" kit request.
 - **Where it's built:** a general "talking bubble" piece (open / type / talk wave / pauses / idle squelch) belongs in the framework UI kit, so other games get it; Goops gives it the spiky-wave style. Sketch it first in Goops (S9), then hand the picks to the framework.
 
+## Story runs on its own (Muzzy 2026-10-23: "the story continues throughout, so can you do the story without all the other elements…? I think so.")
+- Yes. A story moment is words plus an attention call on something that already exists (a light, the monitor, the speaker). When its Look needs a piece that isn't built yet (eyes at 10 = F62, the white goop = F63, mouths at 40), the moment plays its words only, and the look switches on when that piece lands. So the story can be built rank by rank, ahead of the twists.
+- What it does need: the talking bubble (F61, being built in the framework now) for the speaker and the goop.
+
 ## How story moments play (Muzzy 2026-10-23: "short cut scenes — just text and attention calling in the console/tank, not actual cut scenes")
 - A story moment = text in one of the three places (monitor · speaker subtitles · words in the tank) plus **attention calling** on the console or tank: a light blinks, the monitor flickers, the speaker grille buzzes, eyes in the goop all turn to look, the visor dims for a beat. The same spotlight/outline the lessons already use.
 - **Not skippable — short instead** (Muzzy 2026-10-23: "not skippable. if they're short. they'll be over soon."): a few lines, tap to move on; never mid-shift unless it's a whisper that needs no tap.
@@ -254,7 +258,7 @@ How it works:
 - **The end titles** (Muzzy 2026-10-23: "former employee is funny. but I think you get that at lvl 0 of the next game. but when you get to 50, maybe if you lose lvl 50, you get One Of Us, and it's like that until you actually beat it. then you get The Savior of Goopkind"):
   - **Lose the final shift → One Of Us.** It replaces Acting Deputy on your badge and stays until you beat it (Management's interim title is gone; the goop has claimed you).
   - **Beat it → The Savior of Goopkind**, written on your badge by the goop.
-  - **The next career's rank 0 → Former Employee** instead of Probationary Intern. (With ending B the next career is a new operator at the empty console, so this title says the company hired you back. A funny twist, or a contradiction? Decide at F65.)
+  - **The next career's rank 0 → Former Employee** instead of Probationary Intern — it's you, hired back (Muzzy 2026-10-23: "they erase your memories.... idk? who cares about perfect continuity. this is a silly game"). It lasts one rank. The first monitor line slips: "WELCOME BA— …WELCOME, OPERATOR #4471."
 - **Every title change lands on a story beat**, so a new title is a moment, not a number.
 
 | Ranks | Title | The beat it lands on |
