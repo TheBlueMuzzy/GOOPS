@@ -38,7 +38,7 @@ try {
 
   // 1. opens on the console
   check('opens on the console', await page.locator('.kit-art-stage').count() === 1 && await grip.count() === 1)
-  check('fresh player: rank 0 on the meter', (await meterText()) === 'Operator rank 0 · 0 / 3,500 XP', await meterText())
+  check('fresh player: rank 0 on the meter', (await meterText()) === `${en.console.rank} 0 · 0 / 3,500 ${en.console.xp}`, await meterText())
   check('the repair panels read out as unavailable', await page.getByRole('img', { name: en.console.unavailable.replace('{name}', en.console.laser) }).count() === 1)
 
   // 2. a short drag springs back; a real drag past the threshold pulls it
@@ -73,7 +73,7 @@ try {
   await page.waitForTimeout(250)
   await page.screenshot({ path: `${OUT}/day-1-back.png` })
   await page.waitForTimeout(2200) // slide in + the meter filling
-  const want = `Operator rank 0 · ${saved.totalXp.toLocaleString('en')} / 3,500 XP`
+  const want = `${en.console.rank} 0 · ${saved.totalXp.toLocaleString('en')} / 3,500 ${en.console.xp}`
   check('back on the console, the meter shows the new XP', (await meterText()) === want, `${await meterText()} (want ${want})`)
   check('the monitor still says what to do (Muzzy: the report does the XP)', await page.locator('.crt-read', { hasText: 'Pull down the periscope' }).count() === 1) // (the monitor's whole words; the typed copy is aria-hidden)
   await page.screenshot({ path: `${OUT}/day-2-xp.png` })
