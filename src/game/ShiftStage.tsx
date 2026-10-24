@@ -188,6 +188,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       // the x-ray (F36): the goo over a covered crack is drawn see-through, round the box the tank view drew
       const X = cracksLook.xray
       view.xray = { cells: s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), pad: X.pad + X.width, alpha: X.gooAlpha }
+      view.still = still // (reduce motion: the zap has no swell and no spray, F67)
       gooRef.current?.frame(s, events, view, active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`

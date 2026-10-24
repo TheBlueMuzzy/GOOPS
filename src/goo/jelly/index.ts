@@ -14,6 +14,7 @@ import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooCon
 import { XRAY_MAX, XRAY_UNIFORMS, setXray } from '../shared/xray'
 import { buildPoints, traceLoops } from './outline'
 import { BLUR_FS, FINAL_FS, MASK_FS, MASK_VS } from './shaders'
+import { sprayDrops, sprayDue, suckIn, zapEnd, zapFade, zapHeat, zapLook, type ZapLook } from '../shared/zap'
 
 // The knobs as the file has them right now (with the Dev Kit's latest edit)
 export const jellyDefaults = (): Knobs => parseKnobs(jellyFile)
@@ -62,6 +63,22 @@ interface Body {
   from: Set<number>
   landed: number
   stuck: Set<number> | null
+  zap: Zap | null // a zapped ('dying') body's timeline (F67)
+}
+
+// A zapped jelly (F67, the sketch's startZap): its outline at the moment of the zap (rx, ry), each point's distance
+// from the laser point (0 nearest … 1 farthest), where the laser point is (view cells), and how far it's got.
+interface Zap {
+  lx: number
+  ly: number
+  c0x: number
+  c0y: number
+  rx: Float32Array
+  ry: Float32Array
+  dist: Float32Array
+  sprayed: boolean
+  hot: number // 0 … 1 white-hot
+  sc: number // its size now (swell × what's left after the suck-in), for the highlight
 }
 
 interface Strand {
@@ -85,6 +102,8 @@ interface Drop {
   life: number
   life0: number
   color: number
+  g?: number // its own gravity (cells / s²): the zap's spray droplets (F67); others fall with the goo's gravity
+  bounce?: number // bounces off the tank floor keeping this much of its speed (the spray, as v1); others drip away
 }
 
 interface DrawItem {
@@ -96,6 +115,7 @@ interface DrawItem {
   line: number
   fillOn: number
   ready: number
+  hot: number // F67: 0 … 1 white-hot (a zapped jelly)
 }
 
 const C0: number[][] = [[0, 0, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
@@ -139,6 +159,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   let spin = 0
   let fills = new Map<number, FillInfo>()
   let time = 0
+  let zapWhite = 0 // zap.json whiteHot, as of this frame (the final pass's uWhite)
   let S: ShiftState | null = null
 
   function reset(state: ShiftState) {
@@ -174,7 +195,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       hx: new Float32Array(n), hy: new Float32Array(n), x: new Float32Array(n), y: new Float32Array(n),
       vx: new Float32Array(n), vy: new Float32Array(n), t: 0, alpha: 1, fa: 0, fcx: 0, fcy: 0, rcx: 0, rcy: 0,
       hlCell: 0, hlX: 0, hlY: 0, hlW: 0, hlH: 0, hlRX: 0, hlRY: 0, cellIdx: [], centreCol: 0, turns: 0, restMeanY: 0,
-      ring: false, buildCam: 0, from: new Set(), landed: -1, stuck: null,
+      ring: false, buildCam: 0, from: new Set(), landed: -1, stuck: null, zap: null,
     }
     // the one highlight: on the top-left cell, stretched along its row (up to 3 cells)
     let tl = 0
@@ -354,9 +375,10 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     return y * W + ((gx(i) + dx + W) % W)
   }
 
-  // ---------------- POP (placeholder until the laser "explode/harden" look is designed) ----------------
-  // Quiet drain: the body's home springs let go, it swells a touch, then shrinks away and fades (popMs). No droplets.
-  function popCells(cells: number[]) {
+  // ---------------- THE ZAP (F67, the approved sketch: src/goo/shared/zap.ts has the timeline) ----------------
+  // The zapped jelly leaves the grid: it heats (white-hot + swell), then every outline point slides into the laser
+  // point, nearest first, fading at the end; the spray rides the drops. `at` = where the zap hit (tank cells).
+  function popCells(cells: number[], at: { x: number; y: number } | undefined, Z: ZapLook) {
     const hit = new Set<number>()
     for (const c of cells) if (cellBody[c] >= 0) hit.add(cellBody[c])
     for (const id of hit) {
@@ -367,7 +389,34 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       ;[B.hlRX, B.hlRY] = highlightRest(B)
       B.kind = 'dying'
       B.t = 0
-      kick(B, 'radial', 1.5)
+      // its outline as it sat last frame (the homes, view cells — placed with last frame's camera)
+      const rx = Float32Array.from(B.hx)
+      const ry = Float32Array.from(B.hy)
+      let c0x = 0
+      let c0y = 0
+      for (let i = 0; i < B.n; i++) {
+        c0x += rx[i]
+        c0y += ry[i]
+      }
+      c0x /= B.n
+      c0y /= B.n
+      // the laser point in the same view cells, on the copy of the cylinder nearest this jelly (no tap point: its middle)
+      let lx = c0x
+      let ly = c0y
+      if (at) {
+        const x0 = at.x - 0.5 - lastCamera
+        lx = x0 + Math.round((c0x - x0) / W) * W
+        ly = at.y
+      }
+      const dist = new Float32Array(B.n)
+      let dmax = 1e-3
+      for (let i = 0; i < B.n; i++) {
+        dist[i] = Math.hypot(rx[i] - lx, ry[i] - ly)
+        dmax = Math.max(dmax, dist[i])
+      }
+      for (let i = 0; i < B.n; i++) dist[i] /= dmax
+      B.zap = { lx, ly, c0x, c0y, rx, ry, dist, sprayed: false, hot: 0, sc: 1 }
+      kick(B, 'radial', 1.5 * Math.min(1, Z.swell * 5)) // (reduce motion: no swell, so no puff either)
       dying.push(B)
     }
     for (const c of cells) {
@@ -380,8 +429,30 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     }
   }
 
+  // where each point of a zapped jelly is pulled to now (the sketch's stepZap): swollen by the heat, then into the laser
+  // point nearest-first; its look (white-hot, fade, size) follows
+  function zapHomes(B: Body, Z: ZapLook) {
+    const z = B.zap
+    if (!z) return
+    const heat = zapHeat(Z, B.t)
+    const grow = 1 + Z.swell * heat
+    let em = 0
+    for (let i = 0; i < B.n; i++) {
+      const rx = z.c0x + (z.rx[i] - z.c0x) * grow
+      const ry = z.c0y + (z.ry[i] - z.c0y) * grow
+      const e = suckIn(Z, B.t, z.dist[i])
+      B.hx[i] = z.lx + (rx - z.lx) * (1 - e)
+      B.hy[i] = z.ly + (ry - z.ly) * (1 - e)
+      em += e
+    }
+    em /= B.n
+    z.hot = heat
+    z.sc = grow * (1 - em)
+    B.alpha = zapFade(em)
+  }
+
   // ---------------- events ----------------
-  function handle(events: ShiftEvent[], state: ShiftState) {
+  function handle(events: ShiftEvent[], state: ShiftState, Z: ZapLook) {
     // events that read state.piece only make sense if no lock/spawn follows them in this batch (the piece changed)
     let lastSwap = -1
     events.forEach((e, i) => {
@@ -439,7 +510,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
           break
         }
         case 'pop':
-          popCells(e.cells)
+          popCells(e.cells, e.at, Z)
           break
         case 'reject': // a zap on goop that can't pop yet pokes it: the jelly presses in and springs back (Muzzy 2026-10-18)
           if (e.cell !== undefined && K.poke) {
@@ -803,7 +874,9 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     lastCamera = camera
     camera = view.camera
     spin = state.spin
-    handle(events, state)
+    const Z = zapLook(view.still)
+    zapWhite = Z.whiteHot
+    handle(events, state, Z)
     landedTick++
     const g = K.gravity * 10 // cells / s²
     for (let i = 0; i < W * H; i++) {
@@ -872,6 +945,12 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       for (const B of dying) {
         for (let i = 0; i < B.n; i++) B.x[i] -= dc
         B.hlRX -= dc
+        const z = B.zap
+        if (z) {
+          for (let i = 0; i < B.n; i++) z.rx[i] -= dc
+          z.lx -= dc
+          z.c0x -= dc
+        }
       }
       for (const d of drops) d.x -= dc
     }
@@ -880,7 +959,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     const ks = K.stiffness
     const kh = K.stiffness * K.home
     const c = K.viscosity
-    const DRAIN = Math.max(0.05, K.popMs / 1000)
+    for (const B of dying) zapHomes(B, Z)
     const steps = Math.max(1, Math.ceil(dt * 120))
     const h = dt / steps
     for (let s = 0; s < steps; s++) {
@@ -891,26 +970,31 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       }
       for (const B of bodies) stepBody(B, h, ks, kh, c, 1)
       for (const st of strands) strandPull(st, h)
-      for (const B of dying) {
-        const t = B.t / DRAIN
-        const sc = t < 0.15 ? 1 + (0.05 * t) / 0.15 : Math.max(0.02, 1.05 * (1 - (t - 0.15) / 0.85) ** 1.5)
-        for (let i = 0; i < B.n; i++) B.vy[i] += 4 * h // drains downward a little
-        stepBody(B, h, ks * 0.8, 0, c, sc)
-      }
+      for (const B of dying) stepBody(B, h, ks * 0.5, ks * 0.9, c, 1) // (the sketch's springs for zapped goop)
     }
     cohesion(dt)
     stickyTouch()
     updateStrands(dt)
     for (const B of dying) {
       B.t += dt
-      B.alpha = 1 - Math.max(0, (B.t / DRAIN - 0.35) / 0.65) ** 1.3
+      const z = B.zap!
+      if (!z.sprayed && sprayDue(Z, B.t)) {
+        z.sprayed = true // v1's spray, through the drops (so the droplets are goo, and bend with the visor)
+        for (const d of sprayDrops(Z, B.x, B.y))
+          drops.push({ x: d.x, y: d.y, vx: d.vx, vy: d.vy, r0: d.r, life: d.life, life0: Z.dropLife, color: B.color, g: d.g, bounce: 0.3 })
+      }
     }
-    dying = dying.filter((B) => B.t < DRAIN)
+    const end = zapEnd(Z)
+    dying = dying.filter((B) => B.t < end || !B.zap!.sprayed)
     for (const d of drops) {
-      d.vy += g * dt
+      d.vy += (d.g ?? g) * dt
       d.x += d.vx * dt
       d.y += d.vy * dt
       d.life -= dt
+      if (d.bounce !== undefined && d.y + d.r0 > H) { // the tank floor (v1: bounces back up at 30% speed)
+        d.y = H - d.r0
+        if (d.vy > 0) d.vy *= -d.bounce
+      }
     }
     drops = drops.filter((d) => d.life > 0 && d.y < H + 1)
     fills = groupFillLines(state)
@@ -924,11 +1008,11 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   }
 
   // ---------------- WebGL ----------------
-  const PM: Program = makeProgram(gl, MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl', 'uLine', 'uFillOn', 'uReady', 'uAlpha'])
+  const PM: Program = makeProgram(gl, MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl', 'uLine', 'uFillOn', 'uReady', 'uAlpha', 'uHot'])
   const PB: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uSize', 'uStep', 'uSigma', 'uR'])
   const PF: Program = makeProgram(gl, FULLSCREEN_VS, FINAL_FS, [
     'uS0', 'uS1', 'uS2', 'uQ0', 'uQ1', 'uQ2', 'uM1', 'uRes', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet',
-    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', ...XRAY_UNIFORMS,
+    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS,
   ])
   const xrayBuf = new Float32Array(XRAY_MAX * 4)
   const vaoMask = gl.createVertexArray()!
@@ -1025,14 +1109,16 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       pushV(side[i + 1][0], side[i + 1][1], 0, 0)
     }
   }
-  function hlQuad(B: Body, DRAIN: number) {
+  function hlQuad(B: Body) {
     // the highlight rides the body's fitted rotation + centroid, so it jiggles with it
+    // (a zapped jelly's shrinks with it, around where its middle was: the sketch's hlQuad)
     const [ax, ay] = highlightRest(B)
     const ca = Math.cos(B.fa)
     const sa = Math.sin(B.fa)
-    const qx = ax - B.rcx
-    const qy = ay - B.rcy
-    const k = B.kind === 'dying' ? Math.max(0.05, B.t < DRAIN * 0.15 ? 1 : 1 - (B.t / DRAIN - 0.15) / 0.85) : 1
+    const z = B.kind === 'dying' ? B.zap : null
+    const k = z ? Math.max(0.05, z.sc) : 1
+    const qx = ax - (z ? z.c0x : B.rcx)
+    const qy = ay - (z ? z.c0y : B.rcy)
     const cx = B.fcx + (ca * qx - sa * qy) * k
     const cy = B.fcy + (sa * qx + ca * qy) * k
     const rot = B.fa - 0.18
@@ -1063,7 +1149,6 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   function buildGeometry(clipL: number, clipR: number): DrawItem[] {
     vn = 0
     const items: DrawItem[] = []
-    const DRAIN = Math.max(0.05, K.popMs / 1000)
     const onScreen = (B: Body) => {
       let x0 = 1e9
       let x1 = -1e9
@@ -1084,12 +1169,12 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       fanBody(B)
       const fan: [number, number] = [s, mark() - s]
       s = mark()
-      hlQuad(B, DRAIN)
+      hlQuad(B)
       const hl: [number, number] = [s, mark() - s]
       const f = B.kind === 'grid' ? fills.get(B.groupId) : undefined
       const filling = !!f && f.fill < 0.999
       const line = f ? f.line + (B.fcy - B.restMeanY) : 0
-      items.push({ color: B.color, alpha, fan, hl, cover: cover(bb[0], bb[1], bb[2], bb[3]), line, fillOn: filling ? 1 : 0, ready: f && f.ready ? 1 : 0 })
+      items.push({ color: B.color, alpha, fan, hl, cover: cover(bb[0], bb[1], bb[2], bb[3]), line, fillOn: filling ? 1 : 0, ready: f && f.ready ? 1 : 0, hot: B.zap?.hot ?? 0 })
     }
     for (const B of bodies) add(B, 1)
     if (pieceBody) add(pieceBody, 1)
@@ -1101,7 +1186,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       for (const st of strands) if (st.color === c) fanStrand(st)
       if (mark() === s) continue
       const fan: [number, number] = [s, mark() - s]
-      items.push({ color: c, alpha: 1, fan, hl: [0, 0], cover: cover(-W, -10, W, H + 10), line: 0, fillOn: 0, ready: 0 })
+      items.push({ color: c, alpha: 1, fan, hl: [0, 0], cover: cover(-W, -10, W, H + 10), line: 0, fillOn: 0, ready: 0, hot: 0 })
     }
     return items
   }
@@ -1132,6 +1217,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     gl.uniform1f(PM.u.uLine, it.line)
     gl.uniform1f(PM.u.uFillOn, it.fillOn)
     gl.uniform1f(PM.u.uReady, it.ready)
+    gl.uniform1f(PM.u.uHot, it.hot)
     gl.drawArrays(gl.TRIANGLES, it.cover[0], it.cover[1])
   }
 
@@ -1213,6 +1299,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     gl.uniform1f(PF.u.uClipR, clipR)
     gl.uniform1f(PF.u.uClipB, state.height)
     gl.uniform3fv(PF.u.uCols, cols)
+    gl.uniform1f(PF.u.uWhite, zapWhite) // F67: how far toward white a zapped jelly turns
     setXray(gl, PF.u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)

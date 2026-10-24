@@ -1,6 +1,7 @@
 // Jelly shaders (ported from lab-L4-jelly.html). Passes:
 // 1) mask (half res): each body's outline filled through the stencil (nonzero winding) into its colour channel.
-//    tex0 = colours 1-4, tex1.rgb = colours 5-7, tex1.a = the one highlight per body, tex2 = r unfilled / g ready.
+//    tex0 = colours 1-4, tex1.rgb = colours 5-7, tex1.a = the one highlight per body, tex2 = r unfilled / g ready /
+//    b white-hot (a zapped jelly, F67).
 // 2) small blur (half res): anti-aliased edge + rim bevel   3) big blur (quarter res): body thickness = the dome
 // 4) final: strongest colour wins (clean seams), glossy translucent jelly, written as premultiplied colour over the
 //    TRANSPARENT canvas (the tank underneath is the lead's 2D canvas).
@@ -12,14 +13,14 @@ void main(){ vec2 px = uOrigin + aPos.xy * uCell; vUv = aPos.zw;
   gl_Position = vec4(px.x / uCover.x * 2.0 - 1.0, 1.0 - px.y / uCover.y * 2.0, 0.0, 1.0); }`
 
 export const MASK_FS = `#version 300 es
-precision mediump float; in vec2 vUv; uniform int uMode; uniform vec4 uC0, uC1; uniform float uHl, uLine, uFillOn, uReady, uAlpha;
+precision mediump float; in vec2 vUv; uniform int uMode; uniform vec4 uC0, uC1; uniform float uHl, uLine, uFillOn, uReady, uAlpha, uHot;
 layout(location=0) out vec4 o0; layout(location=1) out vec4 o1; layout(location=2) out vec4 o2;
 void main(){
   if (uMode == 2) { float r = length(vUv); float e = (1.0 - smoothstep(0.35, 1.0, r)); o0 = vec4(0.0); o1 = vec4(0.0, 0.0, 0.0, e * e * uHl); o2 = vec4(0.0); }
   else {
     o0 = uC0 * uAlpha; o1 = vec4(uC1.rgb * uAlpha, 0.0);
     float unfilled = uFillOn * (1.0 - smoothstep(uLine - 0.06, uLine + 0.06, vUv.y)); // above the fill level (y down)
-    o2 = vec4(unfilled, uReady, 0.0, 0.0) * uAlpha;
+    o2 = vec4(unfilled, uReady, uHot, 0.0) * uAlpha;
   }
 }`
 
@@ -37,7 +38,7 @@ void main(){
 export const FINAL_FS = `#version 300 es
 precision highp float;
 uniform sampler2D uS0, uS1, uS2, uQ0, uQ1, uQ2, uM1;
-uniform vec2 uRes, uOrigin, uQTex; uniform float uCell, uTime, uTrans, uWet, uUnA, uUnDim, uGlow, uPulse, uClipL, uClipR, uClipB;
+uniform vec2 uRes, uOrigin, uQTex; uniform float uCell, uTime, uTrans, uWet, uUnA, uUnDim, uGlow, uPulse, uClipL, uClipR, uClipB, uWhite;
 uniform vec3 uCols[8];
 out vec4 outColor;
 ${XRAY_GLSL}
@@ -111,6 +112,11 @@ void main(){
     hl *= 1.0 - 0.6 * u;
     // ready: a gentle pulse inside the body
     body += base * uGlow * rd * (0.25 + 0.75 * pulse) * 0.8;
+    // zapped (F67, the sketch's white-hot): lit from inside, toward white by uWhite, solid while it burns
+    float rh = clamp(s2.b / max(f, 0.05), 0.0, 1.0) * clamp(uWhite * 3.0, 0.0, 1.0);
+    vec3 hotCol = mix(base, vec3(1.0), uWhite) * (1.0 + 0.3 * uWhite) * (0.7 + 0.35 * diff) * (1.0 - 0.25 * rim);
+    body = mix(body, hotCol, rh);
+    op = mix(op, 1.0, rh);
     vec3 col = a * ((1.0 - op) * base * 0.12 + op * body + vec3(spec + hl));
     res = over(vec4(col, a * op), res);
   }
