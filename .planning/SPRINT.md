@@ -1,5 +1,5 @@
 # Sprint 15 — the story starts: ranks 0–9
-Started 2026-10-24 · Milestone M5 Beta · Features: F35
+Started 2026-10-24 · Milestone M5 Beta · Features: F35, F68
 What changes for Muzzy: each rank-up from 0 to 9 plays its short story moment back at the console — Management types on the monitor (0–4), then the Veteran talks in his spiky bubble over the same monitor area (5–9); your rank title shows on the meter and the payday's rank-up line; the first whispers drift up in the tank (3, 8–9). Stays the same: shifts, balance, the payslip, the tutorial lessons. Moments are short, tap to move on, once per device.
 
 ## F35 🎮 Story moments + ranks 0–9
@@ -14,6 +14,17 @@ Check: e2e/story.mjs plays every moment 0–9 (right voice, right words, once on
 - [x] 🤖 6. In-shift whispers at rank 3 and 8+ (a plain bubble in the tank, gone by itself, no tap) — src/game/Whisper.tsx
 - [x] 🤖 7. e2e/story.mjs: every moment 0–9, shots at every portrait size; GDD updated — e2e/story.mjs
 - [ ] 🙋 8. Muzzy plays ranks 0–9 (?rank=N) and says how the moments feel — content/story/moments.json
+
+## F68 🎮 First-day touches (pulled in 2026-10-24 — Muzzy: "run f68 auto")
+Done when: poking goop the lesson won't let you zap jiggles it (squash + sound) just like in a shift; a plain-word message at the stack says when the wrong colour covers an open crack ("pop it to make room for the right colour"), with a cooldown, words in en.json, timing in content/tuning/messages.json; v1's three tutorial docs audited against first-day.json — every missing touch listed in research/tutorial.md, the small ones built, the bigger ones in ROADMAP Ideas; first-day still passes; screenshots at every portrait size.
+why: the first day should answer every poke — a refusal that feels like nothing reads as "broken"; the wrong-colour cover is the most confusing moment for a new player.
+Check: unit test (refused lesson zap still sends the reject cell) · e2e/first-day.mjs (jiggle on a refused zap, the wrong-colour message) · e2e/poke.mjs · check:full
+- [ ] 🤖 1. A zap the lesson refuses still jiggles + plays the reject sound: pop() gives the cell before the zapColors refusal; unit test — src/engine/shift.ts
+- [ ] 🤖 2. Wrong-colour hint at the stack: when goop of the wrong colour first covers an open crack, a plain-word message (cooldown, quiet during lessons that already teach it — the redX step) — src/game/messages.ts
+- [ ] 🤖 3. Audit v1's tutorial (Tutorial.md, Tutorial2.md, Tutorial3.md) against the first day as built: a table of touches (kept / missing / changed on purpose) — .planning/research/tutorial.md
+- [ ] 🤖 4. Build the audit's small missing touches (words, a jiggle, a highlight — no new steps without Muzzy); bigger ones → ROADMAP Ideas — content/lessons/first-day.json
+- [ ] 🤖 5. e2e: the refused-zap jiggle and the wrong-colour message, shots at every portrait size — e2e/first-day.mjs
+- [ ] 🙋 6. Muzzy plays the first day (fresh save) and says what still feels missing — content/lessons/first-day.json
 
 ## Notes
 - Plan OK (Muzzy 2026-10-24: "build"). Speaker placement (Muzzy): "his messages show up in the same area where the company's messages show up, but his in his cool speechbubble. and it can be 'interrupted' by disappearing and the company talks through the monitor at the top. this will work well. I can do art later." → no separate speaker grille; the Veteran's bubble points at the monitor area.

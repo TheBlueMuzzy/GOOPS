@@ -1,9 +1,9 @@
 ## ▶ RESUME HERE
-2026-10-24 — **Sprint 15 open: F35 story moments 0–9 built; one fix left** — the Veteran's bubble must be LIGHT with dark text (S9: fill #f4f4f2, text #222, outline #555 1.6 px); the kit TalkingBubble has no colour option, so a kit request went to the framework session (dev-e3). When that kit arrives: install-module ui-kit, pass the colours from content/tuning/talk.json, screenshot, then Muzzy's "approved" closes F35. Since his play: the monitor hangs 2x lower between shifts (art.json monitorDrop), day one's report has only Back to the console. F69 decided (Management teaches; the Veteran at 5).
-**Next (Muzzy: "i want to clear, and then work on A and B"):** after /clear run `/sprint` — pull F68 (first-day touches: the jiggle in the tutorial, the wrong-colour-covers-a-crack hint, a v1 tutorial audit) and F67 (zap look: sketch L5 laser + v1 spray droplets) into Sprint 15 alongside F35, or start Sprint 16 with them if F35 has closed. Older status notes: **Earlier notes** below.
+2026-10-24 — **Sprint 15: F68 first-day touches pulled in and building on its own (Muzzy: "run f68 auto, and then we'll make sketch for f67")** — tasks in SPRINT.md. F35 still open: the Veteran's bubble must be LIGHT with dark text (S9: fill #f4f4f2, text #222, outline #555 1.6 px); framework F121 (TalkingBubble colours, UI kit 0.33.0) is in the framework sprint — when it arrives: install-module ui-kit, pass the colours from content/tuning/talk.json, screenshot, then Muzzy's "approved" closes F35. **Next:** after F68 → `/sketch` the F67 zap look (sketch L5 laser: .planning/research/sketches/lab-L5-free-goo.html + v1 spray droplets: research/v1/PRD.md:328–347; live pop placeholder = popCells() in src/goo/jelly/index.ts).
+
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35) · Doing: F35 — building · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68) · Doing: F68 — building (auto); F35 waits for UI kit 0.33.0 colours + approval · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
