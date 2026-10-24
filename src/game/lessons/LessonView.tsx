@@ -59,7 +59,10 @@ export function LessonView({ overMenu = false, atConsole = false }: { overMenu?:
       const b = item.getBoundingClientRect()
       if (b.height && b.bottom < (tank.top + tank.bottom) / 2) tank = { ...tank, top: Math.max(tank.top, b.bottom) }
     }
-    return { focus, holes, passThrough: now.only?.includes('console') && !atConsole && tank ? [tank] : [], frame: gameColumn() }
+    const passThrough = now.only?.includes('console') && !atConsole && tank ? [tank] : []
+    // RANK SELECT (a Dev Kit tool, F70) works under any lesson: dimmed, but taps reach it
+    for (const part of document.querySelectorAll('[data-tag="rankSelect"]')) passThrough.push(boxAround([part])!)
+    return { focus, holes, passThrough, frame: gameColumn() }
   }
   return (
     <Spotlight key={`${view.stepId}:${m.kind}`} layout={layout} dim={m.dim} dimAmount={lessonTuning().dimAmount}

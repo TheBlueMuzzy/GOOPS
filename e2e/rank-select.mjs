@@ -7,7 +7,9 @@
 //   pick 7 (from a rank-18 save with upgrades bought) → the console shows rank 7 at its start, every scrap back, no
 //     upgrades, and ?rank is gone from the address (it would override the save)
 //   pick 0 → a brand-new device: the first day's first line on the monitor (A1), the pull starts it at B1 with the
-//     lesson's blue goop falling — and RANK SELECT hides while the day's lesson is on the console
+//     lesson's blue goop falling
+//   during the first day's lesson (Muzzy 2026-10-24: "I should be able to click the rank selector even during
+//     tutorial"): RANK SELECT is there under the lesson's dim, a real tap opens it, and picking 7 leaves the day
 //   mid-shift (the console over a running shift) it isn't there
 // Screenshots: e2e-shots/rank-select/ (console-<size>.png, list-<size>.png)
 // Run: node e2e/rank-select.mjs  (own dev server on port 5351)
@@ -62,16 +64,21 @@ async function device(width, height, { progress = null, query = '?seed=7', skipD
 }
 
 // the bottom row's three boxes (px): version, RANK SELECT's button, the credit
-const bottomRow = (page) => page.evaluate((open) => {
+const bottomRow = (page) => page.evaluate(([open, credits]) => {
   const layers = [...document.querySelectorAll('.kit-art-layer[data-text]')]
   const version = layers.find((l) => /^v\d|^dev$/.test(l.textContent.trim()))
-  const credit = layers.find((l) => l.textContent.includes('©'))
+  const credit = layers.find((l) => credits.includes(l.textContent.trim()))
+  const stage = document.querySelector('.kit-art-stage').getBoundingClientRect()
   const button = [...document.querySelectorAll('button')].find((b) => b.textContent.trim() === open)
   const box = (el) => { if (!el) return null; const r = el.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, text: el.textContent.trim(), fits: el.scrollWidth <= el.clientWidth + 1 } }
   // the words themselves (a Range round the text), so a box wider than its words still counts as fitting
   const words = (el) => { if (!el) return null; const r = document.createRange(); r.selectNodeContents(el); const b = r.getBoundingClientRect(); return { left: b.left, right: b.right, top: b.top, bottom: b.bottom } }
-  return { version: box(version), versionWords: words(version), credit: box(credit), creditWords: words(credit), button: box(button), buttonWords: words(button?.querySelector('span') ?? button), w: innerWidth, h: innerHeight }
-}, R.open)
+  return { version: box(version), versionWords: words(version), credit: box(credit), creditWords: words(credit), button: box(button), buttonWords: words(button?.querySelector('span') ?? button), w: innerWidth, h: innerHeight,
+    stage: { left: stage.left, width: stage.width } }
+}, [R.open, [en.console.credit, en.console.creditShort]])
+// the console's dark bottom strip narrows toward the bottom: on the row's line its sides are at ~48 and ~598 of the
+// art's 648 units (measured from the art, 2026-10-24 — Muzzy: "too wide" when the words hung off it)
+const STRIP = [48, 598], ART_W = 648
 
 try {
   // ════════════ 1. THE BOTTOM ROW + THE LIST AT EVERY PORTRAIT SIZE ════════════
@@ -85,16 +92,16 @@ try {
     const row = await bottomRow(page)
     check(`${size}: the version label = version.json (${expectedVersion()})`, row.version?.text === expectedVersion(), row.version?.text)
     check(`${size}: RANK SELECT is on the bottom row`, !!row.button, JSON.stringify(row.button))
-    check(`${size}: the credit is there`, row.credit?.text === en.console.credit, row.credit?.text)
+    check(`${size}: the credit is there (short beside RANK SELECT)`, row.credit?.text === en.console.creditShort, row.credit?.text)
     if (row.version && row.button && row.credit) {
       const v = row.versionWords, b = row.button, c = row.creditWords
       const bw = row.buttonWords
       check(`${size}: left → right: version · RANK SELECT · credit — words 8 px+ apart, the button's tap area clear of both`,
         v.right + 8 <= bw.left && bw.right + 8 <= c.left && v.right <= b.left && b.right <= c.left,
         JSON.stringify({ v: [v.left, v.right], b: [b.left, b.right], bw: [bw.left, bw.right], c: [c.left, c.right] }))
-      // the console's body art (the container) — the words never touch its sides
-      const body = await page.locator('.kit-art-layer-picture').first().boundingBox()
-      check(`${size}: the row sits inside the console's body with room at both sides`, !!body && v.left >= body.x + 8 && c.right <= body.x + body.width - 8, JSON.stringify({ body: body && [body.x, body.x + body.width], v: v.left, c: c.right }))
+      // the console's dark strip (the container) — the words never touch its sides
+      const px = (u) => row.stage.left + (u * row.stage.width) / ART_W
+      check(`${size}: the row sits inside the console's dark strip with room at both sides`, v.left >= px(STRIP[0]) + 4 && c.right <= px(STRIP[1]) - 4, JSON.stringify({ strip: STRIP.map(px), v: v.left, c: c.right }))
       check(`${size}: all three inside the window (with room at the sides)`, v.left >= 4 && c.right <= row.w - 4 && b.bottom <= row.h && v.bottom <= row.h, JSON.stringify({ vl: v.left, cr: c.right, bb: b.bottom, w: row.w, h: row.h }))
       check(`${size}: each one's words fit on one line in its box`, row.version.fits && row.credit.fits && row.button.fits && (v.bottom - v.top) < 2.2 * (row.buttonWords.bottom - row.buttonWords.top) + 1 && (c.bottom - c.top) < 2.2 * (row.buttonWords.bottom - row.buttonWords.top) + 1)
       const mid = (r) => (r.top + r.bottom) / 2
@@ -187,7 +194,6 @@ try {
     check('…the console shows rank 0', (await consoleRank(page)) === 0)
     const monitor = await page.locator('[data-tag="crt"] .crt-read').textContent()
     check('…the first day\'s first line is on the monitor (A1)', a1 && Object.values(FD.pull).includes(monitor), monitor)
-    check('…RANK SELECT hides while the day\'s lesson is on the console', !(await rankButton(page).count()))
     await page.screenshot({ path: `${OUT}/fresh-A1-390x844.png` })
     // the pull starts the day at B1, the lesson's goop falling
     await page.getByRole('button', { name: 'Start shift' }).click()
@@ -199,6 +205,27 @@ try {
     await sleep(700)
     await page.screenshot({ path: `${OUT}/fresh-B1-390x844.png` })
     check('pick 0: no page errors', !errors.length, errors.join(' | '))
+    await close()
+  }
+  {
+    // a brand-new device at the first day's first step (A1, the lesson's dim over the console)
+    const { page, errors, close } = await device(390, 844, { skipDay: false, seen: [] })
+    const atA1 = await page.waitForFunction((lines) => lines.includes(document.querySelector('[data-tag="crt"] .crt-read')?.textContent), Object.values(FD.pull), { timeout: 8000 }).then(() => true, () => false)
+    check('during the first day (A1): RANK SELECT is on the console', atA1 && (await rankButton(page).count()) === 1)
+    await page.screenshot({ path: `${OUT}/lesson-A1-390x844.png` })
+    await rankButton(page).click({ timeout: 3000 }).catch(() => {}) // (a real tap: Playwright refuses while the lesson's tap blocker is on top)
+    const opened = await list(page).waitFor({ timeout: 3000 }).then(() => true, () => false)
+    check('…a tap on it opens SELECT RANK (the lesson\'s dim lets it through)', opened)
+    if (opened) {
+      await sleep(400)
+      await page.screenshot({ path: `${OUT}/lesson-list-390x844.png` })
+      await list(page).locator('.kit-listrow').nth(7).click()
+      await page.waitForEvent('load', { timeout: 10000 }).catch(() => {})
+      await page.locator('.kit-art-stage').waitFor()
+      await sleep(600)
+      check('…picking 7 leaves the day: the console shows rank 7', (await consoleRank(page)) === 7)
+    }
+    check('during the first day: no page errors', !errors.length, errors.join(' | '))
     await close()
   }
 } catch (e) {

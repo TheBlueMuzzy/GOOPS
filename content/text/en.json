@@ -12,6 +12,7 @@
     "lights": "Visor",
     "unavailable": "{name} (unavailable)",
     "credit": "MuzzyMade © 2026",
+    "creditShort": "MuzzyMade",
     "rankSelect": {
       "open": "RANK SELECT",
       "title": "SELECT RANK",

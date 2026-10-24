@@ -448,9 +448,11 @@ export function App() {
     lastPause.current = pauseOpen
   }, [pauseOpen])
   // (re-drawn when a lesson changes: it may freeze the tank at the console)
-  const lessonOn = !!useSyncExternalStore(lessonRunner.subscribe, lessonRunner.view).lessonId
-  // F70: RANK SELECT — a Dev Kit build, between shifts, and not while a lesson or a story moment is on the console
-  const showRankSelect = rankSelectOn && !peeking && !lessonOn && !storyUp
+  useSyncExternalStore(lessonRunner.subscribe, lessonRunner.view)
+  // F70: RANK SELECT — a Dev Kit build, between shifts. Lessons and story moments too (Muzzy 2026-10-24: "I should be
+  // able to click the rank selector even during tutorial"): the lesson's dim lets taps through to it (LessonView), and
+  // its list hides the lesson while it's open (overMenu)
+  const showRankSelect = rankSelectOn && !peeking
   // at the console mid-shift the tank runs on under it, a little quieter (content/audio.json snapshots.console)
   useAudioSnapshot(getAudio(), peeking ? 'console' : null)
   // how fast the shift runs: full in the tank, slowed at the console mid-shift, stopped under any menu or a slide.
