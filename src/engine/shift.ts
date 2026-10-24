@@ -497,7 +497,12 @@ class Shift implements ShiftEngine {
     const g = s.groups.get(id)
     if (!g) return false
     const zapColors = this.training?.zapColors
-    if (zapColors && !zapColors.includes(g.color)) return false // a lesson that only lets one colour be zapped
+    if (zapColors && !zapColors.includes(g.color)) {
+      // a lesson that only lets one colour be zapped: the poked goop still jiggles + sounds like a shift poke (F68),
+      // so the refusal answers the tap instead of feeling broken (the lesson's own line says which colour)
+      this.rejectReason = 'lessonColour'
+      return false
+    }
     if (!this.canPop(g)) {
       // say why (F26): the line is the reason that waiting won't fix, so it wins when both are true
       const topRow = Math.floor(g.cells[0] / s.width)

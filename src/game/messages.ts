@@ -41,7 +41,7 @@ export function createMessages(tuning: MessageTuning) {
     const out: Message[] = []
     const say = (key: MessageKey, seconds: number, danger = false) => out.push({ key, danger, seconds })
     for (const e of events) {
-      if (e.type === 'reject' && e.action === 'pop' && e.reason) {
+      if (e.type === 'reject' && e.action === 'pop' && (e.reason === 'aboveLine' || e.reason === 'filling')) { // ('lessonColour': the lesson's line says it)
         if (nowMs - lastRefusedAt < tuning.refusedCooldownSeconds * 1000) continue
         lastRefusedAt = nowMs
         say(e.reason === 'aboveLine' ? 'refusedAboveLine' : 'refusedFilling', tuning.seconds.refused)

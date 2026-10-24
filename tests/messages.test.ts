@@ -28,6 +28,11 @@ describe('refused zaps', () => {
     expect(m.step(state(), [{ type: 'reject', action: 'spin' }, { type: 'reject', action: 'pop' }], 0)).toEqual([])
   })
 
+  it("F68: a lesson's 'not this colour' jiggles but says nothing (the lesson's own line does)", () => {
+    const m = createMessages(t)
+    expect(m.step(state(), [{ type: 'reject', action: 'pop', reason: 'lessonColour', cell: 0 }], 0)).toEqual([])
+  })
+
   it('a real refused zap in the engine gets its message', () => {
     const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(['11'], 5) })
     shift.takeEvents()

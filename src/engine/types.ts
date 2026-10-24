@@ -130,8 +130,10 @@ export type ShiftEvent =
 
 // Why a zap on goop was refused (F26), so the screen can say it: 'aboveLine' = the group reaches above the pressure line
 // (it can't pop until pressure rises or it's lowered), 'filling' = it's below the line but hasn't finished filling.
-// Only pops on goop get a reason; other rejects (an empty cell, a blocked turn…) have none.
-export type RejectReason = 'aboveLine' | 'filling'
+// 'lessonColour' = a lesson only lets another colour be zapped right now (F68: it jiggles, but there's no stack
+// message — the lesson's own line says which colour). Only pops on goop get a reason; other rejects (an empty cell,
+// a blocked turn…) have none.
+export type RejectReason = 'aboveLine' | 'filling' | 'lessonColour'
 
 export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column

@@ -163,7 +163,7 @@ export function App() {
   useEffect(() => session.listen((events) => {
     for (const e of events) {
       if (e.type === 'breakdown') facts.current.broke.add(e.machine)
-      else if (e.type === 'reject' && e.action === 'pop' && e.cell !== undefined) facts.current.refusedZaps++
+      else if (e.type === 'reject' && e.action === 'pop' && e.cell !== undefined && e.reason !== 'lessonColour') facts.current.refusedZaps++ // (a lesson's "not this colour" isn't the player's slip)
     }
   }), [])
   const open = useScreens()
