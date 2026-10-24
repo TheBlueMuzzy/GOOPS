@@ -111,7 +111,7 @@ export type ShiftEvent =
   | { type: 'lock'; cells: number[]; color: Color } // piece became part of the grid (grid indexes)
   | { type: 'merge'; groupId: number } // a group grew by joining others
   | { type: 'ready'; groupId: number } // a group finished filling and can pop
-  | { type: 'pop'; cells: number[]; color: Color; sealed: number[] } // popped cells (sealed = crack ids sealed by it)
+  | { type: 'pop'; cells: number[]; color: Color; sealed: number[]; at?: TapPoint } // popped cells (sealed = crack ids sealed by it); at = where the zap hit (F67: the laser point the goop is sucked into — the engine always sends it, other makers of pop events may not)
   | { type: 'fall'; moves: [from: number, to: number][] } // unsupported goop fell (grid indexes)
   | { type: 'crack'; crack: Crack } // a new crack appeared
   | { type: 'plug'; crackId: number; plugged: boolean }
@@ -135,12 +135,16 @@ export type ShiftEvent =
 // a blocked turn…) have none.
 export type RejectReason = 'aboveLine' | 'filling' | 'lessonColour'
 
+// The exact spot of a tap in tank cells, FRACTIONAL: cell (x, y) covers x … x+1 and y … y+1, so its centre is
+// (x + 0.5, y + 0.5). x is wrapped into 0 … width. (F67: the zap's laser point.)
+export interface TapPoint { x: number; y: number }
+
 export type ShiftAction =
   | { type: 'spin'; dir: 1 | -1 } // turn the tank one column
   | { type: 'rotate'; dir: 1 | -1 }
   | { type: 'softDrop'; on: boolean } // hold to fall fast
   | { type: 'hold' } // swap the falling piece with the next one (F59)
-  | { type: 'pop'; x: number; y: number } // tap a cell (tank space)
+  | { type: 'pop'; x: number; y: number; at?: TapPoint } // tap a cell (tank space); at = the exact tap inside it (F67, optional: bots and tests leave it out → the cell's centre)
   | { type: 'ability'; id: string } // fire an equipped, ready ability (F22)
   | { type: 'repair'; machine: MachineId } // the console's repair puzzle for this machine was solved (F23/F24)
   | { type: 'console'; on: boolean } // the player went to the console mid-shift (on) / back to the tank (off): the machines' break-progress pauses

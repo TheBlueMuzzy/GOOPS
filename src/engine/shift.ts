@@ -5,7 +5,7 @@
 // starts (by design, like the rank): the tank's size, the colours in play and the crack quota.
 // The loop (GDD §4): pressure rises → cracks come faster → open cracks drain tank integrity → at 0 the tank
 // ruptures → pressure drains to 0 while you zap what you can → the shift ends (won if the crack quota was met).
-import type { AbilityState, Group, RejectReason, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, WallKickMode } from './types'
+import type { AbilityState, Group, RejectReason, ShiftAction, ShiftEngine, ShiftEvent, ShiftState, ShiftStatus, TapPoint, WallKickMode } from './types'
 import type { ShiftConfig } from './config'
 import { cracksNeededFor, junkCount, paletteSize } from './config'
 import { createRng, type Rng } from './rng'
@@ -264,7 +264,7 @@ class Shift implements ShiftEngine {
         ok = this.hold()
         break
       case 'pop':
-        ok = this.pop(action.x, action.y)
+        ok = this.pop(action.x, action.y, action.at)
         break
       case 'ability':
         ok = this.fireAbility(action.id)
@@ -490,7 +490,7 @@ class Shift implements ShiftEngine {
     return true
   }
 
-  private pop(x: number, y: number): boolean {
+  private pop(x: number, y: number, tap?: TapPoint): boolean {
     const s = this.state
     if (!Number.isInteger(x) || !Number.isInteger(y) || y < 0 || y >= s.height) return false
     const id = s.groupOf[y * s.width + wrapX(x, s.width)]
@@ -548,7 +548,11 @@ class Shift implements ShiftEngine {
     }
     s.groups.delete(g.id)
     this.book.fillMs.delete(g.id)
-    this.events.push({ type: 'pop', cells: g.cells, color: g.color, sealed })
+    // where the zap hit (F67): the exact tap if the screen sent one, else the tapped cell's centre; x wrapped round the tank
+    const at = tap && Number.isFinite(tap.x) && Number.isFinite(tap.y)
+      ? { x: ((tap.x % s.width) + s.width) % s.width, y: tap.y }
+      : { x: wrapX(x, s.width) + 0.5, y: y + 0.5 }
+    this.events.push({ type: 'pop', cells: g.cells, color: g.color, sealed, at })
     if (s.phase === 'playing' && this.breakdownsOn()) this.machines.zapped(g.cells.length)
 
     this.settle()

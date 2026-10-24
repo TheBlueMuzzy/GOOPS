@@ -3,7 +3,7 @@
 // It also decides where the tank sits around the HUD (F26, Muzzy's mock-up; F59 his second one): one top row above it,
 // the bottom panel under it (or beside it on a phone on its side), and the pressure readout hanging on the pressure line.
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
-import type { MachineId, ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase, ShiftState } from '../engine'
+import type { MachineId, ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase, ShiftState, TapPoint } from '../engine'
 import type { GooRenderer, GooView } from '../goo/types'
 import { colorOf, makeGoo } from './gooFactory'
 import { drawTank } from '../view/tankView'
@@ -246,6 +246,14 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       const [fx, fy] = flatPoint(px - r.left, py - r.top, tankRect(view, s.visibleWidth, s.height - s.bufferRows), visorFx.current?.curve() ?? 0)
       return screenToVisibleCell(fx, fy, view, s.width, s.bufferRows, s.visibleWidth, s.height - s.bufferRows)
     }
+    // ...and the exact spot inside it, in fractional tank cells (cell x, y covers x … x+1, y … y+1) — the zap's laser
+    // point (F67). Same flat (un-bent) point as cellAt, so it lands inside the cell cellAt picked.
+    const tapPoint = (px: number, py: number): TapPoint => {
+      const r = el.getBoundingClientRect()
+      const [fx, fy] = flatPoint(px - r.left, py - r.top, tankRect(view, s.visibleWidth, s.height - s.bufferRows), visorFx.current?.curve() ?? 0)
+      const x = view.camera + (fx - view.centreX) / view.cellPx + 0.5
+      return { x: ((x % s.width) + s.width) % s.width, y: (fy - view.topY) / view.cellPx + s.bufferRows }
+    }
     // fast drop held (on) / let go: the engine has no event for it (it's the player's hold), so its whoosh plays here
     const softDrop = (on: boolean) => {
       if (on && !softHeld) playGameSound(SOUNDS.fastDrop)
@@ -290,7 +298,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         if (!cell) return false // beside or above the visible tank: a plain tap (rotate)
         const [x, y] = cell
         if (y < 0 || y >= s.height || !s.grid[y * s.width + x]) return false
-        engine.act({ type: 'pop', x, y })
+        engine.act({ type: 'pop', x, y, at: tapPoint(px, py) })
         return true
       },
     }, () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.inputOn() && s.status === 'playing',

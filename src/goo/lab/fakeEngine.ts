@@ -128,7 +128,7 @@ export class FakeEngine implements ShiftEngine {
         const g = S.groups.get(S.groupOf[i])
         if (!g || !g.ready) return
         for (const c of g.cells) S.grid[c] = 0
-        this.events.push({ type: 'pop', cells: g.cells.slice(), color: g.color, sealed: [] })
+        this.events.push({ type: 'pop', cells: g.cells.slice(), color: g.color, sealed: [], at: a.at ?? { x: a.x + 0.5, y: a.y + 0.5 } })
         this.regroup()
         this.gravityT = 160
         break
