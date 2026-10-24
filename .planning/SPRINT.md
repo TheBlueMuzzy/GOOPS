@@ -26,3 +26,8 @@ Checked: 9 payslip unit tests pass (net = XP at 7 ranks x 6 scores x 3 seeds, pa
 - Full check 1 (4663d7f): first-day failed (the new payday, fixed above); gestures + crack-spread failed because old dev servers held their ports 5291 / 5391 (stopped with stop-servers; gestures 47/47 alone).
 - Task 7 (Claude, 2026-10-24): framework v0.14.0 installed — UI kit 0.31.0 + Dev Kit 0.26.1 (install-module added vite-plugins/devkit to eslint ignores itself). The report and Payday rows show one at a time (payslip.json lineMs), fines + debt ▼ red, net pay + rank up ▲ green (kit tones); the report's rows scroll with title + buttons pinned, following the newest row. Meter unit PAYMENT DUE → DUE: it spilled at 360x780 (283 > 247 px; console-shots) — "50 / 3,750 DUE" fits every portrait size. console-shots.mjs: pays through paydays, landscape sizes removed (portrait only).
 - Task 6 (Muzzy 2026-10-24): "it's fine. approved" — the feel question and the 450 ms pace answered with that; F41 ✅.
+
+Retro: (Muzzy 2026-10-24 went straight to /sprint — Claude's draft kept)
+- went well: the payslip runs on the real XP, so no balance work; the framework turned three kit requests around in one evening (reveal, tones, scrolling stats)
+- went wrong: the first report layout didn't fit a phone; two layout ideas before Muzzy's scrolling idea solved it
+- change: check a new screen at phone size (a quick mock-up) before building all of it
