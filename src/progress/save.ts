@@ -40,6 +40,11 @@ export function saveProgress(p: Progress, storage: Pick<Storage, 'getItem' | 'se
   } catch { /* private mode: play on */ }
 }
 
+// F70 RANK SELECT 0: forget the progress entirely, as on a brand-new device (the next load is a fresh start)
+export function clearProgress(storage: Pick<Storage, 'removeItem'> | null = safeStorage()): void {
+  try { storage?.removeItem(KEY) } catch { /* private mode: nothing was kept */ }
+}
+
 function newerSaveThere(storage: Pick<Storage, 'getItem'> | null): boolean {
   try {
     const v = JSON.parse(storage?.getItem(KEY) ?? 'null')?.v

@@ -12,6 +12,17 @@
     "lights": "Visor",
     "unavailable": "{name} (unavailable)",
     "credit": "MuzzyMade © 2026",
+    "rankSelect": {
+      "open": "RANK SELECT",
+      "title": "SELECT RANK",
+      "back": "Back",
+      "list": "Ranks",
+      "row": "Rank {n}",
+      "yours": "You",
+      "wipe": "Wipe save",
+      "wipeDetail": "A fresh first day",
+      "about": "Jump to the start of a rank, upgrades refunded. Rank 0 wipes the save."
+    },
     "settings": "Settings",
     "hintBack": "Pull the periscope to go back",
     "hintRepair": "Repair the {name}!",

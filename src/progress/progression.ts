@@ -61,6 +61,16 @@ export function unlocksBetween(from: number, to: number, t: ProgressionTuning = 
   return UNLOCKS.filter((u) => !isUnlocked(u, from, t) && isUnlocked(u, to, t))
 }
 
+// RANK SELECT (F70, a Dev Kit tool): the START of a rank — all the XP it takes to just reach it (0 XP into it), with
+// nothing bought (every scrap back, as Respec gives them). Clamped to 0…maxRank.
+export const topRank = (t: ProgressionTuning = tuning) => t.maxRank
+export function progressAtRank(rank: number, t: ProgressionTuning = tuning): Progress {
+  const to = Math.max(0, Math.min(t.maxRank, Math.floor(rank)))
+  let totalXp = 0
+  for (let r = 0; r < to; r++) totalXp += xpToNext(r, t)
+  return { ...freshProgress(), totalXp }
+}
+
 // TITLES (F35): the title a rank carries — the band that starts at or below it (content/tuning/progression.json titles;
 // words: en.json story.titles). The ids are in rank order in the file.
 export type TitleId = keyof ProgressionTuning['titles']

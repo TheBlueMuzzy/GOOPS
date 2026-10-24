@@ -33,6 +33,8 @@ import { makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
 import { UpgradesScreen } from './UpgradesScreen'
+import { RankSelectScreen } from './RankSelect'
+import { rankSelectOn } from '../game/rankSelect'
 import { UpgradeShopContext } from './upgradeShopContext'
 import { versionLabel } from '../version'
 import { art } from './art'
@@ -96,7 +98,8 @@ const SettingsScreen = () => (
   }} />
 )
 // the console between shifts: Settings and the Upgrades shop (one fixed map, so a screen stays mounted while it's used)
-const IDLE_SCREENS = { settings: SettingsScreen, upgrades: UpgradesScreen }
+// (+ F70 RANK SELECT's list, in a Dev Kit build)
+const IDLE_SCREENS = { settings: SettingsScreen, upgrades: UpgradesScreen, ...(rankSelectOn ? { rankSelect: RankSelectScreen } : {}) }
 // in-shift messages (F26, src/game/messages.ts decides which): kit toasts just above the goop. How long one stays is
 // LOOKS time (src/devkit/gameClock.ts): the Dev Kit's full pause holds it on screen, so the frozen picture stays whole.
 const ONE_DAY_S = 86_400 // (the kit's own timer, never reached: the looks clock takes it away)
@@ -445,7 +448,9 @@ export function App() {
     lastPause.current = pauseOpen
   }, [pauseOpen])
   // (re-drawn when a lesson changes: it may freeze the tank at the console)
-  useSyncExternalStore(lessonRunner.subscribe, lessonRunner.view)
+  const lessonOn = !!useSyncExternalStore(lessonRunner.subscribe, lessonRunner.view).lessonId
+  // F70: RANK SELECT — a Dev Kit build, between shifts, and not while a lesson or a story moment is on the console
+  const showRankSelect = rankSelectOn && !peeking && !lessonOn && !storyUp
   // at the console mid-shift the tank runs on under it, a little quieter (content/audio.json snapshots.console)
   useAudioSnapshot(getAudio(), peeking ? 'console' : null)
   // how fast the shift runs: full in the tank, slowed at the console mid-shift, stopped under any menu or a slide.
@@ -541,7 +546,8 @@ export function App() {
             phase={mode === 'console' || mode === 'peek' ? 'idle' : mode === 'leaving' || mode === 'peekOut' ? 'leaving' : 'arriving'}
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
             midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair, fewerRepairSteps: upgrades.fewerRepairSteps } : undefined}
-            upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }} />
+            upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }}
+            rankSelect={showRankSelect} />
         </ScreenStack>
         </UpgradeShopContext.Provider>
       )}

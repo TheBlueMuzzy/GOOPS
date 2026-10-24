@@ -1,8 +1,8 @@
 // Ranks + XP (F20) and the save.
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
-import { freshProgress, isUnlocked, meterSteps, rankInfo, rewardFirstDay, rewardShift, unlocksBetween, xpToNext } from '../src/progress/progression'
-import { SAVE_VERSION, loadProgress, saveProgress } from '../src/progress/save'
+import { freshProgress, isUnlocked, meterSteps, progressAtRank, rankInfo, rewardFirstDay, rewardShift, topRank, unlocksBetween, xpToNext } from '../src/progress/progression'
+import { SAVE_VERSION, clearProgress, loadProgress, saveProgress } from '../src/progress/save'
 import goldenV1 from './saves/goops-progress-v1.json'
 import goldenV2 from './saves/goops-progress-v2.json'
 
@@ -175,5 +175,29 @@ describe('unlocks', () => {
     expect(unlocksBetween(2, 3)).toEqual(['swap'])
     expect(unlocksBetween(0, 6)).toEqual(['nextPiece', 'swap', 'upgrades'])
     expect(unlocksBetween(5, 5)).toEqual([])
+  })
+})
+describe('rank select (F70: the start of a rank, upgrades refunded; 0 = a fresh save)', () => {
+  it('rank N = all the XP to reach it, 0 into it, nothing bought or spent', () => {
+    const p = progressAtRank(7)
+    expect(rankInfo(p)).toMatchObject({ rank: 7, xpIntoRank: 0, scraps: 7 * tuning.scrapsPerRank })
+    expect(p).toEqual({ totalXp: cumulative(7), scrapsSpent: 0, owned: {}, equipped: [] })
+    expect(progressAtRank(0)).toEqual(freshProgress())
+  })
+
+  it('every rank 0…maxRank lands on itself; outside that it clamps', () => {
+    for (let r = 0; r <= topRank(); r++) expect(rankInfo(progressAtRank(r)).rank).toBe(r)
+    expect(topRank()).toBe(tuning.maxRank)
+    expect(rankInfo(progressAtRank(topRank() + 5)).rank).toBe(tuning.maxRank)
+    expect(progressAtRank(-3)).toEqual(freshProgress())
+  })
+
+  it('clearProgress forgets the save: the next load is a fresh start', () => {
+    const store = new Map<string, string>()
+    const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => { store.set(k, v) }, removeItem: (k: string) => { store.delete(k) } }
+    saveProgress(progressAtRank(12), storage)
+    expect(rankInfo(loadProgress(storage)).rank).toBe(12)
+    clearProgress(storage)
+    expect(loadProgress(storage)).toEqual(freshProgress())
   })
 })

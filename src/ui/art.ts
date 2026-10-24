@@ -39,6 +39,7 @@ export const art = {
     words: {
       hint: words(scene.words.hint), laser: words(scene.words.laser), controls: words(scene.words.controls),
       lights: words(scene.words.lights), version: words(scene.words.version), credit: words(scene.words.credit),
+      rankSelect: words(scene.words.rankSelect), // F70
     },
   },
   // the repair panels' moving parts (F24), drawn over the panels: lamps, slider knobs, the dial, the visor's buttons

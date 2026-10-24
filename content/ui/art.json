@@ -29,8 +29,10 @@
       "laser": { "at": [226, 1298, 200, 24], "text": 17 },
       "controls": { "at": [88, 1460, 212, 24], "text": 17 },
       "lights": { "at": [363, 1458, 180, 24], "text": 17 },
-      "version": { "at": [70, 1841, 172, 20], "text": 15.7 },
-      "credit": { "at": [370, 1841, 216, 20], "text": 15.7 }
+      "_bottomRow": "F70 (Muzzy 2026-10-24): the bottom row reads version · RANK SELECT · MuzzyMade © 2026. rankSelect = the Dev Kit's rank tool (a button; its box is centred on the row and taller, so the button's 44 px tap target sits on the row).",
+      "version": { "at": [40, 1841, 110, 20], "text": 15.7 },
+      "rankSelect": { "at": [152, 1831, 200, 40], "text": 15.7 },
+      "credit": { "at": [380, 1841, 228, 20], "text": 15.7 }
     },
     "crt": {
       "_about": "F32 (Muzzy, 2026-10-19): the monitor's screen IS the lesson message at the console. Its words sit in words.hint (smaller and higher than the mock-up, so they stay on the screen, off the bezel); a lesson line that needs more room makes the screen slide down past its bezel like a toaster. screen / bezel = the monitor art's colours (cls-51 / cls-56 in Example1.svg); bezelWidth = the bezel's thickness at the sides and bottom; screenLeft / screenTop / screenWidth / screenBottom = the screen's edges (mock-up units: the game draws the screen over the art's, so a longer line can slide it down seamlessly); radius = its corners.",

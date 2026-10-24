@@ -20,6 +20,7 @@ import { useShort } from './useShort'
 import { CrtLook, TypedText } from '../game/CrtLook'
 import text from '../../content/text/en.json'
 import { versionLabel } from '../version'
+import { RankSelectButton } from './RankSelect'
 
 export type ConsolePhase = 'idle' | 'leaving' | 'arriving'
 export type ConsoleMachines = Record<MachineId, { broken: boolean }>
@@ -37,6 +38,9 @@ type Props = {
   // F59: the Upgrades button (between shifts only): the scraps in hand, and whether upgrading is unlocked yet (before
   // its rank the button is greyed out, showing the scraps saved so far); onOpen opens the Upgrades screen.
   upgrades?: { scraps: number; open: boolean; opensAt: number; onOpen(): void }
+  // F70: RANK SELECT on the bottom row, between the version and the credit (the App says when: a Dev Kit build, between
+  // shifts, no lesson or story moment on the console)
+  rankSelect?: boolean
 }
 
 const t = text.console
@@ -106,7 +110,7 @@ function UpgradesButton({ scraps, open, opensAt, onOpen }: NonNullable<Props['up
   )
 }
 
-export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades }: Props) {
+export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades, rankSelect }: Props) {
   const now = rankInfo(progress)
   // (only the XP moves the meter: buying an upgrade changes the progress but must not replay the fill — F34)
   const totalXp = progress.totalXp
@@ -173,6 +177,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
         <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
         <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{versionLabel}</ArtLayer>
+        {rankSelect && <ArtLayer {...a.words.rankSelect} align="center" dim={leaving}><RankSelectButton /></ArtLayer>}
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>
           <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving}
