@@ -94,7 +94,7 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 | **20–29** | Pressure Specialist → Lead | Fines go up. Goop holds together. The Veteran tells the station's history: how many operators there have been (a lot), where they "retired" to. The goop says its first name. | All three; Veteran clearer. |
 | **30–39** | Containment Supervisor → Senior | The tank falls apart; Management blames you. The goop **asks you to stop zapping it**. **The Veteran gets caught at 30** and the speaker goes dead; you're the veteran now. **The goop takes over at once** (a moment every rank); the white goop (him) is in the tank from 31 and speaks in your head at ~35. You find your own name in a list of "pending retirements". | Goop sentences; the white goop. |
 | **40–49** | Assistant to the Department Head → Acting Deputy (Interim) | The full picture: the goop is people; the pressure is Management's power; the debt is how they keep operators coming. **The speaker crackles again — the Veteran, from inside the tank** (caught and gooped at 30; see The Veteran's arc). Management slips: it isn't human. | Everything. Mouths open. |
-| **50** | Acting Deputy Department Head (Interim) | **The final shift** (all galaxy black, the Veteran drops in), then **The ending** — Department Head is given at the win. | Everything. |
+| **50** | Acting Deputy Department Head (Interim) | **The final shift** (all galaxy black, the Veteran drops in), then **The ending** — the win title is given by the goop. | Everything. |
 
 ## The Veteran's arc — he gets caught (Muzzy 2026-10-23)
 Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned into goop at some later level … when we become high enough level, we don't need a veteran anymore… we're the veteran. but I don't want to lose touch with the speaker … we can lose touch with it much later."
@@ -108,7 +108,7 @@ Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned i
 | 31–39 | **The goop** (in your head) takes over at once: one moment every rank, broken sentences → whole sentences. The **white goop** is in the tank from 31 — it's him | the white goop's eyes follow you |
 | ~35 | **The white goop speaks in your head** — his voice, from inside, learning to talk like goop | — |
 | 40–49 | **The speaker crackles again**: he's reached its wire through the cracks and teaches the goop to use it — the speaker carries him + the goop, the monitor carries Management slipping | mouths open |
-| 50 | The ending — you beat the game | — |
+| 50 | The final shift (the Veteran drops in), then the ending — you beat the game | — |
 
 - **5–29:** the speaker crackles every rank-up; he leaves scraps and warnings, clearer as he trusts you.
 - **30: caught.** Mid-sentence the monitor cuts in: "UNAUTHORISED BROADCAST LOCATED. OPERATOR #0001 HAS BEEN SCHEDULED FOR RETIREMENT." The speaker goes dead. That shift's report has a fine for *you*: "Association with a retired employee". From now on you salvage your own scraps — you're the veteran now (report words change; the economy doesn't).
@@ -124,7 +124,7 @@ One moment per rank-up, shown at the console before the next shift (not skippabl
 
 | Rank | Voice | Lines | Look |
 |---|---|---|---|
-| 0 | MON | WELCOME, OPERATOR #4471. YOUR PASSAGE DEBT HAS BEEN PRE-APPROVED. · PLEASE KEEP THE TANK FROM EXPLODING. | The monitor flickers on (then the first day's lessons) |
+| 0 | MON | WELCOME, OPERATOR #4471. YOUR PASSAGE DEBT HAS BEEN PRE-APPROVED. · PLEASE SIGN HERE. · PLEASE KEEP THE TANK FROM EXPLODING. | The monitor flickers on; you sign the contract (type your name — see **Your name**); then the first day's lessons |
 | 1 | MON | CONGRATULATIONS ON YOUR FIRST PAYDAY. · A NEXT-PIECE WINDOW HAS BEEN INSTALLED. ITS RENTAL IS ON YOUR BILL. | The next-piece window lights |
 | 2 | MON | YOUR PERISCOPE IS ON BACKORDER. ESTIMATED ARRIVAL: SOON. · THE OLD ONE WILL DO. | The visor flickers |
 | 3 | MON | SWAPPING PIECES IS NOW PERMITTED. · G.O.O.P.S. = GENERAL OVERFLOW & ORGANIC PRESSURE SERVICES. | The swap key glows |
@@ -163,7 +163,7 @@ One moment per rank-up, shown at the console before the next shift (not skippabl
 | 36 | HEAD | …he says… you have… a name… · …what is… your name… | — |
 | 37 | HEAD (him) | …it's warm in here… · …warmer than the bunk… | The white goop glows a little |
 | 38 | HEAD | …please… not the laser… · …just… hold us… | The laser meter dims |
-| 39 | HEAD | …your name… is on a list… · …we saw it… | The report shows "Pending retirements: Operator #4471" |
+| 39 | HEAD | …your name… is on a list… · …we saw it… | The report shows "Pending retirements: Operator #4471 — <your name>" |
 | 40 | SPK | ── can you hear me? ── got to the wire through a crack. ── that's what cracks are for. | The speaker crackles back to life; mouths appear in the tank |
 | 41 | SPK (the goop) | …we… can talk… here too… · …LOUD… | The grille buzzes in time with the mouths |
 | 42 | SPK | The pressure's power, kid. ── runs the whole station. ── runs something above it too. | The pressure line glows |
@@ -235,20 +235,23 @@ Muzzy: "we'll need an ending where we save the goop instead of zapping it." The 
 1. **The tank opens.** The console shakes; the goop pours out of the tank and out of every tank on the station (the periscope view fills).
 2. **The goop speaks out loud**, through its mouths (the blobby bubble, now from the goop itself): thank you, and its names.
 3. **The speaker's last line**, clear for the first time, in the Veteran's voice: "told you you'd make a good veteran, kid." Then it goes quiet for good.
-4. **The badge.** The monitor glitches; the goop rewrites it: **Department Head, G.O.O.P.S.** — and under it the real acronym: **GRADUAL ONBOARDING OF PERMANENT STAFF.**
-5. **The last payday:** "Remaining passage debt: 0 cr — paid by: 1,312 former employees."
-6. **What happens to you** — ❓ Muzzy's pick (task 2):
-   - **A. You stay — as the next Veteran.** ← Claude's pick. The console is yours now. The goop rewrites the monitor's last ad: "Position available: G.O.O.P.S. Operator. Ask for the Department Head." The new career is the next operator's story — and the upgraded console / periscope / vat is *yours*, so the visual upgrade has a reason. Hopeful, and it explains the new career.
-   - **B. You leave.** The goop carries you out through the open tank; the last screen is the empty console. The new career is a new operator at that empty console. Clean and kind, but the new career has no link to you.
-   - **C. You join them.** You climb into the goop; the last whisper is in your own voice: "…warm…". The new career's operator hears it at rank 3. Bittersweet and ambiguous (v1 wanted "what does that mean?"); some players will read it as a bad end.
-7. **Then the end-game screen** (Muzzy's art in `art/`), and the new career: the same game from rank 0 with the console / periscope / vat upgraded (which upgrade: later).
+4. **The last payday:** "Remaining passage debt: 0 cr — paid by: 1,312 former employees."
+5. **The badge.** The monitor glitches; the goop crosses out your title and writes the win title (see **Rank titles**) — and under it the real acronym: **GRADUAL ONBOARDING OF PERMANENT STAFF.**
+6. **You leave** (Muzzy 2026-10-23: "B"). The goop carries you out through the open tank; the last screen is the empty console. (Turned down: staying as the next Veteran; climbing into the goop.)
+7. **Then the end-game screen** (Muzzy's art in `art/`), and the new career: a new operator at that empty console — the same game from rank 0 with the console / periscope / vat upgraded (which upgrade: later).
 - **One ending, no choice** (Claude's pick kept): the whole game earns it. A secret bleak ending could come later.
 - The old draft's "last shift played backwards" is replaced by **The final shift** (Muzzy's design).
 
+## Your name — how the goop knows it (Muzzy 2026-10-23: "how does the goop know your name? do we have a level 0 sign in?")
+- **You sign the contract at rank 0.** The first-day monitor says "PLEASE SIGN HERE" and you type a name — no account, no sign-in, saved on the device with the rest of the save. Skip it and you're just Operator #4471.
+- The goop learns it from the Veteran (rank 36: "…he says… you have… a name…") and from the list it saw (rank 39: "Pending retirements: Operator #4471 — <your name>"). From 39 the whispers and the ending can use it.
+- **Later, maybe a framework profile module** (a name + an avatar, shared by every game). Goops only needs the name. Planned in F66.
+
 ## Rank titles — 12, in bands (Muzzy 2026-10-23: "12 titles, but the final title is only given out at the end. make that make sense and the banding should work with it")
 How it works:
-- **Rank 0 has its own title** (the first day) and **the 12th title isn't a rank at all — it's the win.** Rank 50 (the final shift) still carries the 45–50 title; **Department Head** appears only when the third valve stage opens.
-- **Who gives it:** not Management — the goop. When the tank opens, the monitor glitches and the goop rewrites your badge. Management's titles were all "assistant", "acting", "interim": it never meant to promote anyone. The real acronym lands on the same screen (Gradual Onboarding Of Permanent Staff).
+- **Rank 0 has its own title** (the first day) and **the 12th title isn't a rank at all — it's the win.** The last title you earn by ranking comes at 45 and lasts to 49 (Muzzy: "if 50 no longer gives title, then it has to be 49, right?" — yes). Rank 50 is the final shift itself, played under that same title; the win title appears only when the third valve stage opens.
+- **Who gives it:** not Management — the goop. When the tank opens, the monitor glitches and the goop rewrites your badge. Management's titles were all "assistant", "acting", "interim": it never meant to promote anyone — so the win title is NOT a job title (Muzzy 2026-10-23: "need a new title when you beat the game. like. The Freed, or The GOOP, or king of the goops or savior of goopkind, or One Of Us"). The real acronym lands on the same screen (Gradual Onboarding Of Permanent Staff).
+- ❓ **The win title** (Ask Muzzy, on F65): **Former Employee #1,313** ← Claude's pick: it lands right after "paid by: 1,312 former employees", so you're counted with them — but you walk out (ending B) · **The Freed** · **Savior of Goopkind** · **King of the Goops**. (One Of Us fits joining them, which you don't.)
 - **Every title change lands on a story beat**, so a new title is a moment, not a number.
 
 | Ranks | Title | The beat it lands on |
@@ -263,8 +266,9 @@ How it works:
 | 30–34 | Containment Supervisor | The Veteran is caught; white goop arrives; the cracks spread |
 | 35–39 | Senior Containment Supervisor | The white goop (him) speaks in your head |
 | 40–44 | Assistant to the Department Head | The speaker comes back: him and the goop; mouths open |
-| 45–50 | Acting Deputy Department Head (Interim) | Management slips — it isn't human; rank 50 = the final shift |
-| **the win** | **Department Head, G.O.O.P.S.** | Given by the goop when the valve opens — not a rank, the ending |
+| 45–49 | Acting Deputy Department Head (Interim) | Management slips — it isn't human |
+| 50 | (same title) | The final shift — no new title |
+| **the win** | **❓ the win title** (Claude's pick: Former Employee #1,313) | Given by the goop when the valve opens — not a rank, the ending |
 
 ## Sample lines (tone check)
 - Monitor, rank 0: "WELCOME, OPERATOR. YOUR COMFORT IS OUR POLICY. YOUR BUNK IS 0.8 m WIDE. YOUR DEBT HAS BEEN PRE-APPROVED."

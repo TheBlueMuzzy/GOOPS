@@ -38,7 +38,7 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F06 Breakdowns: v1 meters, softer effects, the tank slows at the console, simplified repairs (GDD §5, 2026-10-18) — must:alpha · needs: F01
 - ✅ F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06 · decided 2026-10-19: alpha = the playable game (no upgrades, no story) for Muzzy + friends; beta = the whole job (story, upgrades, all three rank twists); 1.0 = polished, replaces v1 (research/release-scope.md, GDD §7)
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
-- 🔨 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
+- ✅ F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
   note: Muzzy (2026-10-19, F07): "story is beta. alpha is playable game"
 - ✅ F10 ❓ Phone gestures without conflicts — must:alpha · decided 2026-10-20: every finger is its own gesture (swap timer at the holding finger), taps contextual like a PC click (GDD §4, gestures.md §7)
   note: gesture list + 14-line phone checklist done (research/gestures.md); waits for Muzzy's phone session (2026-10-19: "developing fully on PC for now")
@@ -126,18 +126,19 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - ✅ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · decided 2026-10-22 (design/upgrades-map.md "F33 decisions": store at 5 shelf-ready, 1 scrap a level + free take-backs, rank 3 slower depressurise, rank 9 pressure slower, tougher tank at 22) · needs: F08
 - ✅ F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
 - ⏳ F35 🎮 Story moments + ranks 0–9: the story-moment runner on the lesson runner (MON / SPK / HEAD voices, attention calls, not skippable), Management 0–4, the Veteran 5–9, titles on the report (design/story.md "Story moments, rank by rank") — must:beta · needs: F09, F30, F61
-- ⏳ F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
+- 🟢 F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
   note: Muzzy (2026-10-19): keep all three
 - ⏳ F40 🎮 The Veteran, ranks 10–29, and his capture at 30 (speaker cut-in, the fine for YOU, white joins as a colour) — must:beta · needs: F35
-- ⏳ F41 🎮 Credits, fines and payday on the end report: the rank meter becomes CREDITS / PAYMENT DUE, fines as theatre (net = real XP), payday at each rank-up in 5 lines, passage debt line (sketch S8 approved; design/story.md "Credits, payday and fines" + "Fines and payday — the lines") — must:beta · needs: F09
+- 🟢 F41 🎮 Credits, fines and payday on the end report: the rank meter becomes CREDITS / PAYMENT DUE, fines as theatre (net = real XP), payday at each rank-up in 5 lines, passage debt line (sketch S8 approved; design/story.md "Credits, payday and fines" + "Fines and payday — the lines") — must:beta · needs: F09
 - 🟢 F42 🎮 Active abilities: equip slots + the charge button in the HUD — must:beta · needs: F34
 - ⏳ F43 🎮 Upgrades ranks 10–38 (Hold Viewer + Goop Window retired by F59 — two slots to fill with new upgrades for the new pacing, Muzzy 2026-10-19) — must:beta · needs: F34, F42
 - ⏳ F45 🎮 Ranks 40–49: the speaker comes back (him + the goop), Management slips, the valve is named — must:beta · needs: F63, F39
 - ⏳ F61 🧱 Talking bubble (framework UI kit piece: open / type / talk wave / rests / idle squelch; Goops' spiky-wave style for the Veteran, a blobby one for the goop) — sketch S9 approved 2026-10-23 (research/speaker-bubble/picks.json); requested from the framework session, logged in its ROADMAP Ideas — must:beta
-- ⏳ F62 🎮 The goop grows eyes and mouths: eyes at 10, following at 20, worried at 30, mouths at 40 (looks, design/story.md "The Goop changes") — must:beta · needs: F09
+- 🟢 F62 🎮 The goop grows eyes and mouths: eyes at 10, following at 20, worried at 30, mouths at 40 (looks, design/story.md "The Goop changes") — must:beta · needs: F09
 - ⏳ F63 🎮 The goop's voice (ranks 31–39) + the white goop = the Veteran in the tank (never merges or pops, drifts to the worst crack and seals it slowly) — must:beta · needs: F40, F62
 - ⏳ F64 🎮 The final shift (rank 50): all galaxy black goop and cracks, the onslaught, the Veteran drops in and seals the cracks you can't reach (shrinking), 3 release-valve stages at the console (6 / 8 / 10 seals, his count), three ways to lose — sketch or bot run first — must:beta · needs: F63, F45
-- ⏳ F65 🎮 The ending + the new career: the tank opens, the goop speaks, the speaker's last line, the badge and the real acronym, what happens to you, the end-game screen, a new career with an upgraded console — must:beta · needs: F64
+- ⏳ F65 🎮 The ending + the new career: the tank opens, the goop speaks, the speaker's last line, the badge (the win title ❓ — Ask Muzzy: Claude's pick "Former Employee #1,313") and the real acronym, you leave (Muzzy: B), the end-game screen, a new career with an upgraded console — must:beta · needs: F64
+- 🟢 F66 ❓ Your name: sign the contract at rank 0 (type a name, saved on the device) so the goop can say it from 39 — plan whether it's just a name in Goops or a framework profile module (name + avatar) (design/story.md "Your name") — must:beta · needs: F09
 - 🟢 F46 🎮 Operator Journal — should:beta · needs: F30
 - ⏳ F47 ✨ The zap look (sketch first) — should:beta
 - 🟢 F48 🎮 Quick Fix upgrade (fewer repair steps) — should:beta · needs: F34
