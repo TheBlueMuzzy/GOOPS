@@ -17,6 +17,8 @@ import { wallKick } from './wallKick'
 import { readoutSetting, type ReadoutSetting } from './readoutSetting'
 import { createMessages, type Message, type MessageTuning } from './messages'
 import { createVisorFx, curvedY, flatPoint, type VisorFx } from '../view/visorFx'
+import { createZapBeam } from '../view/zapBeam'
+import { screenColumn } from '../goo/types'
 import { PinnedBox, reduceMotion } from '../ui/kit'
 import tank from '../../content/tuning/tank.json'
 import hud from '../../content/tuning/hud.json'
@@ -76,6 +78,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
   const tankCanvas = useRef<HTMLCanvasElement>(null)
   const gooCanvas = useRef<HTMLCanvasElement>(null)
   const readoutCanvas = useRef<HTMLCanvasElement>(null)
+  const zapCanvas = useRef<HTMLCanvasElement>(null) // F67 the zap's beam, above the visor
   const readoutEl = useRef<HTMLDivElement>(null)
   const lessonMark = useRef<HTMLDivElement>(null)
   const swapRing = useRef<SVGSVGElement>(null)
@@ -117,6 +120,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     const el = host.current!, tc = tankCanvas.current!, ctx = tc.getContext('2d')!
     const rc = readoutCanvas.current!, rctx = rc.getContext('2d')!
     const s = engine.state
+    const beam = createZapBeam(zapCanvas.current!) // F67: the zap's beam + laser point (src/view/zapBeam.ts)
+    let lastTap: { x: number; y: number; at: TapPoint } | null = null // the last zap tap: stage px + the tank point it sent
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
     // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
     let camera = s.spin, last = looksClock.now(), hudAt = 0, raf = 0, ended = false
@@ -189,7 +194,19 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       const X = cracksLook.xray
       view.xray = { cells: s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), pad: X.pad + X.width, alpha: X.gooAlpha }
       view.still = still // (reduce motion: the zap has no swell and no spray, F67)
-      gooRef.current?.frame(s, events, view, active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0)
+      const gooDt = active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0
+      gooRef.current?.frame(s, events, view, gooDt)
+      // F67 the zap's beam: from the visible tank's top centre to the tap (the finger: stage px, above the visor), on
+      // the goo's clock. A pop that didn't come from a tap here (a lesson, a test) aims at its `at`, un-bent.
+      for (const e of events) if (e.type === 'pop' && e.at) {
+        const rect = tankRect(view, s.visibleWidth, s.height - s.bufferRows)
+        // (the engine re-wraps x, which can move it by a rounding error: near enough is the same tap)
+        const tap = lastTap && Math.abs(lastTap.at.x - e.at.x) < 1e-6 && Math.abs(lastTap.at.y - e.at.y) < 1e-6 ? lastTap : null
+        const to: [number, number] = tap ? [tap.x, tap.y]
+          : [view.centreX + screenColumn(e.at.x - 0.5, view.camera, s.width) * view.cellPx, view.topY + (e.at.y - s.bufferRows) * view.cellPx]
+        beam.fire([rect.left + rect.width / 2, rect.top], to, colorOf(e.color))
+      }
+      beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
@@ -272,6 +289,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: softDrop,
       bubbles: { count: () => bubbles.count(), from: (crackId: number) => bubbles.from(crackId) }, // F36 e2e/cracks-look.mjs
+      zapBeam: () => beam.shots(), // F67 e2e/zap.mjs: the beams on screen (from, to: stage px; t: seconds)
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }),
       // F30 lessons: lesson('sample', 3) plays a lesson from a step (1 = the first, or a step id); lessonView(): where it is
@@ -299,7 +317,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         if (!cell) return false // beside or above the visible tank: a plain tap (rotate)
         const [x, y] = cell
         if (y < 0 || y >= s.height || !s.grid[y * s.width + x]) return false
-        engine.act({ type: 'pop', x, y, at: tapPoint(px, py) })
+        const at = tapPoint(px, py), r = el.getBoundingClientRect()
+        lastTap = { x: px - r.left, y: py - r.top, at } // (the beam ends on the finger: F67)
+        engine.act({ type: 'pop', x, y, at })
         return true
       },
     }, () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.inputOn() && s.status === 'playing',
@@ -307,7 +327,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.consoleOnly() && s.status === 'playing')
 
     return () => {
-      cancelAnimationFrame(raf); ro.disconnect(); detach(); stopHudEdits()
+      cancelAnimationFrame(raf); ro.disconnect(); detach(); stopHudEdits(); beam.dispose()
       for (const v of ['--kit-hud-w', '--kit-hud-dock-size', '--kit-toasts-at', '--kit-toasts-start', '--kit-toasts-end']) root.style.removeProperty(v)
     }
   }, [engine])
@@ -318,6 +338,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       <canvas className="stage-layer" ref={gooCanvas} key={style} data-goo={style} />
       {/* the pressure readout, on top of everything in the tank (the goo and the visor glitch): its line on a canvas
           of its own, its words kit text in a kit PinnedBox (never catches taps, so zaps reach the tank under it) */}
+      {/* F67 the zap's beam + laser point: above the visor (a laser from the viewer — it lands exactly on the finger) */}
+      <canvas className="stage-layer stage-zap" ref={zapCanvas} />
       <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>

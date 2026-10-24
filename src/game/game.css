@@ -5,6 +5,8 @@
 /* F26 the pressure readout: its line (a canvas of its own) and its words (kit text, placed each frame by the frame loop
    with a CSS translate), above the visor glitch (z-index 1), so the reading stays clear while the view breaks up. */
 .stage-readout { z-index: 2; pointer-events: none; }
+/* F67 the zap's beam (src/view/zapBeam.ts): above the visor too, never catches taps */
+.stage-zap { z-index: 2; pointer-events: none; }
 .stage-pin { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; }
 /* F28 the swap timer beside a holding finger (ShiftStage placeSwapRing: size, place and fill; content/tuning/hud.json
    swapRing). Never catches touches. Fills clockwise from the top in the style's accent (the HUD Swap bar's colour), on
