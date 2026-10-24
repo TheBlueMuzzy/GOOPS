@@ -47,6 +47,7 @@ const E2E = [
   ['payslip', 'e2e/payslip.mjs', ''],          // 5348 (F41: the report's payslip + paydays, every portrait size)
   ['story', 'e2e/story.mjs', ''],              // 5349 (F35: story moments 0–9, whispers, titles; ?story turns them on)
   ['rank-select', 'e2e/rank-select.mjs', ''],  // 5351 (F70: version · RANK SELECT · credit; pick 0 / pick 7; every portrait size)
+  ['zap', 'e2e/zap.mjs', ''],                  // 5355 (F67: the pop's tap point · beam top centre → tap · white-hot · spray · Particle · reduce motion; every portrait size)
 ]
 
 const args = process.argv.slice(2)
