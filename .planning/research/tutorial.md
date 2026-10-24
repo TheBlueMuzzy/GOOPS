@@ -460,3 +460,49 @@ b) The real 25% speed from the start.
 - **The rails:** pressure capped at 90 %, integrity floor 20 %, no rupture, the overflow rail clears the top — proven by 10 minutes of sped-up free play in the e2e.
 
 **Logged, not changed:** the bubble is see-through glass (the kit's Callout look): where it sits over the pressure line, the PSI readout and the dashed line show through its words (D1, E1 at 1440). A taste call for Muzzy (see SPRINT Notes).
+
+---
+
+## 11. v1's tutorial touches against the first day as built (F68 task 3, 2026-10-24)
+
+*Every small "touch" in v1's three tutorial docs (`research/v1/Tutorial.md` = v1, `Tutorial2.md` = v2, `Tutorial3.md` = v3) — a word, a pause, a highlight, a jiggle, a sound, a safety net — checked against `content/lessons/first-day.json`, its words (en.json → lessons.first-day) and the code. Steps (A1, B2…) are v1's names first, then today's. **Kept** = it's there (maybe in other words) · **Changed** = changed on purpose (why given; §2 has the step-level changes) · **Missing** = not there; small ones built in F68, bigger ones → ROADMAP parking lot.*
+
+| Touch | v1 | Now | Verdict |
+|---|---|---|---|
+| Periscope highlighted on the welcome | A2 / v3 A1: "periscope highlighted" | A1's pointer outlines the periscope (or Back to the tank) + a 6 s hint | **Kept** |
+| Welcome line, "Operator training begins" | A1 (v1 had a separate briefing step) | "Your first day! …pull the periscope." | **Kept** (one step, as v2/v3) |
+| Same piece carries B1 → B2 (watch it, then fast drop it) | B1 → B1B → B2 | B1 → B2, the same blue I | **Kept** |
+| The one character beat "Yeah. It's slow." | B1B / v2 B2 | "Slow, right? Hold S or ↓ to fast drop." | **Kept** (new words) |
+| "The faster you place it, the better" | B2 | — | **Changed**: there's no speed score; why fast drops matter comes with the visor (rank 2: "Dropping the Goop faster keeps the Visor charged") |
+| A beat before the rotate line (1.2 s) | B3 pauseDelay 1200 | B3 showAfter 1.2 | **Kept** |
+| Practice drop "Do it again." | B4 | — | **Changed** (§2: the blue piece arrives in C2 with a purpose) |
+| Watching pressure climb ("faster than you think") | C1 → C1B, ~2.5× rise | C1-rise: ×4 rise with no line, until the yellow is ready | **Kept** (the drama line cut in v2) |
+| Target goop pulses (yellow, then blue) | C1C / v3 C2 + C4 highlightGoopColor | the pointer's outline on `{ "goop": "yellow" }` / `"blue"` + the engine's ready glow | **Kept** |
+| Only the taught colour can be zapped | v3 trainingHighlightColor (pop restricted) | rules.zapColors | **Kept** |
+| **A tap on goop the lesson won't let you zap answers you** | v1 audit: "only gets generic shake"; v2 C4: "shake rejection provides feedback" | **was silent** (the engine refused before giving the cell) → now it jiggles + plays the poke sound, like a shift poke; no stack message (the lesson's line says which colour) | **Missing → built (F68 task 1)** |
+| Wait-then-remind hint, can't be closed, pressure held | C1C reshow 3 s / v3 Pattern 3 | waitThenHint, hint after 3 s, pressure held (`pressureRise: 0`) | **Kept** |
+| "Still filling" on a zap too early | v2 C4: shake + fill animation | jiggle + C3/D3/E1-seal reaction "Still filling. Wait until it's full." | **Kept** |
+| A tap on empty water / the background | v1 audit: generic shake | nothing (same as in a shift) | **Changed** on purpose — same intention, same motion: the day behaves like a shift |
+| Merge, fill and vent from one zap | C2 + C3 (v3: one three-concept line) | C2-join ("Same colours join… fills up first") + C3-vent ("Big blobs let out more") | **Kept** (split: vent is tiny, §2) |
+| A breath before a line after a zap / merge (1–1.5 s) | C2 1000 ms, v3 C3 1500 ms, E2 1500 ms | lessons.json `betweenStepsSeconds` 0.5 between steps (the 600 ms pop is all but done) | **Kept** (shorter; Muzzy can lengthen it in the Dev Kit's Lessons tab) |
+| See the crack before reading about it | D1 pauseDelay 2500 | D1 showAfter 1.5 | **Kept** |
+| "Seal it with the laser" → plug, then zap to seal | v1 D1 (wrong), v3 two-step fix | D1 "Cover it…", D3 "Zap that goop to seal it." | **Kept** (v3's model) |
+| Goop on a plugged crack glows "ready to seal" | v3 §3 | the x-ray box (dotted, marching) round any covered crack + the ready glow when the goop is full; a wrong colour gets a red pixel X | **Changed** (F36 readable cracks). The box looks the same for the right colour and the wrong one until the X shows → parking lot idea (taste call) |
+| Spin taught when there's a reason (the crack is over there) | v2 principle 6 | D2: the crack is out of the piece's line; spin unlocked then | **Kept** |
+| Piece shown a third of the way down before the spin line | D2 showWhenPieceBelow row 8 | D2 positionGated atLeast 7 | **Kept** |
+| Retry: cracks pile up so success gets certain | v3 D2 (v1: freeze → pop all → new crack) | D2 retry adds a crack in view + "Try again. Spin until the shadow is over the crack.", most 8 | **Kept** (v3's way) |
+| Off-screen cracks discovery, once ever, armed across steps | D3 (v1 auto-skip 15 s; v2/v3 persistent) | outOfView interrupt, remembered per device, + a sure trigger in F1 | **Kept** (and finished) |
+| Stack up to reach a high crack, hands-on | E1 (v1 had no spawns; v2/v3 continuous spawn) | E1-build: chosen pieces, a build-up helper, hint 8 s | **Kept** |
+| Wrong colour on a crack | — (not in v1) | redX interrupt in E1: "Wrong colour. See the red X? Zap that goop to uncover it." + in real shifts "Wrong colour on a crack — zap it" at the stack (F68 task 2) | **New** |
+| "Cracks form higher as pressure builds" named after the seal | v3 E2 | E1 says it before ("Cracks form up high too…"); F1 "Cracks come faster as pressure rises" | **Changed** (§2: folded) |
+| Free play with rails (95 % cap, re-cap message) | v2/v3 F1 | F1-work: 90 % cap + "Zap goop to let pressure out.", integrity floor, overflow rail "Too full!" | **Kept** |
+| "Don't let the goop pile too high" | v2/v3 F1 | the overflow rail's "Too full! I've cleared some. Zap more often." | **Kept** (said when it happens) |
+| Swipe up to leave training = how you leave the tank | v2/v3 F1 | the day ends on a real rupture → report → Back to the console; flick up / W / ↑ is taught by the first breakdown lesson (V2/L2/K2) | **Changed** on purpose (GDD §4: the console is for repairs; the day ends like a shift) |
+| Rank 1 at the end (not on replays) | v3 F1 exit | rank 1 with the day's report | **Kept** |
+| "Got it" can't be hit by the tap meant for the game | v1 advance arm 150 ms | lessons.json dismissArmSeconds 0.4 | **Kept** |
+| Garbled intercom, key words in green | all of v1's lines (`[brackets]` = static) | plain words (alpha decision 2026-10-19, §7: it layers on in beta) | **Missing → parking lot** (bigger: a line format + renderer; GDD §6 keeps it) |
+| Operator Journal entries (WELCOME, DROP_INTRO, POP_TIMING, CRACK_INTRO, ROTATE_INTRO, WRAP_INTRO, FIRST_SHIFT) | every phase | — | **Missing → already F46** (Operator Journal, should:beta) |
+| Spray droplets on each zap (the line waits for them to fade) | C2 / D2 retry "droplet animation" | the placeholder pop drain (popMs 600) | **Missing → already F67** (the zap look) |
+| "You have one job!" boss flavour | v1 D1 | — | **Changed** (story voice: F35 / F69 — Management's lines on the monitor) |
+
+**Built in F68:** the refused-zap jiggle + poke sound (task 1), the wrong-colour message at the stack (task 2). Every other small touch was already there or changed on purpose; the bigger ones are F46, F67 or the parking lot (garbled key words · a plugged-vs-wrong look for the x-ray box).
