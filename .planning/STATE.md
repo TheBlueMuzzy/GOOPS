@@ -1,9 +1,9 @@
 ## ▶ RESUME HERE
-2026-10-24 — **Sprint 14 / F41 payslip built, waiting for Muzzy's play + "approved"** (🙋 task 6). The meter reads "x / y DUE"; the report shows Gross → fines (▼) → Net pay (▲, = real XP), rows one at a time (payslip.json lineMs), scrolling with title + buttons pinned; each rank crossed opens a Payday Modal (5 items = the payment due, passage debt, rank up). Framework v0.14.0 installed (UI kit 0.31.0, Dev Kit 0.26.1). check:full ALL PASS 24 at 67d2b0f.
-**Next:** on "approved": F41 ✅ → `F41: done` → /save → retro → archive → /sprint 15 (candidates: F35 story moments — its F61 talking bubble is in UI kit 0.31.0 as <TalkingBubble>, feel in content/tuning/talk.json; F39 / F62 / F66; F42 + F48). Hand-off cards now have **Your to-dos:** and Questions = only questions with "?". Older status notes: **Earlier notes** below.
+2026-10-24 — **F41 ✅ approved by Muzzy** ("it's fine. approved"): the end report is a payslip — "x / y DUE" meter, Gross → fines (▼) → Net pay (▲, = real XP) row by row, a Payday card per rank crossed (5 items = the payment due, passage debt, rank up). Framework v0.14.0 in (UI kit 0.31.0, Dev Kit 0.26.1). Sprint 14 is finished.
+**Next:** Muzzy's 3-line Sprint 14 retro → archive-sprint → /sprint 15 (candidates: F35 story moments ranks 0–9 — the talking bubble F61 shipped as <TalkingBubble> in UI kit 0.31.0, feel in content/tuning/talk.json; F39 rank twists; F62 eyes + mouths; F66 your name; F42 + F48 upgrades). Older status notes: **Earlier notes** below.
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 14 (F41) · Doing: F41 — building · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 14 (F41) · Doing: F41 ✅ — Sprint 14 retro next · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
