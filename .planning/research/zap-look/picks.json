@@ -1,0 +1,15 @@
+{
+  "_note": "F67 zap look — Muzzy's pick 2026-10-24 (\"great settings. Both.\"): the L5 laser + v1's spray together. Change: the beam starts at the top centre of the view and angles down to the tap point (sketch: research/sketches/zap-look.html, now its defaults).",
+  "beamFrom": "top centre of the visible tank, angled to the tap point",
+  "values": {
+    "beamTime": 0.3,
+    "whiteHot": 0.52,
+    "swell": 0.14,
+    "suckTime": 0.27,
+    "droplets": 15,
+    "dropSpeed": 95,
+    "dropLife": 1.4,
+    "gravity": 310,
+    "sprayAt": 0.6
+  }
+}

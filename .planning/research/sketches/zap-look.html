@@ -71,24 +71,24 @@
 const $ = id => document.getElementById(id);
 
 // ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
-// Default = the "Both" blend. Droplet numbers are in v1's units (px on v1's 30-px cell), so v1's 30 / 60 / 3 / 180 read the same here.
+// Default = Muzzy's pick (2026-10-24, research/zap-look/picks.json). Droplet numbers are in v1's units (px on v1's 30-px cell), so v1's 30 / 60 / 3 / 180 read the same here.
 const GOO = {
   beamTime: 0.3,    // s the beam shows (L5: 0.3). The goop heats for 40% of it (L5: 0.12 s flash)
-  whiteHot: 0.7,    // 0 = keeps its colour, 1 = pure white (L5: 0.75)
-  swell: 0.2,       // how much bigger it grows while it heats (L5: 0.24)
-  suckTime: 0.6,    // s to be sucked into the laser point (L5: 0.73). 0 = vanishes at once
-  droplets: 18,     // droplets per zap (v1: 30, same for any size)
-  dropSpeed: 110,   // px/s on v1's 30-px cell (v1: 60)
+  whiteHot: 0.52,   // 0 = keeps its colour, 1 = pure white (L5: 0.75)
+  swell: 0.14,      // how much bigger it grows while it heats (L5: 0.24)
+  suckTime: 0.27,   // s to be sucked into the laser point (L5: 0.73). 0 = vanishes at once
+  droplets: 15,     // droplets per zap (v1: 30, same for any size)
+  dropSpeed: 95,    // px/s on v1's 30-px cell (v1: 60)
   dropLife: 1.4,    // s before a droplet fades out (v1: 3)
-  gravity: 240,     // px/s² on v1's 30-px cell (v1: 180)
-  sprayAt: 1,       // 0 = the moment the beam hits (from the goop) ... 1 = when the suck-in ends (from the laser point)
+  gravity: 310,     // px/s² on v1's 30-px cell (v1: 180)
+  sprayAt: 0.6,     // 0 = the moment the beam hits (from the goop) ... 1 = when the suck-in ends (from the laser point)
 };
 // [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
 const KNOBS = [['The laser'], ['beamTime', 0, 1, 0.01], ['whiteHot', 0, 1, 0.01], ['swell', 0, 1, 0.01], ['suckTime', 0, 2, 0.01],
   ['The spray'], ['droplets', 0, 100, 1], ['dropSpeed', 0, 300, 5], ['dropLife', 0.2, 6, 0.1], ['gravity', 0, 600, 10], ['sprayAt', 0, 1, 0.05]];
 // One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
 const KNOB_HELP = {
-  beamTime: 'Seconds the white beam shows, from above the tank down to your tap. The goop heats up during the first 40% of it. 0 = no beam, no heat-up wait.',
+  beamTime: 'Seconds the white beam shows, from the top centre of the view down to your tap (it angles toward the middle). The goop heats up during the first 40% of it. 0 = no beam, no heat-up wait.',
   whiteHot: 'How far the zapped goop turns toward white. 0 = keeps its colour, 1 = pure white-hot.',
   swell: 'How much the zapped goop puffs up while it heats (0.2 = 20% bigger). Easiest to see on a big group in Slow-mo.',
   suckTime: 'Seconds to be sucked into the laser point; the side nearest your tap goes first, so it stretches into a teardrop. 0 = it just vanishes (v1).',
@@ -528,7 +528,7 @@ function drawFx() {
     const a = 1 - beam.t / GOO.beamTime, x = sx(beam.x), y = sy(beam.y);
     fx.strokeStyle = `rgba(255,255,255,${a})`; fx.lineWidth = 3 + 6 * a; fx.lineCap = 'round';
     fx.shadowColor = beam.css; fx.shadowBlur = 18;
-    fx.beginPath(); fx.moveTo(x, sy(-0.6)); fx.lineTo(x, y); fx.stroke();
+    fx.beginPath(); fx.moveTo(sx(W / 2), sy(-0.6)); fx.lineTo(x, y); fx.stroke(); // from the top centre of the view (Muzzy 2026-10-24)
     fx.fillStyle = `rgba(255,255,255,${a})`; fx.beginPath(); fx.arc(x, y, cell * 0.5 * a + 4, 0, Math.PI * 2); fx.fill();
     fx.shadowBlur = 0;
   }
