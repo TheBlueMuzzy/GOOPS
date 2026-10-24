@@ -6,6 +6,8 @@
 //   integrity low    → "Tank weak…" once when it falls below integrityLowAt, again only after it climbs back above
 //   pressure near max→ once when it reaches pressureHighAt, again only after it drops below pressureHighResetAt
 //   quota met, rupture + why (too many open cracks / overflow)
+//   wrong colour     → "Wrong colour on a crack…" the first time goop of another colour covers each open crack (F68),
+//                      at most once per wrongCoverCooldownSeconds
 import type { MachineId, ShiftEvent, ShiftState } from '../engine'
 import en from '../../content/text/en.json'
 
@@ -13,8 +15,9 @@ export type MessageKey = keyof typeof en.messages
 export interface Message { key: MessageKey; danger: boolean; seconds: number }
 
 export interface MessageTuning {
-  seconds: { refused: number; broke: number; integrityLow: number; pressureHigh: number; quotaMet: number; rupture: number }
+  seconds: { refused: number; broke: number; integrityLow: number; pressureHigh: number; quotaMet: number; rupture: number; wrongCover: number }
   refusedCooldownSeconds: number
+  wrongCoverCooldownSeconds: number
   integrityLowAt: number
   pressureHighAt: number
   pressureHighResetAt: number
@@ -34,6 +37,8 @@ export function createMessages(tuning: MessageTuning) {
   let lastRefusedAt = -Infinity // ms of the last "refused" message
   let integrityWarned = false
   let pressureWarned = false
+  let lastWrongCoverAt = -Infinity // ms of the last "wrong colour on a crack" message
+  const wrongCovered = new Set<number>() // the cracks wrong-colour goop has covered already (each one says it once)
 
   // Call once per frame with the frame's events. nowMs = the page clock (performance.now()), so the cooldown is
   // real time: spam-tapping is a real-time thing, even when the shift runs slower at the console.
@@ -54,6 +59,16 @@ export function createMessages(tuning: MessageTuning) {
     if (s.phase === 'playing') {
       if (!integrityWarned && s.integrity < tuning.integrityLowAt) { integrityWarned = true; say('integrityLow', tuning.seconds.integrityLow, true) }
       if (!pressureWarned && s.pressure >= tuning.pressureHighAt) { pressureWarned = true; say('pressureHigh', tuning.seconds.pressureHigh, true) }
+      // goop of another colour sits on an open crack: it can't plug it (only its own colour does) — the most
+      // confusing moment for a new player (Muzzy 2026-10-24), so say it the first time each crack gets covered
+      for (const c of s.cracks) {
+        const on = s.grid[c.y * s.width + c.x]
+        if (on === 0 || on === c.color || wrongCovered.has(c.id)) continue
+        wrongCovered.add(c.id)
+        if (nowMs - lastWrongCoverAt < tuning.wrongCoverCooldownSeconds * 1000) continue
+        lastWrongCoverAt = nowMs
+        say('wrongCover', tuning.seconds.wrongCover)
+      }
     }
     if (s.integrity > tuning.integrityLowAt) integrityWarned = false
     if (s.pressure < tuning.pressureHighResetAt) pressureWarned = false

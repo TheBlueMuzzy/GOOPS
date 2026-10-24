@@ -140,7 +140,8 @@
     "pressureHigh": "Pressure near max — zap goop!",
     "quotaMet": "Quota met! Every crack now is a bonus.",
     "ruptureCracks": "Rupture! Too many open cracks",
-    "ruptureOverflow": "Rupture! The tank overflowed"
+    "ruptureOverflow": "Rupture! The tank overflowed",
+    "wrongCover": "Wrong colour on a crack — zap it"
   },
   "pause": {
     "title": "Console",

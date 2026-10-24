@@ -9,7 +9,7 @@ import { oneShapeConfig, tank } from './engine/helpers'
 
 const t = tuning as MessageTuning
 // just the parts of the state the messages read
-const state = (over: Partial<ShiftState> = {}) => ({ phase: 'playing', integrity: 1, pressure: 0, ...over }) as ShiftState
+const state = (over: Partial<ShiftState> = {}) => ({ phase: 'playing', integrity: 1, pressure: 0, cracks: [], ...over }) as ShiftState
 const keys = (list: { key: string }[]) => list.map((m) => m.key)
 
 describe('refused zaps', () => {
@@ -38,6 +38,40 @@ describe('refused zaps', () => {
     shift.takeEvents()
     shift.act({ type: 'pop', x: 5, y: 23 }) // just landed: still filling
     expect(keys(createMessages(t).step(shift.state, shift.takeEvents(), 0))).toEqual(['refusedFilling'])
+  })
+})
+
+describe('wrong colour on a crack (F68)', () => {
+  // a 4-wide, 2-tall tank with one open green (3) crack at (1, 1)
+  const tankWith = (on: number, cracks = [{ id: 7, x: 1, y: 1, color: 3, plugged: false }]) => {
+    const grid = new Uint8Array(8)
+    grid[1 * 4 + 1] = on
+    return state({ width: 4, height: 2, grid, cracks })
+  }
+
+  it('says it the first time another colour covers an open crack — once per crack', () => {
+    const m = createMessages(t)
+    expect(m.step(tankWith(0), [], 0)).toEqual([]) // open, nothing on it
+    expect(m.step(tankWith(3), [], 0)).toEqual([]) // its own colour: plugged, all good
+    const first = m.step(tankWith(1), [], 0)
+    expect(keys(first)).toEqual(['wrongCover'])
+    expect(first[0].danger).toBe(false)
+    expect(first[0].seconds).toBe(t.seconds.wrongCover)
+    expect(m.step(tankWith(1), [], 100_000)).toEqual([]) // still covered: said already
+    expect(m.step(tankWith(0), [], 200_000)).toEqual([])
+    expect(m.step(tankWith(2), [], 300_000)).toEqual([]) // the same crack again: said already
+  })
+
+  it('at most once per cooldown across cracks', () => {
+    const m = createMessages(t)
+    const crack = (id: number) => [{ id, x: 1, y: 1, color: 3, plugged: false }]
+    expect(keys(m.step(tankWith(1, crack(1)), [], 0))).toEqual(['wrongCover'])
+    expect(m.step(tankWith(1, crack(2)), [], 1000)).toEqual([]) // cooling down (and crack 2 counts as said)
+    expect(keys(m.step(tankWith(1, crack(3)), [], t.wrongCoverCooldownSeconds * 1000 + 1))).toEqual(['wrongCover'])
+  })
+
+  it('has words', () => {
+    expect(messageWords('wrongCover', 'keys')).toBe(text.messages.wrongCover)
   })
 })
 
