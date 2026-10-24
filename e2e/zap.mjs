@@ -76,12 +76,19 @@ const unfreeze = (page) => page.evaluate(async () => (await import('/src/devkit/
 
 // Let the zap run on (from a freeze, or from the start) until the beam has gone, then ~0.15 s more — the droplets are
 // in the air (Muzzy's sprayAt 0.6 → they leave at 0.23 s of the 0.39 s zap) — and freeze again
+// Freezes at a GOO-clock moment (0.45 s into the zap), never after wall-clock ms: under check:full's load the goo's
+// frames are capped at 0.1 s, so wall time runs ahead of goo time and the droplets hadn't left the block yet.
+// While the beam is up its own t is the goo time; after it ends, add the looks clock's frames with the game's cap.
 async function freezeAfterBeam(page, at) {
   await page.evaluate(async () => {
-    const { setClockPause } = await import('/src/devkit/gameClock.ts')
+    const { setClockPause, clockTimes } = await import('/src/devkit/gameClock.ts')
+    let gooT = -1, last = 0
     const watch = () => {
-      const b = window.__goops.zapBeam()[0]
-      if (!b || b.t >= 0.3) setTimeout(() => setClockPause('full'), 150)
+      const b = window.__goops.zapBeam()[0], now = clockTimes().looks
+      if (b) gooT = b.t
+      else if (gooT >= 0) gooT += Math.min(now - last, 100) / 1000
+      last = now
+      if (gooT >= 0.45) setClockPause('full')
       else requestAnimationFrame(watch)
     }
     requestAnimationFrame(watch)
