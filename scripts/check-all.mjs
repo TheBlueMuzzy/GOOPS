@@ -44,6 +44,7 @@ const E2E = [
   ['controls', 'e2e/controls.mjs', ''],        // 5251
   ['shift-smoke', 'e2e/shift-smoke.mjs', ''],  // 5250
   ['portrait', 'e2e/portrait.mjs', ''],        // 5343
+  ['payslip', 'e2e/payslip.mjs', ''],          // 5348 (F41: the report's payslip + paydays, every portrait size)
 ]
 
 const args = process.argv.slice(2)

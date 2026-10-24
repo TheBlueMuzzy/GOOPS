@@ -5,7 +5,7 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, Button, GameOver, Hud, HudText, ListRow, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
+import { Bar, Button, GameOver, Hud, HudText, ListRow, Modal, Pause, Row, Score, ScreenStack, ScrollArea, Settings, Stack, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema } from './kit'
 import { clampModifiers, createShift, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
 import { upgradesForShift } from '../progress/upgradeShop'
@@ -355,11 +355,12 @@ export function App() {
       return (
         <Modal title={P.paydayTitle} actions={<Button onClick={pay}>{P.pay}</Button>}>
           <Text>{fill(P.paydayMessage, { due: cr(day.due) })}</Text>
-          <Stack gap="xs">
+          {/* (the bill's rows scroll on a short phone — no scroll bar, the edge fades; Pay up stays in view) */}
+          <ScrollArea label={P.paydayTitle}><Stack gap="xs">
             {day.items.map((item) => <ListRow key={item.key} label={payWords(item.key)}><Text kind="label">{fill(P.minus, { n: cr(item.amount) })}</Text></ListRow>)}
             <ListRow label={P.debt}><Text kind="label">{fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) })}</Text></ListRow>
             <ListRow label={P.rankUp}><Text kind="label">{what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to })}</Text></ListRow>
-          </Stack>
+          </Stack></ScrollArea>
         </Modal>
       )
     },

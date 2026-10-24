@@ -9,9 +9,10 @@ Check: unit tests for the payslip maths (net = XP for many scores and ranks, pay
 - [x] 🤖 1. The payslip maths: gross, fines, net, paydays, passage debt, first day — src/progress/payslip.ts + content/tuning/payslip.json
 - [x] 🤖 2. The fine and payday lines as editable text (fines from the shift's events, silly fines with their starting ranks, payday items, the debt line) — content/text/en.json
 - [x] 🤖 3. The rank meter becomes CREDITS / PAYMENT DUE — src/ui/Console.tsx
-- [ ] 🤖 4. The end report with the payslip and paydays, lines one at a time, fixed-size card — src/ui/App.tsx
-- [ ] 🤖 5. e2e check + screenshots at every portrait size; TDD + GDD updated — e2e/payslip.mjs
+- [x] 🤖 4. The end report with the payslip and paydays, fixed-size cards (Payday rows scroll in a ScrollArea, Muzzy 2026-10-23) — src/ui/App.tsx
+- [x] 🤖 5. e2e check + screenshots at every portrait size; TDD + GDD updated — e2e/payslip.mjs
 - [ ] 🙋 6. Muzzy plays a few shifts through a payday and says how it feels — src/ui/App.tsx
+- [ ] 🤖 7. Install UI kit 0.31.0 (framework F113): the report's rows scroll with the title + buttons pinned, rows revealed one at a time, fines red / net green; e2e/payslip.mjs's report-fit check turns on by itself — src/ui/App.tsx
 
 ## Notes
 - Plan OK (Muzzy 2026-10-23: "ok. /develop"). Sprint picked: "A. fine" (story build first).

@@ -185,6 +185,15 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D19 · 2026-10-23 · The payslip is theatre worked out from the XP; nothing new is saved (F41)
+  Proposed by: Claude   Options: save credits, fines and debt / work them out from the shift's reward
+  Chose: makePayslip(reward, facts) in src/progress/payslip.ts: net = the XP the shift earned (gross = net + fines,
+  so fines never slow ranking), one payday per rank crossed for exactly that rank's xpToNext; the passage debt is
+  debtAt(rank) (seeded interest per rank), so it can't disagree with the rank and the save stays v2. Fines from the
+  shift's real events (App gathers them from session.listen + the end state) come first, then silly ones by rank.
+  Layout: the report's rows + a Payday Modal per rank crossed (its rows in a ScrollArea — Muzzy: "just obviously
+  hangs off screen", as Glyphtender does); the report's own rows scroll from UI kit 0.31.0 (framework F113, with
+  the row reveal + tones). Font sizes never go under the kit's 18 px body text (Muzzy: a pixel font).
 D18 · 2026-10-22 · Upgrades you own live in the progress save (v2, old saves carried over); the shop rules are pure functions (F34)
   Proposed by: Claude   Options: a separate upgrades save / extend goops-progress
   Chose: goops-progress version 2 = { totalXp, scrapsSpent, owned: id → level, equipped: ids }, one upgrade step per
