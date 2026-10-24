@@ -125,6 +125,26 @@ try {
     await close()
   }
 
+  // ---------------- in-shift whispers: "…cold…" once at rank 3, a feeling every shift from 8 ----------------
+  for (const [rank, want, again] of [[3, [en.story.whispers.cold], false], [8, Object.values(en.story.whispers), true]]) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+    const page = await context.newPage()
+    await skipFirstDay(page)
+    for (let shift = 1; shift <= 2; shift++) {
+      await page.goto(`http://localhost:${PORT}/?seed=7&story&rank=${rank}&whisperAt=1`)
+      await page.evaluate(() => window.__goopsSeen?.(Array.from({ length: 51 }, (_, i) => `story:${i}`).concat(['lesson:unlock-upgrades'])))
+      await page.reload(); await page.locator('.kit-art-stage').waitFor()
+      await startShift(page)
+      await page.waitForTimeout(1000 + 1500)
+      const said = await page.locator('.kit-talk').allInnerTexts()
+      if (shift === 1) {
+        await page.screenshot({ path: `${OUT}/whisper-rank${rank}-390x844.png` })
+        check(`rank ${rank}: a whisper in the shift`, said.some((t) => want.some((w) => t.includes(w))), JSON.stringify(said))
+      } else check(`rank ${rank}: the next shift ${again ? 'whispers again' : 'stays quiet ("cold" was once)'}`, said.length > 0 === again, JSON.stringify(said))
+    }
+    await context.close()
+  }
+
   // ---------------- the Veteran's bubble at every portrait size (looked at by hand) ----------------
   for (const [w, h] of [[360, 780], [1100, 900], [1440, 900], [1920, 1080]]) {
     const { page, errors, close } = await device(xpFor(5) + 10, { width: w, height: h })

@@ -18,6 +18,7 @@ import { messageWords, type Message } from '../game/messages'
 import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '../game/lessons/goopsLessons'
 import { LessonView } from '../game/lessons/LessonView'
 import { StoryView } from '../game/lessons/StoryView'
+import { Whisper } from '../game/Whisper'
 import { storyMoments } from '../game/lessons/storyMoments'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
 import { unlockLessons } from '../game/lessons/unlockLessons'
@@ -541,6 +542,8 @@ export function App() {
       {/* (F31: and over the end report — day one's last step points at its "Back to the console") */}
       {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={menuOpen} atConsole={mode !== 'shift'} />}
       {mode === 'console' && !menuOpen && <StoryView />}
+      {/* F35: the goop's first whispers in a real shift (not a lesson's training shift) */}
+      {engine && lessonPlay.realShift() && (mode === 'shift' || peeking) && !result && !menuOpen && <Whisper engine={engine} />}
       {sideways && <UprightScreen />}
     </>
   )

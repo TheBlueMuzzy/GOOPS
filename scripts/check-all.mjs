@@ -45,6 +45,7 @@ const E2E = [
   ['shift-smoke', 'e2e/shift-smoke.mjs', ''],  // 5250
   ['portrait', 'e2e/portrait.mjs', ''],        // 5343
   ['payslip', 'e2e/payslip.mjs', ''],          // 5348 (F41: the report's payslip + paydays, every portrait size)
+  ['story', 'e2e/story.mjs', ''],              // 5349 (F35: story moments 0–9, whispers, titles; ?story turns them on)
 ]
 
 const args = process.argv.slice(2)

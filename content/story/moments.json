@@ -2,6 +2,15 @@
   "_about": "F35: one story moment per rank-up (design/story.md \"Story moments, rank by rank\"), played at the console between shifts, once per device (Settings → Replay lessons plays them again). Each line: voice mon = Management types it on the monitor · spk = the Veteran's talking bubble over the monitor (Management can cut in: a mon line in the middle of his). words = a key in content/text/en.json story.lines. look = a console part to outline while the moment plays (optional; a part that isn't on the console yet is just left out).",
   "_catchUp": "Most moments played in one visit to the console (the newest ones), e.g. after two rank-ups in one shift or on a device that skipped some.",
   "catchUp": 2,
+  "_whispers": "In-shift whispers (design/story.md: 3 '…cold…' — one you'll doubt, once per device · 8+ one feeling a shift). A plain bubble pointing into the tank; no tap, it goes by itself. Seconds are rules time (pauses stop them). Words: en.json story.whispers.",
+  "whispers": {
+    "coldAt": 3,
+    "feelingsFrom": 8,
+    "feelings": ["warm", "tight", "nnn"],
+    "afterSeconds": [20, 70],
+    "showSeconds": 3.5,
+    "heightInTank": 0.6
+  },
   "moments": {
     "0": { "lines": [{ "voice": "mon", "words": "r0a" }, { "voice": "mon", "words": "r0b" }] },
     "1": { "lines": [{ "voice": "mon", "words": "r1a" }, { "voice": "mon", "words": "r1b" }] },

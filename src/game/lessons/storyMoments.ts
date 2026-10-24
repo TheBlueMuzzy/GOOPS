@@ -12,7 +12,8 @@ import text from '../../../content/text/en.json'
 export type Voice = 'mon' | 'spk'
 export type StoryLine = { voice: Voice; words: string }
 type Moment = { look?: string; lines: StoryLine[] }
-type MomentsFile = { catchUp: number; moments: Record<string, Moment> }
+type Whispers = { coldAt: number; feelingsFrom: number; feelings: string[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number }
+type MomentsFile = { catchUp: number; moments: Record<string, Moment>; whispers: Whispers }
 
 export const storyFile = momentsFile as unknown as MomentsFile
 const seenId = (rank: number) => `story:${rank}`
@@ -23,6 +24,15 @@ export function dueRanks(rank: number, seen: (rank: number) => boolean, file: Mo
   return due.slice(Math.max(0, due.length - Math.max(1, file.catchUp)))
 }
 
+/** In-shift whispers (Whisper.tsx): which one this shift gets at this rank (null = none) — one of the feelings from
+ *  feelingsFrom on; "cold" once per device from coldAt. pick = a random 0..1. */
+export const COLD_SEEN = 'whisper:cold'
+export function whisperFor(rank: number, coldSeen: boolean, pick: number, w: Whispers = storyFile.whispers): string | null {
+  if (rank >= w.feelingsFrom && w.feelings.length) return w.feelings[Math.floor(pick * w.feelings.length) % w.feelings.length]
+  if (rank >= w.coldAt && !coldSeen) return 'cold'
+  return null
+}
+
 /** The words of a line (its key when en.json has none, so a missing line shows up instead of going quiet). */
 export const storyWords = (key: string) => (text.story.lines as Record<string, string>)[key] ?? key
 
@@ -30,7 +40,7 @@ export type StoryView = { rank: number; line: StoryLine; look?: string } | null
 
 // Scripted checks (a dev build in an automated browser) start at the console at every rank: there the moments stay
 // quiet unless the page asks for them with ?story (e2e/story.mjs) — never in a player's game.
-const quietForChecks = () => import.meta.env.DEV && typeof navigator !== 'undefined' && navigator.webdriver
+export const quietForChecks = () => import.meta.env.DEV && typeof navigator !== 'undefined' && navigator.webdriver
   && !new URLSearchParams(location.search).has('story')
 
 let queue: { rank: number; moment: Moment }[] = []

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import en from '../../content/text/en.json'
 import progression from '../../content/tuning/progression.json'
-import { dueRanks, storyFile } from '../../src/game/lessons/storyMoments'
+import { dueRanks, storyFile, whisperFor } from '../../src/game/lessons/storyMoments'
 import { titleAt } from '../../src/progress/progression'
 
 const none = () => false
@@ -35,6 +35,13 @@ describe('story moments', () => {
   })
   it('Management 0–4, the Veteran 5–9 (story.md pacing)', () => {
     for (let r = 0; r <= 9; r++) for (const l of storyFile.moments[String(r)].lines) expect(l.voice).toBe(r < 5 ? 'mon' : 'spk')
+  })
+  it('whispers: none before 3, "cold" once at 3–7, a feeling every shift from 8', () => {
+    expect(whisperFor(2, false, 0.5)).toBeNull()
+    expect(whisperFor(3, false, 0.5)).toBe('cold')
+    expect(whisperFor(7, true, 0.5)).toBeNull()
+    for (const pick of [0, 0.4, 0.99]) expect(storyFile.whispers.feelings).toContain(whisperFor(8, true, pick))
+    for (const k of [...storyFile.whispers.feelings, 'cold']) expect((en.story.whispers as Record<string, string>)[k]).toBeTruthy()
   })
   it('titles: the bands from story.md, every one with words', () => {
     expect([0, 1, 4, 5, 9, 10, 29, 30, 44, 45, 50].map((r) => titleAt(r))).toEqual(
