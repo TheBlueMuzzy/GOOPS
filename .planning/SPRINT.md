@@ -1,5 +1,5 @@
 # Sprint 15 — the story starts: ranks 0–9
-Started 2026-10-24 · Milestone M5 Beta · Features: F35, F68
+Started 2026-10-24 · Milestone M5 Beta · Features: F35, F68, F70
 What changes for Muzzy: each rank-up from 0 to 9 plays its short story moment back at the console — Management types on the monitor (0–4), then the Veteran talks in his spiky bubble over the same monitor area (5–9); your rank title shows on the meter and the payday's rank-up line; the first whispers drift up in the tank (3, 8–9). Stays the same: shifts, balance, the payslip, the tutorial lessons. Moments are short, tap to move on, once per device.
 
 ## F35 🎮 Story moments + ranks 0–9
@@ -26,6 +26,15 @@ Check: unit test (refused lesson zap still sends the reject cell) · e2e/first-d
 - [x] 🤖 5. e2e: the refused-zap jiggle and the wrong-colour message, shots at every portrait size — e2e/first-day.mjs
 - [ ] 🙋 6. Muzzy plays the first day (fresh save) and says what still feels missing — content/lessons/first-day.json
 
+## F70 🧱 Rank select + version label (pulled in 2026-10-24 — Muzzy: "maybe we need the v1's rank selector back again at the bottom between the version … and \"muzzymade 2026\"")
+Done when: the console's bottom row reads version · RANK SELECT · MuzzyMade © 2026; the version comes from the framework version module (version.json, the same label as Settings and bug files — today the console shows v0.0.0.0); RANK SELECT opens a kit list of ranks 0–50 (v1: 0 in red = wipe the save → a fresh first day; your rank in green; any other = the start of that rank with upgrades refunded, as v1); shown wherever the Dev Kit is on (dev + the alpha testers' build), not in a store build; every word in en.json, every number in content/; shots at every portrait size.
+why: Muzzy (and testers) can jump to any rank or start a truly fresh first day in one tap, and always see which build they're on.
+Check: e2e (pick rank 0 → the first day starts; pick 7 → rank 7 at the console; version label = version.json) · check:framework (version module wiring) · check:full
+- [ ] 🤖 1. Install the framework version module (install-module version); retire Goops' own src/version.ts copy; the console shows its label — src/ui/Console.tsx
+- [ ] 🤖 2. RANK SELECT between the version and the credit; a kit list 0–50 (0 red, yours green); 0 wipes the save → first day, N sets that rank's start, refunds upgrades; only where the Dev Kit is on — src/ui/RankSelect.tsx
+- [ ] 🤖 3. e2e + shots at every portrait size — e2e/rank-select.mjs
+- [ ] 🙋 4. Muzzy picks rank 0, plays the first day fresh (F68 task 6 too) — src/ui/RankSelect.tsx
+
 ## Notes
 - Plan OK (Muzzy 2026-10-24: "build"). Speaker placement (Muzzy): "his messages show up in the same area where the company's messages show up, but his in his cool speechbubble. and it can be 'interrupted' by disappearing and the company talks through the monitor at the top. this will work well. I can do art later." → no separate speaker grille; the Veteran's bubble points at the monitor area.
 - No open P0/P1 bugs (B001–B003 are P3, not in these files).
@@ -44,3 +53,4 @@ Check: unit test (refused lesson zap still sends the reject cell) · e2e/first-d
 - F68 task 4 (c58dc7a): no other small touch was missing — the "breath" before a line after a zap/merge is lessons.json betweenStepsSeconds 0.5 (v1 had 1–1.5 s; the 600 ms pop is all but done by then — Muzzy can lengthen it in the Dev Kit). Two bigger ones → ROADMAP parking lot (read back): garbled key words in lesson lines · plugged vs wrong colour at a glance (the x-ray box looks the same until the red X shows). Nothing changed in first-day.json.
 - F68 task 5 (efa75a3): e2e/first-day.mjs 143/143 — C1's refused blue jiggles (motion 0 → 3.1), reject has reason lessonColour + the cell, goop.poke asked for; E1 keeps the wrong-colour message quiet under the red X; a real rank-4 shift shows "Wrong colour on a crack — zap it" just above the goop at 390x844 · 360x780 · 1100x800 · 1440x900 · 1920x1080 (shots e2e-shots/first-day/wrongCover-*.png, looked at). The day's shots now at all five sizes too. poke.mjs 12/12, check:fast green (498 unit tests).
 - Ask Muzzy: the wrong-colour words — "Wrong colour on a crack — zap it" (the phone limit is 40 characters). And should the first day's free play (F1) say it too? Now it's quiet for the whole day (the redX step already taught it in E1).
+- Muzzy 2026-10-24 on F68: "wrong color approved" (the wording "Wrong colour on a crack — zap it"). The tutorial-zap link (?lesson=first-day&step=C1-zap) opened with no goop — jumping to a step skips the steps that set up the board; RANK SELECT 0 (F70) is the real way into a fresh first day. Rank links: his save stayed rank 18 → F70.
