@@ -251,7 +251,10 @@ Muzzy: "we'll need an ending where we save the goop instead of zapping it." The 
 How it works:
 - **Rank 0 has its own title** (the first day) and **the 12th title isn't a rank at all — it's the win.** The last title you earn by ranking comes at 45 and lasts to 49 (Muzzy: "if 50 no longer gives title, then it has to be 49, right?" — yes). Rank 50 is the final shift itself, played under that same title; the win title appears only when the third valve stage opens.
 - **Who gives it:** not Management — the goop. When the tank opens, the monitor glitches and the goop rewrites your badge. Management's titles were all "assistant", "acting", "interim": it never meant to promote anyone — so the win title is NOT a job title (Muzzy 2026-10-23: "need a new title when you beat the game. like. The Freed, or The GOOP, or king of the goops or savior of goopkind, or One Of Us"). The real acronym lands on the same screen (Gradual Onboarding Of Permanent Staff).
-- ❓ **The win title** (Ask Muzzy, on F65): **Former Employee #1,313** ← Claude's pick: it lands right after "paid by: 1,312 former employees", so you're counted with them — but you walk out (ending B) · **The Freed** · **Savior of Goopkind** · **King of the Goops**. (One Of Us fits joining them, which you don't.)
+- **The end titles** (Muzzy 2026-10-23: "former employee is funny. but I think you get that at lvl 0 of the next game. but when you get to 50, maybe if you lose lvl 50, you get One Of Us, and it's like that until you actually beat it. then you get The Savior of Goopkind"):
+  - **Lose the final shift → One Of Us.** It replaces Acting Deputy on your badge and stays until you beat it (Management's interim title is gone; the goop has claimed you).
+  - **Beat it → The Savior of Goopkind**, written on your badge by the goop.
+  - **The next career's rank 0 → Former Employee** instead of Probationary Intern. (With ending B the next career is a new operator at the empty console, so this title says the company hired you back. A funny twist, or a contradiction? Decide at F65.)
 - **Every title change lands on a story beat**, so a new title is a moment, not a number.
 
 | Ranks | Title | The beat it lands on |
@@ -267,8 +270,9 @@ How it works:
 | 35–39 | Senior Containment Supervisor | The white goop (him) speaks in your head |
 | 40–44 | Assistant to the Department Head | The speaker comes back: him and the goop; mouths open |
 | 45–49 | Acting Deputy Department Head (Interim) | Management slips — it isn't human |
-| 50 | (same title) | The final shift — no new title |
-| **the win** | **❓ the win title** (Claude's pick: Former Employee #1,313) | Given by the goop when the valve opens — not a rank, the ending |
+| 50 | (same title) → **One Of Us** after a lost final shift | The final shift — One Of Us stays until you win |
+| **the win** | **The Savior of Goopkind** | Given by the goop when the valve opens — not a rank, the ending |
+| next career, 0 | Former Employee | Your new career's first day |
 
 ## Sample lines (tone check)
 - Monitor, rank 0: "WELCOME, OPERATOR. YOUR COMFORT IS OUR POLICY. YOUR BUNK IS 0.8 m WIDE. YOUR DEBT HAS BEEN PRE-APPROVED."

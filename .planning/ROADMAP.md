@@ -137,7 +137,7 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - 🟢 F62 🎮 The goop grows eyes and mouths: eyes at 10, following at 20, worried at 30, mouths at 40 (looks, design/story.md "The Goop changes") — must:beta · needs: F09
 - ⏳ F63 🎮 The goop's voice (ranks 31–39) + the white goop = the Veteran in the tank (never merges or pops, drifts to the worst crack and seals it slowly) — must:beta · needs: F40, F62
 - ⏳ F64 🎮 The final shift (rank 50): all galaxy black goop and cracks, the onslaught, the Veteran drops in and seals the cracks you can't reach (shrinking), 3 release-valve stages at the console (6 / 8 / 10 seals, his count), three ways to lose — sketch or bot run first — must:beta · needs: F63, F45
-- ⏳ F65 🎮 The ending + the new career: the tank opens, the goop speaks, the speaker's last line, the badge (the win title ❓ — Ask Muzzy: Claude's pick "Former Employee #1,313") and the real acronym, you leave (Muzzy: B), the end-game screen, a new career with an upgraded console — must:beta · needs: F64
+- ⏳ F65 🎮 The ending + the new career: the tank opens, the goop speaks, the speaker's last line, the badge (lose the final shift → One Of Us until you win; win → The Savior of Goopkind; the next career's rank 0 → Former Employee) and the real acronym, you leave (Muzzy: B), the end-game screen, a new career with an upgraded console — must:beta · needs: F64
 - 🟢 F66 ❓ Your name: sign the contract at rank 0 (type a name, saved on the device) so the goop can say it from 39 — plan whether it's just a name in Goops or a framework profile module (name + avatar) (design/story.md "Your name") — must:beta · needs: F09
 - 🟢 F46 🎮 Operator Journal — should:beta · needs: F30
 - ⏳ F47 ✨ The zap look (sketch first) — should:beta
