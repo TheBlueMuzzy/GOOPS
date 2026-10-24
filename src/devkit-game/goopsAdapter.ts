@@ -8,6 +8,7 @@
 //     goo's jiggle keep going (content/tuning/pause.json halfPauseGooMoves turns the goo off too).
 import type { DevKitGame } from '../devkit/devkitGame'
 import type { ShiftEvent, ShiftState } from '../engine'
+import type { RejectReason } from '../engine/types'
 import { readSnapshot, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
 import { versionLabel } from '../version'
@@ -16,6 +17,7 @@ import en from '../../content/text/en.json'
 type GoopsMoment = { shift: ShiftSnapshot | null }
 
 const pct = (n: number) => `${Math.round(n * 100)}%`
+const REJECT_WORDS: Record<RejectReason, string> = { aboveLine: 'above the pressure line', filling: 'still filling', lessonColour: 'the lesson wants another colour' }
 
 /** One short line per engine event worth reading in a bug capture (the frame-by-frame ones are left out). */
 export function eventLine(e: ShiftEvent): string | null {
@@ -33,7 +35,7 @@ export function eventLine(e: ShiftEvent): string | null {
     case 'prime': return `broken laser: group ${e.groupId} primed (zap again)`
     case 'ability': return `ability fired: ${e.id}`
     case 'abilityReady': return `ability ready: ${e.id}`
-    case 'reject': return e.action === 'pop' && e.reason ? `zap refused (${e.reason === 'aboveLine' ? 'above the pressure line' : 'still filling'})` : null
+    case 'reject': return e.action === 'pop' && e.reason ? `zap refused (${REJECT_WORDS[e.reason] ?? e.reason})` : null
     default: return null // spawn, step, spin, rotate, fall, merge, ready… (many a second)
   }
 }
