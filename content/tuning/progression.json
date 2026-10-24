@@ -13,5 +13,19 @@
     "nextPiece": 1,
     "swap": 3,
     "upgrades": 5
+  },
+  "_titles": "F35: the rank each title starts at (design/story.md 'Rank titles'); words: en.json story.titles. The 12th title is the win, not a rank (F65). A new title shows on the payday that reaches it.",
+  "titles": {
+    "intern": 0,
+    "juniorAssociate": 1,
+    "associate": 5,
+    "technician": 10,
+    "seniorTechnician": 15,
+    "specialist": 20,
+    "leadSpecialist": 25,
+    "supervisor": 30,
+    "seniorSupervisor": 35,
+    "assistant": 40,
+    "deputy": 45
   }
 }

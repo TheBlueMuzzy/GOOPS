@@ -61,6 +61,15 @@ export function unlocksBetween(from: number, to: number, t: ProgressionTuning = 
   return UNLOCKS.filter((u) => !isUnlocked(u, from, t) && isUnlocked(u, to, t))
 }
 
+// TITLES (F35): the title a rank carries — the band that starts at or below it (content/tuning/progression.json titles;
+// words: en.json story.titles). The ids are in rank order in the file.
+export type TitleId = keyof ProgressionTuning['titles']
+export function titleAt(rank: number, t: ProgressionTuning = tuning): TitleId {
+  let id = Object.keys(t.titles)[0] as TitleId
+  for (const [key, from] of Object.entries(t.titles) as [TitleId, number][]) if (rank >= from) id = key
+  return id
+}
+
 export interface ShiftReward {
   xp: number // XP this shift earned (score, or the floor)
   before: RankInfo

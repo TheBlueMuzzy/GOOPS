@@ -17,6 +17,8 @@ import { readoutSetting } from '../game/readoutSetting'
 import { messageWords, type Message } from '../game/messages'
 import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '../game/lessons/goopsLessons'
 import { LessonView } from '../game/lessons/LessonView'
+import { StoryView } from '../game/lessons/StoryView'
+import { storyMoments } from '../game/lessons/storyMoments'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
 import { unlockLessons } from '../game/lessons/unlockLessons'
 import { FIRST_DAY, firstDay } from '../game/lessons/firstDay'
@@ -24,7 +26,7 @@ import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
+import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, titleAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
 import { makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
 import { NextWindow } from '../game/NextWindow'
@@ -202,6 +204,7 @@ export function App() {
   // the periscope is down: the shift is made (paused) under the console, which slides away to show it
   // (F31: while the first day is due, its shift — at the phase it got to; the console's own step, A1, is done)
   const leaveConsole = useCallback(() => {
+    if (storyMoments.playing()) return // (F35: the periscope waits for a story moment — Console disables it too)
     const lesson = urlLesson.current ?? (dayDue(progressRef.current) ? { id: FIRST_DAY, step: firstDay.startStep() } : null)
     urlLesson.current = null
     start(lesson ?? undefined); setMeterFrom(null); setMode('leaving')
@@ -372,6 +375,8 @@ export function App() {
               ...day.items.map((item): Stat => ({ label: payWords(item.key), value: fill(P.minus, { n: cr(item.amount) }), tone: 'danger' })),
               { label: P.debt, value: fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) }), tone: 'danger' },
               { label: P.rankUp, value: what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to }), tone: 'success' },
+              // F35: a rank that starts a new title band says the new title (story.md "Rank titles")
+              ...(titleAt(day.to) !== titleAt(day.from) ? [{ label: P.newTitle, value: text.story.titles[titleAt(day.to)], tone: 'success' as const }] : []),
             ]} />
           </ScrollArea>
         </Modal>
@@ -393,13 +398,18 @@ export function App() {
   // F59: on the console between shifts at upgrading's rank, its unlock lesson (once per device: unlockLessons.ts)
   // F31: while the first day is due, its first step instead (pull the periscope) — again after Replay lessons (tips).
   // Between shifts the rules clock runs (no shift uses it then; a console lesson's hint does).
+  // F35: the rank's story moment comes first (storyMoments.ts); the console's lessons wait until it's over.
   const tips = useTips()
+  const storyUp = useSyncExternalStore(storyMoments.subscribe, storyMoments.playing)
   useEffect(() => {
     if (mode !== 'console') return
     rulesClock.scale = 1
+    if (storyMoments.atConsole(rank)) return
     if (dayDue(progress)) firstDay.atConsole()
     else unlockLessons.atConsole(rank)
-  }, [mode, rank, progress, tips])
+  }, [mode, rank, progress, tips, storyUp])
+  // (the console going away mid-moment — a Dev Kit snapshot, a lesson started from the Dev Kit: it plays again next time)
+  useEffect(() => { if (mode !== 'console') storyMoments.stop() }, [mode])
 
   // the console mid-shift: Settings and the pause menu (End shift throws the run away)
   const consoleScreens = useMemo(() => ({
@@ -530,6 +540,7 @@ export function App() {
       {/* (F59: and on the console between shifts — the Upgrades unlock lesson outlines its button there) */}
       {/* (F31: and over the end report — day one's last step points at its "Back to the console") */}
       {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={menuOpen} atConsole={mode !== 'shift'} />}
+      {mode === 'console' && !menuOpen && <StoryView />}
       {sideways && <UprightScreen />}
     </>
   )

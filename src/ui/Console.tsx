@@ -6,8 +6,9 @@
 // a broken machine's repair panel comes alive (RepairPanels.tsx), the gear opens the pause menu, and pulling the
 // periscope goes back to the same shift. On a phone on its side only the panels show, with a Back to the tank button.
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { useCrtLesson, useSpotlitTags } from '../game/lessons/lessonLine'
+import { storyMoments, storyWords } from '../game/lessons/storyMoments'
 import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Screen, Stack, TitleArt, fill, screens } from './kit'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
@@ -120,6 +121,11 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const fewer = (id: MachineId) => midShift?.fewerRepairSteps?.[id] ?? 0
   // F32: a lesson's line goes on the monitor's screen; a panel a lesson shows off ("Fixed!") looks lit, not switched off
   const lessonLine = useCrtLesson()
+  // F35: a story moment's Management line types on the monitor too (the Veteran's lines are his bubble: StoryView.tsx)
+  const story = useSyncExternalStore(storyMoments.subscribe, storyMoments.view)
+  const storyLine = story?.line.voice === 'mon' ? { text: storyWords(story.line.words), gotIt: true, onGotIt: storyMoments.next }
+    // (while the Veteran talks, the monitor's "pull down the periscope" would be wrong — the periscope waits: blank)
+    : story ? { text: '', gotIt: false, onGotIt: storyMoments.next } : null
   const spotlit = useSpotlitTags()
   const showcase = (id: MachineId) => !!midShift && spotlit.includes(`panel-${id}`)
   // (and while a lesson step outlines a part, only that part answers — the other controls shake: RepairPanels.tsx)
@@ -167,12 +173,13 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <ArtLayer at={a.periscope.at}>
           <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving}
             onPull={() => { playUiSound(SOUNDS.periscope); onPull() } /* the clunk as it reaches the end */}
-            disabled={phase === 'arriving' || (!!midShift && short) /* a phone on its side: Back to the tank does it (the periscope is mostly off screen) */}>
+            disabled={phase === 'arriving' || (!!midShift && short) /* a phone on its side: Back to the tank does it (the periscope is mostly off screen) */
+              || (!midShift && !!story) /* F35: a story moment is short and not skippable — the shift waits for it */}>
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor}><LessonTag tag="monitor" /></ArtLayer>
-        <Crt hint={hint} lesson={lessonLine} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
+        <Crt hint={hint} lesson={storyLine ?? lessonLine} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
       </ArtStage>
     </Screen>
   )

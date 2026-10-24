@@ -1,0 +1,23 @@
+{
+  "_about": "F35: the Veteran's talking bubble (kit TalkingBubble, UI kit 0.31.0) — Muzzy's approved sketch S9 values (research/speaker-bubble/picks.json, 2026-10-23). Read every frame: Dev Kit edits show live.",
+  "_waveStart": "Where the speech wave starts along the outline (0 = top-left corner, clockwise).",
+  "waveStart": 0,
+  "_waveEnd": "Where it ends (0.34 = the first third). Start = end = all the way round.",
+  "waveEnd": 0.34,
+  "_spikeGap": "px between spikes.",
+  "spikeGap": 19,
+  "_talkHeight": "px: how tall the spikes get while he talks (and in a squelch).",
+  "talkHeight": 51,
+  "_roundness": "0 = needle-sharp spikes · 5 = sine bumps · 10 = round bumps.",
+  "roundness": 3,
+  "_variability": "0 = every spike the same width … 1 = very uneven.",
+  "variability": 0.45,
+  "_popSize": "How much the outline swells on each syllable (0.025 = 2.5%). The words never move.",
+  "popSize": 0.025,
+  "_typeSpeed": "Letters a second.",
+  "typeSpeed": 22,
+  "_pauseMs": "ms of rest after . ! ? … (half after , and —).",
+  "pauseMs": 380,
+  "_squelchEvery": "Seconds between static squelches while he waits for you (± 1.5 s). 0 = never.",
+  "squelchEvery": 2.5
+}

@@ -187,6 +187,7 @@
     "rankUp": "Rank up",
     "rankUpValue": "Rank {rank}",
     "rankUpNew": "Rank {rank} · New: {what}",
+    "newTitle": "New title",
     "pay": "Pay up",
     "fines": {
       "association": "Association with a retired employee",
@@ -232,6 +233,47 @@
       "Light rental",
       "Gravity surcharge"
     ]
+  },
+  "story": {
+    "_about": "F35: the story moments' words (design/story.md 'Story moments, rank by rank'; which line plays when: content/story/moments.json). Management types in capitals on the monitor; the Veteran's '──' is static.",
+    "veteran": "The Veteran",
+    "management": "Management",
+    "lines": {
+      "r0a": "WELCOME, OPERATOR #4471. YOUR PASSAGE DEBT HAS BEEN PRE-APPROVED.",
+      "r0b": "PLEASE KEEP THE TANK FROM EXPLODING.",
+      "r1a": "CONGRATULATIONS ON YOUR FIRST PAYDAY.",
+      "r1b": "A NEXT-PIECE WINDOW HAS BEEN INSTALLED. ITS RENTAL IS ON YOUR BILL.",
+      "r2a": "YOUR PERISCOPE IS ON BACKORDER. ESTIMATED ARRIVAL: SOON.",
+      "r2b": "THE OLD ONE WILL DO.",
+      "r3a": "SWAPPING PIECES IS NOW PERMITTED.",
+      "r3b": "G.O.O.P.S. = GENERAL OVERFLOW & ORGANIC PRESSURE SERVICES.",
+      "r4a": "LASER POWER IS NOW RATIONED FOR YOUR SAFETY.",
+      "r4b": "PLEASE ZAP RESPONSIBLY.",
+      "r5": "—you the new one? ── scraps in your panel. ── don't tell the screen.",
+      "r6": "Controls run hot. ── goop gets in the gears. ── easy on the turning.",
+      "r7": "Screen fine you yet? ── fines everybody. ── pay it no mind.",
+      "r8": "You hear it too? ── the cold voice. ── ...thought so.",
+      "r9": "Got you a pressure part. ── fell off a cart. ── don't ask which cart."
+    },
+    "titles": {
+      "intern": "Probationary Intern (Unpaid)",
+      "juniorAssociate": "Junior Tank Associate",
+      "associate": "Tank Associate",
+      "technician": "Goop Technician",
+      "seniorTechnician": "Senior Goop Technician",
+      "specialist": "Pressure Specialist",
+      "leadSpecialist": "Lead Pressure Specialist",
+      "supervisor": "Containment Supervisor",
+      "seniorSupervisor": "Senior Containment Supervisor",
+      "assistant": "Assistant to the Department Head",
+      "deputy": "Acting Deputy Department Head (Interim)"
+    },
+    "whispers": {
+      "cold": "…cold…",
+      "warm": "…warm…",
+      "tight": "…tight…",
+      "nnn": "…nnn…"
+    }
   },
   "lessons": {
     "gotIt": "Got it",
