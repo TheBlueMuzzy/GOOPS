@@ -1,9 +1,9 @@
 ## ▶ RESUME HERE
-2026-10-24 — **F41 ✅ approved by Muzzy** ("it's fine. approved"): the end report is a payslip — "x / y DUE" meter, Gross → fines (▼) → Net pay (▲, = real XP) row by row, a Payday card per rank crossed (5 items = the payment due, passage debt, rank up). Framework v0.14.0 in (UI kit 0.31.0, Dev Kit 0.26.1). Sprint 14 is finished.
-**Next:** Muzzy's 3-line Sprint 14 retro → archive-sprint → /sprint 15 (candidates: F35 story moments ranks 0–9 — the talking bubble F61 shipped as <TalkingBubble> in UI kit 0.31.0, feel in content/tuning/talk.json; F39 rank twists; F62 eyes + mouths; F66 your name; F42 + F48 upgrades). Older status notes: **Earlier notes** below.
+2026-10-24 — **Sprint 15 started: F35 story moments, ranks 0–9** (SPRINT.md). Each rank-up plays its moment at the console: Management on the monitor CRT (0–4), the Veteran in the kit TalkingBubble over the same monitor area (5–9; Management can interrupt him — Muzzy's call, no separate speaker); 12 rank titles on the meter + payday; whispers at 3 and 8–9. Lines: design/story.md "Story moments, rank by rank". F41 ✅ (payslip) and Sprint 14 archived.
+**Next: /develop task 1 (content/tuning/talk.json = S9 picks from research/speaker-bubble/picks.json).** Extraction queue live (framework v0.15.0, `extract.mjs`), nothing queued. Older status notes: **Earlier notes** below.
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 14 (F41) · Doing: F41 ✅ — Sprint 14 retro next · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35) · Doing: F35 — building · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
