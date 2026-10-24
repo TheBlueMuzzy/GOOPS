@@ -34,7 +34,7 @@ export function StoryView() {
       }} dim={false} />}
       {view.line.voice === 'spk' && (
         <TalkingBubble key={`${view.rank}:${view.line.words}`} target='[data-tag="crt"]' placement="bottom" outline="wave"
-          text={storyWords(view.line.words)} speaker={text.story.veteran} feel={talk} onConfirm={storyMoments.next} />
+          text={storyWords(view.line.words)} speaker={text.story.veteran} feel={talk} colours={talk.colours} onConfirm={storyMoments.next} />
       )}
     </>
   )

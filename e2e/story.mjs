@@ -154,6 +154,13 @@ try {
     await page.screenshot({ path: `${OUT}/rank5-${w}x${h}.png` })
     const inside = await page.locator('.kit-talk').first().evaluate((el) => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5 }).catch(() => false)
     check(`${w}x${h}: the Veteran's bubble is on screen`, inside)
+    // F35 S9: a light bubble with dark words (content/tuning/talk.json colours, UI kit 0.33 TalkingBubble colours)
+    const paint = await page.locator('.kit-talk').first().evaluate((el) => {
+      const shape = el.querySelector('.kit-talk-shape')
+      return { fill: shape && getComputedStyle(shape).fill, outline: shape && getComputedStyle(shape).stroke, ink: getComputedStyle(el).color }
+    }).catch(() => null)
+    check(`${w}x${h}: the bubble is light (#f4f4f2) with dark words (#222) and a grey outline (#555)`,
+      paint?.fill === 'rgb(244, 244, 242)' && paint?.ink === 'rgb(34, 34, 34)' && paint?.outline === 'rgb(85, 85, 85)', JSON.stringify(paint))
     check(`${w}x${h}: no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }

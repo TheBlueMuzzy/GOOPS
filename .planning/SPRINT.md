@@ -13,6 +13,7 @@ Check: e2e/story.mjs plays every moment 0–9 (right voice, right words, once on
 - [x] 🤖 5. 12 rank titles on the payday that reaches a new one ("New title") (bands in content, words in en.json) — content/tuning/progression.json
 - [x] 🤖 6. In-shift whispers at rank 3 and 8+ (a plain bubble in the tank, gone by itself, no tap) — src/game/Whisper.tsx
 - [x] 🤖 7. e2e/story.mjs: every moment 0–9, shots at every portrait size; GDD updated — e2e/story.mjs
+- [x] 🤖 9. The Veteran's bubble light with dark words (S9: fill #f4f4f2, words #222, outline #555 1.6 px, ▼ #888): UI kit 0.33.1 installed (TalkingBubble colours), talk.json colours → StoryView; story.mjs checks the painted colours at every portrait size. Dev Kit 0.27.0 not installed — its own test is red in the framework (an npm warning line on this PC), sent to the framework session. Port pre-flight added to check-all (scripts/ports.mjs from the template) — content/tuning/talk.json
 - [ ] 🙋 8. Muzzy plays ranks 0–9 (?rank=N) and says how the moments feel — content/story/moments.json
 
 ## F68 🎮 First-day touches (pulled in 2026-10-24 — Muzzy: "run f68 auto")

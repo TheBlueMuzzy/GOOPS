@@ -62,6 +62,31 @@ if (unknown.length) {
 }
 mkdirSync('e2e-shots/logs', { recursive: true })
 
+// Port pre-flight (F118, from the BMUZ template): every port this run's e2e scripts use must be free before anything
+// starts — a busy one fails at once, naming who holds it, instead of a vague timeout deep in the run. Ports come from
+// each script's PORT constants, a `// ports: …` header line and its args. Needs scripts/ports.mjs (the template's).
+if (tier === 'full') {
+  const users = new Map() // port → the e2e names that use it
+  for (const [name, script, a] of e2e) {
+    const text = existsSync(script) ? readFileSync(script, 'utf8') : ''
+    const declared = [...text.matchAll(/^\s*\/\/\s*ports:(.*)$/gim)].map((m) => m[1]).join(' ')
+    const constants = [...text.matchAll(/\b(?![A-Z0-9_]*DEFAULT)(?:[A-Z0-9]+_)*PORT(?:_[A-Z0-9]+)*\s*=\s*(\d+)\b/g)].map((m) => m[1]).join(' ')
+    for (const port of `${a} ${declared} ${constants}`.match(/\b\d+\b/g) ?? []) {
+      if (Number(port) < 1024 || Number(port) > 65535) continue
+      users.set(Number(port), [...new Set([...(users.get(Number(port)) ?? []), name])])
+    }
+  }
+  const { heldPorts } = await import('./ports.mjs')
+  const held = heldPorts([...users.keys()])
+  for (const { port, cmd, folder } of held) {
+    console.log(`Port ${port} (${users.get(port).join(', ')}) is held by \`${cmd}\`${folder ? ` in ${folder}` : ''} — free it: node ~/.claude/config/bmuz/scripts/stop-servers.mjs ${port}`)
+  }
+  if (held.length) {
+    console.log(`\nNOT STARTED — ${held.length} port${held.length > 1 ? 's' : ''} already in use (the scripts would fail on ${held.length > 1 ? 'them' : 'it'} later as a vague timeout).`)
+    process.exit(1)
+  }
+}
+
 // One e2e run at a time: the Dev Kit scripts save + restore content files, which reloads every running dev server
 // mid-test (Glyphtender sprint 23: a false "navigation destroyed"). A second full/area run waits for the first.
 const LOCK = 'e2e-shots/.check-lock'

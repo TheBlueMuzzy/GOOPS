@@ -19,5 +19,7 @@
   "_pauseMs": "ms of rest after . ! ? … (half after , and —).",
   "pauseMs": 380,
   "_squelchEvery": "Seconds between static squelches while he waits for you (± 1.5 s). 0 = never.",
-  "squelchEvery": 2.5
+  "squelchEvery": 2.5,
+  "_colours": "The bubble's colours (UI kit 0.33.0 TalkingBubble colours) — S9's light bubble with dark words (the sketch: fill #f4f4f2, words #222, outline #555 at 1.6 px, ▼ #888). Leave one out = the style's. Words that don't read on the fill (under 4.5 : 1) fall back to the style's.",
+  "colours": { "fill": "#f4f4f2", "ink": "#222222", "outline": "#555555", "outlineWidth": 1.6, "more": "#888888" }
 }

@@ -126,26 +126,51 @@
   .kit-hud-text .kit-stack { align-items: center; }
   .kit-hud-text .kit-text { overflow-wrap: normal; }
   .kit-screen:has(> [data-slot] > .kit-hud-slot) > :is([data-slot="top"], [data-slot="bottom"]) { justify-self: center; }
+  /* HUD corners keep their content's width; the middle of the row gives way (0.33.1, F123). Every slot could shrink to
+     nothing before (kit.css), so the middle took all the room it wanted first and a corner slid under it — Roll over
+     "40%" on a 667×375 phone, the coins over the end of the Health bar on an upright Cozy phone.
+     Five columns, so the top and bottom rows don't share their corners' widths: the top corners take two columns each,
+     the bottom middle the three inner ones (a HUD's top corners are wide — bars, coins — and so is its bottom middle —
+     the action buttons; with three shared columns the wide top corners squeezed the actions on a phone on its side).
+     The four outer columns share the spare room evenly, so both middles stay centred while there's room. A middle with
+     no corners in its row has the whole row. (A plain Screen keeps its three columns — kit.css.) */
+  .kit-screen:has(> [data-slot] > .kit-hud-slot) {
+    grid-template-columns: 1fr 1fr minmax(0, auto) 1fr 1fr;
+    grid-template-areas: "top-left top-left top top-right top-right" "center center center center center" "bottom-left bottom bottom bottom bottom-right";
+  }
+  .kit-screen:has(> [data-slot] > .kit-hud-slot) > :is([data-slot="top-left"], [data-slot="top-right"], [data-slot="bottom-left"], [data-slot="bottom-right"]) { min-inline-size: min-content; }
+  .kit-screen:has(> [data-slot] > .kit-hud-slot) > :is([data-slot="top"], [data-slot="bottom"]) { max-inline-size: 100%; }
+  .kit-screen:has(> [data-slot] > .kit-hud-slot):not(:has(> :is([data-slot="top-left"], [data-slot="top-right"]))) > [data-slot="top"],
+  .kit-screen:has(> [data-slot] > .kit-hud-slot):not(:has(> :is([data-slot="bottom-left"], [data-slot="bottom-right"]))) > [data-slot="bottom"] { grid-column: 1 / -1; }
   /* Phones: the corners share the first row and the top-centre piece gets its own row below,
      so three things never squeeze into one narrow line. Same at the bottom. A HUD on a narrow game box
      (--kit-frame-w, 0.11.2) gets the same layout from its own width, whatever the window's width. */
+  /* The right corners (score + pause) size to their pieces; each left corner gives way to the right corner IN ITS OWN ROW
+     (0.33.1, F123): three columns, so the top-left only loses what the top-right needs and the bottom-left only what
+     the bottom-right needs (with two shared columns a wide top-right squeezed the bottom-left too). A left corner stays
+     inside its room — its bars get shorter — instead of keeping its full width and sliding under the right one (the
+     coins sat on the end of the Health bar on an upright Cozy phone). */
   @media (max-width: 40rem) {
     .kit-screen:has(> [data-slot] > .kit-hud-slot) {
-      grid-template-columns: minmax(0, 1fr) auto; /* the right corner (score + pause) sizes to its pieces; the left gives way */
+      grid-template-columns: minmax(0, 1fr) auto auto;
       grid-template-rows: auto auto minmax(0, 1fr) auto auto;
-      grid-template-areas: "top-left top-right" "top top" "center center" "bottom-left bottom-right" "bottom bottom";
+      grid-template-areas: "top-left top-right top-right" "top top top" "center center center" "bottom-left bottom-left bottom-right" "bottom bottom bottom";
     }
+    .kit-screen:has(> [data-slot] > .kit-hud-slot) > :is([data-slot="top-left"], [data-slot="bottom-left"]) { min-inline-size: 0; max-inline-size: 100%; }
   }
   @container (max-width: 40rem) {
     .kit-screen:has(> [data-slot] > .kit-hud-slot) {
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       grid-template-rows: auto auto minmax(0, 1fr) auto auto;
-      grid-template-areas: "top-left top-right" "top top" "center center" "bottom-left bottom-right" "bottom bottom";
+      grid-template-areas: "top-left top-right top-right" "top top top" "center center center" "bottom-left bottom-left bottom-right" "bottom bottom bottom";
     }
+    .kit-screen:has(> [data-slot] > .kit-hud-slot) > :is([data-slot="top-left"], [data-slot="bottom-left"]) { min-inline-size: 0; max-inline-size: 100%; }
   }
-  /* Bar width (s / m / l): the bar keeps that length and its plate hugs it. Unset = it fills the room it's given. */
+  /* Bar width (s / m / l): the bar keeps that length and its plate hugs it. Unset = it fills the room it's given.
+     Squeezed (a phone's left corner giving way, 0.33.1): the bar gets shorter inside its plate, down to 2rem, like a
+     bar without a width — before, it held its length and stuck out of the plate. */
   .kit-hud-chip[data-width] { inline-size: max-content; max-inline-size: 100%; }
-  .kit-hud-chip[data-width] > .kit-progress { flex: none; min-inline-size: 0; inline-size: var(--kit-bar-w); max-inline-size: 100%; }
+  .kit-hud-chip[data-width] > .kit-progress { flex: 0 1 auto; min-inline-size: 2rem; inline-size: var(--kit-bar-w); }
   .kit-hud-chip[data-width="s"] { --kit-bar-w: 4rem; }
   .kit-hud-chip[data-width="m"] { --kit-bar-w: 8rem; }
   .kit-hud-chip[data-width="l"] { --kit-bar-w: 14rem; }
@@ -221,9 +246,10 @@
   /* Flow: the countdown number on a round plate, and the end-screen title */
   .kit-countdown { display: inline-grid; place-items: center; min-inline-size: 11rem; padding: var(--gap-l); aspect-ratio: 1; border-radius: 50%; }
   .kit-countdown .kit-text { font-size: calc(var(--text-display) * 2.75); line-height: 1; }
+  /* A name (Results, Lobby room, Seat picker) is never cut short: it wraps at its spaces (a single over-long word breaks
+     too), and its badges (★, You, Host) move under it when the row is too narrow — never "Sherman Mere…" (0.33.0) */
   .kit-result-name { flex: 1 1 0; min-inline-size: 0; }
-  .kit-result-name { flex-wrap: nowrap; }
-  .kit-result-name > .kit-text { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kit-result-name > .kit-text { min-inline-size: 0; overflow-wrap: break-word; }
   .kit-place { min-inline-size: 3.5ch; }
   /* Results on a short, wide screen (a phone on its side): title, message and buttons on the left,
      the list on the right, so the list keeps its height instead of shrinking to one row */
@@ -246,10 +272,11 @@
       grid-template-rows: auto minmax(0, 1fr); align-content: start; }
     .kit-pause > :not(.kit-menu) { grid-column: 1; }
     .kit-pause > .kit-menu { grid-column: 2; grid-row: 1 / -1; }
-    .kit-modal.kit-lobby-room { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-      grid-template-rows: auto auto minmax(0, 1fr); align-content: start; }
+    /* half and half (0.33.0: 1 : 1.25 wrapped Leave / I'm ready onto two lines), and the last row never shrinks below
+       its buttons (a plain 1fr, not minmax(0, 1fr)): too little height → the card scrolls, never buttons over words */
+    .kit-modal.kit-lobby-room { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto auto 1fr; align-content: start; }
     .kit-lobby-room > :not(.kit-scroll) { grid-column: 1; }
-    .kit-lobby-room > .kit-row:first-child .kit-result-name > .kit-text { white-space: normal; } /* the code wraps, never "Room BA…" */
     .kit-lobby-room > .kit-scroll { grid-column: 2; grid-row: 1 / -1; }
     .kit-lobby-room > .kit-row:last-child { grid-row: 3; align-self: end; }
     .kit-modal.kit-lobby-join { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -319,11 +346,13 @@
      In a letterboxed game (--kit-frame-w / --kit-frame-h, see kit.css) they stay on the game picture, out of the black bars.
      --kit-toasts-start / --kit-toasts-end: room to keep clear at the game picture's left / right edge (default none),
      e.g. a game whose left half is its board: :root { --kit-toasts-start: calc(var(--kit-frame-w, 100vw) / 2); }
-     puts toasts over the right half. (Plain % would be of the window, not the game picture.) */
+     puts toasts over the right half. (Plain % would be of the window, not the game picture.)
+     --kit-toasts-top (0.33.0): room to keep clear above top toasts — a bar of the page's own over the game (the
+     gallery's Menu + style bar: toasts sat on its buttons). Default none. */
   .kit-toasts { --kit-letterbox-h: calc((100dvh - var(--kit-frame-h, 100dvh)) / 2);
     --kit-letterbox-w: calc((100vw - var(--kit-frame-w, 100vw)) / 2);
     inset-block: 0 auto; inset-inline: calc(var(--kit-letterbox-w) + var(--kit-toasts-start, 0%)) calc(var(--kit-letterbox-w) + var(--kit-toasts-end, 0%));
-    margin: calc(var(--kit-letterbox-h) + max(var(--gap-m), env(safe-area-inset-top))) auto 0; padding: 0; border: 0; background: none;
+    margin: calc(var(--kit-letterbox-h) + var(--kit-toasts-top, 0rem) + max(var(--gap-m), env(safe-area-inset-top))) auto 0; padding: 0; border: 0; background: none;
     overflow: visible; display: none; flex-direction: column; align-items: center; gap: var(--gap-s);
     max-inline-size: calc(var(--kit-frame-w, 100vw) - var(--kit-toasts-start, 0%) - var(--kit-toasts-end, 0%) - 2 * var(--gap-m)); }
   .kit-toasts[data-place="center"] { inset-block: 0; margin: auto; }
@@ -567,9 +596,13 @@
 }
 @layer kit-style {
   /* The box draws nothing (the path does); no Callout entrance — it grows from its tip in code */
-  .kit-callout-layer .kit-callout.kit-talk { background: none; border-color: transparent; box-shadow: none; animation: none; }
-  .kit-talk-shape { fill: var(--surface); stroke: var(--border); stroke-width: var(--border-width); stroke-linejoin: miter; }
+  .kit-callout-layer .kit-callout.kit-talk { background: none; border-color: transparent; box-shadow: none; animation: none;
+    color: var(--kit-talk-ink, var(--on-surface)); }
+  /* --kit-talk-*: a game's own colours (the colours prop, 0.33.0) — each one not set is the style's, as before */
+  .kit-talk-shape { fill: var(--kit-talk-fill, var(--surface)); stroke: var(--kit-talk-outline, var(--border));
+    stroke-width: var(--kit-talk-outline-width, var(--border-width)); stroke-linejoin: miter; }
   .kit-talk-more { color: var(--muted); animation: kit-talk-blink calc(var(--motion-normal) * 2) steps(1) infinite; }
+  .kit-talk-more > .kit-text[data-kind] { color: var(--kit-talk-more, var(--muted)); } /* the ▼ is a caption: its own colour */
   @media (prefers-reduced-motion: reduce) { .kit-talk-more { animation: none; } }
   :root[data-reduce-motion] .kit-talk-more { animation: none; }
 }

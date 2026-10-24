@@ -4,7 +4,8 @@
 //   "small:"   a control smaller than 44×44 px (a fingertip misses it)
 //   "clipped:" a control cut off at the edge of a box that hides overflow (its outline / shadow too) or past the
 //              screen edge (and not in something that scrolls), or text cut off
-//   "overlap:" two things on screen sit on top of each other (text over text, a control over text…) — new in 0.18.0
+//   "overlap:" two things on screen sit on top of each other (text over text, a control over text…) — new in 0.18.0;
+//              and a solid chip, badge or panel slid part-way onto a bar, meter or picture — 0.33.1
 //   "focus:"   a focus ring showing although nobody used the keyboard
 //   "faint:"   text too faint to read against what's behind it: under 4.5:1, or 3:1 for big text (24 px, or 18.66 px
 //              bold) — the WCAG AA line. Skipped where it can't be judged: text over a picture, gradient, canvas or
@@ -22,7 +23,7 @@
 export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {}) {
   const problems = []
   const SKIP = '#devkit-root, [data-ui-check="skip"], [inert], [aria-hidden="true"]'
-  const name = (el) => (el.getAttribute('aria-label') ?? el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 30) || `<${el.tagName.toLowerCase()}>`
+  const name = (el) => (el.getAttribute('aria-label') ?? el.getAttribute('alt') ?? el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 30) || `<${el.tagName.toLowerCase()}>`
   // The part of an element you can actually see: its box cut by every ancestor that hides overflow (a scroll area, a
   // panel) and by the screen — null when nothing of it shows (a row scrolled out of its list)
   const visibleBox = (el) => {
@@ -276,6 +277,52 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
           if (seenA && seenB) break
         }
         if (seenA && seenB) problems.push(`overlap: "${name(a)}" × "${name(b)}"`)
+      }
+    }
+    // Covered bars and pictures (0.33.1): a solid piece (a chip, badge, button or panel — its own background, not
+    // see-through) that slid part-way onto a bar, meter or picture. Those hold no words, so the check above never saw
+    // them (the coins chip sat on the end of the Health bar on an upright Cozy phone). On-purpose layering is left alone:
+    //   - laid WHOLLY over it (a dialog over the HUD) or sitting wholly ON it (a chip on a backdrop picture): only a
+    //     piece crossing the bar's or picture's edge — part of it showing, part hidden — is a collision
+    //   - in the bar's own card (the nearest drawn box around it, inside its screen slot): a badge on its portrait's
+    //     corner, a label on its own bar
+    //   - floating in the top layer (a toast, a tooltip, a modal dialog), or moving right now (a "+4" floating away)
+    //   - anything under an open screen (inert) or skipped (see the header)
+    const covered = [...document.querySelectorAll('[role="progressbar"], [role="meter"], progress, meter, img, svg, canvas, video, [role="img"], .kit-avatar')]
+      .filter((el) => !el.parentElement?.closest('svg') && shown(el))
+    const solid = (el) => {
+      if (el === document.body || el === document.documentElement) return false
+      const s = getComputedStyle(el)
+      return rgba(s.backgroundColor)[3] >= 0.5 || s.backgroundImage !== 'none'
+    }
+    const floats = (el) => !!el.closest(':popover-open, dialog:modal') || moving(el)
+    const covers = [...document.querySelectorAll('body *')].filter((el) => solid(el) && drawsBox(el) && shown(el) && !floats(el))
+    const ownCard = (el) => {
+      for (let p = el.parentElement; p && p !== document.body && !p.matches('[data-slot], .kit-layer, .kit-screen'); p = p.parentElement) if (drawsBox(p)) return p
+      return null
+    }
+    const inside = (small, big) => small.left >= big.left - 0.5 && small.right <= big.right + 0.5 && small.top >= big.top - 0.5 && small.bottom <= big.bottom + 0.5
+    for (const target of covered) {
+      const tBox = visibleBox(target)
+      const card = ownCard(target)
+      const found = []
+      for (const piece of covers) {
+        if (piece.contains(target) || target.contains(piece) || card?.contains(piece)) continue
+        if (found.some((f) => f.contains(piece))) continue // one line per piece: not again for the coin inside the chip
+        const pBox = visibleBox(piece)
+        const at = crossing(tBox, pBox)
+        if (!at || inside(tBox, pBox) || inside(pBox, tBox)) continue
+        let seenT = false, seenP = false
+        for (const el of document.elementsFromPoint(at.x, at.y)) {
+          if (part(el, piece)) seenP = true
+          else if (part(el, target)) seenT = true
+          else if (el.contains(piece) && el.contains(target)) continue // a box around both: under them
+          else if (paints(el)) break // something else covers them there
+          if (seenT && seenP) break
+        }
+        if (!seenT || !seenP) continue
+        found.push(piece)
+        problems.push(`overlap: "${name(piece)}" covers part of "${name(target)}"`)
       }
     }
   } finally {

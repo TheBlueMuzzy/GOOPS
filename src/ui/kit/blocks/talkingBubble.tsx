@@ -291,6 +291,146 @@ export function waveOffsets(points: OutlinePoint[], s: TalkState, feel: TalkFeel
 /** The grow (0.15 → 1, ease-out-back) at `t` 0..1. */
 export const growScale = (t: number) => { const c1 = 1.7, u = Math.min(1, Math.max(0, t)) - 1; return 0.15 + 0.85 * (1 + (c1 + 1) * u ** 3 + c1 * u ** 2) }
 
+// ─── The game's colours (0.33.0, F121 — Goops' Veteran: a light bubble with dark words) ─────
+
+/** A game's own bubble colours (content/tuning/talk.json): each one left out = the style's. The part holds no colours —
+ *  these come in as the game's data. */
+export type TalkColours = {
+  /** The bubble's inside (the style's surface). */
+  fill?: string
+  /** The words (the style's text colour). Kept only if it reads on the fill: at least 4.5 : 1. */
+  ink?: string
+  /** The outline (the style's border). */
+  outline?: string
+  /** The outline's width in px at 100% text size, 0–8 (the style's edge width). */
+  outlineWidth?: number
+  /** The ▼ "tap to go on" mark (the style's muted colour). */
+  more?: string
+}
+export const TALK_OUTLINE_WIDTH_RANGE = [0, 8] as const
+export const TALK_MIN_CONTRAST = 4.5
+
+const NUMBER = String.raw`[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?`
+const HEX = /^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i
+// rgb / hsl with commas or spaces, an optional alpha ("rgb" + "(" kept apart so check-ui never reads them as a colour)
+const FUNCTION = new RegExp(`^(rgba?|hsla?)\\(\\s*(${NUMBER})(%|deg)?\\s*,?\\s*(${NUMBER})(%)?\\s*,?\\s*(${NUMBER})(%)?\\s*(?:[,/]\\s*(${NUMBER})%?\\s*)?\\)$`, 'i')
+// What the browser hands back for a colour it resolved ("color" + "(srgb …" for the newer kinds)
+const SRGB = new RegExp(`^color\\(srgb\\s+(${NUMBER})\\s+(${NUMBER})\\s+(${NUMBER})`, 'i')
+
+/** Is this a real colour? The browser says (CSS.supports); where there is none (tests, a server), only hex, rgb() and
+ *  hsl() count. Anything else (a number, a word that isn't a colour, a sneaky "red; …") is no colour. */
+export function isColour(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  const v = value.trim()
+  if (!v || v.length > 64 || /[;{}<>]/.test(v)) return false
+  // Not a colour of its own (the browser says yes to these): currentColor paints the fill in the words' own colour,
+  // var() / env() / attr() and inherit … revert point somewhere else — the contrast floor couldn't judge what they show
+  if (/currentcolor|\b(?:var|env|attr)\s*\(|^(?:inherit|initial|unset|revert|revert-layer)$/i.test(v)) return false
+  const css = browserCss()
+  return css ? css.supports('color', v) : readRgb(v) !== null
+}
+const browserCss = () => (typeof CSS !== 'undefined' && typeof CSS.supports === 'function' ? CSS : null)
+
+/** A colour as red, green, blue (0–255), or null when it can't be read. Hex, rgb() and hsl() are read here; any other
+ *  colour the browser knows (a name like "ivory") is read through the browser. Alpha is ignored. */
+export function colourRgb(value: string): [number, number, number] | null {
+  const v = value.trim()
+  const read = readRgb(v)
+  if (read) return read
+  // Any other colour: let the browser resolve it (a probe never shown), then read what it hands back
+  if (!browserCss() || typeof document === 'undefined' || !document.body || !isColour(v)) return null
+  const probe = document.createElement('span')
+  probe.style.color = v
+  probe.hidden = true
+  document.body.appendChild(probe)
+  const seen = getComputedStyle(probe).color
+  probe.remove()
+  return readRgb(seen)
+}
+
+// Hex, rgb(), hsl() and the browser's color(srgb …), read here; anything else → null
+function readRgb(v: string): [number, number, number] | null {
+  const hex = HEX.exec(v)
+  if (hex) {
+    const h = hex[1].length <= 4 ? [...hex[1]].map((c) => c + c).join('') : hex[1]
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number]
+  }
+  const fn = FUNCTION.exec(v)
+  if (fn) {
+    const [, kind, a, aUnit, b, bPct, c, cPct] = fn
+    const n = (s: string) => Number(s)
+    if (/^rgb/i.test(kind)) {
+      if (aUnit === 'deg') return null
+      const ch = (s: string, pct?: string) => Math.max(0, Math.min(255, pct ? n(s) * 2.55 : n(s)))
+      return [ch(a, aUnit), ch(b, bPct), ch(c, cPct)]
+    }
+    // hsl → rgb
+    const hue = (((n(a) % 360) + 360) % 360) / 360, sat = Math.max(0, Math.min(1, n(b) / 100)), lig = Math.max(0, Math.min(1, n(c) / 100))
+    const q = lig < 0.5 ? lig * (1 + sat) : lig + sat - lig * sat, p = 2 * lig - q
+    const part = (t: number) => {
+      t = ((t % 1) + 1) % 1
+      const x = t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p
+      return x * 255
+    }
+    return [part(hue + 1 / 3), part(hue), part(hue - 1 / 3)]
+  }
+  const srgb = SRGB.exec(v)
+  if (srgb) return [1, 2, 3].map((i) => Math.max(0, Math.min(255, Number(srgb[i]) * 255))) as [number, number, number]
+  return null
+}
+
+/** WCAG contrast of two colours (1 … 21), or null when either can't be read. */
+export function contrastRatio(a: string, b: string): number | null {
+  const ra = colourRgb(a), rb = colourRgb(b)
+  if (!ra || !rb) return null
+  const lum = ([r, g, bl]: number[]) => {
+    const lin = (c: number) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(bl)
+  }
+  const [hi, lo] = [lum(ra), lum(rb)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/** The colours the bubble paints with: the game's ones that are real (bad ones dropped), the width pulled into 0–8,
+ *  and the contrast floor — the words must read on the fill (4.5 : 1). The game's ink fails → the style's text colour;
+ *  the style's text fails on the game's fill too → the style's fill as well (never unreadable). `style` = the style's
+ *  own fill + text colours (to judge against). `problems` = what was dropped, for the dev console. */
+export function talkColours(colours: unknown, style: { fill: string; ink: string }) {
+  const out: TalkColours = {}
+  const problems: string[] = []
+  if (!colours || typeof colours !== 'object') return { colours: out, problems }
+  const given = colours as Record<keyof TalkColours, unknown>
+  for (const key of ['fill', 'ink', 'outline', 'more'] as const) {
+    const v = given[key]
+    if (v === undefined || v === null) continue
+    if (isColour(v)) out[key] = v.trim()
+    else problems.push(`colours.${key} ${JSON.stringify(v)} is not a colour — the style's is used`)
+  }
+  const width = given.outlineWidth
+  if (typeof width === 'number' && Number.isFinite(width)) out.outlineWidth = Math.min(TALK_OUTLINE_WIDTH_RANGE[1], Math.max(TALK_OUTLINE_WIDTH_RANGE[0], width))
+  else if (width !== undefined && width !== null) problems.push(`colours.outlineWidth ${JSON.stringify(width)} is not a number — the style's is used`)
+  // The contrast floor (a colour that can't be read for contrast counts as failing it)
+  const reads = (ink: string, fill: string) => (contrastRatio(ink, fill) ?? 0) >= TALK_MIN_CONTRAST
+  if ((out.ink || out.fill) && !reads(out.ink ?? style.ink, out.fill ?? style.fill)) {
+    if (out.ink) {
+      problems.push(`colours.ink ${out.ink} on ${out.fill ?? style.fill} is under ${TALK_MIN_CONTRAST} : 1 — the style's text colour is used`)
+      delete out.ink
+    }
+    if (out.fill && !reads(style.ink, out.fill)) {
+      problems.push(`colours.fill ${out.fill} doesn't read with the style's text colour either — the style's fill is used (set a darker or lighter ink)`)
+      delete out.fill
+    }
+  }
+  return { colours: out, problems }
+}
+
+// Each problem is said once a page (in dev), not every frame
+const told = new Set<string>()
+function tell(problems: string[]) {
+  if (!import.meta.env?.DEV) return
+  for (const p of problems) if (!told.has(p)) { told.add(p); console.warn(`[ui-kit] TalkingBubble: ${p}`) }
+}
+
 // ─── The part ───────────────────────────────────────────────────────
 
 export type TalkingBubbleProps = {
@@ -308,6 +448,10 @@ export type TalkingBubbleProps = {
   /** The numbers (content/tuning/talk.json) — any left out are DEFAULT_TALK_FEEL's. Read every frame (live). Each is
    *  kept in its safe range (TALK_FEEL_RANGES); a null / NaN / non-number one is the default (talkFeel). */
   feel?: Partial<Record<keyof TalkFeel, unknown>> | null
+  /** The game's own colours (0.33.0, F121 — content/tuning/talk.json): fill, ink (the words), outline, outlineWidth,
+   *  more (the ▼). Each left out = the style's, exactly as without it. Read every frame (live, like `feel`). Bad ones are
+   *  ignored; ink that doesn't read on the fill (under 4.5 : 1) → the style's text colour (talkColours). */
+  colours?: Partial<Record<keyof TalkColours, unknown>> | null
   placement?: CalloutPlacement
   /** A CSS selector of what it must stay clear of (the HUD). */
   avoid?: string
@@ -329,7 +473,7 @@ function shadowFilter(depth: string) {
   return lengths.length >= 2 ? `drop-shadow(${lengths.join(' ')} ${colour})` : 'none'
 }
 
-export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave', feel, placement = 'top', avoid, onConfirm, onTyped, words }: TalkingBubbleProps) {
+export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave', feel, colours, placement = 'top', avoid, onConfirm, onTyped, words }: TalkingBubbleProps) {
   const w = { ...talkWords, ...words }
   const layer = useRef<HTMLDivElement>(null)
   const bubble = useRef<HTMLDivElement>(null)
@@ -338,9 +482,9 @@ export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave',
   const typed = useRef<HTMLSpanElement>(null)
   const rest = useRef<HTMLSpanElement>(null)
   const now = useRef<CalloutPlaceInput>({ target, placement, avoid })
-  const props = useRef({ text, outline, feel, onConfirm, onTyped })
+  const props = useRef({ text, outline, feel, colours, onConfirm, onTyped })
   const talk = useRef<TalkState>(startTalk())
-  useLayoutEffect(() => { now.current = { target, placement, avoid }; props.current = { text, outline, feel, onConfirm, onTyped } })
+  useLayoutEffect(() => { now.current = { target, placement, avoid }; props.current = { text, outline, feel, colours, onConfirm, onTyped } })
   useShownPopover(layer)
   useCalloutPlace(layer, bubble, now)
 
@@ -369,7 +513,7 @@ export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave',
   // The frame loop: steps the talking at the sketch's fixed step, then draws the outline and the typed words.
   // Everything here writes to the page directly (refs) — never React state per frame.
   useLayoutEffect(() => {
-    let frame = 0, last = performance.now(), carry = 0, drawn = '', room = '', phase = '', words = '', typedFired = false
+    let frame = 0, last = performance.now(), carry = 0, drawn = '', room = '', phase = '', words = '', painted = '', typedFired = false
     let line: TalkState | null = null // the talk onTyped was last judged for (a new line = a new TalkState)
     const tick = () => {
       const at = performance.now()
@@ -398,9 +542,10 @@ export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave',
         rest.current.textContent = line.slice(s.shown)
       }
       if (s.phase !== phase) { phase = s.phase; box.setAttribute('data-phase', phase) }
+      const look = getComputedStyle(box)
+      paint(box, look)
       if (!el.hasAttribute('data-ready')) return
       // The look, read live from the style: border width, corner radius + shape, the shadow, the text size
-      const look = getComputedStyle(box)
       const border = (box.offsetWidth - box.clientWidth) / 2
       const scale = (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16) / 16
       const layerStyle = el.style
@@ -435,6 +580,26 @@ export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave',
         el.style.setProperty('--kit-talk-room-t', `${t}rem`); el.style.setProperty('--kit-talk-room-r', `${r}rem`)
         el.style.setProperty('--kit-talk-room-b', `${b}rem`); el.style.setProperty('--kit-talk-room-l', `${l}rem`)
       }
+    }
+    // The game's colours → the bubble's --kit-talk-* variables (blocks.css falls back to the style's for each one
+    // not set). Only when the game's values or the style's fill / text change; none set = no variables at all.
+    const paint = (box: HTMLElement, look: CSSStyleDeclaration) => {
+      const given = props.current.colours
+      const style = { fill: cssVar(look, '--surface'), ink: cssVar(look, '--on-surface') }
+      const key = given && typeof given === 'object'
+        ? `${style.fill}|${style.ink}|${(['fill', 'ink', 'outline', 'outlineWidth', 'more'] as const).map((k) => String(given[k])).join('|')}`
+        : ''
+      if (key === painted) return
+      painted = key
+      const { colours: use, problems } = talkColours(given, style)
+      tell(problems)
+      const set = (name: string, value: string | undefined) => (value === undefined ? box.style.removeProperty(name) : box.style.setProperty(name, value))
+      set('--kit-talk-fill', use.fill)
+      set('--kit-talk-ink', use.ink)
+      set('--kit-talk-outline', use.outline)
+      set('--kit-talk-outline-width', use.outlineWidth === undefined ? undefined : `${use.outlineWidth / 16}rem`)
+      set('--kit-talk-more', use.more)
+      if (!box.getAttribute('style')) box.removeAttribute('style') // none set → no style attribute at all (as before)
     }
     tick()
     return () => cancel(frame)
