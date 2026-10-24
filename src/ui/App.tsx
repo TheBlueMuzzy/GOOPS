@@ -320,19 +320,21 @@ export function App() {
     end: () => {
       if (!result) return null
       // F41: the payslip — gross, fines, net pay (= what the shift earned, and a rank-up if it crossed one, F59: and
-      // what that rank unlocked). Net pay replaces the Score row: they were the same number, and a phone has no room
-      // for both (the report must never scroll).
+      // what that rank unlocked). Net pay replaces the Score row: they were the same number (bar the minimum XP), and
+      // a phone has little room. A long list scrolls inside the report from UI kit 0.31.0 (framework F113).
       const stats = [{ label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }, ...payslipStats(result.payslip, result.reward)]
       // (F31: a lesson hears the report close — the first day's last step is "back to the console")
       // F41: a rank-up first plays its payday (one screen per rank crossed), then does what the button asked
+      // (the report closes as the payday opens: day one's last lesson step ends there, not over the payday)
       const thenPay = (go: () => void) => () => {
+        lessonPlay.screen('reportClosed')
         if (!result.payslip.paydays.length) return go()
         afterPay.current = go
         setPayIndex(0)
         screens.replace('payday')
       }
-      const again = thenPay(() => { lessonPlay.screen('reportClosed'); while (screens.current.length) screens.pop(); start() })
-      const back = thenPay(() => { lessonPlay.screen('reportClosed'); toConsole() })
+      const again = thenPay(() => { while (screens.current.length) screens.pop(); start() })
+      const back = thenPay(toConsole)
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
@@ -350,7 +352,13 @@ export function App() {
       const day = result?.payslip.paydays[payIndex]
       if (!result || !day) return null
       const last = payIndex >= result.payslip.paydays.length - 1
-      const pay = () => { if (last) afterPay.current?.(); else setPayIndex((i) => i + 1) }
+      // (the last Pay up runs the report's choice once, even on a quick double tap)
+      const pay = () => {
+        if (!last) return setPayIndex((i) => i + 1)
+        const go = afterPay.current
+        afterPay.current = null
+        go?.()
+      }
       const what = gainedBetween(day.from, day.to)
       return (
         <Modal title={P.paydayTitle} actions={<Button onClick={pay}>{P.pay}</Button>}>
