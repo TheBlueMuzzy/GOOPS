@@ -2,7 +2,8 @@
 // MODULE-CONTRACTS.md "Version": one source (version.json, which /save bumps), one format ("vX.Y.Z.B"), the same
 // places in every game:
 //   - the build reads version.json: versionPlugin() in vite.config (bakes the version in + the app-version meta tag)
-//   - the main-menu footer and the bottom of Settings show versionLabel (UI kit: <MainMenu version> + <Settings version>)
+//   - the main-menu footer and the bottom of Settings show versionLabel (UI kit: <MainMenu version> + <Settings version>;
+//     a screen the game draws itself: data-version-spot="main-menu" / "settings" on the element showing versionLabel)
 //   - nothing else in the game reads version.json or builds its own version words (one format everywhere)
 //   - the Dev Kit adapter stamps versionLabel on snapshots and bug files
 //   - an e2e script calls checkVersion(page), so no test runs against a stale build or a cached service worker
@@ -92,6 +93,16 @@ export function versionProps(files, tag) {
   return out
 }
 
+/** Files that draw a version spot themselves (a game's own main menu, e.g. console art): an element marked
+ *  data-version-spot="<spot>" in a file that shows versionLabel from the version module → their paths. */
+export function ownSpots(files, spot) {
+  const marked = new RegExp(`\\bdata-version-spot\\s*=\\s*(["'])${spot}\\1|\\bdata-version-spot\\s*=\\s*\\{\\s*(["'])${spot}\\2\\s*\\}`)
+  const shows = (code) => /\bversionLabel\b/.test(code.replace(/^\s*import\b[^;]*?\bfrom\s*['"][^'"]*['"]/gm, '')) // not just imported
+  return files
+    .filter(({ text }) => FROM_MODULE.test(text) && marked.test(withoutComments(text)) && shows(withoutComments(text)))
+    .map(({ path }) => path)
+}
+
 export async function check(t) {
   // 1. versionPlugin in vite.config, and a version.json it can read
   {
@@ -117,16 +128,19 @@ export async function check(t) {
       else t.fail(name, ['Nothing in the game shows versionLabel (the game has no UI kit, so its own menu must).'], 'Show versionLabel (import { versionLabel } from \'../version\') on the main menu and in Settings.')
     } else {
       const problems = []
-      for (const [tag, place] of [['MainMenu', 'the main-menu footer'], ['Settings', 'the bottom of Settings']]) {
+      const own = []
+      for (const [tag, place, spot] of [['MainMenu', 'the main-menu footer', 'main-menu'], ['Settings', 'the bottom of Settings', 'settings']]) {
         const uses = versionProps(code, tag)
-        if (!uses.length) problems.push(`No <${tag}> in the game's code, so ${place} can't show the version.`)
+        const mine = ownSpots(code, spot)
+        if (!uses.length && mine.length) { own.push(`${spot} in ${mine.join(', ')}`); continue } // the game draws this screen itself
+        if (!uses.length) problems.push(`No <${tag}> in the game's code, so ${place} can't show the version (a screen the game draws itself: data-version-spot="${spot}" on the element showing versionLabel).`)
         for (const u of uses) {
           if (u.value === null) problems.push(`${u.where}  <${tag}> has no version prop — ${place} shows nothing.`)
           else if (!/\bversionLabel\b/.test(u.value)) problems.push(`${u.where}  <${tag} version=${u.value}> — not versionLabel, so it can say something else than the other places.`)
         }
       }
       if (problems.length) t.fail(name, problems, 'import { versionLabel } from \'../version\'   then   <MainMenu version={versionLabel} …>   and   <Settings version={versionLabel} …> (UI kit 0.24.0: one line at the bottom of every tab).')
-      else t.pass(name, 'MainMenu + Settings get versionLabel')
+      else t.pass(name, own.length ? `versionLabel shown — the game's own spots: ${own.join(' · ')}` : 'MainMenu + Settings get versionLabel')
     }
   }
 

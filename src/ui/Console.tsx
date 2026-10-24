@@ -176,7 +176,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} outlined={outlined} />
         <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
         <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
-        <ArtLayer {...a.words.version} tone="muted" align="start" dim={leaving}>{versionLabel}</ArtLayer>
+        <ArtLayer data-version-spot="main-menu" {...a.words.version} tone="muted" align="start" dim={leaving}>{versionLabel}</ArtLayer>
         {rankSelect && <ArtLayer {...a.words.rankSelect} align="center" dim={leaving}><RankSelectButton /></ArtLayer>}
         <ArtLayer {...a.words.credit} tone="muted" align="end" dim={leaving}>{t.credit}</ArtLayer>
         <ArtLayer at={a.periscope.at}>

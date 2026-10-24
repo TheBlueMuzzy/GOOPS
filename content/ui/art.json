@@ -31,7 +31,7 @@
       "lights": { "at": [363, 1458, 180, 24], "text": 17 },
       "_bottomRow": "F70 (Muzzy 2026-10-24): the bottom row reads version · RANK SELECT · MuzzyMade © 2026. rankSelect = the Dev Kit's rank tool (a button; its box is centred on the row and taller, so the button's 44 px tap target sits on the row).",
       "version": { "at": [40, 1841, 110, 20], "text": 15.7 },
-      "rankSelect": { "at": [152, 1831, 200, 40], "text": 15.7 },
+      "rankSelect": { "at": [157, 1831, 200, 40], "text": 15.7 },
       "credit": { "at": [380, 1841, 228, 20], "text": 15.7 }
     },
     "crt": {
