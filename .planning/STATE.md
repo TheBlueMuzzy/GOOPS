@@ -1,10 +1,9 @@
 ## ▶ RESUME HERE
-2026-10-23 — **F09 ✅ approved by Muzzy** ("it's fine for now. approved"): the whole story is on paper in .planning/design/story.md — ending B (you leave), last earned title 45–49 and rank 50 = the final shift, you sign the contract with your name at rank 0 (F66, 🟢). Built: only the kit update (UI kit 0.30.0, Dev Kit 0.26.0) + Goops lint skips src/devkit.
-End titles set (One Of Us after a lost final shift · The Savior of Goopkind at the win · Former Employee at the next career's rank 0). Sprint 13 archived. **Next: /sprint 14 — Muzzy picks** (🟢: F42 + F48 more upgrades, or start the story build with F41 credits + payday, F39, F62, F66).
-**Muzzy (framework window):** yes to the sketch-starter typeable knobs, the install-module lint fix, and his module-extraction idea (sent to dev-e3 2026-10-23: a second window extracts finished game pieces into modules; re-integration = install-module + the game's e2e as the contract). Older status notes: **Earlier notes** below.
+2026-10-23 — **Sprint 14 started: F41 the end report becomes a payslip** (SPRINT.md): CREDITS / PAYMENT DUE meter, gross → fines → net (= real XP), a payday at each rank-up (5 lines + passage debt). Design: story.md "Credits, payday and fines" + "Fines and payday — the lines"; sketch S8 picks in research/credits-payday/picks.json. F09 ✅ (story approved: ending B, end titles One Of Us / The Savior of Goopkind / Former Employee).
+**Next: /develop task 1 (src/progress/payslip.ts).** **Muzzy (framework window):** yes to the sketch-starter typeable knobs, the install-module lint fix (F112), the extraction queue, the hand-off card "Your to-dos" change. Older status notes: **Earlier notes** below.
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 13 (F09) · Doing: planning Sprint 14 · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 14 (F41) · Doing: F41 — building · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
