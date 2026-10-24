@@ -1,9 +1,9 @@
 ## ▶ RESUME HERE
-2026-10-24 — **Sprint 15: building F70 (RANK SELECT + the framework version label at the bottom of the console — Muzzy's ask; tasks in SPRINT.md), then `/sketch` F67.** F68 built + "wrong color approved"; its last task = Muzzy plays the first day fresh, which needs F70's rank 0 (the ?lesson step link opened with no goop; ?rank links left his save at 18). Open F68 question: should the first day's free play (F1) show the wrong-colour hint (Claude's pick: no). F35 still open: the Veteran's bubble must be LIGHT with dark text (S9: fill #f4f4f2, text #222, outline #555 1.6 px) — UI kit 0.33.0 (framework F121 TalkingBubble colours) is available: install-module ui-kit, pass the colours from content/tuning/talk.json, screenshot, then Muzzy's "approved". **F67 sketch next:** sketch L5 laser (.planning/research/sketches/lab-L5-free-goo.html: tap() ~316, step() ~375 suck-in, white-hot ~580, drawOverlay() ~770 beam) + v1 spray droplets (research/v1/PRD.md:328–347); live pop placeholder = popCells() in src/goo/jelly/index.ts ~359.
+2026-10-24 — **Sprint 15: F70 built (RANK SELECT + framework version module label on the console's bottom row; check:full 26/26) + the F67 zap-look sketch is up (.planning/research/sketches/zap-look.html, planner Sketches tab "F67: Zap look") — waiting on Muzzy:** (1) try the sketch, paste "Copy values for Claude" → save to .planning/research/zap-look/picks.json, make them the defaults, then plan F67's build (popCells() in src/goo/jelly/index.ts ~359 is the placeholder); (2) RANK SELECT → 0, play the first day fresh (closes F68 task 6 + F70 task 4); (3) answers in SPRINT Notes: RANK SELECT at the first-day's first step too (Claude's pick: yes, testers need a skip)? credit shorter on phones so RANK SELECT can centre (Claude's pick: leave it)? first day's free play shows the wrong-colour hint (Claude's pick: no)? Framework request (version module): check:framework's 6th version check wants a kit <MainMenu version> — Goops' menu is console art; needs a way to name its own spot (tell the framework session). F35 still open: the Veteran's bubble must be LIGHT with dark text (S9: fill #f4f4f2, text #222, outline #555 1.6 px) — UI kit 0.33.0 (F121 TalkingBubble colours) is available: install-module ui-kit, pass the colours from content/tuning/talk.json, screenshot, then Muzzy's "approved".
 
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68, F70) · Doing: F70 rank select + version label — building; F68 built, wording approved, waits for Muzzy's fresh first-day play; F35 waits for UI kit 0.33.0 colours + approval · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68, F70) · Doing: F70 + F68 built, wait for Muzzy's fresh first-day play; F67 sketch out for Muzzy's picks; F35 waits for UI kit 0.33.0 colours + approval · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
@@ -43,6 +43,7 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 **Remote:** github.com/TheBlueMuzzy/GOOPS
 
 ## Log
+- 2026-10-24 — F70: the console's bottom row shows the real version and a RANK SELECT (testers jump to any rank, or 0 for a fresh first day); F67 zap-look sketch to play with
 - 2026-10-24 — F68 built: in the first day, poking goop you aren't allowed to zap now jiggles and squelches; in shifts a "Wrong colour on a crack — zap it" hint shows when the wrong goop covers a crack
 - 2026-10-23 — Sprint 12 / F34 approved: the console's Upgrades screen at rank 5 — 8 upgrades that change the shift, green cards for what you own, greyed locked ones, red −, Respec flashes your scraps green; Cooldown Booster's lightning-bolt charge button
 - 2026-10-20 — Released v0.1.0, the alpha: a guided first day, shifts up to rank 9 with three machines and sound, installable on phones at thebluemuzzy.github.io/GOOPS/alpha/
@@ -52,4 +53,3 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 - 2026-10-17 — Overnight M1 build: clean remake scaffold (React 19 + Vite 7), engine (v1 rules, 100 tests), tank view + v1 controls, Jelly/Particle goo switch, kit UI (Neon); ui-kit 0.10.5 (phone HUD fix)
 - 2026-10-17 — F02 picked: L4 Jelly; F02b = A (grid); /sketch command made
 - 2026-10-16 — Goo round 2: research (videos, CodePens, techniques) + goo lab L1–L5; planner gets Sketches tabs and /ppp
-- 2026-10-16 — Discovery: v1 review, goo research, GDD draft
