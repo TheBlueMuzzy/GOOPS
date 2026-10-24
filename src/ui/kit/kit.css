@@ -350,6 +350,7 @@
   .kit-badge[data-variant="neutral"] { background: var(--surface); color: var(--on-surface); }
   .kit-badge[data-variant="primary"] { background: var(--primary); color: var(--on-primary); border-color: var(--ink); }
   .kit-badge[data-variant="danger"] { background: var(--danger); color: var(--on-danger); border-color: var(--ink); }
+  .kit-badge[data-variant="success"] { background: var(--success); color: var(--on-success); border-color: var(--ink); }
 
   /* Initials always in the body font at semibold, whatever they sit in: small, heavy display letters turn to blobs */
   .kit-avatar { background: var(--kit-avatar-color, var(--primary)); color: var(--on-primary); font-family: var(--font-body); text-transform: none; }

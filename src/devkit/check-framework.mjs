@@ -90,8 +90,10 @@ export function sourceFiles(root, { dirs = ['src'], skip = [], exts = /\.(m?[jt]
 /** The framework's own folders inside a game (code the game didn't write) — skipped when checking the game's code. */
 export const KIT_FOLDERS = ['src/devkit', 'src/ui/kit', 'src/audio', 'src/table', 'src/ai/kit', 'src/rooms', 'src/saves', 'src/version', 'src/crashes', 'src/emotes']
 const isTestFile = (path) => /\.(test|spec)\.[cm]?[jt]sx?$/.test(path) || /(^|\/)(tests?|e2e|__tests__)\//.test(path)
-/** The game's own code: src/ minus the framework's folders, the Dev Kit's game folder and tests. */
-export const gameCode = (root) => sourceFiles(root, { skip: [...KIT_FOLDERS, 'src/devkit-game'] }).filter((f) => !isTestFile(f.path))
+/** The game's own code: src/ minus the framework's folders, the Dev Kit's game folder and tests. A module folder is
+ *  KIT_FOLDERS (the known list) AND every src/<x>/ or src/<x>/kit/ holding a VERSION (findModules) — so a module newer
+ *  than this Dev Kit is never read as the game's code (F112). */
+export const gameCode = (root) => sourceFiles(root, { skip: [...new Set([...KIT_FOLDERS, ...findModules(root).map((m) => m.rel)]), 'src/devkit-game'] }).filter((f) => !isTestFile(f.path))
 
 /** "src/a.ts:12" for every line matching `re` (comments skipped) — suspects to name in a message. */
 export function linesMatching(files, re) {

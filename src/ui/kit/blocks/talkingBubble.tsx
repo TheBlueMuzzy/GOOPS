@@ -1,0 +1,433 @@
+// TALKING BUBBLE — a story line someone SAYS (framework F111, from Goops' sketch S9 "speaker bubble", the Veteran).
+//
+// <TalkingBubble target="#speaker" text="Found some scraps. Don't tell the screen." feel={tuning.talk} onConfirm={next} />
+//   Same intention as the emote SpeechBubble (words pointing at a thing) → the same Callout underneath: the same
+//   placement maths (flips to fit, stays in the window or game picture, `avoid` = a CSS selector it stays clear of),
+//   the same pointer and the same colours in every style. What's new is how it TALKS:
+//   1. It grows open from its pointer's tip (320 ms, ease-out-back). No words while it grows.
+//   2. The words type out (`typeSpeed` letters a second) and rest at . ! ? … (`pauseMs`) and at , — (half that).
+//   3. While it types, a stretch of the outline (`waveStart` → `waveEnd`, a share of the outline from the top-left
+//      corner, clockwise) fizzes as a spiky speech wave: spikes about `spikeGap` apart, up to `talkHeight` tall, their
+//      heights re-picked ~25 times a second, their widths drifting (`variability`), their shape from `roundness`
+//      (0 needle → 5 sine → 10 semicircle). The pointer never fizzes. At a rest the wave relaxes flat.
+//   4. Each syllable pops the OUTLINE a little (`popSize`) — the words never move.
+//   5. Done, waiting to be confirmed: now and then (`squelchEvery` ± 1.5 s) the outline squelches — a burst of static.
+//   outline "wave" (default) or "plain" (the same grow, typing, rests and pops — no wave, no squelch). (Not named
+//   `style`: that's the CSS prop — check-ui would flag every game that passes it.)
+//   FIXED SIZE from the start: the whole line is laid out (the untyped part unseen), so it never grows while typing.
+//   onConfirm: the bubble becomes a button ("Next" — `words`): a tap / Enter / Space while typing shows the whole line;
+//   once it's all there, it calls onConfirm. Without onConfirm it never catches taps. onTyped: the whole line is showing.
+//   feel: the numbers (DEFAULT_TALK_FEEL = Muzzy's approved S9 values). A game keeps them in content/tuning/talk.json and
+//   passes that object; they're read every frame, so Dev Kit edits apply live. Spike sizes are px at 100% text size.
+//   Reduce motion (device or the kit's switch): no grow, no wave, no pops — the whole line just shows.
+//   Screen readers: the full line is said once (a LiveAnnouncer, `speaker` in front), never letter by letter.
+//   Pause: animation frames only (the Dev Kit's full pause holds them; a frame's time is capped, so no jump after).
+import { useLayoutEffect, useRef, type KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
+import { Text } from '../controls'
+import { type CalloutPlacement, type CalloutSide, type CalloutTarget } from './callout'
+import { LiveAnnouncer } from './emotes'
+import { reduceMotion } from './motion'
+import { useCalloutPlace, useShownPopover, type CalloutPlaceInput } from './teach'
+
+// ─── The numbers ────────────────────────────────────────────────────
+
+export type TalkFeel = {
+  /** Where the wave starts, as a share of the outline (0 = top-left corner, going clockwise). */
+  waveStart: number
+  /** Where it ends. Start = end (or 0 → 1) = all the way round, with no seam. */
+  waveEnd: number
+  /** px between spikes (at 100% text size). */
+  spikeGap: number
+  /** px: how tall the spikes get while it talks (and in a squelch). */
+  talkHeight: number
+  /** 0 = needle-sharp spikes · 5 = sine bumps · 10 = round bumps. */
+  roundness: number
+  /** 0 = every spike the same width … 1 = very uneven (they keep shifting while it talks). */
+  variability: number
+  /** How much the outline swells on each syllable (0.025 = 2.5%). The words never move. */
+  popSize: number
+  /** Letters a second. */
+  typeSpeed: number
+  /** ms of rest after . ! ? … (half after , and —). */
+  pauseMs: number
+  /** Seconds between squelches while it waits (± 1.5 s at random). 0 = never. */
+  squelchEvery: number
+}
+
+/** Muzzy's approved values (Goops sketch S9, 2026-10-23). */
+export const DEFAULT_TALK_FEEL: TalkFeel = {
+  waveStart: 0, waveEnd: 0.34, spikeGap: 19, talkHeight: 51, roundness: 3, variability: 0.45,
+  popSize: 0.025, typeSpeed: 22, pauseMs: 380, squelchEvery: 2.5,
+}
+
+// Fixed (S9 picks.json "_fixed"): the grow, the beat before typing starts, the squelch spread
+export const TALK_GROW_MS = 320
+const PRE_TYPE_S = 0.15
+const SQUELCH_SPREAD_S = 1.5
+const STEP_S = 1 / 120 // the sketch's fixed step
+const MAX_FRAME_S = 0.1 // a long frame (a tab back from the background, a pause let go) counts as this at most
+
+export const talkWords = { next: 'Next' }
+
+// ─── The talking (the sketch's update(), pure: tested without a page) ─
+
+export type TalkPhase = 'grow' | 'pre' | 'type' | 'wait'
+export type TalkState = {
+  phase: TalkPhase; t: number; shown: number; wait: number
+  level: number; levelTarget: number; pop: number; popV: number
+  squelch: number; nextSquelch: number; flickerT: number
+  heights: number[]; heightTargets: number[]; widths: number[]; widthTargets: number[]
+}
+type Random = () => number
+
+export function startTalk(): TalkState {
+  return { phase: 'grow', t: 0, shown: 0, wait: 0.2, level: 0, levelTarget: 0, pop: 0, popV: 0, squelch: 0, nextSquelch: Infinity,
+    flickerT: 0, heights: [], heightTargets: [], widths: [], widthTargets: [] }
+}
+
+/** Seconds until the next squelch: squelchEvery ± 1.5 s (never under 0.2 s); squelchEvery 0 = never. */
+export const squelchGap = (feel: TalkFeel, rnd: Random) =>
+  feel.squelchEvery > 0 ? Math.max(0.2, feel.squelchEvery + (rnd() * 2 - 1) * SQUELCH_SPREAD_S) : Infinity
+
+/** The rest after this letter, in seconds (and whether the voice goes quiet): . ! ? … full, , — half. */
+export function restAfter(text: string, index: number, feel: TalkFeel) {
+  const c = text[index]
+  if ('.!?…'.includes(c) && text[index + 1] !== '.') return feel.pauseMs / 1000 // ("..." rests once, after the last dot)
+  if (',—'.includes(c)) return feel.pauseMs / 2000
+  return 0
+}
+
+const isVowel = (c: string) => 'aeiouyAEIOUY'.includes(c)
+
+/** Show the whole line now (a tap while it types, or reduce motion) → waiting. */
+export function finishTalk(s: TalkState, text: string, feel: TalkFeel, rnd: Random) {
+  s.phase = 'wait'; s.shown = text.length; s.levelTarget = 0; s.nextSquelch = squelchGap(feel, rnd)
+}
+
+/** One step of `dt` seconds. `outline` plain: no voice level (so no wave, no squelch); pops stay. */
+export function stepTalk(s: TalkState, dt: number, text: string, feel: TalkFeel, rnd: Random = Math.random, plain = false) {
+  s.t += dt
+  if (s.phase === 'grow' && s.t * 1000 >= TALK_GROW_MS) { s.phase = 'pre'; s.t = 0 }
+  if (s.phase === 'pre' && s.t >= PRE_TYPE_S) { s.phase = 'type'; s.wait = 0 }
+  if (s.phase === 'type') {
+    s.wait -= dt
+    while (s.wait <= 0 && s.shown < text.length) {
+      const c = text[s.shown], prev = text[s.shown - 1] ?? ' '
+      const rest = restAfter(text, s.shown, feel)
+      s.shown++
+      if (rest > 0) s.levelTarget = 0
+      else if (c === ' ') s.levelTarget *= 0.5
+      else s.levelTarget = 0.65 + rnd() * 0.35
+      // a syllable starts at a vowel after a non-vowel → a small pop
+      if (isVowel(c) && !isVowel(prev)) s.popV += feel.popSize * 40
+      s.wait += 1 / Math.max(1, feel.typeSpeed) + rest
+    }
+    if (s.shown >= text.length && s.wait <= 0) finishTalk(s, text, feel, rnd)
+  }
+  if (s.phase === 'wait') {
+    s.nextSquelch -= dt
+    if (s.nextSquelch <= 0) { s.squelch = 0.25 + rnd() * 0.2; s.nextSquelch = squelchGap(feel, rnd) }
+    if (s.squelch > 0) { s.squelch -= dt; s.levelTarget = 0.6 + rnd() * 0.6 } else s.levelTarget = 0
+  }
+  if (plain) s.levelTarget = 0
+  // the voice level eases toward its target (fast up, slower down = relaxing)
+  const k = s.levelTarget > s.level ? 40 : 10
+  s.level += (s.levelTarget - s.level) * Math.min(1, k * dt)
+  // the pop spring
+  s.popV += (-300 * s.pop - 18 * s.popV) * dt; s.pop += s.popV * dt
+  // spikes re-pick their heights ~25 times a second (uneven: a few tall, many small), then glide there
+  s.flickerT -= dt
+  if (s.flickerT <= 0) { s.flickerT = 0.04; for (let i = 0; i < s.heightTargets.length; i++) s.heightTargets[i] = Math.pow(rnd(), 1.6) }
+  for (let i = 0; i < s.heights.length; i++) s.heights[i] += (s.heightTargets[i] - s.heights[i]) * Math.min(1, 30 * dt)
+  // widths drift to new random widths while it talks (variability), slower than the heights
+  if (s.level > 0.05 && rnd() < dt * 8) for (let i = 0; i < s.widthTargets.length; i++) s.widthTargets[i] = spikeWidth(feel, rnd)
+  for (let i = 0; i < s.widths.length; i++) s.widths[i] += (s.widthTargets[i] - s.widths[i]) * Math.min(1, 12 * dt)
+}
+
+const spikeWidth = (feel: TalkFeel, rnd: Random) => 1 + feel.variability * (rnd() * 2 - 1) * 0.85
+
+/** As many spikes as the stretch holds (a whole number → a full loop closes with no seam). */
+function fitSpikes(s: TalkState, count: number, feel: TalkFeel, rnd: Random) {
+  if (s.heights.length === count) return
+  s.heights = Array.from({ length: count }, () => 0.5); s.heightTargets = s.heights.slice()
+  s.widths = Array.from({ length: count }, () => spikeWidth(feel, rnd)); s.widthTargets = s.widths.slice()
+}
+
+// ─── The outline (the sketch's outline() + draw(), pure) ─────────────
+
+/** One spike, f = 0..1 across it → 0..1 high. roundness 0 = needle (concave sides), 5 = sine bump, 10 = semicircle. */
+export function spikeShape(f: number, roundness: number) {
+  const tri = 1 - Math.abs(2 * f - 1), sine = Math.sin(Math.PI * f), circle = Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2))
+  const t = Math.max(0, Math.min(1, roundness / 10))
+  return t < 0.5 ? tri ** 2 + (sine - tri ** 2) * (t * 2) : sine + (circle - sine) * (t * 2 - 1)
+}
+const smooth01 = (t: number) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t) }
+
+export type OutlinePoint = { x: number; y: number; nx: number; ny: number; keep: number }
+export type OutlineBox = {
+  /** The outline's rectangle (the middle of the border line). */
+  x: number; y: number; w: number; h: number
+  /** Corner radius; bevel = the corners are cut straight (Neon, Pixel). */
+  r: number; bevel: boolean
+  /** Which side of its target the bubble is on (the pointer is on the opposite edge), the pointer's middle on that
+   *  edge, and how far it sticks out (its base is twice that wide — the Callout's turned square). */
+  side: CalloutSide; tipX: number; tipY: number; reach: number
+}
+
+/** The outline as points 1 px apart, clockwise from the top-left corner, with outward normals and `keep` (0 on the
+ *  pointer, fading to 1 over 10 px either side: the pointer never fizzes). Also the pointer's tip. */
+export function talkOutline(b: OutlineBox): { points: OutlinePoint[]; tip: { x: number; y: number } } {
+  const pts: [number, number][] = []
+  const r = Math.max(0, Math.min(b.r, b.w / 2, b.h / 2))
+  const { x, y, w, h, reach } = b
+  const line = (x0: number, y0: number, x1: number, y1: number) => {
+    const n = Math.max(1, Math.round(Math.hypot(x1 - x0, y1 - y0)))
+    for (let i = 0; i < n; i++) pts.push([x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n])
+  }
+  const corner = (cx: number, cy: number, a0: number, a1: number) => {
+    if (r <= 0) return
+    if (b.bevel) { line(cx + Math.cos(a0) * r, cy + Math.sin(a0) * r, cx + Math.cos(a1) * r, cy + Math.sin(a1) * r); return }
+    const n = Math.max(2, Math.round(r * Math.abs(a1 - a0)))
+    for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / n; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]) }
+  }
+  // The pointer's edge: a bubble above its target points from its bottom edge, and so on
+  const tailEdge = ({ top: 'bottom', bottom: 'top', left: 'right', right: 'left' } as const)[b.side]
+  let t0 = -1, t1 = -1, tip = { x: b.tipX, y: b.tipY }
+  // An edge from (x0, y0) to (x1, y1), with the pointer on it when it's the pointer's edge
+  const edge = (name: CalloutSide, x0: number, y0: number, x1: number, y1: number) => {
+    if (name !== tailEdge) return line(x0, y0, x1, y1)
+    const len = Math.hypot(x1 - x0, y1 - y0) || 1, tx = (x1 - x0) / len, ty = (y1 - y0) / len
+    const half = Math.min(reach, len / 2)
+    // where the pointer's middle falls along this edge (kept clear of the corners)
+    const along = Math.max(half, Math.min(len - half, (b.tipX - x0) * tx + (b.tipY - y0) * ty))
+    const ax = x0 + tx * (along - half), ay = y0 + ty * (along - half)
+    const bx = x0 + tx * (along + half), by = y0 + ty * (along + half)
+    tip = { x: x0 + tx * along + ty * reach, y: y0 + ty * along - tx * reach } // outward = (ty, −tx)
+    line(x0, y0, ax, ay)
+    t0 = pts.length
+    line(ax, ay, tip.x, tip.y); line(tip.x, tip.y, bx, by)
+    t1 = pts.length
+    line(bx, by, x1, y1)
+  }
+  const P = Math.PI
+  edge('top', x + r, y, x + w - r, y)
+  corner(x + w - r, y + r, -P / 2, 0)
+  edge('right', x + w, y + r, x + w, y + h - r)
+  corner(x + w - r, y + h - r, 0, P / 2)
+  edge('bottom', x + w - r, y + h, x + r, y + h)
+  corner(x + r, y + h - r, P / 2, P)
+  edge('left', x, y + h - r, x, y + r)
+  corner(x + r, y + r, P, P * 1.5)
+  const n = pts.length
+  const points = pts.map(([px, py], i) => {
+    const a = pts[(i - 2 + n) % n], c = pts[(i + 2) % n]
+    let tx = c[0] - a[0], ty = c[1] - a[1]; const l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l
+    const dist = t0 < 0 ? Infinity : i < t0 ? Math.min(t0 - i, n - t1 + i) : i >= t1 ? Math.min(i - t1 + 1, n - i + t0) : 0
+    return { x: px, y: py, nx: ty, ny: -tx, keep: smooth01(dist / 10) }
+  })
+  return { points, tip }
+}
+
+/** How far each outline point is pushed out right now (px), from the talk state: the speech wave's stretch, its
+ *  spikes and the voice level. Also which sides of the bubble the stretch reaches (for the room it keeps round it). */
+export function waveOffsets(points: OutlinePoint[], s: TalkState, feel: TalkFeel, scale: number, rnd: Random = Math.random) {
+  const N = points.length
+  const a = ((feel.waveStart % 1) + 1) % 1
+  let span = feel.waveEnd - feel.waveStart; if (span <= 0.0001) span += 1
+  span = Math.min(1, span)
+  const full = span >= 0.999, spanPx = span * N
+  const waves = Math.max(1, Math.round(spanPx / Math.max(1, feel.spikeGap * scale)))
+  fitSpikes(s, waves, feel, rnd)
+  let total = 0; for (const w of s.widths) total += w
+  const edges = [0]; for (let k = 0; k < waves; k++) edges.push(edges[k] + s.widths[k] / total)
+  const taper = Math.min(spanPx * 0.2, 24 * scale)
+  const amp = feel.talkHeight * scale * s.level
+  const out = new Float32Array(N)
+  const sides = { top: false, right: false, bottom: false, left: false }
+  let k = 0
+  for (let i = 0; i < N; i++) {
+    let sIn = (i / N - a) % 1; if (sIn < 0) sIn += 1 // where it is inside the stretch, 0..1 of the outline
+    if (sIn > span) continue
+    const p = points[i]
+    if (p.keep > 0) {
+      if (p.ny < -0.5) sides.top = true; if (p.nx > 0.5) sides.right = true
+      if (p.ny > 0.5) sides.bottom = true; if (p.nx < -0.5) sides.left = true
+    }
+    if (amp <= 0.05) continue
+    const u = sIn / span
+    if (edges[k] > u) k = 0
+    while (k < waves - 1 && edges[k + 1] <= u) k++
+    const f = (u - edges[k]) / (edges[k + 1] - edges[k])
+    const env = full ? 1 : smooth01(sIn * N / taper) * smooth01((span - sIn) * N / taper)
+    out[i] = amp * s.heights[k] * spikeShape(f, feel.roundness) * env * p.keep
+  }
+  return { out, sides }
+}
+
+/** The grow (0.15 → 1, ease-out-back) at `t` 0..1. */
+export const growScale = (t: number) => { const c1 = 1.7, u = Math.min(1, Math.max(0, t)) - 1; return 0.15 + 0.85 * (1 + (c1 + 1) * u ** 3 + c1 * u ** 2) }
+
+// ─── The part ───────────────────────────────────────────────────────
+
+export type TalkingBubbleProps = {
+  target: CalloutTarget
+  /** The line, in the current language. A new line restarts it (grow, then type). */
+  text: string
+  /** Who's talking, said in front of the line for screen readers ("The Veteran: …"). */
+  speaker?: string
+  /** "wave" (default) — the outline fizzes while it talks · "plain" — no wave, no squelch. */
+  outline?: 'wave' | 'plain'
+  /** The numbers (content/tuning/talk.json) — any left out are DEFAULT_TALK_FEEL's. Read every frame (live). */
+  feel?: Partial<TalkFeel>
+  placement?: CalloutPlacement
+  /** A CSS selector of what it must stay clear of (the HUD). */
+  avoid?: string
+  /** Makes it a button: a tap while typing shows the whole line; once it's all there, this. */
+  onConfirm?: () => void
+  /** The whole line is showing (typed out, tapped through, or reduce motion). */
+  onTyped?: () => void
+  words?: Partial<typeof talkWords>
+}
+
+const cssVar = (style: CSSStyleDeclaration, name: string) => style.getPropertyValue(name).trim()
+// The style's --depth-2 shadow as a filter for the drawn outline (its first shadow; a box shadow's spread can't be)
+function shadowFilter(depth: string) {
+  const first = depth.split(/,(?![^(]*\))/)[0]?.trim()
+  if (!first || first === 'none' || /inset/.test(first)) return 'none'
+  const parts = first.match(/(?:[a-z-]+\([^)]*\)|[^\s]+)/gi) ?? []
+  const lengths = parts.filter((p) => /^-?[\d.]+(px|rem|em)?$/.test(p)).slice(0, 3) // x y blur (no spread)
+  const colour = parts.filter((p) => !/^-?[\d.]+(px|rem|em)?$/.test(p)).join(' ')
+  return lengths.length >= 2 ? `drop-shadow(${lengths.join(' ')} ${colour})` : 'none'
+}
+
+export function TalkingBubble({ target, text, speaker, outline = 'wave', feel, placement = 'top', avoid, onConfirm, onTyped, words }: TalkingBubbleProps) {
+  const w = { ...talkWords, ...words }
+  const layer = useRef<HTMLDivElement>(null)
+  const bubble = useRef<HTMLDivElement>(null)
+  const shape = useRef<SVGPathElement>(null)
+  const group = useRef<SVGGElement>(null)
+  const typed = useRef<HTMLSpanElement>(null)
+  const rest = useRef<HTMLSpanElement>(null)
+  const now = useRef<CalloutPlaceInput>({ target, placement, avoid })
+  const props = useRef({ text, outline, feel, onConfirm, onTyped })
+  const talk = useRef<TalkState>(startTalk())
+  useLayoutEffect(() => { now.current = { target, placement, avoid }; props.current = { text, outline, feel, onConfirm, onTyped } })
+  useShownPopover(layer)
+  useCalloutPlace(layer, bubble, now)
+
+  // A new line starts over (grow, then type)
+  useLayoutEffect(() => { talk.current = startTalk() }, [text])
+
+  // The frame loop: steps the talking at the sketch's fixed step, then draws the outline and the typed words.
+  // Everything here writes to the page directly (refs) — never React state per frame.
+  useLayoutEffect(() => {
+    let frame = 0, last = performance.now(), carry = 0, drawn = '', room = '', phase = '', words = '', typedFired = false
+    let line: TalkState | null = null // the talk onTyped was last judged for (a new line = a new TalkState)
+    const tick = () => {
+      const at = performance.now()
+      const dt = Math.min((at - last) / 1000, MAX_FRAME_S); last = at
+      const p = props.current, f: TalkFeel = { ...DEFAULT_TALK_FEEL, ...p.feel }, s = talk.current
+      // A new line gets its own onTyped — even under reduce motion, where it's whole before this frame ever sees it type
+      if (s !== line) { line = s; typedFired = false }
+      const still = reduceMotion(), plain = p.outline === 'plain'
+      if (still) { if (s.phase !== 'wait') finishTalk(s, p.text, f, Math.random); s.level = 0; s.levelTarget = 0; s.pop = 0; s.popV = 0 }
+      carry += dt
+      while (carry >= STEP_S) { stepTalk(s, STEP_S, p.text, f, Math.random, plain); carry -= STEP_S }
+      if (still) { s.level = 0; s.pop = 0; s.popV = 0 }
+      draw(s, f, still, plain)
+      if (s.phase === 'wait' && !typedFired) { typedFired = true; p.onTyped?.() }
+      if (s.phase !== 'wait') typedFired = false
+      frame = schedule(tick)
+    }
+    const draw = (s: TalkState, f: TalkFeel, still: boolean, plain: boolean) => {
+      const el = layer.current, box = bubble.current, path = shape.current, g = group.current
+      if (!el || !box || !path || !g) return
+      // The words: the typed part shown, the rest laid out but unseen (so nothing reflows as it types)
+      const line = props.current.text
+      if (`${s.shown}|${line}` !== words && typed.current && rest.current) {
+        words = `${s.shown}|${line}`
+        typed.current.textContent = line.slice(0, s.shown)
+        rest.current.textContent = line.slice(s.shown)
+      }
+      if (s.phase !== phase) { phase = s.phase; box.setAttribute('data-phase', phase) }
+      if (!el.hasAttribute('data-ready')) return
+      // The look, read live from the style: border width, corner radius + shape, the shadow, the text size
+      const look = getComputedStyle(box)
+      const border = (box.offsetWidth - box.clientWidth) / 2
+      const scale = (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16) / 16
+      const layerStyle = el.style
+      const side = (el.getAttribute('data-side') ?? 'top') as CalloutSide
+      const tipEl = box.querySelector<HTMLElement>('.kit-callout-tip')
+      const reach = (tipEl?.offsetWidth ?? 16 * scale) * Math.SQRT1_2
+      const { points, tip } = talkOutline({
+        x: -border / 2, y: -border / 2, w: box.clientWidth + border, h: box.clientHeight + border,
+        r: parseFloat(look.borderTopLeftRadius) || 0, bevel: cssVar(look, '--corner-shape') === 'bevel',
+        side, tipX: parseFloat(layerStyle.getPropertyValue('--kit-callout-tip-x')) || 0,
+        tipY: parseFloat(layerStyle.getPropertyValue('--kit-callout-tip-y')) || 0, reach,
+      })
+      const { out, sides } = waveOffsets(points, s, f, scale)
+      let d = ''
+      for (let i = 0; i < points.length; i++) {
+        const q = points[i], o = plain || still ? 0 : out[i]
+        d += `${i ? 'L' : 'M'}${(q.x + q.nx * o).toFixed(1)} ${(q.y + q.ny * o).toFixed(1)}`
+      }
+      d += 'Z'
+      if (d !== drawn) { drawn = d; path.setAttribute('d', d) }
+      // Grows open from the pointer's tip, then swells round its middle on each syllable (the words stay put)
+      const grow = still || s.phase !== 'grow' ? 1 : growScale(s.t * 1000 / TALK_GROW_MS)
+      const cx = box.clientWidth / 2, cy = box.clientHeight / 2, pop = still ? 1 : 1 + s.pop
+      g.setAttribute('transform', `translate(${tip.x} ${tip.y}) scale(${grow.toFixed(4)}) translate(${-tip.x} ${-tip.y}) translate(${cx} ${cy}) scale(${pop.toFixed(4)}) translate(${-cx} ${-cy})`)
+      g.style.filter = shadowFilter(cssVar(look, '--depth-2'))
+      // Room round it on the sides the wave reaches, so the spikes stay inside the window (rem: grows with the text)
+      const reachRem = plain ? 0 : (f.talkHeight * 1.2) / 16
+      const want = (['top', 'right', 'bottom', 'left'] as const).map((k) => (sides[k] ? reachRem : 0).toFixed(3)).join()
+      if (want !== room) {
+        room = want
+        const [t, r, b, l] = want.split(',')
+        el.style.setProperty('--kit-talk-room-t', `${t}rem`); el.style.setProperty('--kit-talk-room-r', `${r}rem`)
+        el.style.setProperty('--kit-talk-room-b', `${b}rem`); el.style.setProperty('--kit-talk-room-l', `${l}rem`)
+      }
+    }
+    tick()
+    return () => cancel(frame)
+  }, [])
+
+  const confirm = () => {
+    const s = talk.current, p = props.current
+    if (s.phase !== 'wait') finishTalk(s, p.text, { ...DEFAULT_TALK_FEEL, ...p.feel }, Math.random)
+    else p.onConfirm?.()
+  }
+  // A held key's repeats are ignored, or holding Enter skipped through every line
+  const key = (event: KeyboardEvent) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    if (!event.repeat) confirm()
+  }
+  const button = !!onConfirm
+  const content = (
+    <div ref={layer} {...{ popover: 'manual' }} className="kit-scope kit-callout-layer kit-talk-layer" data-outline={outline}>
+      <div className="kit-callout-frame" aria-hidden />
+      <div ref={bubble} className="kit-callout kit-talk" data-phase="grow" data-confirm={button || undefined}
+        role={button ? 'button' : undefined} tabIndex={button ? 0 : undefined} aria-label={button ? w.next : undefined}
+        aria-hidden={button ? undefined : true} onClick={button ? confirm : undefined} onKeyDown={button ? key : undefined}>
+        <svg className="kit-talk-outline" aria-hidden="true" focusable="false"><g ref={group}><path ref={shape} className="kit-talk-shape" /></g></svg>
+        <div className="kit-callout-body kit-talk-body" aria-hidden="true">
+          <Text><span ref={typed} className="kit-talk-typed" /><span ref={rest} className="kit-talk-rest" /></Text>
+          <span className="kit-talk-more"><Text kind="caption">▼</Text></span>
+        </div>
+        <span className="kit-callout-tip" aria-hidden />
+      </div>
+    </div>
+  )
+  return (
+    <>
+      {typeof document === 'undefined' ? null : createPortal(content, document.body)}
+      <LiveAnnouncer text={speaker ? `${speaker}: ${text}` : text} stamp={text} minGapMs={0} />
+    </>
+  )
+}
+
+// One frame later (a timer where there are no animation frames, e.g. tests)
+const schedule = (fn: () => void) => (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(fn) : (setTimeout(fn, 16) as unknown as number))
+const cancel = (id: number) => (typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id))

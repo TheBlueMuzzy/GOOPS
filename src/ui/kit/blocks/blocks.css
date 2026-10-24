@@ -278,9 +278,18 @@
   }
   .kit-end-title { display: inline-block; }
   .kit-end-swipe { display: block; text-align: center; padding-block-start: var(--gap-xs); } /* "⇧ Swipe up…": words, not a button */
-  /* Victory / Game over on a short, wide screen (a phone on its side): the report on the left, its buttons on the right (0.11.0) */
+  /* Victory / Game over with a long list (0.31.0): only the stats' ScrollArea gives up height — the title, message
+     and buttons keep theirs, so they stay in sight and the rows scroll under the edge fade */
+  .kit-screen > [data-slot="center"] > .kit-panel > .kit-end-info { flex-shrink: 1; }
+  .kit-end-info > :not(.kit-scroll) { flex-shrink: 0; }
+  /* The scroll that follows a reveal stops the newest row clear of the "more below" fade (flow.tsx reads this) */
+  .kit-scroll .kit-stat-row { scroll-margin-block-end: var(--kit-scroll-fade, 2rem); }
+  /* Victory / Game over on a short, wide screen (a phone on its side): the report on the left, its buttons on the right (0.11.0);
+     the report's column is never taller than the card, so a long list scrolls there too (0.31.0) */
   @media (max-height: 30rem) and (min-width: 40rem) {
-    .kit-end { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: center; column-gap: var(--gap-l); }
+    .kit-end { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+      align-items: center; column-gap: var(--gap-l); }
+    .kit-end > .kit-end-info { max-block-size: 100%; }
   }
   .kit-dot { inline-size: 0.75rem; block-size: 0.75rem; border-radius: 50%; }
 
@@ -390,9 +399,11 @@
   .kit-countdown { background: var(--surface) var(--panel-texture); color: var(--on-surface); border: var(--border-width) solid var(--border);
     box-shadow: var(--depth-2); animation: kit-pop var(--motion-normal) var(--ease); }
   .kit-end-title { animation: kit-pop calc(var(--motion-normal) * 2) var(--ease) backwards; }
-  /* Results rows arrive one after another: each waits one fast motion longer than the row above */
-  .kit-result-row { animation: var(--enter) var(--motion-normal) var(--ease) backwards; animation-delay: calc(var(--kit-i, 0) * var(--motion-fast)); }
-  .kit-result-row + .kit-result-row { border-block-start: var(--border-width) solid var(--border); }
+  /* Results rows arrive one after another: each waits one fast motion longer than the row above.
+     Stats rows with reveal (0.31.0) use the SAME entrance, each waiting --kit-step (the game's ms per row) longer;
+     a waiting row is held at the entrance's first frame (backwards: unseen), so it keeps its space. */
+  .kit-result-row, .kit-stat-row[data-reveal] { animation: var(--enter) var(--motion-normal) var(--ease) backwards; animation-delay: calc(var(--kit-i, 0) * var(--kit-step, var(--motion-fast))); }
+  .kit-result-row + .kit-result-row, .kit-stat-row + .kit-stat-row { border-block-start: var(--border-width) solid var(--border); }
   .kit-player-chip { transition: opacity var(--motion-normal) var(--ease), filter var(--motion-normal) var(--ease); }
   .kit-player-chip[data-dim] { opacity: 0.35; }
   .kit-dot[data-status="good"] { background: var(--primary); }
@@ -527,6 +538,42 @@
     box-shadow: 0 0 0 0.125rem var(--surface); animation: kit-emote-fill var(--kit-emote-wait, 1s) linear forwards; }
 }
 @keyframes kit-emote-fill { from { --kit-emote-fill: 0%; } to { --kit-emote-fill: 100%; } }
+
+/* ───────────── Talking bubble (talkingBubble.tsx, 0.31.0): a story line someone says ─────────────
+   A Callout underneath (placed by teach.tsx's useCalloutPlace, the same pointer maths) — but its outline is DRAWN
+   (an svg path the frame loop writes), so it can grow from its tip, fizz as a speech wave and pop. The box itself
+   draws nothing; the path takes the box's colours, edge width, corners and shadow from the style. */
+@layer kit-base {
+  /* The frame keeps room on the sides the wave reaches (written by the frame loop), so spikes stay in the window */
+  .kit-talk-layer .kit-callout-frame {
+    padding: max(calc(var(--gap-m) + var(--kit-talk-room-t, 0rem)), env(safe-area-inset-top))
+             max(calc(var(--gap-m) + var(--kit-talk-room-r, 0rem)), env(safe-area-inset-right))
+             max(calc(var(--gap-m) + var(--kit-talk-room-b, 0rem)), env(safe-area-inset-bottom))
+             max(calc(var(--gap-m) + var(--kit-talk-room-l, 0rem)), env(safe-area-inset-left)); }
+  .kit-talk-layer .kit-talk { pointer-events: none; }
+  .kit-talk-layer .kit-talk[data-confirm] { pointer-events: auto; cursor: pointer; }
+  /* The drawn outline fills the box's cell and takes no room of its own (contain: size); spikes reach outside it */
+  .kit-talk-outline { justify-self: stretch; align-self: stretch; inline-size: auto; block-size: auto; contain: size;
+    overflow: visible; pointer-events: none; }
+  /* The whole line is laid out from the start (fixed size); the part not typed yet takes its room unseen */
+  .kit-talk-body { display: grid; gap: var(--gap-xs); }
+  .kit-talk-rest { visibility: hidden; }
+  .kit-talk[data-phase="grow"] .kit-talk-body { visibility: hidden; }
+  /* The "tap to go on" mark: its own line, always there (so the bubble never grows), shown once the line is all out */
+  .kit-talk-more { justify-self: end; line-height: 1; visibility: hidden; }
+  .kit-talk[data-confirm][data-phase="wait"] .kit-talk-more { visibility: visible; }
+  /* The Callout's own pointer is only measured (its size sets the drawn pointer's) */
+  .kit-talk-layer .kit-talk .kit-callout-tip { visibility: hidden; }
+}
+@layer kit-style {
+  /* The box draws nothing (the path does); no Callout entrance — it grows from its tip in code */
+  .kit-callout-layer .kit-callout.kit-talk { background: none; border-color: transparent; box-shadow: none; animation: none; }
+  .kit-talk-shape { fill: var(--surface); stroke: var(--border); stroke-width: var(--border-width); stroke-linejoin: miter; }
+  .kit-talk-more { color: var(--muted); animation: kit-talk-blink calc(var(--motion-normal) * 2) steps(1) infinite; }
+  @media (prefers-reduced-motion: reduce) { .kit-talk-more { animation: none; } }
+  :root[data-reduce-motion] .kit-talk-more { animation: none; }
+}
+@keyframes kit-talk-blink { 50% { opacity: 0.25; } }
 
 /* ───────────── Level meter (meter.tsx, 0.12.0): "RANK 2 · 10,347 / 12,500 XP" over a bar ─────────────
    Sized in em, so it follows the text size around it (inside an ArtLayer `text`: it grows with the art). */

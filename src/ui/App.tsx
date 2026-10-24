@@ -5,8 +5,8 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, Button, GameOver, Hud, HudText, ListRow, Modal, Pause, Row, Score, ScreenStack, ScrollArea, Settings, Stack, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
-import type { SettingsSchema } from './kit'
+import { Bar, Button, GameOver, Hud, HudText, Modal, Pause, Row, Score, ScreenStack, ScrollArea, Settings, Stack, StatList, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
+import type { SettingsSchema, Stat } from './kit'
 import { clampModifiers, createShift, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
 import { upgradesForShift } from '../progress/upgradeShop'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
@@ -41,6 +41,7 @@ import breakdowns from '../../content/tuning/breakdowns.json'
 import hudTuning from '../../content/tuning/hud.json'
 import settingsJson from '../../content/ui/settings.json'
 import text from '../../content/text/en.json'
+import payslipTuning from '../../content/tuning/payslip.json'
 
 const settings = settingsJson as SettingsSchema
 // the machines' bars in the bottom panel, left to right (Muzzy's second mock-up, 2026-10-19: VISOR · LASER · CONTROLS —
@@ -129,12 +130,13 @@ const payWords = (key: string): string => {
   const words = (P as unknown as Record<string, Record<string, string> | string[]>)[group]
   return (Array.isArray(words) ? words[Number(id)] : words?.[id]) ?? key
 }
-function payslipStats(p: Payslip, r: ShiftReward) {
+// (UI kit 0.31.0 rows: one at a time, payslip.json lineMs apart; tone = the ▼ / ▲ badge — fines down, net pay up)
+function payslipStats(p: Payslip, r: ShiftReward): Stat[] {
   return [
     { label: P.gross, value: fill(P.plus, { n: cr(p.gross) }) },
     ...(p.firstDay ? [{ label: P.firstDay, value: fill(P.minus, { n: 0 }) }]
-      : p.fines.map((f) => ({ label: payWords(f.key), value: fill(P.minus, { n: cr(f.amount) }) }))),
-    { label: P.net, value: rankUpLine(r) },
+      : p.fines.map((f): Stat => ({ label: payWords(f.key), value: fill(P.minus, { n: cr(f.amount) }), tone: 'danger' }))),
+    { label: P.net, value: rankUpLine(r), tone: 'success' },
   ]
 }
 // A random pick of fines each shift; fixed under scripted checks so e2e is the same every run
@@ -338,11 +340,11 @@ export function App() {
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
-            frame={art.end.frame} art={{ continue: art.end.again, quit: art.end.quit }} stats={stats}
+            frame={art.end.frame} art={{ continue: art.end.again, quit: art.end.quit }} stats={stats} reveal={payslipTuning.lineMs}
             onContinue={again} onQuit={back} onSwipeUp={back} />
         : <GameOver words={{ title: text.end.lostTitle, retry: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.lostOverflow : text.end.lostCracks}
-            frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={stats}
+            frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={stats} reveal={payslipTuning.lineMs}
             onRetry={again} onQuit={back} onSwipeUp={back} />
     },
     // F41: payday — the Company takes exactly the payment due, itemised, then the passage debt and the rank-up.
@@ -364,11 +366,14 @@ export function App() {
         <Modal title={P.paydayTitle} actions={<Button onClick={pay}>{P.pay}</Button>}>
           <Text>{fill(P.paydayMessage, { due: cr(day.due) })}</Text>
           {/* (the bill's rows scroll on a short phone — no scroll bar, the edge fades; Pay up stays in view) */}
-          <ScrollArea label={P.paydayTitle}><Stack gap="xs">
-            {day.items.map((item) => <ListRow key={item.key} label={payWords(item.key)}><Text kind="label">{fill(P.minus, { n: cr(item.amount) })}</Text></ListRow>)}
-            <ListRow label={P.debt}><Text kind="label">{fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) })}</Text></ListRow>
-            <ListRow label={P.rankUp}><Text kind="label">{what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to })}</Text></ListRow>
-          </Stack></ScrollArea>
+          {/* (one at a time like the report's rows; key = the payday, so a second payday plays its rows again) */}
+          <ScrollArea label={P.paydayTitle}>
+            <StatList key={payIndex} reveal={payslipTuning.lineMs} stats={[
+              ...day.items.map((item): Stat => ({ label: payWords(item.key), value: fill(P.minus, { n: cr(item.amount) }), tone: 'danger' })),
+              { label: P.debt, value: fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) }), tone: 'danger' },
+              { label: P.rankUp, value: what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to }), tone: 'success' },
+            ]} />
+          </ScrollArea>
         </Modal>
       )
     },

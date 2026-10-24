@@ -19,7 +19,8 @@ await new Promise((ok, fail) => {
   server.on('exit', () => fail(new Error('dev server stopped (port busy?)')))
 })
 
-const sizes = [[360, 780], [390, 844], [844, 390], [768, 343], [654, 900], [1100, 800], [1440, 900], [1920, 1080], [2560, 1440]]
+// (portrait only — Muzzy: "not expected to function in horizontal/landscape mode. ever." — so no 844x390 / 768x343)
+const sizes = [[360, 780], [390, 844], [654, 900], [1100, 800], [1440, 900], [1920, 1080], [2560, 1440]]
 // a save just short of rank 1, so the shift's XP (at least 100) ranks up on the way back
 const SAVE = JSON.stringify({ v: 1, totalXp: 3450, scrapsSpent: 0 })
 
@@ -112,6 +113,12 @@ try {
     for (let i = 1; i <= 8; i++) await page.mouse.move(sx, sy - (h * 0.4 * i) / 8)
     await page.mouse.up()
     await page.waitForTimeout(250)
+    // F41: a shift that ranked up opens its payday(s) first — Pay up through them
+    for (let i = 0; i < 5; i++) {
+      const pay = page.getByRole('button', { name: 'Pay up' })
+      if (!(await pay.count())) break
+      await pay.click(); await page.waitForTimeout(300)
+    }
     await page.screenshot({ path: `${OUT}/${name}-6-arriving.png` })
     await page.waitForTimeout(1250) // slide in + the first step: the rank-up moment
     await page.screenshot({ path: `${OUT}/${name}-7-rank-up.png` })

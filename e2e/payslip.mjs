@@ -17,6 +17,8 @@ const PORT = 5348, OUT = 'e2e-shots/payslip'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const P = en.payslip
+const PAY = JSON.parse(readFileSync('content/tuning/payslip.json', 'utf8'))
+const settle = () => 500 + 8 * PAY.lineMs // a card's entrance, then its rows one at a time (UI kit 0.31.0 reveal)
 const xpToNext = (rank) => prog.xpBase + prog.xpPerRank * rank
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return xp }
 const KIT = readFileSync('src/ui/kit/VERSION', 'utf8').split(/\s/)[0]
@@ -52,12 +54,12 @@ async function shiftEnded(totalXp, { width = 390, height = 844, score } = {}) {
     for (let i = 0; i < 60 && e.state.status === 'playing'; i++) e.tick(600000)
   }, score)
   await page.getByRole('heading', { name: /Shift (complete|failed)/ }).waitFor({ timeout: 5000 })
-  await page.waitForTimeout(700) // (the report settles: fonts, its entrance)
+  await page.waitForTimeout(700 + 8 * PAY.lineMs) // (the report settles, then its rows show one at a time)
   return { page, errors, close: () => context.close() }
 }
 // the open card's rows: [label, value]
 const rowsOf = async (page, sel) => {
-  const raw = await page.locator(`${sel} .kit-listrow`).allInnerTexts()
+  const raw = await page.locator(`${sel} .kit-stat-row`).allInnerTexts()
   return raw.map((t) => t.split('\n').map((s) => s.trim()).filter(Boolean)).map((p) => [p[0], p[p.length - 1]])
 }
 const growth = (page) => page.evaluate(() => window.__uiGrowth ?? [])
@@ -93,7 +95,7 @@ try {
     check('payday: the report says the rank-up', await page.getByText(/Rank up! 4/).count() === 1)
     await page.getByRole('button', { name: en.end.quit }).click()
     await page.getByRole('heading', { name: P.paydayTitle }).waitFor({ timeout: 3000 })
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(settle())
     const r = await rowsOf(page, '.kit-modal')
     const bill = r.filter(([l]) => billWords.has(l))
     check('payday: 5 items on the bill', bill.length === 5, JSON.stringify(r))
@@ -114,11 +116,11 @@ try {
     const { page, errors, close } = await shiftEnded(xpToNext(0) - 50, { score: xpToNext(1) + 4000 })
     await page.getByRole('button', { name: en.end.again }).click()
     await page.getByRole('heading', { name: P.paydayTitle }).waitFor({ timeout: 3000 })
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(settle())
     const first = await rowsOf(page, '.kit-modal'), size1 = await cardSize(page, '.kit-modal')
     await page.screenshot({ path: `${OUT}/payday-double-1-390x844.png` })
     await page.getByRole('button', { name: P.pay }).click()
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(settle())
     const second = await rowsOf(page, '.kit-modal'), size2 = await cardSize(page, '.kit-modal')
     await page.screenshot({ path: `${OUT}/payday-double-2-390x844.png` })
     check('two paydays: rank 1, then rank 2', first.some(([l, v]) => l === P.rankUp && v.includes('1')) && second.some(([l, v]) => l === P.rankUp && v.includes('2')), JSON.stringify([first.at(-1), second.at(-1)]))
@@ -153,7 +155,7 @@ try {
     else console.log(`WAIT ${w}x${h}: the report fits the window — needs UI kit 0.31.0 (now ${KIT}) · ${report.ok ? 'fits already' : report.why}`)
     await page.getByRole('button', { name: en.end.quit }).click()
     await page.getByRole('heading', { name: P.paydayTitle }).waitFor({ timeout: 3000 })
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(settle())
     await page.screenshot({ path: `${OUT}/payday-${w}x${h}.png` })
     const payday = await fits('.kit-modal')
     check(`${w}x${h}: the payday fits the window (no scrolling, every button pressable)`, payday.ok, payday.why)

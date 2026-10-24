@@ -12,7 +12,7 @@ Check: unit tests for the payslip maths (net = XP for many scores and ranks, pay
 - [x] 🤖 4. The end report with the payslip and paydays, fixed-size cards (Payday rows scroll in a ScrollArea, Muzzy 2026-10-23) — src/ui/App.tsx
 - [x] 🤖 5. e2e check + screenshots at every portrait size; TDD + GDD updated — e2e/payslip.mjs
 - [ ] 🙋 6. Muzzy plays a few shifts through a payday and says how it feels — src/ui/App.tsx
-- [ ] 🤖 7. Install UI kit 0.31.0 (framework F113): the report's rows scroll with the title + buttons pinned, rows revealed one at a time, fines red / net green; e2e/payslip.mjs's report-fit check turns on by itself — src/ui/App.tsx
+- [x] 🤖 7. Install UI kit 0.31.0 (framework F113): the report's rows scroll with the title + buttons pinned, rows revealed one at a time, fines red / net green; e2e/payslip.mjs's report-fit check turns on by itself — src/ui/App.tsx
 
 ## Notes
 - Plan OK (Muzzy 2026-10-23: "ok. /develop"). Sprint picked: "A. fine" (story build first).
@@ -23,3 +23,4 @@ Check: unit tests for the payslip maths (net = XP for many scores and ranks, pay
 - Muzzy 2026-10-23: "can the payslip screen be a modal … that just gets long and you can scroll it vertically? we did it in Glyphtender with the UI kit. no scroll bar, just obviously hangs off screen. then we can keep full corporate speak and humor" → the Payday Modal's rows are in a kit ScrollArea (edge fade, Pay up pinned); the report's own rows scroll from UI kit 0.31.0 (framework F113 task 5) → task 7.
 - Task 4 review fixes (376f3bd, part of task 4): a quick double tap on the last Pay up can't start two shifts; the report tells the lesson it closed as the payday opens, so day one's last bubble never sits over the payday. first-day e2e now pays day one's first payday (rank 1 → Payday is correct: the monitor's rank-1 line is "your first payday").
 - Full check 1 (4663d7f): first-day failed (the new payday, fixed above); gestures + crack-spread failed because old dev servers held their ports 5291 / 5391 (stopped with stop-servers; gestures 47/47 alone).
+- Task 7 (Claude, 2026-10-24): framework v0.14.0 installed — UI kit 0.31.0 + Dev Kit 0.26.1 (install-module added vite-plugins/devkit to eslint ignores itself). The report and Payday rows show one at a time (payslip.json lineMs), fines + debt ▼ red, net pay + rank up ▲ green (kit tones); the report's rows scroll with title + buttons pinned, following the newest row. Meter unit PAYMENT DUE → DUE: it spilled at 360x780 (283 > 247 px; console-shots) — "50 / 3,750 DUE" fits every portrait size. console-shots.mjs: pays through paydays, landscape sizes removed (portrait only).

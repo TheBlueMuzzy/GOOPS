@@ -118,17 +118,103 @@ export function Results({ players, meId, lowestWins, title, message, onContinue,
 // onSwipeUp (0.12.0): a swipe up anywhere on the report does it too (Goops: "swipe up to end the day" = back to the
 // console); words.swipe = the quiet line at the bottom that says so (plain words, not a button).
 // Victory onQuit (0.12.0): a second, quieter way out beside Continue (words.quit, art.quit) — like GameOver's.
-type Stat = { label: string; value: ReactNode }
+// reveal (0.31.0, Goops' payslip): ms per row — the stats rows arrive one after another with the Results rows' entrance
+// (the same motion; each row `reveal` ms after the one above); all at once with reduce motion. Waiting rows hold their
+// space, so the card is its final size from the start. onRevealed: once, when the last row is in (at once with reduce
+// motion, no rows or no reveal). It follows the CSS animation, so the Dev Kit's full pause holds it too.
+// STAT LIST (0.31.0) — the same rows as a block, for a Modal or your own card: <StatList stats reveal onRevealed />.
+// A row's tone: "danger" (a loss, a deduction, a debt) or "success" (net pay, a rank up) — like Card's tone, the style's
+// danger / success colour: a small ▼ / ▲ tag in that colour before the value (a Badge, like Results' winner star), so
+// the shape says it too, never colour alone (read out as words.danger / words.success). The value itself keeps the
+// panel's text colour: some styles' danger isn't readable as text on their panel (Pixel's is 2:1).
+// Long lists (0.31.0, Goops' payslip: 692 px of rows in a 605 px frame): Victory / GameOver hold their stats in a
+// ScrollArea, so the title, message and buttons stay put and in sight and only the rows scroll (edge fade, no bar);
+// a list that fits looks and sizes as before. With reveal the scroll follows the newest row (StatList, in any
+// ScrollArea) until the player scrolls it themselves.
+export type Stat = { label: string; value: ReactNode; tone?: 'danger' | 'success' }
+export const statListWords = { danger: 'Loss', success: 'Gain' }
+type RevealProps = { reveal?: number; onRevealed?: () => void }
+type StatListProps = RevealProps & { stats: Stat[]; words?: Partial<typeof statListWords> }
+const toneMark = { danger: '▼', success: '▲' }
+export function StatList({ stats, reveal, onRevealed, words }: StatListProps) {
+  const w = { ...statListWords, ...words }
+  const revealing = reveal !== undefined && stats.length > 0 && !reduceMotion()
+  const done = useRef(onRevealed)
+  useEffect(() => { done.current = onRevealed }) // always call the latest onRevealed
+  const fired = useRef(false) // once, whether the last row's entrance ends or there's nothing to wait for
+  const finish = () => { if (!fired.current) { fired.current = true; done.current?.() } }
+  const lastRow = useRef<HTMLDivElement>(null)
+  // Follows whichever row is last now: new stats mid-reveal can add, drop or swap the last row (review fix)
+  const lastKey = stats.length > 0 ? stats[stats.length - 1].label : undefined
+  useEffect(() => {
+    const el = lastRow.current
+    if (!revealing || !el) { finish(); return }
+    // Nothing left to play on it (its entrance already over, or the style has none): it's in now
+    if (typeof el.getAnimations === 'function' && el.getAnimations().length === 0) { finish(); return }
+    // (the row's own entrance, not a part inside it; a cancelled entrance — e.g. hidden — has nothing more to show)
+    const onEnd = (e: AnimationEvent) => { if (e.target === el) finish() }
+    el.addEventListener('animationend', onEnd)
+    el.addEventListener('animationcancel', onEnd)
+    return () => { el.removeEventListener('animationend', onEnd); el.removeEventListener('animationcancel', onEnd) }
+  }, [revealing, lastKey, stats.length])
+  // In a ScrollArea (Victory / GameOver's own, or yours round a StatList) the scroll follows the reveal: as each row
+  // starts its entrance it's scrolled into view (smoothly; at once with reduce motion), clear of the "more below" fade.
+  // A player who scrolls it themselves (wheel, touch, a press, the keys) takes over: it stops following.
+  useEffect(() => {
+    const stack = lastRow.current?.parentElement // the rows' own list (.kit-stats)
+    const box = stack?.closest<HTMLElement>('.kit-scroll')
+    if (!revealing || !stack || !box) return
+    let theirs = false
+    const takeOver = () => { theirs = true }
+    const follow = (e: AnimationEvent) => {
+      const row = e.target as HTMLElement
+      if (theirs || row.parentElement !== stack) return // only a row's own entrance (not a part inside it)
+      // where the row's bottom is in the box's contents (offsets ignore the entrance's own movement)
+      const stackTop = stack.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop
+      const bottom = stackTop + row.offsetTop - stack.offsetTop + row.offsetHeight
+      const room = parseFloat(getComputedStyle(row).scrollMarginBlockEnd) || 0 // the fade's height (blocks.css)
+      const top = bottom + room - box.clientHeight
+      if (top > box.scrollTop + 1) box.scrollTo({ top, behavior: reduceMotion() ? 'auto' : 'smooth' })
+    }
+    const intents = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const
+    for (const name of intents) box.addEventListener(name, takeOver, { passive: true })
+    box.addEventListener('animationstart', follow)
+    return () => {
+      for (const name of intents) box.removeEventListener(name, takeOver)
+      box.removeEventListener('animationstart', follow)
+    }
+  }, [revealing])
+  if (stats.length === 0) return null
+  const last = stats.length - 1
+  const waits = (i: number) => (revealing ? i : undefined) // row i waits i steps (no reveal: no variables at all)
+  const step = revealing ? `${reveal}ms` : undefined
+  return (
+    <Stack gap="xs" className="kit-stats">
+      {stats.map((s, i) => (
+        <div key={s.label} ref={i === last ? lastRow : undefined} className="kit-stat-row" data-reveal={revealing || undefined} data-tone={s.tone}
+          style={{ '--kit-i': waits(i), '--kit-step': step } as CSSProperties}>
+          <ListRow label={s.label}>
+            {s.tone
+              ? <Row gap="xs" className="kit-nowrap"><Badge variant={s.tone}><span role="img" aria-label={w[s.tone]}>{toneMark[s.tone]}</span></Badge><Text kind="label">{s.value}</Text></Row>
+              : <Text kind="label">{s.value}</Text>}
+          </ListRow>
+        </div>
+      ))}
+    </Stack>
+  )
+}
 type EndArt = { frame?: PanelFrame; backdrop?: string; onSwipeUp?: () => void }
-type EndScreenProps = EndArt & { title: string; message?: string; stats?: Stat[]; swipeHint?: string; children: ReactNode }
-function EndScreen({ title, message, stats = [], children, frame, backdrop, onSwipeUp, swipeHint }: EndScreenProps) {
+type EndScreenProps = EndArt & RevealProps & { title: string; message?: string; stats?: Stat[]; swipeHint?: string; children: ReactNode }
+function EndScreen({ title, message, stats = [], reveal, onRevealed, children, frame, backdrop, onSwipeUp, swipeHint }: EndScreenProps) {
   return (
     <Screen label={title} backdrop={backdrop} swipe={onSwipeUp ? { up: onSwipeUp } : undefined}>
       <Panel depth={2} gap="m" className="kit-modal kit-centred kit-end" frame={frame}>
         <Stack gap="m" className="kit-end-info">
           <span className="kit-end-title"><Text kind="display">{title}</Text></span>
           {message && <Text>{message}</Text>}
-          {stats.length > 0 && <Stack gap="xs">{stats.map((s) => <ListRow key={s.label} label={s.label}><Text kind="label">{s.value}</Text></ListRow>)}</Stack>}
+          {stats.length > 0
+            ? <ScrollArea label={title}><StatList stats={stats} reveal={reveal} onRevealed={onRevealed} /></ScrollArea>
+            : <StatList stats={stats} onRevealed={onRevealed} />}
         </Stack>
         <Stack gap="s" className="kit-end-actions">
           {children}
@@ -139,7 +225,7 @@ function EndScreen({ title, message, stats = [], children, frame, backdrop, onSw
   )
 }
 export const victoryWords = { title: 'Victory!', continue: 'Continue', quit: 'Quit', swipe: '⇧ Swipe up to go back' }
-type VictoryProps = EndArt & {
+type VictoryProps = EndArt & RevealProps & {
   message?: string; stats?: Stat[]; onContinue: () => void; onQuit?: () => void; words?: Partial<typeof victoryWords>
   art?: { continue?: ButtonArt; quit?: ButtonArt }
 }
@@ -153,7 +239,7 @@ export function Victory({ message, stats, onContinue, onQuit, words, art, ...loo
   )
 }
 export const gameOverWords = { title: 'Game over', retry: 'Try again', quit: 'Quit', swipe: '⇧ Swipe up to go back' }
-type GameOverProps = EndArt & {
+type GameOverProps = EndArt & RevealProps & {
   message?: string; stats?: Stat[]; onRetry?: () => void; onQuit?: () => void; words?: Partial<typeof gameOverWords>
   art?: { retry?: ButtonArt; quit?: ButtonArt }
 }
