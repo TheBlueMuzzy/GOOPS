@@ -5,7 +5,7 @@
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { Bar, Button, GameOver, Hud, HudText, Pause, Row, Score, ScreenStack, Settings, Stack, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
+import { Bar, Button, GameOver, Hud, HudText, ListRow, Modal, Pause, Row, Score, ScreenStack, Settings, Stack, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema } from './kit'
 import { clampModifiers, createShift, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
 import { upgradesForShift } from '../progress/upgradeShop'
@@ -26,6 +26,7 @@ import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
 import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
+import { makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
 import { UpgradesScreen } from './UpgradesScreen'
@@ -101,20 +102,43 @@ const onMessage = (m: Message) => {
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
 
-// The end report's XP line: what the shift earned; a rank-up if it crossed one, naming what the new rank unlocked (F59:
-// the progression unlocks and the machines, in the order they come)
-function rankUpLine(r: ShiftReward): string {
-  const xp = r.xp.toLocaleString('en')
-  if (r.rankUps <= 0) return fill(text.end.xpValue, { xp })
-  const from = r.before.rank, to = r.after.rank
+// What ranking up from `from` to `to` unlocked (F59: the progression unlocks and the machines, in the order they come)
+function gainedBetween(from: number, to: number): string[] {
   const gained: [number, string][] = [
     ...unlocksBetween(from, to).map((u): [number, string] => [unlockRank(u), text.unlocks[u]]),
     ...MACHINES.filter((id) => breakdowns[id].unlockRank > from && breakdowns[id].unlockRank <= to).map((id): [number, string] => [breakdowns[id].unlockRank, text.unlocks[id]]),
   ]
   gained.sort((a, b) => a[0] - b[0])
-  return gained.length ? fill(text.end.xpRankUpNew, { xp, rank: to, what: gained.map(([, name]) => name).join(', ') })
-    : fill(text.end.xpRankUp, { xp, rank: to })
+  return gained.map(([, name]) => name)
 }
+
+// The end report's net pay line: what the shift earned; a rank-up if it crossed one, naming what the new rank unlocked
+function rankUpLine(r: ShiftReward): string {
+  const xp = r.xp.toLocaleString('en')
+  if (r.rankUps <= 0) return fill(text.end.xpValue, { xp })
+  const what = gainedBetween(r.before.rank, r.after.rank)
+  return what.length ? fill(text.end.xpRankUpNew, { xp, rank: r.after.rank, what: what.join(', ') })
+    : fill(text.end.xpRankUp, { xp, rank: r.after.rank })
+}
+
+// F41: the payslip's rows on the report — gross pay, the fines (none on day one: "Day one is on us"), net pay
+const cr = (n: number) => n.toLocaleString('en')
+const P = text.payslip
+const payWords = (key: string): string => {
+  const [group, id] = key.split('.') as [string, string]
+  const words = (P as unknown as Record<string, Record<string, string> | string[]>)[group]
+  return (Array.isArray(words) ? words[Number(id)] : words?.[id]) ?? key
+}
+function payslipStats(p: Payslip, r: ShiftReward) {
+  return [
+    { label: P.gross, value: fill(P.plus, { n: cr(p.gross) }) },
+    ...(p.firstDay ? [{ label: P.firstDay, value: fill(P.minus, { n: 0 }) }]
+      : p.fines.map((f) => ({ label: payWords(f.key), value: fill(P.minus, { n: cr(f.amount) }) }))),
+    { label: P.net, value: rankUpLine(r) },
+  ]
+}
+// A random pick of fines each shift; fixed under scripted checks so e2e is the same every run
+const payslipSeed = () => (import.meta.env.DEV && navigator.webdriver ? 1 : Math.floor(Math.random() * 1e9))
 
 // console = on the console · leaving = sliding away to the tank · shift = in the tank (report included) · arriving = sliding back
 // peekIn / peek / peekOut = mid-shift: the console sliding over the running tank / on it / sliding away back to the shift
@@ -125,7 +149,18 @@ export function App() {
   const [mode, setMode] = useState<Mode>('console')
   const [engine, setEngine] = useState<ShiftEngine | null>(null)
   const [hud, setHud] = useState<HudSnapshot | null>(null)
-  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward } | null>(null)
+  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward; payslip: Payslip } | null>(null)
+  // F41: the payday on screen (0 = the first) and what the report's button asked for, done after the last payday
+  const [payIndex, setPayIndex] = useState(0)
+  const afterPay = useRef<(() => void) | null>(null)
+  // F41: what really happened in this shift, for the fines (machines that broke, refused zaps, time at the console)
+  const facts = useRef({ broke: new Set<MachineId>(), refusedZaps: 0, consoleMs: 0, peekSince: 0 })
+  useEffect(() => session.listen((events) => {
+    for (const e of events) {
+      if (e.type === 'breakdown') facts.current.broke.add(e.machine)
+      else if (e.type === 'reject' && e.action === 'pop' && e.cell !== undefined) facts.current.refusedZaps++
+    }
+  }), [])
   const open = useScreens()
   const short = useShort()
   // portrait only (F32, Muzzy): locked upright where the browser allows it; a touch phone held sideways gets the
@@ -159,6 +194,7 @@ export function App() {
     pendingLesson.current = lesson ?? null
     freshShift.current = !lesson
     engineRef.current = e
+    facts.current = { broke: new Set(), refusedZaps: 0, consoleMs: 0, peekSince: 0 }
     setResult(null); setHud(null); setEngine(e)
   }, [])
   // the periscope is down: the shift is made (paused) under the console, which slides away to show it
@@ -202,7 +238,7 @@ export function App() {
   }, [start])
   useEffect(() => { session.startLesson = startLessonNow; return () => { session.startLesson = null } }, [startLessonNow])
   useEffect(() => {
-    if (mode === 'shift' && result && !screens.current.includes('end')) { lessonPlay.screen('reportClosed'); toConsole() } // (Esc / Back finish day one too)
+    if (mode === 'shift' && result && !screens.current.includes('end') && !screens.current.includes('payday')) { lessonPlay.screen('reportClosed'); toConsole() } // (Esc / Back finish day one too)
   }, [mode, result, open, toConsole])
   // (the last shift's engine stays in state on the console, unmounted; the next pull replaces it)
   const consoleSlid = useCallback(() => setMode((m) => (m === 'leaving' || m === 'peekOut' ? 'shift' : m === 'arriving' ? 'console' : m === 'peekIn' ? 'peek' : m)), [])
@@ -242,17 +278,31 @@ export function App() {
   useEffect(() => { session.engine = engine; session.inShift = !!engine && mode !== 'console' }, [engine, mode])
   // at the console mid-shift the machines' break-progress pauses (Muzzy, 2026-10-18; src/engine/machines.ts)
   useEffect(() => { engine?.act({ type: 'console', on: PEEK.includes(mode) }) }, [engine, mode])
+  // (F41: time at the console mid-shift, for "Unscheduled console loitering")
+  useEffect(() => {
+    const f = facts.current
+    if (PEEK.includes(mode)) { if (!f.peekSince) f.peekSince = performance.now() }
+    else if (f.peekSince) { f.consoleMs += performance.now() - f.peekSince; f.peekSince = 0 }
+  }, [mode])
   const onEnd = useCallback((status: ShiftStatus) => {
     const e = engineRef.current
     if (!e) return
     // the final score (after the leftover penalty) becomes XP — saved right away
     // (F31: the first day's shift tops it up to rank 1 when it started at rank 0 — the report says the rank-up)
-    const reward = (firstDay.running() ? rewardFirstDay : rewardShift)(progressRef.current, e.state.score)
+    const dayOne = firstDay.running()
+    const reward = (dayOne ? rewardFirstDay : rewardShift)(progressRef.current, e.state.score)
     progressRef.current = reward.progress
     setProgress(reward.progress)
     saveProgress(reward.progress)
+    // F41: the payslip — fines from what really happened first (src/progress/payslip.ts)
+    const f = facts.current, s = e.state
+    const shiftFacts: ShiftFacts = { ruptured: s.ruptureReason !== null, broke: [...f.broke], openCracks: s.cracks.length,
+      goopLeft: (s.leftoverPenalty ?? 0) > 0, refusedZaps: f.refusedZaps,
+      consoleSeconds: (f.consoleMs + (f.peekSince ? performance.now() - f.peekSince : 0)) / 1000 }
+    const payslip = makePayslip(reward, shiftFacts, { firstDay: dayOne, seed: payslipSeed(), extras: P.extras.length })
+    setPayIndex(0); afterPay.current = null
     setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
-      cause: e.state.ruptureReason ?? 'integrity', reward })
+      cause: e.state.ruptureReason ?? 'integrity', reward, payslip })
     toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
     if (modeRef.current === 'shift') screens.push('end')
     else { // at the console mid-shift: back to the tank first, then the report
@@ -269,13 +319,20 @@ export function App() {
     ),
     end: () => {
       if (!result) return null
-      const stats = [{ label: text.end.score, value: String(result.score) }, { label: text.end.cracks, value: `${result.sealed} / ${result.needed}` },
-        // what the shift earned, and a rank-up if it crossed one
-        // (F59: and what that rank unlocked)
-        { label: text.end.xp, value: rankUpLine(result.reward) }]
+      // F41: the payslip — gross, fines, net pay (= what the shift earned, and a rank-up if it crossed one, F59: and
+      // what that rank unlocked). Net pay replaces the Score row: they were the same number, and a phone has no room
+      // for both (the report must never scroll).
+      const stats = [{ label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }, ...payslipStats(result.payslip, result.reward)]
       // (F31: a lesson hears the report close — the first day's last step is "back to the console")
-      const again = () => { lessonPlay.screen('reportClosed'); screens.pop(); start() }
-      const back = () => { lessonPlay.screen('reportClosed'); toConsole() }
+      // F41: a rank-up first plays its payday (one screen per rank crossed), then does what the button asked
+      const thenPay = (go: () => void) => () => {
+        if (!result.payslip.paydays.length) return go()
+        afterPay.current = go
+        setPayIndex(0)
+        screens.replace('payday')
+      }
+      const again = thenPay(() => { lessonPlay.screen('reportClosed'); while (screens.current.length) screens.pop(); start() })
+      const back = thenPay(() => { lessonPlay.screen('reportClosed'); toConsole() })
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
@@ -286,7 +343,27 @@ export function App() {
             frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={stats}
             onRetry={again} onQuit={back} onSwipeUp={back} />
     },
-  }), [result, start, toConsole])
+    // F41: payday — the Company takes exactly the payment due, itemised, then the passage debt and the rank-up.
+    // Every payday has the same rows, so the card is the same size each time. Closed another way (Esc, phone Back):
+    // back to the console, like the report.
+    payday: () => {
+      const day = result?.payslip.paydays[payIndex]
+      if (!result || !day) return null
+      const last = payIndex >= result.payslip.paydays.length - 1
+      const pay = () => { if (last) afterPay.current?.(); else setPayIndex((i) => i + 1) }
+      const what = gainedBetween(day.from, day.to)
+      return (
+        <Modal title={P.paydayTitle} actions={<Button onClick={pay}>{P.pay}</Button>}>
+          <Text>{fill(P.paydayMessage, { due: cr(day.due) })}</Text>
+          <Stack gap="xs">
+            {day.items.map((item) => <ListRow key={item.key} label={payWords(item.key)}><Text kind="label">{fill(P.minus, { n: cr(item.amount) })}</Text></ListRow>)}
+            <ListRow label={P.debt}><Text kind="label">{fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) })}</Text></ListRow>
+            <ListRow label={P.rankUp}><Text kind="label">{what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to })}</Text></ListRow>
+          </Stack>
+        </Modal>
+      )
+    },
+  }), [result, start, toConsole, payIndex])
 
   // the console between shifts: Settings, and the Upgrades screen (F59 opens it from its rank; F34 the shop: buy, take
   // back, equip — src/ui/UpgradesScreen.tsx). What it changes is saved at once.
