@@ -19,4 +19,7 @@ Checked: story.md audited by script after task 1 (51 rank rows, voices on the pa
 - Task 2 (Muzzy, 2026-10-23): ending "B" (you leave) · story.md "it's fine for now. approved" · the last earned title runs 45–49, rank 50 is the final shift (his "it has to be 49, right?") · the win title must be a new non-job title (his list: The Freed, The GOOP, king of the goops, savior of goopkind, One Of Us) → Ask Muzzy on F65, Claude's pick "Former Employee #1,313" · "how does the goop know your name?" → you sign the contract at rank 0 (story.md "Your name"), planned as F66 (just a name, or a framework profile module). His idea for the framework (a second window extracting finished game pieces into modules while the game keeps going) → sent to the framework session.
 - Titles (Muzzy, 2026-10-23, after F09): lose the final shift → One Of Us (until you win) · win → The Savior of Goopkind · next career rank 0 → Former Employee. In story.md + F65.
 
-Retro: (Muzzy 2026-10-23: "skip")
+Retro: (Muzzy 2026-10-23: "skip" — Claude's draft from the Notes)
+- went well: the whole story settled in one sprint; the speaker bubble got approved in a sketch and sent to the framework
+- went wrong: the Dev Kit update failed Goops' lint (fixed; the framework fixes install-module in F112); the card's Questions section held to-dos, which confused Muzzy
+- change: Questions = only real decisions; to-dos go elsewhere (asked of the framework session)
