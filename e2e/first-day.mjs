@@ -13,8 +13,12 @@
 //      the piece, tap goop, drag sideways to spin.
 //   3. LEAVING MID-PHASE — End shift in phase D → the console says the first line again → the pull restarts at D1 (also
 //      after a reload).
-//   4. SHOTS — A1, C1, D1, E1, F1, F3 at 390x844, 360x780 and 1440x900 (portrait phones only) → e2e-shots/first-day/,
-//      each checked: the bubble / monitor words inside the screen with room round them, the outline on screen.
+//   4. SHOTS — A1, C1, D1, E1, F1, F3 at 390x844, 360x780, 1100x800, 1440x900 and 1920x1080 (portrait phones + desktop
+//      windows, never a phone on its side) → e2e-shots/first-day/, each checked: the bubble / monitor words inside the
+//      screen with room round them, the outline on screen.
+//   5. F68 — in pass 1, a zap the lesson refuses (the blue in C1) jiggles the goo there, sends its cell, asks for the poke
+//      sound; in E1 the game's own "Wrong colour on a crack" stays quiet under the red X line. Then, at every size, a
+//      real shift: a piece lands on an open crack of another colour → "Wrong colour on a crack — zap it" at the stack.
 // Time: the steps really run (real keys, clicks, touches; the runner's own timers). Only the slow parts of free play are
 // sped up through the dev hooks (window.__goops.engine: ticking game time, and in F1 a crack with its goop placed on it,
 // which a real click then seals); phase jumps for the shots use the Dev Kit's lesson jump (window.__goops.lesson).
@@ -25,6 +29,7 @@ import { mkdirSync, readFileSync } from 'node:fs'
 import { startShift } from './start.mjs'
 
 const PORT = 5347, OUT = 'e2e-shots/first-day'
+const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]] // (portrait phones + desktop windows — never a phone on its side)
 mkdirSync(OUT, { recursive: true })
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const W = en.lessons['first-day']
@@ -100,6 +105,25 @@ async function hitGroup(page, color, how) {
   }
   return false
 }
+// F68: click goop of a colour the way a player does and watch it: how much the goo there moved (at rest → its peak
+// over the next ~250 ms), the reject events the engine sent and the sounds asked for since the click
+async function pokeGroup(page, color) {
+  await spy(page)
+  for (const [x, y] of await groupCells(page, color)) {
+    const p = await cellPoint(page, x, y)
+    if (!p) continue
+    const cell = await page.evaluate(([x, y]) => y * window.__goops.engine.state.width + x, [x, y])
+    const motion = () => page.evaluate((c) => window.__goops.gooMotion(c), cell)
+    await page.evaluate(() => { window.__rejects = []; window.__audioLog?.clear() })
+    const calm = await motion()
+    await page.mouse.click(...p)
+    let peak = 0
+    for (let k = 0; k < 6; k++) { await sleep(40); peak = Math.max(peak, await motion()) }
+    const { rejects, sounds } = await page.evaluate(() => ({ rejects: window.__rejects, sounds: (window.__audioLog?.entries() ?? []).map((e) => e.id) }))
+    return { cell, calm, peak, rejects, sounds }
+  }
+  return null
+}
 // the columns round the tank between two tank columns, the short way (+ = the piece must move right in tank columns)
 const shortWay = (from, to, width) => { let d = (((to - from) % width) + width) % width; if (d > width / 2) d -= width; return d }
 // spin the tank (one key press = one column) until the falling piece's left column is over tank column x
@@ -132,9 +156,9 @@ const spy = (page) => page.evaluate(() => {
   const e = window.__goops.engine
   if (e.__spied) return
   e.__spied = true
-  window.__locks = 0; window.__events = []
+  window.__locks = 0; window.__events = []; window.__rejects = []
   const take = e.takeEvents.bind(e)
-  e.takeEvents = () => { const ev = take(); for (const x of ev) { if (x.type === 'lock') window.__locks++; if (x.type !== 'step' && x.type !== 'move') window.__events.push(x.type) } return ev }
+  e.takeEvents = () => { const ev = take(); for (const x of ev) { if (x.type === 'lock') window.__locks++; if (x.type === 'reject') window.__rejects.push(x); if (x.type !== 'step' && x.type !== 'move') window.__events.push(x.type) } return ev }
 })
 // game time, sped up: tick the engine in 50 ms steps until fn(state) holds (or maxMs of game time)
 const tickUntil = (page, cond, maxMs) => page.evaluate(([cond, maxMs]) => {
@@ -180,13 +204,13 @@ const ringAround = (page, selector) => page.evaluate((selector) => {
 const shot = async (page, name) => { await sleep(700); await page.screenshot({ path: `${OUT}/${name}.png` }) } // (after the bubble's fade-in)
 const size = (page) => { const v = page.viewportSize(); return `${v.width}x${v.height}` }
 
-async function freshDevice(width, height, touch = false) {
+async function freshDevice(width, height, touch = false, query = '?seed=7') {
   const context = await browser.newContext({ viewport: { width, height }, ...(touch ? { hasTouch: true, isMobile: true } : {}) })
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
-  await page.goto(`http://localhost:${PORT}/?seed=7`)
+  await page.goto(`http://localhost:${PORT}/${query}`)
   await page.getByRole('button', { name: 'Start shift' }).waitFor()
   return { page, context, errors }
 }
@@ -249,8 +273,13 @@ try {
     check('C1: the words (Keys/Mouse)', (await bubbleSays(page)) === words('zapYellow', 'mouse'), await bubbleSays(page))
     const held = (await state(page)).pressure; await sleep(600)
     check('C1: pressure holds while it waits', Math.abs((await state(page)).pressure - held) < 0.001)
-    await hitGroup(page, BLUE, (x, y) => page.mouse.click(x, y)); await sleep(200)
+    // F68: a zap the lesson refuses (the blue, while only yellow may go) still answers: the goo jiggles there and the
+    // poke sound plays, like a poke in a shift — and no stack message (the lesson's line says which colour)
+    const poked = await pokeGroup(page, BLUE)
     check('C1: the blue can\'t be zapped (yellow only)', (await groupCells(page, BLUE)).length >= 4 && (await view(page)).step === 'C1-zap')
+    check('F68 C1: the refused blue jiggles where it was poked', !!poked && poked.peak > Math.max(poked.calm * 4, 0.02), poked && `motion ${poked.calm.toFixed(3)} → peak ${poked.peak.toFixed(3)}`)
+    check('F68 C1: …the engine says which cell (reason lessonColour)', !!poked && poked.rejects.some((r) => r.reason === 'lessonColour' && r.cell === poked.cell), JSON.stringify(poked?.rejects))
+    check('F68 C1: …the poke sound is asked for', !!poked && poked.sounds.includes('goop.poke'), JSON.stringify(poked?.sounds))
     await hitGroup(page, YELLOW, (x, y) => page.mouse.click(x, y))
     // ── C2 · same colours join ──
     check('C1: zapping the yellow → C2 (a blue O comes)', await stepIs(page, 'C2'))
@@ -320,6 +349,7 @@ try {
     check('E1: the stack under the crack too low → a blue I comes to build up', bu.piece?.color === BLUE, JSON.stringify(bu.piece))
     await alignPiece(page, high.x); await dropWithS(page)
     check('E1: the blue covers the crack → "Wrong colour. See the red X?…" (paused)', (await messageIs(page, 'redX')) && (await bubbleSays(page)) === words('redX'), await bubbleSays(page))
+    check('F68 E1: the game\'s own "Wrong colour on a crack" stays quiet (the day teaches it)', !(await toastTexts(page)).some((t) => t.includes(en.messages.wrongCover)), JSON.stringify(await toastTexts(page)))
     await shot(page, 'E1-redX-1440x900')
     await gotIt(page)
     await page.waitForFunction(() => { const s = window.__goops.engine.state; const c = s.cracks[0]; const g = s.groups.get(s.groupOf[c.y * s.width + c.x]); return g && g.ready }, null, { timeout: 15000 })
@@ -550,7 +580,7 @@ try {
   }
 
   // ════════════════ 3. SHOTS: A1, C1, D1, E1, F1, F3 at every portrait size ════════════════
-  for (const [w, h] of [[390, 844], [360, 780], [1440, 900]]) {
+  for (const [w, h] of SIZES) {
     const { page, context, errors } = await freshDevice(w, h)
     const name = `${w}x${h}`
     await page.waitForFunction(() => document.querySelector('[data-tag="crt"]') && !document.querySelector('[data-tag="crt"]').hasAttribute('data-typing'), null, { timeout: 8000 }).catch(() => {})
@@ -587,6 +617,37 @@ try {
       const seen = await page.evaluate(() => JSON.parse(localStorage.getItem(Object.keys(localStorage).find((k) => k.startsWith('kit-tips')))).seen)
       check(`${name} F3: Esc closes the report and the day is remembered`, seen.includes('lesson:first-day'), JSON.stringify(seen))
     }
+    check(`${name}: no page errors`, errors.length === 0, errors.join(' | '))
+    await context.close()
+  }
+
+  // ════════════════ 4. F68: "Wrong colour on a crack" at the stack, in a real shift, at every portrait size ════════════════
+  // (a rank-4 device that has had its first day: an open crack put on the floor right under the falling piece, in a
+  // colour the piece isn't — then the piece really falls on it with S held)
+  for (const [w, h] of SIZES) {
+    const { page, context, errors } = await freshDevice(w, h, false, '?seed=7&rank=4&visor=off')
+    const name = `${w}x${h}`
+    await startShift(page)
+    await spy(page)
+    const scene = await page.evaluate(async () => {
+      const { regroup } = await import('/src/engine/groups.ts')
+      const engine = window.__goops.engine, s = engine.state
+      if (!s.piece) return null
+      s.grid.fill(0); s.cracks.length = 0; regroup(s, engine.book)
+      const low = Math.max(...s.piece.cells.map(([, y]) => y))
+      const [x] = s.piece.cells.find(([, y]) => y === low)
+      const color = [1, 2, 3, 4].find((c) => !s.piece.colors.includes(c))
+      s.cracks.push({ id: 990, x, y: s.height - 1, color, plugged: false })
+      return { x, color }
+    })
+    await dropWithS(page)
+    const covered = await page.evaluate(() => { const s = window.__goops.engine.state, c = s.cracks.find((c) => c.id === 990); const on = c && s.grid[c.y * s.width + c.x]; return !!on && on !== c.color })
+    const said = await page.waitForFunction((want) => [...document.querySelectorAll('.kit-toast')].some((t) => t.textContent.includes(want)), en.messages.wrongCover, { timeout: 3000 }).then(() => true, () => false)
+    await sleep(400) // (the toast's fade-in)
+    await page.screenshot({ path: `${OUT}/wrongCover-${name}.png` })
+    const box = await page.evaluate((want) => { const t = [...document.querySelectorAll('.kit-toast')].find((t) => t.textContent.includes(want)); const b = t?.getBoundingClientRect(); return b && { left: b.left, top: b.top, right: b.right, bottom: b.bottom } }, en.messages.wrongCover)
+    check(`${name} F68: the wrong colour lands on an open crack → "${en.messages.wrongCover}" at the stack`, !!scene && covered && said, JSON.stringify({ scene, covered, toasts: await toastTexts(page) }))
+    check(`${name} F68: …on screen, whole`, !!box && box.left >= 0 && box.top >= 0 && box.right <= w && box.bottom <= h, JSON.stringify(box))
     check(`${name}: no page errors`, errors.length === 0, errors.join(' | '))
     await context.close()
   }
