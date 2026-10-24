@@ -3,7 +3,7 @@
 
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68, F70) · Doing: F70 + F68 built, wait for Muzzy's fresh first-day play; F67 sketch out for Muzzy's picks; F35 waits for UI kit 0.33.0 colours + approval · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68, F70, F67) · Doing: F70 + F68 built, wait for Muzzy's fresh first-day play; F67 sketch out for Muzzy's picks; F35 waits for UI kit 0.33.0 colours + approval · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)

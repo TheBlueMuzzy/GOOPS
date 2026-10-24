@@ -1,5 +1,5 @@
 # Sprint 15 — the story starts: ranks 0–9
-Started 2026-10-24 · Milestone M5 Beta · Features: F35, F68, F70
+Started 2026-10-24 · Milestone M5 Beta · Features: F35, F68, F70, F67
 What changes for Muzzy: each rank-up from 0 to 9 plays its short story moment back at the console — Management types on the monitor (0–4), then the Veteran talks in his spiky bubble over the same monitor area (5–9); your rank title shows on the meter and the payday's rank-up line; the first whispers drift up in the tank (3, 8–9). Stays the same: shifts, balance, the payslip, the tutorial lessons. Moments are short, tap to move on, once per device.
 
 ## F35 🎮 Story moments + ranks 0–9
@@ -34,6 +34,13 @@ Check: e2e (pick rank 0 → the first day starts; pick 7 → rank 7 at the conso
 - [x] 🤖 2. RANK SELECT between the version and the credit; a kit list 0–50 (0 red, yours green); 0 wipes the save → first day, N sets that rank's start, refunds upgrades; only where the Dev Kit is on — src/ui/RankSelect.tsx
 - [x] 🤖 3. e2e + shots at every portrait size — e2e/rank-select.mjs
 - [ ] 🙋 4. Muzzy picks rank 0, plays the first day fresh (F68 task 6 too) — src/ui/RankSelect.tsx
+
+## F67 🎮 The zap look — sketch first (pulled in 2026-10-24 — Muzzy: "then we'll make sketch for f67")
+Done when (this sprint): Muzzy has tuned the zap-look sketch and pasted his values; they're saved to research/zap-look/picks.json and made the sketch's defaults. The in-game build is planned after his pick.
+why: the zap is the every-second moment ("the goop is so satisfying to squish and zap") — the placeholder pop is a quiet drain.
+Check: sketch shots at 1280x800 + 390x844 mid-zap, every knob measured min/mid/max, 60 fps
+- [x] 🤖 1. Zap-look sketch: L4 jelly board, L5 laser (beam, white-hot, swell, suck-in) + v1 spray droplets, 9 knobs, presets L5 laser / v1 spray / Both (e3544af) — .planning/research/sketches/zap-look.html
+- [ ] 🙋 2. Muzzy tunes the sketch and pastes "Copy values for Claude" — .planning/research/sketches/zap-look.html
 
 ## Notes
 - Plan OK (Muzzy 2026-10-24: "build"). Speaker placement (Muzzy): "his messages show up in the same area where the company's messages show up, but his in his cool speechbubble. and it can be 'interrupted' by disappearing and the company talks through the monitor at the top. this will work well. I can do art later." → no separate speaker grille; the Veteran's bubble points at the monitor area.
