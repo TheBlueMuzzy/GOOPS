@@ -21,7 +21,7 @@
     "unfilledDim": "Filling goo: how much darker the not-yet-filled part is (0 = not darker).",
     "readyGlow": "Ready-to-pop glow strength (0 = off).",
     "readyPulse": "Ready-to-pop pulse speed (pulses per second).",
-    "popMs": "Pop shrink + fade length (ms). Placeholder until the laser look is designed.",
+    "popMs": "Shrink + fade length (ms) of goo that leaves WITHOUT a zap (a swapped-out piece). The zap itself is content/tuning/zap.json (F67).",
     "poke": "Zapping goop that can't pop yet (still filling, or above the line) pokes it: a ripple from the poked cell through its cluster (0 = none, 1 = gentle, 2 = a big jolt). Muzzy 2026-10-18."
   },
   "gravity": 4.1,

@@ -1,15 +1,16 @@
 // Particle shaders (ported from lab-L3-particles.html): splat particles + bond capsules into a per-colour field
 // (half res) -> blur -> threshold + wet shading, written as premultiplied colour over the TRANSPARENT canvas.
-// Field textures: tex0 = colours 1-4, tex1.rgb = colours 5-7, tex2 = r unfilled weight / g ready weight.
+// Field textures: tex0 = colours 1-4, tex1.rgb = colours 5-7, tex2 = r unfilled weight / g ready weight / b white-hot
+// weight (zapped goo, F67).
 import { XRAY_GLSL } from '../shared/xray'
 
 export const SPLAT_VS = `#version 300 es
 layout(location=0) in vec2 aCorner;
 layout(location=1) in vec4 aSeg;   // capsule ends (view cells): a.xy, b.xy (a particle is a capsule with a == b)
 layout(location=2) in vec3 aInfo;  // reach (cells), weight, colour 1-7
-layout(location=3) in vec2 aFill;  // unfilled 0..1, ready 0..1
+layout(location=3) in vec3 aFill;  // unfilled 0..1, ready 0..1, white-hot 0..1 (zapped, F67)
 uniform vec2 uFieldRes, uOrigin; uniform float uCell;
-out vec2 vP; flat out vec4 vSeg; flat out vec3 vInfo; flat out vec2 vFill;
+out vec2 vP; flat out vec4 vSeg; flat out vec3 vInfo; flat out vec3 vFill;
 void main(){
   vec2 lo = min(aSeg.xy, aSeg.zw) - aInfo.x, hi = max(aSeg.xy, aSeg.zw) + aInfo.x;
   vec2 p = mix(lo, hi, aCorner * 0.5 + 0.5);
@@ -20,7 +21,7 @@ void main(){
 
 export const SPLAT_FS = `#version 300 es
 precision highp float;
-in vec2 vP; flat in vec4 vSeg; flat in vec3 vInfo; flat in vec2 vFill;
+in vec2 vP; flat in vec4 vSeg; flat in vec3 vInfo; flat in vec3 vFill;
 uniform float uWS;
 layout(location=0) out vec4 o0; layout(location=1) out vec4 o1; layout(location=2) out vec4 o2;
 void main(){
@@ -32,7 +33,7 @@ void main(){
   int c = int(vInfo.z + 0.5);
   o0 = vec4(float(c == 1), float(c == 2), float(c == 3), float(c == 4)) * k;
   o1 = vec4(float(c == 5), float(c == 6), float(c == 7), 0.0) * k;
-  o2 = vec4(vFill.x * k, vFill.y * k, 0.0, 0.0);
+  o2 = vec4(vFill.x * k, vFill.y * k, vFill.z * k, 0.0);
 }`
 
 export const BLUR_FS = `#version 300 es
@@ -54,7 +55,7 @@ export const SHADE_FS = `#version 300 es
 precision highp float;
 uniform sampler2D uT0, uT1, uT2, uW0, uW1, uW2;   // field (lightly blurred) + a wide-blurred copy for the group dome
 uniform vec2 uRes, uOrigin; uniform float uCell, uScale, uTh, uWet, uBulge, uAbsorb, uFres, uTrans, uTime;
-uniform float uUnA, uUnDim, uGlow, uPulse, uClipL, uClipR, uClipB;
+uniform float uUnA, uUnDim, uGlow, uPulse, uClipL, uClipR, uClipB, uWhite;
 uniform vec3 uCols[8];
 out vec4 outColor;
 ${XRAY_GLSL}
@@ -130,6 +131,9 @@ void main(){
     col *= 1.0 - uUnDim * un;
     col += (base * 0.5 + 0.35) * level * 0.3;
     col += base * uGlow * rd * (0.25 + 0.75 * pulse) * 0.8;   // ready: a gentle pulse inside the goo
+    // zapped (F67, Jelly's white-hot): lit from inside, toward white by uWhite
+    float rh = clamp(fl.b / max(fsum, 1e-4), 0.0, 1.0) * clamp(uWhite * 3.0, 0.0, 1.0);
+    col = mix(col, mix(base, vec3(1.0), uWhite) * (1.0 + 0.3 * uWhite) * 0.95, rh);
     float al = cover * mix(1.0, uUnA, un);
     outc = over(vec4(col * al, al), outc);
   }
