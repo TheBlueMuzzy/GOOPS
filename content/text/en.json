@@ -11,7 +11,6 @@
     "controls": "Controls",
     "lights": "Visor",
     "unavailable": "{name} (unavailable)",
-    "version": "v{v}",
     "credit": "MuzzyMade © 2026",
     "settings": "Settings",
     "hintBack": "Pull the periscope to go back",

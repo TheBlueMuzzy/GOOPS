@@ -48,7 +48,7 @@ export function describeShift(s: Pick<ShiftState, 'rank' | 'score' | 'cracksSeal
 
 export const goopsAdapter: DevKitGame = {
   name: 'Goops',
-  version: versionLabel, // "vX.Y.Z.B" — the same words as the console footer (src/version.ts)
+  version: versionLabel, // "vX.Y.Z.B" — the same words as the console footer (the version module, src/version)
   getState: (): GoopsMoment => ({ shift: session.inShift && session.engine ? session.engine.snapshot() : null }),
   setState(state) {
     const moment = state as Partial<GoopsMoment> | null

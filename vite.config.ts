@@ -1,15 +1,9 @@
 /// <reference types="vitest/config" />
-import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { devkit } from './vite-plugins/devkit/devkitVite'
-
-// The game's version, shown on the console's footer as vX.Y.Z.B — version.json (BMUZ versioning: /save bumps
-// "build", /deliver bumps "version"). GOOPS_BUILD=<n> overrides the build number for one build (e2e/sw-update.mjs
-// uses it to make a "next release" without touching version.json).
-const versionFile = JSON.parse(readFileSync(new URL('./version.json', import.meta.url), 'utf8'))
-const version = `${versionFile.version}.${process.env.GOOPS_BUILD ?? versionFile.build ?? 0}`
+import { versionPlugin } from './src/version/vitePlugin.mjs'
 
 // Where the release build lives on the web: the alpha sits beside v1 on the same GitHub Pages site
 // (v1 = /GOOPS/, the remake = /GOOPS/alpha/ — F37). scripts/deploy.js refuses a build made for anywhere else.
@@ -21,9 +15,9 @@ export default defineConfig({
   plugins: [
     react(),
     devkit(),
-    // <meta name="app-version" content="vX.Y.Z.B"> — what tests read (e2e/start.mjs checks it equals version.json,
-    // so a test never runs against a stale build or a cached service worker). Same words as src/version.ts.
-    { name: 'goops-version-meta', transformIndexHtml: () => [{ tag: 'meta', attrs: { name: 'app-version', content: `v${version}` }, injectTo: 'head' }] },
+    // The framework version module (F70): version.json → import.meta.env.APP_VERSION (src/version's versionLabel,
+    // "vX.Y.Z.B") + <meta name="app-version"> for tests. VERSION_BUILD=<n> overrides the build (e2e/sw-update.mjs).
+    versionPlugin(),
     // The offline cache + install (TDD D17). Its service worker is dist/sw.js, served at /GOOPS/alpha/sw.js, so its
     // scope is /GOOPS/alpha/ — narrower than v1's /GOOPS/ one, so it (not v1's) runs the alpha.
     // autoUpdate + registerSW({ immediate: true }) in main.tsx: a returning player gets the new version on their
@@ -43,7 +37,6 @@ export default defineConfig({
       },
     }),
   ],
-  define: { 'import.meta.env.GOOPS_VERSION': JSON.stringify(version) },
   server: { host: true },
   test: { include: ['tests/**/*.test.ts'] },
 })

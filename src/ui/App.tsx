@@ -90,7 +90,7 @@ const onSettingsAction = (id: string) => {
   looksClock.after(3000, () => toasts.dismiss(shown))
 }
 const SettingsScreen = () => (
-  <Settings schema={settings} onAction={onSettingsAction} info={{ version: versionLabel } /* About → Version */} onChange={(values) => {
+  <Settings schema={settings} onAction={onSettingsAction} version={versionLabel /* the version module: the bottom of every tab (+ About → Version) */} onChange={(values) => {
     gooStyle.setFromSetting(values.gooStyle); wallKick.setFromSetting(values.wallKick); readoutSetting.setFromSettings(values)
     soundSettingsChanged(values)
   }} />
