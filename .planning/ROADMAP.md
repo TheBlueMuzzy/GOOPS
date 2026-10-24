@@ -125,10 +125,10 @@ flowchart LR
 Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every v1 system are in; numbers can still be rough.
 - ✅ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · decided 2026-10-22 (design/upgrades-map.md "F33 decisions": store at 5 shelf-ready, 1 scrap a level + free take-backs, rank 3 slower depressurise, rank 9 pressure slower, tougher tank at 22) · needs: F08
 - ✅ F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
-- 🔨 F35 🎮 Story moments + ranks 0–9: the story-moment runner on the lesson runner (MON / SPK / HEAD voices, attention calls, not skippable), Management 0–4, the Veteran 5–9, titles on the report (design/story.md "Story moments, rank by rank") — must:beta · needs: F09, F30, F61
+- ✅ F35 🎮 Story moments + ranks 0–9: the story-moment runner on the lesson runner (MON / SPK / HEAD voices, attention calls, not skippable), Management 0–4, the Veteran 5–9, titles on the report (design/story.md "Story moments, rank by rank") — must:beta · needs: F09, F30, F61
 - 🟢 F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
   note: Muzzy (2026-10-19): keep all three
-- ⏳ F40 🎮 The Veteran, ranks 10–29, and his capture at 30 (speaker cut-in, the fine for YOU, white joins as a colour) — must:beta · needs: F35
+- 🟢 F40 🎮 The Veteran, ranks 10–29, and his capture at 30 (speaker cut-in, the fine for YOU, white joins as a colour) — must:beta · needs: F35
 - ✅ F41 🎮 Credits, fines and payday on the end report: the rank meter becomes CREDITS / PAYMENT DUE, fines as theatre (net = real XP), payday at each rank-up in 5 lines, passage debt line (sketch S8 approved; design/story.md "Credits, payday and fines" + "Fines and payday — the lines") — must:beta · needs: F09
 - 🟢 F42 🎮 Active abilities: equip slots + the charge button in the HUD — must:beta · needs: F34
 - ⏳ F43 🎮 Upgrades ranks 10–38 (Hold Viewer + Goop Window retired by F59 — two slots to fill with new upgrades for the new pacing, Muzzy 2026-10-19) — must:beta · needs: F34, F42
