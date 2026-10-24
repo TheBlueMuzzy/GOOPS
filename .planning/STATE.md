@@ -1,9 +1,9 @@
 ## ▶ RESUME HERE
-2026-10-24 — **Sprint 15: F68 first-day touches pulled in and building on its own (Muzzy: "run f68 auto, and then we'll make sketch for f67")** — tasks in SPRINT.md. F35 still open: the Veteran's bubble must be LIGHT with dark text (S9: fill #f4f4f2, text #222, outline #555 1.6 px); framework F121 (TalkingBubble colours, UI kit 0.33.0) is in the framework sprint — when it arrives: install-module ui-kit, pass the colours from content/tuning/talk.json, screenshot, then Muzzy's "approved" closes F35. **Next:** after F68 → `/sketch` the F67 zap look (sketch L5 laser: .planning/research/sketches/lab-L5-free-goo.html + v1 spray droplets: research/v1/PRD.md:328–347; live pop placeholder = popCells() in src/goo/jelly/index.ts).
+2026-10-24 — **Sprint 15: F68 first-day touches built (all 5 🤖 tasks, check:full 25/25 at 1df999d) — waits for Muzzy's first-day play + 2 answers** (SPRINT Notes "Ask Muzzy": is "Wrong colour on a crack — zap it" right (40-char phone cap)? should the first day's free play (F1) show it too — quiet all day now). Built: a zap the lesson refuses jiggles + plays the poke sound (reason lessonColour; no payslip deduction) · the wrong-colour stack message (20 s cooldown, content/tuning/messages.json) · v1 tutorial audit = research/tutorial.md §11 (nothing else small missing; 2 bigger ideas parked). F35 still open: the Veteran's bubble must be LIGHT with dark text (S9: fill #f4f4f2, text #222, outline #555 1.6 px) — framework F121 (TalkingBubble colours) ships in UI kit 0.33.0, which the planner says is now available: install-module ui-kit, pass the colours from content/tuning/talk.json, screenshot, then Muzzy's "approved" closes F35. **Next (Muzzy: "then we'll make sketch for f67"):** `/sketch` the F67 zap look — sketch L5 laser (.planning/research/sketches/lab-L5-free-goo.html: tap() ~316, step() ~375 suck-in, white-hot in the fragment shader ~580, drawOverlay() ~770 beam) + v1 spray droplets (research/v1/PRD.md:328–347: 30 droplets, 60 px/s, 3 s, 9 px, gravity 180); live pop placeholder = popCells() in src/goo/jelly/index.ts ~359, popMs in goo-jelly.json.
 
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68) · Doing: F68 — building (auto); F35 waits for UI kit 0.33.0 colours + approval · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68) · Doing: F68 built — waits for Muzzy's play; F35 waits for UI kit 0.33.0 colours + approval · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
@@ -43,6 +43,7 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 **Remote:** github.com/TheBlueMuzzy/GOOPS
 
 ## Log
+- 2026-10-24 — F68 built: in the first day, poking goop you aren't allowed to zap now jiggles and squelches; in shifts a "Wrong colour on a crack — zap it" hint shows when the wrong goop covers a crack
 - 2026-10-23 — Sprint 12 / F34 approved: the console's Upgrades screen at rank 5 — 8 upgrades that change the shift, green cards for what you own, greyed locked ones, red −, Respec flashes your scraps green; Cooldown Booster's lightning-bolt charge button
 - 2026-10-20 — Released v0.1.0, the alpha: a guided first day, shifts up to rank 9 with three machines and sound, installable on phones at thebluemuzzy.github.io/GOOPS/alpha/
 - 2026-10-20 — Sprint 10: phones get finger-by-finger touch (each finger its own gesture, swap ring by the holding finger); a fresh save now plays "your first day" — 15 guided steps from the periscope pull to rank 1
@@ -52,4 +53,3 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 - 2026-10-17 — F02 picked: L4 Jelly; F02b = A (grid); /sketch command made
 - 2026-10-16 — Goo round 2: research (videos, CodePens, techniques) + goo lab L1–L5; planner gets Sketches tabs and /ppp
 - 2026-10-16 — Discovery: v1 review, goo research, GDD draft
-- 2026-10-16 — Started the BMUZ 2 remake: old code archived to `archive/goops-v1`, GSD planning archived, /discover begun
