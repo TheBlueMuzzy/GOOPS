@@ -1,6 +1,6 @@
 // FLOW — the screens between the playing: Loading, Countdown, RoundIntro, Results,
 // Victory, GameOver, PostGame. They show what the game tells them; the game decides what's next.
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { isValidElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Panel, Row, Screen, Stack, type PanelFrame } from '../layout'
 import { Avatar, Badge, Button, ListRow, ProgressBar, ScrollArea, Text, type ButtonArt } from '../controls'
 import { Spinner } from './dialogs'
@@ -131,22 +131,44 @@ export function Results({ players, meId, lowestWins, title, message, onContinue,
 // ScrollArea, so the title, message and buttons stay put and in sight and only the rows scroll (edge fade, no bar);
 // a list that fits looks and sizes as before. With reveal the scroll follows the newest row (StatList, in any
 // ScrollArea) until the player scrolls it themselves.
+// New rows replay it (0.32.0, Goops' payslip Modal swapping its stats): when the rows change BY CONTENT (labels, values,
+// tones — not a new array or new objects with the same words) the reveal starts again from the top and onRevealed fires
+// once more for the new rows; the same rows re-rendered never replay. No `key` needed to restart it.
 export type Stat = { label: string; value: ReactNode; tone?: 'danger' | 'success' }
 export const statListWords = { danger: 'Loss', success: 'Gain' }
 type RevealProps = { reveal?: number; onRevealed?: () => void }
 type StatListProps = RevealProps & { stats: Stat[]; words?: Partial<typeof statListWords> }
 const toneMark = { danger: '▼', success: '▲' }
+// The words a value shows (a number, text, or an element's text inside) — what "the same rows" compares.
+// An element's plain props count too (review fix: <Money cents={500} /> has no text inside, so a new amount under the
+// same label never replayed and onRevealed never came); functions and objects (a new onClick / style each render) don't.
+function textOf(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number' || typeof node === 'bigint') return String(node)
+  if (Array.isArray(node)) return node.map(textOf).join('')
+  if (isValidElement<Record<string, unknown>>(node)) {
+    const { children, ...props } = node.props
+    const plain = Object.keys(props).sort().filter((k) => ['string', 'number', 'bigint', 'boolean'].includes(typeof props[k]))
+    const marks = plain.map((k) => `${k}=${String(props[k])}`).join(',')
+    return (marks ? `<${marks}>` : '') + textOf(children as ReactNode)
+  }
+  return ''
+}
+const rowsText = (stats: Stat[]) => JSON.stringify(stats.map((s) => [s.label, textOf(s.value), s.tone ?? '']))
 export function StatList({ stats, reveal, onRevealed, words }: StatListProps) {
   const w = { ...statListWords, ...words }
   const revealing = reveal !== undefined && stats.length > 0 && !reduceMotion()
+  // Which reveal this is: a new one each time the rows' words change (React's "adjust state while rendering" pattern)
+  const text = rowsText(stats)
+  const [seen, setSeen] = useState({ text, round: 0 })
+  const round = seen.text === text ? seen.round : seen.round + 1
+  if (seen.text !== text) setSeen({ text, round })
   const done = useRef(onRevealed)
   useEffect(() => { done.current = onRevealed }) // always call the latest onRevealed
-  const fired = useRef(false) // once, whether the last row's entrance ends or there's nothing to wait for
-  const finish = () => { if (!fired.current) { fired.current = true; done.current?.() } }
+  const firedRound = useRef(-1) // once per reveal, whether the last row's entrance ends or there's nothing to wait for
   const lastRow = useRef<HTMLDivElement>(null)
-  // Follows whichever row is last now: new stats mid-reveal can add, drop or swap the last row (review fix)
-  const lastKey = stats.length > 0 ? stats[stats.length - 1].label : undefined
   useEffect(() => {
+    const finish = () => { if (firedRound.current !== round) { firedRound.current = round; done.current?.() } }
     const el = lastRow.current
     if (!revealing || !el) { finish(); return }
     // Nothing left to play on it (its entrance already over, or the style has none): it's in now
@@ -156,7 +178,7 @@ export function StatList({ stats, reveal, onRevealed, words }: StatListProps) {
     el.addEventListener('animationend', onEnd)
     el.addEventListener('animationcancel', onEnd)
     return () => { el.removeEventListener('animationend', onEnd); el.removeEventListener('animationcancel', onEnd) }
-  }, [revealing, lastKey, stats.length])
+  }, [revealing, round])
   // In a ScrollArea (Victory / GameOver's own, or yours round a StatList) the scroll follows the reveal: as each row
   // starts its entrance it's scrolled into view (smoothly; at once with reduce motion), clear of the "more below" fade.
   // A player who scrolls it themselves (wheel, touch, a press, the keys) takes over: it stops following.
@@ -164,6 +186,7 @@ export function StatList({ stats, reveal, onRevealed, words }: StatListProps) {
     const stack = lastRow.current?.parentElement // the rows' own list (.kit-stats)
     const box = stack?.closest<HTMLElement>('.kit-scroll')
     if (!revealing || !stack || !box) return
+    if (round > 0 && box.scrollTop > 0) box.scrollTo({ top: 0 }) // a replay starts from the top, like the first reveal
     let theirs = false
     const takeOver = () => { theirs = true }
     const follow = (e: AnimationEvent) => {
@@ -183,13 +206,13 @@ export function StatList({ stats, reveal, onRevealed, words }: StatListProps) {
       for (const name of intents) box.removeEventListener(name, takeOver)
       box.removeEventListener('animationstart', follow)
     }
-  }, [revealing])
+  }, [revealing, round])
   if (stats.length === 0) return null
   const last = stats.length - 1
   const waits = (i: number) => (revealing ? i : undefined) // row i waits i steps (no reveal: no variables at all)
   const step = revealing ? `${reveal}ms` : undefined
   return (
-    <Stack gap="xs" className="kit-stats">
+    <Stack key={round} gap="xs" className="kit-stats">{/* a new reveal = fresh rows, so their entrances play again */}
       {stats.map((s, i) => (
         <div key={s.label} ref={i === last ? lastRow : undefined} className="kit-stat-row" data-reveal={revealing || undefined} data-tone={s.tone}
           style={{ '--kit-i': waits(i), '--kit-step': step } as CSSProperties}>

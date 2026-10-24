@@ -370,9 +370,9 @@ export function App() {
         <Modal title={P.paydayTitle} actions={<Button onClick={pay}>{P.pay}</Button>}>
           <Text>{fill(P.paydayMessage, { due: cr(day.due) })}</Text>
           {/* (the bill's rows scroll on a short phone — no scroll bar, the edge fades; Pay up stays in view) */}
-          {/* (one at a time like the report's rows; key = the payday, so a second payday plays its rows again) */}
+          {/* (one at a time like the report's rows; a second payday's new rows replay the reveal — UI kit 0.32.0) */}
           <ScrollArea label={P.paydayTitle}>
-            <StatList key={payIndex} reveal={payslipTuning.lineMs} stats={[
+            <StatList reveal={payslipTuning.lineMs} stats={[
               ...day.items.map((item): Stat => ({ label: payWords(item.key), value: fill(P.minus, { n: cr(item.amount) }), tone: 'danger' })),
               { label: P.debt, value: fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) }), tone: 'danger' },
               { label: P.rankUp, value: what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to }), tone: 'success' },

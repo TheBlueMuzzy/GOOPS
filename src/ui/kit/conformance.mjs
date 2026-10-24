@@ -256,7 +256,7 @@ export function readRowManifest(text, { module, file = `src/${module}/${ROW_MANI
   return { module, file, rows, problems }
 }
 
-// ONE-RELEASE FALLBACK (0.30.0, F110 — take it out in 0.32.0; kept through 0.31.0 because Glyphtender hadn't
+// ONE-RELEASE FALLBACK (0.30.0, F110 — take it out in 0.33.0; kept through 0.32.0 because Glyphtender hadn't
 // reinstalled crashes / emotes / ai yet, decided 2026-10-23): module copies older than their settings-rows.json
 // (crashes ≤ 0.1.0, emotes ≤ 0.3.0, ai ≤ 0.7.0) still get their row counted, exactly as the kit's old hard-coded lists
 // did. Used ONLY for one of these folders installed (a VERSION) WITHOUT the file — updating the module makes it unused.
