@@ -21,7 +21,7 @@
 import { spawnSync } from 'node:child_process'
 import net from 'node:net'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative, win32 } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 export const DEFAULT_PORT = 5197
@@ -33,6 +33,23 @@ export function readArgs(args) {
   if (!Number.isInteger(port) || port <= 0) throw new Error(`--port must be a number (got "${value('--port')}")`)
   const only = value('--only')?.split(',').map((s) => s.trim()).filter(Boolean) ?? null
   return { port, staticOnly: args.includes('--static'), only }
+}
+
+/**
+ * How t.run starts a command without a shell → { file, args } (or { error }). `node` = this same Node. On Windows
+ * npm / npx are .cmd files, which only start through a shell — so they run as this Node + npm's own npm-cli.js /
+ * npx-cli.js instead (beside node.exe, or next to the npm that started this run). Anything else starts directly.
+ */
+export function commandLine(command, args, { platform = process.platform, execPath = process.execPath, env = process.env, exists = existsSync } = {}) {
+  if (command === 'node') return { file: execPath, args }
+  if (platform !== 'win32' || !/^(npm|npx)$/.test(command)) return { file: command, args }
+  const cli = `${command}-cli.js`
+  const places = [ // Windows path rules, whatever machine runs this (the tests run on Linux too)
+    /npm-cli\.js$/.test(env.npm_execpath ?? '') ? win32.join(win32.dirname(env.npm_execpath), cli) : null, // the npm running this
+    win32.join(win32.dirname(execPath), 'node_modules', 'npm', 'bin', cli), // the npm installed with Node
+  ].filter(Boolean)
+  const found = places.find((p) => exists(p))
+  return found ? { file: execPath, args: [found, ...args] } : { error: `couldn't find npm's ${cli} (looked in ${places.join(', ')}) — reinstall Node.js with its npm` }
 }
 
 /** Every installed module: { id: 'ui', rel: 'src/ui/kit', dir, version, checks: path to conformance.mjs or null }. */
@@ -207,14 +224,16 @@ export function makeTester({ root, module, modules, shared, staticOnly, results 
     adapterFile: () => adapterFile(root),
     /** The game's package.json scripts. */
     scripts: () => t.json('package.json')?.scripts ?? {},
-    /** Run a command in the game folder → { code, out } (out = stdout + stderr). */
+    /**
+     * Run a command in the game folder → { code, out } (out = stdout + stderr). The arguments go to the program as a
+     * list, never through a shell (0.26.2, F120): a file named `a;b.test.ts` or `$(x).test.ts` is just a name.
+     */
     run(command, args = [], opts = {}) {
       const options = { cwd: root, encoding: 'utf8', timeout: 10 * 60_000, ...opts }
-      const quote = (a) => (/[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a)
-      const r = command === 'node'
-        ? spawnSync(process.execPath, args, options) // this same Node
-        : spawnSync([command, ...args].map(quote).join(' '), { ...options, shell: true }) // npx etc. (a .cmd on Windows)
-      return { code: r.status ?? 1, out: `${r.stdout ?? ''}${r.stderr ?? ''}` }
+      const how = commandLine(command, args)
+      if (how.error) return { code: 1, out: how.error }
+      const r = spawnSync(how.file, how.args, options)
+      return { code: r.status ?? 1, out: `${r.stdout ?? ''}${r.stderr ?? ''}${r.error ? r.error.message : ''}` }
     },
     /** Load a game module (TypeScript is fine) through the game's own Vite: t.load('src/devkit/tuning/liveGuard.ts') */
     async load(path) { return (await shared.vite()).ssrLoadModule('/' + path.replace(/^\//, '')) },
