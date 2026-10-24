@@ -22,6 +22,8 @@
     },
     "meterFill": { "file": "art/ConsoleMeterFill.svg", "colourOf": "cls-59", "at": [81.91, 1184.71, 486.02, 19.76] },
     "meterText": 21,
+    "_monitorDrop": "F35 (Muzzy 2026-10-24: 'the console monitor can come down much lower. like 2x the distance, so long as the top of the graphic isn't in view. this will give more room for the company message'): how far (mock-up units) the monitor and its screen hang lower than the mock-up at rest. 78 = twice what showed before. A lesson step that outlines the periscope lifts it back to 0, so the periscope shows.",
+    "monitorDrop": 78,
     "words": {
       "hint": { "at": [72, 806, 504, 62], "text": 22 },
       "laser": { "at": [226, 1298, 200, 24], "text": 17 },

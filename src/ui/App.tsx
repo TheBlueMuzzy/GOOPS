@@ -341,6 +341,14 @@ export function App() {
       }
       const again = thenPay(() => { while (screens.current.length) screens.pop(); start() })
       const back = thenPay(toConsole)
+      // Day one ends at the console, never straight into a shift (Muzzy 2026-10-24: "that button just shouldn't be
+      // available just for the 1 end after the tutorial") — its report has only "Back to the console"
+      if (result.payslip.firstDay) return (
+        <Victory words={{ title: text.end.wonTitle, continue: text.end.quit, swipe: text.end.swipe }}
+          message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
+          frame={art.end.frame} art={{ continue: art.end.quit }} stats={stats} reveal={payslipTuning.lineMs}
+          onContinue={back} onSwipeUp={back} />
+      )
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}

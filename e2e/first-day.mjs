@@ -397,7 +397,9 @@ try {
     if (!f3) console.log('debug', JSON.stringify(await view(page)), JSON.stringify(await page.evaluate(() => window.__goops.clocks())))
     check('F2 → F3: the report, "Day one done!…" pointing at Back to the console', f3 && (await messageIs(page, 'clockOut')) && (await bubbleSays(page)) === words('clockOut'))
     await page.waitForTimeout(600)
-    check('F3: the outline is round "Back to the console"', await ringAround(page, '.kit-end-actions button[data-variant="secondary"]'))
+    check('F3: the outline is round "Back to the console"', await ringAround(page, '.kit-end-actions button'))
+    check('F3: day one\'s report has only "Back to the console" (no Next shift)', await page.locator('.kit-end-actions button').count() === 1
+      && (await page.locator('.kit-end-actions button').innerText()).toLowerCase().includes(en.end.quit.toLowerCase()), await page.locator('.kit-end-actions').innerText())
     check('F3: the report says the rank-up (rank 1)', (await page.locator('.kit-end').textContent()).includes('Rank up! 1'), await page.locator('.kit-end').textContent())
     await shot(page, 'F3-1440x900')
     check('F3: the look', (await lookProblems(page)).length === 0, (await lookProblems(page)).join(', '))
@@ -577,7 +579,7 @@ try {
     await sleep(900)
     await shot(page, `F3-${name}`)
     const bad = await lookProblems(page)
-    check(`${name} F3: "Day one done!" on the report, pointing at Back to the console (${bad.join(', ') || 'look right'})`, f3 && bad.length === 0 && await ringAround(page, '.kit-end-actions button[data-variant="secondary"]'))
+    check(`${name} F3: "Day one done!" on the report, pointing at Back to the console (${bad.join(', ') || 'look right'})`, f3 && bad.length === 0 && await ringAround(page, '.kit-end-actions button'))
     if (w === 390) { // review fix: Esc (or the phone's Back) closing the report finishes the day too — else a replay restarts it at every pull
       await page.keyboard.press('Escape')
       await page.getByRole('button', { name: 'Start shift' }).waitFor()

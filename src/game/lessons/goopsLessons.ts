@@ -328,7 +328,8 @@ const TAG_TARGETS: Record<string, string> = {
   'bar-visor': barOf(text.hud.visor), 'bar-laser': barOf(text.hud.laser), 'bar-controls': barOf(text.hud.controls),
   'bar-integrity': barOf(text.hud.integrity), // F31: day one's D1 "this bar is its health"
   cracks: '.kit-hud-text[data-size="l"]', // F31: the HUD's CRACKS n / total (its one big line) — day one's D3
-  reportBack: '.kit-end-actions button[data-variant="secondary"]', // F31: the end report's "Back to the console" — F3
+  // F31: the end report's "Back to the console" — F3 (day one's report has only that button: F35)
+  reportBack: '.kit-end-actions button[data-variant="secondary"], .kit-end-actions button:only-of-type',
   pauseResume: '.kit-pause .kit-menu > button:first-child', // the pause menu's "Back to the tank" (the kit's Pause)
   // the console's periscope: the part you grab (the kit's PullHandle) — while it works (a phone on its side switches it
   // off: the "or" pointer, Back to the tank, takes over)

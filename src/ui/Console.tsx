@@ -50,8 +50,9 @@ const NOTHING: string[] = []
 // just toasters down if it needs more room"): its words (the hint), or a lesson's line with its Got it. Words that
 // need more room than the screen has make it slide down past the bezel, in the screen's colours (art.json console.crt).
 type CrtLine = { text: string; gotIt: boolean; onGotIt(): void }
-function Crt({ hint, lesson }: { hint: string; lesson: CrtLine | null }) {
-  const c = a.crt, [x, y, w, h] = a.words.hint.at
+// drop: how much lower than the mock-up the monitor hangs (F35, art.json monitorDrop) — the screen moves with it
+function Crt({ hint, lesson, drop }: { hint: string; lesson: CrtLine | null; drop: number }) {
+  const c = a.crt, [x, artY, w, h] = a.words.hint.at, y = artY + drop
   const box = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
   const [fit, setFit] = useState<{ height: number; grown: boolean; unit: number } | null>(null)
@@ -63,15 +64,15 @@ function Crt({ hint, lesson }: { hint: string; lesson: CrtLine | null }) {
     // where the art's does unless the words need more — then it's longer (grown: the toaster)
     const measure = () => {
       const unit = layer.clientWidth / w, need = Math.max(layer.clientHeight, inner.offsetHeight)
-      const height = Math.max((c.screenBottom - c.screenTop) * unit, (y - c.screenTop) * unit + need)
-      const grown = (y - c.screenTop) * unit + need > (c.screenBottom - c.screenTop) * unit + 0.5
+      const height = Math.max((c.screenBottom - c.screenTop) * unit, (artY - c.screenTop) * unit + need)
+      const grown = (artY - c.screenTop) * unit + need > (c.screenBottom - c.screenTop) * unit + 0.5
       setFit((old) => (old && Math.abs(old.height - height) < 0.5 && old.grown === grown && Math.abs(old.unit - unit) < 0.001 ? old : { height, grown, unit }))
     }
     const ro = new ResizeObserver(measure)
     ro.observe(inner); ro.observe(layer)
     measure()
     return () => ro.disconnect()
-  }, [c.screenBottom, c.screenTop, y, w])
+  }, [c.screenBottom, c.screenTop, artY, w])
   const height = fit ? fit.height + 'px' : undefined, unit = fit ? fit.unit + 'px' : undefined
   // F32 (Muzzy: "make it look like old DOS") → F60: the CRT look, one wrapper (src/game/CrtLook.tsx): green glowing
   // words over scan lines, typed out letter by letter with a block cursor where the next letter goes. The preset is
@@ -82,7 +83,7 @@ function Crt({ hint, lesson }: { hint: string; lesson: CrtLine | null }) {
   return (
     <ArtLayer at={[x, y, w, h]} text={a.words.hint.text}>
       <CrtLook place="monitor" unit={unit} ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined}
-        style={{ '--crt-inset': x - c.screenLeft, '--crt-top': y - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
+        style={{ '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
           '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
         <div ref={body} className="crt-body">
           <TypedText text={words} className="lesson-words" />
@@ -127,6 +128,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
     // (while the Veteran talks, the monitor's "pull down the periscope" would be wrong — the periscope waits: blank)
     : story ? { text: '', gotIt: false, onGotIt: storyMoments.next } : null
   const spotlit = useSpotlitTags()
+  // F35: between shifts the monitor hangs lower (more room for its words) — not while a lesson shows the periscope, and
+  // not mid-shift, where the periscope is the way back to the tank (it would hide the top of its grip)
+  const drop = midShift || spotlit.includes('periscope') ? 0 : a.monitorDrop
   const showcase = (id: MachineId) => !!midShift && spotlit.includes(`panel-${id}`)
   // (and while a lesson step outlines a part, only that part answers — the other controls shake: RepairPanels.tsx)
   const outlined = midShift ? spotlit : NOTHING
@@ -178,8 +182,8 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
-        <ArtLayer {...a.monitor}><LessonTag tag="monitor" /></ArtLayer>
-        <Crt hint={hint} lesson={storyLine ?? lessonLine} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
+        <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]}><LessonTag tag="monitor" /></ArtLayer>
+        <Crt hint={hint} lesson={storyLine ?? lessonLine} drop={drop} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
       </ArtStage>
     </Screen>
   )

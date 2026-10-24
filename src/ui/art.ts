@@ -31,6 +31,7 @@ export const art = {
     lights: layer(scene.layers.lights),
     monitor: layer(scene.layers.monitor),
     crt: scene.crt, // F32: the monitor's screen as the lesson message (its colours and edges)
+    monitorDrop: scene.monitorDrop, // F35: how much lower the monitor hangs at rest (0 while a lesson shows the periscope)
     periscope: { ...layer(scene.layers.periscope), travel: scene.layers.periscope.travel, grip: scene.layers.periscope.grip },
     // the meter's words + bar sit over its art; the bar picture's shape = width / height
     meterText: scene.meterText,
