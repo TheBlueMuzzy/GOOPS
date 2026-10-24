@@ -60,3 +60,4 @@ Check: e2e (pick rank 0 → the first day starts; pick 7 → rank 7 at the conso
 - Ask Muzzy: on a brand-new device (and after RANK SELECT 0) the first day's first step is a lesson on the console, so RANK SELECT stays hidden until the day is done (as asked: "not during a lesson"). Should it show at A1 too, so a tester can skip the day straight away?
 - Ask Muzzy: RANK SELECT sits a little left of centre on the bottom row (the credit is long at phone size). OK, or shorten the credit on phones?
 - Framework request (version module): its check "the main menu and Settings show the version" demands a kit `<MainMenu version>`; Goops' main menu is its own console (ArtStage) showing versionLabel on the bottom row — let a game name its own main-menu spot (e.g. any versionLabel use in the file the game marks as its menu), so check:framework can go green.
+- F70 full check (dbc88f1): check:full ALL PASS — 26 checks (11.8 min), rank-select included.
