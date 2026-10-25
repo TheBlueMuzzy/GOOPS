@@ -1,6 +1,7 @@
 // Piece shapes: picking one, mirroring, rotating, and testing where it fits.
-import type { Color } from './types'
+import { type Color, WILD } from './types'
 import type { ShiftConfig } from './config'
+import { type TwistsConfig, bestSplit, splitChance, splitOn, wildChance, wildOn } from './twists'
 import { shapeSet } from './config'
 import type { Rng } from './rng'
 import { wrapX } from './tank'
@@ -11,9 +12,10 @@ export type Cell = [x: number, y: number]
 export interface PieceDef {
   name: string
   cells: Cell[]
-  color: Color
+  color: Color // WILD for a wild piece (F39); a two-colour piece's first colour
   corrupted: boolean
   noRotate: boolean
+  colors?: Color[] // F39 two-colour pieces: one per cell, in `cells` order (rotating and mirroring keep the order); unset = all `color`
 }
 
 // The falling piece. It lives in SCREEN columns: column `offset` from the centre (0 = straight down the
@@ -35,14 +37,34 @@ export function mirror(cells: Cell[]): Cell[] {
 }
 
 // Pick a random piece from a size zone ('tetra' | 'penta' | 'hexa'), as v1 does.
-export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCount: number): PieceDef {
+// F39 rank twists (twists.ts), in v1's order: corrupt first (a corrupt piece is never wild or two-colour), then wild
+// (from its rank), then two-colour (from its rank, if not wild). Their rolls come AFTER the old ones and only from each
+// twist's rank, so pieces below rank 20 come out exactly as before. Leave `twists` out = no twists.
+export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCount: number, twists?: { config: TwistsConfig; rank: number }): PieceDef {
   const corrupted = rng.chance(config.pieces.corruptChance)
   const set = shapeSet(config, zone)
   const shape = rng.pick(corrupted ? set.corrupted : set.normal)
   let cells = shape.cells.map(([x, y]) => [x, y] as Cell)
   if (rng.chance(config.pieces.mirrorChance)) cells = mirror(cells)
-  return { name: shape.name, cells, color: 1 + rng.int(colorCount), corrupted, noRotate: !!shape.noRotate }
+  const def: PieceDef = { name: shape.name, cells, color: 1 + rng.int(colorCount), corrupted, noRotate: !!shape.noRotate }
+  const t = twists?.config
+  if (!t || corrupted) return def
+  if (wildOn(t, twists.rank) && rng.chance(wildChance(t))) {
+    def.color = WILD
+    return def
+  }
+  if (splitOn(t, twists.rank) && colorCount >= 2 && rng.chance(splitChance(t))) {
+    const inA = bestSplit(cells)
+    if (inA) {
+      const other: Color = 1 + ((def.color - 1 + 1 + rng.int(colorCount - 1)) % colorCount) // any colour but the first
+      def.colors = inA.map((a) => (a ? def.color : other))
+    }
+  }
+  return def
 }
+
+/** The colour of a piece's k-th cell (two-colour pieces have one per cell; the rest are all def.color). */
+export const cellColor = (def: PieceDef, k: number): Color => def.colors?.[k] ?? def.color
 
 export function rotationCenter(cells: Cell[]): Cell {
   const sx = cells.reduce((sum, c) => sum + c[0], 0)

@@ -16,6 +16,7 @@
 // which the engine calls on the rules clock — the Dev Kit pause stops him. No randomness: shifts stay repeatable.
 import type { Crack, ShiftState, TapPoint, WhiteGoop } from './types'
 import { wrapX } from './tank'
+import { crackCells, crackHas, crackSize } from './twists'
 
 // The shape of content/tuning/whiteGoop.json the engine reads (the look numbers are the view's)
 export interface WhiteGoopConfig {
@@ -27,6 +28,8 @@ export interface WhiteGoopConfig {
   targetBy: string // 'hardestForYou' (Muzzy's pick) · 'oldest' · 'closest'
   coveredHardness: number // hardestForYou: a crack covered by the wrong colour counts this many rows harder (you'd dig)
   sealTime: number // seconds sitting on a crack to seal it
+  // F39 grown cracks: each cell past the first adds sealTime × this (1 = sealTime × the crack's size). Unset = 1.
+  sealTimePerExtraCell?: number
   restAfter: number // seconds he rests after a seal
   thinkSec: number // with no crack to go to, he looks again this often
   countsForQuota: boolean // his seals count toward the shift's crack quota
@@ -67,10 +70,22 @@ function columnTop(s: ShiftState, x: number): number {
 
 /** How hard a crack is for YOU (the sketch's hardness): rows you'd have to build up under it, + coveredHardness if
  *  wrong-colour goop covers it (you'd have to dig it out first). */
+//  F39: a grown crack is as hard as its hardest cell (you have to cover every one).
 export function crackHardness(s: ShiftState, c: Crack, cfg: WhiteGoopConfig): number {
-  const here = s.grid[c.y * s.width + c.x]
-  const covered = here !== 0 && here !== c.color
-  return Math.max(0, s.height - 1 - c.y - columnTop(s, c.x)) + (covered ? num(cfg.coveredHardness, 4) : 0)
+  let hardest = 0
+  for (const [x, y] of crackCells(c)) {
+    const here = s.grid[y * s.width + x]
+    const covered = here !== 0 && here !== c.color
+    hardest = Math.max(hardest, Math.max(0, s.height - 1 - y - columnTop(s, x)) + (covered ? num(cfg.coveredHardness, 4) : 0))
+  }
+  return hardest
+}
+
+/** How long he sits on this crack to seal it (ms): sealTime, + sealTime × sealTimePerExtraCell for each cell a grown
+ *  crack has past its first (F39: 1 = sealTime × its size). */
+export function sealMs(cfg: WhiteGoopConfig, c: Crack): number {
+  const one = Math.max(0.1, num(cfg.sealTime, 6)) * 1000
+  return one * (1 + (crackSize(c) - 1) * num(cfg.sealTimePerExtraCell, 1))
 }
 
 // Cheapest ooze path from him to every visible cell (Dijkstra over the tank's visible rows; the tank wraps round).
@@ -108,9 +123,9 @@ export function stepWhiteGoop(s: ShiftState, cfg: WhiteGoopConfig, dt: number): 
     if (v.t >= 1 && v.mode === 'move') v.mode = 'idle'
   } else if (v.mode === 'seal') {
     const c = s.cracks.find((k) => k.id === v.targetId)
-    if (!c || c.x !== v.x || c.y !== v.y) { v.mode = 'idle'; v.seal = 0 } // (you sealed it first)
+    if (!c || !crackHas(c, v.x, v.y)) { v.mode = 'idle'; v.seal = 0 } // (you sealed it first)
     else {
-      v.seal += dt / (Math.max(0.1, num(cfg.sealTime, 6)) * 1000)
+      v.seal += dt / sealMs(cfg, c) // (a crack that grows while he sits on it takes longer from then on)
       if (v.seal >= 1) { sealed = c; v.targetId = null; v.seal = 0; v.mode = 'rest'; v.waitMs = num(cfg.restAfter, 1) * 1000 }
     }
   } else if (v.mode === 'rest' || v.mode === 'wait') {
@@ -142,7 +157,7 @@ function startMove(v: WhiteGoop, x: number, y: number, ms: number): void {
 // The sketch's decide(): on a crack → seal it; no cracks → wait a moment and look again; else one ooze step toward
 // the crack in most danger.
 function decide(s: ShiftState, v: WhiteGoop, cfg: WhiteGoopConfig): void {
-  const under = s.cracks.find((c) => c.x === v.x && c.y === v.y)
+  const under = s.cracks.find((c) => crackHas(c, v.x, v.y)) // (any cell of a grown crack: he seals it whole, F39)
   if (under) {
     if (v.targetId !== under.id) v.seal = 0
     v.targetId = under.id
@@ -153,14 +168,16 @@ function decide(s: ShiftState, v: WhiteGoop, cfg: WhiteGoopConfig): void {
   const from = v.y * s.width + v.x
   const oozeSlow = num(cfg.oozeSlow, 2.5, 1)
   const { dist, prev } = search(s, from, oozeSlow)
-  const cost = (c: Crack) => dist[c.y * s.width + c.x]
+  // (F39: a grown crack is reached at its nearest cell)
+  const nearest = (c: Crack) => crackCells(c).map(([x, y]) => y * s.width + x).reduce((a, b) => (dist[b] < dist[a] ? b : a))
+  const cost = (c: Crack) => dist[nearest(c)]
   const pick = [...s.cracks].sort((a, b) => danger(s, b, cfg, cost(b)) - danger(s, a, cfg, cost(a)) || a.id - b.id)
     .find((c) => Number.isFinite(cost(c))) // (oozing reaches every cell: always the first)
   if (!pick) { wait(v, cfg); return }
   v.targetId = pick.id
   v.seal = 0
   // walk back from the crack to find the first step
-  let step = pick.y * s.width + pick.x
+  let step = nearest(pick)
   while (prev[step] !== from && prev[step] >= 0) step = prev[step]
   const nx = step % s.width, ny = Math.floor(step / s.width)
   const secs = num(cfg.secPerCell, 0.7, 0.05) * (goopAt(s, nx, ny) ? oozeSlow : 1)

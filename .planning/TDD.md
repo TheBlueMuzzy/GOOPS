@@ -146,7 +146,8 @@ flowchart LR
 | `content/tuning/payslip.json` | F41: the end report's payslip — `fineShare` (8% of the shift, theatre: net always = the real XP), `fineLines` 3, `lineMs`, `loiterSeconds`, the silly fines and the rank each starts at, the payday shares (lodging · meals · air · periscope · rotating extra), the passage debt (start, paid share, interest, goes up from rank 30). Rules: src/progress/payslip.ts (`makePayslip`, `debtAt` — worked out from the rank, never saved); words: en.json `payslip` | Dev Kit Tuning (live) / Obsidian |
 | `content/tuning/talk.json` | F35: the Veteran's talking bubble feel (kit TalkingBubble, UI kit 0.31.0) — Muzzy's S9 picks: wave start/end, spike gap + height, roundness, variability, pop size, type speed, rest, squelch. Read every frame | Dev Kit Tuning (live) |
 | `content/tuning/name.json` | F66: `maxLength` — the most letters the first day's name box takes (12, Muzzy 2026-10-25); the name itself is in the save (D20) | Dev Kit Tuning / Obsidian |
-| `content/tuning/whiteGoop.json` | F63 the white goop (the Veteran, gooped — D21). Rules, read by src/engine/whiteGoop.ts on the rules clock: `fromRank` 31, drop-in (`dropFromCentre`, `dropSecPerCell`), ooze (`secPerCell` 0.7, `oozeSlow` 2.5), `targetBy` hardestForYou (+ `coveredHardness` 4), `sealTime` 6, `restAfter` 1, `thinkSec`, `countsForQuota`, `integrityRefund`. Looks, read by src/view/whiteGoopView.ts on the goo's clock: colour, alphas, `squint` 0.25, `eyeSize` 0.18, eye gap/colours, `owTime`, `flinch`, the sealing ring, Particle `dots`, `eyesTurnSec` (the goop's eyes on him as he drops in) | Dev Kit Tuning (live) |
+| `content/tuning/whiteGoop.json` | F63 the white goop (the Veteran, gooped — D21). Rules, read by src/engine/whiteGoop.ts on the rules clock: `fromRank` 31, drop-in (`dropFromCentre`, `dropSecPerCell`), ooze (`secPerCell` 0.7, `oozeSlow` 2.5), `targetBy` hardestForYou (+ `coveredHardness` 4), `sealTime` 6, `sealTimePerExtraCell` 1 (F39: a grown crack takes sealTime × its size), `restAfter` 1, `thinkSec`, `countsForQuota`, `integrityRefund`. Looks, read by src/view/whiteGoopView.ts on the goo's clock: colour, alphas, `squint` 0.25, `eyeSize` 0.18, eye gap/colours, `owTime`, `flinch`, the sealing ring, Particle `dots`, `eyesTurnSec` (the goop's eyes on him as he drops in) | Dev Kit Tuning (live) |
+| `content/tuning/twists.json` | F39 rank twists (D22), read by src/engine/twists.ts + pieces.ts on the rules clock, seeded by the shift's rng: `split` (two-colour pieces: `fromRank` 20, `chance` 0.25), `grow` (growing cracks: `fromRank` 30, a roll every `everyMsMin`–`everyMsMax` 5–10 s per uncovered cell, chance (`baseChance` 0.1 + pressure × `pressureWeight` 1) × `leafMult` 0.5 if nothing grew from it × max(`minFalloff` 0.1, 1 − `hopFalloff` 0.25 × steps from the root), `diagonals` true = 8 directions), `wild` (wild goop: `fromRank` 40, `chance` 0.15). Corrupt pieces are never split or wild; wild is never split | Dev Kit Tuning (live) |
 | `content/story/moments.json` | F35: one story moment per rank (0–9 so far): its lines (voice `mon` = the monitor, `spk` = the Veteran's bubble, `head` = the goop in your head 31–39, the whisper's plain bubble, `him` on 35/37; `{name}` in words = operatorName() or Operator #4471; `words` = a key in en.json story.lines) and `look` (a console part to outline); `catchUp` = most moments in one console visit. Played by src/game/lessons/storyMoments.ts + StoryView.tsx; seen ones in the kit tips memory as `story:<rank>` (Replay lessons replays them). Its own folder: every file in content/lessons/ loads as a lesson | Obsidian |
 | `content/tuning/hud.json` | the shift's HUD sizes (top row room `topRowPx`, panel, bars, readout, chevrons) · F59 `nextWindow` (cols × rows cells, `cellRem`, `padCells`, `cellGap`, `cornerCells`) — the window sits at the left of the bottom panel, which is at least its height (ShiftStage adds the frame's kit gaps + border) · `bars.machineWidth` = the most of the room right of the window a machine bar takes (shared out evenly, never narrower than its name), `bars.integrityWidth` 1 = all of it | Dev Kit Tuning (live) |
 | `content/lessons/unlock-window.json` · `unlock-swap.json` · `unlock-upgrades.json` | F59: the unlock lessons — one step each; the window's and swap's pause the start of the first shift after their rank (one per shift start: src/game/lessons/unlockLessons.ts), upgrading's is the console monitor's line + the Upgrades button outlined until it's opened. Words en.json `lessons.unlock-*` | Dev Kit Lessons tab / Obsidian |
@@ -191,6 +192,25 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D22 · 2026-10-25 · A grown crack is one Crack with a list of cells; wild goop is a colour value (F39)
+  Proposed by: Claude (Muzzy's rule 2026-10-25: a grown crack is ONE crack, sealed only when every cell is covered,
+  counting its cell count toward the quota)
+  Options (cracks): one Crack per cell, linked by a group id · one Crack with cells[] (root = its old x, y)
+  Chose: one Crack with optional `cells` (root first), `parent` (which cell each grew from — for v1's leaf and
+  hops-from-root odds) and `growMs` (each cell's own roll clock), all in state.cracks — so snapshots keep them with
+  no new fields, and a crack that never grew has none of them (old snapshots load as they were; x, y stay the root, so
+  everything that only knows x, y still finds the crack). Helpers in src/engine/twists.ts: crackCells / crackSize /
+  crackHas / crackPlugged; the views draw per cell through crackSpots (src/view/crackBubbles.ts). One cell = one seal
+  everywhere a seal counts (quota, pressure vent, integrity refund, ability charge); drain is per cell; the white goop
+  seals it whole in sealTime × (1 + extra cells × sealTimePerExtraCell). Growth never goes above the pressure line,
+  into goop, another crack, a sealed spot or the white goop's cell; Slow Cracks (crackEveryMult) stretches its clock.
+  Two cracks growing side by side stay two cracks (v1 merged same-colour ones — not built; Muzzy's rule didn't ask).
+  Options (wild): a flag on each cell · a colour value of its own
+  Chose: WILD = 255 in the grid (types.ts): wild cells clump with wild cells by the normal grouping, pop like any
+  goop, and plugsCrack() lets it plug any colour. The renderers map it to a stand-in (palette.ts gooSlot → slot 7's
+  channel; goo-colors.json "wild" on the tank canvas) until task 6's look. A two-colour piece is PieceDef.colors (one
+  per cell, in cell order — rotation and mirroring keep the order). Twist rolls come after the old ones and only from
+  each twist's rank, so seeds below rank 20 play exactly as before; no twists in a lesson's training shift.
 D21 · 2026-10-25 · The white goop is his own entity in the engine, drawn on the tank canvas (F63)
   Proposed by: Claude (Muzzy's sketch pick: he oozes BEHIND the goop)
   Options: a grid cell of a special colour · his own entity in the engine (state.vet) + drawn as a body in each goo

@@ -3,7 +3,7 @@
 // It also decides where the tank sits around the HUD (F26, Muzzy's mock-up; F59 his second one): one top row above it,
 // the bottom panel under it (or beside it on a phone on its side), and the pressure readout hanging on the pressure line.
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { whiteGoopAt, type MachineId, type ShiftEngine, type ShiftEvent, type ShiftStatus, type ShiftPhase, type ShiftState, type TapPoint } from '../engine'
+import { crackCells, whiteGoopAt, type MachineId, type ShiftEngine, type ShiftEvent, type ShiftStatus, type ShiftPhase, type ShiftState, type TapPoint } from '../engine'
 import { createWhiteGoopView } from '../view/whiteGoopView'
 import whiteGoopLook from '../../content/tuning/whiteGoop.json'
 import talk from '../../content/tuning/talk.json'
@@ -224,7 +224,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       // the white goop while goop covers him (F63)
       const X = cracksLook.xray
       xray.cells.length = 0
-      for (const c of s.cracks) if (!crackIsOpen(s, c)) xray.cells.push(c.y * s.width + c.x)
+      for (const c of s.cracks) for (const [x, y] of crackCells(c)) if (!crackIsOpen(s, { x, y })) xray.cells.push(y * s.width + x) // (F39: each cell of a grown crack)
       white.xrayCells(s, xray.cells)
       xray.pad = X.pad + X.width
       xray.alpha = X.gooAlpha
@@ -271,7 +271,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
           integrity: s.integrity, phase: s.phase, holdProgress, machines: machinesNow(s.machines), breaks: { ...breaks },
-          next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0] } : null,
+          next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0], colors: s.next } : null, // (F39: colors = per cell)
           ability: s.abilities?.[0] ? { id: s.abilities[0].id, charge: s.abilities[0].charge, ready: s.abilities[0].ready } : null })
         still = reduceMotion()
         const box = readoutEl.current?.querySelector('.kit-pinned')?.getBoundingClientRect()

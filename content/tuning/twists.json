@@ -1,0 +1,45 @@
+{
+  "_about": "F39 RANK TWISTS (GDD rank twists; v1 numbers from research/v1/PRD.md): from rank 20 some pieces fall in two colours (two even, connected halves that lock as two clumps); from rank 30 cracks grow into the cells next to them (a grown crack is ONE crack: sealed only when every cell is covered by its colour, then it counts its cell count toward the quota; it drains per cell); from rank 40 some pieces are wild goop (plugs any crack colour; a normal piece landing next to a wild clump turns the whole clump its colour). Read by the engine (src/engine/twists.ts) at the moment each number is used, on the rules clock — live in the Dev Kit. Seeded by the shift's random numbers, so ?seed plays repeat. Chances are 0..1, times in ms.",
+  "_help": {
+    "split.fromRank": "Two-colour pieces start at this rank.",
+    "split.chance": "The share of pieces that fall in two colours (0.25 = one in four). Corrupt and wild pieces never split.",
+    "grow.fromRank": "Cracks start growing at this rank.",
+    "grow.everyMsMin": "Each uncovered crack cell rolls to grow once every so often: at least this long between rolls…",
+    "grow.everyMsMax": "…and at most this long (picked at random in between each time). Slow Cracks stretches it.",
+    "grow.baseChance": "The chance a roll grows the crack, before pressure (0.1 = 10%).",
+    "grow.pressureWeight": "How much pressure adds to that chance: chance = base + pressure × this (v1: 1, so 10% at empty → 110% at full).",
+    "grow.leafMult": "A cell with nothing grown from it yet is this much less likely to grow (v1: 0.5) — so cracks branch rather than snake.",
+    "grow.hopFalloff": "Each step a cell is from where the crack formed takes this off its chance (v1: 0.25 a step)…",
+    "grow.minFalloff": "…but never below this share of it (v1: 0.1).",
+    "grow.diagonals": "true = a crack can grow into the 8 cells round it (v1); false = only up, down, left, right.",
+    "wild.fromRank": "Wild goop starts at this rank.",
+    "wild.chance": "The share of pieces that are wild goop (0.15 = about one in seven). Corrupt pieces are never wild; wild is never two-colour."
+  },
+  "_ranges": {
+    "split.fromRank": [1, 60, 1],
+    "split.chance": [0, 1, 0.05],
+    "grow.fromRank": [1, 60, 1],
+    "grow.everyMsMin": [500, 30000, 500],
+    "grow.everyMsMax": [500, 30000, 500],
+    "grow.baseChance": [0, 1, 0.01],
+    "grow.pressureWeight": [0, 2, 0.05],
+    "grow.leafMult": [0, 1, 0.05],
+    "grow.hopFalloff": [0, 1, 0.05],
+    "grow.minFalloff": [0, 1, 0.05],
+    "wild.fromRank": [1, 60, 1],
+    "wild.chance": [0, 1, 0.05]
+  },
+  "split": { "fromRank": 20, "chance": 0.25 },
+  "grow": {
+    "fromRank": 30,
+    "everyMsMin": 5000,
+    "everyMsMax": 10000,
+    "baseChance": 0.1,
+    "pressureWeight": 1,
+    "leafMult": 0.5,
+    "hopFalloff": 0.25,
+    "minFalloff": 0.1,
+    "diagonals": true
+  },
+  "wild": { "fromRank": 40, "chance": 0.15 }
+}
