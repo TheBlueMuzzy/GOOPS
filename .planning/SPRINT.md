@@ -7,7 +7,7 @@ Done when: eyes picked in a sketch first (Muzzy tunes it); then in BOTH renderer
 why: the tank is half the game — the goop itself tells the story that something in there is alive.
 Check: e2e/eyes.mjs (eyes at 10/20/30/40, none at 9, closing on a zap, looking at the piece) with shots looked at · check:full
 - [x] 🤖 1. Eyes sketch: eye size, count per clump, follow speed, blink, worried look, mouth — knobs + presets for ranks 10/20/30/40 + Copy values — .planning/research/sketches/goop-eyes.html
-- [ ] 🙋 2. Muzzy tunes the eyes sketch and copies the values — .planning/research/sketches/goop-eyes.html
+- [x] 🙋 2. Muzzy tunes the eyes sketch and copies the values — .planning/research/sketches/goop-eyes.html (v1 values pasted; v2 "approved" 2026-10-24 → .planning/research/goop-eyes/picks.json; pixel look unanswered → Claude's pick smooth, pixelSize 0 kept as a knob)
 - [ ] 🤖 3. Jelly eyes (drawn like the zap highlight quad), values live from content/tuning/eyes.json — src/goo/jelly/index.ts
 - [ ] 🤖 4. Particle eyes, same values — src/goo/particle/index.ts
 - [ ] 🤖 5. The renderer gets rank, pressure and the focus point (falling piece / laser) — src/goo/types.ts
@@ -17,6 +17,7 @@ Check: e2e/eyes.mjs (eyes at 10/20/30/40, none at 9, closing on a zap, looking a
 Done when: every rank 10–30 has its moment from design/story.md (voice · lines · look), played once per device at the console like 0–9; whispers grow from feelings to words (15) to names (24), and the Veteran says he hears "no voices" (12); the rank-gated silly fines appear on the payslip and the report wording changes after 30; white joins as a normal colour at 30 (Muzzy 2026-10-24: keep white — the Veteran's clump stands out by behaviour and open eyes, F63); every word in en.json, every number in content/; GDD §5 updated.
 why: the middle of the game needs a reason to keep climbing — a friend on the inside, then losing him.
 Check: e2e/story.mjs plays every moment 0–30 (right voice, words, once only, replay) with shots at every portrait size · unit tests (whisper stages, fines by rank) · check:full
+Checked: e2e/story.mjs ALL PASS (every moment 0–30, whisper stages, fines, the alarm's words white at every portrait size); shots looked at (capture 390, no-voices 360, after-capture payday 390, white alarm words 390); unit tests in check:fast (514); check:full 27/27 at e1a506f; review (low) no bugs. Muzzy: "approved" 2026-10-24.
 - [x] 🤖 1. Moments 10–30 as data + their lines — content/story/moments.json
 - [x] 🤖 2. New looks the moments need (speaker cut-in, the capture) — src/game/lessons/StoryView.tsx
 - [x] 🤖 3. Whisper stages: words from 15, names from 24, "no voices" at 12 — src/game/lessons/storyMoments.ts
