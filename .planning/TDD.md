@@ -145,6 +145,7 @@ flowchart LR
 | `content/tuning/progression.json` | ranks + XP (v1 numbers), scraps per rank · F59 `unlocks` = the rank each part of the game unlocks at (`nextPiece` 1 · `swap` 3 · `upgrades` 5); `isUnlocked(what, rank)` in src/progress/progression.ts is the ONE rule the HUD, the controls (engine `swap` option) and the console ask — no rank numbers in UI code | Dev Kit Tuning (live) |
 | `content/tuning/payslip.json` | F41: the end report's payslip — `fineShare` (8% of the shift, theatre: net always = the real XP), `fineLines` 3, `lineMs`, `loiterSeconds`, the silly fines and the rank each starts at, the payday shares (lodging · meals · air · periscope · rotating extra), the passage debt (start, paid share, interest, goes up from rank 30). Rules: src/progress/payslip.ts (`makePayslip`, `debtAt` — worked out from the rank, never saved); words: en.json `payslip` | Dev Kit Tuning (live) / Obsidian |
 | `content/tuning/talk.json` | F35: the Veteran's talking bubble feel (kit TalkingBubble, UI kit 0.31.0) — Muzzy's S9 picks: wave start/end, spike gap + height, roundness, variability, pop size, type speed, rest, squelch. Read every frame | Dev Kit Tuning (live) |
+| `content/tuning/name.json` | F66: `maxLength` — the most letters the first day's name box takes (12, Muzzy 2026-10-25); the name itself is in the save (D20) | Dev Kit Tuning / Obsidian |
 | `content/story/moments.json` | F35: one story moment per rank (0–9 so far): its lines (voice `mon` = the monitor, `spk` = the Veteran's bubble; `words` = a key in en.json story.lines) and `look` (a console part to outline); `catchUp` = most moments in one console visit. Played by src/game/lessons/storyMoments.ts + StoryView.tsx; seen ones in the kit tips memory as `story:<rank>` (Replay lessons replays them). Its own folder: every file in content/lessons/ loads as a lesson | Obsidian |
 | `content/tuning/hud.json` | the shift's HUD sizes (top row room `topRowPx`, panel, bars, readout, chevrons) · F59 `nextWindow` (cols × rows cells, `cellRem`, `padCells`, `cellGap`, `cornerCells`) — the window sits at the left of the bottom panel, which is at least its height (ShiftStage adds the frame's kit gaps + border) · `bars.machineWidth` = the most of the room right of the window a machine bar takes (shared out evenly, never narrower than its name), `bars.integrityWidth` 1 = all of it | Dev Kit Tuning (live) |
 | `content/lessons/unlock-window.json` · `unlock-swap.json` · `unlock-upgrades.json` | F59: the unlock lessons — one step each; the window's and swap's pause the start of the first shift after their rank (one per shift start: src/game/lessons/unlockLessons.ts), upgrading's is the console monitor's line + the Upgrades button outlined until it's opened. Words en.json `lessons.unlock-*` | Dev Kit Lessons tab / Obsidian |
@@ -189,6 +190,16 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D20 · 2026-10-25 · Your name lives in Goops' own save, on the device; a framework profile module waits (F66)
+  Proposed by: Claude (story.md "Your name": Muzzy 2026-10-23 "do we have a level 0 sign in?")
+  Options: an account / sign-in · a framework profile module now (name + avatar, shared by every game) · a field in
+  Goops' save
+  Chose: a field in Goops' save — `name` in the "goops-progress" record (save v3; older saves step up with no name),
+  device only, no account, nothing sent anywhere. Signed on the first day's monitor ("PLEASE SIGN HERE", rank 0's
+  story moment; the kit's TextInput), trimmed, 12 letters max (content/tuning/name.json, Muzzy 2026-10-25); empty or
+  skipped = no name, and the game says "Operator #4471" (en.json story.sign.fallback). RANK SELECT 0 wipes it with the
+  rest of the save. F63 reads it with operatorName() (src/progress/save.ts: the name or null). A framework profile
+  module (name + avatar) only when a second game needs a name — then this field moves onto it with one save step.
 D19 · 2026-10-23 · The payslip is theatre worked out from the XP; nothing new is saved (F41)
   Proposed by: Claude   Options: save credits, fines and debt / work them out from the shift's reward
   Chose: makePayslip(reward, facts) in src/progress/payslip.ts: net = the XP the shift earned (gross = net + fines,
