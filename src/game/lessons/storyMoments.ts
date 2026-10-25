@@ -10,10 +10,14 @@ import momentsFile from '../../../content/story/moments.json'
 import text from '../../../content/text/en.json'
 
 export type Voice = 'mon' | 'spk'
-export type StoryLine = { voice: Voice; words: string }
+// F40: monitor = what the monitor does while the line is up · crackle = the bubble squelches more often · cut = the line
+// is cut off once typed (the moment moves on by itself) — moments.json _about
+export type MonitorLook = 'flicker' | 'alarm'
+export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean }
 type Moment = { look?: string; lines: StoryLine[] }
 type Whispers = { coldAt: number; feelingsFrom: number; feelings: string[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number }
-type MomentsFile = { catchUp: number; moments: Record<string, Moment>; whispers: Whispers }
+export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; crackleEvery: number; cutSeconds: number }
+type MomentsFile = { catchUp: number; moments: Record<string, Moment>; whispers: Whispers; looks: StoryLooks }
 
 export const storyFile = momentsFile as unknown as MomentsFile
 const seenId = (rank: number) => `story:${rank}`

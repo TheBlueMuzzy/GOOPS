@@ -22,9 +22,9 @@ describe('story moments', () => {
   it('everything seen: nothing', () => {
     expect(dueRanks(9, () => true)).toEqual([])
   })
-  it('every rank 0–9 has a moment, and every line has words', () => {
+  it('every rank 0–30 has a moment, and every line has words', () => {
     const lines = en.story.lines as Record<string, string>
-    for (let r = 0; r <= 9; r++) {
+    for (let r = 0; r <= 30; r++) {
       const m = storyFile.moments[String(r)]
       expect(m?.lines.length, `rank ${r}`).toBeGreaterThan(0)
       for (const l of m.lines) {
@@ -33,8 +33,15 @@ describe('story moments', () => {
       }
     }
   })
-  it('Management 0–4, the Veteran 5–9 (story.md pacing)', () => {
-    for (let r = 0; r <= 9; r++) for (const l of storyFile.moments[String(r)].lines) expect(l.voice).toBe(r < 5 ? 'mon' : 'spk')
+  it('Management 0–4, the Veteran 5–29 (story.md pacing)', () => {
+    for (let r = 0; r <= 29; r++) for (const l of storyFile.moments[String(r)].lines) expect(l.voice).toBe(r < 5 ? 'mon' : 'spk')
+  })
+  it('30 = his capture: the Veteran is cut off, then Management cuts in with the alarm', () => {
+    const lines = storyFile.moments['30'].lines
+    expect(lines.map((l) => l.voice)).toEqual(['spk', 'mon'])
+    expect(lines[0].cut).toBe(true)
+    expect(lines[1].monitor).toBe('alarm')
+    expect(storyFile.moments['29'].lines[0].cut).toBe(true) // he cuts out mid-word the rank before
   })
   it('whispers: none before 3, "cold" once at 3–7, a feeling every shift from 8', () => {
     expect(whisperFor(2, false, 0.5)).toBeNull()
