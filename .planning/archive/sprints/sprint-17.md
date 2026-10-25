@@ -37,3 +37,8 @@ Check: unit tests (white clump rules) · e2e/story.mjs (moments 31–39, the nam
 - F63 merged e367dba; full check ALL PASS 30/30 (20.1 min); review (low): no bugs, cleanup a61fae4 (no per-frame gaze / x-ray arrays). Review note: a zap through only him counts as a good zap (combo kept). Not built (no pieces yet): tank looks 32–38, sentence whispers from 31.
 - Muzzy picked Ooze with a 6 s seal; the sketch measured ~26 seals in 5 min at 50% pressure with nobody zapping (he could carry the tank). Kept as his call; sealTime and restAfter go in content/tuning live so it is one slider if real play shows it.
 - Tiny fix outside the tasks (check:full at 6e01cf9: 3 false fails — eyes, first-day, zap): the F63 helper's new worktree under .claude/worktrees added .html files and Vite reloaded every open page for each one, killing e2e pages mid-test (also e2e-shots/checks.html). vite.config.ts now ignores **/.claude/** and **/e2e-shots/** in server.watch. Re-run alone: eyes, first-day 143/143, zap all PASS. Lesson for the BMUZ session: every game's vite config (and the template) should ignore .claude/ and e2e-shots/.
+
+Retro: (Muzzy 2026-10-25: "rsaar/sprint" — read as "retro ok", Claude's draft kept)
+- went well: the white-goop sketch let Muzzy pick how he moves before any game code, and helpers built F66 + F63 side by side
+- went wrong: the dev server reloaded test pages for files in helpers' worktrees (3 false fails), and commands were blocked for a while when a safety service went down
+- change: keep the dev server's ignore list for .claude/ and e2e-shots/, and never save while the full check runs
