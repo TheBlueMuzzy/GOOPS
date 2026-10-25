@@ -28,7 +28,7 @@ import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
 import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, titleAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
-import { loadProgress, saveProgress } from '../progress/save'
+import { loadProgress, operatorName, saveProgress } from '../progress/save'
 import { afterCaught, makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
@@ -153,7 +153,13 @@ function payslipStats(p: Payslip, r: ShiftReward): Stat[] {
     ...(p.firstDay ? [{ label: P.firstDay, value: fill(P.minus, { n: 0 }) }]
       : p.fines.map((f): Stat => ({ label: payWords(f.key), value: fill(P.minus, { n: cr(f.amount) }), tone: 'danger' }))),
     { label: P.net, value: rankUpLine(r), tone: 'success' },
+    // F63 (rank 39+): you're on the list — "Pending retirements: Operator #4471 — <your name>"
+    ...(p.pendingRetirement ? [{ label: P.pendingRetirements.label, value: pendingName() }] : []),
   ]
+}
+const pendingName = () => {
+  const name = operatorName()
+  return name ? fill(P.pendingRetirements.value, { name }) : P.pendingRetirements.noName
 }
 // F40: the once-only "Association with a retired employee" fine, kept in the tips memory like the story moments
 const ASSOCIATION_FINED = 'fine:association'

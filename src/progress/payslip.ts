@@ -29,6 +29,10 @@ export const associationDue = (facts: ShiftFacts, rank: number, t: PayslipTuning
 /** F40: do the report's words at this rank use the after-capture wording (en.json payslip.afterCaught)? */
 export const afterCaught = (rank: number, t: PayslipTuning = tuning) => rank >= t.caughtRank
 
+/** F63: does the report list you under "Pending retirements" (story.md rank 39: "…your name… is on a list…")? From the
+ *  shift that reaches pendingRetirementRank on, every report. */
+export const pendingRetirement = (rankAfter: number, t: PayslipTuning = tuning) => rankAfter >= t.pendingRetirementRank
+
 // One line on the payslip: what it's for (a key into en.json payslip) and how many credits
 export interface PayLine { key: string; amount: number }
 
@@ -50,6 +54,7 @@ export interface Payslip {
   credits: number // credits after it all (XP into the new rank)
   due: number // the payment due now (0 at the top rank)
   debt: number // passage debt now
+  pendingRetirement: boolean // F63: the report shows "Pending retirements: Operator #4471 — <your name>"
 }
 
 // The real fines from what happened in the shift (shuffled among themselves when picked)
@@ -132,5 +137,6 @@ export function makePayslip(reward: ShiftReward, facts: ShiftFacts, opts: { firs
     const due = xpToNext(from)
     paydays.push({ from, to: from + 1, due, items: paydayItems(due, from, opts.extras, t), debt: debtAt(from + 1, t), interest: interestAt(from, t) })
   }
-  return { firstDay: opts.firstDay, gross, fines, net, paydays, credits: reward.after.xpIntoRank, due: reward.after.xpToNext, debt: debtAt(reward.after.rank, t) }
+  return { firstDay: opts.firstDay, gross, fines, net, paydays, credits: reward.after.xpIntoRank, due: reward.after.xpToNext, debt: debtAt(reward.after.rank, t),
+    pendingRetirement: pendingRetirement(reward.after.rank, t) }
 }

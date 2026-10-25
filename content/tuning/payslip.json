@@ -10,6 +10,8 @@
   "loiterSeconds": 20,
   "_caughtRank": "F40: the rank the Veteran is caught at (design/story.md, moment 30). The first shift report at or after it fines YOU once: 'Association with a retired employee' (always the first fine line). Paydays from this rank on use the after-capture words (en.json payslip.afterCaught): the economy doesn't change, the words do.",
   "caughtRank": 30,
+  "_pendingRetirementRank": "F63: from the shift that reaches this rank, every end report has a last row 'Pending retirements: Operator #4471 — <your name>' (design/story.md moment 39: '…your name… is on a list…'). Words: en.json payslip.pendingRetirements.",
+  "pendingRetirementRank": 39,
   "_sillyFines": "Silly fines (words: en.json payslip.silly) and the rank each starts at.",
   "sillyFines": {
     "blinking": 0, "nosePicking": 0, "facialExpression": 0, "fingerprints": 0, "humming": 0, "sighing": 0,

@@ -69,6 +69,17 @@ describe('payslip', () => {
     expect(en.payslip.afterCaught.debt).toBeTruthy()
   })
 
+  it('F63: "Pending retirements" from the shift that reaches rank 39, and its words exist', () => {
+    const slip = (rank: number) => makePayslip(rewardShift(at(xpForRank(rank) + 10), 1000), NO_FACTS, { firstDay: false, seed: 2, extras })
+    expect(slip(tuning.pendingRetirementRank - 2).pendingRetirement).toBe(false)
+    expect(slip(tuning.pendingRetirementRank).pendingRetirement).toBe(true)
+    // the shift that ranks up INTO 39 shows it already (the moment at 39 plays right after that report)
+    const into = makePayslip(rewardShift(at(xpForRank(tuning.pendingRetirementRank) - 5), 1000), NO_FACTS, { firstDay: false, seed: 2, extras })
+    expect(into.pendingRetirement).toBe(true)
+    expect(en.payslip.pendingRetirements.value).toContain('{name}')
+    expect(en.payslip.pendingRetirements.noName).toBe(en.story.sign.fallback)
+  })
+
   it('every fine and payday key has words in en.json', () => {
     const words = en.payslip as unknown as Record<string, Record<string, string>>
     for (const k of ['association', 'rupture', 'laser', 'visor', 'controls', 'openCracks', 'goopLeft', 'loitering', 'zapping']) expect(words.fines[k]).toBeTruthy()
