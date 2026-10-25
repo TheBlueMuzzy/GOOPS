@@ -4,7 +4,7 @@
 // grid ("stay where the rules say"), with damping (TaminoMartinius home springs + Müller 2005 shape matching).
 // Reads the engine's state + events, never writes back. Simulates in view space around the camera (TDD D03).
 import type { ShiftEvent, ShiftState } from '../../engine/types'
-import type { GooOptions, GooRenderer, GooView } from '../types'
+import { screenColumn, type GooOptions, type GooRenderer, type GooView } from '../types'
 import jellyFile from '../../../content/tuning/goo-jelly.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
 import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
@@ -15,6 +15,8 @@ import { XRAY_MAX, XRAY_UNIFORMS, setXray } from '../shared/xray'
 import { buildPoints, traceLoops } from './outline'
 import { BLUR_FS, FINAL_FS, MASK_FS, MASK_VS } from './shaders'
 import { sprayDrops, sprayDue, suckIn, zapEnd, zapFade, zapHeat, zapLook, type ZapLook } from '../shared/zap'
+import { FaceBook, spotIn, type Face, type FaceReport } from '../shared/faces'
+import { FaceDrawer } from '../shared/faceDraw'
 
 // The knobs as the file has them right now (with the Dev Kit's latest edit)
 export const jellyDefaults = (): Knobs => parseKnobs(jellyFile)
@@ -64,6 +66,18 @@ interface Body {
   landed: number
   stuck: Set<number> | null
   zap: Zap | null // a zapped ('dying') body's timeline (F67)
+  ux: number[] // grid bodies: each cell's unwrapped column + row (the rest shape's coordinates)
+  uy: number[]
+  // F62 its face (rank 10+): the face, where its eyes sit in the rest shape (like the highlight), where they are now
+  // (view cells, riding the body's fitted turn + centre) and, once zapped, where they sat at the zap
+  face: Face | null
+  spotX: number
+  spotY: number
+  spotCell: number
+  faceX: number
+  faceY: number
+  faceRX: number
+  faceRY: number
 }
 
 // A zapped jelly (F67, the sketch's startZap): its outline at the moment of the zap (rx, ry), each point's distance
@@ -161,6 +175,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   let time = 0
   let zapWhite = 0 // zap.json whiteHot, as of this frame (the final pass's uWhite)
   let S: ShiftState | null = null
+  const book = new FaceBook() // F62 the goop's faces (rank 10+)
+  let lastView: GooView | null = null // (for __goops.faces(): where the faces are on the stage)
 
   function reset(state: ShiftState) {
     W = state.width
@@ -181,6 +197,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     seenGrid = new Uint8Array(W * H)
     seenGroup = new Int32Array(W * H).fill(-1)
     forceRebuild = true
+    book.clear()
     pose.shape = null
     needPiece = !!state.piece
     if (state.piece) pose.spawn(state.piece, W, state.spin, 0)
@@ -196,6 +213,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       vx: new Float32Array(n), vy: new Float32Array(n), t: 0, alpha: 1, fa: 0, fcx: 0, fcy: 0, rcx: 0, rcy: 0,
       hlCell: 0, hlX: 0, hlY: 0, hlW: 0, hlH: 0, hlRX: 0, hlRY: 0, cellIdx: [], centreCol: 0, turns: 0, restMeanY: 0,
       ring: false, buildCam: 0, from: new Set(), landed: -1, stuck: null, zap: null,
+      ux: [], uy: [], face: null, spotX: 0, spotY: 0, spotCell: -1, faceX: 0, faceY: 0, faceRX: 0, faceRY: 0,
     }
     // the one highlight: on the top-left cell, stretched along its row (up to 3 cells)
     let tl = 0
@@ -221,6 +239,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     const B = newBody(U.ux.map((x, i) => [x, U.uy[i]]), color, 'grid')
     B.groupId = groupId
     B.cellIdx = cells
+    B.ux = U.ux
+    B.uy = U.uy
     B.ring = U.ring
     B.buildCam = camera
     B.centreCol = U.ux.reduce((s, v) => s + v, 0) / U.ux.length
@@ -255,6 +275,51 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     if (B.kind === 'piece') return pose.shape ? pose.viewRel(B.hlX, B.hlY, spin, W) : [B.hlX, B.hlY]
     if (B.kind === 'grid') return [B.hlX + offX(B), B.hlY + cellOff[B.cellIdx[B.hlCell]]]
     return [B.hlRX, B.hlRY]
+  }
+
+  // ---------------- F62 THE FACES (src/goo/shared/faces.ts has the rules; this places them on the jellies) ----------------
+  // where a body's eyes sit in its rest shape right now (view cells), like highlightRest
+  function faceRest(B: Body): [number, number] {
+    if (B.kind === 'grid') return [B.spotX + offX(B), B.spotY + (B.spotCell >= 0 ? cellOff[B.spotCell] : 0)]
+    return [B.faceRX, B.faceRY]
+  }
+
+  // hand each grid body its face (after a rebuild, or when faces switch on)
+  function assignFaces() {
+    book.begin()
+    for (const B of bodies) {
+      const f = book.faceFor(B.cellIdx, B.ux, B.uy)
+      B.face = f
+      ;[B.spotX, B.spotY] = spotIn(f, B.cellIdx, B.ux, B.uy)
+      B.spotCell = f.spotA
+    }
+    book.end()
+  }
+
+  // once a frame after the physics: each face's spot rides its body's fitted turn + centre (the sketch's toWorld)
+  function stepFaces(dt: number) {
+    for (const B of bodies) {
+      if (!B.face) continue
+      const [ax, ay] = faceRest(B)
+      const ca = Math.cos(B.fa)
+      const sa = Math.sin(B.fa)
+      const qx = ax - B.rcx
+      const qy = ay - B.rcy
+      B.faceX = B.fcx + ca * qx - sa * qy
+      B.faceY = B.fcy + sa * qx + ca * qy
+      book.step(B.face, B.faceX, B.faceY, dt)
+    }
+  }
+
+  // a zapped body's face: where its spot is now (shrinking with it round where its middle was, like hlQuad) + its size
+  function dyingFace(B: Body): [number, number, number] {
+    const z = B.zap!
+    const k = Math.max(0.05, z.sc)
+    const ca = Math.cos(B.fa)
+    const sa = Math.sin(B.fa)
+    const qx = B.faceRX - z.c0x
+    const qy = B.faceRY - z.c0y
+    return [B.fcx + (ca * qx - sa * qy) * k, B.fcy + (sa * qx + ca * qy) * k, k]
   }
 
   // start a fresh body from the old bodies' wobble: each new point copies the displacement + velocity of the
@@ -387,6 +452,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       bodies = bodies.filter((b) => b !== B)
       strands = strands.filter((s) => s.A !== B && s.B !== B)
       ;[B.hlRX, B.hlRY] = highlightRest(B)
+      if (B.face) [B.faceRX, B.faceRY] = faceRest(B) // (its eyes squeeze shut and shrink away with it)
       B.kind = 'dying'
       B.t = 0
       // its outline as it sat last frame (the homes, view cells — placed with last frame's camera)
@@ -419,6 +485,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       kick(B, 'radial', 1.5 * Math.min(1, Z.swell * 5)) // (reduce motion: no swell, so no puff either)
       dying.push(B)
     }
+    book.shutAround(cells, W, H) // F62: the clumps touching it squeeze their eyes shut
     for (const c of cells) {
       cellOff[c] = 0
       cellVel[c] = 0
@@ -531,6 +598,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
             cellDelay[t] = 0.04
             fallFrom.set(t, f)
           }
+          book.moveCells(e.moves) // (falling clumps keep their faces)
           break
         }
       }
@@ -604,6 +672,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
         makeStrand(A, Bb)
       }
     bodies = next
+    if (book.on) assignFaces()
     fallFrom = new Map()
     lockSet = new Set()
     seenGrid.set(state.grid)
@@ -876,6 +945,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     spin = state.spin
     const Z = zapLook(view.still)
     zapWhite = Z.whiteHot
+    book.frame(view.story, dt, (x) => screenColumn(x, camera, W))
+    lastView = view
     handle(events, state, Z)
     landedTick++
     const g = K.gravity * 10 // cells / s²
@@ -901,6 +972,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       forceRebuild = false
       rebuild(state)
     }
+    if (book.on && !book.built) assignFaces() // (faces just switched on: the rank reached 10)
     if (state.piece && pose.swapped(state.piece, W)) {
       // a different piece without a spawn (hold swap, or we missed the spawn): it appears where it is
       pose.spawn(state.piece, W, spin, 0)
@@ -998,6 +1070,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     }
     drops = drops.filter((d) => d.life > 0 && d.y < H + 1)
     fills = groupFillLines(state)
+    if (book.on) stepFaces(dt)
   }
 
   function sameArrays(state: ShiftState): boolean {
@@ -1015,6 +1088,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS,
   ])
   const xrayBuf = new Float32Array(XRAY_MAX * 4)
+  const faceDraw = new FaceDrawer(gl) // F62
   const vaoMask = gl.createVertexArray()!
   const vbo = gl.createBuffer()!
   const vaoFsq = gl.createVertexArray()!
@@ -1303,6 +1377,40 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     setXray(gl, PF.u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)
+    // 5) F62 the faces, over the goo on the same canvas
+    if (book.on) drawFaces(state, view, ox * dpr, oy * dpr, cell, clipL, clipR)
+  }
+
+  function drawFaces(state: ShiftState, view: GooView, ox: number, oy: number, cell: number, clipL: number, clipR: number) {
+    faceDraw.begin()
+    const px = 1 / view.cellPx // one CSS pixel, in cells
+    for (const B of bodies)
+      if (B.face && B.faceX > clipL - 1 && B.faceX < clipR + 1)
+        book.draw(faceDraw, B.face, B.faceX, B.faceY, Math.cos(B.fa), Math.sin(B.fa), 1, 1, false, px)
+    for (const B of dying) {
+      if (!B.face || B.face.eyes.a <= 0) continue
+      const [x, y, k] = dyingFace(B)
+      book.draw(faceDraw, B.face, x, y, Math.cos(B.fa), Math.sin(B.fa), k, Math.max(0, B.alpha), true, px)
+    }
+    const L = book.look
+    faceDraw.flush({ originX: ox, originY: oy, cell, width: canvas.width, height: canvas.height, clipL, clipR, clipB: state.height,
+      eye: L.eyeColor, pupil: L.pupilColor, mouth: L.mouthColor }, (u) => setXray(gl, u, state, view, xrayBuf))
+  }
+
+  // (dev + tests) every face now, with where it is on the stage
+  function faceReports(): FaceReport[] {
+    if (!book.on || !lastView || !S) return []
+    const [ox, oy] = viewOrigin(lastView, S.bufferRows)
+    const cp = lastView.cellPx
+    const toPx = (x: number, y: number): [number, number] => [ox + x * cp, oy + y * cp]
+    const out: FaceReport[] = []
+    for (const B of bodies) if (B.face) out.push(book.report(B.face, B.faceX, B.faceY, toPx, false))
+    for (const B of dying)
+      if (B.face) {
+        const [x, y] = dyingFace(B)
+        out.push(book.report(B.face, x, y, toPx, true))
+      }
+    return out
   }
 
   let disposed = false
@@ -1327,12 +1435,14 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       for (let i = 0; i < B.n; i++) sum += Math.hypot(B.vx[i], B.vy[i])
       return sum / B.n
     },
+    faces: faceReports,
     dispose() {
       if (disposed) return
       disposed = true
       for (const T of [TM, TA, TS, TB, TQ]) freeTarget(gl, T)
       TM = TA = TS = TB = TQ = null
       for (const P of [PM, PB, PF]) freeProgram(gl, P)
+      faceDraw.dispose()
       gl.deleteBuffer(vbo)
       gl.deleteVertexArray(vaoMask)
       gl.deleteVertexArray(vaoFsq)

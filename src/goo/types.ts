@@ -1,6 +1,7 @@
 // A goo renderer draws living goo on top of the tank. It READS the engine's state + events and never writes back:
 // the grid is the game, the goo is the costume. Switching renderers (or turning goo off) changes no result.
 import type { ShiftEvent, ShiftState } from '../engine/types'
+import type { FaceReport, FaceStory } from './shared/faces'
 
 export interface GooView {
   cellPx: number // CSS pixels per cell
@@ -15,6 +16,9 @@ export interface GooView {
   xray?: { cells: number[]; pad: number; alpha: number }
   // reduce motion (the kit's setting, read by the frame loop): the zap (F67) skips its swell and spray
   still?: boolean
+  // F62 the goop's faces (src/goo/shared/faces.ts): the player's rank (0–9 = no faces at all), the pressure (0..1) and
+  // what the eyes look at — the falling piece's centre, or the laser's tap point while the beam fires. Unset = rank 0.
+  story?: FaceStory
 }
 
 export interface GooRenderer {
@@ -25,6 +29,8 @@ export interface GooRenderer {
   dispose(): void
   // (dev + tests) how fast the goo at a cell is moving right now (cells/s) — feel checks read it (e2e: a poke jiggles)
   motion?(cell: number): number
+  // (dev + tests) the goop's faces right now (F62, e2e/eyes.mjs) — empty below rank 10
+  faces?(): FaceReport[]
 }
 
 // Options for createJellyRenderer / createParticleRenderer (added F15)
