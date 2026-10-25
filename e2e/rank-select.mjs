@@ -18,7 +18,8 @@ import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { checkVersion, expectedVersion, skipFirstDay, startShift } from './start.mjs'
 
-const PORT = 5351, OUT = 'e2e-shots/rank-select'
+// ports: 5351 (E2E_PORT=… runs it on another)
+const PORT = Number(process.env.E2E_PORT) || 5351, OUT = 'e2e-shots/rank-select'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]] // (portrait phones + desktop windows — never a phone on its side)
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))

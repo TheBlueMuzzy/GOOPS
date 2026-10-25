@@ -6,10 +6,11 @@
 // a broken machine's repair panel comes alive (RepairPanels.tsx), the gear opens the pause menu, and pulling the
 // periscope goes back to the same shift. On a phone on its side only the panels show, with a Back to the tank button.
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from 'react'
 import { useCrtLesson, useSpotlitTags } from '../game/lessons/lessonLine'
 import { storyFile, storyMoments, storyWords, type MonitorLook } from '../game/lessons/storyMoments'
-import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Screen, Stack, TitleArt, fill, screens } from './kit'
+import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Row, Screen, Stack, TextInput, TitleArt, fill, screens } from './kit'
+import { cleanName, loadOperatorName, nameMaxLength, saveOperatorName } from '../progress/save'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
 import { ControlsPanel, LaserPanel, LessonTag, VisorPanel } from './RepairPanels'
@@ -53,7 +54,35 @@ const NOTHING: string[] = []
 // THE MONITOR'S SCREEN (F32, Muzzy 2026-10-19: "use the CRT panel at the top of the console as our tutorial bubbles. it
 // just toasters down if it needs more room"): its words (the hint), or a lesson's line with its Got it. Words that
 // need more room than the screen has make it slide down past the bezel, in the screen's colours (art.json console.crt).
-type CrtLine = { text: string; gotIt: boolean; onGotIt(): void }
+// sign (F66): the line is "PLEASE SIGN HERE" — the name box + Sign + Skip instead of Got it (both move on: onGotIt)
+type CrtLine = { text: string; gotIt: boolean; sign?: boolean; onGotIt(): void }
+
+// F66 YOUR NAME (story.md "Your name", TDD D20): rank 0's "PLEASE SIGN HERE" on the monitor — the kit's TextInput (at
+// most content/tuning/name.json maxLength letters) with Sign and Skip. Sign keeps the name in the save (trimmed; empty =
+// a skip); Skip keeps nothing — you stay Operator #4471. A replay (Settings → Replay lessons) starts from the name kept.
+// Enter in the box signs (a form); the game's keys leave a text box alone (input/controls.ts typingIn, the periscope's
+// ↓ / Enter above). It sits at the top of the screen, so a phone's keyboard opening below never covers it.
+function SignHere({ onDone }: { onDone(): void }) {
+  const s = text.story.sign
+  const [typed, setTyped] = useState(() => loadOperatorName() ?? '')
+  const sign = (e: FormEvent) => {
+    e.preventDefault()
+    if (cleanName(typed)) saveOperatorName(typed)
+    onDone()
+  }
+  return (
+    <form className="crt-sign" onSubmit={sign}>
+      <Stack gap="s">
+        <TextInput label={s.label} value={typed} maxLength={nameMaxLength()} onChange={(e) => setTyped(e.target.value)}
+          autoComplete="off" autoCapitalize="words" spellCheck={false} enterKeyHint="done" data-tag="name" />
+        <Row gap="s" justify="center">
+          <Button type="submit">{s.sign}</Button>
+          <Button variant="secondary" onClick={onDone}>{s.skip}</Button>
+        </Row>
+      </Stack>
+    </form>
+  )
+}
 // drop: how much lower than the mock-up the monitor hangs (F35, art.json monitorDrop) — the screen moves with it
 // look (F40): a story line's monitor look — 'flicker' (it heard that) or 'alarm' (red flashes: the Veteran's capture at
 // 30); its numbers are content/story/moments.json looks, the CSS is lessons.css
@@ -95,6 +124,7 @@ function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | nul
         <div ref={body} className="crt-body">
           <TypedText text={words} className="lesson-words" />
           {lesson?.gotIt && <Button onClick={lesson.onGotIt}>{text.lessons.gotIt}</Button>}
+          {lesson?.sign && <SignHere onDone={lesson.onGotIt} />}
         </div>
       </CrtLook>
     </ArtLayer>
@@ -131,7 +161,8 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const lessonLine = useCrtLesson()
   // F35: a story moment's Management line types on the monitor too (the Veteran's lines are his bubble: StoryView.tsx)
   const story = useSyncExternalStore(storyMoments.subscribe, storyMoments.view)
-  const storyLine = story?.line.voice === 'mon' ? { text: storyWords(story.line.words), gotIt: true, onGotIt: storyMoments.next }
+  // (F66: the sign line has the name box's Sign / Skip instead of Got it)
+  const storyLine = story?.line.voice === 'mon' ? { text: storyWords(story.line.words), gotIt: !story.line.sign, sign: story.line.sign, onGotIt: storyMoments.next }
     // (while the Veteran talks, the monitor's "pull down the periscope" would be wrong — the periscope waits: blank)
     : story ? { text: '', gotIt: false, onGotIt: storyMoments.next } : null
   const spotlit = useSpotlitTags()

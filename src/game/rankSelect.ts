@@ -1,5 +1,5 @@
 // RANK SELECT's rules (F70; the screen: src/ui/RankSelect.tsx) — what picking a rank does to this device's save.
-//   0        wipe the save: the progress, the first day's checkpoint and every lesson / story moment / tip the device
+//   0        wipe the save: the progress (and the name you signed, F66), the first day's checkpoint and every lesson / story moment / tip the device
 //            has seen — a brand-new device's fresh first day. Settings are kept.
 //   any other  the START of that rank (0 XP into it), nothing bought: every scrap back, as Respec gives them
 // Then the page reloads without ?rank / ?lesson / ?step (they'd override the save — Muzzy's ?rank links left his save

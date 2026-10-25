@@ -9,7 +9,8 @@
 //     squelchEvery swapped for moments.json looks.crackleEvery) · cut = he's cut off: once his line has typed out, the
 //     moment moves on by itself after looks.cutSeconds (looks clock: the Dev Kit's full pause holds it; a tap still
 //     works) — at 30 that's Management cutting in. (The monitor's own looks, flicker / alarm: Console.tsx's Crt.)
-// Enter moves a Management line on (the bubble takes its own tap / Enter / Space).
+// Enter moves a Management line on (the bubble takes its own tap / Enter / Space) — not the sign line (F66): there
+// Enter signs the name box (Console.tsx).
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { TalkingBubble } from '../../ui/kit'
 import { looksClock } from '../../devkit/gameClock'
@@ -21,7 +22,7 @@ import text from '../../../content/text/en.json'
 
 export function StoryView() {
   const view = useSyncExternalStore(storyMoments.subscribe, storyMoments.view)
-  const mon = view?.line.voice === 'mon'
+  const mon = view?.line.voice === 'mon' && !view.line.sign
   useEffect(() => {
     if (!mon) return
     const key = (e: KeyboardEvent) => { if (e.code === 'Enter' || e.code === 'NumpadEnter') { e.preventDefault(); storyMoments.next() } }

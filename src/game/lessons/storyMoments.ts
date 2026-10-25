@@ -11,9 +11,10 @@ import text from '../../../content/text/en.json'
 
 export type Voice = 'mon' | 'spk'
 // F40: monitor = what the monitor does while the line is up · crackle = the bubble squelches more often · cut = the line
-// is cut off once typed (the moment moves on by itself) — moments.json _about
+// is cut off once typed (the moment moves on by itself) — moments.json _about · F66 sign = the line puts a name box on
+// the monitor (PLEASE SIGN HERE, rank 0): Sign or Skip moves on instead of Got it (Console.tsx)
 export type MonitorLook = 'flicker' | 'alarm'
-export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean }
+export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean; sign?: boolean }
 type Moment = { look?: string; lines: StoryLine[] }
 // F40: the goop gets better at talking — each stage (from a rank on) has its own words: feelings (8) → single words
 // (15) → names (24). From noVoicesFrom, Management answers a whisper (en.json story.lines.noVoices).

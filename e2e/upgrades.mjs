@@ -22,7 +22,8 @@ import { mkdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-const PORT = 5345, OUT = 'e2e-shots/upgrades', SCRATCH = join(homedir(), 'Documents', 'dev', '.scratch', 'goops-upgrades-2')
+// ports: 5345 (E2E_PORT=… runs it on another)
+const PORT = Number(process.env.E2E_PORT) || 5345, OUT = 'e2e-shots/upgrades', SCRATCH = join(homedir(), 'Documents', 'dev', '.scratch', 'goops-upgrades-2')
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const w = en.upgrades, items = w.items
@@ -443,7 +444,7 @@ try {
       && await page.locator('.kit-modal .kit-card[data-tone="success"]').count() === 1)
     await shot(page, 'green-card-390x844')
     const s1 = await saved(page)
-    check('saved at once, as version 2 (XP kept)', s1.v === 2 && s1.owned.circuitStabilizer === 1 && s1.scrapsSpent === 1 && s1.totalXp === xpFor(5), JSON.stringify(s1))
+    check('saved at once, as version 3 (XP kept)', s1.v === 3 && s1.owned.circuitStabilizer === 1 && s1.scrapsSpent === 1 && s1.totalXp === xpFor(5), JSON.stringify(s1))
     check('the console button says 4 scraps too', (await page.locator('[data-tag="upgrades"]').textContent()).includes('4'))
     await page.reload()
     await page.getByRole('button', { name: 'Start shift' }).waitFor()

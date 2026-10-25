@@ -2,9 +2,11 @@
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
 import { freshProgress, isUnlocked, meterSteps, progressAtRank, rankInfo, rewardFirstDay, rewardShift, topRank, unlocksBetween, xpToNext } from '../src/progress/progression'
-import { SAVE_VERSION, clearProgress, loadProgress, saveProgress } from '../src/progress/save'
+import { SAVE_VERSION, cleanName, clearProgress, loadOperatorName, loadProgress, nameMaxLength, saveOperatorName, saveProgress } from '../src/progress/save'
+import nameTuning from '../content/tuning/name.json'
 import goldenV1 from './saves/goops-progress-v1.json'
 import goldenV2 from './saves/goops-progress-v2.json'
+import goldenV3 from './saves/goops-progress-v3.json'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
@@ -76,7 +78,7 @@ describe('save', () => {
   const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m } }
 
   // tests/saves/: one golden save per version, kept forever (a new version adds its own)
-  const golden = (v: number) => JSON.stringify(v === 1 ? goldenV1 : goldenV2)
+  const golden = (v: number) => JSON.stringify(v === 1 ? goldenV1 : v === 2 ? goldenV2 : goldenV3)
 
   it('round-trips (with what the scraps bought, F34)', () => {
     const s = memory()
@@ -86,19 +88,28 @@ describe('save', () => {
     expect(JSON.parse(s.m.get('goops-progress')!).v).toBe(SAVE_VERSION)
   })
 
-  it('golden version-1 save (the alpha) → version 2: XP and scraps spent KEPT, nothing owned yet', () => {
+  it('golden version-1 save (the alpha) → version 3: XP and scraps spent KEPT, nothing owned yet, no name', () => {
     const s = memory()
     s.m.set('goops-progress', golden(1))
     expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [] })
-    // saving it again writes version 2, and it still loads the same
+    expect(loadOperatorName(s)).toBeNull()
+    // saving it again writes version 3, and it still loads the same
     saveProgress(loadProgress(s), s)
-    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 2, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [] })
+    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 3, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], name: null })
   })
 
-  it('golden version-2 save loads as it was', () => {
+  it('golden version-2 save loads as it was (and steps up to version 3 with no name)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(2))
     expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
+    expect(loadOperatorName(s)).toBeNull()
+  })
+
+  it('golden version-3 save loads as it was, name and all (F66)', () => {
+    const s = memory()
+    s.m.set('goops-progress', golden(3))
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
+    expect(loadOperatorName(s)).toBe('Muzzy')
   })
 
   it('a missing, broken, unknown-version or nonsense save starts fresh instead of crashing', () => {
@@ -122,10 +133,61 @@ describe('save', () => {
 
   it('never writes over a newer build’s save', () => {
     const s = memory()
-    const newer = JSON.stringify({ v: 3, totalXp: 99999, scrapsSpent: 4, somethingNew: true })
+    const newer = JSON.stringify({ v: SAVE_VERSION + 1, totalXp: 99999, scrapsSpent: 4, somethingNew: true })
     s.m.set('goops-progress', newer)
     saveProgress(freshProgress(), s)
+    saveOperatorName('Someone', s)
     expect(s.m.get('goops-progress')).toBe(newer)
+  })
+})
+
+// F66 YOUR NAME (TDD D20): signed on the first day's monitor, kept in the save
+describe('your name', () => {
+  const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k), m } }
+
+  it('the limit comes from content/tuning/name.json (12, Muzzy 2026-10-25)', () => {
+    expect(nameMaxLength()).toBe(nameTuning.maxLength)
+    expect(nameMaxLength()).toBe(12)
+  })
+
+  it('signing keeps the name — trimmed, at most 12 letters; empty or spaces = no name', () => {
+    expect(cleanName('  Muzzy  ')).toBe('Muzzy')
+    expect(cleanName('ABCDEFGHIJKLMNOP')).toBe('ABCDEFGHIJKL')
+    expect(cleanName('Ann Marie Smith')).toBe('Ann Marie Sm')
+    expect(cleanName('Mary Jo     X')).toBe('Mary Jo') // (cut at 12, then the spaces at the end trimmed)
+    expect(cleanName('')).toBeNull()
+    expect(cleanName('    ')).toBeNull()
+    expect([...cleanName('😀'.repeat(20))!].length).toBe(12) // (letters, not halves of an emoji)
+  })
+
+  it('saving the progress keeps the name (and signing keeps the progress)', () => {
+    const s = memory()
+    saveProgress(progressAtRank(4), s)
+    saveOperatorName('  Muzzy ', s)
+    expect(loadOperatorName(s)).toBe('Muzzy')
+    expect(rankInfo(loadProgress(s)).rank).toBe(4)
+    saveProgress(progressAtRank(7), s) // (a shift ends: the progress is saved again)
+    expect(loadOperatorName(s)).toBe('Muzzy')
+    expect(rankInfo(loadProgress(s)).rank).toBe(7)
+  })
+
+  it('a fresh device has no name; a broken name in the save is no name', () => {
+    const s = memory()
+    expect(loadOperatorName(s)).toBeNull()
+    expect(loadOperatorName(null)).toBeNull()
+    s.m.set('goops-progress', JSON.stringify({ v: 3, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], name: 42 }))
+    expect(loadOperatorName(s)).toBeNull()
+    expect(loadProgress(s).totalXp).toBe(5) // (the rest of the save stays)
+    s.m.set('goops-progress', JSON.stringify({ v: 3, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], name: '   way too long a name   ' }))
+    expect(loadOperatorName(s)).toBe('way too long')
+  })
+
+  it('RANK SELECT 0 (clearProgress) wipes the name with the rest of the save', () => {
+    const s = memory()
+    saveOperatorName('Muzzy', s)
+    expect(loadOperatorName(s)).toBe('Muzzy')
+    clearProgress(s)
+    expect(loadOperatorName(s)).toBeNull()
   })
 })
 
