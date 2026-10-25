@@ -26,7 +26,23 @@ let failed = 0
 const check = (name, ok, detail = '') => { console.log(ok ? '✓' : '✗', name, detail); if (!ok) failed++ }
 const white = (page) => page.evaluate(() => window.__goops.white())
 // wait (every frame) until white() passes `test` (a function body over `V`), or time out → false
-const until = (page, test, ms = 20000) => page.waitForFunction((t) => new Function('V', `return (${t})`)(window.__goops.white()), test, { polling: 'raf', timeout: ms }).then(() => true, () => false)
+// waits up to `ms` of time the ENGINE has actually played (its tick()s, counted here) — not the wall clock or the rules
+// clock: under check:full's load each frame's step is capped at 0.1 s, so the game plays slower than both, and a
+// wall-clock wait failed at 1920 while he was still oozing (Sprint 18). A wall-clock ceiling of 8× stops a stuck page.
+const until = (page, test, ms = 20000) => page.evaluate(([t, ms]) => {
+  const e = window.__goops.engine
+  if (!e.__played) { const tick = e.tick; e.__played = 0; e.tick = (d) => { e.__played += d; return tick.call(e, d) } }
+  const f = new Function('V', `return (${t})`)
+  const start = e.__played, wallEnd = performance.now() + ms * 8
+  return new Promise((ok) => {
+    const step = () => {
+      if (f(window.__goops.white())) return ok(true)
+      if (e.__played - start > ms || performance.now() > wallEnd) return ok(false)
+      requestAnimationFrame(step)
+    }
+    step()
+  })
+}, [test, ms])
 const sendWhite = (page, data) => page.evaluate((d) => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'whiteGoop', data: d } })), data)
 
 async function open(w, h, rank, style = 'Jelly') {
