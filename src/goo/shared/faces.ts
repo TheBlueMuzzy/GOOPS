@@ -48,6 +48,11 @@ export interface EyesLook {
   mouthOpen: number
   talkEvery: number
   talkTime: number
+  talkFlaps: number
+  mouthDrop: number
+  eyeLift: number
+  browHeight: number
+  worriedShake: number
   appearSpread: number
   appearFade: number
 }
@@ -85,6 +90,11 @@ export function readEyesLook(out?: EyesLook): EyesLook {
   L.mouthOpen = Math.min(1, num(f.mouthOpen, 0))
   L.talkEvery = num(f.talkEvery, 0.1)
   L.talkTime = num(f.talkTime, 0.05)
+  L.talkFlaps = num(f.talkFlaps, 0.5)
+  L.mouthDrop = num(f.mouthDrop, 0)
+  L.eyeLift = num(f.eyeLift, 0)
+  L.browHeight = num(f.browHeight, 0)
+  L.worriedShake = num(f.worriedShake, 0)
   L.appearSpread = num(f.appearSpread, 0)
   L.appearFade = num(f.appearFade, 0.01)
   return L
@@ -247,7 +257,7 @@ export class FaceBook {
         key, size: cells.length, cells: cells.slice(), eyeRoll: hash01(key + 'eyes'), mouthRoll: hash01(key + 'mouth'),
         spotA: cells[a], spotB: b >= 0 ? cells[b] : -1, gx: 0, gy: 0,
         blinkIn: L.blinkEvery * (0.3 + rand()), blinkT: -1, zapT: -1,
-        talkIn: L.talkEvery * (0.3 + 1.4 * rand()), talkT: -1, flaps: 5 + rand() * 4,
+        talkIn: L.talkEvery * (0.3 + 1.4 * rand()), talkT: -1, flaps: L.talkFlaps * (0.7 + 0.6 * rand()),
         eyes: fader(), brows: fader(), mouth: fader(),
       }
       this.inherit(f, cells)
@@ -420,7 +430,7 @@ export class FaceBook {
     alpha *= f.eyes.a
     if (r < 0.4 * pxCell || alpha <= 0.02) return
     const n = L.eyeCount
-    const ay = -0.1 * f.mouth.a // the eyes move up a little to make room for a mouth (as it fades in)
+    const ay = -L.eyeLift * f.mouth.a // the eyes move up a little to make room for a mouth (as it fades in)
     const blink = this.blinkOf(f)
     const zapS = this.zapShutOf(f, forceShut)
     const shut = Math.max(blink, zapS)
@@ -436,7 +446,7 @@ export class FaceBook {
       if (open > 0.12) {
         const pr = r * L.pupilSize * (1 - L.pupilShrink * w)
         const reach = Math.max(0, r - pr) * 0.9
-        const shake = w * r * 0.07
+        const shake = w * r * L.worriedShake
         const px = f.gx * reach + shake * Math.sin(this.time * 47 + i)
         const py = f.gy * reach + shake * Math.cos(this.time * 41 + i)
         D.eye(ex, ey, r, open, px / r, py / r, pr / r, alpha)
@@ -447,14 +457,14 @@ export class FaceBook {
       } else D.line(ex - r, ey, ex + r, ey, hw, alpha) // a blink: a flat line
       if (w > 0 && L.browTilt > 0) { // worried brows: inner ends up; they fade in with this clump's turn
         const tilt = (L.browTilt * w * Math.PI) / 180
-        const by = ey - r * (1.45 + 0.25 * w)
+        const by = ey - r * (L.browHeight + 0.25 * w)
         const dx = Math.cos(tilt) * r
         const dy = -Math.sin(tilt) * r * side
         D.line(ex - dx, by + dy, ex + dx, by - dy, hw, alpha * f.brows.a)
       }
     }
     if (f.mouth.a > 0) { // a mouth: a shut line most of the time; while it says something, a few quick flaps
-      place(cx, cy, ca, sa, scale, 0, 0.24)
+      place(cx, cy, ca, sa, scale, 0, L.mouthDrop)
       const mw = L.mouthSize * 0.5 * scale
       const say = this.sayOf(f, zapS)
       D.mouth(P[0], P[1], mw, Math.max(pxCell, mw * 0.7 * (0.08 + 0.92 * L.mouthOpen * say)), alpha * f.mouth.a)

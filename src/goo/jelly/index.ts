@@ -279,9 +279,12 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
 
   // ---------------- F62 THE FACES (src/goo/shared/faces.ts has the rules; this places them on the jellies) ----------------
   // where a body's eyes sit in its rest shape right now (view cells), like highlightRest
+  // (into FR, so a frame makes nothing new)
+  const FR: [number, number] = [0, 0]
   function faceRest(B: Body): [number, number] {
-    if (B.kind === 'grid') return [B.spotX + offX(B), B.spotY + (B.spotCell >= 0 ? cellOff[B.spotCell] : 0)]
-    return [B.faceRX, B.faceRY]
+    if (B.kind === 'grid') { FR[0] = B.spotX + offX(B); FR[1] = B.spotY + (B.spotCell >= 0 ? cellOff[B.spotCell] : 0) }
+    else { FR[0] = B.faceRX; FR[1] = B.faceRY }
+    return FR
   }
 
   // hand each grid body its face (after a rebuild, or when faces switch on)
@@ -312,6 +315,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   }
 
   // a zapped body's face: where its spot is now (shrinking with it round where its middle was, like hlQuad) + its size
+  // (into DF, so a frame makes nothing new)
+  const DF: [number, number, number] = [0, 0, 0]
   function dyingFace(B: Body): [number, number, number] {
     const z = B.zap!
     const k = Math.max(0.05, z.sc)
@@ -319,7 +324,10 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     const sa = Math.sin(B.fa)
     const qx = B.faceRX - z.c0x
     const qy = B.faceRY - z.c0y
-    return [B.fcx + (ca * qx - sa * qy) * k, B.fcy + (sa * qx + ca * qy) * k, k]
+    DF[0] = B.fcx + (ca * qx - sa * qy) * k
+    DF[1] = B.fcy + (sa * qx + ca * qy) * k
+    DF[2] = k
+    return DF
   }
 
   // start a fresh body from the old bodies' wobble: each new point copies the displacement + velocity of the

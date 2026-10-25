@@ -26,7 +26,12 @@
     "talkEvery": "Rank 40+: average seconds between one mouth's sayings. Each wait is random (30–170% of this), so they never talk in step. High = rare.",
     "talkTime": "Rank 40+: how long one saying lasts (a few quick flaps).",
     "appearSpread": "Eyes (a new clump, or a new rank), brows (pressure passes Worried at) and mouths show up one clump at a time, at random moments within this many seconds. Leaving goes the same way.",
-    "appearFade": "How quickly one clump's eyes / brows / mouth fade in or out once its turn comes (seconds)."
+    "appearFade": "How quickly one clump's eyes / brows / mouth fade in or out once its turn comes (seconds).",
+    "talkFlaps": "Rank 40+: how fast a mouth flaps while it says something (each clump 70–130% of this).",
+    "mouthDrop": "Rank 40+: how far below the eyes' spot the mouth sits (cells).",
+    "eyeLift": "Rank 40+: how far the eyes move up to make room for a mouth (cells), as the mouth fades in.",
+    "browHeight": "Rank 30+: how high the worried brows sit above the eyes (in eye sizes).",
+    "worriedShake": "Rank 30+: how much the worried pupils tremble (share of the eye). 0 = still."
   },
   "_ranges": {
     "eyeSize": [0.04, 0.4, 0.01],
@@ -51,7 +56,12 @@
     "talkEvery": [1, 30, 0.5],
     "talkTime": [0.2, 3, 0.1],
     "appearSpread": [0, 10, 0.5],
-    "appearFade": [0.05, 2, 0.05]
+    "appearFade": [0.05, 2, 0.05],
+    "talkFlaps": [1, 15, 0.5],
+    "mouthDrop": [0, 0.6, 0.01],
+    "eyeLift": [0, 0.4, 0.01],
+    "browHeight": [1, 3, 0.05],
+    "worriedShake": [0, 0.3, 0.01]
   },
   "eyeSize": 0.1,
   "pupilSize": 0.45,
@@ -77,6 +87,11 @@
   "mouthOpen": 0.5,
   "talkEvery": 9,
   "talkTime": 0.9,
+  "talkFlaps": 7,
+  "mouthDrop": 0.24,
+  "eyeLift": 0.1,
+  "browHeight": 1.45,
+  "worriedShake": 0.07,
   "appearSpread": 5,
   "appearFade": 0.3
 }

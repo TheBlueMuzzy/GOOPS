@@ -397,8 +397,9 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     let sx = 0
     let sy = 0
     let n = 0
-    for (const c of f.spotB >= 0 ? [f.spotA, f.spotB] : [f.spotA]) {
-      const l = cellParts[c]
+    for (let k = 0; k < 2; k++) { // spotA, then spotB if there is one (no array a frame)
+      const c = k === 0 ? f.spotA : f.spotB
+      const l = c >= 0 ? cellParts[c] : undefined
       if (l) for (const i of l) if (ST[i] === 1) { sx += X[i]; sy += Y[i]; n++ }
     }
     if (n) {
