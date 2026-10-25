@@ -78,7 +78,8 @@ export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, col
   if (colors.length === 0) return null
 
   // taken: open cracks, and every spot sealed before (F36, Muzzy: "no crack can ever form on a sealed spot again")
-  const cracked = new Set([...state.cracks, ...(state.sealedCracks ?? [])].map((c) => c.y * state.width + c.x))
+  // (F63: and the white goop's cell — a crack forming under him would be sealed for free; the sketch's spawnCrack)
+  const cracked = new Set([...state.cracks, ...(state.sealedCracks ?? []), ...(state.vet ? [state.vet] : [])].map((c) => c.y * state.width + c.x))
   const spots: number[] = []
   const lowTop = lowRows ? Math.max(state.bufferRows, state.height - lowRows) : 0
   const firstRow = lowRows ? Array<number>(state.width).fill(lowTop) : firstCrackRows(state, config)

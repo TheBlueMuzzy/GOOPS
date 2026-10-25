@@ -8,7 +8,8 @@ import type { Machines } from './machines'
 import type { FallingPiece, PieceDef } from './pieces'
 import type { AbilitySpec, ActiveEffects } from './abilities'
 import type { Modifiers } from './upgrades'
-import type { AbilityState, Crack, Group, SealedSpot, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode } from './types'
+import type { AbilityState, Crack, Group, SealedSpot, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode, WhiteGoop } from './types'
+import type { WhiteGoopConfig } from './whiteGoop'
 import type { PieceChoice, PieceFallback, TrainingRules } from './training'
 import { createShift } from './shift'
 
@@ -41,6 +42,7 @@ export interface ShiftSnapshot {
     groups: Group[]
     abilities: AbilityState[]
     effects: ActiveEffects
+    vet?: WhiteGoop | null // F63 the white goop (older snapshots have none — still format 1, read as none)
   }
   inner: {
     fillMs: [number, number][]
@@ -83,10 +85,11 @@ export function readSnapshot(x: unknown): ShiftSnapshot {
   return x as unknown as ShiftSnapshot
 }
 
-/** A new engine that carries on from a snapshot (the game's live tuning + breakdowns, the snapshot's own options). */
-export function restoreShift(config: ShiftConfig, snapshot: unknown, breakdowns?: BreakdownConfig): ShiftEngine {
+/** A new engine that carries on from a snapshot (the game's live tuning + breakdowns + white goop (F63), the snapshot's
+ *  own options). */
+export function restoreShift(config: ShiftConfig, snapshot: unknown, breakdowns?: BreakdownConfig, whiteGoop?: WhiteGoopConfig): ShiftEngine {
   const snap = readSnapshot(snapshot)
-  const engine = createShift(config, { ...snap.options, breakdowns })
+  const engine = createShift(config, { ...snap.options, breakdowns, whiteGoop })
   engine.restore(snap)
   return engine
 }
