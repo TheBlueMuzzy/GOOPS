@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch (BMUZ) F63, 2026-10-25. Goo look + zap = goop-eyes.html (L4 Jelly renderer, Muzzy's zap pick). The white goop = story.md "The Veteran's arc" + the rank 31 row of "Every difficulty has a story reason". World = src/engine (sticky gravity, cracks in empty cells at or below the pressure line, the hill, plug + pop to seal). -->
+<title>F63: White goop</title>
+<meta name="description" content="How does the white goop (the Veteran, gooped) move in the tank from rank 31? He picks the crack in most danger, goes there and seals it slowly. Try the three move styles (slide along the goop / ooze behind it / wait then hop), how he picks a crack, how long sealing takes, his size, his squint. Tap him: the laser passes through, 'ow'.">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #fx { pointer-events: none; z-index: 1; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); flex-direction: column; align-items: stretch; }
+  #bottom .row { display: flex; gap: 8px; align-items: center; }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  #bottom button { min-height: 44px; font-size: 15px; }
+  #bottom .act { flex: 0 0 auto; padding: 0 12px; }
+  #bottom .lbl { flex: 0 0 auto; font-size: 12px; color: var(--dim); }
+  #pval { flex: 0 0 82px; font-size: 13px; color: #86efac; }
+  #press { flex: 1; min-width: 0; accent-color: #4ade80; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #hint { position: fixed; left: 16px; right: 16px; text-align: center; font-size: 13px; line-height: 1.3; color: var(--dim); z-index: 2; pointer-events: none; }
+  #status { margin-top: 4px; color: #e2e8f0; font-weight: 600; }
+  body.side #hint { right: 316px; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 10px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 92px; }
+  #panel input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel select { flex: 1; min-width: 0; height: 30px; padding: 0 4px; font: 600 12px system-ui, sans-serif; color: var(--ink);
+    background: #0b1224; border: 1px solid var(--line); border-radius: 6px; }
+  /* the value box: type any number, even past the slider's ends (the slider then sits at its end, the box turns amber) */
+  #panel input.num { flex: 0 0 52px; width: 52px; box-sizing: border-box; padding: 3px 4px; text-align: right; font: 600 12px ui-monospace, monospace;
+    color: #94a3b8; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; -moz-appearance: textfield; }
+  #panel input.num::-webkit-inner-spin-button, #panel input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #panel input.num:focus { outline: none; border-color: var(--accent); color: var(--ink); }
+  #panel input.num.over { color: #fbbf24; border-color: #fbbf2480; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="fx"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bSlow">Slow-mo</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="hint"><div id="hintText"></div><div id="status"></div></div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <div class="row" id="styles"><span class="lbl">Move</span>
+    <button data-s="0">Slide</button><button data-s="1">Ooze</button><button data-s="2">Hop</button></div>
+  <div class="row"><span id="pval">Pressure 50%</span><input type="range" id="press" min="0" max="100" step="1" value="50">
+    <button class="act" id="bReset">Refill</button></div>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+// Sizes and distances are in cells (1 = one grid square). Times in seconds.
+const GOO = {
+  // how he moves
+  moveStyle: 0,       // 0 = slide along the goop (gravity), 1 = ooze behind the goop (clings to the back wall), 2 = wait, then hop (gravity)
+  secPerCell: 0.7,    // seconds he takes to move one cell
+  oozeSlow: 2.5,      // ooze: × slower while he's behind goop
+  hopWait: 1.2,       // hop: seconds he waits (crouching) before each hop
+  hopHeight: 2,       // hop: most cells up one hop can go (across: up to 2)
+  // which crack, and sealing
+  targetBy: 0,        // 0 = oldest crack, 1 = hardest for you to reach, 2 = closest to him
+  unreachable: 0,     // 0 = he waits as close as he can get, 1 = he takes the next crack he can reach
+  sealTime: 6,        // seconds sitting on a crack to seal it
+  restAfter: 1.5,     // seconds he rests after a seal before the next one (0 = straight on)
+  // his body
+  size: 1,            // cells wide (1 or 2)
+  buried: 0,          // goop landing on him: 0 = it stacks on him, 1 = he wriggles out to the top
+  // his face (eyes = Muzzy's F62 picks, bigger here so the squint reads on a 1-cell clump)
+  squint: 0.5,        // how far the lid comes down over his squinting eye (0 = no squint)
+  eyeSize: 0.16,      // eye radius, in cells (the F62 pick is 0.1)
+  owTime: 1.0,        // seconds the "ow" bubble stays after you zap him
+  // the tank
+  pieceSpeed: 1.3,    // rows per second the piece falls (the game: 780 ms a row = 1.3)
+};
+// [name, min, max, step] rows, [name, 'choice', [labels]] rows; a one-item row is a group heading.
+const STYLE_NAMES = ['Slide along the goop', 'Ooze behind the goop', 'Wait, then hop'];
+const TARGET_NAMES = ['Oldest crack', 'Hardest for you', 'Closest to him'];
+const UNREACH_NAMES = ['Waits near it', 'Takes the next one'];
+const BURIED_NAMES = ['Stacks on him', 'He wriggles out'];
+const KNOBS = [['How he moves'], ['moveStyle', 'choice', STYLE_NAMES], ['secPerCell', 0.1, 3, 0.05], ['oozeSlow', 1, 6, 0.25],
+  ['hopWait', 0, 4, 0.1], ['hopHeight', 1, 5, 1],
+  ['Which crack, and sealing'], ['targetBy', 'choice', TARGET_NAMES], ['unreachable', 'choice', UNREACH_NAMES],
+  ['sealTime', 0.5, 20, 0.5], ['restAfter', 0, 8, 0.25],
+  ['His body'], ['size', 1, 2, 1], ['buried', 'choice', BURIED_NAMES],
+  ['His face'], ['squint', 0, 0.9, 0.05], ['eyeSize', 0.05, 0.3, 0.01], ['owTime', 0.3, 3, 0.1],
+  ['The tank'], ['pieceSpeed', 0, 6, 0.1]];
+// plain-word names shown beside each knob (the JSON keeps the short names)
+const KNOB_LABEL = { moveStyle: 'Move style', secPerCell: 'Sec per cell', oozeSlow: 'Ooze slow', hopWait: 'Hop wait', hopHeight: 'Hop height',
+  targetBy: 'Picks crack', unreachable: "Can't reach", sealTime: 'Seal time', restAfter: 'Rest after',
+  size: 'Size', buried: 'Goop on him', squint: 'Squint', eyeSize: 'Eye size', owTime: '"Ow" time', pieceSpeed: 'Piece speed' };
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
+const KNOB_HELP = {
+  moveStyle: 'Slide: falls like goop and inches along the top of it, climbing 1-cell steps. Ooze: clings to the back wall and oozes behind the goop (dotted outline). Hop: falls like goop, crouches, then hops. Also the Move buttons under the tank.',
+  secPerCell: 'How long one cell of movement takes. 0.3 = busy little helper; 1.5 = an old man taking his time.',
+  oozeSlow: 'Ooze only: how much slower he goes while he\'s behind goop. 1 = goop doesn\'t slow him at all.',
+  hopWait: 'Hop only: how long he crouches before each hop. Watch him squash down first.',
+  hopHeight: 'Hop only: how many cells up one hop reaches. 1 = he needs stairs; 4 = he gets almost anywhere on top of the goop.',
+  targetBy: 'Which crack is "in most danger" (the dotted ring). The game drains the tank the same for every open crack, so this is our call: the oldest (has drained most), the one you\'d have to build up to (or dig to), or the nearest.',
+  unreachable: 'Slide / Hop: a crack in mid-air or under goop is out of his reach. Waits near it = he parks under it and looks up (you build to him). Takes the next one = he goes for a crack he can reach.',
+  sealTime: 'How long he sits on a crack to seal it. Short = he\'s a big help; long = a little help.',
+  restAfter: 'How long he sits still after a seal before heading off again. 0 = straight on to the next.',
+  size: '1 = one cell, fits anywhere. 2 = two cells wide: easier to see, but can\'t get into 1-wide pits.',
+  buried: 'Slide / Hop: when a piece lands on him. Stacks = he holds it up (and can be buried). Wriggles out = he swaps upward through it, one cell at a time, back to the top.',
+  squint: 'How far the lid comes down over his right eye (your right). 0 = no squint; 0.7 = a proper old-sailor squint.',
+  eyeSize: 'Eye size in cells. The goop\'s approved eyes are 0.1; on a 1-cell clump the squint only reads from ~0.14 up.',
+  owTime: 'How long the "ow" bubble stays after you tap him. He flinches and squeezes his eyes; he never pops.',
+  pieceSpeed: 'How fast the falling piece drops (rows per second). 0 = no more pieces fall, so you can watch him on a still tank.',
+};
+
+// ===== The sketch itself =====
+// Fixed look: the game's L4 Jelly values (content/tuning/goo-jelly.json, Muzzy's pick 2026-10-17). Not knobs here.
+const JELLY = { stiffness: 700, viscosity: 6.5, wobble: 0.25, translucency: 0.5, wetness: 0.9, home: 0.3, corner: 0.32, magnetism: 1.4, maxDpr: 1.5 };
+// Fixed zap: Muzzy's F67 pick (research/zap-look/picks.json, 2026-10-24). Not knobs here.
+const ZAP = { beamTime: 0.3, whiteHot: 0.52, swell: 0.14, suckTime: 0.27, droplets: 15, dropSpeed: 95, dropLife: 1.4, gravity: 310, sprayAt: 0.6 };
+// game goo-colors; 6 = the white goop (him) — white is also the 6th normal colour from rank 30, but this sketch keeps it his alone so he's easy to watch
+const COLORS = [[0, 0, 0], [0.94, 0.27, 0.27], [0.23, 0.51, 0.96], [0.13, 0.77, 0.37], [0.92, 0.70, 0.03], [0.66, 0.33, 0.97], [0.9, 0.92, 0.95]];
+const CSS = ['#000', '#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#f8fafc'];
+const COLOR_NAME = ['', 'red', 'blue', 'green', 'yellow', 'purple', 'white'];
+// The window: 12 columns (what the game shows of its 30-wide round tank) × 18 rows. This window doesn't wrap round.
+const W = 12, H = 18, V1_CELL = 30;
+const BOARD = ['............', '............', '............', '............', '............', '............',
+  '............', '............', '............', '............', '............', '............', '............', '............',
+  '.......YY...', 'RR....BYY..G', 'RRB..BBPPGGG', 'RBBY.PPPGGRR'];
+// the four cracks it starts with (x, y from the top, colour, age): one in a pit, one in mid-air, one under the wrong colour, one on top of the goop
+const START_CRACKS = [[2, 10, 3, 20], [4, 17, 1, 12], [10, 17, 2, 8], [9, 15, 4, 3]];
+// the game's normal tetra pieces (shift.json pieces.tetra.normal)
+const SHAPES = [[[0, -1], [0, 0], [0, 1], [0, 2]], [[0, 0], [0, 1], [0, 2], [1, 0]], [[0, 0], [0, 1], [0, 2], [1, 1]], [[0, 0], [0, 1], [1, 1], [1, 2]], [[0, 0], [0, 1], [1, 0], [1, 1]]];
+let seed = 7; const rand = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); return ((h ^ (h >>> 15)) >>> 0) / 4294967296; };
+
+// ---- rules: a plain grid with the game's sticky gravity (a same-colour group falls as one when nothing holds it up)
+const G = { grid: new Uint8Array(W * H), ver: 0, events: [], fell: new Set(), lockedPiece: null };
+const idx = (x, y) => y * W + x;
+let pressure = 0.5, cracks = [], sealedSpots = [], crackId = 1, crackClock = 0, sealedByHim = 0, sealedByYou = 0;
+let needSettle = false, settleT = 0, piecesOn = true;
+function groupAt(x, y) {
+  const c = G.grid[idx(x, y)], out = [], seen = new Set([idx(x, y)]), stack = [[x, y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop(); out.push([cx, cy]);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy, i = idx(nx, ny);
+      if (nx >= 0 && nx < W && ny >= 0 && ny < H && !seen.has(i) && G.grid[i] === c) { seen.add(i); stack.push([nx, ny]); }
+    }
+  }
+  return out;
+}
+const gravityStyle = () => GOO.moveStyle !== 1 || !vet.landed; // ooze clings to the wall once he has landed
+const isVet = (x, y) => y === vet.y && x >= vet.x && x < vet.x + vet.size;
+const vetSolid = (x, y) => gravityStyle() && isVet(x, y); // with gravity he's solid: goop lands on him
+// one pass of the game's settle(): every loose group drops one row. Returns true if anything moved.
+function dropPass() {
+  const seen = new Uint8Array(W * H), loose = [];
+  for (let i = 0; i < W * H; i++) {
+    if (!G.grid[i] || seen[i]) continue;
+    const x = i % W, g = groupAt(x, (i - x) / W), own = new Set(g.map(([gx, gy]) => idx(gx, gy)));
+    for (const k of own) seen[k] = 1;
+    const held = g.some(([gx, gy]) => gy === H - 1 || (G.grid[idx(gx, gy + 1)] && !own.has(idx(gx, gy + 1))) || vetSolid(gx, gy + 1) || pieceHas(gx, gy + 1));
+    if (!held) loose.push({ g, c: G.grid[i] });
+  }
+  for (const { g } of loose) for (const [x, y] of g) G.grid[idx(x, y)] = 0;
+  for (const { g, c } of loose) for (const [x, y] of g) { G.grid[idx(x, y + 1)] = c; G.fell.add(idx(x, y + 1)); }
+  if (loose.length) G.ver++;
+  return loose.length > 0;
+}
+function sealCrack(c, by) {
+  cracks = cracks.filter(k => k !== c); sealedSpots.push({ id: c.id, x: c.x, y: c.y });
+  if (by === 'him') sealedByHim++; else sealedByYou++;
+}
+function zap(x, y, px, py) { // (x, y) cell; (px, py) the tap point in cell units = where the laser lands
+  const c = G.grid[idx(x, y)]; if (!c) return false;
+  const cells = groupAt(x, y);
+  for (const [cx, cy] of cells) G.grid[idx(cx, cy)] = 0;
+  // the game's seal: a crack plugged by goop of its own colour is sealed when that goop pops
+  for (const k of cracks.slice()) if (k.color === c && cells.some(([cx, cy]) => cx === k.x && cy === k.y)) sealCrack(k, 'you');
+  G.ver++; G.events.push({ type: 'zap', cells, color: c, x: px ?? x + 0.5, y: py ?? y + 0.5 }); needSettle = true; return true;
+}
+// keep the tank from filling up while you watch: when the goop gets near the top, the biggest clump is zapped for you
+function autoZap() {
+  let best = null, seen = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) { if (!G.grid[i] || seen[i]) continue; const x = i % W, g = groupAt(x, (i - x) / W);
+    for (const [gx, gy] of g) seen[idx(gx, gy)] = 1; if (!best || g.length > best.length) best = g; }
+  if (best) { const [x, y] = best[Math.floor(best.length / 2)]; zap(x, y, x + 0.5, y + 0.5); }
+}
+function goopTopY() { for (let i = 0; i < W * H; i++) if (G.grid[i]) return Math.floor(i / W); return H; }
+function colTopRow(x) { for (let y = 0; y < H; y++) if (G.grid[idx(x, y)]) return H - 1 - y; return -1; } // as a row from the floor; empty = -1
+
+// ---- cracks: the game's rules (src/engine/cracks.ts), sized to this window
+// The pressure line (popLine): 0% = the floor row, 100% = the top row. Cracks only form at or below it.
+const lineY = () => Math.round((H - 1) - pressure * (H - 1));
+// crackEveryMs with curve 3 (shift.json: 6 s at 0%, 1.33 s at 100%), × 30/12 because this window is 12 of the tank's 30 columns
+function crackEvery() { const rate = 1 / 6 + (1 / 1.333 - 1 / 6) * pressure ** 3; return (1 / rate) * (30 / W); }
+// The hill (pickHillSpot): each column's base is the first empty row above its goop, borrowing height from up to 4 neighbours;
+// the most likely row is halfway from the base to the line (reach 0.5), thinning out like a bell (spread 0.3).
+function spawnCrack() {
+  if (cracks.length >= 8) return;
+  const ly = lineY(), lineRow = H - 1 - ly, own = [];
+  for (let x = 0; x < W; x++) own.push(colTopRow(x) + 1);
+  const bases = own.map((_, x) => { let b = own[x]; for (let d = 1; d <= 4; d++) { const fade = 1 - d / 5;
+    if (x - d >= 0) b = Math.max(b, Math.floor(own[x - d] * fade)); if (x + d < W) b = Math.max(b, Math.floor(own[x + d] * fade)); } return b; });
+  const taken = new Set([...cracks, ...sealedSpots].map(c => idx(c.x, c.y))), spots = [], weights = [];
+  for (let y = ly; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = idx(x, y); if (G.grid[i] || taken.has(i) || isVet(x, y)) continue;
+    const row = H - 1 - y, room = Math.max(0, lineRow - bases[x]), peak = bases[x] + 0.5 * room, wd = Math.max(1, 0.3 * room);
+    spots.push(i); weights.push(Math.exp(-0.5 * ((row - peak) / wd) ** 2));
+  }
+  if (!spots.length) return;
+  let r = rand() * weights.reduce((a, b) => a + b, 0), pick = spots[spots.length - 1];
+  for (let k = 0; k < spots.length; k++) { r -= weights[k]; if (r < 0) { pick = spots[k]; break; } }
+  cracks.push({ id: crackId++, x: pick % W, y: Math.floor(pick / W), color: 1 + Math.floor(rand() * 5), age: 0, seal: 0 });
+}
+// how hard a crack is for YOU: rows you'd have to build up under it, +4 if wrong-colour goop covers it (you'd have to dig)
+function hardness(c) {
+  const covered = G.grid[idx(c.x, c.y)] && G.grid[idx(c.x, c.y)] !== c.color;
+  return Math.max(0, (H - 1 - c.y) - colTopRow(c.x)) + (covered ? 4 : 0);
+}
+
+// ---- the falling piece: the game's tetra shapes, falling at pieceSpeed, drifting to a random column, sticky gravity when it locks
+const piece = { cells: null, color: 1, x: 0, y: 0, fy: 0, tx: 0, driftT: 0, wait: 0.6, B: null, hx0: null, hy0: null };
+function pieceHas(x, y) { if (!piece.cells) return false; for (const [cx, cy] of piece.cells) if (piece.x + cx === x && piece.y + cy === y) return true; return false; }
+function pieceBlocked(px, py) {
+  for (const [cx, cy] of piece.cells) { const x = px + cx, y = py + cy;
+    if (x < 0 || x >= W || y >= H) return true; if (y >= 0 && (G.grid[idx(x, y)] || vetSolid(x, y))) return true; }
+  return false;
+}
+function spawnPiece() {
+  let cells = SHAPES[Math.floor(rand() * SHAPES.length)].map(([r, c]) => [c, r]);
+  for (let k = Math.floor(rand() * 4); k > 0; k--) cells = cells.map(([x, y]) => [-y, x]);
+  const mx = Math.min(...cells.map(c => c[0])), my = Math.min(...cells.map(c => c[1]));
+  cells = cells.map(([x, y]) => [x - mx, y - my]);
+  const w = Math.max(...cells.map(c => c[0])) + 1;
+  piece.cells = cells; piece.color = 1 + Math.floor(rand() * 5); piece.x = Math.floor(rand() * (W - w + 1)); piece.tx = Math.floor(rand() * (W - w + 1));
+  piece.y = 0; piece.fy = 0; piece.driftT = 0;
+  if (pieceBlocked(piece.x, piece.y)) { piece.cells = null; piece.wait = 0.6; autoZap(); return; }
+  const B = makeBody(cells, piece.color); piece.B = B; piece.hx0 = Float32Array.from(B.hx); piece.hy0 = Float32Array.from(B.hy);
+  placePiece(); for (let i = 0; i < B.n; i++) { B.x[i] = B.hx[i]; B.y[i] = B.hy[i]; }
+}
+function placePiece() {
+  const B = piece.B, ry = pieceBlocked(piece.x, piece.y + 1) ? piece.y : piece.fy;
+  for (let i = 0; i < B.n; i++) { B.hx[i] = piece.hx0[i] + piece.x; B.hy[i] = piece.hy0[i] + ry; }
+}
+function lockPiece() {
+  for (const [cx, cy] of piece.cells) if (piece.y + cy >= 0) G.grid[idx(piece.x + cx, piece.y + cy)] = piece.color;
+  G.lockedPiece = piece.B; G.ver++; piece.cells = null; piece.B = null; piece.wait = 0.35; needSettle = true;
+  if (goopTopY() <= 5) autoZap();
+}
+function stepPiece(dt) {
+  if (!piece.cells) { if (piecesOn && GOO.pieceSpeed > 0 && (piece.wait -= dt) <= 0) spawnPiece(); return; }
+  if ((piece.driftT += dt) > 0.18 && piece.x !== piece.tx) { piece.driftT = 0; const nx = piece.x + Math.sign(piece.tx - piece.x);
+    if (!pieceBlocked(nx, piece.y)) piece.x = nx; else piece.tx = piece.x; }
+  piece.fy += Math.max(0, GOO.pieceSpeed) * dt;
+  while (piece.fy - piece.y >= 1) { if (pieceBlocked(piece.x, piece.y + 1)) { lockPiece(); return; } piece.y++; }
+  placePiece();
+  const ks = JELLY.stiffness; stepBody(piece.B, dt, ks, ks * JELLY.home, JELLY.viscosity);
+}
+
+// ---- THE WHITE GOOP (what this sketch is about) ----
+// Rules: an anchor cell (x, y) = his left cell, `size` cells wide. He never merges or pops. With gravity (Slide, Hop) he is
+// solid: goop lands on him and he falls when nothing holds him up. Oozing, he clings to the back wall and goop passes in front.
+// Every time he arrives somewhere he thinks again: on a crack -> seal it; else pick the crack in most danger and take one step.
+const vet = { x: 5, y: 0, size: 1, landed: false, state: 'idle', kind: '', from: null, to: null, t: 0, dur: 1, wait: 0, think: 0,
+  target: null, path: [], waiting: false, px: 5, py: 0, sq: 1, owT: -1, inGoop: 0, gx: 0, gy: 0, B: null, hx0: null, hy0: null };
+function makeVetBody() {
+  const cells = []; for (let k = 0; k < vet.size; k++) cells.push([k, 0]);
+  const B = makeBody(cells, 6); vet.B = B; vet.hx0 = Float32Array.from(B.hx); vet.hy0 = Float32Array.from(B.hy);
+  placeVet(); for (let i = 0; i < B.n; i++) { B.x[i] = B.hx[i]; B.y[i] = B.hy[i]; }
+}
+function placeVet() { // his homes follow his smooth position, squashed toward his bottom edge by sq (1 = normal, <1 = squat, >1 = tall)
+  const B = vet.B, cx0 = vet.size / 2, sxs = 1 + (1 - vet.sq) * 0.6;
+  for (let i = 0; i < B.n; i++) { B.hx[i] = vet.px + cx0 + (vet.hx0[i] - cx0) * sxs; B.hy[i] = vet.py + 1 - (1 - vet.hy0[i]) * vet.sq; }
+}
+const inBoundsAt = (x, y) => x >= 0 && x + vet.size - 1 < W && y >= 0 && y < H;
+function freeAt(x, y) { if (!inBoundsAt(x, y)) return false; for (let k = 0; k < vet.size; k++) if (G.grid[idx(x + k, y)] || pieceHas(x + k, y)) return false; return true; }
+function supportedAt(x, y) { for (let k = 0; k < vet.size; k++) if (y === H - 1 || G.grid[idx(x + k, y + 1)]) return true; return false; }
+const standable = (x, y) => freeAt(x, y) && supportedAt(x, y);
+function goopAt(x, y) { for (let k = 0; k < vet.size; k++) if (G.grid[idx(x + k, y)]) return true; return false; }
+// where he can go in one step from (x, y), and what it costs (in "cells" of time)
+function stepsFrom(x, y) {
+  const out = [], s = GOO.moveStyle;
+  if (s === 1) { // ooze: any neighbour cell, slower through goop
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy;
+      if (inBoundsAt(nx, ny)) out.push({ x: nx, y: ny, cost: goopAt(nx, ny) ? Math.max(1, GOO.oozeSlow) : 1, kind: 'ooze' }); }
+  } else if (s === 0) { // slide: sideways along the top of the goop, up 1-cell steps, down any drop
+    for (const d of [-1, 1]) { const nx = x + d;
+      if (freeAt(nx, y)) { let ny = y; while (ny < H - 1 && !supportedAt(nx, ny) && freeAt(nx, ny + 1)) ny++;
+        if (supportedAt(nx, ny)) out.push({ x: nx, y: ny, cost: 1 + 0.25 * (ny - y), kind: ny > y ? 'drop' : 'slide' }); }
+      else if (freeAt(nx, y - 1) && freeAt(x, y - 1) && supportedAt(nx, y - 1)) out.push({ x: nx, y: y - 1, cost: 1.3, kind: 'climb' });
+    }
+  } else { // hop: to any spot he can stand on, up to 2 across, hopHeight up, 6 down
+    const up = Math.max(1, Math.round(GOO.hopHeight));
+    for (let dx = -2; dx <= 2; dx++) for (let dy = -up; dy <= 6; dy++) { if (!dx && !dy) continue;
+      if (standable(x + dx, y + dy)) out.push({ x: x + dx, y: y + dy, cost: 1 + 0.01 * (Math.abs(dx) + Math.abs(dy)), kind: 'hop' }); }
+  }
+  return out;
+}
+function search() { // cheapest way from where he is to every cell (Dijkstra; the grid is tiny)
+  const N = W * H, dist = new Float32Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1), kinds = new Array(N), done = new Uint8Array(N);
+  dist[idx(vet.x, vet.y)] = 0;
+  for (;;) {
+    let u = -1, best = Infinity; for (let i = 0; i < N; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
+    if (u < 0) break; done[u] = 1; const x = u % W, y = (u - x) / W;
+    for (const n of stepsFrom(x, y)) { const v = idx(n.x, n.y), d = best + n.cost; if (d < dist[v]) { dist[v] = d; prev[v] = u; kinds[v] = n.kind; } }
+  }
+  return { dist, prev, kinds };
+}
+function anchorsFor(c) { // where his anchor can be so that he covers crack c
+  const out = []; for (let ax = c.x - vet.size + 1; ax <= c.x; ax++) {
+    if (GOO.moveStyle === 1 ? inBoundsAt(ax, c.y) : standable(ax, c.y)) out.push({ x: ax, y: c.y }); }
+  return out;
+}
+function dangerOf(c, cost) { // bigger = more danger (see the "Picks crack" knob)
+  if (GOO.targetBy === 1) return hardness(c) + c.age * 1e-3;
+  if (GOO.targetBy === 2) return -(Number.isFinite(cost) ? cost : 1000 + Math.abs(c.x - vet.x) + Math.abs(c.y - vet.y));
+  return c.age;
+}
+const crackUnder = () => cracks.find(c => isVet(c.x, c.y));
+function startMove(x, y, kind, dur) {
+  vet.from = { x: vet.x, y: vet.y }; vet.to = { x, y }; vet.kind = kind; vet.t = 0; vet.dur = Math.max(0.03, dur);
+  vet.x = x; vet.y = y; vet.state = 'move'; needSettle = true; // he's in the new cell for the rules at once; goop he held up can fall now
+}
+function stepDur(n) {
+  const spc = Math.max(0.05, GOO.secPerCell);
+  if (n.kind === 'ooze') return spc * (goopAt(n.x, n.y) ? Math.max(1, GOO.oozeSlow) : 1);
+  if (n.kind === 'hop') return 0.28 + 0.05 * Math.hypot(n.x - vet.x, n.y - vet.y);
+  if (n.kind === 'climb') return spc * 1.3;
+  if (n.kind === 'drop') return spc + 0.08 * (n.y - vet.y);
+  return spc;
+}
+function decide() {
+  const grav = gravityStyle();
+  vet.waiting = false;
+  if (grav && !freeAt(vet.x, vet.y)) { // switched from Ooze while behind goop: climb out the top
+    if (vet.y > 0) startMove(vet.x, vet.y - 1, 'climb', 0.15); return; }
+  if (grav && !supportedAt(vet.x, vet.y)) { if (freeAt(vet.x, vet.y + 1)) startMove(vet.x, vet.y + 1, 'fall', 0.07); return; }
+  vet.landed = true;
+  if (grav && GOO.buried === 1 && vet.y > 0 && goopAt(vet.x, vet.y - 1)) { // wriggle out: swap places with the goop above
+    for (let k = 0; k < vet.size; k++) { const a = idx(vet.x + k, vet.y - 1), b = idx(vet.x + k, vet.y);
+      if (G.grid[a]) { G.grid[b] = G.grid[a]; G.grid[a] = 0; G.fell.add(b); } }
+    G.ver++; startMove(vet.x, vet.y - 1, 'wriggle', Math.max(0.05, GOO.secPerCell)); return;
+  }
+  const under = crackUnder();
+  if (under) { vet.state = 'seal'; vet.target = under; vet.path = []; return; }
+  if (!cracks.length) { vet.state = 'idle'; vet.target = null; vet.path = []; return; }
+  // pick the crack in most danger
+  const S = search();
+  const info = cracks.map(c => { let cost = Infinity, goal = null;
+    for (const a of anchorsFor(c)) { const d = S.dist[idx(a.x, a.y)]; if (d < cost) { cost = d; goal = a; } } return { c, cost, goal }; });
+  info.sort((a, b) => dangerOf(b.c, b.cost) - dangerOf(a.c, a.cost));
+  let pick = info[0];
+  if (!pick.goal && GOO.unreachable === 1) pick = info.find(i => i.goal) || pick;
+  vet.target = pick.c;
+  let goal = pick.goal;
+  if (!goal) { // can't reach it: the reachable spot nearest to it (he parks there and looks at it)
+    let best = Infinity;
+    for (let i = 0; i < W * H; i++) { if (!Number.isFinite(S.dist[i])) continue; const x = i % W, y = (i - x) / W;
+      const dx = Math.max(0, x - pick.c.x, pick.c.x - (x + vet.size - 1)), score = Math.hypot(dx, pick.c.y - y) + 0.01 * S.dist[i];
+      if (score < best) { best = score; goal = { x, y }; } }
+    vet.waiting = true;
+  }
+  // walk back from the goal to find the path; take its first step
+  const path = []; let v = idx(goal.x, goal.y);
+  while (v >= 0 && v !== idx(vet.x, vet.y)) { path.unshift(v); v = S.prev[v]; }
+  vet.path = path;
+  if (!path.length) { vet.state = 'wait'; return; }
+  const nv = path[0], n = { x: nv % W, y: Math.floor(nv / W), kind: S.kinds[nv] };
+  if (n.kind === 'hop') { vet.state = 'crouch'; vet.wait = Math.max(0, GOO.hopWait); vet.to = n; return; }
+  startMove(n.x, n.y, n.kind, stepDur(n));
+}
+function stepVet(dt) {
+  const size = Math.max(1, Math.min(2, Math.round(GOO.size)));
+  if (size !== vet.size) { vet.size = size; if (vet.x + size > W) vet.x = W - size; vet.state = 'idle'; vet.px = vet.x; vet.py = vet.y; makeVetBody(); }
+  if (vet.owT >= 0 && (vet.owT += dt) >= GOO.owTime) vet.owT = -1;
+  const grav = gravityStyle(), loose = grav && vet.landed && !supportedAt(vet.x, vet.y);
+  let sq = 1;
+  if (vet.state === 'move') {
+    vet.t += dt / vet.dur;
+    const t = Math.min(1, vet.t), f = vet.from, to = vet.to;
+    if (vet.kind === 'drop') { const a = 1 / (1 + (to.y - f.y) * 0.35);
+      if (t < a) { vet.px = f.x + (to.x - f.x) * (t / a); vet.py = f.y; } else { vet.px = to.x; vet.py = f.y + (to.y - f.y) * (t - a) / (1 - a); } }
+    else { const e = vet.kind === 'slide' || vet.kind === 'climb' || vet.kind === 'wriggle' ? t * t * (3 - 2 * t) : t; // slide inches cell by cell; ooze flows
+      vet.px = f.x + (to.x - f.x) * e; vet.py = f.y + (to.y - f.y) * e; }
+    if (vet.kind === 'hop') { vet.py -= Math.sin(Math.PI * t) * (0.6 + Math.max(0, f.y - to.y) * 0.6); sq = 1 + 0.12 * Math.sin(Math.PI * t); }
+    else if (vet.kind !== 'fall') sq = 1 - 0.1 * Math.sin(Math.PI * t);
+    if (vet.t >= 1) {
+      vet.px = to.x; vet.py = to.y; vet.state = 'idle';
+      if (vet.kind === 'hop' || (vet.kind === 'fall' && supportedAt(vet.x, vet.y))) kick(vet.B, 'squash', vet.kind === 'hop' ? 1.2 : 0.8);
+    }
+  } else if (vet.state === 'crouch') { // hop wind-up: squash down over the last 0.35 s of the wait
+    vet.wait -= dt; sq = 1 - 0.28 * Math.max(0, Math.min(1, 1 - vet.wait / Math.min(0.35, Math.max(0.01, GOO.hopWait))));
+    if (loose) vet.state = 'idle';
+    else if (vet.wait <= 0) { const n = vet.to; if (standable(n.x, n.y)) startMove(n.x, n.y, 'hop', stepDur(n)); else vet.state = 'idle'; }
+  } else if (vet.state === 'seal') {
+    const c = vet.target;
+    if (loose || !cracks.includes(c) || !isVet(c.x, c.y)) vet.state = 'idle';
+    else { c.seal += dt / Math.max(0.1, GOO.sealTime); sq = 1 + 0.04 * Math.sin(simT * 3);
+      if (c.seal >= 1) { sealCrack(c, 'him'); vet.target = null; vet.state = 'rest'; vet.wait = Math.max(0, GOO.restAfter); kick(vet.B, 'squash', 0.9); } }
+  } else if (vet.state === 'rest') {
+    if ((vet.wait -= dt) <= 0 || loose) vet.state = 'idle';
+  }
+  if (vet.state === 'idle') { vet.think = 0; decide(); }
+  else if (vet.state === 'wait' && (vet.think += dt) > 0.3) { vet.think = 0; decide(); }
+  // behind goop (ooze): he fades back a little so the goop in front wins, and gets a dotted outline
+  const behind = GOO.moveStyle === 1 && goopAt(Math.round(vet.px), Math.round(vet.py)) ? 1 : 0;
+  vet.inGoop += (behind - vet.inGoop) * Math.min(1, dt * 8);
+  if (vet.inGoop > 0.5) sq *= 0.94;
+  vet.sq += (sq - vet.sq) * Math.min(1, dt * 18);
+  placeVet();
+  const ks = JELLY.stiffness; stepBody(vet.B, dt, ks, ks * JELLY.home, JELLY.viscosity);
+  // his gaze: the crack he's after (or sealing), else the laser / your finger, else the falling piece
+  const tgt = beam ? beam : (vet.target ? { x: vet.target.x + 0.5, y: vet.target.y + 0.5 } : (aim && simT - aim.t < 1.2 ? aim : (piece.cells ? { x: piece.x + 1, y: piece.fy + 0.5 } : null)));
+  let tx = 0, ty = 0;
+  if (tgt) { const dx = tgt.x - (vet.px + vet.size / 2), dy = tgt.y - (vet.py + 0.5), d = Math.hypot(dx, dy);
+    if (d > 0.05) { const near = Math.min(1, d / 0.8); tx = dx / d * near; ty = dy / d * near; } }
+  const k = 1 - Math.exp(-10.5 * dt); vet.gx += (tx - vet.gx) * k; vet.gy += (ty - vet.gy) * k; // follow speed = Muzzy's F62 pick
+}
+function tapVet(px, py) { // the laser passes through him: "ow", a flinch, never a pop
+  vet.owT = 0; kick(vet.B, 'radial', -0.9); kick(vet.B, 'squash', 0.8);
+  beam = ZAP.beamTime > 0 ? { x: px, y: py, t: 0, css: '#f8fafc' } : null;
+}
+const onVet = (px, py) => px >= vet.px - 0.1 && px <= vet.px + vet.size + 0.1 && py >= vet.py - 0.15 && py <= vet.py + 1.1;
+
+// ---- jelly layer (ported from lab-L4-jelly.html via goop-eyes.html): one shape-matched soft body per group
+let bodies = [], zapped = [], drops = [], kicks = [], nextId = 1, seenVer = -1, beam = null, simT = 0, aim = null;
+let cellBody = new Int32Array(W * H).fill(-1);
+function traceLoops(cells) {
+  const key = (x, y) => (x + 64) * 1024 + (y + 64);
+  const has = new Set(cells.map(([x, y]) => key(x, y)));
+  const edges = new Map(), all = [];
+  const add = (x0, y0, dx, dy, cell) => { const e = { x0, y0, dx, dy, cell, used: false }, k = key(x0, y0);
+    if (!edges.has(k)) edges.set(k, []); edges.get(k).push(e); all.push(e); };
+  cells.forEach(([x, y], ci) => {
+    if (!has.has(key(x, y - 1))) add(x, y, 1, 0, ci);
+    if (!has.has(key(x + 1, y))) add(x + 1, y, 0, 1, ci);
+    if (!has.has(key(x, y + 1))) add(x + 1, y + 1, -1, 0, ci);
+    if (!has.has(key(x - 1, y))) add(x, y + 1, 0, -1, ci);
+  });
+  const loops = [];
+  for (const e0 of all) {
+    if (e0.used) continue;
+    const loop = []; let cur = e0;
+    while (cur && !cur.used) {
+      cur.used = true; loop.push(cur);
+      const list = edges.get(key(cur.x0 + cur.dx, cur.y0 + cur.dy)) || [];
+      let best = null, bs = -9;
+      for (const c of list) { if (c.used) continue; const s = cur.dx * c.dy - cur.dy * c.dx; if (s > bs) { bs = s; best = c; } }
+      cur = best;
+    }
+    loops.push(loop);
+  }
+  return loops;
+}
+function buildPoints(loops, B) {
+  for (const loop of loops) {
+    const n = loop.length, start = B.n, corners = [];
+    for (let k = 0; k < n; k++) { const a = loop[(k + n - 1) % n], b = loop[k]; if (a.dx !== b.dx || a.dy !== b.dy) corners.push(k); }
+    const rad = k => { const a = loop[(k + n - 1) % n], b = loop[k]; return (a.dx * b.dy - a.dy * b.dx) > 0 ? JELLY.corner : JELLY.corner * 0.5; };
+    for (let j = 0; j < corners.length; j++) {
+      const k = corners[j], kn = corners[(j + 1) % corners.length];
+      const ein = loop[(k + n - 1) % n], eo = loop[k], Vx = eo.x0, Vy = eo.y0, r = rad(k);
+      for (const t of [0, 0.25, 0.5, 0.75]) {
+        const ax = Vx - ein.dx * r, ay = Vy - ein.dy * r, bx = Vx + eo.dx * r, by = Vy + eo.dy * r, u = 1 - t;
+        pushPt(B, u * u * ax + 2 * t * u * Vx + t * t * bx, u * u * ay + 2 * t * u * Vy + t * t * by);
+      }
+      const runLen = ((kn - k + n) % n) || n, r2 = rad(kn), L = runLen - r - r2, m = Math.max(1, Math.round(L / 0.3));
+      for (let i = 0; i < m; i++) { const s = i * L / m; pushPt(B, Vx + eo.dx * (r + s), Vy + eo.dy * (r + s)); }
+    }
+    B.loops.push([start, B.n - start]);
+  }
+}
+function pushPt(B, x, y) { B.bx.push(x); B.by.push(y); B.n++; }
+function makeBody(cells, color) {
+  const B = { id: nextId++, color, cells, n: 0, loops: [], bx: [], by: [], fa: 0, fcx: 0, fcy: 0, rcx: 0, rcy: 0, alpha: 1, hot: 0, sc: 1 };
+  buildPoints(traceLoops(cells), B);
+  B.hx = Float32Array.from(B.bx); B.hy = Float32Array.from(B.by); B.x = new Float32Array(B.n); B.y = new Float32Array(B.n);
+  B.vx = new Float32Array(B.n); B.vy = new Float32Array(B.n);
+  let tl = 0; cells.forEach(([x, y], i) => { if (y < cells[tl][1] || (y === cells[tl][1] && x < cells[tl][0])) tl = i; });
+  const [tx, ty] = cells[tl]; let run = 1; while (run < 3 && cells.some(([x, y]) => x === tx + run && y === ty)) run++;
+  const tall = cells.some(([x, y]) => x === tx && y === ty + 1);
+  B.hlX = tx + 0.42 + 0.36 * (run - 1); B.hlY = ty + 0.3; B.hlW = 0.24 + 0.2 * (run - 1); B.hlH = tall ? 0.12 : 0.1;
+  B.cellIdx = cells.map(([x, y]) => idx(x, y));
+  return B;
+}
+// carry the old wobble across a rebuild; goop that just fell a row is matched one row up, so it drops smoothly instead of popping in
+function transfer(B, olds, shift) {
+  let matched = 0;
+  for (let i = 0; i < B.n; i++) {
+    let best = null, bi = 0, bd = 0.5;
+    for (const O of olds) { if (O.color !== B.color) continue;
+      for (let k = 0; k < O.n; k++) { const d = Math.abs(O.hx[k] - B.hx[i]) + Math.abs(O.hy[k] + shift - B.hy[i]); if (d < bd) { bd = d; best = O; bi = k; } } }
+    if (best) { B.x[i] = B.hx[i] + best.x[bi] - best.hx[bi]; B.y[i] = B.hy[i] - shift + best.y[bi] - best.hy[bi]; B.vx[i] = best.vx[bi]; B.vy[i] = best.vy[bi]; matched++; }
+    else { B.x[i] = B.hx[i]; B.y[i] = B.hy[i]; }
+  }
+  if (!matched) {
+    let cx = 0, cy = 0; for (let i = 0; i < B.n; i++) { cx += B.hx[i]; cy += B.hy[i]; } cx /= B.n; cy /= B.n;
+    for (let i = 0; i < B.n; i++) { B.x[i] = cx + (B.hx[i] - cx) * 0.7; B.y[i] = cy + (B.hy[i] - cy) * 0.7; }
+  }
+}
+function kick(B, kind, amt) {
+  if (!B || !amt) return;
+  let cx = 0, cy = 0, ymax = -1e9, ymin = 1e9; for (let i = 0; i < B.n; i++) { cx += B.x[i]; cy += B.y[i]; ymax = Math.max(ymax, B.y[i]); ymin = Math.min(ymin, B.y[i]); } cx /= B.n; cy /= B.n;
+  const hgt = Math.max(1, ymax - ymin), s = amt * JELLY.wobble;
+  for (let i = 0; i < B.n; i++) {
+    const dx = B.x[i] - cx, dy = B.y[i] - cy;
+    if (kind === 'squash') { B.vy[i] += s * (ymax - B.y[i]) / Math.sqrt(hgt); B.vx[i] += s * 0.6 * dx / Math.sqrt(hgt); }
+    else if (kind === 'radial') { B.vx[i] += s * dx; B.vy[i] += s * dy; }
+  }
+}
+function rebuild() {
+  const olds = G.lockedPiece ? bodies.concat(G.lockedPiece) : bodies, next = [], seen = new Uint8Array(W * H);
+  cellBody = new Int32Array(W * H).fill(-1);
+  for (let i = 0; i < W * H; i++) {
+    if (!G.grid[i] || seen[i]) continue;
+    const x = i % W, y = (i - x) / W, g = groupAt(x, y); for (const [gx, gy] of g) seen[idx(gx, gy)] = 1;
+    const B = makeBody(g, G.grid[i]); transfer(B, olds, B.cellIdx.some(c => G.fell.has(c)) ? 1 : 0);
+    for (const ci of B.cellIdx) cellBody[ci] = B.id;
+    next.push(B);
+  }
+  bodies = next; G.fell.clear(); G.lockedPiece = null;
+}
+function stepBody(B, h, ks, kh, c) { // Müller shape matching toward the homes + home springs + damping
+  const n = B.n; let cx = 0, cy = 0, rx = 0, ry = 0;
+  for (let i = 0; i < n; i++) { cx += B.x[i]; cy += B.y[i]; rx += B.hx[i]; ry += B.hy[i]; }
+  cx /= n; cy /= n; rx /= n; ry /= n;
+  let a00 = 0, a01 = 0, a10 = 0, a11 = 0;
+  for (let i = 0; i < n; i++) { const px = B.x[i] - cx, py = B.y[i] - cy, qx = B.hx[i] - rx, qy = B.hy[i] - ry;
+    a00 += px * qx; a01 += px * qy; a10 += py * qx; a11 += py * qy; }
+  const ang = Math.atan2(a10 - a01, a00 + a11), cs = Math.cos(ang), sn = Math.sin(ang);
+  B.fa = ang; B.fcx = cx; B.fcy = cy; B.rcx = rx; B.rcy = ry;
+  for (let i = 0; i < n; i++) {
+    const qx = B.hx[i] - rx, qy = B.hy[i] - ry, gx = cx + cs * qx - sn * qy, gy = cy + sn * qx + cs * qy;
+    B.vx[i] += (ks * (gx - B.x[i]) + kh * (B.hx[i] - B.x[i]) - c * B.vx[i]) * h;
+    B.vy[i] += (ks * (gy - B.y[i]) + kh * (B.hy[i] - B.y[i]) - c * B.vy[i]) * h;
+    B.x[i] += B.vx[i] * h; B.y[i] += B.vy[i] * h;
+    if (B.y[i] > H) { B.y[i] = H; if (B.vy[i] > 0) B.vy[i] *= -0.3; }
+    if (B.x[i] < 0) { B.x[i] = 0; if (B.vx[i] < 0) B.vx[i] *= -0.3; } else if (B.x[i] > W) { B.x[i] = W; if (B.vx[i] > 0) B.vx[i] *= -0.3; }
+  }
+}
+// a point in a body's rest shape -> where it is now (rides the jelly's fitted turn + centre)
+function toWorld(B, x, y) {
+  const ca = Math.cos(B.fa), sa = Math.sin(B.fa), qx = x - B.rcx, qy = y - B.rcy;
+  return { x: B.fcx + ca * qx - sa * qy, y: B.fcy + sa * qx + ca * qy };
+}
+
+// ---- THE ZAP (Muzzy's F67 pick, fixed): heat + swell -> sucked into the laser point -> spray. Touching clumps flinch.
+const heatTime = () => ZAP.beamTime * 0.4;
+function startZap(e) {
+  const B = bodies.find(b => b.id === cellBody[idx(e.cells[0][0], e.cells[0][1])]);
+  beam = ZAP.beamTime > 0 ? { x: e.x, y: e.y, t: 0, css: CSS[e.color] } : null;
+  if (B) {
+    bodies = bodies.filter(b => b !== B);
+    B.t = 0; B.lx = e.x; B.ly = e.y; B.sprayed = false;
+    let cx = 0, cy = 0; for (let i = 0; i < B.n; i++) { cx += B.bx[i]; cy += B.by[i]; } B.c0x = cx / B.n; B.c0y = cy / B.n;
+    B.dist = new Float32Array(B.n); let dmax = 1e-3;
+    for (let i = 0; i < B.n; i++) { B.dist[i] = Math.hypot(B.bx[i] - e.x, B.by[i] - e.y); dmax = Math.max(dmax, B.dist[i]); }
+    for (let i = 0; i < B.n; i++) B.dist[i] /= dmax;
+    kick(B, 'radial', 1.5 * Math.min(1, ZAP.swell * 5));
+    zapped.push(B);
+  }
+  for (const [x, y] of e.cells) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { // neighbours flinch (game: -0.8)
+    const nx = x + dx, ny = y + dy; if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+    if (G.grid[idx(nx, ny)]) kicks.push([idx(nx, ny), 'radial', -0.8]);
+    if (isVet(nx, ny) && vet.owT < 0) kick(vet.B, 'radial', -0.5); // he flinches too, but only says "ow" when the laser hits HIM
+  }
+}
+function spray(B) { // v1 createDropletsForPop
+  B.sprayed = true; const n = Math.round(ZAP.droplets); if (n <= 0) return;
+  let cx = 0, cy = 0; for (let i = 0; i < B.n; i++) { cx += B.x[i]; cy += B.y[i]; } cx /= B.n; cy /= B.n;
+  const k = 1 / V1_CELL;
+  for (let d = 0; d < n; d++) {
+    const i = Math.floor(rand() * B.n), dx = B.x[i] - cx, dy = B.y[i] - cy;
+    const ang = Math.hypot(dx, dy) > 0.15 ? Math.atan2(dy, dx) + (rand() - 0.5) * 0.8 : rand() * Math.PI * 2;
+    const sp = ZAP.dropSpeed * (0.5 + rand() * 0.8) * k, life = ZAP.dropLife * (0.7 + rand() * 0.6);
+    drops.push({ x: B.x[i], y: B.y[i], vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - ZAP.dropSpeed * (50 / 60) * k,
+      r: 9 * (0.5 + rand() * 0.7) * k, life, life0: ZAP.dropLife, color: B.color });
+  }
+}
+function stepZap(B, h) {
+  const t = B.t, F = heatTime(), S = ZAP.suckTime;
+  const heat = F > 0 ? Math.min(t / F, 1) : 1, grow = 1 + ZAP.swell * heat;
+  B.hot = heat;
+  let em = 0;
+  for (let i = 0; i < B.n; i++) {
+    const rx = B.c0x + (B.bx[i] - B.c0x) * grow, ry = B.c0y + (B.by[i] - B.c0y) * grow;
+    let e = 0;
+    if (t > F) { const u = S > 0 ? (t - F) / S : 1, ui = Math.max(0, Math.min(1, (u - 0.35 * B.dist[i]) / 0.65)); e = ui * ui * (3 - 2 * ui); }
+    B.hx[i] = B.lx + (rx - B.lx) * (1 - e); B.hy[i] = B.ly + (ry - B.ly) * (1 - e); em += e;
+  }
+  em /= B.n;
+  B.sc = grow * (1 - em); B.alpha = 1 - Math.max(0, (em - 0.6) / 0.4) ** 1.5;
+  const ks = JELLY.stiffness; stepBody(B, h, ks * 0.5, ks * 0.9, JELLY.viscosity);
+}
+function update(dt) {
+  simT += dt;
+  for (const e of G.events) if (e.type === 'zap') startZap(e);
+  G.events.length = 0;
+  if (needSettle && (settleT += dt) >= 0.05) { settleT = 0; if (!dropPass()) needSettle = false; }
+  if (seenVer !== G.ver) { seenVer = G.ver; rebuild(); }
+  if (kicks.length) { const best = new Map();
+    for (const [cell, kind, amt] of kicks) { const id = cellBody[cell]; if (id < 0) continue; const k = id + kind;
+      if (!best.has(k) || Math.abs(amt) > Math.abs(best.get(k)[2])) best.set(k, [id, kind, amt]); }
+    for (const [id, kind, amt] of best.values()) kick(bodies.find(b => b.id === id), kind, amt);
+    kicks = []; }
+  // cracks: age, and new ones on the game's clock
+  for (const c of cracks) c.age += dt;
+  if ((crackClock += dt) >= crackEvery()) { crackClock = 0; spawnCrack(); }
+  const ks = JELLY.stiffness, kh = ks * JELLY.home, c = JELLY.viscosity;
+  for (const B of bodies) stepBody(B, dt, ks, kh, c);
+  stepPiece(dt);
+  stepVet(dt);
+  for (const B of zapped) {
+    stepZap(B, dt); B.t += dt;
+    const end = heatTime() + ZAP.suckTime;
+    if (!B.sprayed && B.t >= ZAP.sprayAt * end) spray(B);
+    if (B.t >= end && B.sprayed) B.dead = true;
+  }
+  zapped = zapped.filter(B => !B.dead);
+  const g = ZAP.gravity / V1_CELL;
+  for (const d of drops) {
+    d.vy += g * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; d.r *= Math.pow(0.995, dt * 60);
+    if (d.y + d.r > H) { d.y = H - d.r; d.vy *= -0.3; }
+    if (d.x + d.r < 0 || d.x - d.r > W) d.life = 0;
+  }
+  drops = drops.filter(d => d.life > 0);
+  if (beam) { beam.t += dt; if (beam.t >= ZAP.beamTime) beam = null; }
+}
+
+// ---- WebGL2 renderer: L4 Jelly's passes (mask -> small blur -> big blur -> glossy jelly), plus a white-hot channel.
+// Six goo channels: red..purple in the first target's RGBA + second's R, and the white goop in the second's A.
+const canvas = $('c'), fxc = $('fx'), fx = fxc.getContext('2d');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, stencil: false });
+if (!gl) document.body.innerHTML = '<p style="padding:16px">WebGL2 is not available on this device.</p>';
+const floatOK = !!gl.getExtension('EXT_color_buffer_float');
+const FSQ = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const MASK_VS = `#version 300 es
+layout(location=0) in vec4 aPos; uniform vec2 uOrigin, uCover; uniform float uCell; out vec2 vUv;
+void main(){ vec2 px = uOrigin + aPos.xy * uCell; vUv = aPos.zw;
+  gl_Position = vec4(px.x / uCover.x * 2.0 - 1.0, 1.0 - px.y / uCover.y * 2.0, 0.0, 1.0); }`;
+const MASK_FS = `#version 300 es
+precision mediump float; in vec2 vUv; uniform int uMode; uniform vec4 uC0, uC1; uniform float uHl;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
+void main(){
+  if (uMode == 2) { float r = length(vUv); float e = (1.0 - smoothstep(0.35, 1.0, r)); o0 = vec4(0.0); o1 = vec4(0.0, e * e * uHl, 0.0, 0.0); }
+  else { o0 = uC0; o1 = uC1; }
+}`;
+const BLUR_FS = `#version 300 es
+precision highp float; uniform sampler2D uT0, uT1; uniform vec2 uSize, uStep; uniform float uSigma; uniform int uR;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
+void main(){
+  vec2 uv = gl_FragCoord.xy / uSize; vec4 a = vec4(0.0), b = vec4(0.0); float ws = 0.0;
+  for (int i = -40; i <= 40; i++) { if (i < -uR || i > uR) continue;
+    float w = exp(-0.5 * float(i * i) / (uSigma * uSigma)); vec2 u = uv + uStep * float(i);
+    a += w * texture(uT0, u); b += w * texture(uT1, u); ws += w; }
+  o0 = a / ws; o1 = b / ws;
+}`;
+const FINAL_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uS0, uS1, uQ0, uQ1, uM1;
+uniform vec2 uRes, uCover, uOrigin, uQTex; uniform float uCell, uTime, uTrans, uWet, uHot; uniform ivec2 uGrid; uniform vec3 uCols[7];
+out vec4 outColor;
+float pick(vec4 t0, vec4 t1, vec4 s0, vec2 s1){ return dot(t0, s0) + t1.r * s1.x + t1.a * s1.y; }
+void main(){
+  vec2 fc = gl_FragCoord.xy, uv = fc / uCover;
+  vec2 p = (vec2(fc.x, uRes.y - fc.y) - uOrigin) / uCell;
+  vec2 gs = vec2(uGrid); float px = 1.0 / uCell;
+  vec3 bg = vec3(0.008, 0.016, 0.04);
+  if (p.x >= 0.0 && p.x <= gs.x && p.y >= 0.0 && p.y <= gs.y) { vec2 f = abs(fract(p) - 0.5);
+    bg = vec3(0.02, 0.035, 0.08) + 0.025 * smoothstep(0.5 - px * 1.5, 0.5, max(f.x, f.y)); }
+  float edge = (p.y <= gs.y && p.y >= -0.6) ? min(abs(p.x), abs(p.x - gs.x)) : 1e3;
+  if (p.x >= 0.0 && p.x <= gs.x) edge = min(edge, abs(p.y - gs.y));
+  bg += vec3(0.08, 0.16, 0.3) * smoothstep(px * 3.0, 0.0, edge);
+  vec2 so = vec2(0.6, -0.9) * uQTex; vec4 sh0 = texture(uQ0, uv + so), sh1 = texture(uQ1, uv + so);
+  bg *= 1.0 - 0.45 * clamp(sh0.r + sh0.g + sh0.b + sh0.a + sh1.r + sh1.a, 0.0, 1.0);
+  vec4 s0 = texture(uS0, uv), s1 = texture(uS1, uv);
+  float f = s0.r, f2 = 0.0; int c = 1; vec4 sel = vec4(1, 0, 0, 0); vec2 sel1 = vec2(0.0);
+  if (s0.g > f) { f2 = f; f = s0.g; c = 2; sel = vec4(0, 1, 0, 0); } else f2 = max(f2, s0.g);
+  if (s0.b > f) { f2 = f; f = s0.b; c = 3; sel = vec4(0, 0, 1, 0); } else f2 = max(f2, s0.b);
+  if (s0.a > f) { f2 = f; f = s0.a; c = 4; sel = vec4(0, 0, 0, 1); } else f2 = max(f2, s0.a);
+  if (s1.r > f) { f2 = f; f = s1.r; c = 5; sel = vec4(0); sel1 = vec2(1.0, 0.0); } else f2 = max(f2, s1.r);
+  if (s1.a > f) { f2 = f; f = s1.a; c = 6; sel = vec4(0); sel1 = vec2(0.0, 1.0); } else f2 = max(f2, s1.a);
+  float aa = max(fwidth(f), 1e-4);
+  float a = smoothstep(0.5 - aa, 0.5 + aa, f);
+  a *= smoothstep(0.0, max(fwidth(f - f2) * 1.5, 0.03), f - f2);
+  if (a <= 0.0) { outColor = vec4(bg, 1.0); return; }
+  float th = pick(texture(uQ0, uv), texture(uQ1, uv), sel, sel1);
+  vec2 ex = vec2(uQTex.x, 0.0), ey = vec2(0.0, uQTex.y);
+  vec2 gq = vec2(pick(texture(uQ0, uv + ex), texture(uQ1, uv + ex), sel, sel1) - pick(texture(uQ0, uv - ex), texture(uQ1, uv - ex), sel, sel1),
+                 pick(texture(uQ0, uv + ey), texture(uQ1, uv + ey), sel, sel1) - pick(texture(uQ0, uv - ey), texture(uQ1, uv - ey), sel, sel1)) * 0.5;
+  vec2 ge = vec2(dFdx(f), dFdy(f)) * uCell;
+  float bev = 1.0 - smoothstep(0.5, 0.95, f);
+  vec3 n = normalize(vec3(-(gq * 7.0 + ge * 0.9 * bev), 1.0));
+  vec3 L = normalize(vec3(-0.45, 0.65, 0.62)), Hh = normalize(L + vec3(0.0, 0.0, 1.0));
+  vec3 base = uCols[c];
+  float t = smoothstep(0.45, 1.0, th);
+  float diff = max(dot(n, L), 0.0);
+  vec3 body = base * (0.5 + 0.55 * diff);
+  body = mix(body * 1.15 + base * 0.12, body * 0.85, t);
+  body += base * 0.45 * smoothstep(0.35, 1.0, t) * (0.85 + 0.15 * sin(uTime * 1.3));
+  float rim = 1.0 - smoothstep(0.5, 0.7, f);
+  body = mix(body, base * 0.3, rim * 0.55);
+  float fres = pow(1.0 - n.z, 1.6);
+  body += (base * 0.6 + 0.4) * fres * uWet * 0.55;
+  float spec = pow(max(dot(n, Hh), 0.0), 18.0) * uWet * 0.16;
+  float hl = texture(uM1, uv).g * uWet;
+  float op = mix(1.0, 0.5 + 0.45 * t, uTrans);
+  vec3 col = mix(bg + base * 0.12, body, op) + vec3(spec + hl);
+  float rh = clamp(s1.b / max(f, 1e-3), 0.0, 1.0);
+  vec3 hotCol = mix(base, vec3(1.0), uHot) * (1.0 + 0.3 * uHot) * (0.7 + 0.35 * diff) * (1.0 - 0.25 * rim) + vec3(spec + hl);
+  col = mix(col, hotCol, rh * clamp(uHot * 3.0, 0.0, 1.0));
+  outColor = vec4(mix(bg, col, a), 1.0);
+}`;
+function compile(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+function program(vs, fs, names) {
+  const p = gl.createProgram(); gl.attachShader(p, compile(gl.VERTEX_SHADER, vs)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}; for (const n of names) u[n] = gl.getUniformLocation(p, n); return { p, u };
+}
+const PM = program(MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl']);
+const PB = program(FSQ, BLUR_FS, ['uT0', 'uT1', 'uSize', 'uStep', 'uSigma', 'uR']);
+const PF = program(FSQ, FINAL_FS, ['uS0', 'uS1', 'uQ0', 'uQ1', 'uM1', 'uRes', 'uCover', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet', 'uHot', 'uGrid', 'uCols']);
+const vaoMask = gl.createVertexArray(), vbo = gl.createBuffer(), vaoFsq = gl.createVertexArray();
+gl.bindVertexArray(vaoMask); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0);
+function makeTex(w, h, float) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, float ? gl.RGBA16F : gl.RGBA8, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function makeTarget(w, h, float, stencil) {
+  const T = { w, h, t0: makeTex(w, h, float), t1: makeTex(w, h, float), fb: gl.createFramebuffer() };
+  gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, T.t0, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, T.t1, 0);
+  if (stencil) { T.rb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, T.rb);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, w, h); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, T.rb); }
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+  return T;
+}
+function freeTarget(T) { if (!T) return; gl.deleteTexture(T.t0); gl.deleteTexture(T.t1); gl.deleteFramebuffer(T.fb); if (T.rb) gl.deleteRenderbuffer(T.rb); }
+let TM, TA, TS, TB, TQ, dpr = 1, cell = 30, ox = 0, oy = 0, Wm = 1, Hm = 1, viewW = 0;
+let vbuf = new Float32Array(1 << 15), vn = 0;
+const pushV = (x, y, u, v) => { if (vn + 4 > vbuf.length) { const nb = new Float32Array(vbuf.length * 2); nb.set(vbuf); vbuf = nb; } vbuf[vn++] = x; vbuf[vn++] = y; vbuf[vn++] = u; vbuf[vn++] = v; };
+function fanBody(B) { for (const [s, cnt] of B.loops) for (let i = 1; i < cnt - 1; i++) {
+  pushV(B.x[s], B.y[s], 0, 0); pushV(B.x[s + i], B.y[s + i], 0, 0); pushV(B.x[s + i + 1], B.y[s + i + 1], 0, 0); } }
+function hlQuad(B) { // the one highlight rides the body's fitted rotation + centre (shrinks with a zapped goop)
+  const ca = Math.cos(B.fa), sa = Math.sin(B.fa), k = Math.max(0.05, B.sc);
+  const qx = B.t !== undefined ? (B.hlX - B.c0x) * k : B.hlX - B.rcx, qy = B.t !== undefined ? (B.hlY - B.c0y) * k : B.hlY - B.rcy;
+  const cx = B.fcx + ca * qx - sa * qy, cy = B.fcy + sa * qx + ca * qy, rot = B.fa - 0.18;
+  const ux = Math.cos(rot) * B.hlW * k, uy = Math.sin(rot) * B.hlW * k, vx = -Math.sin(rot) * B.hlH * k, vy = Math.cos(rot) * B.hlH * k;
+  const P = (s, t) => pushV(cx + ux * s + vx * t, cy + uy * s + vy * t, s, t);
+  P(-1, -1); P(1, -1); P(1, 1); P(-1, -1); P(1, 1); P(-1, 1);
+}
+function vetHl() { // his highlight: hlX/hlY are in his own cell frame, so shift them to where his homes are
+  const B = vet.B, sx0 = B.hlX, sy0 = B.hlY; B.hlX = sx0 + vet.px; B.hlY = sy0 + vet.py; hlQuad(B); B.hlX = sx0; B.hlY = sy0;
+}
+function buildGeometry() {
+  vn = 0; const R = { fan: [], hl: [], zap: [] }, all = piece.B ? bodies.concat(piece.B) : bodies;
+  for (let c = 1; c <= 5; c++) {
+    let s = vn / 4; for (const B of all) if (B.color === c) fanBody(B); R.fan[c] = [s, vn / 4 - s];
+    s = vn / 4; for (const B of all) if (B.color === c) hlQuad(B); R.hl[c] = [s, vn / 4 - s];
+  }
+  let s = vn / 4; fanBody(vet.B); R.fan[6] = [s, vn / 4 - s];
+  s = vn / 4; vetHl(); R.hl[6] = [s, vn / 4 - s];
+  for (const B of zapped) { let s = vn / 4; fanBody(B); const f = [s, vn / 4 - s]; s = vn / 4; hlQuad(B); R.zap.push({ B, f, h: [s, vn / 4 - s] }); }
+  R.cover = vn / 4; pushV(-40, -60, 0, 0); pushV(W + 40, -60, 0, 0); pushV(W + 40, H + 40, 0, 0); pushV(-40, -60, 0, 0); pushV(W + 40, H + 40, 0, 0); pushV(-40, H + 40, 0, 0);
+  return R;
+}
+const C0 = [null, [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0]];
+let glR = null;
+function maskShape(color, fan, hl, alpha, hot) {
+  if (!fan[1]) return;
+  gl.colorMask(false, false, false, false); gl.stencilFunc(gl.ALWAYS, 0, 0xff);
+  gl.stencilOpSeparate(gl.FRONT, gl.KEEP, gl.KEEP, gl.INCR_WRAP); gl.stencilOpSeparate(gl.BACK, gl.KEEP, gl.KEEP, gl.DECR_WRAP);
+  gl.uniform1i(PM.u.uMode, 0); gl.drawArrays(gl.TRIANGLES, fan[0], fan[1]);
+  gl.colorMask(true, true, true, true); gl.stencilFunc(gl.NOTEQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+  gl.uniform4fv(PM.u.uC0, C0[color].map(v => v * alpha)); gl.uniform4f(PM.u.uC1, color === 5 ? alpha : 0, 0, hot * alpha, color === 6 ? alpha : 0);
+  gl.uniform1i(PM.u.uMode, 1); gl.drawArrays(gl.TRIANGLES, glR.cover, 6);
+  if (hl[1]) { gl.uniform1i(PM.u.uMode, 2); gl.uniform1f(PM.u.uHl, alpha); gl.drawArrays(gl.TRIANGLES, hl[0], hl[1]); }
+  gl.clear(gl.STENCIL_BUFFER_BIT);
+}
+function blur(src, dst, dx, dy, sigma) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb); gl.viewport(0, 0, dst.w, dst.h);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, src.t1);
+  gl.uniform2f(PB.u.uSize, dst.w, dst.h); gl.uniform2f(PB.u.uStep, dx / dst.w, dy / dst.h);
+  gl.uniform1f(PB.u.uSigma, sigma); gl.uniform1i(PB.u.uR, Math.min(40, Math.ceil(sigma * 2.5)));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function drawGoo(time) {
+  glR = buildGeometry();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, TM.fb); gl.viewport(0, 0, Wm, Hm);
+  gl.clearColor(0, 0, 0, 0); gl.clearStencil(0); gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+  gl.useProgram(PM.p); gl.bindVertexArray(vaoMask); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, vbuf.subarray(0, vn), gl.STREAM_DRAW);
+  const hs = Wm / canvas.width;
+  gl.uniform2f(PM.u.uOrigin, ox * dpr, oy * dpr); gl.uniform1f(PM.u.uCell, cell * dpr); gl.uniform2f(PM.u.uCover, canvas.width, canvas.height);
+  gl.enable(gl.BLEND); gl.blendEquation(gl.MAX); gl.enable(gl.STENCIL_TEST);
+  for (let c = 1; c <= 5; c++) maskShape(c, glR.fan[c], glR.hl[c], 1, 0);
+  maskShape(6, glR.fan[6], glR.hl[6], 1 - 0.25 * vet.inGoop, 0); // behind goop he's a little weaker, so the goop in front wins
+  for (const D of glR.zap) maskShape(D.B.color, D.f, D.h, Math.max(0, D.B.alpha), D.B.hot);
+  gl.disable(gl.BLEND); gl.disable(gl.STENCIL_TEST); gl.colorMask(true, true, true, true);
+  gl.useProgram(PB.p); gl.bindVertexArray(vaoFsq); gl.uniform1i(PB.u.uT0, 0); gl.uniform1i(PB.u.uT1, 1);
+  const cHalf = cell * dpr * hs, sg = cHalf * (0.06 + 0.03 * JELLY.magnetism);
+  blur(TM, TA, 1, 0, sg); blur(TA, TS, 0, 1, sg);
+  blur(TM, TB, 1, 0, cHalf * 0.5 * 0.42); blur(TB, TQ, 0, 1, cHalf * 0.5 * 0.42);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(PF.p);
+  [[TS.t0, 'uS0'], [TS.t1, 'uS1'], [TQ.t0, 'uQ0'], [TQ.t1, 'uQ1'], [TM.t1, 'uM1']].forEach(([t, n], i) => {
+    gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(PF.u[n], i); });
+  gl.uniform2f(PF.u.uRes, canvas.width, canvas.height); gl.uniform2f(PF.u.uCover, Wm / hs, Hm / hs);
+  gl.uniform2f(PF.u.uOrigin, ox * dpr, oy * dpr); gl.uniform2f(PF.u.uQTex, 2 / Wm, 2 / Hm);
+  gl.uniform1f(PF.u.uCell, cell * dpr); gl.uniform1f(PF.u.uTime, time); gl.uniform2i(PF.u.uGrid, W, H);
+  gl.uniform1f(PF.u.uTrans, JELLY.translucency); gl.uniform1f(PF.u.uWet, JELLY.wetness); gl.uniform1f(PF.u.uHot, ZAP.whiteHot);
+  gl.uniform3fv(PF.u.uCols, COLORS.flat());
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+// 2D overlay: the pressure line, the cracks, his path, his face, "ow", the beam, the laser point while it sucks, droplets
+const sx = x => ox + x * cell, sy = y => oy + y * cell;
+function crackPts(c) { // a jagged line across its cell, the same shape every time (from its id)
+  const pts = []; for (let k = 0; k <= 5; k++) { const t = k / 5, j = (hash(c.id + ':' + k) - 0.5) * 0.3;
+    pts.push([c.x + 0.2 + 0.6 * t + j, c.y + 0.15 + 0.7 * t - j]); } return pts;
+}
+function strokePts(pts) { fx.beginPath(); pts.forEach(([x, y], i) => i ? fx.lineTo(sx(x), sy(y)) : fx.moveTo(sx(x), sy(y))); fx.stroke(); }
+function stitches(c, n, color) { // little bars across the crack, like the game's mended scar
+  const pts = crackPts(c); fx.strokeStyle = color; fx.lineWidth = Math.max(1, cell * 0.04);
+  for (let k = 0; k < n; k++) { const t = (k + 0.5) / 4, i = Math.min(4, Math.floor(t * 5)), u = t * 5 - i, a = pts[i], b = pts[i + 1];
+    const x = a[0] + (b[0] - a[0]) * u, y = a[1] + (b[1] - a[1]) * u;
+    fx.beginPath(); fx.moveTo(sx(x - 0.1), sy(y - 0.1)); fx.lineTo(sx(x + 0.1), sy(y + 0.1)); fx.stroke(); }
+}
+function drawCracks() {
+  fx.lineJoin = 'round'; fx.lineCap = 'round';
+  for (const s of sealedSpots) { fx.globalAlpha = 0.6; fx.strokeStyle = '#475569'; fx.lineWidth = Math.max(1, cell * 0.05); strokePts(crackPts(s)); stitches(s, 4, '#94a3b8'); }
+  for (const c of cracks) {
+    const under = isVet(c.x, c.y), covered = !under && G.grid[idx(c.x, c.y)], grow = Math.min(1, c.age / 30);
+    fx.globalAlpha = under ? 0.45 : 1;
+    fx.strokeStyle = CSS[c.color]; fx.shadowColor = CSS[c.color]; fx.shadowBlur = 4 + 8 * grow;
+    fx.lineWidth = Math.max(1.2, cell * (0.06 + 0.06 * grow)); strokePts(crackPts(c)); fx.shadowBlur = 0;
+    if (covered) { // the game's x-ray box: a crack with goop on it stays visible
+      fx.globalAlpha = 0.8; fx.strokeStyle = '#f8fafc'; fx.lineWidth = 1.2; fx.setLineDash([3, 3]);
+      fx.strokeRect(sx(c.x + 0.06), sy(c.y + 0.06), cell * 0.88, cell * 0.88); fx.setLineDash([]); }
+    if (c.seal > 0) { fx.globalAlpha = 1; stitches(c, Math.floor(c.seal * 4.999), '#f8fafc'); }
+  }
+  fx.globalAlpha = 1;
+  const t = vet.target;
+  if (t && cracks.includes(t)) { // the crack he's going for: a dotted ring (a progress ring while he seals it)
+    const cx = sx(t.x + 0.5), cy = sy(t.y + 0.5), r = cell * (0.62 + 0.04 * Math.sin(simT * 4));
+    fx.strokeStyle = '#f8fafc'; fx.lineWidth = 1.5;
+    if (vet.state === 'seal') { fx.globalAlpha = 0.9; fx.beginPath(); fx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * t.seal); fx.stroke(); }
+    else { fx.globalAlpha = 0.7; fx.setLineDash([2, 4]); fx.beginPath(); fx.arc(cx, cy, r, 0, Math.PI * 2); fx.stroke(); fx.setLineDash([]); }
+    fx.globalAlpha = 1;
+  }
+}
+function drawPath() { // where he's heading: faint dots
+  if (!vet.path.length || vet.state === 'seal') return;
+  fx.fillStyle = 'rgba(248,250,252,0.28)';
+  for (const v of vet.path) { const x = v % W, y = Math.floor(v / W); fx.beginPath(); fx.arc(sx(x + vet.size / 2), sy(y + 0.5), Math.max(1.5, cell * 0.06), 0, Math.PI * 2); fx.fill(); }
+}
+function drawVet() {
+  const B = vet.B, r = GOO.eyeSize * cell, alpha = 1 - 0.3 * vet.inGoop;
+  if (vet.inGoop > 0.05) { // behind goop: the x-ray outline, like a covered crack
+    fx.globalAlpha = 0.85 * vet.inGoop; fx.strokeStyle = '#f8fafc'; fx.lineWidth = 1.2; fx.setLineDash([3, 3]);
+    fx.beginPath(); fx.roundRect(sx(vet.px + 0.04), sy(vet.py + 0.04), cell * (vet.size - 0.08), cell * 0.92, cell * 0.3); fx.stroke(); fx.setLineDash([]);
+  }
+  fx.globalAlpha = alpha; fx.lineCap = 'round';
+  const spotX = vet.px + vet.size / 2, spotY = vet.py + 1 - 0.56 * vet.sq;
+  const ouch = vet.owT >= 0 && vet.owT < Math.min(0.45, GOO.owTime * 0.6);
+  for (let i = 0; i < 2; i++) {
+    const side = i ? 1 : -1, p = toWorld(B, spotX + side * 0.24, spotY), ex = sx(p.x), ey = sy(p.y);
+    fx.strokeStyle = '#0f172a'; fx.lineWidth = Math.max(1.2, r * 0.32);
+    if (ouch) { const d = -side; fx.beginPath(); // squeezed shut: ">" "<"
+      fx.moveTo(ex - d * r, ey - r * 0.6); fx.lineTo(ex + d * r * 0.6, ey); fx.lineTo(ex - d * r, ey + r * 0.6); fx.stroke(); continue; }
+    fx.save(); fx.beginPath(); fx.arc(ex, ey, r, 0, Math.PI * 2); fx.fillStyle = '#f8fafc'; fx.fill();
+    fx.lineWidth = Math.max(0.8, r * 0.14); fx.strokeStyle = 'rgba(15,23,42,0.55)'; fx.stroke(); // white eyes on a white goop need a rim
+    fx.clip();
+    const pr = r * 0.45, reach = (r - pr) * 0.9;
+    fx.beginPath(); fx.arc(ex + vet.gx * reach, ey + vet.gy * reach, pr, 0, Math.PI * 2); fx.fillStyle = '#0f172a'; fx.fill();
+    const lid = i ? GOO.squint : GOO.squint * 0.15; // his squint: the right eye's lid comes down, the left one only a little
+    if (lid > 0) { const ly = ey - r + 2 * r * lid;
+      fx.fillStyle = '#cfd6df'; fx.fillRect(ex - r - 1, ey - r - 1, 2 * r + 2, ly - (ey - r) + 1);
+      fx.strokeStyle = '#0f172a'; fx.lineWidth = Math.max(1, r * 0.22); fx.beginPath(); fx.moveTo(ex - r, ly); fx.lineTo(ex + r, ly); fx.stroke(); }
+    fx.restore();
+    if (i && GOO.squint > 0.05) { // a low brow over the squint: the outer end pulled down
+      const by = ey - r * (1.25 - 0.5 * GOO.squint); fx.strokeStyle = '#0f172a'; fx.lineWidth = Math.max(1.2, r * 0.3);
+      fx.beginPath(); fx.moveTo(ex - r * 0.9, by - r * 0.15); fx.lineTo(ex + r * 1.0, by + r * 0.25 * GOO.squint * 2); fx.stroke(); }
+  }
+  fx.globalAlpha = 1;
+}
+function drawOw() { // "ow": a little bubble that pops in above him and fades
+  if (vet.owT < 0) return;
+  const u = vet.owT / Math.max(0.01, GOO.owTime), pop = Math.min(1, vet.owT / 0.1), a = u > 0.7 ? (1 - u) / 0.3 : 1;
+  const w = cell * 1.2 * pop, h = cell * 0.72 * pop;
+  let x = sx(vet.px + vet.size / 2 + 0.55), y = sy(vet.py - 0.55);
+  x = Math.max(ox + w / 2 + 4, Math.min(ox + W * cell - w / 2 - 4, x)); y = Math.max(h / 2 + 4, y);
+  fx.globalAlpha = Math.max(0, a); fx.fillStyle = '#f8fafc'; fx.strokeStyle = '#0f172a'; fx.lineWidth = 1.5;
+  fx.beginPath(); fx.roundRect(x - w / 2, y - h / 2, w, h, h * 0.45);
+  fx.moveTo(x - w * 0.2, y + h / 2); fx.lineTo(x - w * 0.38, y + h / 2 + h * 0.4); fx.lineTo(x - w * 0.02, y + h / 2); fx.fill(); fx.stroke();
+  fx.fillStyle = '#0f172a'; fx.font = `800 ${Math.round(h * 0.6)}px system-ui, sans-serif`; fx.textAlign = 'center'; fx.textBaseline = 'middle';
+  fx.fillText('ow', x, y + h * 0.02); fx.globalAlpha = 1;
+}
+function drawFx() {
+  fx.clearRect(0, 0, innerWidth, innerHeight);
+  const ly = sy(lineY()); fx.strokeStyle = 'rgba(74,222,128,0.6)'; fx.lineWidth = 1.5; fx.setLineDash([6, 5]); // the pressure line
+  fx.beginPath(); fx.moveTo(sx(0), ly); fx.lineTo(sx(W), ly); fx.stroke(); fx.setLineDash([]);
+  drawCracks(); drawPath(); drawVet();
+  for (const d of drops) {
+    fx.globalAlpha = Math.max(0, d.life / d.life0); fx.fillStyle = CSS[d.color];
+    fx.beginPath(); fx.arc(sx(d.x), sy(d.y), Math.max(0.5, d.r * cell), 0, Math.PI * 2); fx.fill();
+  }
+  fx.globalAlpha = 1;
+  for (const B of zapped) if (B.t > heatTime() && ZAP.suckTime > 0) {
+    const u = Math.min(1, (B.t - heatTime()) / ZAP.suckTime), r = cell * (0.06 + 0.1 * Math.sin(Math.PI * u));
+    fx.shadowColor = CSS[B.color]; fx.shadowBlur = 14; fx.fillStyle = `rgba(255,255,255,${0.9 * (1 - u * u)})`;
+    fx.beginPath(); fx.arc(sx(B.lx), sy(B.ly), r, 0, Math.PI * 2); fx.fill(); fx.shadowBlur = 0;
+  }
+  if (beam) {
+    const a = 1 - beam.t / ZAP.beamTime, x = sx(beam.x), y = sy(beam.y);
+    fx.strokeStyle = `rgba(255,255,255,${a})`; fx.lineWidth = 3 + 6 * a; fx.lineCap = 'round';
+    fx.shadowColor = beam.css; fx.shadowBlur = 18;
+    fx.beginPath(); fx.moveTo(sx(W / 2), sy(-0.6)); fx.lineTo(x, y); fx.stroke(); // from the top centre of the view (Muzzy 2026-10-24)
+    fx.fillStyle = `rgba(255,255,255,${a})`; fx.beginPath(); fx.arc(x, y, cell * 0.5 * a + 4, 0, Math.PI * 2); fx.fill();
+    fx.shadowBlur = 0;
+  }
+  drawOw();
+}
+function draw() { drawGoo(simT); drawFx(); }
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, JELLY.maxDpr);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  const fd = devicePixelRatio || 1; fxc.width = Math.round(innerWidth * fd); fxc.height = Math.round(innerHeight * fd); fx.setTransform(fd, 0, 0, fd, 0, 0);
+  viewW = playW();
+  const hintH = $('hint').offsetHeight || 40;
+  const top = $('top').getBoundingClientRect().bottom + hintH + 14, bot = $('bottom').getBoundingClientRect().top - 8;
+  cell = Math.min((viewW - 32) / W, (bot - top) / (H + 0.8));
+  ox = (viewW - W * cell) / 2; oy = bot - H * cell;
+  $('hint').style.top = Math.max($('top').getBoundingClientRect().bottom + 2, oy - 0.8 * cell - hintH) + 'px';
+  Wm = Math.ceil(canvas.width / 4) * 2; Hm = Math.ceil(canvas.height / 4) * 2;
+  [TM, TA, TS, TB, TQ].forEach(freeTarget);
+  TM = makeTarget(Wm, Hm, false, true); TA = makeTarget(Wm, Hm, floatOK); TS = makeTarget(Wm, Hm, floatOK);
+  TB = makeTarget(Wm / 2, Hm / 2, floatOK); TQ = makeTarget(Wm / 2, Hm / 2, floatOK);
+}
+const STYLE_HINT = [
+  'Slide: he falls like goop and inches along the top of it. A crack in mid-air or under goop is out of his reach until you build to it.',
+  'Ooze: he clings to the back wall and oozes behind the goop (dotted outline), slower inside it. He reaches every crack, even covered ones.',
+  'Hop: he falls like goop, crouches, then hops. Quick over bumps, but mid-air cracks are still out of reach.'];
+let shownStyle = -1;
+function showStyle() {
+  if (shownStyle === GOO.moveStyle) return; shownStyle = GOO.moveStyle;
+  for (const b of document.querySelectorAll('#styles button')) b.classList.toggle('on', +b.dataset.s === GOO.moveStyle);
+  $('hintText').textContent = STYLE_HINT[GOO.moveStyle] + ' Dotted ring = his crack. Tap him: "ow". Tap goop: zap.';
+  layout();
+}
+let statusT = 0;
+function showStatus() {
+  const t = vet.target, name = t ? COLOR_NAME[t.color] : '';
+  const doing = !vet.landed ? 'dropping in' : vet.state === 'seal' ? `sealing the ${name} crack ${Math.round(t.seal * 100)}%`
+    : vet.state === 'rest' ? 'resting' : vet.kind === 'wriggle' && vet.state === 'move' ? 'wriggling out'
+    : vet.state === 'crouch' ? `about to hop to the ${name} crack` : vet.waiting ? `waiting near the ${name} crack (can't reach it)`
+    : t ? `going to the ${name} crack` : 'idle (no cracks)';
+  $('status').textContent = `He's ${doing} · open ${cracks.length} · he sealed ${sealedByHim} · you sealed ${sealedByYou}`;
+}
+function setPressure(p) { pressure = Math.max(0, Math.min(1, p)); $('press').value = Math.round(pressure * 100); $('pval').textContent = 'Pressure ' + Math.round(pressure * 100) + '%'; }
+function refill() {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const k = ' RBGYP'.indexOf(BOARD[y][x]); G.grid[idx(x, y)] = k > 0 ? k : 0; }
+  cracks = START_CRACKS.map(([x, y, color, age]) => ({ id: crackId++, x, y, color, age, seal: 0 }));
+  sealedSpots = []; sealedByHim = 0; sealedByYou = 0; crackClock = 0; needSettle = true;
+  piece.cells = null; piece.B = null; piece.wait = 1.2;
+  vet.size = Math.max(1, Math.min(2, Math.round(GOO.size))); vet.x = 5; vet.y = 0; vet.px = 5; vet.py = 0; vet.landed = false;
+  vet.state = 'idle'; vet.target = null; vet.path = []; vet.owT = -1; vet.waiting = false;
+  makeVetBody(); G.ver++;
+}
+let slow = false, paused = false;
+$('bReset').onclick = refill;
+$('press').oninput = e => setPressure(e.target.value / 100);
+$('styles').onclick = e => { if (e.target.dataset.s !== undefined) { GOO.moveStyle = +e.target.dataset.s; showKnob('moveStyle'); vet.path = []; } };
+$('bSlow').onclick = () => { slow = !slow; $('bSlow').classList.toggle('on', slow); $('bSlow').textContent = slow ? 'Slow-mo 0.25×' : 'Slow-mo'; };
+canvas.addEventListener('pointerdown', e => {
+  const px = (e.clientX - ox) / cell, py = (e.clientY - oy) / cell, gx = Math.floor(px), gy = Math.floor(py);
+  aim = { x: px, y: py, t: simT };
+  if (onVet(px, py)) { tapVet(px, py); if (GOO.moveStyle === 1 && gx >= 0 && gx < W && gy >= 0 && gy < H) zap(gx, gy, px, py); return; } // oozing: the goop in front of him pops too
+  if (gx >= 0 && gx < W && gy >= 0 && gy < H) zap(gx, gy, px, py);
+});
+canvas.addEventListener('pointermove', e => {
+  const px = (e.clientX - ox) / cell, py = (e.clientY - oy) / cell;
+  if (px >= 0 && px <= W && py >= -1 && py <= H) aim = { x: px, y: py, t: simT };
+});
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+const isChoice = row => row[1] === 'choice';
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(row => { const [k, lo, hi, st] = row; return lo === undefined ? `<h4>${k}</h4>` :
+  (isChoice(row) ? `<label><span>${KNOB_LABEL[k] || k}</span><select id="k_${k}">${hi.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select></label>`
+  : `<label><span>${KNOB_LABEL[k] || k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><input class="num" type="number" inputmode="decimal" id="v_${k}" step="${st}" value="${GOO[k]}" title="Type any value, even past the slider's ends"></label>`)
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : ''); }).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+// show a value in both the slider (pinned at its end when past it) and the box (amber when past the slider's ends)
+function showKnob(k) {
+  const row = KNOBS.find(r => r[0] === k), v = GOO[k];
+  if (isChoice(row)) { $('k_' + k).value = v; if (k === 'moveStyle') showStyle(); return; }
+  const box = $('v_' + k);
+  $('k_' + k).value = v; if (document.activeElement !== box) box.value = v;
+  box.classList.toggle('over', v < row[1] || v > row[2]);
+}
+// typing in the box updates the sketch live; Enter or leaving the box applies, Escape puts back what was there
+for (const row of KNOBS) {
+  const [k, lo] = row; if (lo === undefined) continue;
+  if (isChoice(row)) { $('k_' + k).onchange = e => { GOO[k] = +e.target.value; showKnob(k); }; continue; }
+  const box = $('v_' + k); let before = GOO[k];
+  $('k_' + k).oninput = e => { GOO[k] = +e.target.value; showKnob(k); };
+  box.onfocus = () => { before = GOO[k]; };
+  box.oninput = () => { const v = parseFloat(box.value); if (Number.isFinite(v)) { GOO[k] = v; showKnob(k); } };
+  box.onkeydown = e => {
+    if (e.key === 'Enter') box.blur();
+    if (e.key === 'Escape') { GOO[k] = before; box.value = before; showKnob(k); box.blur(); }
+  };
+  box.onblur = () => { box.value = GOO[k]; showKnob(k); };
+}
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
+const DEFAULTS = readKnobs();
+// The three starting presets (until you save your own over them): three different feels for the same old man.
+const STARTERS = [
+  { name: 'Old slug', values: { ...DEFAULTS, moveStyle: 0, secPerCell: 1.1, targetBy: 0, unreachable: 0, sealTime: 8, restAfter: 2.5, size: 1, buried: 0, squint: 0.6 } },
+  { name: 'Ghost in the wall', values: { ...DEFAULTS, moveStyle: 1, secPerCell: 0.45, oozeSlow: 2, targetBy: 1, sealTime: 5, restAfter: 0.5, size: 1, squint: 0.4 } },
+  { name: 'Old frog', values: { ...DEFAULTS, moveStyle: 2, secPerCell: 0.6, hopWait: 1.6, hopHeight: 2, targetBy: 2, unreachable: 1, sealTime: 6, restAfter: 1, size: 2, buried: 1, squint: 0.7, eyeSize: 0.2 } }];
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || STARTERS; } catch (e) { presets = STARTERS; }
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  const names = { moveStyle: STYLE_NAMES[GOO.moveStyle], targetBy: TARGET_NAMES[GOO.targetBy], unreachable: UNREACH_NAMES[GOO.unreachable], buried: BURIED_NAMES[GOO.buried] };
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ pressure, now: readKnobs(), names, presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+refill(); setPressure(0.5); showStyle(); showStatus();
+layout();
+// fixed-step loop + fps (one-second average); Slow-mo runs the sim at 0.25×
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (!paused) { acc += dt * (slow ? 0.25 : 1); while (acc >= STEP) { update(STEP); acc -= STEP; } }
+  draw(); if ((statusT += dt) > 0.15) { statusT = 0; showStatus(); }
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// for Playwright checks: pause the clock, step it by hand, place cracks, tap him, read what he's doing
+window.sketch = { GOO, readKnobs, setKnobs, zap, refill, setPressure, G, groupAt,
+  pause: on => { paused = on; acc = 0; },
+  advance: sec => { for (let n = Math.round(sec / STEP); n > 0; n--) update(STEP); draw(); showStatus(); },
+  pieces: on => { piecesOn = on; if (!on) { piece.cells = null; piece.B = null; } },
+  clearCracks: () => { cracks = []; },
+  addCrack: (x, y, color = 1, age = 0) => { const c = { id: crackId++, x, y, color, age, seal: 0 }; cracks.push(c); return c.id; },
+  tapVet: () => tapVet(vet.px + vet.size / 2, vet.py + 0.5),
+  state: () => ({ simT, cell, ox, oy, pressure, lineY: lineY(),
+    vet: { x: vet.x, y: vet.y, px: +vet.px.toFixed(2), py: +vet.py.toFixed(2), size: vet.size, state: vet.state, kind: vet.kind, landed: vet.landed,
+      waiting: vet.waiting, target: vet.target && { x: vet.target.x, y: vet.target.y, seal: +vet.target.seal.toFixed(2) }, owT: vet.owT, inGoop: +vet.inGoop.toFixed(2), sq: +vet.sq.toFixed(2) },
+    cracks: cracks.map(c => ({ id: c.id, x: c.x, y: c.y, color: c.color, age: +c.age.toFixed(1), seal: +c.seal.toFixed(2) })),
+    sealedByHim, sealedByYou, status: $('status').textContent }),
+  fxPixel: (x, y) => { const fd = devicePixelRatio || 1; return [...fx.getImageData(Math.round(x * fd), Math.round(y * fd), 1, 1).data]; } };
+</script>
+</body>
+</html>
