@@ -74,6 +74,11 @@ async function playMoment(page, rank, shot) {
     if (line.voice === 'mon') {
       await page.locator('[data-tag="crt"]').getByRole('button', { name: en.lessons.gotIt }).waitFor({ timeout: 4000 })
       seen.push(['mon', (await monitorSays(page)).trim() === words, (await monitorLook(page)) === (line.monitor ?? null)])
+      if (line.monitor === 'alarm') { // the alarm's words: looks.alarmWords (Muzzy 2026-10-24: white)
+        const ink = await page.locator('[data-tag="crt"] .crt-words').first().evaluate((el) => getComputedStyle(el).color)
+        const hex = story.looks.alarmWords.replace('#', ''), want = `rgb(${[0, 2, 4].map((k) => parseInt(hex.slice(k, k + 2), 16)).join(', ')})`
+        check(`rank ${rank}: the alarm's words are ${story.looks.alarmWords}`, ink === want, ink)
+      }
       if (shot && i === story.moments[String(rank)].lines.length - 1) await page.screenshot({ path: `${OUT}/${shot}.png` })
       await page.waitForTimeout(200)
       await page.locator('[data-tag="crt"]').getByRole('button', { name: en.lessons.gotIt }).click()

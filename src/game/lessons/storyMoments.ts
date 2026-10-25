@@ -20,7 +20,7 @@ type Moment = { look?: string; lines: StoryLine[] }
 type WhisperStage = { from: number; say: string[] }
 type Whispers = { coldAt: number; stages: WhisperStage[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number
   noVoicesFrom: number; noVoicesDelaySeconds: number; noVoicesSeconds: number }
-export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; crackleEvery: number; cutSeconds: number }
+export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; alarmWords: string; crackleEvery: number; cutSeconds: number }
 type MomentsFile = { catchUp: number; moments: Record<string, Moment>; whispers: Whispers; looks: StoryLooks }
 
 export const storyFile = momentsFile as unknown as MomentsFile

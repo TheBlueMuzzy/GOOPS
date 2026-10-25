@@ -90,7 +90,7 @@ function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | nul
   return (
     <ArtLayer at={[x, y, w, h]} text={a.words.hint.text}>
       <CrtLook place="monitor" unit={unit} ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined} data-story-look={look}
-        style={{ '--story-flicker': `${looks.flickerSeconds}s`, '--story-alarm': `${looks.alarmSeconds}s`, '--story-alarm-colour': looks.alarmColour, '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
+        style={{ '--story-flicker': `${looks.flickerSeconds}s`, '--story-alarm': `${looks.alarmSeconds}s`, '--story-alarm-colour': looks.alarmColour, ...(look === 'alarm' && { '--crt-ink': looks.alarmWords, '--crt-glow': looks.alarmWords }), '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
           '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
         <div ref={body} className="crt-body">
           <TypedText text={words} className="lesson-words" />
