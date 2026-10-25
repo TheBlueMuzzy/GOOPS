@@ -125,6 +125,7 @@ export interface FaceReport {
   cells: number[]
   size: number
   eyes: number // 0..1 how faded in
+  due: boolean // its eyes should be showing (they may still be waiting for their turn to fade in)
   brows: number
   mouth: number
   talking: boolean
@@ -464,7 +465,7 @@ export class FaceBook {
   report(f: Face, x: number, y: number, toPx: (x: number, y: number) => [number, number], dying: boolean): FaceReport {
     const zapS = this.zapShutOf(f, dying)
     return {
-      cells: f.cells.slice(), size: f.size, eyes: f.eyes.a, brows: f.brows.a, mouth: f.mouth.a,
+      cells: f.cells.slice(), size: f.size, eyes: f.eyes.a, due: f.eyes.want, brows: f.brows.a, mouth: f.mouth.a,
       talking: this.sayOf(f, zapS) > 0.05, shut: Math.max(this.blinkOf(f), zapS), worried: dying ? 0 : this.worriedOf(f),
       gaze: [f.gx, f.gy], at: toPx(x, y), dying,
     }

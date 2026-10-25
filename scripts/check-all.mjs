@@ -26,6 +26,7 @@ const FAST = [
 // (red on a short desktop window: the kit's swipe rule — SPRINT 08 Notes; add it back once that's fixed).
 const E2E = [
   ['first-day', 'e2e/first-day.mjs', ''],      // 5347
+  ['eyes', 'e2e/eyes.mjs', ''],                // 6262 (F62: the goop's faces by rank 9/10/20/30/40 — fade-in one clump at a time, gaze, zap squeeze, brows, mouths; Jelly + Particle; shots at every portrait size)
   ['sw-update', 'e2e/sw-update.mjs', ''],      // 5462 (two release builds, served like GitHub Pages; + the Dev Kit in it)
   ['perf', 'e2e/perf.mjs', ''],                // 5464 (pass line: content/tuning/perf.json — same result 3 runs + beside sw-update)
   ['lessons', 'e2e/lessons.mjs', ''],          // 5341
