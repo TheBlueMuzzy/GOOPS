@@ -8,7 +8,7 @@
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { useCrtLesson, useSpotlitTags } from '../game/lessons/lessonLine'
-import { storyMoments, storyWords } from '../game/lessons/storyMoments'
+import { storyFile, storyMoments, storyWords, type MonitorLook } from '../game/lessons/storyMoments'
 import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Screen, Stack, TitleArt, fill, screens } from './kit'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
@@ -55,7 +55,9 @@ const NOTHING: string[] = []
 // need more room than the screen has make it slide down past the bezel, in the screen's colours (art.json console.crt).
 type CrtLine = { text: string; gotIt: boolean; onGotIt(): void }
 // drop: how much lower than the mock-up the monitor hangs (F35, art.json monitorDrop) — the screen moves with it
-function Crt({ hint, lesson, drop }: { hint: string; lesson: CrtLine | null; drop: number }) {
+// look (F40): a story line's monitor look — 'flicker' (it heard that) or 'alarm' (red flashes: the Veteran's capture at
+// 30); its numbers are content/story/moments.json looks, the CSS is lessons.css
+function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | null; drop: number; look?: MonitorLook }) {
   const c = a.crt, [x, artY, w, h] = a.words.hint.at, y = artY + drop
   const box = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
@@ -84,10 +86,11 @@ function Crt({ hint, lesson, drop }: { hint: string; lesson: CrtLine | null; dro
   // from the first frame — the letters not typed yet are there, unseen — so the screen never changes size.
   // (a broken machine's hint used to be in the accent colour: every word on the monitor is phosphor green now)
   const words = lesson ? lesson.text : hint
+  const looks = storyFile.looks
   return (
     <ArtLayer at={[x, y, w, h]} text={a.words.hint.text}>
-      <CrtLook place="monitor" unit={unit} ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined}
-        style={{ '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
+      <CrtLook place="monitor" unit={unit} ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined} data-story-look={look}
+        style={{ '--story-flicker': `${looks.flickerSeconds}s`, '--story-alarm': `${looks.alarmSeconds}s`, '--story-alarm-colour': looks.alarmColour, '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
           '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
         <div ref={body} className="crt-body">
           <TypedText text={words} className="lesson-words" />
@@ -190,7 +193,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]}><LessonTag tag="monitor" /></ArtLayer>
-        <Crt hint={hint} lesson={storyLine ?? lessonLine} drop={drop} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
+        <Crt hint={hint} lesson={storyLine ?? lessonLine} drop={drop} look={story?.line.monitor} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
       </ArtStage>
     </Screen>
   )
