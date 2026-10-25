@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch (BMUZ) F62, 2026-10-24. Goo look + zap = zap-look.html (L4 Jelly renderer, Muzzy's zap pick). Eyes/mouths = story.md "The Goop changes". -->
+<title>F62: Goop eyes</title>
+<meta name="description" content="How should the goop's eyes and mouths look and move as the story goes on? Pick a rank (10 / 20 / 30 / 40): tiny eyes in big clumps, eyes that follow the falling piece and your laser, blinks, worry at high pressure, relief when a crack is sealed, silent mouths. Tap a goop to zap it and watch the eyes close.">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #fx { pointer-events: none; z-index: 1; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); flex-direction: column; align-items: stretch; }
+  #bottom .row { display: flex; gap: 8px; align-items: center; }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  #bottom button { min-height: 44px; font-size: 15px; }
+  #bottom .act { flex: 0 0 auto; padding: 0 12px; }
+  #bottom .lbl { flex: 0 0 auto; font-size: 12px; color: var(--dim); }
+  #pval { flex: 0 0 82px; font-size: 13px; color: #fca5a5; }
+  #press { flex: 1; min-width: 0; accent-color: #f87171; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #hint { position: fixed; left: 16px; right: 16px; text-align: center; font-size: 13px; line-height: 1.3; color: var(--dim); z-index: 2; pointer-events: none; }
+  body.side #hint { right: 316px; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 10px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 92px; }
+  #panel input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel input[type=color] { flex: 1; height: 28px; padding: 0 2px; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; }
+  /* the value box: type any number, even past the slider's ends (the slider then sits at its end, the box turns amber) */
+  #panel input.num { flex: 0 0 52px; width: 52px; box-sizing: border-box; padding: 3px 4px; text-align: right; font: 600 12px ui-monospace, monospace;
+    color: #94a3b8; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; -moz-appearance: textfield; }
+  #panel input.num::-webkit-inner-spin-button, #panel input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #panel input.num:focus { outline: none; border-color: var(--accent); color: var(--ink); }
+  #panel input.num.over { color: #fbbf24; border-color: #fbbf2480; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="fx"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bSlow">Slow-mo</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="hint"></div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <div class="row" id="ranks"><span class="lbl">Rank</span>
+    <button data-r="10">10</button><button data-r="20">20</button><button data-r="30">30</button><button data-r="40">40</button></div>
+  <div class="row"><span id="pval">Pressure 0%</span><input type="range" id="press" min="0" max="100" step="1" value="0">
+    <button class="act" id="bSeal">Seal a crack</button><button class="act" id="bReset">Refill</button></div>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+// Sizes and distances are in cells (1 = one grid square). Times in seconds.
+const GOO = {
+  // the eyes
+  eyeSize: 0.13,      // eye radius, in cells (tiny = 0.1)
+  pupilSize: 0.5,     // pupil as a share of the eye (1 = all pupil)
+  eyeGap: 0.3,        // distance between eye centres, in cells
+  eyeCount: 2,        // eyes per clump that has eyes
+  eyeColor: '#f8fafc',
+  pupilColor: '#0f172a',
+  // which clumps get eyes
+  minClump10: 5,      // rank 10-19: smallest clump (in cells) that can have eyes
+  eyeChance10: 0.7,   // rank 10-19: chance a big-enough clump has eyes (0.7 = 2 of this board's 4 big clumps)
+  minClump20: 2,      // rank 20+: same, once eyes are "in most clumps"
+  eyeChance20: 0.85,
+  // following (rank 20+)
+  followSpeed: 6,     // how fast the pupils catch up (per second)
+  followRange: 6,     // cells: further than this, they stop following and look ahead
+  // blinks and moods (rank 30+)
+  blinkEvery: 3.5,    // s between blinks (each clump varies 50-150%)
+  blinkTime: 0.15,    // s one blink takes
+  worriedAt: 0.6,     // pressure (0-1) where they start to look worried
+  browTilt: 25,       // degrees the worried brows tilt (inner ends up)
+  pupilShrink: 0.4,   // how much the pupils shrink when worried (0.4 = 40% smaller)
+  reliefTime: 1.2,    // s the eyes close in relief after a crack is sealed
+  // zap (all ranks)
+  zapClose: 0.6,      // s the eyes stay squeezed shut on the clumps touching a zap
+  // mouths (rank 40+)
+  mouthChance: 0.5,   // chance a clump with eyes also has a mouth
+  mouthSize: 0.3,     // mouth width, in cells
+  mouthWobble: 0.5,   // how far the silent mouth opens and closes (0 = a still line)
+  // the falling piece
+  pieceSpeed: 1.2,    // cells per second it falls
+};
+// [name, min, max, step] rows (or [name, 'color']); a one-item row is a group heading.
+const KNOBS = [['The eyes'], ['eyeSize', 0.04, 0.4, 0.01], ['pupilSize', 0.1, 1, 0.05], ['eyeGap', 0, 0.8, 0.02], ['eyeCount', 1, 4, 1],
+  ['eyeColor', 'color'], ['pupilColor', 'color'],
+  ['Which clumps get eyes'], ['minClump10', 1, 9, 1], ['eyeChance10', 0, 1, 0.05], ['minClump20', 1, 9, 1], ['eyeChance20', 0, 1, 0.05],
+  ['Following (rank 20+)'], ['followSpeed', 0, 20, 0.5], ['followRange', 0, 14, 0.5],
+  ['Blinks and moods (rank 30+)'], ['blinkEvery', 0.5, 10, 0.1], ['blinkTime', 0.03, 0.6, 0.01], ['worriedAt', 0, 1, 0.05],
+  ['browTilt', 0, 45, 1], ['pupilShrink', 0, 0.9, 0.05], ['reliefTime', 0.1, 4, 0.1],
+  ['Zap'], ['zapClose', 0, 3, 0.05],
+  ['Mouths (rank 40+)'], ['mouthChance', 0, 1, 0.05], ['mouthSize', 0.05, 0.8, 0.01], ['mouthWobble', 0, 1, 0.05],
+  ['The falling piece'], ['pieceSpeed', 0, 6, 0.1]];
+// plain-word names shown beside each knob (the JSON keeps the short names)
+const KNOB_LABEL = { eyeSize: 'Eye size', pupilSize: 'Pupil size', eyeGap: 'Eye spacing', eyeCount: 'Eyes per clump', eyeColor: 'Eye colour', pupilColor: 'Pupil colour',
+  minClump10: 'Min clump (10)', eyeChance10: 'Eye chance (10)', minClump20: 'Min clump (20+)', eyeChance20: 'Eye chance (20+)',
+  followSpeed: 'Follow speed', followRange: 'Follow range', blinkEvery: 'Blink every', blinkTime: 'Blink length', worriedAt: 'Worried at',
+  browTilt: 'Brow tilt', pupilShrink: 'Pupil shrink', reliefTime: 'Relief close', zapClose: 'Zap close',
+  mouthChance: 'Mouth chance', mouthSize: 'Mouth size', mouthWobble: 'Mouth wobble', pieceSpeed: 'Piece speed' };
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
+const KNOB_HELP = {
+  eyeSize: 'How big each eye is (cells). 0.1 = a speck you have to look for; 0.25 = cartoon eyes.',
+  pupilSize: 'How much of the eye the pupil fills. Small = staring and creepy; big = cute.',
+  eyeGap: 'How far apart the eyes sit. 0 = they overlap into one blob.',
+  eyeCount: 'How many eyes a clump with eyes gets, in a row. 3+ starts to feel alien.',
+  eyeColor: 'The whites of the eyes.',
+  pupilColor: 'The pupils (and the brows and closed-eye lines).',
+  minClump10: 'Rank 10: only clumps at least this many cells big can open eyes. The board has clumps of 1, 2, 4, 5, 8 and 9.',
+  eyeChance10: 'Rank 10: chance each big-enough clump has eyes. Low = "a few", you have to spot them.',
+  minClump20: 'Rank 20+: the smallest clump with eyes once they are "in most clumps".',
+  eyeChance20: 'Rank 20+: chance each big-enough clump has eyes.',
+  followSpeed: 'Rank 20+: how quickly the pupils swing to the falling piece (or your finger / laser). Low = lazy, high = snappy.',
+  followRange: 'Rank 20+: only clumps this close (cells) to the piece follow it; the rest look ahead. Watch the far corner.',
+  blinkEvery: 'Rank 30+: seconds between blinks. Each clump blinks on its own clock.',
+  blinkTime: 'Rank 30+: how long one blink takes. Long = sleepy.',
+  worriedAt: 'Rank 30+: when the Pressure slider passes this, the eyes look worried (brows, small shaky pupils).',
+  browTilt: 'Rank 30+: how steep the worried brows are. 0 = no brows.',
+  pupilShrink: 'Rank 30+: how much the pupils shrink when worried. Turn Pressure to 100% to see the most.',
+  reliefTime: 'Rank 30+: seconds the eyes close in relief (soft curves) after you press Seal a crack.',
+  zapClose: 'Seconds the clumps touching a zapped goop squeeze their eyes shut. The zapped one shuts at once.',
+  mouthChance: 'Rank 40: chance a clump with eyes also has a mouth.',
+  mouthSize: 'Rank 40: how wide the mouths are (cells).',
+  mouthWobble: 'Rank 40: how far the silent mouths open and close. 0 = a still line.',
+  pieceSpeed: 'How fast the piece falls (cells/s); it drifts side to side so you can watch the eyes follow. 0 = it hangs still.',
+};
+
+// ===== The sketch itself =====
+// Fixed look: the game's L4 Jelly values (content/tuning/goo-jelly.json, Muzzy's pick 2026-10-17). Not knobs here.
+const JELLY = { stiffness: 700, viscosity: 6.5, wobble: 0.25, translucency: 0.5, wetness: 0.9, home: 0.3, corner: 0.32, magnetism: 1.4, maxDpr: 1.5 };
+// Fixed zap: Muzzy's F67 pick (research/zap-look/picks.json, 2026-10-24). Not knobs here.
+const ZAP = { beamTime: 0.3, whiteHot: 0.52, swell: 0.14, suckTime: 0.27, droplets: 15, dropSpeed: 95, dropLife: 1.4, gravity: 310, sprayAt: 0.6 };
+const COLORS = [[0, 0, 0], [0.94, 0.27, 0.27], [0.23, 0.51, 0.96], [0.13, 0.77, 0.37], [0.92, 0.70, 0.03], [0.66, 0.33, 0.97]]; // game goo-colors
+const CSS = ['#000', '#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7'];
+const W = 8, H = 12, V1_CELL = 30;
+// the board: clumps of 1, 2, 4, 5, 8 and 9 cells (R red, B blue, G green, Y yellow, P purple). The top half is for the falling piece.
+const BOARD = ['........', '........', '........', '........', '........', '........',
+  '..BB..GP', '..BBRGGP', 'RRRYYGGP', 'RRRYPPPP', 'RRBYPGGB', 'BBBYPGGB'];
+let seed = 7; const rand = () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t ^= t + Math.imul(t ^ (t >>> 7), 61 | t); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+// a fixed 0..1 number per text, so a clump keeps the same dice roll for "has eyes?" across rebuilds and rank changes
+const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); return ((h ^ (h >>> 15)) >>> 0) / 4294967296; };
+
+// ---- rules: a plain grid. Tap a group -> it's zapped (any size). Never reads the visuals.
+const G = { grid: new Uint8Array(W * H), ver: 0, events: [] };
+const idx = (x, y) => y * W + x;
+function refill() { for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) G.grid[idx(x, y)] = ' RBGYP'.indexOf(BOARD[y][x]) > 0 ? ' RBGYP'.indexOf(BOARD[y][x]) : 0; G.ver++; }
+function groupAt(x, y) {
+  const c = G.grid[idx(x, y)], out = [], seen = new Set([idx(x, y)]), stack = [[x, y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop(); out.push([cx, cy]);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy, i = idx(nx, ny);
+      if (nx >= 0 && nx < W && ny >= 0 && ny < H && !seen.has(i) && G.grid[i] === c) { seen.add(i); stack.push([nx, ny]); }
+    }
+  }
+  return out;
+}
+function zap(x, y, px, py) { // (x, y) cell; (px, py) the tap point in cell units = where the laser lands
+  const c = G.grid[idx(x, y)]; if (!c) return false;
+  const cells = groupAt(x, y);
+  for (const [cx, cy] of cells) G.grid[idx(cx, cy)] = 0;
+  G.ver++; G.events.push({ type: 'zap', cells, color: c, x: px ?? x + 0.5, y: py ?? y + 0.5 }); return true;
+}
+
+// ---- story state: rank, pressure, relief
+let rank = 20, pressure = 0, reliefT = -1, sealT = -1, aim = null;
+
+// ---- jelly layer (ported from lab-L4-jelly.html via zap-look.html): one shape-matched soft body per group
+let bodies = [], zapped = [], drops = [], kicks = [], nextId = 1, seenVer = -1, beam = null, simT = 0;
+let cellBody = new Int32Array(W * H).fill(-1);
+function traceLoops(cells) {
+  const key = (x, y) => (x + 64) * 1024 + (y + 64);
+  const has = new Set(cells.map(([x, y]) => key(x, y)));
+  const edges = new Map(), all = [];
+  const add = (x0, y0, dx, dy, cell) => { const e = { x0, y0, dx, dy, cell, used: false }, k = key(x0, y0);
+    if (!edges.has(k)) edges.set(k, []); edges.get(k).push(e); all.push(e); };
+  cells.forEach(([x, y], ci) => {
+    if (!has.has(key(x, y - 1))) add(x, y, 1, 0, ci);
+    if (!has.has(key(x + 1, y))) add(x + 1, y, 0, 1, ci);
+    if (!has.has(key(x, y + 1))) add(x + 1, y + 1, -1, 0, ci);
+    if (!has.has(key(x - 1, y))) add(x, y + 1, 0, -1, ci);
+  });
+  const loops = [];
+  for (const e0 of all) {
+    if (e0.used) continue;
+    const loop = []; let cur = e0;
+    while (cur && !cur.used) {
+      cur.used = true; loop.push(cur);
+      const list = edges.get(key(cur.x0 + cur.dx, cur.y0 + cur.dy)) || [];
+      let best = null, bs = -9;
+      for (const c of list) { if (c.used) continue; const s = cur.dx * c.dy - cur.dy * c.dx; if (s > bs) { bs = s; best = c; } }
+      cur = best;
+    }
+    loops.push(loop);
+  }
+  return loops;
+}
+function buildPoints(loops, B) {
+  for (const loop of loops) {
+    const n = loop.length, start = B.n, corners = [];
+    for (let k = 0; k < n; k++) { const a = loop[(k + n - 1) % n], b = loop[k]; if (a.dx !== b.dx || a.dy !== b.dy) corners.push(k); }
+    const rad = k => { const a = loop[(k + n - 1) % n], b = loop[k]; return (a.dx * b.dy - a.dy * b.dx) > 0 ? JELLY.corner : JELLY.corner * 0.5; };
+    for (let j = 0; j < corners.length; j++) {
+      const k = corners[j], kn = corners[(j + 1) % corners.length];
+      const ein = loop[(k + n - 1) % n], eo = loop[k], Vx = eo.x0, Vy = eo.y0, r = rad(k);
+      for (const t of [0, 0.25, 0.5, 0.75]) {
+        const ax = Vx - ein.dx * r, ay = Vy - ein.dy * r, bx = Vx + eo.dx * r, by = Vy + eo.dy * r, u = 1 - t;
+        pushPt(B, u * u * ax + 2 * t * u * Vx + t * t * bx, u * u * ay + 2 * t * u * Vy + t * t * by);
+      }
+      const runLen = ((kn - k + n) % n) || n, r2 = rad(kn), L = runLen - r - r2, m = Math.max(1, Math.round(L / 0.3));
+      for (let i = 0; i < m; i++) { const s = i * L / m; pushPt(B, Vx + eo.dx * (r + s), Vy + eo.dy * (r + s)); }
+    }
+    B.loops.push([start, B.n - start]);
+  }
+}
+function pushPt(B, x, y) { B.bx.push(x); B.by.push(y); B.n++; }
+function makeBody(cells, color) {
+  const B = { id: nextId++, color, cells, n: 0, loops: [], bx: [], by: [], fa: 0, fcx: 0, fcy: 0, rcx: 0, rcy: 0, alpha: 1, hot: 0, sc: 1 };
+  buildPoints(traceLoops(cells), B);
+  B.hx = Float32Array.from(B.bx); B.hy = Float32Array.from(B.by); B.x = new Float32Array(B.n); B.y = new Float32Array(B.n);
+  B.vx = new Float32Array(B.n); B.vy = new Float32Array(B.n);
+  let tl = 0; cells.forEach(([x, y], i) => { if (y < cells[tl][1] || (y === cells[tl][1] && x < cells[tl][0])) tl = i; });
+  const [tx, ty] = cells[tl]; let run = 1; while (run < 3 && cells.some(([x, y]) => x === tx + run && y === ty)) run++;
+  const tall = cells.some(([x, y]) => x === tx && y === ty + 1);
+  B.hlX = tx + 0.42 + 0.36 * (run - 1); B.hlY = ty + 0.3; B.hlW = 0.24 + 0.2 * (run - 1); B.hlH = tall ? 0.12 : 0.1;
+  B.cellIdx = cells.map(([x, y]) => idx(x, y));
+  return B;
+}
+function transfer(B, olds) { // carry the old wobble across a rebuild; brand-new bodies spring out from 70%
+  let matched = 0;
+  for (let i = 0; i < B.n; i++) {
+    let best = null, bi = 0, bd = 0.5;
+    for (const O of olds) { if (O.color !== B.color) continue;
+      for (let k = 0; k < O.n; k++) { const d = Math.abs(O.hx[k] - B.hx[i]) + Math.abs(O.hy[k] - B.hy[i]); if (d < bd) { bd = d; best = O; bi = k; } } }
+    if (best) { B.x[i] = B.hx[i] + best.x[bi] - best.hx[bi]; B.y[i] = B.hy[i] + best.y[bi] - best.hy[bi]; B.vx[i] = best.vx[bi]; B.vy[i] = best.vy[bi]; matched++; }
+    else { B.x[i] = B.hx[i]; B.y[i] = B.hy[i]; }
+  }
+  if (!matched) {
+    let cx = 0, cy = 0; for (let i = 0; i < B.n; i++) { cx += B.hx[i]; cy += B.hy[i]; } cx /= B.n; cy /= B.n;
+    for (let i = 0; i < B.n; i++) { B.x[i] = cx + (B.hx[i] - cx) * 0.7; B.y[i] = cy + (B.hy[i] - cy) * 0.7; }
+  }
+}
+function kick(B, kind, amt) {
+  if (!B || !amt) return;
+  let cx = 0, cy = 0, ymax = -1e9, ymin = 1e9; for (let i = 0; i < B.n; i++) { cx += B.x[i]; cy += B.y[i]; ymax = Math.max(ymax, B.y[i]); ymin = Math.min(ymin, B.y[i]); } cx /= B.n; cy /= B.n;
+  const hgt = Math.max(1, ymax - ymin), s = amt * JELLY.wobble;
+  for (let i = 0; i < B.n; i++) {
+    const dx = B.x[i] - cx, dy = B.y[i] - cy;
+    if (kind === 'squash') { B.vy[i] += s * (ymax - B.y[i]) / Math.sqrt(hgt); B.vx[i] += s * 0.6 * dx / Math.sqrt(hgt); }
+    else if (kind === 'radial') { B.vx[i] += s * dx; B.vy[i] += s * dy; }
+  }
+}
+function rebuild() {
+  const olds = bodies, next = [], seen = new Uint8Array(W * H);
+  cellBody = new Int32Array(W * H).fill(-1);
+  for (let i = 0; i < W * H; i++) {
+    if (!G.grid[i] || seen[i]) continue;
+    const x = i % W, y = (i - x) / W, g = groupAt(x, y); for (const [gx, gy] of g) seen[idx(gx, gy)] = 1;
+    const B = makeBody(g, G.grid[i]); transfer(B, olds);
+    B.face = faceFor(B);
+    for (const ci of B.cellIdx) cellBody[ci] = B.id;
+    next.push(B);
+  }
+  bodies = next;
+}
+function stepBody(B, h, ks, kh, c) { // Müller shape matching toward the homes + home springs + damping
+  const n = B.n; let cx = 0, cy = 0, rx = 0, ry = 0;
+  for (let i = 0; i < n; i++) { cx += B.x[i]; cy += B.y[i]; rx += B.hx[i]; ry += B.hy[i]; }
+  cx /= n; cy /= n; rx /= n; ry /= n;
+  let a00 = 0, a01 = 0, a10 = 0, a11 = 0;
+  for (let i = 0; i < n; i++) { const px = B.x[i] - cx, py = B.y[i] - cy, qx = B.hx[i] - rx, qy = B.hy[i] - ry;
+    a00 += px * qx; a01 += px * qy; a10 += py * qx; a11 += py * qy; }
+  const ang = Math.atan2(a10 - a01, a00 + a11), cs = Math.cos(ang), sn = Math.sin(ang);
+  B.fa = ang; B.fcx = cx; B.fcy = cy; B.rcx = rx; B.rcy = ry;
+  for (let i = 0; i < n; i++) {
+    const qx = B.hx[i] - rx, qy = B.hy[i] - ry, gx = cx + cs * qx - sn * qy, gy = cy + sn * qx + cs * qy;
+    B.vx[i] += (ks * (gx - B.x[i]) + kh * (B.hx[i] - B.x[i]) - c * B.vx[i]) * h;
+    B.vy[i] += (ks * (gy - B.y[i]) + kh * (B.hy[i] - B.y[i]) - c * B.vy[i]) * h;
+    B.x[i] += B.vx[i] * h; B.y[i] += B.vy[i] * h;
+    if (B.y[i] > H) { B.y[i] = H; if (B.vy[i] > 0) B.vy[i] *= -0.3; }
+    if (B.x[i] < 0) { B.x[i] = 0; if (B.vx[i] < 0) B.vx[i] *= -0.3; } else if (B.x[i] > W) { B.x[i] = W; if (B.vx[i] > 0) B.vx[i] *= -0.3; }
+  }
+}
+
+// ---- the falling piece: a 2-cell jelly body that glides down the empty top half, drifting side to side, then starts again.
+// Not part of the grid (it never lands); it's only there for the eyes to watch.
+const piece = { B: null, x: 3, y: -0.5, hx0: null, hy0: null };
+function newPiece() {
+  const B = makeBody([[0, 0], [1, 0]], 1 + Math.floor(rand() * 5));
+  piece.hx0 = Float32Array.from(B.hx); piece.hy0 = Float32Array.from(B.hy); piece.B = B; piece.y = -0.5;
+  placePiece(); for (let i = 0; i < B.n; i++) { B.x[i] = B.hx[i]; B.y[i] = B.hy[i]; }
+}
+function placePiece() {
+  piece.x = 2.8 + 2.6 * Math.sin(simT * 0.8); // left cell from 0.2 to 5.4: the piece sweeps the whole width
+  const B = piece.B; for (let i = 0; i < B.n; i++) { B.hx[i] = piece.hx0[i] + piece.x; B.hy[i] = piece.hy0[i] + piece.y; }
+}
+function stepPiece(dt) {
+  piece.y += GOO.pieceSpeed * dt;
+  if (piece.y > 4.4) { newPiece(); return; }
+  placePiece();
+  const ks = JELLY.stiffness; stepBody(piece.B, dt, ks, ks * JELLY.home, JELLY.viscosity);
+}
+const pieceCentre = () => ({ x: piece.x + 1, y: piece.y + 0.5 });
+
+// ---- THE EYES (what this sketch is about) ----
+// Each clump has a "face" (kept across rebuilds by its cells): a fixed dice roll for eyes and for a mouth, a spot for the eyes,
+// where the pupils look, a blink clock and a zap-shut clock. Rank decides which of these behaviours are switched on.
+const faces = new Map();
+function faceFor(B) {
+  const key = B.cellIdx.slice().sort((a, b) => a - b).join(',');
+  let f = faces.get(key);
+  if (!f) { f = { key, eyeRoll: hash(key + 'eyes'), mouthRoll: hash(key + 'mouth'), spot: eyeSpot(B.cells), gx: 0, gy: 0,
+    blinkIn: GOO.blinkEvery * (0.3 + rand()), blinkT: -1, zapT: -1, mph: rand() * 6.28, mspd: 0.8 + rand() * 0.6 }; faces.set(key, f); }
+  return f;
+}
+// where the eyes sit: the most "inside" pair of side-by-side cells (else the most inside single cell), preferring room below for a mouth
+function eyeSpot(cells) {
+  const has = new Set(cells.map(([x, y]) => x + ',' + y)), n = (x, y) => has.has(x + ',' + y) ? 1 : 0;
+  const nb = (x, y) => n(x + 1, y) + n(x - 1, y) + n(x, y + 1) + n(x, y - 1);
+  let best = null, bs = -1e9;
+  for (const [x, y] of cells) {
+    const s1 = nb(x, y) + 0.5 * n(x, y + 1) - 0.01 * y;
+    if (s1 > bs) { bs = s1; best = { x: x + 0.5, y: y + 0.5 }; }
+    if (n(x + 1, y)) { const s2 = 1 + nb(x, y) + nb(x + 1, y) + 0.5 * (n(x, y + 1) + n(x + 1, y + 1)) - 0.01 * y;
+      if (s2 > bs) { bs = s2; best = { x: x + 1, y: y + 0.5 }; } }
+  }
+  return best;
+}
+const hasEyes = B => {
+  if (!B.face || rank < 10) return false;
+  const late = rank >= 20, min = late ? GOO.minClump20 : GOO.minClump10, chance = late ? GOO.eyeChance20 : GOO.eyeChance10;
+  return B.cells.length >= min && B.face.eyeRoll < chance;
+};
+const hasMouth = B => rank >= 40 && hasEyes(B) && B.face.mouthRoll < GOO.mouthChance;
+// a point in the clump's rest shape -> where it is now (rides the jelly's fitted turn + centre, like the highlight; shrinks while zapped)
+function toWorld(B, x, y) {
+  const ca = Math.cos(B.fa), sa = Math.sin(B.fa);
+  const qx = B.t !== undefined ? (x - B.c0x) * B.sc : x - B.rcx, qy = B.t !== undefined ? (y - B.c0y) * B.sc : y - B.rcy;
+  return { x: B.fcx + ca * qx - sa * qy, y: B.fcy + sa * qx + ca * qy };
+}
+// what the eyes watch: the laser while it fires, else your finger/mouse over the tank (for 1.2 s), else the falling piece
+function gazeTarget() {
+  if (beam) return beam;
+  if (aim && simT - aim.t < 1.2) return aim;
+  return piece.B ? pieceCentre() : null;
+}
+// 0 = open, 1 = shut. Closes over `closeIn`, stays shut, opens again over the last 30% (at most 0.25 s).
+function shutCurve(t, T, closeIn) {
+  if (t < 0 || T <= 0) return 0;
+  if (t < closeIn) return t / closeIn;
+  const r = Math.min(0.3 * T, 0.25); return t > T - r ? Math.max(0, (T - t) / r) : 1;
+}
+const reliefAmount = () => rank >= 30 ? shutCurve(reliefT, GOO.reliefTime, 0.25) : 0;
+const worriedAmount = () => rank >= 30 && pressure >= GOO.worriedAt && pressure > 0
+  ? (0.5 + 0.5 * (pressure - GOO.worriedAt) / Math.max(0.01, 1 - GOO.worriedAt)) * (1 - reliefAmount()) : 0;
+function updateFaces(dt) {
+  const tgt = gazeTarget(), k = 1 - Math.exp(-GOO.followSpeed * dt);
+  for (const B of bodies) {
+    const f = B.face; if (!f || !hasEyes(B)) continue;
+    let tx = 0, ty = 0; // look ahead unless following
+    if (rank >= 20 && tgt) {
+      const c = toWorld(B, f.spot.x, f.spot.y), dx = tgt.x - c.x, dy = tgt.y - c.y, d = Math.hypot(dx, dy);
+      if (d <= GOO.followRange && d > 1e-3) { const near = Math.min(1, d / 0.8); tx = dx / d * near; ty = dy / d * near; }
+    }
+    f.gx += (tx - f.gx) * k; f.gy += (ty - f.gy) * k;
+    if (rank >= 30) {
+      if (f.blinkT >= 0) { f.blinkT += dt; if (f.blinkT >= GOO.blinkTime) f.blinkT = -1; }
+      else if ((f.blinkIn -= dt) <= 0) { f.blinkT = 0; f.blinkIn = GOO.blinkEvery * (0.5 + rand()); }
+    } else f.blinkT = -1;
+    if (f.zapT >= 0) { f.zapT += dt; if (f.zapT >= GOO.zapClose) f.zapT = -1; }
+    f.mph += dt * f.mspd * 2 * Math.PI;
+  }
+  if (reliefT >= 0) { reliefT += dt; if (reliefT >= GOO.reliefTime) reliefT = -1; }
+  if (sealT >= 0) sealT += dt;
+}
+function seal() { reliefT = 0; sealT = 0; }
+
+// ---- THE ZAP (Muzzy's F67 pick, fixed): heat + swell -> sucked into the laser point -> spray. Touching clumps flinch and shut their eyes.
+const heatTime = () => ZAP.beamTime * 0.4;
+function startZap(e) {
+  const B = bodies.find(b => b.id === cellBody[idx(e.cells[0][0], e.cells[0][1])]);
+  beam = ZAP.beamTime > 0 ? { x: e.x, y: e.y, t: 0, css: CSS[e.color] } : null;
+  if (B) {
+    B.hadEyes = hasEyes(B);
+    bodies = bodies.filter(b => b !== B);
+    B.t = 0; B.lx = e.x; B.ly = e.y; B.sprayed = false;
+    let cx = 0, cy = 0; for (let i = 0; i < B.n; i++) { cx += B.bx[i]; cy += B.by[i]; } B.c0x = cx / B.n; B.c0y = cy / B.n;
+    B.dist = new Float32Array(B.n); let dmax = 1e-3;
+    for (let i = 0; i < B.n; i++) { B.dist[i] = Math.hypot(B.bx[i] - e.x, B.by[i] - e.y); dmax = Math.max(dmax, B.dist[i]); }
+    for (let i = 0; i < B.n; i++) B.dist[i] /= dmax;
+    kick(B, 'radial', 1.5 * Math.min(1, ZAP.swell * 5));
+    zapped.push(B);
+  }
+  for (const [x, y] of e.cells) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { // neighbours flinch (game: -0.8) and shut their eyes
+    const nx = x + dx, ny = y + dy; if (nx < 0 || nx >= W || ny < 0 || ny >= H || !G.grid[idx(nx, ny)]) continue;
+    kicks.push([idx(nx, ny), 'radial', -0.8]);
+    const N = bodies.find(b => b.id === cellBody[idx(nx, ny)]); if (N && N.face) N.face.zapT = 0;
+  }
+}
+function spray(B) { // v1 createDropletsForPop: random outline point, outward ±0.4 rad, speed 50–130%, upward bias, size 50–120%, life 70–130%
+  B.sprayed = true; const n = Math.round(ZAP.droplets); if (n <= 0) return;
+  let cx = 0, cy = 0; for (let i = 0; i < B.n; i++) { cx += B.x[i]; cy += B.y[i]; } cx /= B.n; cy /= B.n;
+  const k = 1 / V1_CELL; // v1 px -> cells
+  for (let d = 0; d < n; d++) {
+    const i = Math.floor(rand() * B.n), dx = B.x[i] - cx, dy = B.y[i] - cy;
+    const ang = Math.hypot(dx, dy) > 0.15 ? Math.atan2(dy, dx) + (rand() - 0.5) * 0.8 : rand() * Math.PI * 2;
+    const sp = ZAP.dropSpeed * (0.5 + rand() * 0.8) * k, life = ZAP.dropLife * (0.7 + rand() * 0.6);
+    drops.push({ x: B.x[i], y: B.y[i], vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - ZAP.dropSpeed * (50 / 60) * k,
+      r: 9 * (0.5 + rand() * 0.7) * k, life, life0: ZAP.dropLife, color: B.color });
+  }
+}
+function stepZap(B, h) {
+  const t = B.t, F = heatTime(), S = ZAP.suckTime;
+  const heat = F > 0 ? Math.min(t / F, 1) : 1, grow = 1 + ZAP.swell * heat;
+  B.hot = heat;
+  let em = 0;
+  for (let i = 0; i < B.n; i++) {
+    const rx = B.c0x + (B.bx[i] - B.c0x) * grow, ry = B.c0y + (B.by[i] - B.c0y) * grow;
+    let e = 0;
+    if (t > F) { const u = S > 0 ? (t - F) / S : 1, ui = Math.max(0, Math.min(1, (u - 0.35 * B.dist[i]) / 0.65)); e = ui * ui * (3 - 2 * ui); }
+    B.hx[i] = B.lx + (rx - B.lx) * (1 - e); B.hy[i] = B.ly + (ry - B.ly) * (1 - e); em += e;
+  }
+  em /= B.n;
+  B.sc = grow * (1 - em); B.alpha = 1 - Math.max(0, (em - 0.6) / 0.4) ** 1.5;
+  const ks = JELLY.stiffness; stepBody(B, h, ks * 0.5, ks * 0.9, JELLY.viscosity);
+}
+function update(dt) {
+  simT += dt;
+  for (const e of G.events) if (e.type === 'zap') startZap(e);
+  G.events.length = 0;
+  if (seenVer !== G.ver) { seenVer = G.ver; rebuild(); }
+  if (kicks.length) { const best = new Map();
+    for (const [cell, kind, amt] of kicks) { const id = cellBody[cell]; if (id < 0) continue; const k = id + kind;
+      if (!best.has(k) || Math.abs(amt) > Math.abs(best.get(k)[2])) best.set(k, [id, kind, amt]); }
+    for (const [id, kind, amt] of best.values()) kick(bodies.find(b => b.id === id), kind, amt);
+    kicks = []; }
+  const ks = JELLY.stiffness, kh = ks * JELLY.home, c = JELLY.viscosity;
+  for (const B of bodies) stepBody(B, dt, ks, kh, c);
+  stepPiece(dt);
+  for (const B of zapped) {
+    stepZap(B, dt); B.t += dt;
+    const end = heatTime() + ZAP.suckTime;
+    if (!B.sprayed && B.t >= ZAP.sprayAt * end) spray(B);
+    if (B.t >= end && B.sprayed) B.dead = true;
+  }
+  zapped = zapped.filter(B => !B.dead);
+  const g = ZAP.gravity / V1_CELL;
+  for (const d of drops) { // v1: gravity, floor bounce 30%, linear fade, shrink 0.995 per 60-fps frame, gone past the tank sides
+    d.vy += g * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; d.r *= Math.pow(0.995, dt * 60);
+    if (d.y + d.r > H) { d.y = H - d.r; d.vy *= -0.3; }
+    if (d.x + d.r < 0 || d.x - d.r > W) d.life = 0;
+  }
+  drops = drops.filter(d => d.life > 0);
+  if (beam) { beam.t += dt; if (beam.t >= ZAP.beamTime) beam = null; }
+  updateFaces(dt);
+}
+
+// ---- WebGL2 renderer: L4 Jelly's passes (mask -> small blur -> big blur -> glossy jelly), plus a white-hot channel
+const canvas = $('c'), fxc = $('fx'), fx = fxc.getContext('2d');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, stencil: false });
+if (!gl) document.body.innerHTML = '<p style="padding:16px">WebGL2 is not available on this device.</p>';
+const floatOK = !!gl.getExtension('EXT_color_buffer_float');
+const FSQ = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const MASK_VS = `#version 300 es
+layout(location=0) in vec4 aPos; uniform vec2 uOrigin, uCover; uniform float uCell; out vec2 vUv;
+void main(){ vec2 px = uOrigin + aPos.xy * uCell; vUv = aPos.zw;
+  gl_Position = vec4(px.x / uCover.x * 2.0 - 1.0, 1.0 - px.y / uCover.y * 2.0, 0.0, 1.0); }`;
+const MASK_FS = `#version 300 es
+precision mediump float; in vec2 vUv; uniform int uMode; uniform vec4 uC0, uC1; uniform float uHl;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
+void main(){
+  if (uMode == 2) { float r = length(vUv); float e = (1.0 - smoothstep(0.35, 1.0, r)); o0 = vec4(0.0); o1 = vec4(0.0, e * e * uHl, 0.0, 0.0); }
+  else { o0 = uC0; o1 = uC1; }
+}`;
+const BLUR_FS = `#version 300 es
+precision highp float; uniform sampler2D uT0, uT1; uniform vec2 uSize, uStep; uniform float uSigma; uniform int uR;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1;
+void main(){
+  vec2 uv = gl_FragCoord.xy / uSize; vec4 a = vec4(0.0), b = vec4(0.0); float ws = 0.0;
+  for (int i = -40; i <= 40; i++) { if (i < -uR || i > uR) continue;
+    float w = exp(-0.5 * float(i * i) / (uSigma * uSigma)); vec2 u = uv + uStep * float(i);
+    a += w * texture(uT0, u); b += w * texture(uT1, u); ws += w; }
+  o0 = a / ws; o1 = b / ws;
+}`;
+const FINAL_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uS0, uS1, uQ0, uQ1, uM1;
+uniform vec2 uRes, uCover, uOrigin, uQTex; uniform float uCell, uTime, uTrans, uWet, uHot; uniform ivec2 uGrid; uniform vec3 uCols[6];
+out vec4 outColor;
+float pick(vec4 t0, vec4 t1, vec4 s0, float s1){ return dot(t0, s0) + t1.r * s1; }
+void main(){
+  vec2 fc = gl_FragCoord.xy, uv = fc / uCover;
+  vec2 p = (vec2(fc.x, uRes.y - fc.y) - uOrigin) / uCell;
+  vec2 gs = vec2(uGrid); float px = 1.0 / uCell;
+  vec3 bg = vec3(0.008, 0.016, 0.04);
+  if (p.x >= 0.0 && p.x <= gs.x && p.y >= 0.0 && p.y <= gs.y) { vec2 f = abs(fract(p) - 0.5);
+    bg = vec3(0.02, 0.035, 0.08) + 0.025 * smoothstep(0.5 - px * 1.5, 0.5, max(f.x, f.y)); }
+  float edge = (p.y <= gs.y && p.y >= -0.6) ? min(abs(p.x), abs(p.x - gs.x)) : 1e3;
+  if (p.x >= 0.0 && p.x <= gs.x) edge = min(edge, abs(p.y - gs.y));
+  bg += vec3(0.08, 0.16, 0.3) * smoothstep(px * 3.0, 0.0, edge);
+  vec2 so = vec2(0.6, -0.9) * uQTex; vec4 sh0 = texture(uQ0, uv + so), sh1 = texture(uQ1, uv + so);
+  bg *= 1.0 - 0.45 * clamp(sh0.r + sh0.g + sh0.b + sh0.a + sh1.r, 0.0, 1.0);
+  vec4 s0 = texture(uS0, uv), s1 = texture(uS1, uv);
+  float f = s0.r, f2 = 0.0; int c = 1; vec4 sel = vec4(1, 0, 0, 0); float sel1 = 0.0;
+  if (s0.g > f) { f2 = f; f = s0.g; c = 2; sel = vec4(0, 1, 0, 0); } else f2 = max(f2, s0.g);
+  if (s0.b > f) { f2 = f; f = s0.b; c = 3; sel = vec4(0, 0, 1, 0); } else f2 = max(f2, s0.b);
+  if (s0.a > f) { f2 = f; f = s0.a; c = 4; sel = vec4(0, 0, 0, 1); } else f2 = max(f2, s0.a);
+  if (s1.r > f) { f2 = f; f = s1.r; c = 5; sel = vec4(0); sel1 = 1.0; } else f2 = max(f2, s1.r);
+  float aa = max(fwidth(f), 1e-4);
+  float a = smoothstep(0.5 - aa, 0.5 + aa, f);
+  a *= smoothstep(0.0, max(fwidth(f - f2) * 1.5, 0.03), f - f2);
+  if (a <= 0.0) { outColor = vec4(bg, 1.0); return; }
+  float th = pick(texture(uQ0, uv), texture(uQ1, uv), sel, sel1);
+  vec2 ex = vec2(uQTex.x, 0.0), ey = vec2(0.0, uQTex.y);
+  vec2 gq = vec2(pick(texture(uQ0, uv + ex), texture(uQ1, uv + ex), sel, sel1) - pick(texture(uQ0, uv - ex), texture(uQ1, uv - ex), sel, sel1),
+                 pick(texture(uQ0, uv + ey), texture(uQ1, uv + ey), sel, sel1) - pick(texture(uQ0, uv - ey), texture(uQ1, uv - ey), sel, sel1)) * 0.5;
+  vec2 ge = vec2(dFdx(f), dFdy(f)) * uCell;
+  float bev = 1.0 - smoothstep(0.5, 0.95, f);
+  vec3 n = normalize(vec3(-(gq * 7.0 + ge * 0.9 * bev), 1.0));
+  vec3 L = normalize(vec3(-0.45, 0.65, 0.62)), Hh = normalize(L + vec3(0.0, 0.0, 1.0));
+  vec3 base = uCols[c];
+  float t = smoothstep(0.45, 1.0, th);
+  float diff = max(dot(n, L), 0.0);
+  vec3 body = base * (0.5 + 0.55 * diff);
+  body = mix(body * 1.15 + base * 0.12, body * 0.85, t);
+  body += base * 0.45 * smoothstep(0.35, 1.0, t) * (0.85 + 0.15 * sin(uTime * 1.3));
+  float rim = 1.0 - smoothstep(0.5, 0.7, f);
+  body = mix(body, base * 0.3, rim * 0.55);
+  float fres = pow(1.0 - n.z, 1.6);
+  body += (base * 0.6 + 0.4) * fres * uWet * 0.55;
+  float spec = pow(max(dot(n, Hh), 0.0), 18.0) * uWet * 0.16;
+  float hl = texture(uM1, uv).g * uWet;
+  float op = mix(1.0, 0.5 + 0.45 * t, uTrans);
+  vec3 col = mix(bg + base * 0.12, body, op) + vec3(spec + hl);
+  // zapped goop: white-hot (L5), lit from inside; uHot = how far toward white
+  float rh = clamp(s1.b / max(f, 1e-3), 0.0, 1.0);
+  vec3 hotCol = mix(base, vec3(1.0), uHot) * (1.0 + 0.3 * uHot) * (0.7 + 0.35 * diff) * (1.0 - 0.25 * rim) + vec3(spec + hl);
+  col = mix(col, hotCol, rh * clamp(uHot * 3.0, 0.0, 1.0));
+  outColor = vec4(mix(bg, col, a), 1.0);
+}`;
+function compile(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+function program(vs, fs, names) {
+  const p = gl.createProgram(); gl.attachShader(p, compile(gl.VERTEX_SHADER, vs)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}; for (const n of names) u[n] = gl.getUniformLocation(p, n); return { p, u };
+}
+const PM = program(MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl']);
+const PB = program(FSQ, BLUR_FS, ['uT0', 'uT1', 'uSize', 'uStep', 'uSigma', 'uR']);
+const PF = program(FSQ, FINAL_FS, ['uS0', 'uS1', 'uQ0', 'uQ1', 'uM1', 'uRes', 'uCover', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet', 'uHot', 'uGrid', 'uCols']);
+const vaoMask = gl.createVertexArray(), vbo = gl.createBuffer(), vaoFsq = gl.createVertexArray();
+gl.bindVertexArray(vaoMask); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0);
+function makeTex(w, h, float) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, float ? gl.RGBA16F : gl.RGBA8, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function makeTarget(w, h, float, stencil) {
+  const T = { w, h, t0: makeTex(w, h, float), t1: makeTex(w, h, float), fb: gl.createFramebuffer() };
+  gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, T.t0, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, T.t1, 0);
+  if (stencil) { T.rb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, T.rb);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, w, h); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, T.rb); }
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+  return T;
+}
+function freeTarget(T) { if (!T) return; gl.deleteTexture(T.t0); gl.deleteTexture(T.t1); gl.deleteFramebuffer(T.fb); if (T.rb) gl.deleteRenderbuffer(T.rb); }
+let TM, TA, TS, TB, TQ, dpr = 1, cell = 30, ox = 0, oy = 0, Wm = 1, Hm = 1, viewW = 0;
+let vbuf = new Float32Array(1 << 15), vn = 0;
+const pushV = (x, y, u, v) => { if (vn + 4 > vbuf.length) { const nb = new Float32Array(vbuf.length * 2); nb.set(vbuf); vbuf = nb; } vbuf[vn++] = x; vbuf[vn++] = y; vbuf[vn++] = u; vbuf[vn++] = v; };
+function fanBody(B) { for (const [s, cnt] of B.loops) for (let i = 1; i < cnt - 1; i++) {
+  pushV(B.x[s], B.y[s], 0, 0); pushV(B.x[s + i], B.y[s + i], 0, 0); pushV(B.x[s + i + 1], B.y[s + i + 1], 0, 0); } }
+function hlQuad(B) { // the one highlight rides the body's fitted rotation + centre (shrinks with a zapped goop)
+  const ca = Math.cos(B.fa), sa = Math.sin(B.fa), k = Math.max(0.05, B.sc);
+  const qx = B.t !== undefined ? (B.hlX - B.c0x) * k : B.hlX - B.rcx, qy = B.t !== undefined ? (B.hlY - B.c0y) * k : B.hlY - B.rcy;
+  const cx = B.fcx + ca * qx - sa * qy, cy = B.fcy + sa * qx + ca * qy, rot = B.fa - 0.18;
+  const ux = Math.cos(rot) * B.hlW * k, uy = Math.sin(rot) * B.hlW * k, vx = -Math.sin(rot) * B.hlH * k, vy = Math.cos(rot) * B.hlH * k;
+  const P = (s, t) => pushV(cx + ux * s + vx * t, cy + uy * s + vy * t, s, t);
+  P(-1, -1); P(1, -1); P(1, 1); P(-1, -1); P(1, 1); P(-1, 1);
+}
+function buildGeometry() {
+  vn = 0; const R = { fan: [], hl: [], zap: [] }, all = piece.B ? bodies.concat(piece.B) : bodies;
+  for (let c = 1; c <= 5; c++) {
+    let s = vn / 4; for (const B of all) if (B.color === c) fanBody(B); R.fan[c] = [s, vn / 4 - s];
+    s = vn / 4; for (const B of all) if (B.color === c) hlQuad(B); R.hl[c] = [s, vn / 4 - s];
+  }
+  for (const B of zapped) { let s = vn / 4; fanBody(B); const f = [s, vn / 4 - s]; s = vn / 4; hlQuad(B); R.zap.push({ B, f, h: [s, vn / 4 - s] }); }
+  R.cover = vn / 4; pushV(-40, -60, 0, 0); pushV(W + 40, -60, 0, 0); pushV(W + 40, H + 40, 0, 0); pushV(-40, -60, 0, 0); pushV(W + 40, H + 40, 0, 0); pushV(-40, H + 40, 0, 0);
+  return R;
+}
+const C0 = [null, [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0]];
+let glR = null;
+function maskShape(color, fan, hl, alpha, hot) {
+  if (!fan[1]) return;
+  gl.colorMask(false, false, false, false); gl.stencilFunc(gl.ALWAYS, 0, 0xff);
+  gl.stencilOpSeparate(gl.FRONT, gl.KEEP, gl.KEEP, gl.INCR_WRAP); gl.stencilOpSeparate(gl.BACK, gl.KEEP, gl.KEEP, gl.DECR_WRAP);
+  gl.uniform1i(PM.u.uMode, 0); gl.drawArrays(gl.TRIANGLES, fan[0], fan[1]);
+  gl.colorMask(true, true, true, true); gl.stencilFunc(gl.NOTEQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+  gl.uniform4fv(PM.u.uC0, C0[color].map(v => v * alpha)); gl.uniform4f(PM.u.uC1, color === 5 ? alpha : 0, 0, hot * alpha, 0);
+  gl.uniform1i(PM.u.uMode, 1); gl.drawArrays(gl.TRIANGLES, glR.cover, 6);
+  if (hl[1]) { gl.uniform1i(PM.u.uMode, 2); gl.uniform1f(PM.u.uHl, alpha); gl.drawArrays(gl.TRIANGLES, hl[0], hl[1]); }
+  gl.clear(gl.STENCIL_BUFFER_BIT);
+}
+function blur(src, dst, dx, dy, sigma) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb); gl.viewport(0, 0, dst.w, dst.h);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, src.t1);
+  gl.uniform2f(PB.u.uSize, dst.w, dst.h); gl.uniform2f(PB.u.uStep, dx / dst.w, dy / dst.h);
+  gl.uniform1f(PB.u.uSigma, sigma); gl.uniform1i(PB.u.uR, Math.min(40, Math.ceil(sigma * 2.5)));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+function drawGoo(time) {
+  glR = buildGeometry();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, TM.fb); gl.viewport(0, 0, Wm, Hm);
+  gl.clearColor(0, 0, 0, 0); gl.clearStencil(0); gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+  gl.useProgram(PM.p); gl.bindVertexArray(vaoMask); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, vbuf.subarray(0, vn), gl.STREAM_DRAW);
+  const hs = Wm / canvas.width;
+  gl.uniform2f(PM.u.uOrigin, ox * dpr, oy * dpr); gl.uniform1f(PM.u.uCell, cell * dpr); gl.uniform2f(PM.u.uCover, canvas.width, canvas.height);
+  gl.enable(gl.BLEND); gl.blendEquation(gl.MAX); gl.enable(gl.STENCIL_TEST);
+  for (let c = 1; c <= 5; c++) maskShape(c, glR.fan[c], glR.hl[c], 1, 0);
+  for (const D of glR.zap) maskShape(D.B.color, D.f, D.h, Math.max(0, D.B.alpha), D.B.hot);
+  gl.disable(gl.BLEND); gl.disable(gl.STENCIL_TEST); gl.colorMask(true, true, true, true);
+  gl.useProgram(PB.p); gl.bindVertexArray(vaoFsq); gl.uniform1i(PB.u.uT0, 0); gl.uniform1i(PB.u.uT1, 1);
+  const cHalf = cell * dpr * hs, sg = cHalf * (0.06 + 0.03 * JELLY.magnetism);
+  blur(TM, TA, 1, 0, sg); blur(TA, TS, 0, 1, sg);
+  blur(TM, TB, 1, 0, cHalf * 0.5 * 0.42); blur(TB, TQ, 0, 1, cHalf * 0.5 * 0.42);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(PF.p);
+  [[TS.t0, 'uS0'], [TS.t1, 'uS1'], [TQ.t0, 'uQ0'], [TQ.t1, 'uQ1'], [TM.t1, 'uM1']].forEach(([t, n], i) => {
+    gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(PF.u[n], i); });
+  gl.uniform2f(PF.u.uRes, canvas.width, canvas.height); gl.uniform2f(PF.u.uCover, Wm / hs, Hm / hs);
+  gl.uniform2f(PF.u.uOrigin, ox * dpr, oy * dpr); gl.uniform2f(PF.u.uQTex, 2 / Wm, 2 / Hm);
+  gl.uniform1f(PF.u.uCell, cell * dpr); gl.uniform1f(PF.u.uTime, time); gl.uniform2i(PF.u.uGrid, W, H);
+  gl.uniform1f(PF.u.uTrans, JELLY.translucency); gl.uniform1f(PF.u.uWet, JELLY.wetness); gl.uniform1f(PF.u.uHot, ZAP.whiteHot);
+  gl.uniform3fv(PF.u.uCols, COLORS.flat());
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+// 2D overlay: the crack, the eyes and mouths, the beam, the laser point while it sucks, and v1's droplets
+const sx = x => ox + x * cell, sy = y => oy + y * cell;
+const LINE = 'rgba(0,0,0,0.6)'; // closed eyes and brows are drawn in the pupil colour; this is the mouth's dark
+function drawFace(B, alpha, scale, forceShut) {
+  const f = B.face, r = GOO.eyeSize * cell * scale; if (r < 0.4 || alpha <= 0.02) return;
+  const mouth = hasMouth(B), n = Math.max(1, Math.round(GOO.eyeCount)), ay = f.spot.y + (mouth ? -0.1 : 0);
+  // how shut, and which way: blink (a flat line), zap (squeezed > <), relief (soft curves, like a sigh)
+  const blink = f.blinkT >= 0 ? Math.sin(Math.PI * Math.min(1, f.blinkT / Math.max(0.01, GOO.blinkTime))) : 0;
+  const zapS = forceShut ? 1 : shutCurve(f.zapT, GOO.zapClose, 0.05), rel = reliefAmount();
+  const shut = Math.max(blink, zapS, rel), style = zapS >= shut ? 'squeeze' : rel >= shut ? 'relief' : 'blink';
+  const open = 1 - shut, w = forceShut ? 0 : worriedAmount();
+  fx.globalAlpha = alpha; fx.lineCap = 'round';
+  for (let i = 0; i < n; i++) {
+    const side = Math.sign(i - (n - 1) / 2), p = toWorld(B, f.spot.x + (i - (n - 1) / 2) * GOO.eyeGap, ay), ex = sx(p.x), ey = sy(p.y);
+    fx.strokeStyle = GOO.pupilColor; fx.lineWidth = Math.max(1.2, r * 0.32);
+    if (open > 0.12) {
+      fx.save(); fx.beginPath(); fx.ellipse(ex, ey, r, r * open, 0, 0, Math.PI * 2); fx.fillStyle = GOO.eyeColor; fx.fill(); fx.clip();
+      const pr = r * GOO.pupilSize * (1 - GOO.pupilShrink * w), reach = Math.max(0, r - pr) * 0.9, shake = w * r * 0.07;
+      fx.beginPath(); fx.arc(ex + f.gx * reach + shake * Math.sin(simT * 47 + i), ey + f.gy * reach + shake * Math.cos(simT * 41 + i), pr, 0, Math.PI * 2);
+      fx.fillStyle = GOO.pupilColor; fx.fill(); fx.restore();
+    } else {
+      fx.beginPath();
+      if (style === 'squeeze' && side) { const d = -side; // ">" on the left eye, "<" on the right: points to the nose
+        fx.moveTo(ex - d * r, ey - r * 0.6); fx.lineTo(ex + d * r * 0.6, ey); fx.lineTo(ex - d * r, ey + r * 0.6); }
+      else if (style === 'relief') fx.arc(ex, ey - r * 0.55, r, 0.15 * Math.PI, 0.85 * Math.PI);
+      else { fx.moveTo(ex - r, ey); fx.lineTo(ex + r, ey); }
+      fx.stroke();
+    }
+    if (w > 0 && GOO.browTilt > 0) { // worried brows: inner ends up
+      const tilt = GOO.browTilt * w * Math.PI / 180, by = ey - r * (1.45 + 0.25 * w), dx = Math.cos(tilt) * r, dy = -Math.sin(tilt) * r * (side || 0);
+      fx.beginPath(); fx.moveTo(ex - dx, by + dy); fx.lineTo(ex + dx, by - dy); fx.stroke();
+    }
+  }
+  if (mouth) { // silent mouth: opens and closes slowly; shut when the eyes squeeze or sigh
+    const p = toWorld(B, f.spot.x, f.spot.y + 0.24), mw = GOO.mouthSize * cell * 0.5 * scale;
+    const o = (zapS > 0.5 || rel > 0.5) ? 0.06 : 0.12 + 0.88 * GOO.mouthWobble * (0.5 + 0.5 * Math.sin(f.mph));
+    fx.beginPath(); fx.ellipse(sx(p.x), sy(p.y), mw, Math.max(1, mw * 0.7 * o), 0, 0, Math.PI * 2); fx.fillStyle = 'rgba(12,4,22,0.85)'; fx.fill();
+  }
+  fx.globalAlpha = 1;
+}
+function drawCrack() { // a crack in the left wall: brighter with pressure; Seal a crack flashes it green and it's gone for a while
+  const hidden = sealT >= 0 && sealT < GOO.reliefTime + 1.5;
+  if (sealT >= 0 && sealT < 0.4) { fx.fillStyle = `rgba(74,222,128,${0.7 * (1 - sealT / 0.4)})`; fx.beginPath(); fx.ellipse(sx(0), sy(7.2), cell * 0.35, cell * 1.0, 0, 0, Math.PI * 2); fx.fill(); }
+  if (hidden || pressure <= 0) return;
+  const pts = [[0, 6.3], [-0.08, 6.6], [0.12, 6.9], [-0.05, 7.2], [0.14, 7.5], [0, 7.8], [0.09, 8.1]];
+  fx.strokeStyle = `rgba(252,165,165,${0.25 + 0.75 * pressure})`; fx.lineWidth = 1.5 + 1.5 * pressure; fx.lineJoin = 'round';
+  fx.beginPath(); pts.forEach(([x, y], i) => i ? fx.lineTo(sx(x), sy(y)) : fx.moveTo(sx(x), sy(y))); fx.stroke();
+}
+function drawFx() {
+  fx.clearRect(0, 0, innerWidth, innerHeight);
+  drawCrack();
+  for (const B of bodies) if (hasEyes(B)) drawFace(B, 1, 1, false);
+  for (const B of zapped) if (B.hadEyes && B.face) drawFace(B, Math.max(0, B.alpha), Math.max(0, B.sc), true);
+  for (const d of drops) {
+    fx.globalAlpha = Math.max(0, d.life / d.life0); fx.fillStyle = CSS[d.color];
+    fx.beginPath(); fx.arc(sx(d.x), sy(d.y), Math.max(0.5, d.r * cell), 0, Math.PI * 2); fx.fill();
+  }
+  fx.globalAlpha = 1;
+  for (const B of zapped) if (B.t > heatTime() && ZAP.suckTime > 0) { // the laser point the goop is pulled into
+    const u = Math.min(1, (B.t - heatTime()) / ZAP.suckTime), r = cell * (0.06 + 0.1 * Math.sin(Math.PI * u));
+    fx.shadowColor = CSS[B.color]; fx.shadowBlur = 14; fx.fillStyle = `rgba(255,255,255,${0.9 * (1 - u * u)})`;
+    fx.beginPath(); fx.arc(sx(B.lx), sy(B.ly), r, 0, Math.PI * 2); fx.fill(); fx.shadowBlur = 0;
+  }
+  if (beam) {
+    const a = 1 - beam.t / ZAP.beamTime, x = sx(beam.x), y = sy(beam.y);
+    fx.strokeStyle = `rgba(255,255,255,${a})`; fx.lineWidth = 3 + 6 * a; fx.lineCap = 'round';
+    fx.shadowColor = beam.css; fx.shadowBlur = 18;
+    fx.beginPath(); fx.moveTo(sx(W / 2), sy(-0.6)); fx.lineTo(x, y); fx.stroke(); // from the top centre of the view (Muzzy 2026-10-24)
+    fx.fillStyle = `rgba(255,255,255,${a})`; fx.beginPath(); fx.arc(x, y, cell * 0.5 * a + 4, 0, Math.PI * 2); fx.fill();
+    fx.shadowBlur = 0;
+  }
+}
+function draw() { drawGoo(simT); drawFx(); }
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, JELLY.maxDpr);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  const fd = devicePixelRatio || 1; fxc.width = Math.round(innerWidth * fd); fxc.height = Math.round(innerHeight * fd); fx.setTransform(fd, 0, 0, fd, 0, 0);
+  viewW = playW();
+  const top = $('top').getBoundingClientRect().bottom + 40, bot = $('bottom').getBoundingClientRect().top - 8;
+  cell = Math.min((viewW - 32) / W, (bot - top) / (H + 0.8));
+  ox = (viewW - W * cell) / 2; oy = bot - H * cell;
+  $('hint').style.top = Math.max($('top').getBoundingClientRect().bottom + 2, oy - 0.6 * cell - 36) + 'px';
+  Wm = Math.ceil(canvas.width / 4) * 2; Hm = Math.ceil(canvas.height / 4) * 2;
+  [TM, TA, TS, TB, TQ].forEach(freeTarget);
+  TM = makeTarget(Wm, Hm, false, true); TA = makeTarget(Wm, Hm, floatOK); TS = makeTarget(Wm, Hm, floatOK);
+  TB = makeTarget(Wm / 2, Hm / 2, floatOK); TQ = makeTarget(Wm / 2, Hm / 2, floatOK);
+}
+// what to try at each rank (the story list, story.md "The Goop changes")
+const RANK_HINT = {
+  10: 'Rank 10: a few tiny eyes in big clumps. Tap a goop to zap it: eyes nearby squeeze shut.',
+  20: 'Rank 20: eyes in most clumps, following the falling piece (and your finger / laser).',
+  30: 'Rank 30: they blink. Push Pressure up to worry them; Seal a crack for relief.',
+  40: 'Rank 40: some clumps grow silent mouths.' };
+function setRank(r) {
+  rank = r;
+  for (const b of document.querySelectorAll('#ranks button')) b.classList.toggle('on', +b.dataset.r === r);
+  $('hint').textContent = RANK_HINT[r] || '';
+}
+function setPressure(p) { pressure = Math.max(0, Math.min(1, p)); $('press').value = Math.round(pressure * 100); $('pval').textContent = 'Pressure ' + Math.round(pressure * 100) + '%'; }
+let slow = false, paused = false;
+$('bReset').onclick = refill;
+$('bSeal').onclick = seal;
+$('press').oninput = e => setPressure(e.target.value / 100);
+$('ranks').onclick = e => { if (e.target.dataset.r) setRank(+e.target.dataset.r); };
+$('bSlow').onclick = () => { slow = !slow; $('bSlow').classList.toggle('on', slow); $('bSlow').textContent = slow ? 'Slow-mo 0.25×' : 'Slow-mo'; };
+canvas.addEventListener('pointerdown', e => {
+  const px = (e.clientX - ox) / cell, py = (e.clientY - oy) / cell, gx = Math.floor(px), gy = Math.floor(py);
+  aim = { x: px, y: py, t: simT };
+  if (gx >= 0 && gx < W && gy >= 0 && gy < H) zap(gx, gy, px, py);
+});
+canvas.addEventListener('pointermove', e => { // aiming your laser: the eyes watch your finger / mouse while it's over the tank
+  const px = (e.clientX - ox) / cell, py = (e.clientY - oy) / cell;
+  if (px >= 0 && px <= W && py >= -1 && py <= H) aim = { x: px, y: py, t: simT };
+});
+refill(); newPiece(); setRank(20); setPressure(0);
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+const isColor = row => row[1] === 'color';
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(row => { const [k, lo, hi, st] = row; return lo === undefined ? `<h4>${k}</h4>` :
+  (isColor(row) ? `<label><span>${KNOB_LABEL[k] || k}</span><input type="color" id="k_${k}" value="${GOO[k]}"></label>`
+  : `<label><span>${KNOB_LABEL[k] || k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><input class="num" type="number" inputmode="decimal" id="v_${k}" step="${st}" value="${GOO[k]}" title="Type any value, even past the slider's ends"></label>`)
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : ''); }).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+// show a value in both the slider (pinned at its end when past it) and the box (amber when past the slider's ends)
+function showKnob(k) {
+  const row = KNOBS.find(r => r[0] === k), v = GOO[k];
+  if (isColor(row)) { $('k_' + k).value = v; return; }
+  const box = $('v_' + k);
+  $('k_' + k).value = v; if (document.activeElement !== box) box.value = v;
+  box.classList.toggle('over', v < row[1] || v > row[2]);
+}
+// typing in the box updates the sketch live; Enter or leaving the box applies, Escape puts back what was there
+for (const row of KNOBS) {
+  const [k, lo] = row; if (lo === undefined) continue;
+  if (isColor(row)) { $('k_' + k).oninput = e => { GOO[k] = e.target.value; }; continue; }
+  const box = $('v_' + k); let before = GOO[k];
+  $('k_' + k).oninput = e => { GOO[k] = +e.target.value; showKnob(k); };
+  box.onfocus = () => { before = GOO[k]; };
+  box.oninput = () => { const v = parseFloat(box.value); if (Number.isFinite(v)) { GOO[k] = v; showKnob(k); } };
+  box.onkeydown = e => {
+    if (e.key === 'Enter') box.blur();
+    if (e.key === 'Escape') { GOO[k] = before; box.value = before; showKnob(k); box.blur(); }
+  };
+  box.onblur = () => { box.value = GOO[k]; showKnob(k); };
+}
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
+const DEFAULTS = readKnobs();
+// The three starting presets (until you save your own over them): three looks to compare. The rank buttons pick the behaviour.
+const STARTERS = [
+  { name: 'Tiny & shy', values: { ...DEFAULTS, eyeSize: 0.09, pupilSize: 0.6, eyeGap: 0.22, followSpeed: 2.5, followRange: 4, blinkEvery: 2.5, mouthSize: 0.18, mouthWobble: 0.3 } },
+  { name: 'Cartoon', values: { ...DEFAULTS, eyeSize: 0.2, pupilSize: 0.45, eyeGap: 0.44, followSpeed: 8, followRange: 10, browTilt: 30, mouthSize: 0.4, mouthWobble: 0.7 } },
+  { name: 'Creepy', values: { ...DEFAULTS, eyeSize: 0.12, pupilSize: 0.28, eyeGap: 0.26, eyeCount: 3, eyeColor: '#fde68a', pupilColor: '#1c0505',
+    followSpeed: 14, followRange: 14, blinkEvery: 8, blinkTime: 0.3, mouthChance: 0.8, mouthSize: 0.36, mouthWobble: 0.25 } }];
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || STARTERS; } catch (e) { presets = STARTERS; }
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ rank, pressure, now: readKnobs(), presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+layout();
+// fixed-step loop + fps (one-second average); Slow-mo runs the sim at 0.25×
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (!paused) { acc += dt * (slow ? 0.25 : 1); while (acc >= STEP) { update(STEP); acc -= STEP; } }
+  draw();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// for Playwright checks: pause the clock, step it by hand, switch rank / pressure, read what the faces are doing
+window.sketch = { GOO, readKnobs, setKnobs, zap, refill, seal, setRank, setPressure, G, groupAt,
+  pause: on => { paused = on; acc = 0; },
+  advance: sec => { for (let n = Math.round(sec / STEP); n > 0; n--) update(STEP); draw(); },
+  aimAt: (x, y) => { aim = { x, y, t: simT }; },
+  state: () => ({ rank, pressure, reliefT, simT, cell, ox, oy, beam, piece: pieceCentre(), worried: worriedAmount(), relief: reliefAmount(),
+    clumps: bodies.map(B => ({ size: B.cells.length, color: B.color, eyes: hasEyes(B), mouth: hasMouth(B), spot: B.face.spot,
+      gaze: [+B.face.gx.toFixed(3), +B.face.gy.toFixed(3)], blinkT: B.face.blinkT, zapT: B.face.zapT })) }),
+  pixel: (x, y) => { const p = new Uint8Array(4); gl.readPixels(Math.round(x * dpr), Math.round(canvas.height - y * dpr), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, p); return [...p.slice(0, 3)]; },
+  fxPixel: (x, y) => { const fd = devicePixelRatio || 1; return [...fx.getImageData(Math.round(x * fd), Math.round(y * fd), 1, 1).data]; } };
+</script>
+</body>
+</html>
