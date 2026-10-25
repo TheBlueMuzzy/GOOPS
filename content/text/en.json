@@ -203,7 +203,7 @@
     "pay": "Pay up",
     "_afterCaught": "F40: from the rank the Veteran is caught (payslip.json caughtRank) these replace the payday's words above — his debt is now yours.",
     "afterCaught": {
-      "paydayMessage": "Payment due: {due} cr. Retired colleagues' balances have been added to yours. Thank you for your continued employment.",
+      "paydayMessage": "Payment due: {due} cr. Retired colleagues' debts are now yours.",
       "debt": "Remaining passage debt (incl. Operator #0001)"
     },
     "fines": {

@@ -13,7 +13,7 @@ import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 
-const PORT = 5348, OUT = 'e2e-shots/payslip'
+const PORT = Number(process.env.E2E_PORT) || 5348, OUT = 'e2e-shots/payslip'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const P = en.payslip
