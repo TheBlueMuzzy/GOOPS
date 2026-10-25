@@ -137,6 +137,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     let laser: { at: TapPoint; t: number } | null = null // the last zap's tap point while its beam is up (goo clock)
     const white = createWhiteGoopView() // F63 the white goop's look (on the tank canvas, behind the goop)
     const vetAt: TapPoint = { x: 0, y: 0 }
+    const xray = { cells: [] as number[], pad: 0, alpha: 1 } // view.xray, refilled each frame (no garbage per frame)
     let owT = -1, owN = 0 // F63: seconds the "ow" bubble has been up (goo clock; -1 = none), and which ow it is
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
     // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
@@ -222,7 +223,12 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       // the x-ray (F36): the goo over a covered crack is drawn see-through, round the box the tank view drew — and over
       // the white goop while goop covers him (F63)
       const X = cracksLook.xray
-      view.xray = { cells: [...s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), ...white.xrayCells(s)], pad: X.pad + X.width, alpha: X.gooAlpha }
+      xray.cells.length = 0
+      for (const c of s.cracks) if (!crackIsOpen(s, c)) xray.cells.push(c.y * s.width + c.x)
+      white.xrayCells(s, xray.cells)
+      xray.pad = X.pad + X.width
+      xray.alpha = X.gooAlpha
+      view.xray = xray
       gooRef.current?.frame(s, events, view, gooDt)
       // F67 the zap's beam: from the visible tank's top centre to the tap (the finger: stage px, above the visor), on
       // the goo's clock. A pop that didn't come from a tap here (a lesson, a test) aims at its `at`, un-bent.

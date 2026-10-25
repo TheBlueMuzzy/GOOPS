@@ -26,7 +26,7 @@ export interface WhiteGoopView {
   /** Draw him (call inside the tank's clip, after the cracks — drawTank's `white` hook). */
   draw(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, style: 'jelly' | 'particle', timeSec: number, still: boolean): void
   /** His cells for the goo's x-ray (see-through over him) while goop covers him: grid indexes, added to view.xray. */
-  xrayCells(s: ShiftState): number[]
+  xrayCells(s: ShiftState, out: number[]): void
   /** Story (rank 31: "every eye turns to it"): his centre while he drops in and for eyesTurnSec after he lands — the
    *  goop's eyes look there instead of their usual focus; null otherwise. */
   eyesOnHim(s: ShiftState, out: TapPoint): TapPoint | null
@@ -70,12 +70,12 @@ export function createWhiteGoopView(): WhiteGoopView {
       sq += (want - sq) * Math.min(1, dt * 18)
       // gaze: the crack he's after, else the goop's own focus
       const crack = v.targetId !== null ? s.cracks.find((c) => c.id === v.targetId) : undefined
-      const tgt = crack ? { x: crack.x + 0.5, y: crack.y + 0.5 } : focus
+      const tgtX = crack ? crack.x + 0.5 : focus?.x, tgtY = crack ? crack.y + 0.5 : focus?.y
       let tx = 0, ty = 0
-      if (tgt) {
-        let dx = tgt.x - (v.px + 0.5)
+      if (tgtX !== undefined && tgtY !== undefined) {
+        let dx = tgtX - (v.px + 0.5)
         dx = ((dx % s.width) + s.width * 1.5) % s.width - s.width / 2
-        const dy = tgt.y - (v.py + 0.5), d = Math.hypot(dx, dy)
+        const dy = tgtY - (v.py + 0.5), d = Math.hypot(dx, dy)
         if (d > 0.05) { const near = Math.min(1, d / 0.8); tx = (dx / d) * near; ty = (dy / d) * near }
       }
       const k = 1 - Math.exp(-GAZE_FOLLOW * dt)
@@ -112,15 +112,12 @@ export function createWhiteGoopView(): WhiteGoopView {
       ctx.restore()
     },
 
-    xrayCells(s) {
+    xrayCells(s, out) {
       const v = s.vet
-      if (!v) return []
-      const out: number[] = []
-      for (const [x, y] of [[v.x, v.y], [v.fromX, v.fromY]]) {
-        const i = y * s.width + x
-        if (s.grid[i] && !out.includes(i)) out.push(i)
-      }
-      return inGoop > 0.05 || v.behind ? out : []
+      if (!v || !(inGoop > 0.05 || v.behind)) return
+      const here = v.y * s.width + v.x, from = v.fromY * s.width + v.fromX
+      if (s.grid[here] && !out.includes(here)) out.push(here)
+      if (s.grid[from] && !out.includes(from)) out.push(from)
     },
 
     eyesOnHim(s, out) {
