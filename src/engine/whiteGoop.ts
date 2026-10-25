@@ -16,7 +16,7 @@
 // which the engine calls on the rules clock — the Dev Kit pause stops him. No randomness: shifts stay repeatable.
 import type { Crack, ShiftState, TapPoint, WhiteGoop } from './types'
 import { wrapX } from './tank'
-import { crackCells, crackHas, crackSize } from './twists'
+import { crackCells, crackHas, crackSize, plugsCrack } from './twists'
 
 // The shape of content/tuning/whiteGoop.json the engine reads (the look numbers are the view's)
 export interface WhiteGoopConfig {
@@ -75,7 +75,7 @@ export function crackHardness(s: ShiftState, c: Crack, cfg: WhiteGoopConfig): nu
   let hardest = 0
   for (const [x, y] of crackCells(c)) {
     const here = s.grid[y * s.width + x]
-    const covered = here !== 0 && here !== c.color
+    const covered = here !== 0 && !plugsCrack(here, c.color) // (wild goop plugs any colour: not "wrong")
     hardest = Math.max(hardest, Math.max(0, s.height - 1 - y - columnTop(s, x)) + (covered ? num(cfg.coveredHardness, 4) : 0))
   }
   return hardest
