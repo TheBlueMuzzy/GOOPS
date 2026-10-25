@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
 import { freshProgress, isUnlocked, meterSteps, progressAtRank, rankInfo, rewardFirstDay, rewardShift, topRank, unlocksBetween, xpToNext } from '../src/progress/progression'
-import { NAME_MAX_LENGTH, SAVE_VERSION, cleanName, clearProgress, loadOperatorName, loadProgress, saveOperatorName, saveProgress } from '../src/progress/save'
+import { SAVE_VERSION, cleanName, clearProgress, loadOperatorName, loadProgress, nameMaxLength, saveOperatorName, saveProgress } from '../src/progress/save'
 import nameTuning from '../content/tuning/name.json'
 import goldenV1 from './saves/goops-progress-v1.json'
 import goldenV2 from './saves/goops-progress-v2.json'
@@ -146,8 +146,8 @@ describe('your name', () => {
   const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k), m } }
 
   it('the limit comes from content/tuning/name.json (12, Muzzy 2026-10-25)', () => {
-    expect(NAME_MAX_LENGTH).toBe(nameTuning.maxLength)
-    expect(NAME_MAX_LENGTH).toBe(12)
+    expect(nameMaxLength()).toBe(nameTuning.maxLength)
+    expect(nameMaxLength()).toBe(12)
   })
 
   it('signing keeps the name — trimmed, at most 12 letters; empty or spaces = no name', () => {

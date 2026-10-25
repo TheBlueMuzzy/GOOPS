@@ -71,7 +71,13 @@ async function playMoment(page, rank, shot) {
   const seen = []
   for (const [i, line] of story.moments[String(rank)].lines.entries()) {
     const words = L[line.words]
-    if (line.voice === 'mon') {
+    if (line.sign) { // F66: PLEASE SIGN HERE — the name box with Sign / Skip instead of Got it (signing: e2e/your-name.mjs)
+      const skip = page.locator('[data-tag="crt"]').getByRole('button', { name: en.story.sign.skip })
+      await skip.waitFor({ timeout: 4000 })
+      seen.push(['sign', (await monitorSays(page)).trim() === words, (await monitorLook(page)) === (line.monitor ?? null)])
+      await page.waitForTimeout(200)
+      await skip.click()
+    } else if (line.voice === 'mon') {
       await page.locator('[data-tag="crt"]').getByRole('button', { name: en.lessons.gotIt }).waitFor({ timeout: 4000 })
       seen.push(['mon', (await monitorSays(page)).trim() === words, (await monitorLook(page)) === (line.monitor ?? null)])
       if (line.monitor === 'alarm') { // the alarm's words: looks.alarmWords (Muzzy 2026-10-24: white)

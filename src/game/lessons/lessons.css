@@ -22,6 +22,9 @@
   min-block-size: calc(var(--crt-room) * var(--u)); padding-block: calc(12 * var(--u)); box-sizing: border-box;
   padding-inline: calc(18 * var(--u)); /* breathing room: the words never touch the screen's sides */
   text-align: center; flex: none; }
+/* F66 "PLEASE SIGN HERE" (Console.tsx SignHere): the name box as wide as the words box; more room under its two buttons
+   than under a lone Got it, so the row never meets the screen's rounded bottom corners */
+.crt-sign { inline-size: 100%; padding-block-end: calc(14 * var(--u)); box-sizing: border-box; }
 /* F40: a story line's monitor look (Console.tsx's Crt, data-story-look; numbers in content/story/moments.json looks).
    flicker = the screen stutters dark a few times, once, as the line comes up ("it heard that") ·
    alarm = the screen flashes red while the line is up (the Veteran's capture at 30: "UNAUTHORISED BROADCAST LOCATED").

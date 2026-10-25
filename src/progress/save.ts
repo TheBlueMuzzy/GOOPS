@@ -56,11 +56,11 @@ function writeSave(p: Progress, name: string | null, storage: Pick<Storage, 'get
 }
 
 // F66 YOUR NAME (TDD D20) — signed on the first day's monitor, kept in the save on this device only.
-export const NAME_MAX_LENGTH = nameTuning.maxLength
+export const nameMaxLength = () => nameTuning.maxLength // (read when used: the Dev Kit's edits reach it)
 
-/** The name as it's kept: spaces at either end trimmed, at most NAME_MAX_LENGTH letters; empty = no name (null). */
+/** The name as it's kept: spaces at either end trimmed, at most nameMaxLength() letters; empty = no name (null). */
 export function cleanName(typed: string): string | null {
-  const name = [...typed.trim()].slice(0, NAME_MAX_LENGTH).join('').trim() // (by letters, so an emoji isn't cut in half)
+  const name = [...typed.trim()].slice(0, nameMaxLength()).join('').trim() // (by letters, so an emoji isn't cut in half)
   return name || null
 }
 

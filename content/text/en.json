@@ -255,8 +255,16 @@
     "_about": "F35: the story moments' words (design/story.md 'Story moments, rank by rank'; which line plays when: content/story/moments.json). Management types in capitals on the monitor; the Veteran's '──' is static.",
     "veteran": "The Veteran",
     "management": "Management",
+    "_sign": "F66 YOUR NAME: rank 0's 'PLEASE SIGN HERE' line (lines.r0sign) puts a name box on the monitor. label = the box's name · sign / skip = its buttons · fallback = what the game calls you when you never signed (F63's lines at 36 and 39 use it). The most letters: content/tuning/name.json.",
+    "sign": {
+      "label": "NAME",
+      "sign": "SIGN",
+      "skip": "SKIP",
+      "fallback": "Operator #4471"
+    },
     "lines": {
       "r0a": "WELCOME, OPERATOR #4471. YOUR PASSAGE DEBT HAS BEEN PRE-APPROVED.",
+      "r0sign": "PLEASE SIGN HERE.",
       "r0b": "PLEASE KEEP THE TANK FROM EXPLODING.",
       "r1a": "CONGRATULATIONS ON YOUR FIRST PAYDAY.",
       "r1b": "A NEXT-PIECE WINDOW HAS BEEN INSTALLED. ITS RENTAL IS ON YOUR BILL.",
