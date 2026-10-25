@@ -18,6 +18,8 @@ import { readoutSetting, type ReadoutSetting } from './readoutSetting'
 import { createMessages, type Message, type MessageTuning } from './messages'
 import { createVisorFx, curvedY, flatPoint, type VisorFx } from '../view/visorFx'
 import { createZapBeam } from '../view/zapBeam'
+import { zapLook } from '../goo/shared/zap'
+import type { FaceStory } from '../goo/shared/faces'
 import { screenColumn } from '../goo/types'
 import { PinnedBox, reduceMotion } from '../ui/kit'
 import tank from '../../content/tuning/tank.json'
@@ -122,6 +124,10 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     const s = engine.state
     const beam = createZapBeam(zapCanvas.current!) // F67: the zap's beam + laser point (src/view/zapBeam.ts)
     let lastTap: { x: number; y: number; at: TapPoint } | null = null // the last zap tap: stage px + the tank point it sent
+    // F62 the goop's faces: told the rank, the pressure and what the eyes look at (one object, refilled every frame)
+    const story: FaceStory = { rank: 0, pressure: 0, focus: null }
+    const pieceAt: TapPoint = { x: 0, y: 0 }
+    let laser: { at: TapPoint; t: number } | null = null // the last zap's tap point while its beam is up (goo clock)
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
     // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
     let camera = s.spin, last = looksClock.now(), hudAt = 0, raf = 0, ended = false
@@ -195,6 +201,12 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       view.xray = { cells: s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), pad: X.pad + X.width, alpha: X.gooAlpha }
       view.still = still // (reduce motion: the zap has no swell and no spray, F67)
       const gooDt = active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0
+      // F62 the faces look at the laser's tap while its beam is up, else at the falling piece
+      if (laser && (laser.t += gooDt) >= zapLook().beamTime) laser = null
+      story.rank = s.rank
+      story.pressure = s.pressure
+      story.focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)
+      view.story = story
       gooRef.current?.frame(s, events, view, gooDt)
       // F67 the zap's beam: from the visible tank's top centre to the tap (the finger: stage px, above the visor), on
       // the goo's clock. A pop that didn't come from a tap here (a lesson, a test) aims at its `at`, un-bent.
@@ -205,6 +217,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         const to: [number, number] = tap ? [tap.x, tap.y]
           : [view.centreX + screenColumn(e.at.x - 0.5, view.camera, s.width) * view.cellPx, view.topY + (e.at.y - s.bufferRows) * view.cellPx]
         beam.fire([rect.left + rect.width / 2, rect.top], to, colorOf(e.color))
+        laser = { at: e.at, t: 0 }
       }
       beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
@@ -291,6 +304,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       bubbles: { count: () => bubbles.count(), from: (crackId: number) => bubbles.from(crackId) }, // F36 e2e/cracks-look.mjs
       zapBeam: () => beam.shots(), // F67 e2e/zap.mjs: the beams on screen (from, to: stage px; t: seconds)
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
+      faces: () => gooRef.current?.faces?.() ?? [], // F62 e2e/eyes.mjs: the goop's faces (eyes, brows, mouth, gaze, where)
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }),
       // F30 lessons: lesson('sample', 3) plays a lesson from a step (1 = the first, or a step id); lessonView(): where it is
       lesson: (id: string, step: number | string = 1) => session.startLesson?.(id, step) ?? false,
@@ -384,6 +398,27 @@ function placeSwapRing(svg: SVGSVGElement | null, stage: HTMLElement, p: number 
 function tankSides(s: ShiftState, view: GooView): [number, number] {
   const left = view.centreX - (pieceScreenColumn(s.visibleWidth) + 0.5) * view.cellPx
   return [left, left + s.visibleWidth * view.cellPx]
+}
+
+// F62: what the goop's eyes look at when no laser is firing — the falling piece's centre (tank cells, like a pop's `at`:
+// a cell's centre is x + 0.5, y + 0.5), gliding down with piece.fall. The drawn piece is placed by the spin while the
+// goop rides the animated camera, so the point is shifted by (camera − spin): the eyes look where the piece IS on
+// screen while the tank slides under it. Written into `out`; null = no piece.
+function pieceFocus(s: ShiftState, camera: number, out: TapPoint): TapPoint | null {
+  const p = s.piece
+  if (!p || !p.cells.length) return null
+  const x0 = p.cells[0][0]
+  let sx = 0
+  let sy = 0
+  for (const [x, y] of p.cells) {
+    sx += x0 + screenColumn(x - x0, 0, s.width) // (unwrapped round the tank: a piece on the seam stays whole)
+    sy += y
+  }
+  const n = p.cells.length
+  const x = sx / n + 0.5 + screenColumn(camera - s.spin, 0, s.width)
+  out.x = ((x % s.width) + s.width) % s.width
+  out.y = sy / n + 0.5 + p.fall
+  return out
 }
 
 // Where the pressure readout goes (CSS px): its line's foot on the pressure line, the line's other end, and the point
