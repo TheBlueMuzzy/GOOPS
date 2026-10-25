@@ -53,6 +53,13 @@ export function StoryView() {
           text={storyWords(line.words)} speaker={text.story.veteran} colours={talk.colours} onConfirm={storyMoments.next}
           feel={line.crackle ? { ...talk, squelchEvery: looks.crackleEvery } : talk} onTyped={line.cut ? cutOff : undefined} />
       )}
+      {/* F63 the goop in your head (31–39): the in-shift whisper's bubble (Whisper.tsx — plain outline, no speech wave,
+          the style's own colours) over the same monitor area; a tap moves on (Muzzy 2026-10-25) */}
+      {line.voice === 'head' && (
+        <TalkingBubble key={`${view.rank}:${line.words}`} target='[data-tag="crt"]' placement="bottom" outline="plain"
+          text={storyWords(line.words)} speaker={line.him ? text.story.goopVeteran : text.story.goop} onConfirm={storyMoments.next}
+          feel={talk} />
+      )}
     </>
   )
 }
