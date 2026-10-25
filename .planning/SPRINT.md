@@ -6,7 +6,7 @@ What changes for Muzzy: from rank 10 tiny eyes open in big clumps of goop (follo
 Done when: eyes picked in a sketch first (Muzzy tunes it); then in BOTH renderers (Jelly + Particle): 10–19 a few tiny eyes in big clumps, closing when zapped · 20–29 eyes in most clumps, following the falling piece / the laser · 30–39 blinking, worried at high pressure, closing in relief when a crack is sealed · 40+ some clumps grow silent mouths; every number in content/tuning/eyes.json, live in the Dev Kit; the renderer is told the rank, pressure and focus point; screenshots at every portrait size (390x844, 360x780, ~1100 wide, 1440x900, 1920x1080 — portrait only).
 why: the tank is half the game — the goop itself tells the story that something in there is alive.
 Check: e2e/eyes.mjs (eyes at 10/20/30/40, none at 9, closing on a zap, looking at the piece) with shots looked at · check:full
-- [ ] 🤖 1. Eyes sketch: eye size, count per clump, follow speed, blink, worried look, mouth — knobs + presets for ranks 10/20/30/40 + Copy values — .planning/research/sketches/goop-eyes.html
+- [x] 🤖 1. Eyes sketch: eye size, count per clump, follow speed, blink, worried look, mouth — knobs + presets for ranks 10/20/30/40 + Copy values — .planning/research/sketches/goop-eyes.html
 - [ ] 🙋 2. Muzzy tunes the eyes sketch and copies the values — .planning/research/sketches/goop-eyes.html
 - [ ] 🤖 3. Jelly eyes (drawn like the zap highlight quad), values live from content/tuning/eyes.json — src/goo/jelly/index.ts
 - [ ] 🤖 4. Particle eyes, same values — src/goo/particle/index.ts
@@ -30,3 +30,4 @@ Check: e2e/story.mjs plays every moment 0–30 (right voice, words, once only, r
 - No open P0/P1 bugs (B001–B003 are P3, not in these files).
 - Order: F62 sketch first (task 1) so Muzzy can tune while F40 builds; F62 tasks 3–6 wait on his values.
 - Open roadmap question (not this sprint): cut F47 (the zap look) — F67 did it.
+- F62 task 1 (8b1f684): goop-eyes.html — zap-look's jelly + Muzzy's zap; a 2-cell piece sweeps the top half for the eyes to follow; Rank 10/20/30/40 buttons, Pressure slider, Seal a crack, Refill; 23 knobs grouped by rank (eye size/pupil/spacing/count/colours, which clumps get eyes at 10 and 20+, follow speed/range, blink, worried brows + pupil shrink, relief, zap close, mouths, piece speed); presets Tiny & shy · Cartoon · Creepy. Faces are a fixed roll per clump (no flicker). Shots looked at (390x844 + 1440x900, every rank, zap, relief).
