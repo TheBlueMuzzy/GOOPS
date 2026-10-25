@@ -31,7 +31,7 @@
     "mouthDrop": "Rank 40+: how far below the eyes' spot the mouth sits (cells).",
     "eyeLift": "Rank 40+: how far the eyes move up to make room for a mouth (cells), as the mouth fades in.",
     "browHeight": "Rank 30+: how high the worried brows sit above the eyes (in eye sizes).",
-    "worriedShake": "Rank 30+: how much the worried pupils tremble (share of the eye). 0 = still."
+    "worriedShake": "Rank 30+: how much the worried pupils tremble (share of the eye). 0 = still. With reduce motion on they never tremble (Muzzy 2026-10-25)."
   },
   "_ranges": {
     "eyeSize": [0.04, 0.4, 0.01],

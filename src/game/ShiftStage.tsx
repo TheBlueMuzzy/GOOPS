@@ -205,6 +205,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       if (laser && (laser.t += gooDt) >= zapLook().beamTime) laser = null
       story.rank = s.rank
       story.pressure = s.pressure
+      story.still = still
       story.focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)
       view.story = story
       gooRef.current?.frame(s, events, view, gooDt)

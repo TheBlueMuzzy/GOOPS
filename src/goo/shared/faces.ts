@@ -19,6 +19,7 @@ import type { FaceDrawer } from './faceDraw'
 export interface FaceStory {
   rank: number // the player's rank: 0–9 no faces at all
   pressure: number // 0..1
+  still?: boolean // reduce motion: the worried pupils don't tremble (Muzzy 2026-10-25)
   focus: TapPoint | null // what the eyes look at: the falling piece's centre, or the laser's tap while it fires (tank cells, like a pop's `at`)
 }
 
@@ -203,6 +204,7 @@ export class FaceBook {
   readonly look: EyesLook = readEyesLook()
   rank = 0
   pressure = 0
+  still = false
   hasFocus = false
   focusX = 0 // view cells
   focusY = 0
@@ -223,6 +225,7 @@ export class FaceBook {
     const wasOn = this.on
     this.rank = story?.rank ?? 0
     this.pressure = Math.max(0, Math.min(1, story?.pressure ?? 0))
+    this.still = !!story?.still
     const f = story?.focus
     this.hasFocus = !!f
     if (f) {
@@ -446,7 +449,7 @@ export class FaceBook {
       if (open > 0.12) {
         const pr = r * L.pupilSize * (1 - L.pupilShrink * w)
         const reach = Math.max(0, r - pr) * 0.9
-        const shake = w * r * L.worriedShake
+        const shake = this.still ? 0 : w * r * L.worriedShake
         const px = f.gx * reach + shake * Math.sin(this.time * 47 + i)
         const py = f.gy * reach + shake * Math.cos(this.time * 41 + i)
         D.eye(ex, ey, r, open, px / r, py / r, pr / r, alpha)
