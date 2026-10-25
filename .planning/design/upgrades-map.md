@@ -43,7 +43,7 @@
 ## Cracked band (ranks 30–38)
 | Upgrade | What v1's code did | Touches | New loop | PROPOSAL | Plugs in |
 |---|---|---|---|---|---|
-| **Slow Cracks** (passive · 30 · 4) | Only affected crack **growth** (rank 30+ expanding cracks): spread chance −5 %/level. | ⚡ | **Obsolete as written** — the remake has no expanding cracks (yet) | New cracks come less often: `crackEveryMult` (+X % time between cracks per level). If expanding cracks return at rank 30, it also slows their spread. | M (ready) |
+| **Slow Cracks** (passive · 30 · 4) | Only affected crack **growth** (rank 30+ expanding cracks): spread chance −5 %/level. | ⚡ | v1's version came back with F39 (growing cracks from rank 30, built 2026-10-25) | New cracks come less often: `crackEveryMult` (+X % time between cracks per level) — and **it also slows growth** (F39): the same multiplier stretches each crack cell's 5–10 s growth roll (twists.ts rollDelay), so a level is both fewer new cracks and slower-spreading ones. | M (ready) |
 | **Crack Matcher** (passive · 32 · 4) | When the next piece is made, its colour = the lowest crack's colour with chance 0.25 × level. | 🧩 ⚡ | Unchanged | Keep: `crackColorBias` (needs the piece maker to read it — one extra rng call only when > 0). | M (spot named, not built) |
 | **Crack Down** (active · 35 · 3) | On fire: the next 3/5/7 cracks spawn in the bottom 4 rows (ignoring the pressure line). Charges in 30 s. | ⚡ | Unchanged; useless during a rupture (no new cracks) | Keep — the test-only "Low cracks" is exactly this. Fire rejected during a rupture. | A (proven by the test upgrade) |
 | **Active Expansion Slot 2** (feature · 38 · 1) | 3 abilities equipped. | 🖥 | Unchanged | Keep. | F |
