@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { cracksNeededFor, junkCount, paletteSize } from '../../src/engine/config'
 import { createShift } from '../../src/engine'
 import { realConfig } from './helpers'
+import gooColors from '../../content/tuning/goo-colors.json'
 
 const config = realConfig()
 
@@ -15,6 +16,11 @@ describe('colours by rank (v1)', () => {
     expect(paletteSize(config, 30)).toBe(6)
     expect(paletteSize(config, 50)).toBe(7)
     expect(config.colors.slice(0, 7)).toEqual(['red', 'blue', 'green', 'yellow', 'purple', 'white', 'black'])
+  })
+  it('F40 (Muzzy 2026-10-24): white joins at 30 as a normal colour — not at 29, and it has its own colour', () => {
+    expect(config.colors[paletteSize(config, 29) - 1]).toBe('purple')
+    expect(config.colors[paletteSize(config, 30) - 1]).toBe('white')
+    expect(gooColors.white).toMatch(/^#[0-9a-f]{6}$/i)
   })
 })
 

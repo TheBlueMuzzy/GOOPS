@@ -8,7 +8,7 @@ import { mkdirSync, readFileSync } from 'node:fs'
 import { skipFirstDay } from './start.mjs'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8')) // the game's words (never restated here)
 
-const PORT = 5263, OUT = 'e2e-shots/console'
+const PORT = Number(process.env.E2E_PORT) || 5263, OUT = 'e2e-shots/console'
 mkdirSync(OUT, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 const stop = () => { try { server.kill() } catch { /* already gone */ } }

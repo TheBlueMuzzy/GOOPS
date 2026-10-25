@@ -22,6 +22,25 @@
   min-block-size: calc(var(--crt-room) * var(--u)); padding-block: calc(12 * var(--u)); box-sizing: border-box;
   padding-inline: calc(18 * var(--u)); /* breathing room: the words never touch the screen's sides */
   text-align: center; flex: none; }
+/* F40: a story line's monitor look (Console.tsx's Crt, data-story-look; numbers in content/story/moments.json looks).
+   flicker = the screen stutters dark a few times, once, as the line comes up ("it heard that") ·
+   alarm = the screen flashes red while the line is up (the Veteran's capture at 30: "UNAUTHORISED BROADCAST LOCATED").
+   Looks clock: the Dev Kit's full pause holds them. Reduce motion: no flicker; the alarm is a steady red. */
+.crt[data-story-look="flicker"] { animation: story-flicker var(--story-flicker) steps(1) 1; }
+@keyframes story-flicker {
+  0% { filter: brightness(0.25); } 12% { filter: none; } 22% { filter: brightness(0.4); } 30% { filter: none; }
+  55% { filter: brightness(0.15); } 63% { filter: brightness(1.4); } 72% { filter: none; }
+}
+.crt[data-story-look="alarm"] { animation: story-alarm var(--story-alarm) ease-in-out infinite alternate; }
+@keyframes story-alarm { from { background-color: var(--crt-screen); } to { background-color: var(--story-alarm-colour); } }
+.crt[data-story-look][data-paused] { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .crt[data-story-look="flicker"] { animation: none; }
+  .crt[data-story-look="alarm"] { animation: none; background-color: var(--story-alarm-colour); }
+}
+:root[data-reduce-motion] .crt[data-story-look="flicker"] { animation: none; }
+:root[data-reduce-motion] .crt[data-story-look="alarm"] { animation: none; background-color: var(--story-alarm-colour); }
+
 /* slid down past the bezel: the bezel's colour round it (sides and bottom; the top is the monitor's own) */
 .crt[data-grown] {
   box-shadow: 0 0 0 calc(var(--crt-bezel-w) * var(--u)) var(--crt-bezel);

@@ -5,12 +5,17 @@
 //     where the company's messages show up, but his in his cool speechbubble. and it can be 'interrupted' by
 //     disappearing and the company talks through the monitor at the top" — a mon line after his just takes over.
 //   A moment's `look` (the attention call): the lesson outline round that console part, no dim (Spotlight.tsx).
+//   F40 line looks: crackle = his bubble squelches more often while it waits (the same squelch, sooner — talk.json's
+//     squelchEvery swapped for moments.json looks.crackleEvery) · cut = he's cut off: once his line has typed out, the
+//     moment moves on by itself after looks.cutSeconds (looks clock: the Dev Kit's full pause holds it; a tap still
+//     works) — at 30 that's Management cutting in. (The monitor's own looks, flicker / alarm: Console.tsx's Crt.)
 // Enter moves a Management line on (the bubble takes its own tap / Enter / Space).
-import { useEffect, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { TalkingBubble } from '../../ui/kit'
+import { looksClock } from '../../devkit/gameClock'
 import { boxAround, gameColumn } from './goopsLessons'
 import { Spotlight } from './Spotlight'
-import { storyMoments, storyWords } from './storyMoments'
+import { storyFile, storyMoments, storyWords } from './storyMoments'
 import talk from '../../../content/tuning/talk.json'
 import text from '../../../content/text/en.json'
 
@@ -23,8 +28,18 @@ export function StoryView() {
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
   }, [mon, view])
+  // (a cut line's timer: cancelled when the line goes another way first — a tap, the console leaving)
+  const cutTimer = useRef<() => void>(() => {})
+  useEffect(() => () => cutTimer.current(), [view])
   if (!view) return null
   const look = view.look
+  const line = view.line
+  const looks = storyFile.looks
+  const cutOff = () => {
+    cutTimer.current()
+    const at = view
+    cutTimer.current = looksClock.after(looks.cutSeconds * 1000, () => { if (storyMoments.view() === at) storyMoments.next() })
+  }
   return (
     <>
       {look && <Spotlight key={`look:${view.rank}`} layout={() => {
@@ -32,9 +47,10 @@ export function StoryView() {
         const focus = el ? boxAround([el]) : null
         return { focus, holes: focus ? [focus] : [], frame: gameColumn() }
       }} dim={false} />}
-      {view.line.voice === 'spk' && (
-        <TalkingBubble key={`${view.rank}:${view.line.words}`} target='[data-tag="crt"]' placement="bottom" outline="wave"
-          text={storyWords(view.line.words)} speaker={text.story.veteran} feel={talk} colours={talk.colours} onConfirm={storyMoments.next} />
+      {line.voice === 'spk' && (
+        <TalkingBubble key={`${view.rank}:${line.words}`} target='[data-tag="crt"]' placement="bottom" outline="wave"
+          text={storyWords(line.words)} speaker={text.story.veteran} colours={talk.colours} onConfirm={storyMoments.next}
+          feel={line.crackle ? { ...talk, squelchEvery: looks.crackleEvery } : talk} onTyped={line.cut ? cutOff : undefined} />
       )}
     </>
   )

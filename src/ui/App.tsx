@@ -29,7 +29,7 @@ import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
 import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, titleAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
 import { loadProgress, saveProgress } from '../progress/save'
-import { makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
+import { afterCaught, makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
 import { UpgradesScreen } from './UpgradesScreen'
@@ -110,6 +110,13 @@ const onMessage = (m: Message) => {
   const id = toast(messageWords(m.key, lessonPlay.inputKind()), { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
+// F40: Management answering a whisper in the shift ("THERE ARE NO VOICES IN THE TANK…", rank 12+, Whisper.tsx): the
+// same toast as the in-shift messages — the monitor itself is up out of sight while you're in the tank
+const onMonitor = (words: string, seconds: number) => {
+  if (lessonPlay.messageUp()) return
+  const id = toast(words, { variant: 'neutral', seconds: ONE_DAY_S })
+  looksClock.after(seconds * 1000, () => toasts.dismiss(id))
+}
 
 // What ranking up from `from` to `to` unlocked (F59: the progression unlocks and the machines, in the order they come)
 function gainedBetween(from: number, to: number): string[] {
@@ -147,6 +154,10 @@ function payslipStats(p: Payslip, r: ShiftReward): Stat[] {
     { label: P.net, value: rankUpLine(r), tone: 'success' },
   ]
 }
+// F40: the once-only "Association with a retired employee" fine, kept in the tips memory like the story moments
+const ASSOCIATION_FINED = 'fine:association'
+// F40: a payday's words — from the Veteran's capture on (payslip.json caughtRank), his debt is yours (payslip.afterCaught)
+const paydayWords = (from: number) => (afterCaught(from) ? { ...P, ...P.afterCaught } : P)
 // A random pick of fines each shift; fixed under scripted checks so e2e is the same every run
 const payslipSeed = () => (import.meta.env.DEV && navigator.webdriver ? 1 : Math.floor(Math.random() * 1e9))
 
@@ -309,8 +320,11 @@ export function App() {
     const f = facts.current, s = e.state
     const shiftFacts: ShiftFacts = { ruptured: s.ruptureReason !== null, broke: [...f.broke], openCracks: s.cracks.length,
       goopLeft: (s.leftoverPenalty ?? 0) > 0, refusedZaps: f.refusedZaps,
-      consoleSeconds: (f.consoleMs + (f.peekSince ? performance.now() - f.peekSince : 0)) / 1000 }
+      consoleSeconds: (f.consoleMs + (f.peekSince ? performance.now() - f.peekSince : 0)) / 1000,
+      associationFined: tipsMemory().seen(ASSOCIATION_FINED) }
     const payslip = makePayslip(reward, shiftFacts, { firstDay: dayOne, seed: payslipSeed(), extras: P.extras.length })
+    // (F40: the fine for knowing the Veteran comes once per device — Replay lessons forgets it with his capture moment)
+    if (payslip.fines.some((l) => l.key === 'fines.association')) tipsMemory().markSeen(ASSOCIATION_FINED)
     setPayIndex(0); afterPay.current = null
     setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
       cause: e.state.ruptureReason ?? 'integrity', reward, payslip })
@@ -379,15 +393,16 @@ export function App() {
         go?.()
       }
       const what = gainedBetween(day.from, day.to)
+      const words = paydayWords(day.from)
       return (
         <Modal title={P.paydayTitle} actions={<Button onClick={pay}>{P.pay}</Button>}>
-          <Text>{fill(P.paydayMessage, { due: cr(day.due) })}</Text>
+          <Text>{fill(words.paydayMessage, { due: cr(day.due) })}</Text>
           {/* (the bill's rows scroll on a short phone — no scroll bar, the edge fades; Pay up stays in view) */}
           {/* (one at a time like the report's rows; a second payday's new rows replay the reveal — UI kit 0.32.0) */}
           <ScrollArea label={P.paydayTitle}>
             <StatList reveal={payslipTuning.lineMs} stats={[
               ...day.items.map((item): Stat => ({ label: payWords(item.key), value: fill(P.minus, { n: cr(item.amount) }), tone: 'danger' })),
-              { label: P.debt, value: fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) }), tone: 'danger' },
+              { label: words.debt, value: fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) }), tone: 'danger' },
               { label: P.rankUp, value: what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to }), tone: 'success' },
               // F35: a rank that starts a new title band says the new title (story.md "Rank titles")
               ...(titleAt(day.to) !== titleAt(day.from) ? [{ label: P.newTitle, value: text.story.titles[titleAt(day.to)], tone: 'success' as const }] : []),
@@ -561,7 +576,7 @@ export function App() {
       {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={menuOpen} atConsole={mode !== 'shift'} />}
       {mode === 'console' && !menuOpen && <StoryView />}
       {/* F35: the goop's first whispers in a real shift (not a lesson's training shift) */}
-      {engine && lessonPlay.realShift() && (mode === 'shift' || peeking) && !result && !menuOpen && <Whisper engine={engine} />}
+      {engine && lessonPlay.realShift() && (mode === 'shift' || peeking) && !result && !menuOpen && <Whisper engine={engine} onMonitor={onMonitor} />}
       {sideways && <UprightScreen />}
     </>
   )
