@@ -7,8 +7,17 @@ import { pieceScreenColumn } from './geometry'
 import { crackIsOpen, crackSpots, type CrackBubbles } from './crackBubbles'
 import look from '../../content/tuning/cracks-look.json'
 import tank from '../../content/tuning/tank.json'
+import { WILD_COLOR } from '../goo/shared/palette'
+import { twoColourGlow, wildStops } from '../goo/shared/wildLook'
 
 export type ColorOf = (c: number) => string
+
+/** F39: a wild cell's paint on a 2D canvas — the wild look's body with its sheen band across (x0, y0) → (x1, y1). */
+export function wildPaint(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, colorOf: ColorOf, timeSec: number): CanvasGradient {
+  const g = ctx.createLinearGradient(x0, y0, x1, y1)
+  for (const [at, hex] of wildStops([1, 2, 3, 4, 5].map(colorOf), timeSec)) g.addColorStop(at, hex)
+  return g
+}
 
 // guide: drawn in the tank right after the landing shadow, under everything else that's in the tank (the drop guide's
 // chevrons, src/view/dropGuide.ts)
@@ -71,8 +80,50 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     if (sx < left - cp || sx > right + cp) continue
     drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.key, timeSec)
   }
+  // F39 a grown crack reads as ONE crack: a thin seam in its colour from each grown cell back to the cell it grew from
+  for (const c of s.cracks) {
+    if (!c.cells || c.cells.length < 2) continue
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = colorOf(c.color)
+    ctx.lineWidth = Math.max(1, cp * tank.crackWidth * 0.6)
+    ctx.shadowColor = ctx.strokeStyle
+    ctx.shadowBlur = cp * tank.crackGlow * 0.5
+    ctx.beginPath()
+    c.cells.forEach(([x, y], k) => {
+      const from = c.cells![c.parent?.[k] ?? -1]
+      if (!from) return
+      const ax = centreX + screenColumn(x, view.camera, s.width) * cp, bx = centreX + screenColumn(from[0], view.camera, s.width) * cp
+      if (Math.abs(ax - bx) > cp * 1.5) return // (across the tank's seam: the cells are next to each other the other way round)
+      ctx.moveTo(ax, topY + (y - s.bufferRows + 0.5) * cp)
+      ctx.lineTo(bx, topY + (from[1] - s.bufferRows + 0.5) * cp)
+    })
+    ctx.stroke()
+    ctx.restore()
+  }
   bubbles?.draw(ctx, s, view, left, right)
   white?.()
+
+  // F39 a two-colour piece glows as it falls (story.md rank 20): a soft glow round each cell in its own colour, under
+  // the goo (the jelly is see-through, so it shows round and through the piece). Placed like the ghost, by the spin.
+  const two = twoColourGlow()
+  if (s.piece && two.glow > 0 && new Set(s.piece.colors).size > 1) {
+    const pulse = two.pulseHz > 0 ? 0.7 + 0.3 * Math.sin(timeSec * Math.PI * 2 * two.pulseHz) : 1
+    const r = cp * (0.5 + two.size)
+    ctx.globalCompositeOperation = 'lighter'
+    for (const [k, [x, y]] of s.piece.cells.entries()) {
+      const sx = centreX + screenColumn(x, s.spin, s.width) * cp
+      const sy = topY + (y + s.piece.fall - s.bufferRows + 0.5) * cp
+      const g = ctx.createRadialGradient(sx, sy, cp * 0.4, sx, sy, r) // (full colour up to the cell's edge, under the jelly)
+      g.addColorStop(0, colorOf(s.piece.colors[k] ?? s.piece.colors[0]))
+      g.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.globalAlpha = Math.min(1, two.glow * pulse)
+      ctx.fillStyle = g
+      ctx.fillRect(sx - r, sy - r, r * 2, r * 2)
+    }
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
+  }
 
   // ghost: where the piece will land. Placed by the spin, not the gliding camera, like the piece itself: the piece
   // stays still on screen while the tank slides under it.
@@ -81,10 +132,11 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     ctx.lineWidth = Math.max(1.5, cp * 0.06)
     ctx.setLineDash([cp * 0.18, cp * 0.12])
     for (const [k, [x, y]] of s.ghost.entries()) {
-      ctx.strokeStyle = colorOf(s.piece.colors[k] ?? s.piece.colors[0]) // (F39: a two-colour piece's ghost in both colours)
+      const c = s.piece.colors[k] ?? s.piece.colors[0] // (F39: a two-colour piece's ghost in both colours)
       const sx = centreX + screenColumn(x, s.spin, s.width) * cp
       const sy = topY + (y - s.bufferRows + 0.5) * cp
       const h = cp * 0.42
+      ctx.strokeStyle = c === WILD_COLOR ? wildPaint(ctx, sx - h, sy - h, sx + h, sy + h, colorOf, timeSec) : colorOf(c)
       ctx.strokeRect(sx - h, sy - h, h * 2, h * 2)
     }
     ctx.setLineDash([])

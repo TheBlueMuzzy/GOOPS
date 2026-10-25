@@ -2,7 +2,9 @@
 // (half res) -> blur -> threshold + wet shading, written as premultiplied colour over the TRANSPARENT canvas.
 // Field textures: tex0 = colours 1-4, tex1.rgb = colours 5-7, tex2 = r unfilled weight / g ready weight / b white-hot
 // weight (zapped goo, F67).
+// F39: wild goop = colour 8, in tex1.a, shaded with the wild look (src/goo/shared/wildLook.ts).
 import { XRAY_GLSL } from '../shared/xray'
+import { WILD_GLSL } from '../shared/wildLook'
 
 export const SPLAT_VS = `#version 300 es
 layout(location=0) in vec2 aCorner;
@@ -32,7 +34,7 @@ void main(){
   float u = 1.0 - d2; float k = u * u * u * vInfo.y * uWS;     // Wyvill kernel
   int c = int(vInfo.z + 0.5);
   o0 = vec4(float(c == 1), float(c == 2), float(c == 3), float(c == 4)) * k;
-  o1 = vec4(float(c == 5), float(c == 6), float(c == 7), 0.0) * k;
+  o1 = vec4(float(c == 5), float(c == 6), float(c == 7), float(c == 8)) * k;   // 8 = wild goop (F39)
   o2 = vec4(vFill.x * k, vFill.y * k, vFill.z * k, 0.0);
 }`
 
@@ -56,9 +58,10 @@ precision highp float;
 uniform sampler2D uT0, uT1, uT2, uW0, uW1, uW2;   // field (lightly blurred) + a wide-blurred copy for the group dome
 uniform vec2 uRes, uOrigin; uniform float uCell, uScale, uTh, uWet, uBulge, uAbsorb, uFres, uTrans, uTime;
 uniform float uUnA, uUnDim, uGlow, uPulse, uClipL, uClipR, uClipB, uWhite;
-uniform vec3 uCols[8];
+uniform vec3 uCols[9];
 out vec4 outColor;
 ${XRAY_GLSL}
+${WILD_GLSL}
 float field(vec2 uv, vec4 m0, vec4 m1){ return (dot(texture(uT0, uv), m0) + dot(texture(uT1, uv), m1)) * uScale; }
 float hgt(float f){ return sqrt(clamp((f - uTh) / 0.9, 0.0, 1.0)); }   // steep wet edge, soft dome on top
 vec4 over(vec4 top, vec4 under){ return top + under * (1.0 - top.a); }
@@ -97,31 +100,35 @@ void main(){
     * (1.0 - smoothstep(uClipB - px, uClipB + px, p.y));   // the tank window (sides + floor; open above for the spawn rows)
   if (clip <= 0.0) { outColor = vec4(0.0); return; }
   vec4 a = texture(uT0, uv) * uScale; vec4 b4 = texture(uT1, uv) * uScale;
-  float f[7] = float[7](a.x, a.y, a.z, a.w, b4.x, b4.y, b4.z);
+  float f[8] = float[8](a.x, a.y, a.z, a.w, b4.x, b4.y, b4.z, b4.w);   // [7] = wild goop (F39)
   int ci = 0; float f1 = 0.0, f2 = 0.0, fsum = 0.0;
-  for (int i = 0; i < 7; i++) { fsum += f[i]; if (f[i] > f1) { f2 = f1; f1 = f[i]; ci = i; } else if (f[i] > f2) f2 = f[i]; }
+  for (int i = 0; i < 8; i++) { fsum += f[i]; if (f[i] > f1) { f2 = f1; f1 = f[i]; ci = i; } else if (f[i] > f2) f2 = f[i]; }
   // soft contact shadow under all goo, offset down-right (darkens the tank)
   vec2 so = uv + vec2(2.0, -3.0) * tx;
   vec4 sa = texture(uT0, so) * uScale; vec4 sb = texture(uT1, so) * uScale;
-  vec4 outc = vec4(0.0, 0.0, 0.0, 0.55 * smoothstep(0.05, uTh, sa.x + sa.y + sa.z + sa.w + sb.x + sb.y + sb.z));
+  vec4 outc = vec4(0.0, 0.0, 0.0, 0.55 * smoothstep(0.05, uTh, sa.x + sa.y + sa.z + sa.w + sb.x + sb.y + sb.z + sb.w));
   float pulse = 0.5 + 0.5 * sin(uTime * 6.2832 * uPulse);
   // ready halo: a soft glow just outside a ready group, in the nearest goo colour
   float wr = texture(uW2, uv).g * uScale;
   if (wr > 0.002) {
     vec4 w0 = texture(uW0, uv), w1 = texture(uW1, uv);
-    float wf[7] = float[7](w0.x, w0.y, w0.z, w0.w, w1.x, w1.y, w1.z);
+    float wf[8] = float[8](w0.x, w0.y, w0.z, w0.w, w1.x, w1.y, w1.z, w1.w);
     int wc = 0; float wb = 0.0;
-    for (int i = 0; i < 7; i++) if (wf[i] > wb) { wb = wf[i]; wc = i; }
+    for (int i = 0; i < 8; i++) if (wf[i] > wb) { wb = wf[i]; wc = i; }
     float g = uGlow * clamp(wr * 1.2, 0.0, 1.0) * (0.35 + 0.65 * pulse) * 0.4;
     outc = over(vec4((uCols[wc + 1] * 0.7 + 0.3) * g, g), outc);
   }
+  outc = over(wildHalo(p, texture(uW1, uv).w * uScale), outc);   // F39: the wild goop's soft pulsing halo
   if (f1 > uTh * 0.5) {
     // the winner's field minus part of the rival's -> same colours fuse, different colours meet at a clean seam
     float fe = f1 - 0.6 * f2, aa = fwidth(fe) * 0.9 + 1e-4;
     vec4 m0 = vec4(float(ci == 0), float(ci == 1), float(ci == 2), float(ci == 3));
-    vec4 m1 = vec4(float(ci == 4), float(ci == 5), float(ci == 6), 0.0);
-    vec3 base = uCols[ci + 1];
+    vec4 m1 = vec4(float(ci == 4), float(ci == 5), float(ci == 6), float(ci == 7));
+    vec3 wg = vec3(0.0);
+    // F39: wild goop is shaded with the wild look, never a palette colour
+    vec3 base = ci == 7 ? wildBase(p, vec3(0.0, 0.0, 1.0), clamp(f1 - uTh, 0.0, 1.0), wg) : uCols[ci + 1];
     vec3 col = shade(uv, tx, f1, f2, m0, m1, base);
+    if (ci == 7) col += wildExtras(p, 1.0 - smoothstep(uTh, uTh + 0.6, fe), wg);
     float cover = smoothstep(uTh - aa, uTh + aa, fe);
     // filling: the part above the fill level is dimmer and more see-through, with a soft bright level line
     vec4 fl = texture(uT2, uv) * uScale;

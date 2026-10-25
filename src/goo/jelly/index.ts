@@ -7,7 +7,8 @@ import type { ShiftEvent, ShiftState } from '../../engine/types'
 import { screenColumn, type GooOptions, type GooRenderer, type GooView } from '../types'
 import jellyFile from '../../../content/tuning/goo-jelly.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
-import { DEFAULT_COLOR_NAMES, gooSlot, paletteTable } from '../shared/palette'
+import { DEFAULT_COLOR_NAMES, WILD_COLOR, gooSlot, paletteTable } from '../shared/palette'
+import { WILD_UNIFORMS, setWild } from '../shared/wildLook'
 import { groupFillLines, tankWindow, unwrapAround, unwrapCells, viewOrigin, wrapNear, wrapTurns, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
@@ -135,6 +136,7 @@ interface DrawItem {
 const C0: number[][] = [[0, 0, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 const C1: number[][] = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]
 const N4: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+const EXTRA_COLOURS = [1, 2, 3, 4, 5, 6, 7, WILD_COLOR] // the colours strings + drips can be (F39: wild too)
 
 
 export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions = {}): GooRenderer {
@@ -149,7 +151,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   let W = 0
   let H = 0
   let bodies: Body[] = []
-  let pieceBody: Body | null = null
+  let pieceBodies: Body[] = [] // the falling piece: one body per colour (F39: a two-colour piece has two)
   let retired: Body[] = []
   let dying: Body[] = []
   let drops: Drop[] = []
@@ -182,7 +184,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     W = state.width
     H = state.height
     bodies = []
-    pieceBody = null
+    pieceBodies = []
     retired = []
     dying = []
     drops = []
@@ -539,14 +541,14 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
         case 'spawn':
           if (i === lastSwap && p) {
             pose.spawn(p, W, state.spin, -1.2)
-            pieceBody = null
+            pieceBodies = []
             needPiece = true
           }
           break
         case 'move':
           if (i > lastSwap && p) {
             pose.reshape(p, W, state.spin, 0)
-            if (pieceBody) kick(pieceBody, 'shear', 2.2 * e.dx)
+            for (const P of pieceBodies) kick(P, 'shear', 2.2 * e.dx)
           }
           break
         case 'rotate': // the drawn piece lags 90° behind and springs over with overshoot; the body twists as it goes
@@ -568,11 +570,11 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
               cellDelay[c] = 0
             } else queueKick(c, 'squash', 2.4)
           }
-          if (pieceBody) {
+          for (const P of pieceBodies) {
             // the piece was placed by the spin, the grid by the animated camera: keep the jelly where it is
             const d = wrapNear(spin - camera, W)
-            for (let k = 0; k < pieceBody.n; k++) pieceBody.hx[k] += d
-            retired.push(pieceBody)
+            for (let k = 0; k < P.n; k++) P.hx[k] += d
+            retired.push(P)
           }
           if (!dropping)
             for (const c of e.cells)
@@ -580,7 +582,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
                 const j = neighbour(c, dx, dy)
                 if (j >= 0 && !lockSet.has(j)) queueKick(j, 'squash', 0.9)
               }
-          pieceBody = null
+          pieceBodies = []
           pose.y = 0 // the drop offset belonged to this piece only (several drops in one frame must not add up)
           break
         }
@@ -690,26 +692,32 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   function buildPiece(state: ShiftState) {
     const p = state.piece
     if (!p || !pose.shape) {
-      pieceBody = null
+      pieceBodies = []
       return
     }
     const s = pose.shape
-    const old = pieceBody
-    const B = newBody(s.ux.map((x, i) => [x, s.uy[i]]), p.colors[0] ?? 1, 'piece')
-    // rest points relative to the piece centre (the pose places and turns them)
-    for (let i = 0; i < B.n; i++) {
-      B.bx[i] -= s.cx
-      B.by[i] -= s.cy
-    }
-    B.hlX -= s.cx
-    B.hlY -= s.cy
-    computeHomes(B)
-    transfer(B, old ? [old] : [])
-    if (old) {
-      kick(B, 'twist', -2.2)
-      strands = strands.filter((st) => st.A !== old && st.B !== old)
-    }
-    pieceBody = B
+    const olds = pieceBodies
+    // one body per colour (F39: a two-colour piece falls as its two halves, each in its own colour)
+    const colours = [...new Set(s.ux.map((_, k) => p.colors[k] ?? p.colors[0] ?? 1))]
+    pieceBodies = colours.map((colour) => {
+      const cells: [number, number][] = []
+      s.ux.forEach((x, k) => {
+        if ((p.colors[k] ?? p.colors[0] ?? 1) === colour) cells.push([x, s.uy[k]])
+      })
+      const B = newBody(cells, colour, 'piece')
+      // rest points relative to the piece centre (the pose places and turns them)
+      for (let i = 0; i < B.n; i++) {
+        B.bx[i] -= s.cx
+        B.by[i] -= s.cy
+      }
+      B.hlX -= s.cx
+      B.hlY -= s.cy
+      computeHomes(B)
+      transfer(B, olds)
+      if (olds.length) kick(B, 'twist', -2.2)
+      return B
+    })
+    if (olds.length) strands = strands.filter((st) => !olds.includes(st.A) && !olds.includes(st.B))
   }
 
   function stepBody(B: Body, h: number, ks: number, kh: number, c: number, scale: number) {
@@ -875,7 +883,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     // magnetism: skin points of DIFFERENT same-colour bodies within reach pull toward each other
     const M = K.magnetism
     if (M <= 0) return
-    const all = pieceBody ? bodies.concat([pieceBody]) : bodies
+    const all = pieceBodies.length ? bodies.concat(pieceBodies) : bodies
     const R = 0.25 + 0.5 * M
     const pull = K.stiffness * 0.1 * M * dt
     const map = new Map<number, (Body | number)[]>()
@@ -920,8 +928,10 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   // Sticky touch: when the falling piece touches a same-colour jelly, they stick, and a string forms as they slide
   // apart. One string per jelly per piece; Tension decides how far it stretches.
   function stickyTouch() {
-    if (K.tension <= 0 || !pieceBody) return
-    const P = pieceBody
+    if (K.tension <= 0) return
+    for (const P of pieceBodies) stickyTouchOne(P)
+  }
+  function stickyTouchOne(P: Body) {
     P.stuck = P.stuck || new Set()
     let x0 = 1e9
     let x1 = -1e9
@@ -984,7 +994,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     if (state.piece && pose.swapped(state.piece, W)) {
       // a different piece without a spawn (hold swap, or we missed the spawn): it appears where it is
       pose.spawn(state.piece, W, spin, 0)
-      pieceBody = null
+      pieceBodies = []
       needPiece = true
     }
     if (state.piece) pose.follow(state.piece, W, spin)
@@ -992,7 +1002,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       needPiece = false
       buildPiece(state)
     }
-    if (!state.piece) pieceBody = null
+    if (!state.piece) pieceBodies = []
     if (kicks.length) {
       // apply each kind once per body (strongest wins)
       const best = new Map<string, [number, KickKind, number]>()
@@ -1035,7 +1045,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       for (const d of drops) d.x -= dc
     }
     for (const B of bodies) computeHomes(B)
-    if (pieceBody) computeHomes(pieceBody)
+    for (const P of pieceBodies) computeHomes(P)
     const ks = K.stiffness
     const kh = K.stiffness * K.home
     const c = K.viscosity
@@ -1044,9 +1054,9 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     const h = dt / steps
     for (let s = 0; s < steps; s++) {
       pose.integrate(h)
-      if (pieceBody) {
-        computeHomes(pieceBody)
-        stepBody(pieceBody, h, ks, kh, c, 1)
+      for (const P of pieceBodies) {
+        computeHomes(P)
+        stepBody(P, h, ks, kh, c, 1)
       }
       for (const B of bodies) stepBody(B, h, ks, kh, c, 1)
       for (const st of strands) strandPull(st, h)
@@ -1089,11 +1099,11 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   }
 
   // ---------------- WebGL ----------------
-  const PM: Program = makeProgram(gl, MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl', 'uLine', 'uFillOn', 'uReady', 'uAlpha', 'uHot'])
+  const PM: Program = makeProgram(gl, MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl', 'uLine', 'uFillOn', 'uReady', 'uAlpha', 'uHot', 'uWild'])
   const PB: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uSize', 'uStep', 'uSigma', 'uR'])
   const PF: Program = makeProgram(gl, FULLSCREEN_VS, FINAL_FS, [
     'uS0', 'uS1', 'uS2', 'uQ0', 'uQ1', 'uQ2', 'uM1', 'uRes', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet',
-    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS,
+    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS, ...WILD_UNIFORMS,
   ])
   const xrayBuf = new Float32Array(XRAY_MAX * 4)
   const faceDraw = new FaceDrawer(gl) // F62
@@ -1259,9 +1269,9 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       items.push({ color: B.color, alpha, fan, hl, cover: cover(bb[0], bb[1], bb[2], bb[3]), line, fillOn: filling ? 1 : 0, ready: f && f.ready ? 1 : 0, hot: B.zap?.hot ?? 0 })
     }
     for (const B of bodies) add(B, 1)
-    if (pieceBody) add(pieceBody, 1)
+    for (const P of pieceBodies) add(P, 1)
     for (const B of dying) add(B, Math.max(0, B.alpha))
-    for (let c = 1; c < 8; c++) {
+    for (const c of EXTRA_COLOURS) {
       // extras of this colour: strings + drips
       const s = mark()
       for (const d of drops) if (d.color === c) fanDrop(d)
@@ -1293,8 +1303,9 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     // cover the body's box: writes colour + fill/ready where the stencil is set, and clears the stencil as it goes
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.ZERO)
     gl.uniform1i(PM.u.uMode, 1)
-    gl.uniform4fv(PM.u.uC0, C0[gooSlot(it.color)] ?? C0[0]) // (F39: wild → its stand-in slot)
+    gl.uniform4fv(PM.u.uC0, C0[gooSlot(it.color)] ?? C0[0]) // (F39: wild has no slot here — its own channel, uWild)
     gl.uniform4fv(PM.u.uC1, C1[gooSlot(it.color)] ?? C1[0])
+    gl.uniform1f(PM.u.uWild, it.color === WILD_COLOR ? 1 : 0)
     gl.uniform1f(PM.u.uAlpha, it.alpha)
     gl.uniform1f(PM.u.uLine, it.line)
     gl.uniform1f(PM.u.uFillOn, it.fillOn)
@@ -1382,6 +1393,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     gl.uniform1f(PF.u.uClipB, state.height)
     gl.uniform3fv(PF.u.uCols, cols)
     gl.uniform1f(PF.u.uWhite, zapWhite) // F67: how far toward white a zapped jelly turns
+    setWild(gl, PF.u, cols) // F39: the wild goop's look (twists-look.json, live)
     setXray(gl, PF.u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)

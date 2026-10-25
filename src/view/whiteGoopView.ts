@@ -13,7 +13,9 @@
 // The engine says where he is (state.vet); this only keeps his looks: squash, gaze, the ouch. Times = the goo's clock
 // (the looks clock × the rules rate), so the Dev Kit pause holds him still. Numbers: content/tuning/whiteGoop.json
 // (live); the x-ray line: content/tuning/cracks-look.json xray.
-import type { ShiftEvent, ShiftState, TapPoint } from '../engine/types'
+import type { Crack, ShiftEvent, ShiftState, TapPoint } from '../engine/types'
+import { crackCells } from '../engine/twists'
+import { wrapNear } from '../goo/shared/tank'
 import { screenColumn, type GooView } from '../goo/types'
 import { pieceScreenColumn } from './geometry'
 import look from '../../content/tuning/whiteGoop.json'
@@ -69,8 +71,10 @@ export function createWhiteGoopView(): WhiteGoopView {
       if (inGoop > 0.5) want *= 0.94
       sq += (want - sq) * Math.min(1, dt * 18)
       // gaze: the crack he's after, else the goop's own focus
+      // (F39 a grown crack: the cell of it nearest him — the one he's heading for or sitting on, not its root)
       const crack = v.targetId !== null ? s.cracks.find((c) => c.id === v.targetId) : undefined
-      const tgtX = crack ? crack.x + 0.5 : focus?.x, tgtY = crack ? crack.y + 0.5 : focus?.y
+      const aim = crack ? nearestCell(crack, v.px, v.py, s.width) : null
+      const tgtX = aim ? aim[0] + 0.5 : focus?.x, tgtY = aim ? aim[1] + 0.5 : focus?.y
       let tx = 0, ty = 0
       if (tgtX !== undefined && tgtY !== undefined) {
         let dx = tgtX - (v.px + 0.5)
@@ -191,16 +195,47 @@ function drawRing(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, i
   const cp = view.cellPx
   const x = view.centreX + screenColumn(c.x, view.camera, s.width) * cp
   const y = view.topY + (c.y - s.bufferRows + 0.5) * cp
-  const r = cp * (0.5 + num(look.ringPad, 0.12))
+  const pad = num(look.ringPad, 0.12)
+  const r = cp * (0.5 + pad)
   ctx.save()
   ctx.strokeStyle = String(look.ringColor)
   ctx.lineWidth = Math.max(1, num(look.ringWidth, 0.07) * cp)
   ctx.lineCap = 'round'
-  ctx.globalAlpha = 0.25
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke()
-  ctx.globalAlpha = 0.9
-  ctx.beginPath(); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, seal)); ctx.stroke()
+  const cells = crackCells(c)
+  if (cells.length > 1) {
+    // F39 a grown crack: he seals it whole, so the ring goes round the WHOLE crack — a rounded box round all its cells
+    // (columns the short way round from the root), filling clockwise from its top-left as he seals
+    let x0 = 0, x1 = 0, y0 = c.y, y1 = c.y
+    for (const [cx, cy] of cells) {
+      const dx = wrapNear(cx - c.x, s.width)
+      x0 = Math.min(x0, dx); x1 = Math.max(x1, dx); y0 = Math.min(y0, cy); y1 = Math.max(y1, cy)
+    }
+    const bx = x + (x0 - 0.5 - pad) * cp, by = y + (y0 - c.y - 0.5 - pad) * cp
+    const bw = (x1 - x0 + 1 + 2 * pad) * cp, bh = (y1 - y0 + 1 + 2 * pad) * cp
+    const rad = Math.min(bw, bh) * 0.3
+    const around = 2 * (bw + bh) - 8 * rad + 2 * Math.PI * rad // the box's length all the way round
+    ctx.globalAlpha = 0.25
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, rad); ctx.stroke()
+    ctx.globalAlpha = 0.9
+    ctx.setLineDash([around * Math.min(1, seal), around + 1])
+    ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, rad); ctx.stroke()
+  } else {
+    ctx.globalAlpha = 0.25
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke()
+    ctx.globalAlpha = 0.9
+    ctx.beginPath(); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, seal)); ctx.stroke()
+  }
   ctx.restore()
+}
+
+// The cell of a crack nearest (px, py) (columns the short way round the tank) — F39: a grown crack has many.
+function nearestCell(c: Crack, px: number, py: number, width: number): [number, number] {
+  let best: [number, number] = [c.x, c.y], bd = Infinity
+  for (const [x, y] of crackCells(c)) {
+    const d = Math.hypot(wrapNear(x - px, width), y - py)
+    if (d < bd) { bd = d; best = [x, y] }
+  }
+  return best
 }
 
 // His face (the sketch's drawVet): two white eyes with a dark rim, pupils on (gx, gy); his squint = the right eye's lid

@@ -10,6 +10,8 @@ import { Panel } from '../ui/kit'
 import { colorOf } from './gooFactory'
 import { CrtLook } from './CrtLook'
 import hud from '../../content/tuning/hud.json'
+import { WILD_COLOR } from '../goo/shared/palette'
+import { wildStops } from '../goo/shared/wildLook'
 
 export type NextPiece = { cells: [number, number][]; color: number; colors?: number[] } // colors: one per cell (F39 two-colour pieces)
 
@@ -21,15 +23,25 @@ export function NextWindow({ piece, label }: { piece: NextPiece | null; label: s
   const top = (W.rows - (Math.max(...ys) - Math.min(...ys) + 1)) / 2 - Math.min(...ys)
   const gap = W.cellGap // a thin dark line between cells, so the shape reads as blocks
   const pad = W.padCells // room round the cells inside the frame (nothing touches its edge)
+  const wild = !!piece && (piece.colors ?? [piece.color]).includes(WILD_COLOR)
   return (
     <Panel gap="xs" className="next-window" data-tag="next-window" data-knobs="next-window" data-placement="top"
       style={{ '--next-cols': W.cols + 2 * pad, '--next-rows': W.rows + 2 * pad, '--next-cell': `${W.cellRem}rem` } as CSSProperties}>
       <CrtLook place="nextWindow">
       <svg className="next-window-cells" viewBox={`${-pad} ${-pad} ${W.cols + 2 * pad} ${W.rows + 2 * pad}`} role="img" aria-label={label}>
-        {piece?.cells.map(([x, y], i) => (
-          <rect key={i} x={left + x + gap / 2} y={top + y + gap / 2} width={1 - gap} height={1 - gap} rx={W.cornerCells}
-            fill={colorOf(piece.colors?.[i] ?? piece.color)} />
-        ))}
+        {wild && (
+          <defs>
+            {/* F39 wild goop: the wild look's body with its sheen band across each cell (content/tuning/twists-look.json) */}
+            <linearGradient id="next-wild" x1="0" y1="0" x2="1" y2="1">
+              {wildStops([1, 2, 3, 4, 5].map(colorOf)).map(([at, hex]) => <stop key={at} offset={at} stopColor={hex} />)}
+            </linearGradient>
+          </defs>
+        )}
+        {piece?.cells.map(([x, y], i) => {
+          const c = piece.colors?.[i] ?? piece.color
+          return <rect key={i} x={left + x + gap / 2} y={top + y + gap / 2} width={1 - gap} height={1 - gap} rx={W.cornerCells}
+            fill={c === WILD_COLOR ? 'url(#next-wild)' : colorOf(c)} />
+        })}
       </svg>
       </CrtLook>
     </Panel>
