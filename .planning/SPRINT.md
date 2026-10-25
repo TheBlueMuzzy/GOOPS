@@ -7,7 +7,7 @@ Done when: eyes picked in a sketch first (Muzzy tunes it); then in BOTH renderer
 why: the tank is half the game — the goop itself tells the story that something in there is alive.
 Check: e2e/eyes.mjs (eyes at 10/20/30/40, none at 9, closing on a zap, looking at the piece) with shots looked at · check:full
 - [x] 🤖 1. Eyes sketch: eye size, count per clump, follow speed, blink, worried look, mouth — knobs + presets for ranks 10/20/30/40 + Copy values — .planning/research/sketches/goop-eyes.html
-- [x] 🙋 2. Muzzy tunes the eyes sketch and copies the values — .planning/research/sketches/goop-eyes.html (v1 values pasted; v2 "approved" 2026-10-24 → .planning/research/goop-eyes/picks.json; pixel look unanswered → Claude's pick smooth, pixelSize 0 kept as a knob)
+- [x] 🙋 2. Muzzy tunes the eyes sketch and copies the values — .planning/research/sketches/goop-eyes.html (v1 values pasted; v2 "approved" 2026-10-24 → .planning/research/goop-eyes/picks.json; pixel look → one shared pixel shader later (ROADMAP Ideas, Muzzy 2026-10-24), eyes built smooth, no pixelSize in eyes.json)
 - [ ] 🤖 3. Jelly eyes (drawn like the zap highlight quad), values live from content/tuning/eyes.json — src/goo/jelly/index.ts
 - [ ] 🤖 4. Particle eyes, same values — src/goo/particle/index.ts
 - [ ] 🤖 5. The renderer gets rank, pressure and the focus point (falling piece / laser) — src/goo/types.ts
