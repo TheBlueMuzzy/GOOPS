@@ -37,6 +37,8 @@ export default defineConfig({
       },
     }),
   ],
-  server: { host: true },
+  // (not watched: helpers' worktrees and the checks' own output — any .html there made every open page reload, and
+  // check:full's e2e pages died mid-test, Goops 2026-10-25)
+  server: { host: true, watch: { ignored: ['**/.claude/**', '**/e2e-shots/**'] } },
   test: { include: ['tests/**/*.test.ts'] },
 })
