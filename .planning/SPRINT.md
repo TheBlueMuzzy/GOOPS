@@ -11,9 +11,9 @@ Check: unit tests (split, growth, multi-cell seal + quota count, wild seal + tak
 - [x] 🤖 3. Two-colour pieces from 20: even connected halves, per-cell colours through lock, two clumps; numbers in content/tuning/twists.json; unit tests — src/engine/pieces.ts (9d2b863)
 - [x] 🤖 4. Growing cracks from 30: one crack over many cells, sealed only when every cell is covered, counts its size toward the quota, drains per cell; the white goop seals it whole in sealTime × size; unit tests — src/engine/cracks.ts (9d2b863)
 - [x] 🤖 5. Wild goop from 40: seals any crack, a normal piece landing next to it takes the whole wild clump; unit tests — src/engine/shift.ts (9d2b863)
-- [ ] 🤖 6. Looks: two-colour pieces glow as they fall, wild goop in Muzzy's picked look (Jelly + Particle), grown cracks' bubbles/x-ray, faces on wild + two-colour clumps — src/goo/shared/palette.ts
-- [ ] 🤖 7. e2e: each twist at 20 / 30 / 40 with shots at every portrait size, in check:full — e2e/twists.mjs
-- [ ] 🤖 8. Update GDD rank twists (+ upgrades-map: Slow Cracks slows growth) — .planning/GDD.md
+- [x] 🤖 6. Looks: two-colour pieces glow as they fall, wild goop in Muzzy's picked look (Jelly + Particle), grown cracks' bubbles/x-ray, faces on wild + two-colour clumps — src/goo/shared/palette.ts (c4fa068)
+- [x] 🤖 7. e2e: each twist at 20 / 30 / 40 with shots at every portrait size, in check:full — e2e/twists.mjs (a14dcee)
+- [x] 🤖 8. Update GDD rank twists (+ upgrades-map: Slow Cracks slows growth) — .planning/GDD.md (24b0303)
 
 ## Notes
 - Muzzy 2026-10-25: a grown crack is harder to seal (cover the whole crack), so sealing it counts its cell count toward the quota. Claude's calls with it: open cracks drain per cell (a growing crack gets more urgent); the white goop seals a grown crack whole in sealTime × its size.
