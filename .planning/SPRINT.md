@@ -17,12 +17,12 @@ why: losing the Veteran should hurt, then turn — he's still here, still helpin
 Check: unit tests (white clump rules) · e2e/story.mjs (moments 31–39, the name, the report line) · shots of the white clump at every portrait size · check:full
 - [x] 🤖 1. White-goop sketch: how he drifts to the worst crack and seals it (speed, path, the laser passing through with an "ow"), knobs + presets + Copy values — .planning/research/sketches/white-goop.html
 - [x] 🙋 2. Muzzy tunes the sketch and copies the values — .planning/research/sketches/white-goop.html (2026-10-25: Ooze, hardest for you, takes the next one, wriggles out, seal 6 s, rest 1 s, squint 0.25, eyes 0.18 → .planning/research/white-goop/picks.json)
-- [ ] 🤖 3. Rules: the white clump never merges or pops, drifts, seals slowly; numbers in content/tuning; unit tests — src/engine/shift.ts
-- [ ] 🤖 4. His look: white, his squint, eyes always open — src/goo/shared/faces.ts
-- [ ] 🤖 5. Moments 31–39 + lines (the goop's voice = the whisper bubble at the console; 36 and 39 use the name) — content/story/moments.json
-- [ ] 🤖 6. Rank 39's report: "Pending retirements: Operator #4471 — <your name>" — src/progress/payslip.ts
-- [ ] 🤖 7. e2e: moments 31–39, the name, the report line, white clump shots at every portrait size — e2e/story.mjs
-- [ ] 🤖 8. Update GDD §5 (ranks 31–39) — .planning/GDD.md
+- [x] 🤖 3. Rules: the white clump never merges or pops, drifts, seals slowly; numbers in content/tuning; unit tests — src/engine/shift.ts (abca7b0)
+- [x] 🤖 4. His look: white, his squint, eyes always open — src/goo/shared/faces.ts (0fb3319)
+- [x] 🤖 5. Moments 31–39 + lines (the goop's voice = the whisper bubble at the console; 36 and 39 use the name) — content/story/moments.json (cb71d5e)
+- [x] 🤖 6. Rank 39's report: "Pending retirements: Operator #4471 — <your name>" — src/progress/payslip.ts (5c411f4)
+- [x] 🤖 7. e2e: moments 31–39, the name, the report line, white clump shots at every portrait size — e2e/story.mjs (8d5f319)
+- [x] 🤖 8. Update GDD §5 (ranks 31–39) — .planning/GDD.md (9ec7f0f)
 
 ## Notes
 - Plan OK (Muzzy 2026-10-25: "go" = Claude's picks: the goop's voice at the console = the whisper bubble over the monitor area; name box 12 letters).
