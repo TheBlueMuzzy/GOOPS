@@ -28,7 +28,7 @@ import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
 import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, titleAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
-import { loadProgress, saveProgress } from '../progress/save'
+import { loadProgress, operatorName, saveProgress } from '../progress/save'
 import { afterCaught, makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
@@ -43,6 +43,7 @@ import { usePortraitLock, useSideways } from './portrait'
 import { UprightScreen } from './Upright'
 import shiftConfig from '../../content/tuning/shift.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
+import whiteGoop from '../../content/tuning/whiteGoop.json'
 import hudTuning from '../../content/tuning/hud.json'
 import settingsJson from '../../content/ui/settings.json'
 import text from '../../content/text/en.json'
@@ -75,7 +76,7 @@ function newEngine(progress: Progress, training = false): { engine: ShiftEngine;
   const seed = Number(new URLSearchParams(location.search).get('seed')) || Math.floor(Math.random() * 1e9)
   const rank = playerRank(progress)
   const upgrades = upgradesForShift(progress, training)
-  const engine = createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, swap: !training && isUnlocked('swap', rank),
+  const engine = createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, whiteGoop, swap: !training && isUnlocked('swap', rank),
     modifiers: upgrades.modifiers, abilities: upgrades.abilities, ...(training ? { training: {} } : {}) })
   return { engine, upgrades }
 }
@@ -152,7 +153,13 @@ function payslipStats(p: Payslip, r: ShiftReward): Stat[] {
     ...(p.firstDay ? [{ label: P.firstDay, value: fill(P.minus, { n: 0 }) }]
       : p.fines.map((f): Stat => ({ label: payWords(f.key), value: fill(P.minus, { n: cr(f.amount) }), tone: 'danger' }))),
     { label: P.net, value: rankUpLine(r), tone: 'success' },
+    // F63 (rank 39+): you're on the list — "Pending retirements: Operator #4471 — <your name>"
+    ...(p.pendingRetirement ? [{ label: P.pendingRetirements.label, value: pendingName() }] : []),
   ]
+}
+const pendingName = () => {
+  const name = operatorName()
+  return name ? fill(P.pendingRetirements.value, { name }) : P.pendingRetirements.noName
 }
 // F40: the once-only "Association with a retired employee" fine, kept in the tips memory like the story moments
 const ASSOCIATION_FINED = 'fine:association'
@@ -283,7 +290,7 @@ export function App() {
     // (a snapshot saved before F59 has no swap option: give it the one its rank has, not "on")
     const o = snapshot?.options
     if (o && o.swap === undefined) o.swap = !o.training && isUnlocked('swap', o.rank)
-    const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns)
+    const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns, whiteGoop)
     if (e) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     while (screens.current.length) screens.pop()
     toasts.current.forEach((t) => toasts.dismiss(t.id))

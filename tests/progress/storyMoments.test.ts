@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import en from '../../content/text/en.json'
 import progression from '../../content/tuning/progression.json'
-import { dueRanks, monitorDeniesVoices, storyFile, whisperFor, whisperStage } from '../../src/game/lessons/storyMoments'
+import { dueRanks, monitorDeniesVoices, storyFile, storyWords, whisperFor, whisperStage } from '../../src/game/lessons/storyMoments'
 import { titleAt } from '../../src/progress/progression'
 
 const none = () => false
@@ -32,6 +32,20 @@ describe('story moments', () => {
         expect(lines[l.words], `rank ${r} ${l.words}`).toBeTruthy()
       }
     }
+  })
+  it('F63: 31–39 — every rank has a moment in the goop\'s voice (head), 35 and 37 are him, 36 says your name', () => {
+    const lines = en.story.lines as Record<string, string>
+    for (let r = 31; r <= 39; r++) {
+      const m = storyFile.moments[String(r)]
+      expect(m?.lines.length, `rank ${r}`).toBeGreaterThan(0)
+      for (const l of m.lines) {
+        expect(l.voice, `rank ${r}`).toBe('head')
+        expect(lines[l.words], `rank ${r} ${l.words}`).toBeTruthy()
+        expect(!!l.him, `rank ${r} him`).toBe(r === 35 || r === 37)
+      }
+    }
+    expect(storyFile.moments['36'].lines.some((l) => lines[l.words].includes('{name}'))).toBe(true)
+    expect(storyWords('r36c')).toContain(en.story.sign.fallback) // never signed (no save here): Operator #4471
   })
   it('Management 0–4, the Veteran 5–29 (story.md pacing)', () => {
     for (let r = 0; r <= 29; r++) for (const l of storyFile.moments[String(r)].lines) expect(l.voice).toBe(r < 5 ? 'mon' : 'spk')

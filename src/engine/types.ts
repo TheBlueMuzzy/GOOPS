@@ -79,6 +79,27 @@ export interface ShiftState {
   effects?: ActiveEffects // abilities' effects still running; the engine always sets it (empty when none) (added by F22)
   machines?: Record<MachineId, MachineState> // the three machines (F23); the engine always sets it
   primed?: number[] // group ids primed by a first zap while the laser is broken (F23); a second zap pops them
+  vet?: WhiteGoop | null // F63 the white goop (the Veteran, gooped) from rank 31; null/unset = not in this shift (whiteGoop.ts)
+}
+
+// F63 THE WHITE GOOP (src/engine/whiteGoop.ts): not a grid cell — his own thing, behind the goop. Plain data, so a
+// snapshot keeps him exactly.
+export interface WhiteGoop {
+  x: number // the cell he's in (or oozing into), tank space
+  y: number
+  fromX: number // the cell he's oozing from (= x, y when still)
+  fromY: number
+  t: number // 0..1 through the current move
+  moveMs: number // how long the current move takes (rules ms)
+  px: number // where he's drawn right now (fractional cells: x wrapped into 0 … width)
+  py: number
+  // drop = falling in at the start · move = oozing one cell · seal = sitting on a crack, sealing it · rest = after a
+  // seal · wait = nothing to do, looking again soon · idle = about to think (never seen between steps)
+  mode: 'drop' | 'move' | 'seal' | 'rest' | 'wait' | 'idle'
+  targetId: number | null // the crack he's going for (or sealing)
+  seal: number // 0..1: how far through sealing it
+  waitMs: number // rest / wait time left
+  behind: boolean // goop covers his cell: drawn behind it, with the x-ray outline
 }
 
 // The console's three machines (F23, GDD §5 Breakdowns). Contract shared by the engine (F23) and the console (F24).
@@ -126,6 +147,8 @@ export type ShiftEvent =
   | { type: 'breakdown'; machine: MachineId } // a machine broke (F23)
   | { type: 'repaired'; machine: MachineId } // its repair was finished at the console (F23)
   | { type: 'prime'; groupId: number } // broken laser: a first zap primed this group; zap it again to pop (F23)
+  | { type: 'vetOw'; at: TapPoint } // F63: a zap went through the white goop — "ow" and a flinch (he never pops)
+  | { type: 'vetSeal'; crackId: number } // F63: the white goop finished sealing this crack (it's gone from cracks)
   | { type: 'overflowRail'; cells: number } // F31: a lesson's overflow rail cleared this many goop cells at the top (no rupture)
 
 // Why a zap on goop was refused (F26), so the screen can say it: 'aboveLine' = the group reaches above the pressure line

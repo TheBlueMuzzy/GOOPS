@@ -14,9 +14,11 @@ export type ColorOf = (c: number) => string
 // chevrons, src/view/dropGuide.ts)
 // F36 cracks you can read: bubbles = the open cracks' air bubbles (src/view/crackBubbles.ts), drawn right over the
 // cracks; still = the reduce-motion setting (the x-ray box's dots stop marching)
+// F63 white = draws the white goop (src/view/whiteGoopView.ts) right over the cracks and bubbles, inside the tank's clip:
+// under the goo canvas, so he's behind the goop
 export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, colorOf: ColorOf, timeSec: number, guide?: () => void,
-  cracksLook: { bubbles?: CrackBubbles; still?: boolean } = {}) {
-  const { bubbles, still = false } = cracksLook
+  cracksLook: { bubbles?: CrackBubbles; still?: boolean; white?: () => void } = {}) {
+  const { bubbles, still = false, white } = cracksLook
   const { cellPx: cp, centreX, topY, width: W, height: H, dpr } = view
   const visRows = s.height - s.bufferRows
   const left = centreX - (pieceScreenColumn(s.visibleWidth) + 0.5) * cp
@@ -69,6 +71,7 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.id, timeSec)
   }
   bubbles?.draw(ctx, s, view, left, right)
+  white?.()
 
   // ghost: where the piece will land. Placed by the spin, not the gliding camera, like the piece itself: the piece
   // stays still on screen while the tank slides under it.

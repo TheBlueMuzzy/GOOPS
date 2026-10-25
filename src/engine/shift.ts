@@ -30,6 +30,7 @@ import { type BreakdownConfig, Machines } from './machines'
 import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
 import { type PieceChoice, type PieceFallback, type TrainingCommand, type TrainingRules, OVERFLOW_RAIL_ROWS, TRAINING_START,
   columnTooLow, freeCrackSpot, pieceFromChoice } from './training'
+import { type WhiteGoopConfig, newWhiteGoop, stepWhiteGoop, whiteGoopAt, whiteGoopIn } from './whiteGoop'
 
 export interface ShiftOptions {
   seed: number
@@ -47,6 +48,8 @@ export interface ShiftOptions {
   // F59: can the player swap the falling piece with the next one? (unlocked by rank — src/progress/progression.ts; off
   // in a lesson's training shift). Left out = on. Off: 'hold' is a control that doesn't work (allows says no).
   swap?: boolean
+  // F63 the white goop: content/tuning/whiteGoop.json (read live). Leave it out and he's never in the tank.
+  whiteGoop?: WhiteGoopConfig
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -139,6 +142,8 @@ class Shift implements ShiftEngine {
       this.state.grid.set(options.startGrid)
       regroup(this.state, this.book)
     } else if (!this.training) this.placeJunk(junkCount(config, options.rank))
+    // F63: from rank 31 the white goop drops in (never in a lesson's shift)
+    this.state.vet = whiteGoopIn(options.whiteGoop, options.rank, !!this.training) ? newWhiteGoop(this.state, options.whiteGoop!) : null
     this.nextDef = this.randomDef()
     // (a lesson's shift: no piece until the lesson brings one in — train({ type: 'spawn' }))
     if (!this.training) this.spawnNext()
@@ -172,7 +177,7 @@ class Shift implements ShiftEngine {
         grid: Array.from(s.grid), spin: s.spin, pressure: s.pressure, integrity: s.integrity, phase: s.phase,
         ruptureReason: s.ruptureReason, cracks: s.cracks, sealedCracks: s.sealedCracks ?? [], cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
         quotaMet: s.quotaMet, score: s.score, status: s.status, leftoverPenalty: s.leftoverPenalty ?? null,
-        groups: [...s.groups.values()], abilities: this.abilities, effects: this.effects,
+        groups: [...s.groups.values()], abilities: this.abilities, effects: this.effects, vet: s.vet ?? null,
       },
       inner: {
         fillMs: [...this.book.fillMs], nextGroupId: this.book.nextId, nextCrackId: this.nextCrackId, colorCount: this.colorCount,
@@ -201,6 +206,7 @@ class Shift implements ShiftEngine {
       cracksSealed: st.cracksSealed, cracksNeeded: st.cracksNeeded, quotaMet: st.quotaMet, score: st.score,
       status: st.status, rank: x.options.rank,
       sealedCracks: st.sealedCracks ?? [], // (snapshots from before F36 have none)
+      vet: st.vet ?? null, // F63 the white goop (snapshots from before F63 have none)
     })
     if (st.leftoverPenalty === null) delete s.leftoverPenalty
     else s.leftoverPenalty = st.leftoverPenalty
@@ -313,6 +319,29 @@ class Shift implements ShiftEngine {
     this.settle() // goop that was resting on the falling piece drops once the piece moves away
     if (!this.training || this.training.falling) this.fallPiece(dt)
     this.fillGroups(dt)
+    this.stepVet(dt)
+  }
+
+  // F63 the white goop oozes, seals, rests (whiteGoop.ts). A crack he finishes is sealed like one of yours: gone, its
+  // spot mended for good; whether it counts toward the quota and patches the tank is content/tuning/whiteGoop.json's.
+  // No pressure vent and no score (those come from zapping).
+  private stepVet(dt: number): void {
+    const s = this.state
+    const cfg = this.options.whiteGoop
+    if (!s.vet || !cfg || s.status !== 'playing') return
+    const crack = stepWhiteGoop(s, cfg, dt)
+    if (!crack) return
+    s.cracks = s.cracks.filter((c) => c.id !== crack.id)
+    ;(s.sealedCracks ??= []).push({ id: crack.id, x: crack.x, y: crack.y })
+    this.events.push({ type: 'vetSeal', crackId: crack.id })
+    if (cfg.integrityRefund && s.phase === 'playing') s.integrity = Math.min(1, s.integrity + this.config.integrity.sealRefund)
+    if (cfg.countsForQuota) {
+      s.cracksSealed++
+      if (!s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
+        s.quotaMet = true
+        this.events.push({ type: 'quotaMet' })
+      }
+    }
   }
 
   // Do the machines wear down? Always in a normal shift; in a lesson's training shift only when a step turns it on.
@@ -493,9 +522,12 @@ class Shift implements ShiftEngine {
   private pop(x: number, y: number, tap?: TapPoint): boolean {
     const s = this.state
     if (!Number.isInteger(x) || !Number.isInteger(y) || y < 0 || y >= s.height) return false
+    // F63: the laser passes through the white goop — "ow", and he stays; goop in front of him still pops (the sketch)
+    const throughVet = !!s.vet && whiteGoopAt(s, tap && Number.isFinite(tap.x) && Number.isFinite(tap.y) ? tap : { x: x + 0.5, y: y + 0.5 })
+    if (throughVet) this.events.push({ type: 'vetOw', at: tap ?? { x: wrapX(x, s.width) + 0.5, y: y + 0.5 } })
     const id = s.groupOf[y * s.width + wrapX(x, s.width)]
     const g = s.groups.get(id)
-    if (!g) return false
+    if (!g) return throughVet
     const zapColors = this.training?.zapColors
     if (zapColors && !zapColors.includes(g.color)) {
       // a lesson that only lets one colour be zapped: the poked goop still jiggles + sounds like a shift poke (F68),

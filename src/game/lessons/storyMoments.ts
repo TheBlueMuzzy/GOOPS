@@ -8,13 +8,16 @@
 import { tipsMemory } from '../../ui/kit'
 import momentsFile from '../../../content/story/moments.json'
 import text from '../../../content/text/en.json'
+import { operatorName } from '../../progress/save'
 
-export type Voice = 'mon' | 'spk'
+// F63: head = the goop in your head (ranks 31–39) — the whisper bubble over the monitor area; him = the Veteran from
+// inside the white goop is the one talking (35, 37)
+export type Voice = 'mon' | 'spk' | 'head'
 // F40: monitor = what the monitor does while the line is up · crackle = the bubble squelches more often · cut = the line
 // is cut off once typed (the moment moves on by itself) — moments.json _about · F66 sign = the line puts a name box on
 // the monitor (PLEASE SIGN HERE, rank 0): Sign or Skip moves on instead of Got it (Console.tsx)
 export type MonitorLook = 'flicker' | 'alarm'
-export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean; sign?: boolean }
+export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean; sign?: boolean; him?: boolean }
 type Moment = { look?: string; lines: StoryLine[] }
 // F40: the goop gets better at talking — each stage (from a rank on) has its own words: feelings (8) → single words
 // (15) → names (24). From noVoicesFrom, Management answers a whisper (en.json story.lines.noVoices).
@@ -54,8 +57,10 @@ export function whisperFor(rank: number, coldSeen: boolean, pick: number, w: Whi
 /** F40: does Management answer a whisper at this rank? ("THERE ARE NO VOICES IN THE TANK…", story.md, rank 12+) */
 export const monitorDeniesVoices = (rank: number, w: Whispers = storyFile.whispers) => rank >= w.noVoicesFrom
 
-/** The words of a line (its key when en.json has none, so a missing line shows up instead of going quiet). */
-export const storyWords = (key: string) => (text.story.lines as Record<string, string>)[key] ?? key
+/** The words of a line (its key when en.json has none, so a missing line shows up instead of going quiet).
+ *  F63: {name} = your name — the one you signed at rank 0, else "Operator #4471" (en.json story.sign.fallback). */
+export const storyWords = (key: string) => ((text.story.lines as Record<string, string>)[key] ?? key)
+  .replace(/\{name\}/g, () => operatorName() ?? text.story.sign.fallback)
 
 export type StoryView = { rank: number; line: StoryLine; look?: string } | null
 

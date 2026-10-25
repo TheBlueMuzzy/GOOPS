@@ -50,6 +50,7 @@ const E2E = [
   ['rank-select', 'e2e/rank-select.mjs', ''],  // 5351 (F70: version · RANK SELECT · credit; pick 0 / pick 7; every portrait size)
   ['your-name', 'e2e/your-name.mjs', ''],      // 6366 (F66: PLEASE SIGN HERE on rank 0's monitor — sign, reload, the 12 limit, skip, RANK SELECT 0 wipes it; every portrait size)
   ['zap', 'e2e/zap.mjs', ''],                  // 5355 (F67: the pop's tap point · beam top centre → tap · white-hot · spray · Particle · reduce motion; every portrait size)
+  ['white-goop', 'e2e/white-goop.mjs', ''],    // 6400 (F63: the white goop — not at 30, drops in at 31, laser "ow", oozes + seals a crack, behind goop, Dev Kit pause; every portrait size + Particle)
 ]
 
 const args = process.argv.slice(2)
