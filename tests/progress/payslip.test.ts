@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest'
 import tuning from '../../content/tuning/payslip.json'
 import en from '../../content/text/en.json'
 import { freshProgress, rewardFirstDay, rewardShift, xpToNext, type Progress } from '../../src/progress/progression'
-import { NO_FACTS, debtAt, makePayslip, split, type ShiftFacts } from '../../src/progress/payslip'
+import { NO_FACTS, afterCaught, associationDue, debtAt, makePayslip, pickFines, split, type ShiftFacts } from '../../src/progress/payslip'
+import { createRng } from '../../src/engine/rng'
 
 const extras = en.payslip.extras.length
 const at = (totalXp: number): Progress => ({ ...freshProgress(), totalXp })
@@ -38,6 +39,34 @@ describe('payslip', () => {
       const low = makePayslip(rewardShift(at(xpForRank(3)), 2000), NO_FACTS, { firstDay: false, seed, extras })
       expect(low.fines.some((f) => f.key === 'silly.hearingVoices' || f.key === 'silly.talkingBack')).toBe(false)
     }
+  })
+
+  it('F40: rank-gated silly fines show only from their rank (12 hearing voices · 15 talking to the goop · 40 talking back)', () => {
+    const keysAt = (rank: number) => {
+      const seen = new Set<string>()
+      for (let seed = 0; seed < 300; seed++) for (const f of pickFines(2000, { ...NO_FACTS, associationFined: true }, rank, createRng(seed))) seen.add(f.key)
+      return seen
+    }
+    for (const [key, from] of Object.entries(tuning.sillyFines)) {
+      if (from === 0) continue
+      expect(keysAt(from - 1).has(`silly.${key}`), `${key} before ${from}`).toBe(false)
+      expect(keysAt(from).has(`silly.${key}`), `${key} at ${from}`).toBe(true)
+    }
+  })
+
+  it('F40: "Association with a retired employee" — the first fine on the first report at the capture rank, once', () => {
+    const due = (rank: number, fined: boolean) => pickFines(2000, { ...NO_FACTS, ruptured: true, broke: ['laser', 'visor', 'controls'], associationFined: fined }, rank, createRng(3))
+    expect(due(tuning.caughtRank - 1, false).some((f) => f.key === 'fines.association')).toBe(false)
+    for (const rank of [tuning.caughtRank, tuning.caughtRank + 5]) expect(due(rank, false)[0].key).toBe('fines.association')
+    expect(due(tuning.caughtRank, true).some((f) => f.key === 'fines.association')).toBe(false) // had it already
+    expect(associationDue(NO_FACTS, tuning.caughtRank)).toBe(true)
+  })
+
+  it('F40: the payday words change from the capture rank, and the new words exist', () => {
+    expect(afterCaught(tuning.caughtRank - 1)).toBe(false)
+    expect(afterCaught(tuning.caughtRank)).toBe(true)
+    expect(en.payslip.afterCaught.paydayMessage).toContain('{due}')
+    expect(en.payslip.afterCaught.debt).toBeTruthy()
   })
 
   it('every fine and payday key has words in en.json', () => {

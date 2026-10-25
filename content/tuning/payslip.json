@@ -8,6 +8,8 @@
   "lineMs": 450,
   "_loiterSeconds": "Seconds at the console in one shift before 'Unscheduled console loitering' becomes a real fine.",
   "loiterSeconds": 20,
+  "_caughtRank": "F40: the rank the Veteran is caught at (design/story.md, moment 30). The first shift report at or after it fines YOU once: 'Association with a retired employee' (always the first fine line). Paydays from this rank on use the after-capture words (en.json payslip.afterCaught): the economy doesn't change, the words do.",
+  "caughtRank": 30,
   "_sillyFines": "Silly fines (words: en.json payslip.silly) and the rank each starts at.",
   "sillyFines": {
     "blinking": 0, "nosePicking": 0, "facialExpression": 0, "fingerprints": 0, "humming": 0, "sighing": 0,

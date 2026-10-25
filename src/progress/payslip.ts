@@ -19,8 +19,15 @@ export interface ShiftFacts {
   goopLeft: boolean // goop left in the tank at the end (the leftover penalty)
   refusedZaps: number // zaps on goop that couldn't pop
   consoleSeconds: number // time spent at the console mid-shift
+  associationFined?: boolean // F40: this device has had the once-only "Association with a retired employee" fine
 }
 export const NO_FACTS: ShiftFacts = { ruptured: false, broke: [], openCracks: 0, goopLeft: false, refusedZaps: 0, consoleSeconds: 0 }
+
+/** F40: is the once-only fine for knowing the Veteran due on this shift's report? (at or after caughtRank, not had yet) */
+export const associationDue = (facts: ShiftFacts, rank: number, t: PayslipTuning = tuning) => rank >= t.caughtRank && !facts.associationFined
+
+/** F40: do the report's words at this rank use the after-capture wording (en.json payslip.afterCaught)? */
+export const afterCaught = (rank: number, t: PayslipTuning = tuning) => rank >= t.caughtRank
 
 // One line on the payslip: what it's for (a key into en.json payslip) and how many credits
 export interface PayLine { key: string; amount: number }
@@ -45,10 +52,9 @@ export interface Payslip {
   debt: number // passage debt now
 }
 
-// The real fines, in the order they're picked (the first that apply)
-function realFines(facts: ShiftFacts, rank: number, t: PayslipTuning): string[] {
+// The real fines from what happened in the shift (shuffled among themselves when picked)
+function realFines(facts: ShiftFacts, t: PayslipTuning): string[] {
   const keys: string[] = []
-  if (rank === t.debt.afterRank) keys.push('association') // the rank the Veteran is caught at
   if (facts.ruptured) keys.push('rupture')
   for (const m of facts.broke) keys.push(m) // laser · visor · controls
   if (facts.openCracks > 0) keys.push('openCracks')
@@ -76,13 +82,15 @@ function shuffled<T>(items: T[], rng: Rng): T[] {
   return a
 }
 
-/** The fines for a shift: real ones first (shuffled among themselves), topped up with silly ones open at this rank. */
+/** The fines for a shift: the once-only association fine first (F40, when due), then the real ones (shuffled among
+ *  themselves), topped up with silly ones open at this rank (sillyFines: some only from a rank on). */
 export function pickFines(net: number, facts: ShiftFacts, rank: number, rng: Rng, t: PayslipTuning = tuning): PayLine[] {
   const total = Math.round(net * t.fineShare)
   const lines = Math.min(t.fineLines, total)
   if (lines <= 0) return []
   const silly = Object.entries(t.sillyFines).filter(([, from]) => rank >= from).map(([key]) => `silly.${key}`)
-  const keys = [...shuffled(realFines(facts, rank, t), rng).map((k) => `fines.${k}`), ...shuffled(silly, rng)].slice(0, lines)
+  const first = associationDue(facts, rank, t) ? ['fines.association'] : []
+  const keys = [...first, ...shuffled(realFines(facts, t), rng).map((k) => `fines.${k}`), ...shuffled(silly, rng)].slice(0, lines)
   const amounts = split(total, keys.map(() => 0.5 + rng.next()))
   return keys.map((key, i) => ({ key, amount: amounts[i] }))
 }
