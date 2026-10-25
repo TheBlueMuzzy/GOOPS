@@ -4,14 +4,20 @@
   "looks": { "flickerSeconds": 0.9, "alarmSeconds": 0.6, "alarmColour": "#b3131b", "crackleEvery": 0.5, "cutSeconds": 0.45 },
   "_catchUp": "Most moments played in one visit to the console (the newest ones), e.g. after two rank-ups in one shift or on a device that skipped some.",
   "catchUp": 2,
-  "_whispers": "In-shift whispers (design/story.md: 3 '…cold…' — one you'll doubt, once per device · 8+ one feeling a shift). A plain bubble pointing into the tank; no tap, it goes by itself. Seconds are rules time (pauses stop them). Words: en.json story.whispers.",
+  "_whispers": "In-shift whispers (design/story.md: 3 '…cold…' — one you'll doubt, once per device · then one whisper a shift, the goop getting better at talking: stages = from a rank on, the words it says (8+ feelings · 15+ single words · 24+ names; a stage replaces the one before). A plain bubble pointing into the tank; no tap, it goes by itself. Seconds are rules time (pauses stop them). noVoicesFrom = from this rank Management answers each whisper ('THERE ARE NO VOICES IN THE TANK…', en.json story.lines.noVoices) noVoicesDelaySeconds after the whisper goes, for noVoicesSeconds, where the in-shift messages show. Words: en.json story.whispers.",
   "whispers": {
     "coldAt": 3,
-    "feelingsFrom": 8,
-    "feelings": ["warm", "tight", "nnn"],
+    "stages": [
+      { "from": 8, "say": ["warm", "tight", "nnn"] },
+      { "from": 15, "say": ["dont", "heavy", "hold"] },
+      { "from": 24, "say": ["odile", "bram", "ines", "teodor"] }
+    ],
     "afterSeconds": [20, 70],
     "showSeconds": 3.5,
-    "heightInTank": 0.6
+    "heightInTank": 0.6,
+    "noVoicesFrom": 12,
+    "noVoicesDelaySeconds": 0.5,
+    "noVoicesSeconds": 4.5
   },
   "moments": {
     "0": { "lines": [{ "voice": "mon", "words": "r0a" }, { "voice": "mon", "words": "r0b" }] },

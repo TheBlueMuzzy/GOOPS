@@ -15,7 +15,11 @@ export type Voice = 'mon' | 'spk'
 export type MonitorLook = 'flicker' | 'alarm'
 export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean }
 type Moment = { look?: string; lines: StoryLine[] }
-type Whispers = { coldAt: number; feelingsFrom: number; feelings: string[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number }
+// F40: the goop gets better at talking — each stage (from a rank on) has its own words: feelings (8) → single words
+// (15) → names (24). From noVoicesFrom, Management answers a whisper (en.json story.lines.noVoices).
+type WhisperStage = { from: number; say: string[] }
+type Whispers = { coldAt: number; stages: WhisperStage[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number
+  noVoicesFrom: number; noVoicesDelaySeconds: number; noVoicesSeconds: number }
 export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; crackleEvery: number; cutSeconds: number }
 type MomentsFile = { catchUp: number; moments: Record<string, Moment>; whispers: Whispers; looks: StoryLooks }
 
@@ -28,14 +32,26 @@ export function dueRanks(rank: number, seen: (rank: number) => boolean, file: Mo
   return due.slice(Math.max(0, due.length - Math.max(1, file.catchUp)))
 }
 
-/** In-shift whispers (Whisper.tsx): which one this shift gets at this rank (null = none) — one of the feelings from
- *  feelingsFrom on; "cold" once per device from coldAt. pick = a random 0..1. */
+/** The whisper stage at this rank: the last one whose `from` it has reached (null = none yet). */
+export function whisperStage(rank: number, w: Whispers = storyFile.whispers): WhisperStage | null {
+  let stage: WhisperStage | null = null
+  for (const s of w.stages) if (rank >= s.from && s.say.length && (!stage || s.from >= stage.from)) stage = s
+  return stage
+}
+
+/** In-shift whispers (Whisper.tsx): which one this shift gets at this rank (null = none) — one of its stage's words
+ *  (feelings from 8, single words from 15, names from 24); before the first stage, "cold" once per device from coldAt.
+ *  pick = a random 0..1. */
 export const COLD_SEEN = 'whisper:cold'
 export function whisperFor(rank: number, coldSeen: boolean, pick: number, w: Whispers = storyFile.whispers): string | null {
-  if (rank >= w.feelingsFrom && w.feelings.length) return w.feelings[Math.floor(pick * w.feelings.length) % w.feelings.length]
+  const stage = whisperStage(rank, w)
+  if (stage) return stage.say[Math.floor(pick * stage.say.length) % stage.say.length]
   if (rank >= w.coldAt && !coldSeen) return 'cold'
   return null
 }
+
+/** F40: does Management answer a whisper at this rank? ("THERE ARE NO VOICES IN THE TANK…", story.md, rank 12+) */
+export const monitorDeniesVoices = (rank: number, w: Whispers = storyFile.whispers) => rank >= w.noVoicesFrom
 
 /** The words of a line (its key when en.json has none, so a missing line shows up instead of going quiet). */
 export const storyWords = (key: string) => (text.story.lines as Record<string, string>)[key] ?? key

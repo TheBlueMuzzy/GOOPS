@@ -110,6 +110,13 @@ const onMessage = (m: Message) => {
   const id = toast(messageWords(m.key, lessonPlay.inputKind()), { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
+// F40: Management answering a whisper in the shift ("THERE ARE NO VOICES IN THE TANK…", rank 12+, Whisper.tsx): the
+// same toast as the in-shift messages — the monitor itself is up out of sight while you're in the tank
+const onMonitor = (words: string, seconds: number) => {
+  if (lessonPlay.messageUp()) return
+  const id = toast(words, { variant: 'neutral', seconds: ONE_DAY_S })
+  looksClock.after(seconds * 1000, () => toasts.dismiss(id))
+}
 
 // What ranking up from `from` to `to` unlocked (F59: the progression unlocks and the machines, in the order they come)
 function gainedBetween(from: number, to: number): string[] {
@@ -561,7 +568,7 @@ export function App() {
       {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={menuOpen} atConsole={mode !== 'shift'} />}
       {mode === 'console' && !menuOpen && <StoryView />}
       {/* F35: the goop's first whispers in a real shift (not a lesson's training shift) */}
-      {engine && lessonPlay.realShift() && (mode === 'shift' || peeking) && !result && !menuOpen && <Whisper engine={engine} />}
+      {engine && lessonPlay.realShift() && (mode === 'shift' || peeking) && !result && !menuOpen && <Whisper engine={engine} onMonitor={onMonitor} />}
       {sideways && <UprightScreen />}
     </>
   )

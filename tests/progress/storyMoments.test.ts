@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import en from '../../content/text/en.json'
 import progression from '../../content/tuning/progression.json'
-import { dueRanks, storyFile, whisperFor } from '../../src/game/lessons/storyMoments'
+import { dueRanks, monitorDeniesVoices, storyFile, whisperFor, whisperStage } from '../../src/game/lessons/storyMoments'
 import { titleAt } from '../../src/progress/progression'
 
 const none = () => false
@@ -47,8 +47,28 @@ describe('story moments', () => {
     expect(whisperFor(2, false, 0.5)).toBeNull()
     expect(whisperFor(3, false, 0.5)).toBe('cold')
     expect(whisperFor(7, true, 0.5)).toBeNull()
-    for (const pick of [0, 0.4, 0.99]) expect(storyFile.whispers.feelings).toContain(whisperFor(8, true, pick))
-    for (const k of [...storyFile.whispers.feelings, 'cold']) expect((en.story.whispers as Record<string, string>)[k]).toBeTruthy()
+    for (const pick of [0, 0.4, 0.99]) expect(['warm', 'tight', 'nnn']).toContain(whisperFor(8, true, pick))
+  })
+  it('F40 whisper stages: feelings 8–14, single words 15–23, names from 24 (story.md)', () => {
+    const at = (rank: number) => new Set([0, 0.2, 0.4, 0.6, 0.8, 0.99].map((pick) => whisperFor(rank, true, pick)))
+    for (const r of [8, 14]) expect([...at(r)].every((k) => ['warm', 'tight', 'nnn'].includes(k!))).toBe(true)
+    for (const r of [15, 23]) expect([...at(r)].every((k) => ['dont', 'heavy', 'hold'].includes(k!))).toBe(true)
+    for (const r of [24, 30]) expect([...at(r)].every((k) => ['odile', 'bram', 'ines', 'teodor'].includes(k!))).toBe(true)
+    expect(whisperStage(14)?.from).toBe(8)
+    expect(whisperStage(15)?.from).toBe(15)
+    expect(whisperStage(24)?.from).toBe(24)
+    expect(whisperStage(7)).toBeNull()
+    // the stages' order in the file doesn't matter: the highest one reached wins
+    const shuffled = { ...storyFile.whispers, stages: [...storyFile.whispers.stages].reverse() }
+    expect(whisperStage(20, shuffled)?.from).toBe(15)
+    // every whisper has words
+    for (const k of [...storyFile.whispers.stages.flatMap((s) => s.say), 'cold']) expect((en.story.whispers as Record<string, string>)[k], k).toBeTruthy()
+  })
+  it('F40: Management denies the voices from rank 12, and its line has words', () => {
+    expect(monitorDeniesVoices(11)).toBe(false)
+    expect(monitorDeniesVoices(12)).toBe(true)
+    expect(monitorDeniesVoices(30)).toBe(true)
+    expect((en.story.lines as Record<string, string>).noVoices).toMatch(/NO VOICES/)
   })
   it('titles: the bands from story.md, every one with words', () => {
     expect([0, 1, 4, 5, 9, 10, 29, 30, 44, 45, 50].map((r) => titleAt(r))).toEqual(
