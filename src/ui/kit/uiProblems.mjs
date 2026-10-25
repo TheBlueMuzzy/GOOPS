@@ -5,7 +5,8 @@
 //   "clipped:" a control cut off at the edge of a box that hides overflow (its outline / shadow too) or past the
 //              screen edge (and not in something that scrolls), or text cut off
 //   "overlap:" two things on screen sit on top of each other (text over text, a control over text…) — new in 0.18.0;
-//              and a solid chip, badge or panel slid part-way onto a bar, meter or picture — 0.33.1
+//              and a solid chip, badge or panel slid part-way onto a bar, meter or picture — 0.33.1 — or onto
+//              another card's words — 0.33.2
 //   "focus:"   a focus ring showing although nobody used the keyboard
 //   "faint:"   text too faint to read against what's behind it: under 4.5:1, or 3:1 for big text (24 px, or 18.66 px
 //              bold) — the WCAG AA line. Skipped where it can't be judged: text over a picture, gradient, canvas or
@@ -239,7 +240,10 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
     if (!box || scrolls(box)) return ''
     const b = box.getBoundingClientRect()
     const s = getComputedStyle(box)
-    const inside = { left: b.left + parseFloat(s.borderLeftWidth), top: b.top + parseFloat(s.borderTopWidth), right: b.right - parseFloat(s.borderRightWidth), bottom: b.bottom - parseFloat(s.borderBottomWidth) }
+    // Its border as drawn: a box shrunk by a transform (a chip pinned to the table) has a thinner border on screen than
+    // its style says (0.33.2: Pixel's 4px border at a pin scale of 0.44 is 1.75px, not 4 — the words had 3.5px of room)
+    const k = box.offsetWidth ? b.width / box.offsetWidth : 1
+    const inside = { left: b.left + parseFloat(s.borderLeftWidth) * k, top: b.top + parseFloat(s.borderTopWidth) * k, right: b.right - parseFloat(s.borderRightWidth) * k, bottom: b.bottom - parseFloat(s.borderBottomWidth) * k }
     const midX = (content.left + content.right) / 2, midY = (content.top + content.bottom) / 2
     if (midX < b.left || midX > b.right || midY < b.top || midY > b.bottom) return '' // it sits outside the box, not in it
     const room = Math.min(content.left - inside.left, content.top - inside.top, inside.right - content.right, inside.bottom - content.bottom)
@@ -262,6 +266,7 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
       const edge = tooClose(el, isText)
       if (edge) problems.push(`edge: "${name(el)}" ${edge}`)
     }
+    const crossed = [] // pairs already said as "X × Y" (the covered-piece check below doesn't say them twice)
     for (let i = 0; i < things.length; i++) {
       for (let j = i + 1; j < things.length; j++) {
         const a = things[i], b = things[j]
@@ -276,7 +281,7 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
           else if (paints(el)) break // something else — or one's own card / dialog — covers the other there
           if (seenA && seenB) break
         }
-        if (seenA && seenB) problems.push(`overlap: "${name(a)}" × "${name(b)}"`)
+        if (seenA && seenB) { problems.push(`overlap: "${name(a)}" × "${name(b)}"`); crossed.push([a, b]) }
       }
     }
     // Covered bars and pictures (0.33.1): a solid piece (a chip, badge, button or panel — its own background, not
@@ -302,20 +307,37 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
       return null
     }
     const inside = (small, big) => small.left >= big.left - 0.5 && small.right <= big.right + 0.5 && small.top >= big.top - 0.5 && small.bottom <= big.bottom + 0.5
-    for (const target of covered) {
-      const tBox = visibleBox(target)
+    // Text too (0.33.2): a solid piece over part of another card's words (the coins chip on "Score 120") — the
+    // text-over-text check above stops at the chip's background ("something covers it there"), so it never said.
+    // The words are measured by the words themselves (their element may be much wider); the piece must be ON TOP of
+    // them there. Kept: a label on its own chip and text inside the piece (the piece holds it), a badge in the text's
+    // own card, a dialog wholly over the words or words wholly on a backdrop panel. (A piece wholly inside a run of words
+    // still counts for text: a "×2" sitting on the middle of a title hides letters.)
+    const targets = [...covered.map((el) => [el, false]), ...texts.filter((el) => !covered.includes(el)).map((el) => [el, true])]
+    for (const [target, isText] of targets) {
+      const seen = visibleBox(target)
+      const words = isText ? wordsBox(wordsIn(target, false)) : seen
+      const tBox = words && seen && {
+        left: Math.max(words.left, seen.left), top: Math.max(words.top, seen.top),
+        right: Math.min(words.right, seen.right), bottom: Math.min(words.bottom, seen.bottom),
+      }
+      if (!tBox || tBox.right <= tBox.left || tBox.bottom <= tBox.top) continue
       const card = ownCard(target)
       const found = []
       for (const piece of covers) {
         if (piece.contains(target) || target.contains(piece) || card?.contains(piece)) continue
         if (found.some((f) => f.contains(piece))) continue // one line per piece: not again for the coin inside the chip
+        if (isText && crossed.some(([a, b]) => (part(a, piece) && b === target) || (part(b, piece) && a === target))) continue // said already as "X × Y"
         const pBox = visibleBox(piece)
         const at = crossing(tBox, pBox)
-        if (!at || inside(tBox, pBox) || inside(pBox, tBox)) continue
+        if (!at || inside(tBox, pBox) || (!isText && inside(pBox, tBox))) continue
         let seenT = false, seenP = false
         for (const el of document.elementsFromPoint(at.x, at.y)) {
           if (part(el, piece)) seenP = true
-          else if (part(el, target)) seenT = true
+          else if (part(el, target)) {
+            if (isText && !seenP && solid(target)) break // the words' own chip lies over the piece here: it's the piece that's covered
+            seenT = true
+          }
           else if (el.contains(piece) && el.contains(target)) continue // a box around both: under them
           else if (paints(el)) break // something else covers them there
           if (seenT && seenP) break
