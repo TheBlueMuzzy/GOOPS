@@ -1,0 +1,10 @@
+{
+  "_about": "Muzzy's goop-eyes picks (F62, 2026-10-24, sketch v1 Copy values; v2 added the talking mouths, staggered appear and pixel knobs, at their defaults until he copies again).",
+  "eyeSize": 0.1, "pupilSize": 0.45, "eyeGap": 0.48, "eyeCount": 2, "eyeColor": "#f8fafc", "pupilColor": "#0f172a",
+  "minClump10": 5, "eyeChance10": 0.7, "minClump20": 2, "eyeChance20": 0.85,
+  "followSpeed": 10.5, "followRange": 6,
+  "blinkEvery": 3.5, "blinkTime": 0.15, "worriedAt": 0.6, "browTilt": 25, "pupilShrink": 0.4,
+  "zapClose": 0.6,
+  "mouthChance": 0.5, "mouthSize": 0.3, "mouthOpen": 0.5, "talkEvery": 9, "talkTime": 0.9,
+  "appearSpread": 5, "appearFade": 0.3, "pixelSize": 0
+}

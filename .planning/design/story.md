@@ -68,8 +68,8 @@ The tank is half of the whole game, so the goop itself tells the story, rank by 
 - **0–9:** plain goop. The occasional bubble looks like it blinked (players will doubt it).
 - **10–19:** a few **tiny eyes** open in big clumps, close when zapped.
 - **20–29:** eyes in most clumps, and they **follow the falling piece** / your laser.
-- **30–39:** eyes blink, look worried when pressure is high, close in relief when a crack is sealed.
-- **40–49:** some clumps grow **mouths**, silent at first.
+- **30–39:** eyes blink and look worried when pressure is high (no relief close on a sealed crack — Muzzy 2026-10-24: "doesn't make sense").
+- **40–49:** some clumps grow **mouths**, silent at first: shut most of the time, now and then one opens for a few flaps as if saying something (random, rare). Eyes, brows and mouths show up one clump at a time, at random within ~5 s.
 - **The ending:** the mouths speak (the whispers move from "in your head" to the goop itself).
 
 ## Every difficulty has a story reason

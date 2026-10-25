@@ -73,7 +73,7 @@
   <div class="row" id="ranks"><span class="lbl">Rank</span>
     <button data-r="10">10</button><button data-r="20">20</button><button data-r="30">30</button><button data-r="40">40</button></div>
   <div class="row"><span id="pval">Pressure 0%</span><input type="range" id="press" min="0" max="100" step="1" value="0">
-    <button class="act" id="bSeal">Seal a crack</button><button class="act" id="bReset">Refill</button></div>
+    <button class="act" id="bReset">Refill</button></div>
 </div>
 <script>
 'use strict';
@@ -83,9 +83,9 @@ const $ = id => document.getElementById(id);
 // Sizes and distances are in cells (1 = one grid square). Times in seconds.
 const GOO = {
   // the eyes
-  eyeSize: 0.13,      // eye radius, in cells (tiny = 0.1)
-  pupilSize: 0.5,     // pupil as a share of the eye (1 = all pupil)
-  eyeGap: 0.3,        // distance between eye centres, in cells
+  eyeSize: 0.1,       // eye radius, in cells (Muzzy's pick 2026-10-24)
+  pupilSize: 0.45,    // pupil as a share of the eye (1 = all pupil)
+  eyeGap: 0.48,       // distance between eye centres, in cells
   eyeCount: 2,        // eyes per clump that has eyes
   eyeColor: '#f8fafc',
   pupilColor: '#0f172a',
@@ -95,7 +95,7 @@ const GOO = {
   minClump20: 2,      // rank 20+: same, once eyes are "in most clumps"
   eyeChance20: 0.85,
   // following (rank 20+)
-  followSpeed: 6,     // how fast the pupils catch up (per second)
+  followSpeed: 10.5,  // how fast the pupils catch up (per second; Muzzy's pick)
   followRange: 6,     // cells: further than this, they stop following and look ahead
   // blinks and moods (rank 30+)
   blinkEvery: 3.5,    // s between blinks (each clump varies 50-150%)
@@ -103,13 +103,19 @@ const GOO = {
   worriedAt: 0.6,     // pressure (0-1) where they start to look worried
   browTilt: 25,       // degrees the worried brows tilt (inner ends up)
   pupilShrink: 0.4,   // how much the pupils shrink when worried (0.4 = 40% smaller)
-  reliefTime: 1.2,    // s the eyes close in relief after a crack is sealed
   // zap (all ranks)
   zapClose: 0.6,      // s the eyes stay squeezed shut on the clumps touching a zap
-  // mouths (rank 40+)
+  // mouths (rank 40+): shut most of the time, now and then one "says something" (a few quick flaps)
   mouthChance: 0.5,   // chance a clump with eyes also has a mouth
   mouthSize: 0.3,     // mouth width, in cells
-  mouthWobble: 0.5,   // how far the silent mouth opens and closes (0 = a still line)
+  mouthOpen: 0.5,     // how wide a mouth opens when it says something (0 = it never opens)
+  talkEvery: 9,       // s between one mouth's sayings, on average (each wait is random: 30-170% of this)
+  talkTime: 0.9,      // s one saying lasts
+  // showing up (all of it): eyes, brows and mouths each fade in one clump at a time, at random moments
+  appearSpread: 5,    // s over which the clumps take their turns (Muzzy: "for the next 5 seconds")
+  appearFade: 0.3,    // s one clump's fade takes
+  // look
+  pixelSize: 0,       // 0 = smooth; 2-6 = faces drawn in chunky pixels of this many screen px
   // the falling piece
   pieceSpeed: 1.2,    // cells per second it falls
 };
@@ -119,16 +125,20 @@ const KNOBS = [['The eyes'], ['eyeSize', 0.04, 0.4, 0.01], ['pupilSize', 0.1, 1,
   ['Which clumps get eyes'], ['minClump10', 1, 9, 1], ['eyeChance10', 0, 1, 0.05], ['minClump20', 1, 9, 1], ['eyeChance20', 0, 1, 0.05],
   ['Following (rank 20+)'], ['followSpeed', 0, 20, 0.5], ['followRange', 0, 14, 0.5],
   ['Blinks and moods (rank 30+)'], ['blinkEvery', 0.5, 10, 0.1], ['blinkTime', 0.03, 0.6, 0.01], ['worriedAt', 0, 1, 0.05],
-  ['browTilt', 0, 45, 1], ['pupilShrink', 0, 0.9, 0.05], ['reliefTime', 0.1, 4, 0.1],
+  ['browTilt', 0, 45, 1], ['pupilShrink', 0, 0.9, 0.05],
   ['Zap'], ['zapClose', 0, 3, 0.05],
-  ['Mouths (rank 40+)'], ['mouthChance', 0, 1, 0.05], ['mouthSize', 0.05, 0.8, 0.01], ['mouthWobble', 0, 1, 0.05],
+  ['Mouths (rank 40+)'], ['mouthChance', 0, 1, 0.05], ['mouthSize', 0.05, 0.8, 0.01], ['mouthOpen', 0, 1, 0.05],
+  ['talkEvery', 1, 30, 0.5], ['talkTime', 0.2, 3, 0.1],
+  ['Showing up'], ['appearSpread', 0, 10, 0.5], ['appearFade', 0.05, 2, 0.05],
+  ['Look'], ['pixelSize', 0, 6, 1],
   ['The falling piece'], ['pieceSpeed', 0, 6, 0.1]];
 // plain-word names shown beside each knob (the JSON keeps the short names)
 const KNOB_LABEL = { eyeSize: 'Eye size', pupilSize: 'Pupil size', eyeGap: 'Eye spacing', eyeCount: 'Eyes per clump', eyeColor: 'Eye colour', pupilColor: 'Pupil colour',
   minClump10: 'Min clump (10)', eyeChance10: 'Eye chance (10)', minClump20: 'Min clump (20+)', eyeChance20: 'Eye chance (20+)',
   followSpeed: 'Follow speed', followRange: 'Follow range', blinkEvery: 'Blink every', blinkTime: 'Blink length', worriedAt: 'Worried at',
-  browTilt: 'Brow tilt', pupilShrink: 'Pupil shrink', reliefTime: 'Relief close', zapClose: 'Zap close',
-  mouthChance: 'Mouth chance', mouthSize: 'Mouth size', mouthWobble: 'Mouth wobble', pieceSpeed: 'Piece speed' };
+  browTilt: 'Brow tilt', pupilShrink: 'Pupil shrink', zapClose: 'Zap close',
+  mouthChance: 'Mouth chance', mouthSize: 'Mouth size', mouthOpen: 'Mouth open', talkEvery: 'Talk every', talkTime: 'Talk length',
+  appearSpread: 'Appear spread', appearFade: 'Appear fade', pixelSize: 'Pixel size', pieceSpeed: 'Piece speed' };
 // One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
 const KNOB_HELP = {
   eyeSize: 'How big each eye is (cells). 0.1 = a speck you have to look for; 0.25 = cartoon eyes.',
@@ -141,18 +151,22 @@ const KNOB_HELP = {
   eyeChance10: 'Rank 10: chance each big-enough clump has eyes. Low = "a few", you have to spot them.',
   minClump20: 'Rank 20+: the smallest clump with eyes once they are "in most clumps".',
   eyeChance20: 'Rank 20+: chance each big-enough clump has eyes.',
-  followSpeed: 'Rank 20+: how quickly the pupils swing to the falling piece (or your finger / laser). Low = lazy, high = snappy.',
+  followSpeed: 'Rank 20+: how quickly the pupils swing to the falling piece, the laser while it fires, or your last tap (for 1.2 s). Low = lazy, high = snappy.',
   followRange: 'Rank 20+: only clumps this close (cells) to the piece follow it; the rest look ahead. Watch the far corner.',
   blinkEvery: 'Rank 30+: seconds between blinks. Each clump blinks on its own clock.',
   blinkTime: 'Rank 30+: how long one blink takes. Long = sleepy.',
   worriedAt: 'Rank 30+: when the Pressure slider passes this, the eyes look worried (brows, small shaky pupils).',
   browTilt: 'Rank 30+: how steep the worried brows are. 0 = no brows.',
   pupilShrink: 'Rank 30+: how much the pupils shrink when worried. Turn Pressure to 100% to see the most.',
-  reliefTime: 'Rank 30+: seconds the eyes close in relief (soft curves) after you press Seal a crack.',
   zapClose: 'Seconds the clumps touching a zapped goop squeeze their eyes shut. The zapped one shuts at once.',
   mouthChance: 'Rank 40: chance a clump with eyes also has a mouth.',
   mouthSize: 'Rank 40: how wide the mouths are (cells).',
-  mouthWobble: 'Rank 40: how far the silent mouths open and close. 0 = a still line.',
+  mouthOpen: 'Rank 40: how wide a mouth opens when it says something. Shut the rest of the time.',
+  talkEvery: 'Rank 40: average seconds between one mouth\'s sayings. Each clump waits a random time, so they never talk in step. High = rare.',
+  talkTime: 'Rank 40: how long one saying lasts (a few quick flaps).',
+  appearSpread: 'Eyes (new rank), brows (pressure passes Worried at) and mouths show up one clump at a time, at random moments within this many seconds. Leaving goes the same way.',
+  appearFade: 'How quickly one clump\'s eyes / brows / mouth fade in or out once its turn comes.',
+  pixelSize: 'Draws the eyes, brows and mouths in chunky pixels this many screen px wide. 0 = smooth.',
   pieceSpeed: 'How fast the piece falls (cells/s); it drifts side to side so you can watch the eyes follow. 0 = it hangs still.',
 };
 
@@ -193,8 +207,8 @@ function zap(x, y, px, py) { // (x, y) cell; (px, py) the tap point in cell unit
   G.ver++; G.events.push({ type: 'zap', cells, color: c, x: px ?? x + 0.5, y: py ?? y + 0.5 }); return true;
 }
 
-// ---- story state: rank, pressure, relief
-let rank = 20, pressure = 0, reliefT = -1, sealT = -1, aim = null;
+// ---- story state: rank, pressure, your last tap / pointer
+let rank = 20, pressure = 0, aim = null;
 
 // ---- jelly layer (ported from lab-L4-jelly.html via zap-look.html): one shape-matched soft body per group
 let bodies = [], zapped = [], drops = [], kicks = [], nextId = 1, seenVer = -1, beam = null, simT = 0;
@@ -341,8 +355,19 @@ function faceFor(B) {
   const key = B.cellIdx.slice().sort((a, b) => a - b).join(',');
   let f = faces.get(key);
   if (!f) { f = { key, eyeRoll: hash(key + 'eyes'), mouthRoll: hash(key + 'mouth'), spot: eyeSpot(B.cells), gx: 0, gy: 0,
-    blinkIn: GOO.blinkEvery * (0.3 + rand()), blinkT: -1, zapT: -1, mph: rand() * 6.28, mspd: 0.8 + rand() * 0.6 }; faces.set(key, f); }
+    blinkIn: GOO.blinkEvery * (0.3 + rand()), blinkT: -1, zapT: -1,
+    talkIn: GOO.talkEvery * (0.3 + 1.4 * rand()), talkT: -1, flaps: 5 + rand() * 4, // a saying: its own flap speed per clump
+    eyes: fader(), brows: fader(), mouth: fader() }; faces.set(key, f); }
   return f;
+}
+// Showing up one clump at a time: when a part should appear (or go), it waits a random moment within appearSpread,
+// then fades over appearFade. Each clump rolls its own wait, so the fades overlap at random.
+const fader = () => ({ a: 0, want: false, wait: 0 });
+function stepFader(F, want, dt) {
+  if (want !== F.want) { F.want = want; F.wait = rand() * GOO.appearSpread; }
+  if (F.wait > 0) { F.wait -= dt; return; }
+  const k = dt / Math.max(0.01, GOO.appearFade);
+  F.a = want ? Math.min(1, F.a + k) : Math.max(0, F.a - k);
 }
 // where the eyes sit: the most "inside" pair of side-by-side cells (else the most inside single cell), preferring room below for a mouth
 function eyeSpot(cells) {
@@ -381,13 +406,15 @@ function shutCurve(t, T, closeIn) {
   if (t < closeIn) return t / closeIn;
   const r = Math.min(0.3 * T, 0.25); return t > T - r ? Math.max(0, (T - t) / r) : 1;
 }
-const reliefAmount = () => rank >= 30 ? shutCurve(reliefT, GOO.reliefTime, 0.25) : 0;
-const worriedAmount = () => rank >= 30 && pressure >= GOO.worriedAt && pressure > 0
-  ? (0.5 + 0.5 * (pressure - GOO.worriedAt) / Math.max(0.01, 1 - GOO.worriedAt)) * (1 - reliefAmount()) : 0;
+const isWorried = () => rank >= 30 && pressure > 0 && pressure >= GOO.worriedAt;
+// how worried (0-1) a clump looks: grows with pressure past worriedAt, times its own brows' fade-in
+const worriedOf = f => isWorried() ? (0.5 + 0.5 * (pressure - GOO.worriedAt) / Math.max(0.01, 1 - GOO.worriedAt)) * f.brows.a : f.brows.a * 0.5;
 function updateFaces(dt) {
   const tgt = gazeTarget(), k = 1 - Math.exp(-GOO.followSpeed * dt);
   for (const B of bodies) {
-    const f = B.face; if (!f || !hasEyes(B)) continue;
+    const f = B.face; if (!f) continue;
+    stepFader(f.eyes, hasEyes(B), dt); stepFader(f.brows, hasEyes(B) && isWorried(), dt); stepFader(f.mouth, hasMouth(B), dt);
+    if (f.eyes.a <= 0) continue;
     let tx = 0, ty = 0; // look ahead unless following
     if (rank >= 20 && tgt) {
       const c = toWorld(B, f.spot.x, f.spot.y), dx = tgt.x - c.x, dy = tgt.y - c.y, d = Math.hypot(dx, dy);
@@ -399,12 +426,10 @@ function updateFaces(dt) {
       else if ((f.blinkIn -= dt) <= 0) { f.blinkT = 0; f.blinkIn = GOO.blinkEvery * (0.5 + rand()); }
     } else f.blinkT = -1;
     if (f.zapT >= 0) { f.zapT += dt; if (f.zapT >= GOO.zapClose) f.zapT = -1; }
-    f.mph += dt * f.mspd * 2 * Math.PI;
+    if (f.talkT >= 0) { f.talkT += dt; if (f.talkT >= GOO.talkTime) { f.talkT = -1; f.talkIn = GOO.talkEvery * (0.3 + 1.4 * rand()); } }
+    else if (f.mouth.a > 0 && (f.talkIn -= dt) <= 0) f.talkT = 0; // its turn to say something
   }
-  if (reliefT >= 0) { reliefT += dt; if (reliefT >= GOO.reliefTime) reliefT = -1; }
-  if (sealT >= 0) sealT += dt;
 }
-function seal() { reliefT = 0; sealT = 0; }
 
 // ---- THE ZAP (Muzzy's F67 pick, fixed): heat + swell -> sucked into the laser point -> spray. Touching clumps flinch and shut their eyes.
 const heatTime = () => ZAP.beamTime * 0.4;
@@ -673,14 +698,14 @@ function drawGoo(time) {
 // 2D overlay: the crack, the eyes and mouths, the beam, the laser point while it sucks, and v1's droplets
 const sx = x => ox + x * cell, sy = y => oy + y * cell;
 const LINE = 'rgba(0,0,0,0.6)'; // closed eyes and brows are drawn in the pupil colour; this is the mouth's dark
-function drawFace(B, alpha, scale, forceShut) {
-  const f = B.face, r = GOO.eyeSize * cell * scale; if (r < 0.4 || alpha <= 0.02) return;
-  const mouth = hasMouth(B), n = Math.max(1, Math.round(GOO.eyeCount)), ay = f.spot.y + (mouth ? -0.1 : 0);
-  // how shut, and which way: blink (a flat line), zap (squeezed > <), relief (soft curves, like a sigh)
+function drawFace(fx, B, alpha, scale, forceShut) { // fx = the layer it's drawn on (the pixel layer when Pixel size > 0)
+  const f = B.face, r = GOO.eyeSize * cell * scale; alpha *= f.eyes.a; if (r < 0.4 || alpha <= 0.02) return;
+  const mouth = f.mouth.a > 0, n = Math.max(1, Math.round(GOO.eyeCount)), ay = f.spot.y + (mouth ? -0.1 : 0);
+  // how shut, and which way: blink (a flat line), zap (squeezed > <)
   const blink = f.blinkT >= 0 ? Math.sin(Math.PI * Math.min(1, f.blinkT / Math.max(0.01, GOO.blinkTime))) : 0;
-  const zapS = forceShut ? 1 : shutCurve(f.zapT, GOO.zapClose, 0.05), rel = reliefAmount();
-  const shut = Math.max(blink, zapS, rel), style = zapS >= shut ? 'squeeze' : rel >= shut ? 'relief' : 'blink';
-  const open = 1 - shut, w = forceShut ? 0 : worriedAmount();
+  const zapS = forceShut ? 1 : shutCurve(f.zapT, GOO.zapClose, 0.05);
+  const shut = Math.max(blink, zapS), style = zapS >= shut ? 'squeeze' : 'blink';
+  const open = 1 - shut, w = forceShut ? 0 : worriedOf(f);
   fx.globalAlpha = alpha; fx.lineCap = 'round';
   for (let i = 0; i < n; i++) {
     const side = Math.sign(i - (n - 1) / 2), p = toWorld(B, f.spot.x + (i - (n - 1) / 2) * GOO.eyeGap, ay), ex = sx(p.x), ey = sy(p.y);
@@ -694,26 +719,27 @@ function drawFace(B, alpha, scale, forceShut) {
       fx.beginPath();
       if (style === 'squeeze' && side) { const d = -side; // ">" on the left eye, "<" on the right: points to the nose
         fx.moveTo(ex - d * r, ey - r * 0.6); fx.lineTo(ex + d * r * 0.6, ey); fx.lineTo(ex - d * r, ey + r * 0.6); }
-      else if (style === 'relief') fx.arc(ex, ey - r * 0.55, r, 0.15 * Math.PI, 0.85 * Math.PI);
       else { fx.moveTo(ex - r, ey); fx.lineTo(ex + r, ey); }
       fx.stroke();
     }
-    if (w > 0 && GOO.browTilt > 0) { // worried brows: inner ends up
+    if (w > 0 && GOO.browTilt > 0) { // worried brows: inner ends up; fade in with this clump's turn
       const tilt = GOO.browTilt * w * Math.PI / 180, by = ey - r * (1.45 + 0.25 * w), dx = Math.cos(tilt) * r, dy = -Math.sin(tilt) * r * (side || 0);
+      fx.globalAlpha = alpha * f.brows.a;
       fx.beginPath(); fx.moveTo(ex - dx, by + dy); fx.lineTo(ex + dx, by - dy); fx.stroke();
+      fx.globalAlpha = alpha;
     }
   }
-  if (mouth) { // silent mouth: opens and closes slowly; shut when the eyes squeeze or sigh
+  if (mouth) { // a mouth: a shut line most of the time; while it says something, a few quick flaps (never during a zap)
     const p = toWorld(B, f.spot.x, f.spot.y + 0.24), mw = GOO.mouthSize * cell * 0.5 * scale;
-    const o = (zapS > 0.5 || rel > 0.5) ? 0.06 : 0.12 + 0.88 * GOO.mouthWobble * (0.5 + 0.5 * Math.sin(f.mph));
-    fx.beginPath(); fx.ellipse(sx(p.x), sy(p.y), mw, Math.max(1, mw * 0.7 * o), 0, 0, Math.PI * 2); fx.fillStyle = 'rgba(12,4,22,0.85)'; fx.fill();
+    const say = f.talkT >= 0 && zapS < 0.5 ? Math.abs(Math.sin(Math.PI * f.flaps * f.talkT / 2)) * Math.sin(Math.PI * f.talkT / GOO.talkTime) : 0;
+    fx.globalAlpha = alpha * f.mouth.a;
+    fx.beginPath(); fx.ellipse(sx(p.x), sy(p.y), mw, Math.max(1, mw * 0.7 * (0.08 + 0.92 * GOO.mouthOpen * say)), 0, 0, Math.PI * 2);
+    fx.fillStyle = 'rgba(12,4,22,0.85)'; fx.fill();
   }
   fx.globalAlpha = 1;
 }
-function drawCrack() { // a crack in the left wall: brighter with pressure; Seal a crack flashes it green and it's gone for a while
-  const hidden = sealT >= 0 && sealT < GOO.reliefTime + 1.5;
-  if (sealT >= 0 && sealT < 0.4) { fx.fillStyle = `rgba(74,222,128,${0.7 * (1 - sealT / 0.4)})`; fx.beginPath(); fx.ellipse(sx(0), sy(7.2), cell * 0.35, cell * 1.0, 0, 0, Math.PI * 2); fx.fill(); }
-  if (hidden || pressure <= 0) return;
+function drawCrack() { // a crack in the left wall: brighter with pressure
+  if (pressure <= 0) return;
   const pts = [[0, 6.3], [-0.08, 6.6], [0.12, 6.9], [-0.05, 7.2], [0.14, 7.5], [0, 7.8], [0.09, 8.1]];
   fx.strokeStyle = `rgba(252,165,165,${0.25 + 0.75 * pressure})`; fx.lineWidth = 1.5 + 1.5 * pressure; fx.lineJoin = 'round';
   fx.beginPath(); pts.forEach(([x, y], i) => i ? fx.lineTo(sx(x), sy(y)) : fx.moveTo(sx(x), sy(y))); fx.stroke();
@@ -721,8 +747,11 @@ function drawCrack() { // a crack in the left wall: brighter with pressure; Seal
 function drawFx() {
   fx.clearRect(0, 0, innerWidth, innerHeight);
   drawCrack();
-  for (const B of bodies) if (hasEyes(B)) drawFace(B, 1, 1, false);
-  for (const B of zapped) if (B.hadEyes && B.face) drawFace(B, Math.max(0, B.alpha), Math.max(0, B.sc), true);
+  // the faces: straight on the overlay, or (Pixel size > 0) on a small layer blown up with no smoothing = chunky pixels
+  const ps = Math.round(GOO.pixelSize), g = ps > 0 ? pixLayer(ps) : fx;
+  for (const B of bodies) if (B.face) drawFace(g, B, 1, 1, false);
+  for (const B of zapped) if (B.hadEyes && B.face) drawFace(g, B, Math.max(0, B.alpha), Math.max(0, B.sc), true);
+  if (ps > 0) { fx.imageSmoothingEnabled = false; fx.drawImage(pc, 0, 0, innerWidth, innerHeight); fx.imageSmoothingEnabled = true; }
   for (const d of drops) {
     fx.globalAlpha = Math.max(0, d.life / d.life0); fx.fillStyle = CSS[d.color];
     fx.beginPath(); fx.arc(sx(d.x), sy(d.y), Math.max(0.5, d.r * cell), 0, Math.PI * 2); fx.fill();
@@ -741,6 +770,13 @@ function drawFx() {
     fx.fillStyle = `rgba(255,255,255,${a})`; fx.beginPath(); fx.arc(x, y, cell * 0.5 * a + 4, 0, Math.PI * 2); fx.fill();
     fx.shadowBlur = 0;
   }
+}
+const pc = document.createElement('canvas'), pcx = pc.getContext('2d');
+function pixLayer(ps) { // one layer pixel = ps screen px; drawn in screen px through the scale, so drawFace needs no change
+  const w = Math.ceil(innerWidth / ps), h = Math.ceil(innerHeight / ps);
+  if (pc.width !== w || pc.height !== h) { pc.width = w; pc.height = h; }
+  pcx.setTransform(1 / ps, 0, 0, 1 / ps, 0, 0); pcx.clearRect(0, 0, innerWidth, innerHeight);
+  return pcx;
 }
 function draw() { drawGoo(simT); drawFx(); }
 function layout() {
@@ -762,8 +798,8 @@ function layout() {
 const RANK_HINT = {
   10: 'Rank 10: a few tiny eyes in big clumps. Tap a goop to zap it: eyes nearby squeeze shut.',
   20: 'Rank 20: eyes in most clumps, following the falling piece (and your finger / laser).',
-  30: 'Rank 30: they blink. Push Pressure up to worry them; Seal a crack for relief.',
-  40: 'Rank 40: some clumps grow silent mouths.' };
+  30: 'Rank 30: they blink. Push Pressure past Worried at and their brows come in, one clump at a time.',
+  40: 'Rank 40: some clumps grow mouths that now and then say something.' };
 function setRank(r) {
   rank = r;
   for (const b of document.querySelectorAll('#ranks button')) b.classList.toggle('on', +b.dataset.r === r);
@@ -772,7 +808,6 @@ function setRank(r) {
 function setPressure(p) { pressure = Math.max(0, Math.min(1, p)); $('press').value = Math.round(pressure * 100); $('pval').textContent = 'Pressure ' + Math.round(pressure * 100) + '%'; }
 let slow = false, paused = false;
 $('bReset').onclick = refill;
-$('bSeal').onclick = seal;
 $('press').oninput = e => setPressure(e.target.value / 100);
 $('ranks').onclick = e => { if (e.target.dataset.r) setRank(+e.target.dataset.r); };
 $('bSlow').onclick = () => { slow = !slow; $('bSlow').classList.toggle('on', slow); $('bSlow').textContent = slow ? 'Slow-mo 0.25×' : 'Slow-mo'; };
@@ -835,10 +870,10 @@ function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in
 const DEFAULTS = readKnobs();
 // The three starting presets (until you save your own over them): three looks to compare. The rank buttons pick the behaviour.
 const STARTERS = [
-  { name: 'Tiny & shy', values: { ...DEFAULTS, eyeSize: 0.09, pupilSize: 0.6, eyeGap: 0.22, followSpeed: 2.5, followRange: 4, blinkEvery: 2.5, mouthSize: 0.18, mouthWobble: 0.3 } },
-  { name: 'Cartoon', values: { ...DEFAULTS, eyeSize: 0.2, pupilSize: 0.45, eyeGap: 0.44, followSpeed: 8, followRange: 10, browTilt: 30, mouthSize: 0.4, mouthWobble: 0.7 } },
+  { name: 'Tiny & shy', values: { ...DEFAULTS, eyeSize: 0.09, pupilSize: 0.6, eyeGap: 0.22, followSpeed: 2.5, followRange: 4, blinkEvery: 2.5, mouthSize: 0.18, mouthOpen: 0.3, talkEvery: 14 } },
+  { name: 'Pixel', values: { ...DEFAULTS, eyeSize: 0.13, pupilSize: 0.5, pixelSize: 3 } },
   { name: 'Creepy', values: { ...DEFAULTS, eyeSize: 0.12, pupilSize: 0.28, eyeGap: 0.26, eyeCount: 3, eyeColor: '#fde68a', pupilColor: '#1c0505',
-    followSpeed: 14, followRange: 14, blinkEvery: 8, blinkTime: 0.3, mouthChance: 0.8, mouthSize: 0.36, mouthWobble: 0.25 } }];
+    followSpeed: 14, followRange: 14, blinkEvery: 8, blinkTime: 0.3, mouthChance: 0.8, mouthSize: 0.36, mouthOpen: 0.8, talkEvery: 5 } }];
 let presets = [], activePreset = 'd';
 try { presets = JSON.parse(localStorage.getItem(PKEY)) || STARTERS; } catch (e) { presets = STARTERS; }
 function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
@@ -880,13 +915,14 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 // for Playwright checks: pause the clock, step it by hand, switch rank / pressure, read what the faces are doing
-window.sketch = { GOO, readKnobs, setKnobs, zap, refill, seal, setRank, setPressure, G, groupAt,
+window.sketch = { GOO, readKnobs, setKnobs, zap, refill, setRank, setPressure, G, groupAt,
   pause: on => { paused = on; acc = 0; },
   advance: sec => { for (let n = Math.round(sec / STEP); n > 0; n--) update(STEP); draw(); },
   aimAt: (x, y) => { aim = { x, y, t: simT }; },
-  state: () => ({ rank, pressure, reliefT, simT, cell, ox, oy, beam, piece: pieceCentre(), worried: worriedAmount(), relief: reliefAmount(),
+  state: () => ({ rank, pressure, simT, cell, ox, oy, beam, piece: pieceCentre(), worried: isWorried(),
     clumps: bodies.map(B => ({ size: B.cells.length, color: B.color, eyes: hasEyes(B), mouth: hasMouth(B), spot: B.face.spot,
-      gaze: [+B.face.gx.toFixed(3), +B.face.gy.toFixed(3)], blinkT: B.face.blinkT, zapT: B.face.zapT })) }),
+      gaze: [+B.face.gx.toFixed(3), +B.face.gy.toFixed(3)], blinkT: B.face.blinkT, zapT: B.face.zapT, talkT: B.face.talkT,
+      shown: { eyes: +B.face.eyes.a.toFixed(2), brows: +B.face.brows.a.toFixed(2), mouth: +B.face.mouth.a.toFixed(2) } })) }),
   pixel: (x, y) => { const p = new Uint8Array(4); gl.readPixels(Math.round(x * dpr), Math.round(canvas.height - y * dpr), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, p); return [...p.slice(0, 3)]; },
   fxPixel: (x, y) => { const fd = devicePixelRatio || 1; return [...fx.getImageData(Math.round(x * fd), Math.round(y * fd), 1, 1).data]; } };
 </script>
