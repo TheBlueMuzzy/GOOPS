@@ -8,9 +8,9 @@ why: the tank should feel more alive the longer you work there — the goop hold
 Check: unit tests (split, growth, multi-cell seal + quota count, wild seal + takeover) · e2e/twists.mjs with shots looked at · check:full
 - [x] 🤖 1. Wild-goop look sketch: 3 looks on a real-feeling tank (v1 rainbow wave · oil-slick sheen · pearl glow), knobs + presets + Copy values — .planning/research/sketches/wild-goop.html
 - [ ] 🙋 2. Pick and tune the wild look in the sketch, press Copy values — .planning/research/sketches/wild-goop.html
-- [ ] 🤖 3. Two-colour pieces from 20: even connected halves, per-cell colours through lock, two clumps; numbers in content/tuning/twists.json; unit tests — src/engine/pieces.ts
-- [ ] 🤖 4. Growing cracks from 30: one crack over many cells, sealed only when every cell is covered, counts its size toward the quota, drains per cell; the white goop seals it whole in sealTime × size; unit tests — src/engine/cracks.ts
-- [ ] 🤖 5. Wild goop from 40: seals any crack, a normal piece landing next to it takes the whole wild clump; unit tests — src/engine/shift.ts
+- [x] 🤖 3. Two-colour pieces from 20: even connected halves, per-cell colours through lock, two clumps; numbers in content/tuning/twists.json; unit tests — src/engine/pieces.ts (9d2b863)
+- [x] 🤖 4. Growing cracks from 30: one crack over many cells, sealed only when every cell is covered, counts its size toward the quota, drains per cell; the white goop seals it whole in sealTime × size; unit tests — src/engine/cracks.ts (9d2b863)
+- [x] 🤖 5. Wild goop from 40: seals any crack, a normal piece landing next to it takes the whole wild clump; unit tests — src/engine/shift.ts (9d2b863)
 - [ ] 🤖 6. Looks: two-colour pieces glow as they fall, wild goop in Muzzy's picked look (Jelly + Particle), grown cracks' bubbles/x-ray, faces on wild + two-colour clumps — src/goo/shared/palette.ts
 - [ ] 🤖 7. e2e: each twist at 20 / 30 / 40 with shots at every portrait size, in check:full — e2e/twists.mjs
 - [ ] 🤖 8. Update GDD rank twists (+ upgrades-map: Slow Cracks slows growth) — .planning/GDD.md
