@@ -1,9 +1,9 @@
 ## ▶ RESUME HERE
-2026-10-24 — **Sprint 15 all approved: F35 story moments 0–9, F68 first-day touches, F70 rank select + version label, F67 the zap look (laser from the tank's top centre to the finger, white-hot, swell, suck-in, spray; content/tuning/zap.json).** Next: Muzzy's 3-line Sprint 15 retro → archive-sprint.mjs → /sprint (F40 the Veteran + F62 goop eyes are ready and feed the story chain). Open roadmap question: cut F47 (duplicate of F67)? Known: spinning the tank mid-zap slides the goop away from the glow — left as is (Claude's pick; Muzzy approved without comment). For the BMUZ session (lesson, not Goops-only): e2e that freezes after N wall-clock ms flakes under check:full load when the game caps frame dt — wait on a game-clock moment instead (Goops zap.mjs freezeAfterBeam).
+2026-10-24 — **Sprint 16 started (F62 goop eyes + F40 the Veteran 10–30), on dev/m5-beta.** Sprint 15 archived (retro draft kept). Muzzy decided: white joins at 30 as a normal colour — the Veteran's clump (F63) stands out by behaviour and open eyes. Next: F62 task 1 = the eyes sketch (.planning/research/sketches/goop-eyes.html, knobs + presets 10/20/30/40 + Copy values) → Muzzy tunes it (task 2); meanwhile F40 tasks 1–7 (moments 10–30, looks, whisper stages, silly fines, white at 30, story e2e, GDD §5). Open roadmap question: cut F47 (duplicate of F67)? Known: spinning the tank mid-zap slides the goop away from the glow — left as is. For the BMUZ session (lesson): e2e that freezes after N wall-clock ms flakes under check:full load when the game caps frame dt — wait on a game-clock moment (Goops zap.mjs freezeAfterBeam).
 
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 15 (F35, F68, F70, F67) · Doing: Sprint 15 retro · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 16 (F62, F40) · Doing: F62 — the eyes sketch · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
