@@ -255,6 +255,9 @@
     "_about": "F35: the story moments' words (design/story.md 'Story moments, rank by rank'; which line plays when: content/story/moments.json). Management types in capitals on the monitor; the Veteran's '──' is static.",
     "veteran": "The Veteran",
     "management": "Management",
+    "_goop": "F63: who's talking in your head (ranks 31–39, voice 'head'), said in front of the line for screen readers — goop = the goop, him = the Veteran from inside the white goop (35, 37). {name} in a line = your name (operatorName(): the signed name, else sign.fallback).",
+    "goop": "The goop",
+    "goopVeteran": "The Veteran (in the goop)",
     "_sign": "F66 YOUR NAME: rank 0's 'PLEASE SIGN HERE' line (lines.r0sign) puts a name box on the monitor. label = the box's name · sign / skip = its buttons · fallback = what the game calls you when you never signed (F63's lines at 36 and 39 use it). The most letters: content/tuning/name.json.",
     "sign": {
       "label": "NAME",
@@ -301,6 +304,25 @@
       "r29": "The goop is us. ── every operator who couldn't pay. ── they don't retire you, they ──",
       "r30a": "── kid, they're onto ──",
       "r30b": "UNAUTHORISED BROADCAST LOCATED. OPERATOR #0001 HAS BEEN SCHEDULED FOR RETIREMENT.",
+      "r31a": "…new… one… white…",
+      "r31b": "…he is… here…",
+      "r32a": "…he helps…",
+      "r32b": "…we help… too…",
+      "r33a": "…tight… so tight…",
+      "r33b": "…you feel it…",
+      "r34a": "…we were… operators…",
+      "r34b": "…like you…",
+      "r35a": "…kid… it's me…",
+      "r35b": "…keep working… just… listen…",
+      "r36a": "…he says… you have… a name…",
+      "r36b": "…what is… your name…",
+      "r36c": "…{name}…",
+      "r37a": "…it's warm in here…",
+      "r37b": "…warmer than the bunk…",
+      "r38a": "…please… not the laser…",
+      "r38b": "…just… hold us…",
+      "r39a": "…your name… is on a list…",
+      "r39b": "…we saw it…",
       "noVoices": "THERE ARE NO VOICES IN THE TANK. HEARING VOICES IS A FINEABLE OFFENCE."
     },
     "titles": {
@@ -329,6 +351,10 @@
       "ines": "…Ines…",
       "teodor": "…Teodor…"
     }
+  },
+  "whiteGoop": {
+    "_about": "F63 the white goop (the Veteran, gooped — rank 31+): what he says when the laser goes through him (the whisper bubble above him). Numbers: content/tuning/whiteGoop.json.",
+    "ow": "ow"
   },
   "lessons": {
     "gotIt": "Got it",

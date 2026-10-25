@@ -2,8 +2,12 @@
 // ticks the engine and hands its state + events to both. React only renders this once; per-frame work uses refs.
 // It also decides where the tank sits around the HUD (F26, Muzzy's mock-up; F59 his second one): one top row above it,
 // the bottom panel under it (or beside it on a phone on its side), and the pressure readout hanging on the pressure line.
-import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
-import type { MachineId, ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase, ShiftState, TapPoint } from '../engine'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { whiteGoopAt, type MachineId, type ShiftEngine, type ShiftEvent, type ShiftStatus, type ShiftPhase, type ShiftState, type TapPoint } from '../engine'
+import { createWhiteGoopView } from '../view/whiteGoopView'
+import whiteGoopLook from '../../content/tuning/whiteGoop.json'
+import talk from '../../content/tuning/talk.json'
+import text from '../../content/text/en.json'
 import type { GooRenderer, GooView } from '../goo/types'
 import { colorOf, makeGoo } from './gooFactory'
 import { drawTank } from '../view/tankView'
@@ -16,12 +20,12 @@ import { gooStyle } from './gooStyle'
 import { wallKick } from './wallKick'
 import { readoutSetting, type ReadoutSetting } from './readoutSetting'
 import { createMessages, type Message, type MessageTuning } from './messages'
-import { createVisorFx, curvedY, flatPoint, type VisorFx } from '../view/visorFx'
+import { bentPoint, createVisorFx, curvedY, flatPoint, type VisorFx } from '../view/visorFx'
 import { createZapBeam } from '../view/zapBeam'
 import { zapLook } from '../goo/shared/zap'
 import type { FaceStory } from '../goo/shared/faces'
 import { screenColumn } from '../goo/types'
-import { PinnedBox, reduceMotion } from '../ui/kit'
+import { PinnedBox, TalkingBubble, reduceMotion } from '../ui/kit'
 import tank from '../../content/tuning/tank.json'
 import hud from '../../content/tuning/hud.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
@@ -84,6 +88,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
   const readoutEl = useRef<HTMLDivElement>(null)
   const lessonMark = useRef<HTMLDivElement>(null)
   const swapRing = useRef<SVGSVGElement>(null)
+  // F63: the white goop's "ow" when the laser goes through him — the game's whisper bubble (kit TalkingBubble, plain
+  // outline), above him; n = which ow (a new one restarts the bubble). Set only on the event, never per frame.
+  const [ow, setOw] = useState<{ x: number; y: number; n: number } | null>(null)
   const live = useRef({ inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
   useEffect(() => { live.current = { inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
@@ -128,6 +135,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     const story: FaceStory = { rank: 0, pressure: 0, focus: null }
     const pieceAt: TapPoint = { x: 0, y: 0 }
     let laser: { at: TapPoint; t: number } | null = null // the last zap's tap point while its beam is up (goo clock)
+    const white = createWhiteGoopView() // F63 the white goop's look (on the tank canvas, behind the goop)
+    const vetAt: TapPoint = { x: 0, y: 0 }
+    let owT = -1, owN = 0 // F63: seconds the "ow" bubble has been up (goo clock; -1 = none), and which ow it is
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
     // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
     let camera = s.spin, last = looksClock.now(), hudAt = 0, raf = 0, ended = false
@@ -195,19 +205,24 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       camera = stepCamera(camera, s.spin, s.width, dt, tank.cameraSpeed)
       view.camera = camera
       bubbles.step(s, dt, still) // (looks clock: keeps rising in the half pause, stops in the full pause)
-      drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still), { bubbles, still })
-      // the x-ray (F36): the goo over a covered crack is drawn see-through, round the box the tank view drew
-      const X = cracksLook.xray
-      view.xray = { cells: s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), pad: X.pad + X.width, alpha: X.gooAlpha }
       view.still = still // (reduce motion: the zap has no swell and no spray, F67)
       const gooDt = active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0
-      // F62 the faces look at the laser's tap while its beam is up, else at the falling piece
+      // F62 the faces look at the laser's tap while its beam is up, else at the falling piece — and (F63, rank 31: "every
+      // eye turns to it") at the white goop while he drops in
       if (laser && (laser.t += gooDt) >= zapLook().beamTime) laser = null
+      const focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)
+      white.step(s, events, gooDt, focus)
       story.rank = s.rank
       story.pressure = s.pressure
       story.still = still
-      story.focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)
+      story.focus = white.eyesOnHim(s, vetAt) ?? focus
       view.story = story
+      drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still),
+        { bubbles, still, white: () => white.draw(ctx, s, view, gooStyle.get(), looksMs / 1000, still) })
+      // the x-ray (F36): the goo over a covered crack is drawn see-through, round the box the tank view drew — and over
+      // the white goop while goop covers him (F63)
+      const X = cracksLook.xray
+      view.xray = { cells: [...s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), ...white.xrayCells(s)], pad: X.pad + X.width, alpha: X.gooAlpha }
       gooRef.current?.frame(s, events, view, gooDt)
       // F67 the zap's beam: from the visible tank's top centre to the tap (the finger: stage px, above the visor), on
       // the goo's clock. A pop that didn't come from a tap here (a lesson, a test) aims at its `at`, un-bent.
@@ -220,6 +235,20 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         beam.fire([rect.left + rect.width / 2, rect.top], to, colorOf(e.color))
         laser = { at: e.at, t: 0 }
       }
+      // F63 the laser through the white goop: the same beam (in his white) to the tap, and his "ow" bubble above him.
+      // (A pop of goop in front of him in the same tap already fired its beam above.)
+      for (const e of events) if (e.type === 'vetOw' && s.vet) {
+        const rect = tankRect(view, s.visibleWidth, s.height - s.bufferRows)
+        const tap = lastTap && Math.abs(lastTap.at.x - e.at.x) < 1e-6 && Math.abs(lastTap.at.y - e.at.y) < 1e-6 ? lastTap : null
+        const to: [number, number] = tap ? [tap.x, tap.y]
+          : [view.centreX + screenColumn(e.at.x - 0.5, view.camera, s.width) * view.cellPx, view.topY + (e.at.y - s.bufferRows) * view.cellPx]
+        if (!events.some((p) => p.type === 'pop')) beam.fire([rect.left + rect.width / 2, rect.top], to, String(whiteGoopLook.color))
+        laser = { at: e.at, t: 0 }
+        const [x, y] = vetOnScreen(s, view, 0, visorFx.current?.curve() ?? 0) // (his top middle, where he's seen)
+        owT = 0
+        setOw({ x, y, n: ++owN })
+      }
+      if (owT >= 0 && (owT += gooDt) >= whiteGoopLook.owTime) { owT = -1; setOw(null) }
       beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
@@ -306,6 +335,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       zapBeam: () => beam.shots(), // F67 e2e/zap.mjs: the beams on screen (from, to: stage px; t: seconds)
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
       faces: () => gooRef.current?.faces?.() ?? [], // F62 e2e/eyes.mjs: the goop's faces (eyes, brows, mouth, gaze, where)
+      // F63 e2e/white-goop.mjs: the white goop (the engine's state.vet + how he looks), and his cell's centre on the stage
+      white: () => s.vet ? { ...s.vet, look: white.report(), screen: vetOnScreen(s, view, 0.5, visorFx.current?.curve() ?? 0) } : null,
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }),
       // F30 lessons: lesson('sample', 3) plays a lesson from a step (1 = the first, or a step id); lessonView(): where it is
       lesson: (id: string, step: number | string = 1) => session.startLesson?.(id, step) ?? false,
@@ -331,8 +362,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         const cell = cellAt(px, py)
         if (!cell) return false // beside or above the visible tank: a plain tap (rotate)
         const [x, y] = cell
-        if (y < 0 || y >= s.height || !s.grid[y * s.width + x]) return false
         const at = tapPoint(px, py), r = el.getBoundingClientRect()
+        // (goop to zap — or the white goop, F63: the laser goes through him with an "ow")
+        if (y < 0 || y >= s.height || (!s.grid[y * s.width + x] && !whiteGoopAt(s, at))) return false
         lastTap = { x: px - r.left, y: py - r.top, at } // (the beam ends on the finger: F67)
         engine.act({ type: 'pop', x, y, at })
         return true
@@ -356,6 +388,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       {/* F67 the zap's beam + laser point: above the visor (a laser from the viewer — it lands exactly on the finger) */}
       <canvas className="stage-layer stage-zap" ref={zapCanvas} />
       <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
+      {ow && <TalkingBubble key={ow.n} target={{ x: ow.x, y: ow.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
+        text={text.whiteGoop.ow} />}
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>
       </div>
@@ -393,6 +427,15 @@ function placeSwapRing(svg: SVGSVGElement | null, stage: HTMLElement, p: number 
   svg.style.display = 'block'
   svg.style.width = svg.style.height = `${size}px`
   svg.style.transform = `translate(${cx - half}px, ${cy - half}px)`
+}
+
+// F63: where the white goop is SEEN on the stage (CSS px, bent by the visor's curved-TV look like everything in the
+// tank): his middle column, `down` cells below his top edge (0 = his top, 0.5 = his centre)
+function vetOnScreen(s: ShiftState, view: GooView, down: number, curve: number): [number, number] {
+  const v = s.vet!
+  const x = view.centreX + screenColumn(v.px, view.camera, s.width) * view.cellPx
+  const y = view.topY + (v.py - s.bufferRows + down) * view.cellPx
+  return bentPoint(x, y, tankRect(view, s.visibleWidth, s.height - s.bufferRows), curve)
 }
 
 // The visible tank's left and right edges on screen (CSS px)

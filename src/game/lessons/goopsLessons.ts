@@ -52,7 +52,7 @@ import { liveTuning } from '../../devkit/tuning/liveTuning'
 import { rulesClock } from '../../devkit/gameClock'
 import { fill, tipsMemory } from '../../ui/kit'
 import { cellToScreen, tankRect } from '../../view/geometry'
-import { flatPoint } from '../../view/visorFx'
+import { bentPoint } from '../../view/visorFx'
 import type { GooView } from '../../goo/types'
 import { session } from '../session'
 import { createLessonRunner } from './runner'
@@ -401,18 +401,6 @@ export function gameColumn(): Box {
   // the tank: the HUD's column (ShiftStage's --kit-hud-w: the tank and a little room each side)
   const col = Math.min(w, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kit-hud-w')) || w)
   return { left: (w - col) / 2 + rem, top: rem, right: (w + col) / 2 - rem, bottom: h - rem }
-}
-
-// Where a flat tank point shows on screen under the visor's curved-TV look (the other way round from flatPoint: a few
-// steps of "move by how far off it lands" — the bend is gentle, so it settles quickly).
-function bentPoint(fx: number, fy: number, rect: ReturnType<typeof tankRect>, curve: number): [number, number] {
-  let x = fx, y = fy
-  for (let i = 0; i < 6; i++) {
-    const [lx, ly] = flatPoint(x, y, rect, curve)
-    x -= lx - fx
-    y -= ly - fy
-  }
-  return [x, y]
 }
 
 /** Place the mark box over what the pointer points at (or hide it). Called every frame.
