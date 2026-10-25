@@ -11,7 +11,7 @@ import { colorOf } from './gooFactory'
 import { CrtLook } from './CrtLook'
 import hud from '../../content/tuning/hud.json'
 
-export type NextPiece = { cells: [number, number][]; color: number }
+export type NextPiece = { cells: [number, number][]; color: number; colors?: number[] } // colors: one per cell (F39 two-colour pieces)
 
 export function NextWindow({ piece, label }: { piece: NextPiece | null; label: string }) {
   const W = hud.nextWindow
@@ -28,7 +28,7 @@ export function NextWindow({ piece, label }: { piece: NextPiece | null; label: s
       <svg className="next-window-cells" viewBox={`${-pad} ${-pad} ${W.cols + 2 * pad} ${W.rows + 2 * pad}`} role="img" aria-label={label}>
         {piece?.cells.map(([x, y], i) => (
           <rect key={i} x={left + x + gap / 2} y={top + y + gap / 2} width={1 - gap} height={1 - gap} rx={W.cornerCells}
-            fill={colorOf(piece.color)} />
+            fill={colorOf(piece.colors?.[i] ?? piece.color)} />
         ))}
       </svg>
       </CrtLook>

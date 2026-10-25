@@ -7,7 +7,7 @@ import type { ShiftEvent, ShiftState } from '../../engine/types'
 import { screenColumn, type GooOptions, type GooRenderer, type GooView } from '../types'
 import jellyFile from '../../../content/tuning/goo-jelly.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
-import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
+import { DEFAULT_COLOR_NAMES, gooSlot, paletteTable } from '../shared/palette'
 import { groupFillLines, tankWindow, unwrapAround, unwrapCells, viewOrigin, wrapNear, wrapTurns, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
@@ -1293,8 +1293,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     // cover the body's box: writes colour + fill/ready where the stencil is set, and clears the stencil as it goes
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.ZERO)
     gl.uniform1i(PM.u.uMode, 1)
-    gl.uniform4fv(PM.u.uC0, C0[it.color] ?? C0[0])
-    gl.uniform4fv(PM.u.uC1, C1[it.color] ?? C1[0])
+    gl.uniform4fv(PM.u.uC0, C0[gooSlot(it.color)] ?? C0[0]) // (F39: wild → its stand-in slot)
+    gl.uniform4fv(PM.u.uC1, C1[gooSlot(it.color)] ?? C1[0])
     gl.uniform1f(PM.u.uAlpha, it.alpha)
     gl.uniform1f(PM.u.uLine, it.line)
     gl.uniform1f(PM.u.uFillOn, it.fillOn)

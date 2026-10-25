@@ -44,6 +44,7 @@ import { UprightScreen } from './Upright'
 import shiftConfig from '../../content/tuning/shift.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import whiteGoop from '../../content/tuning/whiteGoop.json'
+import twists from '../../content/tuning/twists.json' // F39 rank twists (live: the engine reads it as it plays)
 import hudTuning from '../../content/tuning/hud.json'
 import settingsJson from '../../content/ui/settings.json'
 import text from '../../content/text/en.json'
@@ -76,7 +77,7 @@ function newEngine(progress: Progress, training = false): { engine: ShiftEngine;
   const seed = Number(new URLSearchParams(location.search).get('seed')) || Math.floor(Math.random() * 1e9)
   const rank = playerRank(progress)
   const upgrades = upgradesForShift(progress, training)
-  const engine = createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, whiteGoop, swap: !training && isUnlocked('swap', rank),
+  const engine = createShift(shiftConfig, { seed, rank, wallKick: wallKick.get(), breakdowns, whiteGoop, twists, swap: !training && isUnlocked('swap', rank),
     modifiers: upgrades.modifiers, abilities: upgrades.abilities, ...(training ? { training: {} } : {}) })
   return { engine, upgrades }
 }
@@ -290,7 +291,7 @@ export function App() {
     // (a snapshot saved before F59 has no swap option: give it the one its rank has, not "on")
     const o = snapshot?.options
     if (o && o.swap === undefined) o.swap = !o.training && isUnlocked('swap', o.rank)
-    const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns, whiteGoop)
+    const e = snapshot && restoreShift(shiftConfig, snapshot, breakdowns, whiteGoop, twists)
     if (e) { lessonPlay.watch(e); firstBreakdowns.newShift() }
     while (screens.current.length) screens.pop()
     toasts.current.forEach((t) => toasts.dismiss(t.id))

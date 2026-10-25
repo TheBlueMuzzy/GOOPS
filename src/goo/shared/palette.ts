@@ -11,7 +11,17 @@ export const DEFAULT_COLOR_NAMES = ['red', 'blue', 'green', 'yellow', 'purple', 
 
 const MISSING = '#808080' // unknown colour: plain grey, so a bad name shows up instead of crashing
 
+// F39 wild goop (the engine's WILD colour value, src/engine/types.ts). Its real look comes from Muzzy's sketch pick
+// (F39 task 6); until then it's a STAND-IN: on the tank canvas (cracks, ghost, next window) goo-colors.json "wild",
+// and in the two goo renderers (7 colour channels, slots 1-7) it borrows slot 7's channel (black — not in play until
+// rank 50, so distinct from rank 40 to 49).
+export const WILD_COLOR = 255 // (= the engine's WILD)
+export const WILD_STAND_IN_SLOT = 7
+/** The renderers' colour slot for an engine colour: wild → its stand-in slot, the rest as they are. */
+export const gooSlot = (c: number) => (c === WILD_COLOR ? WILD_STAND_IN_SLOT : c)
+
 export function colorHex(names: string[], c: number, palette: Palette = PALETTE): string {
+  if (c === WILD_COLOR) return palette.wild || MISSING
   const name = names[c - 1]
   return (name !== undefined && palette[name]) || MISSING
 }

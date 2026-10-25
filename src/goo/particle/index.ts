@@ -7,7 +7,7 @@ import type { ShiftEvent, ShiftState } from '../../engine/types'
 import { screenColumn, type GooOptions, type GooRenderer, type GooView } from '../types'
 import particleFile from '../../../content/tuning/goo-particle.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
-import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
+import { DEFAULT_COLOR_NAMES, gooSlot, paletteTable } from '../shared/palette'
 import { groupFillLines, inWindow, tankWindow, unwrapCells, viewOrigin, wrapNear, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
@@ -1052,7 +1052,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
       // popped: shrinks as it fades; a spray droplet: its own size, shrinking over its life (v1); zapped: white-hot
       const z = ST[i] === 2 && ZG[i] >= 0 ? zaps.get(ZG[i]) : undefined
       const r = ST[i] === 3 ? R * DR[i] * (0.6 + 0.4 * WT[i]) : ST[i] === 2 ? R * (0.55 + 0.45 * WT[i]) * (z ? 1 - 0.6 * EZ[i] : 1) : R
-      put(X[i], Y[i], X[i], Y[i], r, ST[i] === 3 ? Math.min(1, WT[i] * 1.4) : WT[i], COL[i], UN[i], RD[i], z ? z.hot : 0)
+      put(X[i], Y[i], X[i], Y[i], r, ST[i] === 3 ? Math.min(1, WT[i] * 1.4) : WT[i], gooSlot(COL[i]), UN[i], RD[i], z ? z.hot : 0) // (F39: wild → its stand-in slot)
     }
     const L0 = 0.42
     const span = Math.max(0.1, strandSnap() - L0)
@@ -1066,7 +1066,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
       const s = Math.min(1, (d - L0) / span)
       const w = Math.min(WT[i], WT[j], 1) * Math.min(1, (d - L0) * 8) * 1.3 * Math.pow(1 - s, 0.6)
       if (w < 0.02) continue
-      put(X[i], Y[i], X[j], Y[j], R * 0.6 * (1 - 0.4 * s), w, COL[i], Math.min(UN[i], UN[j]), Math.min(RD[i], RD[j]))
+      put(X[i], Y[i], X[j], Y[j], R * 0.6 * (1 - 0.4 * s), w, gooSlot(COL[i]), Math.min(UN[i], UN[j]), Math.min(RD[i], RD[j]))
     }
     return n
   }

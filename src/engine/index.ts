@@ -12,3 +12,6 @@ export type { PieceChoice, PieceFallback, TrainingCommand, TrainingRules } from 
 export type { BreakdownConfig } from './machines'
 export { whiteGoopAt } from './whiteGoop'
 export type { WhiteGoopConfig } from './whiteGoop'
+export { WILD } from './types'
+export { crackCells, crackSize, crackHas, plugsCrack } from './twists'
+export type { TwistsConfig } from './twists'

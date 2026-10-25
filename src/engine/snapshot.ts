@@ -10,6 +10,7 @@ import type { AbilitySpec, ActiveEffects } from './abilities'
 import type { Modifiers } from './upgrades'
 import type { AbilityState, Crack, Group, SealedSpot, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode, WhiteGoop } from './types'
 import type { WhiteGoopConfig } from './whiteGoop'
+import type { TwistsConfig } from './twists'
 import type { PieceChoice, PieceFallback, TrainingRules } from './training'
 import { createShift } from './shift'
 
@@ -85,11 +86,12 @@ export function readSnapshot(x: unknown): ShiftSnapshot {
   return x as unknown as ShiftSnapshot
 }
 
-/** A new engine that carries on from a snapshot (the game's live tuning + breakdowns + white goop (F63), the snapshot's
- *  own options). */
-export function restoreShift(config: ShiftConfig, snapshot: unknown, breakdowns?: BreakdownConfig, whiteGoop?: WhiteGoopConfig): ShiftEngine {
+/** A new engine that carries on from a snapshot (the game's live tuning + breakdowns + white goop (F63) + rank twists
+ *  (F39), the snapshot's own options). (F39's grown cracks ride in state.cracks — cells / parent / growMs — and its
+ *  two-colour and wild pieces in inner.piece / nextDef, so older snapshots, which have none, still load as they were.) */
+export function restoreShift(config: ShiftConfig, snapshot: unknown, breakdowns?: BreakdownConfig, whiteGoop?: WhiteGoopConfig, twists?: TwistsConfig): ShiftEngine {
   const snap = readSnapshot(snapshot)
-  const engine = createShift(config, { ...snap.options, breakdowns, whiteGoop })
+  const engine = createShift(config, { ...snap.options, breakdowns, whiteGoop, twists })
   engine.restore(snap)
   return engine
 }

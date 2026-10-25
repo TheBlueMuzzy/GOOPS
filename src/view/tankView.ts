@@ -4,7 +4,7 @@ import type { ShiftState } from '../engine/types'
 import type { GooView } from '../goo/types'
 import { screenColumn } from '../goo/types'
 import { pieceScreenColumn } from './geometry'
-import { crackIsOpen, type CrackBubbles } from './crackBubbles'
+import { crackIsOpen, crackSpots, type CrackBubbles } from './crackBubbles'
 import look from '../../content/tuning/cracks-look.json'
 import tank from '../../content/tuning/tank.json'
 
@@ -63,12 +63,13 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     drawSealed(ctx, sx, topY + (c.y - s.bufferRows + 0.5) * cp, cp, c.id)
   }
 
-  // cracks in the tank wall
-  for (const c of s.cracks) {
+  // cracks in the tank wall (F39: every cell of a grown crack; key = its id for the root, so old cracks look the same)
+  const spots = crackSpots(s)
+  for (const c of spots) {
     const sx = centreX + screenColumn(c.x, view.camera, s.width) * cp
     const sy = topY + (c.y - s.bufferRows + 0.5) * cp
     if (sx < left - cp || sx > right + cp) continue
-    drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.id, timeSec)
+    drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.key, timeSec)
   }
   bubbles?.draw(ctx, s, view, left, right)
   white?.()
@@ -77,10 +78,10 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
   // stays still on screen while the tank slides under it.
   if (s.piece && s.ghost.length) {
     ctx.globalAlpha = tank.ghostAlpha
-    ctx.strokeStyle = colorOf(s.piece.colors[0])
     ctx.lineWidth = Math.max(1.5, cp * 0.06)
     ctx.setLineDash([cp * 0.18, cp * 0.12])
-    for (const [x, y] of s.ghost) {
+    for (const [k, [x, y]] of s.ghost.entries()) {
+      ctx.strokeStyle = colorOf(s.piece.colors[k] ?? s.piece.colors[0]) // (F39: a two-colour piece's ghost in both colours)
       const sx = centreX + screenColumn(x, s.spin, s.width) * cp
       const sy = topY + (y - s.bufferRows + 0.5) * cp
       const h = cp * 0.42
@@ -119,14 +120,15 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
   // F36 the x-ray: a crack with goop on it gets a dotted box round it ("the visor is auto targeting to help", Muzzy) —
   // the goo over it is drawn see-through (coveredCracks → view.xray → the goo renderers). Here on the tank canvas, so
   // the visor glitch distorts it too. It breathes with the crack's own glow (drawCrack) and its dots march.
+  // (F39: per cell of a grown crack — the red X marks each cell the wrong colour sits on)
   const X = look.xray
-  for (const c of s.cracks) {
+  for (const c of spots) {
     if (crackIsOpen(s, c)) continue
     const sx = centreX + screenColumn(c.x, view.camera, s.width) * cp
     if (sx < left - cp || sx > right + cp) continue
     const top = topY + (c.y - s.bufferRows) * cp
     const pad = X.pad * cp
-    ctx.globalAlpha = X.alpha * (1 - X.pulse * (0.5 - 0.5 * Math.sin(timeSec * 3 + c.id)))
+    ctx.globalAlpha = X.alpha * (1 - X.pulse * (0.5 - 0.5 * Math.sin(timeSec * 3 + c.key)))
     ctx.strokeStyle = X.color
     ctx.lineWidth = Math.max(1, X.width * cp)
     ctx.setLineDash([X.dash * cp, X.gap * cp])

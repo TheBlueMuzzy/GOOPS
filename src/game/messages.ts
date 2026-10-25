@@ -8,7 +8,7 @@
 //   quota met, rupture + why (too many open cracks / overflow)
 //   wrong colour     → "Wrong colour on a crack…" the first time goop of another colour covers each open crack (F68),
 //                      at most once per wrongCoverCooldownSeconds
-import type { MachineId, ShiftEvent, ShiftState } from '../engine'
+import { type MachineId, type ShiftEvent, type ShiftState, crackCells, plugsCrack } from '../engine'
 import en from '../../content/text/en.json'
 
 export type MessageKey = keyof typeof en.messages
@@ -61,9 +61,10 @@ export function createMessages(tuning: MessageTuning) {
       if (!pressureWarned && s.pressure >= tuning.pressureHighAt) { pressureWarned = true; say('pressureHigh', tuning.seconds.pressureHigh, true) }
       // goop of another colour sits on an open crack: it can't plug it (only its own colour does) — the most
       // confusing moment for a new player (Muzzy 2026-10-24), so say it the first time each crack gets covered
+      // (F39: any cell of a grown crack; wild goop plugs every colour, so it's never the wrong one)
       for (const c of s.cracks) {
-        const on = s.grid[c.y * s.width + c.x]
-        if (on === 0 || on === c.color || wrongCovered.has(c.id)) continue
+        const wrong = crackCells(c).some(([x, y]) => { const on = s.grid[y * s.width + x]; return on !== 0 && !plugsCrack(on, c.color) })
+        if (!wrong || wrongCovered.has(c.id)) continue
         wrongCovered.add(c.id)
         if (nowMs - lastWrongCoverAt < tuning.wrongCoverCooldownSeconds * 1000) continue
         lastWrongCoverAt = nowMs

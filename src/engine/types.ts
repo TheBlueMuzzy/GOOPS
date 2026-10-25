@@ -4,11 +4,16 @@
 
 import type { ActiveEffects } from './abilities'
 
-export type Color = number // 0 = empty; 1.. = index into content/tuning/shift.json "colors"
+export type Color = number // 0 = empty; 1.. = index into content/tuning/shift.json "colors"; WILD = wild goop
+
+// F39 wild goop (rank 40+, twists.ts): a colour value of its own, far past the real colours, so the renderers can tell
+// it apart (src/goo/shared/palette.ts gooSlot / colorHex). It plugs and seals a crack of ANY colour; a normal piece
+// locking next to a wild clump turns the whole clump that piece's colour.
+export const WILD: Color = 255
 
 export interface Piece {
   cells: [number, number][] // absolute tank cells (x already wrapped into 0..width-1)
-  colors: Color[] // one per cell (multi-colour pieces later; today all the same)
+  colors: Color[] // one per cell (F39: a two-colour piece has two; a wild piece is all WILD)
   rotation: number // 0..3
   fall: number // 0..1: how far through the current row step the piece is (for smooth drawing)
 }
@@ -26,8 +31,13 @@ export interface Crack {
   x: number
   y: number
   color: Color
-  plugged: boolean // matching goop covers it (pop that goop to seal)
-  drain?: number // × the integrity drain while open (the hill's high cracks drain less, unseen); unset = 1
+  plugged: boolean // matching goop (or wild goop, F39) covers EVERY cell of it (pop that goop to seal)
+  drain?: number // × the integrity drain per open cell (the hill's high cracks drain less, unseen); unset = 1
+  // F39 growing cracks (rank 30+, twists.ts): a grown crack is ONE crack over many cells. x, y stay its root (where
+  // it formed). Unset = a crack that never started growing (just x, y) — older snapshots have none.
+  cells?: [number, number][] // every cell of it, root first ([x, y], tank space) — read it with crackCells()
+  parent?: number[] // per cell: the index (in cells) of the cell it grew from; -1 = the root
+  growMs?: number[] // per cell: ms until it next rolls to grow (counts down only while nothing covers the cell)
 }
 
 // Where a crack was sealed (F36, Muzzy 2026-10-18: "no crack can ever form on a sealed spot again"). The tank view
@@ -129,7 +139,9 @@ export type ShiftEvent =
   | { type: 'rotate'; dir: 1 | -1 }
   | { type: 'step' } // piece moved down one row
   | { type: 'drop'; rows: number } // no longer sent (hard drop was removed); kept so the renderers' handlers compile
-  | { type: 'lock'; cells: number[]; color: Color } // piece became part of the grid (grid indexes)
+  | { type: 'lock'; cells: number[]; color: Color; colors?: Color[] } // piece became part of the grid (grid indexes); colors = one per cell (F39 two-colour pieces; the engine always sends it), color = the first
+  | { type: 'wildTurn'; cells: number[]; color: Color } // F39: a wild clump a landing piece touched turned that colour
+  | { type: 'crackGrow'; crackId: number; x: number; y: number } // F39: a crack grew into this cell (rank 30+)
   | { type: 'merge'; groupId: number } // a group grew by joining others
   | { type: 'ready'; groupId: number } // a group finished filling and can pop
   | { type: 'pop'; cells: number[]; color: Color; sealed: number[]; at?: TapPoint } // popped cells (sealed = crack ids sealed by it); at = where the zap hit (F67: the laser point the goop is sucked into — the engine always sends it, other makers of pop events may not)

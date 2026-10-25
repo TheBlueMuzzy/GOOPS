@@ -5,6 +5,7 @@
 // Moves on the looks clock: the frame loop's dt (keeps going in the Dev Kit's half pause, stops in the full pause).
 // Knobs: content/tuning/cracks-look.json → bubbles (read live, every frame).
 import type { ShiftState } from '../engine/types'
+import { crackCells, plugsCrack } from '../engine/twists'
 import type { GooView } from '../goo/types'
 import { screenColumn } from '../goo/types'
 import look from '../../content/tuning/cracks-look.json'
@@ -24,6 +25,21 @@ export interface CrackBubbles {
 // at bubbles.covered × the rate, its bubbles rising up through the goop (Muzzy, 2026-10-19: "bubbles always leak from
 // open cracks, but half as much from covered cracks, and not at all from sealed cracks" — sealed ones leave s.cracks).
 export const crackIsOpen = (s: ShiftState, c: { x: number; y: number }) => s.grid[c.y * s.width + c.x] === 0
+
+// F39 growing cracks: a grown crack is one crack over many cells — the views draw, x-ray and bubble EACH cell. One
+// spot per cell of every open crack: its crack's id + colour, the cell, `key` (unique per cell, for per-cell
+// bookkeeping) and `plugged` = THIS cell has its crack's colour (or wild goop) on it (the x-ray's red X is per cell).
+export interface CrackSpot { id: number; key: number; x: number; y: number; color: number; plugged: boolean }
+export function crackSpots(s: ShiftState): CrackSpot[] {
+  const out: CrackSpot[] = []
+  for (const c of s.cracks) {
+    crackCells(c).forEach(([x, y], k) => {
+      // (the root's key = the crack's id, so a crack that never grew looks and bubbles exactly as before F39)
+      out.push({ id: c.id, key: k === 0 ? c.id : -(c.id * 1024 + k), x, y, color: c.color, plugged: plugsCrack(s.grid[y * s.width + x], c.color) })
+    })
+  }
+  return out
+}
 
 export function createCrackBubbles(): CrackBubbles {
   const live = new Uint8Array(POOL)
@@ -65,14 +81,14 @@ export function createCrackBubbles(): CrackBubbles {
       // the stream: each open crack owes perSec bubbles a second (a covered one × covered), swelling and fading in
       // gusts (two slow waves of its own, so neighbouring cracks don't puff in step) — "slightly unsteady"
       const seen = new Set<number>()
-      for (const c of s.cracks) {
-        seen.add(c.id)
+      for (const c of crackSpots(s)) { // (F39: every cell of a grown crack leaks on its own)
+        seen.add(c.key)
         const covered = !crackIsOpen(s, c)
-        const wave = 0.5 * Math.sin(t * 1.7 + c.id * 2.1) + 0.5 * Math.sin(t * 0.63 + c.id * 4.7) // −1..1
+        const wave = 0.5 * Math.sin(t * 1.7 + c.key * 2.1) + 0.5 * Math.sin(t * 0.63 + c.key * 4.7) // −1..1
         const rate = Math.max(0, B.perSec * (covered ? B.covered : 1) * calm * (1 + B.gust * wave))
-        let owed = (due.get(c.id) ?? Math.random()) + rate * dt
+        let owed = (due.get(c.key) ?? Math.random()) + rate * dt
         while (owed >= 1) { spawn(c, B, covered); owed -= 1 }
-        due.set(c.id, owed)
+        due.set(c.key, owed)
       }
       for (const id of due.keys()) if (!seen.has(id)) due.delete(id)
       // rise, age, pop

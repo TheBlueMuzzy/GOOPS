@@ -18,6 +18,7 @@ import {
   landingRow,
   newFallingPiece,
   placeCells,
+  cellColor,
   randomPiece,
   rotateCells,
 } from './pieces'
@@ -31,6 +32,9 @@ import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
 import { type PieceChoice, type PieceFallback, type TrainingCommand, type TrainingRules, OVERFLOW_RAIL_ROWS, TRAINING_START,
   columnTooLow, freeCrackSpot, pieceFromChoice } from './training'
 import { type WhiteGoopConfig, newWhiteGoop, stepWhiteGoop, whiteGoopAt, whiteGoopIn } from './whiteGoop'
+import { type TwistsConfig, crackCells, crackHas, crackSize, growCracks as growCrackCells, growOn } from './twists'
+import { type Color, WILD } from './types'
+import { neighbours } from './tank'
 
 export interface ShiftOptions {
   seed: number
@@ -50,6 +54,9 @@ export interface ShiftOptions {
   swap?: boolean
   // F63 the white goop: content/tuning/whiteGoop.json (read live). Leave it out and he's never in the tank.
   whiteGoop?: WhiteGoopConfig
+  // F39 rank twists: content/tuning/twists.json (read live) — two-colour pieces (20), growing cracks (30), wild goop
+  // (40). Leave it out (or a lesson's training shift) and there are none.
+  twists?: TwistsConfig
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -302,6 +309,8 @@ class Shift implements ShiftEngine {
       if (t && pressure > t.pressureCap) pressure = Math.max(s.pressure, t.pressureCap) // stops at the cap (never pulled down)
       this.setPressure(pressure)
       if (!t || t.cracks) this.growCracks(dt)
+      // F39: from rank 30 open cracks spread into the cells next to them (twists.ts; never in a lesson)
+      if (!t && growOn(this.options.twists, s.rank)) growCrackCells(s, this.rng, this.options.twists!, dt, s.pressureRow, this.mods.crackEveryMult, this.events)
       this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
       if (!t || t.integrity) this.drainIntegrity(dt)
       if (s.phase === 'playing' && this.breakdownsOn()) this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
@@ -332,11 +341,13 @@ class Shift implements ShiftEngine {
     const crack = stepWhiteGoop(s, cfg, dt)
     if (!crack) return
     s.cracks = s.cracks.filter((c) => c.id !== crack.id)
-    ;(s.sealedCracks ??= []).push({ id: crack.id, x: crack.x, y: crack.y })
+    for (const [x, y] of crackCells(crack)) (s.sealedCracks ??= []).push({ id: crack.id, x, y }) // (every cell of a grown crack, F39)
     this.events.push({ type: 'vetSeal', crackId: crack.id })
-    if (cfg.integrityRefund && s.phase === 'playing') s.integrity = Math.min(1, s.integrity + this.config.integrity.sealRefund)
+    // a grown crack counts as its cell count (F39, Muzzy 2026-10-25), here as when you seal it
+    const size = crackSize(crack)
+    if (cfg.integrityRefund && s.phase === 'playing') s.integrity = Math.min(1, s.integrity + size * this.config.integrity.sealRefund)
     if (cfg.countsForQuota) {
-      s.cracksSealed++
+      s.cracksSealed += size
       if (!s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
         s.quotaMet = true
         this.events.push({ type: 'quotaMet' })
@@ -385,7 +396,8 @@ class Shift implements ShiftEngine {
   // Every open (unsealed) crack wears the tank down a little each second. Sealing one gives a little back (pop).
   private drainIntegrity(dt: number): void {
     const s = this.state
-    const open = s.cracks.reduce((sum, c) => sum + (c.drain ?? 1), 0) // a high hill crack counts for less (cracks.ts)
+    // a high hill crack counts for less (cracks.ts); a grown crack drains per cell (F39: it gets more urgent as it grows)
+    const open = s.cracks.reduce((sum, c) => sum + (c.drain ?? 1) * crackSize(c), 0)
     const drain = open * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
     s.integrity = Math.max(this.training?.integrityFloor ?? 0, s.integrity - drain)
     if (s.integrity <= 0) this.rupture('integrity')
@@ -555,23 +567,27 @@ class Shift implements ShiftEngine {
     s.score += popPoints(s, this.config, g.cells, combo)
     this.popStreak = combo
 
-    // Seal every plugged crack under this group.
+    // Seal every plugged crack under this group. (F39: a grown crack is plugged only while EVERY cell of it is covered
+    // by its colour (or wild) — then popping goop on any of its cells seals the whole crack.)
     const cellSet = new Set(g.cells)
-    const sealedNow = s.cracks.filter((c) => c.plugged && cellSet.has(c.y * s.width + c.x))
+    const sealedNow = s.cracks.filter((c) => c.plugged && crackCells(c).some(([cx, cy]) => cellSet.has(cy * s.width + cx)))
     const sealed = sealedNow.map((c) => c.id)
     s.cracks = s.cracks.filter((c) => !sealed.includes(c.id))
-    // the spot is mended for good: no crack forms there again (F36, cracks.ts spawnCrack)
-    for (const c of sealedNow) (s.sealedCracks ??= []).push({ id: c.id, x: c.x, y: c.y })
-    s.cracksSealed += sealed.length
+    // the spot is mended for good: no crack forms there again (F36, cracks.ts spawnCrack) — every cell of a grown one
+    for (const c of sealedNow) for (const [cx, cy] of crackCells(c)) (s.sealedCracks ??= []).push({ id: c.id, x: cx, y: cy })
+    // F39 (Muzzy 2026-10-25): a grown crack counts as its cell count toward the quota — and so for everything a seal
+    // gives (vent, integrity, ability charge): one cell = one seal
+    const seals = sealedNow.reduce((sum, c) => sum + crackSize(c), 0)
+    s.cracksSealed += seals
 
     // Zapping vents pressure, sealing vents more (v1's time refunds, turned into pressure: ms of rise).
     // Not during a rupture: there pressure drains on its own, and venting would only shorten the time to zap.
     if (s.phase === 'playing') {
-      const ventMs = popRefundMs(this.config, g.cells.length) + sealed.length * this.config.cracks.sealRefundMs * this.mods.sealVentMult
+      const ventMs = popRefundMs(this.config, g.cells.length) + seals * this.config.cracks.sealRefundMs * this.mods.sealVentMult
       this.setPressure(s.pressure - ventMs / this.riseMsToFull())
       // Each seal patches the tank a little (integrity.sealRefund, F27), never past full. Not during a rupture.
-      s.integrity = Math.min(1, s.integrity + sealed.length * this.config.integrity.sealRefund)
-      this.chargeAbilities(0, sealed.length)
+      s.integrity = Math.min(1, s.integrity + seals * this.config.integrity.sealRefund)
+      this.chargeAbilities(0, seals)
     }
 
     for (const i of g.cells) {
@@ -631,7 +647,9 @@ class Shift implements ShiftEngine {
     const zones = this.config.pieces.zones
     const zone = Math.min(zones.length - 1, Math.floor(this.playedMs / this.config.pieces.zoneEveryMs))
     // (a lesson can hold the size: e.g. 'tetra' keeps every piece 4 cells however long it runs)
-    return randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount)
+    // (F39 rank twists: never in a lesson's training shift)
+    const twists = this.options.twists && !this.training ? { config: this.options.twists, rank: this.state.rank } : undefined
+    return randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount, twists)
   }
 
   // The piece after the one coming in: a lesson's chosen piece first (F30), then the lesson's fallback rule (F31),
@@ -701,7 +719,7 @@ class Shift implements ShiftEngine {
         if (at === null) return false
         const x = wrapX(at, s.width), i = cmd.y * s.width + x
         const taken = (c: { x: number; y: number }) => c.x === x && c.y === cmd.y
-        if (!inTank(at, cmd.y) || !goodColor(cmd.color) || s.grid[i] !== 0 || s.cracks.some(taken) || (s.sealedCracks ?? []).some(taken)) return false
+        if (!inTank(at, cmd.y) || !goodColor(cmd.color) || s.grid[i] !== 0 || s.cracks.some((c) => crackHas(c, x, cmd.y)) || (s.sealedCracks ?? []).some(taken)) return false
         const crack = { id: this.nextCrackId++, x, y: cmd.y, color: cmd.color, plugged: false }
         s.cracks.push(crack)
         this.events.push({ type: 'crack', crack: { ...crack } })
@@ -709,8 +727,8 @@ class Shift implements ShiftEngine {
       }
       case 'removeCrack': {
         const x = wrapX(cmd.x, s.width)
-        if (!s.cracks.some((c) => c.x === x && c.y === cmd.y)) return false
-        s.cracks = s.cracks.filter((c) => !(c.x === x && c.y === cmd.y))
+        if (!s.cracks.some((c) => crackHas(c, x, cmd.y))) return false
+        s.cracks = s.cracks.filter((c) => !crackHas(c, x, cmd.y))
         break
       }
       case 'goop': {
@@ -791,20 +809,46 @@ class Shift implements ShiftEngine {
     if (!p) return
     const s = this.state
     const cells: number[] = []
-    for (const [x, y] of this.pieceCells(p)) {
-      if (y < 0) continue // v1: cells still above the tank are lost
+    const colors: Color[] = [] // (F39: one per cell — a two-colour piece locks as two clumps)
+    this.pieceCells(p).forEach(([x, y], k) => {
+      if (y < 0) return // v1: cells still above the tank are lost
       const i = y * s.width + x
-      s.grid[i] = p.def.color
+      s.grid[i] = cellColor(p.def, k)
       cells.push(i)
-    }
+      colors.push(s.grid[i])
+    })
     this.piece = null
-    this.events.push({ type: 'lock', cells, color: p.def.color })
+    this.events.push({ type: 'lock', cells, color: p.def.color, colors })
+    this.wildTakeover(cells)
     for (const id of regroup(s, this.book)) this.events.push({ type: 'merge', groupId: id })
     this.settle() // corrupted pieces break apart here; loose parts fall
     this.popStreak = 0
     if (s.phase === 'playing' && this.breakdownsOn()) this.machines.landed()
     this.softDrop = false // v1: fast drop stops when a piece lands
     if (!this.training || this.training.autoSpawn) this.spawnNext() // (a lesson may bring the next one in itself)
+  }
+
+  // F39 wild goop: a normal (coloured) cell that just locked next to a wild clump turns that WHOLE clump its colour
+  // (v1 gameLogic.ts). A clump touched by two colours of a two-colour piece takes the first one it touched.
+  // (A wild piece landing next to coloured goop changes nothing — wild only ever gives its colour up.)
+  private wildTakeover(locked: number[]): void {
+    const s = this.state
+    for (const start of locked) {
+      const color = s.grid[start]
+      if (color === WILD || color === 0) continue
+      for (const n of neighbours(start, s.width, s.height)) {
+        if (s.grid[n] !== WILD) continue
+        // the whole wild clump (wild cells touching up / down / left / right, round the tank)
+        const clump = [n]
+        s.grid[n] = color
+        for (let k = 0; k < clump.length; k++) {
+          for (const m of neighbours(clump[k], s.width, s.height)) {
+            if (s.grid[m] === WILD) { s.grid[m] = color; clump.push(m) }
+          }
+        }
+        this.events.push({ type: 'wildTurn', cells: clump.sort((a, b) => a - b), color })
+      }
+    }
   }
 
   // Let every loose group fall until nothing moves, regrouping as it lands.
@@ -889,14 +933,14 @@ class Shift implements ShiftEngine {
     const p = this.piece
     if (p) {
       const cells = this.pieceCells(p)
-      s.piece = { cells, colors: cells.map(() => p.def.color), rotation: p.rotation, fall: p.fall }
+      s.piece = { cells, colors: cells.map((_, k) => cellColor(p.def, k)), rotation: p.rotation, fall: p.fall }
       const landY = landingRow(s.grid, p.cells, s.spin + p.offset, p.y, s.width, s.height)
       s.ghost = placeCells(p.cells, s.spin + p.offset, landY, s.width)
     } else {
       s.piece = null
       s.ghost = []
     }
-    s.next = this.nextDef.cells.map(() => this.nextDef.color)
+    s.next = this.nextDef.cells.map((_, k) => cellColor(this.nextDef, k))
     s.nextCells = this.nextDef.cells.map(([x, y]) => [x, y])
   }
 }
