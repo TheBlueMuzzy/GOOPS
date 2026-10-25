@@ -10,6 +10,9 @@
 //   Settings → Replay lessons plays them again (at rank 30: 29, then the capture)
 //   titles: a payday that reaches a new title says it
 //   whispers: "…cold…" once at 3, feelings from 8, single words from 15, names from 24; Management's "NO VOICES" from 12
+//   F63 ranks 31–39: the goop in your head — the whisper's plain bubble over the monitor area, every line typed; 36 says
+//     your name back (the signed one, or Operator #4471), at every portrait size; from the shift that reaches 39 the
+//     report's last row is "Pending retirements: Operator #4471 — <your name>" (not at 37)
 //   fines (F40): the first report at 30 fines "Association with a retired employee" first, once; paydays from 30 say
 //     the after-capture words
 // Screenshots: e2e-shots/story/
@@ -30,6 +33,7 @@ const W = en.story.whispers
 const xpToNext = (rank) => prog.xpBase + prog.xpPerRank * rank
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return xp }
 const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms))
+const NAME = 'Muzzy' // F63: the name a device signed (36 says it back, 39's report lists it)
 mkdirSync(OUT, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -42,21 +46,22 @@ let failed = 0
 const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`); if (!ok) failed++ }
 
 // a fresh device with this much XP, on the console (the first day had; ?story on)
-async function device(totalXp, { width = 390, height = 844 } = {}) {
+// (F63: name = the name signed on the first day — null = never signed, so the game says Operator #4471)
+async function device(totalXp, { width = 390, height = 844, name = null } = {}) {
   const context = await browser.newContext({ viewport: { width, height } })
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   await skipFirstDay(page)
   await page.goto(`http://localhost:${PORT}/?seed=7&story`)
-  await page.evaluate((xp) => localStorage.setItem('goops-progress', JSON.stringify({ v: 2, totalXp: xp, scrapsSpent: 0, owned: {}, equipped: [] })), totalXp)
+  await page.evaluate(([xp, name]) => localStorage.setItem('goops-progress', JSON.stringify({ v: 3, totalXp: xp, scrapsSpent: 0, owned: {}, equipped: [], name })), [totalXp, name])
   await page.reload()
   await page.locator('.kit-art-stage').waitFor()
   await page.waitForTimeout(800)
   return { page, errors, close: () => context.close() }
 }
 // …at the start of this rank, with every older moment seen (as a player who had them), so only this rank's is due
-async function deviceAt(rank, size) {
+async function deviceAt(rank, size = {}) {
   const d = await device(xpFor(rank) + 10, size)
   await d.page.evaluate((r) => window.__goopsSeen?.(Array.from({ length: r }, (_, i) => `story:${i}`)), rank)
   await d.page.reload(); await d.page.locator('.kit-art-stage').waitFor(); await d.page.waitForTimeout(800)
@@ -67,10 +72,10 @@ const monitorLook = (page) => page.locator('[data-tag="crt"]').getAttribute('dat
 const periscopeOff = (page) => page.locator('.kit-pull-grip').first().isDisabled()
 const typeMs = (words) => words.length / 22 * 1000 // (talk.json typeSpeed 22 letters a second)
 // play the moment that's up, line by line, checking each line's voice and look; returns what was seen per line
-async function playMoment(page, rank, shot) {
+async function playMoment(page, rank, shot, name = null) {
   const seen = []
   for (const [i, line] of story.moments[String(rank)].lines.entries()) {
-    const words = L[line.words]
+    const words = L[line.words].replace('{name}', name ?? en.story.sign.fallback) // (F63: 36 says your name)
     if (line.sign) { // F66: PLEASE SIGN HERE — the name box with Sign / Skip instead of Got it (signing: e2e/your-name.mjs)
       const skip = page.locator('[data-tag="crt"]').getByRole('button', { name: en.story.sign.skip })
       await skip.waitFor({ timeout: 4000 })
@@ -102,7 +107,13 @@ async function playMoment(page, rank, shot) {
       } else {
         await page.waitForTimeout(typeMs(words) + 2000) // (it types out, rests at the static)
         if (shot && i === 0) await page.screenshot({ path: `${OUT}/${shot}.png` })
-        seen.push(['spk', said, look === (line.monitor ?? null)])
+        if (line.voice === 'head') {
+          // F63 the goop in your head: the whisper's bubble (plain outline — no speech wave), the whole line typed
+          const outline = await page.locator('.kit-talk-layer').first().getAttribute('data-outline')
+          const typed = (await b.locator('.kit-talk-typed').textContent()).trim() === words
+          if (shot && i > 0) await page.screenshot({ path: `${OUT}/${shot}-${i + 1}.png` })
+          seen.push(['head', said && typed && outline === 'plain', look === (line.monitor ?? null)])
+        } else seen.push(['spk', said, look === (line.monitor ?? null)])
         await b.click()
       }
     }
@@ -121,12 +132,13 @@ const reportLabels = async (page) => (await page.locator('.kit-end .kit-stat-row
 const allSeen = (page, more = []) => page.evaluate((m) => window.__goopsSeen?.(Array.from({ length: 51 }, (_, i) => `story:${i}`).concat(m)), more)
 
 try {
-  // ---------------- every rank 0–30: its moment, in its voice, with its look, once ----------------
-  // (STORY_FROM=31 skips this part while working on the rest)
-  for (let rank = Number(process.env.STORY_FROM ?? 0); rank <= 30; rank++) {
-    const { page, errors, close } = await deviceAt(rank)
+  // ---------------- every rank 0–39: its moment, in its voice, with its look, once ----------------
+  // (STORY_FROM=31 starts at the goop's moments; F63: from 31 the device has signed "Muzzy", so 36 says it back)
+  for (let rank = Number(process.env.STORY_FROM ?? 0); rank <= 39; rank++) {
+    const name = rank >= 31 ? NAME : null
+    const { page, errors, close } = await deviceAt(rank, { name })
     check(`rank ${rank}: the periscope waits while the moment plays`, await periscopeOff(page))
-    const seen = await playMoment(page, rank, `rank${rank}-390x844`)
+    const seen = await playMoment(page, rank, `rank${rank}-390x844`, name)
     check(`rank ${rank}: every line in its voice, with its words and monitor look`, seen.length && seen.every(([, ok, look]) => ok && look), JSON.stringify(seen))
     await page.waitForTimeout(600)
     const after = (await monitorSays(page)).trim()
@@ -138,6 +150,54 @@ try {
     const again = (await monitorSays(page)).trim()
     check(`rank ${rank}: once only — after a reload no moment`, !Object.values(L).includes(again) && !(await page.locator('.kit-talk').count()), again)
     check(`rank ${rank}: no page errors`, errors.length === 0, errors.join(' | '))
+    await close()
+  }
+
+  // ---------------- F63: 36 never signed → "Operator #4471"; the goop's moment (36) at every portrait size ----------------
+  {
+    const { page, errors, close } = await deviceAt(36)
+    const seen = await playMoment(page, 36, null, null)
+    check('rank 36, never signed: the goop says "Operator #4471" back', seen.length === 3 && seen.every(([, ok]) => ok), JSON.stringify(seen))
+    check('rank 36 unsigned: no page errors', errors.length === 0, errors.join(' | '))
+    await close()
+  }
+  for (const [w, h] of SIZES) {
+    const { page, errors, close } = await deviceAt(36, { width: w, height: h, name: NAME })
+    const b = page.locator('.kit-talk').first()
+    await b.waitFor({ timeout: 4000 })
+    await page.waitForTimeout(typeMs(L.r36a) + 1500)
+    const inside = await b.evaluate((el) => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5 })
+    // over the monitor area: it points at the monitor (its box overlaps the monitor's column, under the monitor's top)
+    const crt = await page.locator('[data-tag="crt"]').boundingBox(), box = await b.boundingBox()
+    check(`${w}x${h}: the goop's bubble (36) is on screen, by the monitor`, inside && box.x < crt.x + crt.width && box.x + box.width > crt.x && box.y > crt.y, JSON.stringify({ crt, box }))
+    await page.screenshot({ path: `${OUT}/goop36-${w}x${h}.png` })
+    check(`${w}x${h}: rank 36 no page errors`, errors.length === 0, errors.join(' | '))
+    await close()
+  }
+
+  // ---------------- F63: rank 39's report — "Pending retirements: Operator #4471 — <your name>" ----------------
+  for (const [name, want] of [[NAME, en.payslip.pendingRetirements.value.replace('{name}', NAME)], [null, en.payslip.pendingRetirements.noName]]) {
+    const { page, errors, close } = await device(xpFor(payslip.pendingRetirementRank) - 50, { name })
+    await allSeen(page, ['lesson:unlock-upgrades'])
+    await page.reload(); await page.locator('.kit-art-stage').waitFor()
+    await startShift(page)
+    await endShift(page)
+    const rows = await page.locator('.kit-end .kit-stat-row').allInnerTexts()
+    const row = rows.find((t) => t.includes(en.payslip.pendingRetirements.label)) ?? ''
+    check(`rank ${payslip.pendingRetirementRank} report${name ? '' : ' (never signed)'}: "${en.payslip.pendingRetirements.label}: ${want}" is the last row`,
+      row.includes(want) && rows.at(-1) === row, rows.join(' | ').replace(/\n/g, ' '))
+    await page.screenshot({ path: `${OUT}/pending-retirements${name ? '' : '-unsigned'}-390x844.png` })
+    check('pending retirements: no page errors', errors.length === 0, errors.join(' | '))
+    await close()
+  }
+  {
+    const { page, close } = await device(xpFor(payslip.pendingRetirementRank - 2) + 10, { name: NAME })
+    await allSeen(page, ['lesson:unlock-upgrades'])
+    await page.reload(); await page.locator('.kit-art-stage').waitFor()
+    await startShift(page)
+    await endShift(page)
+    const rows = await page.locator('.kit-end .kit-stat-row').allInnerTexts()
+    check(`rank ${payslip.pendingRetirementRank - 2} report: no pending retirements yet`, !rows.some((t) => t.includes(en.payslip.pendingRetirements.label)))
     await close()
   }
 
