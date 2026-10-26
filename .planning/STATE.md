@@ -1,5 +1,5 @@
 ## ▶ RESUME HERE
-2026-10-26 — **Sprint 22 planned + started: F64 — The final shift (rank 50, the boss level).** A helper builds tasks 1–4 (rules + finalShift.json, bot pace proof, the Veteran dropping in + shrinking, the galaxy-black look) and STOPS before the valve panel — **Muzzy designs the valve mini-game first (task 5, his words: "let's stop before you code that")**. Sprint 21 archived (F45 — Ranks 40–49 story ✅, retro: Claude's draft approved). F54 — Offline install + replace v1 waits for the 1.0 /deliver.
+2026-10-26 — **Sprint 22 planned + started: F64 — The final shift (rank 50, the boss level), 8 tasks.** A helper builds tasks 1–4 (rules + finalShift.json, bot pace proof, the Veteran dropping in + shrinking, the galaxy-black look) and STOPS before the valve panel — **Muzzy designs the valve mini-game first (task 5, his words: "let's stop before you code that")**. Sprint 21 archived (F45 — Ranks 40–49 story ✅, retro: Claude's draft approved). F54 — Offline install + replace v1 waits for the 1.0 /deliver.
 
 
 ## Where we are

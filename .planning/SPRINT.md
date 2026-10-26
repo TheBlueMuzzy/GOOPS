@@ -12,9 +12,8 @@ Check: unit tests (black merges/seals everything, valve counting + pause, the th
 - [ ] 🤖 4. The galaxy-black look: black goop + black cracks with shimmering stars, Jelly and Particle — src/goo/shared/palette.ts
 - [ ] 🙋 5. Muzzy designs the valve mini-game (how opening each stage works) — .planning/design/story.md
 - [ ] 🤖 6. The release-valve panel at the console mid-shift: "valve's open on your console — go!", Muzzy's mini-game from task 5, the shift slowed like repairs, the hatch from F45 — Ranks 40–49 story opens — src/ui/RepairPanels.tsx
-- [ ] 🤖 7. Rank 50's story moment (MON → him, design/story.md row 50) + the win (placeholder "the valve opens" until F65 — The ending) and the lose screens — content/story/moments.json
+- [ ] 🤖 7. Rank 50's story moment (MON → him, design/story.md row 50) + the win (placeholder "the valve opens" until F65 — The ending) and the lose screens; then update design/story.md (final shift built), GDD, TDD (data file + decisions; next free D26) — content/story/moments.json
 - [ ] 🤖 8. e2e: the final shift at every portrait size — black goop, his help + shrink, each valve stage, each loss, the win — e2e/final-shift.mjs
-- [ ] 🤖 9. Update design/story.md (final shift built), GDD, TDD (data file + decisions; next free D26) — .planning/design/story.md
 
 ## Notes
 - Muzzy 2026-10-26: Sprint 22 plan OK ("/develop").
