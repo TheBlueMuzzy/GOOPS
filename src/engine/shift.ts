@@ -726,9 +726,9 @@ class Shift implements ShiftEngine {
   }
 
   // F43 Crack Matcher: with chance crackColorBias, a newly made piece takes the colour of the lowest open crack not yet
-  // plugged (cracks.ts lowestOpenCrack; a two-colour piece: its main colour's cells; a wild piece stays wild). It's the piece made for
-  // the NEXT window, so the window shows it. One extra roll, only when the chance is above 0 and there is such a crack
-  // — without the upgrade the same seed makes the same pieces. (Goop Colorizer, if running, still wins after this.)
+  // plugged (cracks.ts lowestOpenCrack; a two-colour piece: its main colour's cells; a wild piece stays wild). It's the
+  // piece made for the NEXT window, so the window shows it. One extra roll, only when the chance is above 0 and there is
+  // such a crack — without the upgrade the same seed makes the same pieces. (Goop Colorizer, if running, wins after this.)
   private matchCrack(def: PieceDef): PieceDef {
     const bias = this.mods.crackColorBias
     if (bias <= 0 || this.training || mainColor(def) === null) return def

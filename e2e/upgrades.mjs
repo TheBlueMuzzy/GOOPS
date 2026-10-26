@@ -16,7 +16,12 @@
 // full, a tap and F fire it), and the cards' level number ("2/4"). Shots also in ~/Documents/dev/.scratch/goops-upgrades-2/.
 // F42 (Sprint 19): one charge button per equipped active — 1, 2 and 3 equipped at every portrait size (abilitiesAt), the
 // layout switch live (abilityLayouts). Shots: e2e-shots/upgrades/abilities-<n>-<size>.png.
-// Run: node e2e/upgrades.mjs [shop | shift | abilities]  (own dev server on port 5345; no part = all)
+// F43 + F48 (Sprint 20, part 'f43'): the ranks 10–38 upgrades MEASURED in a real shift — Junk Uniformer, Goop Swap (a
+// real held key and a real held mouse), Sealing Bonus, Tougher Tank, Slow Cracks, Crack Matcher (max level vs none, from
+// the SAME moment of the same shift: a snapshot of one restored into the other) — Quick Fix 2 at the console (2 fewer
+// steps; with the max machine fixes still never below 1), and every Upgrades card fitting at every portrait size
+// (390x844, 360x780, 1100x800, 1440x900, 1920x1080 — never sideways). Shots: e2e-shots/upgrades/f43-*.png.
+// Run: node e2e/upgrades.mjs [shop | shift | abilities | f43]  (own dev server on port 5345; no part = all)
 import { chromium } from 'playwright-core'
 import { checkVersion, skipFirstDay } from './start.mjs'
 import { spawn } from 'node:child_process'
@@ -43,7 +48,8 @@ const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} 
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]))
 const ORDER = ['circuitStabilizer', 'autoPopper', 'capacitorEfficiency', 'cooldownBooster', 'gearLubrication', 'focusMode', 'denseGoop', 'pressureControl',
-  'goopDump', 'activeSlot', 'goopColorizer', 'crackDown', 'activeSlot2'] // (F42: the actives and slots of ranks 15–38)
+  'junkUniformer', 'goopSwap', 'goopDump', 'sealingBonus', 'activeSlot', 'tougherTank', 'goopColorizer', 'quickFix', 'slowCracks', 'crackMatcher',
+  'crackDown', 'activeSlot2'] // (F42: the actives and slots of ranks 15–38; F43 / F48: the rest of ranks 10–38)
 const ABOVE_9 = ORDER.slice(8) // locked at rank 9 too
 
 // a device with this save, on the console
@@ -219,7 +225,9 @@ async function measureShift() {
     consoleTimeScaleMult: byLevel('focusMode', 'consoleTimeScaleMult'), fallSpeedMult: byLevel('denseGoop', 'fallSpeedMult'),
     pressureRiseTimeMult: byLevel('pressureControl', 'pressureRiseTimeMult'),
   }
-  check('nothing owned: every modifier is 1', Object.values(base.modifiers).every((v) => v === 1), JSON.stringify(base.modifiers))
+  // (F43: the two chances are 0 when off, every multiplier 1)
+  const CHANCES = ['junkSameColorChance', 'crackColorBias']
+  check('nothing owned: every modifier is neutral (multipliers 1, chances 0)', Object.entries(base.modifiers).every(([k, v]) => v === (CHANCES.includes(k) ? 0 : 1)), JSON.stringify(base.modifiers))
   for (const [name, value] of Object.entries(want)) check(`owned: the running shift's ${name} = ${value}`, Math.abs(m[name] - value) < 1e-9, String(m[name]))
   console.log('     measured (nothing owned → owned):', JSON.stringify({ base: { ...base, modifiers: undefined }, owned: { ...up, modifiers: undefined } }))
   check('Pressure Control 4: pressure rises 1.2× slower', near(base.pressureRise / up.pressureRise, want.pressureRiseTimeMult), ratioLine(base.pressureRise / up.pressureRise, want.pressureRiseTimeMult))
@@ -531,10 +539,233 @@ async function levelNumbers() {
   }
 }
 
+// ============ F43 + F48 (Sprint 20): ranks 10–38 MEASURED in a real shift ============
+// Two rank-40 saves that differ only in the F43 passives (both own Cooldown Booster 1, equipped, for Sealing Bonus to
+// charge): BASE owns nothing else, MAX owns Junk Uniformer, Goop Swap, Sealing Bonus, Tougher Tank, Slow Cracks and
+// Crack Matcher at level 4. Same seed (?seed=7), so both shifts start the same. Each measurement starts from ONE moment
+// of the base shift (its snapshot, restored into the other engine — restore keeps an engine's own modifiers), so only
+// the upgrades differ. Shifts held under the pause menu, the engine moved by hand (window.__goops.engine).
+const F43_MAX = { junkUniformer: 4, goopSwap: 4, sealingBonus: 4, tougherTank: 4, slowCracks: 4, crackMatcher: 4 }
+const rank40Save = (owned, equipped = []) => JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: Object.values(owned).reduce((a, b) => a + b, 0), owned, equipped })
+const F43_BASE_SAVE = rank40Save({ cooldownBooster: 1 }, ['cooldownBooster'])
+const F43_MAX_SAVE = rank40Save({ cooldownBooster: 1, ...F43_MAX }, ['cooldownBooster'])
+const valueAt = (id, modifier, level) => upgradesJson.upgrades.find((x) => x.id === id).effects.find((e) => e.modifier === modifier).byLevel[level - 1]
+const WILD = 255
+
+// the junk on the floor at the shift's start: the share of it in its most common colour
+const junkShare = (page) => page.evaluate(() => {
+  const s = window.__goops.engine.state, row = [...s.grid.slice((s.height - 1) * s.width, s.height * s.width)].filter((c) => c !== 0)
+  const counts = {}
+  for (const c of row) counts[c] = (counts[c] ?? 0) + 1
+  return { cells: row.length, share: Math.max(...Object.values(counts)) / row.length, row: row.join('') }
+})
+// a moment of the base shift with at least one open crack (ticked by hand until there is one)
+const openCrackMoment = (page) => page.evaluate(() => {
+  const e = window.__goops.engine, s = e.state
+  for (let t = 0; t < 120000 && !s.cracks.some((c) => !c.plugged); t += 100) e.tick(100)
+  return e.snapshot()
+})
+// everything measured from a moment (snap), in one go
+const measureFrom = (page, snap) => page.evaluate(({ snap, WILD }) => {
+  const e = window.__goops.engine, s = e.state, out = {}
+  const from = (change) => { const x = structuredClone(snap); change?.(x); e.restore(x); e.takeEvents() }
+  // Tougher Tank: integrity lost in 0.5 s with the open cracks there (no new crack, no growth in that time)
+  from((x) => { x.inner.crackTimerMs = 0; for (const c of x.state.cracks) if (c.growMs) c.growMs = c.growMs.map(() => 1e9) })
+  { const i0 = s.integrity; e.tick(500); out.wear = i0 - s.integrity }
+  // Slow Cracks: ms from a crack (timer at 0) to the next one
+  from((x) => { x.inner.crackTimerMs = 0 })
+  { let ms = 0; while (ms < 60000 && !e.takeEvents().some((v) => v.type === 'crack')) { e.tick(10); ms += 10 } out.nextCrackMs = ms }
+  // Crack Matcher: 12 new pieces (each fast-dropped, the tank spun between), and how many came in the lowest open crack's
+  // colour (most of their cells; a wild one doesn't count)
+  from()
+  {
+    const lowest = () => { let best = null, by = -1; for (const c of s.cracks) { if (c.plugged) continue; const y = Math.max(...(c.cells ?? [[c.x, c.y]]).map((p) => p[1])); if (y > by) { best = c; by = y } } return best }
+    let match = 0, total = 0
+    for (let i = 0; i < 12 && s.status === 'playing' && s.phase === 'playing'; i++) {
+      for (let k = 0; k < 4; k++) e.act({ type: 'spin', dir: 1 })
+      e.act({ type: 'softDrop', on: true })
+      let ms = 0, spawned = false
+      while (!spawned && ms < 20000) { e.tick(16); ms += 16; spawned = e.takeEvents().some((v) => v.type === 'spawn') }
+      const c = lowest(), next = s.next
+      if (!spawned || !c || !next || next.includes(WILD)) continue
+      total++
+      const n = next.filter((v) => v === c.color).length
+      if (n > 0 && next.every((v) => next.filter((w) => w === v).length <= n)) match++
+    }
+    out.matcher = { match, total }
+  }
+  // Sealing Bonus: a crack covered by full, ready goop of its colour (put there by hand — every cell of it if it grew),
+  // the active at 0 — one pop seals it; the charge it gave (a grown crack: one seal a cell)
+  from((x) => {
+    const c = x.state.cracks.find((k) => !k.plugged && (k.cells ?? [[k.x, k.y]]).every(([cx, cy]) => x.state.grid[cy * x.width + cx] === 0))
+    if (!c) return
+    const cells = (c.cells ?? [[c.x, c.y]]).map(([cx, cy]) => cy * x.width + cx), id = x.inner.nextGroupId
+    for (const i of cells) x.state.grid[i] = c.color
+    x.state.groups.push({ id, color: c.color, cells, fill: 1, ready: true })
+    x.inner.fillMs.push([id, 1e9]); x.inner.nextGroupId = id + 1
+    c.plugged = true
+    x.state.pressure = 0.95
+    x.state.abilities[0].charge = 0; x.state.abilities[0].ready = false
+    out.sealCrack = c.id
+    out.sealCells = cells.length
+  })
+  if (out.sealCrack !== undefined) {
+    const c = s.cracks.find((k) => k.id === out.sealCrack)
+    const c0 = s.abilities[0].charge
+    e.act({ type: 'pop', x: c.x, y: c.y })
+    const pop = e.takeEvents().find((v) => v.type === 'pop')
+    out.sealed = pop?.sealed ?? []
+    out.sealCharge = s.abilities[0].charge - c0
+  }
+  e.restore(snap)
+  return out
+}, { snap, WILD })
+
+// Goop Swap: how long a REAL hold takes to swap — a held R key (the HUD's Swap bar) and a held mouse button on the tank
+// (the ring beside it). The time from the press to the engine's 'hold' action, on the page's clock.
+async function swapTimes(page) {
+  await page.evaluate(() => {
+    const e = window.__goops.engine, act = e.act.bind(e)
+    window.__swapAt = null
+    e.act = (a) => { if (a.type === 'hold' && window.__swapAt === null) window.__swapAt = performance.now(); return act(a) }
+  })
+  const timeOne = async (press, release, extra) => {
+    await page.evaluate(() => { window.__swapAt = null; window.__pressAt = performance.now() })
+    await press()
+    let sawTimer = false
+    for (let i = 0; i < 40 && !(await page.evaluate(() => window.__swapAt !== null)); i++) {
+      await page.waitForTimeout(50)
+      if (!sawTimer) sawTimer = await extra()
+    }
+    await release()
+    await page.waitForTimeout(150)
+    return { ms: await page.evaluate(() => window.__swapAt === null ? null : Math.round(window.__swapAt - window.__pressAt)), sawTimer }
+  }
+  const key = await timeOne(() => page.keyboard.down('KeyR'), () => page.keyboard.up('KeyR'),
+    () => page.evaluate((name) => [...document.querySelectorAll(`[aria-label="${name}"]`)].some((el) => el.getBoundingClientRect().width > 0), en.hud.swap))
+  // (the mouse on the tank, right of centre and low — empty water, not goop: a hold, not a zap)
+  const box = await page.locator('[data-testid="stage"]').boundingBox()
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.35)
+  const mouse = await timeOne(() => page.mouse.down(), () => page.mouse.up(),
+    () => page.evaluate(() => { const r = document.querySelector('[data-testid="swap-ring"]'); return !!r && getComputedStyle(r).display !== 'none' && getComputedStyle(r).visibility !== 'hidden' && Number(getComputedStyle(r).opacity) > 0 }))
+  return { key, mouse }
+}
+
+async function measureF43() {
+  const base = await inShift(F43_BASE_SAVE), max = await inShift(F43_MAX_SAVE)
+  const junk0 = await junkShare(base.page), junk1 = await junkShare(max.page)
+  await hold(base.page); await hold(max.page)
+  const mods = await max.page.evaluate(() => window.__goops.engine.snapshot().options.modifiers)
+  const want = {
+    junkSameColorChance: valueAt('junkUniformer', 'junkSameColorChance', 4), swapHoldTimeMult: valueAt('goopSwap', 'swapHoldTimeMult', 4),
+    abilityChargePerSealMult: valueAt('sealingBonus', 'abilityChargePerSealMult', 4), integrityDrainMult: valueAt('tougherTank', 'integrityDrainMult', 4),
+    crackEveryMult: valueAt('slowCracks', 'crackEveryMult', 4), crackColorBias: valueAt('crackMatcher', 'crackColorBias', 4),
+  }
+  for (const [name, value] of Object.entries(want)) check(`F43 max: the running shift's ${name} = ${value}`, Math.abs(mods[name] - value) < 1e-9, String(mods[name]))
+  check('Junk Uniformer 4: more of the starting junk shares one colour (same seed)', junk1.cells === junk0.cells && junk1.share > junk0.share,
+    `${junk0.row} (${Math.round(junk0.share * 100)}%) → ${junk1.row} (${Math.round(junk1.share * 100)}%)`)
+  const moment = await openCrackMoment(base.page)
+  const m0 = await measureFrom(base.page, moment), m1 = await measureFrom(max.page, moment)
+  console.log('     F43 measured (none → max):', JSON.stringify({ none: m0, max: m1 }))
+  check('Tougher Tank 4: open cracks wear the tank 0.5× as fast', m0.wear > 0 && near(m1.wear / m0.wear, want.integrityDrainMult, 0.01), ratioLine(m1.wear / m0.wear, want.integrityDrainMult))
+  check('Slow Cracks 4: the next crack comes ~1.6× later', m1.nextCrackMs / m0.nextCrackMs > 1.45 && m1.nextCrackMs / m0.nextCrackMs < 1.75, `${m0.nextCrackMs} → ${m1.nextCrackMs} ms`)
+  check('Crack Matcher 4: every new piece comes in the lowest open crack’s colour', m1.matcher.total >= 6 && m1.matcher.match === m1.matcher.total, JSON.stringify(m1.matcher))
+  check('…and without it, far fewer do', m0.matcher.total >= 6 && m0.matcher.match / m0.matcher.total < 0.6, JSON.stringify(m0.matcher))
+  const perSeal = (m, mult) => Math.min(1, m.sealCells * 0.25 * mult) // (Cooldown Booster: 0.25 a sealed cell)
+  check('Sealing Bonus 4: a seal charges Cooldown Booster 0.25 → 0.4 a cell (× 1.6)', m0.sealed?.length === 1 && m1.sealed?.length === 1
+    && Math.abs(m0.sealCharge - perSeal(m0, 1)) < 1e-6 && Math.abs(m1.sealCharge - perSeal(m1, want.abilityChargePerSealMult)) < 1e-6,
+    `${m0.sealCells} cell(s): ${m0.sealCharge} → ${m1.sealCharge}`)
+  // Goop Swap: real input, the shift running (let go of the pause)
+  await letGo(base.page); await letGo(max.page)
+  const s0 = await swapTimes(base.page), s1 = await swapTimes(max.page)
+  console.log('     Goop Swap (none → max):', JSON.stringify({ none: s0, max: s1 }))
+  check('Goop Swap: without it a held R swaps after ~1.5 s, the Swap bar showing', s0.key.ms > 1400 && s0.key.ms < 1800 && s0.key.sawTimer, JSON.stringify(s0.key))
+  check('Goop Swap 4: a held R swaps after ~0.5 s, the Swap bar showing', s1.key.ms > 400 && s1.key.ms < 800 && s1.key.sawTimer, JSON.stringify(s1.key))
+  check('Goop Swap 4: a held mouse on the tank swaps after ~0.5 s (vs ~1.5 s), the ring showing', s0.mouse.ms > 1400 && s1.mouse.ms > 400 && s1.mouse.ms < 800 && s1.mouse.sawTimer,
+    `${JSON.stringify(s0.mouse)} → ${JSON.stringify(s1.mouse)}`)
+  check('F43 measuring: no page errors', !base.errors.length && !max.errors.length, [...base.errors, ...max.errors].join(' | '))
+  await base.close(); await max.close()
+}
+
+// F48 Quick Fix at the console mid-shift: each machine broken (the DEV hook) → its repair panel's steps
+async function quickFix() {
+  const stepsWith = async (owned, name) => {
+    const d = await inShift(rank40Save(owned))
+    await d.page.keyboard.press('KeyW')
+    await d.page.locator('[data-tag="panel-visor"]').waitFor({ state: 'attached', timeout: 5000 })
+    await d.page.waitForTimeout(1200) // (the slide)
+    await d.page.evaluate(() => { for (const id of ['laser', 'visor', 'controls']) window.__goops.breakMachine(id) })
+    await d.page.waitForTimeout(400)
+    const steps = await d.page.evaluate(() => Object.fromEntries(['laser', 'visor', 'controls'].map((id) => [id, Number(document.querySelector(`[data-tag="panel-${id}"]`)?.dataset.steps)])))
+    if (name) await shot(d.page, name)
+    check(`Quick Fix (${JSON.stringify(owned)}): no page errors`, d.errors.length === 0, d.errors.join(' | '))
+    await d.close()
+    return steps
+  }
+  const none = await stepsWith({}), qf2 = await stepsWith({ quickFix: 2 }, 'f43-quickfix2-panels-390x844')
+  const qf1 = await stepsWith({ quickFix: 1 })
+  const all = await stepsWith({ quickFix: 2, circuitStabilizer: 4, capacitorEfficiency: 4, gearLubrication: 4 })
+  check('Quick Fix 0: the repairs take 4 / 3 / 4 steps', JSON.stringify(none) === JSON.stringify({ laser: 4, visor: 3, controls: 4 }), JSON.stringify(none))
+  check('Quick Fix 1: every repair 1 step shorter (3 / 2 / 3)', JSON.stringify(qf1) === JSON.stringify({ laser: 3, visor: 2, controls: 3 }), JSON.stringify(qf1))
+  check('Quick Fix 2: every repair 2 steps shorter (2 / 1 / 2)', JSON.stringify(qf2) === JSON.stringify({ laser: 2, visor: 1, controls: 2 }), JSON.stringify(qf2))
+  check('Quick Fix 2 + every machine fix at max: never below 1 step (1 / 1 / 1)', JSON.stringify(all) === JSON.stringify({ laser: 1, visor: 1, controls: 1 }), JSON.stringify(all))
+}
+
+// Every Upgrades card at every portrait size, at rank 40 with levels in the new ones (green cards, max lines, Quick
+// Fix's count line): breathing room in every card, nothing wider than its box, no card grew; shots at the top, at the
+// new cards (Junk Uniformer, Tougher Tank, Crack Matcher) and at the end. Then buy / take back a level of each new one
+// (the card keeps its size).
+const F43_SHOP_SAVE = rank40Save({ circuitStabilizer: 4, cooldownBooster: 1, junkUniformer: 2, goopSwap: 4, sealingBonus: 1, tougherTank: 3, quickFix: 2, slowCracks: 1, crackMatcher: 4 }, ['cooldownBooster'])
+const F43_SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
+async function shopCardsAt(width, height) {
+  const tag = `${width}x${height}`
+  const { page, errors, close } = await device(F43_SHOP_SAVE, { width, height })
+  await openShop(page)
+  const titles = await page.locator('.kit-modal .kit-card-title').allTextContents()
+  check(`${tag}: every upgrade's card, in rank order, none locked at rank 40`, JSON.stringify(titles) === JSON.stringify(ORDER.map((id) => items[id].name)), titles.join(', '))
+  // (the number line: the card's label text with an arrow or "(max)")
+  const amount = (id) => card(page, id).locator('.kit-text[data-kind="label"]').filter({ hasText: /→|\(max\)/ }).textContent()
+  check(`${tag}: the new cards' number lines — Junk Uniformer "+20% → +30%", Goop Swap "−67% (max)", Quick Fix "2 (max)", Crack Matcher "+100% (max)"`,
+    await amount('junkUniformer') === '+20% → +30%' && await amount('goopSwap') === '−67% (max)' && await amount('quickFix') === '2 (max)' && await amount('crackMatcher') === '+100% (max)',
+    `${await amount('junkUniformer')} · ${await amount('goopSwap')} · ${await amount('quickFix')} · ${await amount('crackMatcher')}`)
+  const room = await roomProblems(page)
+  check(`${tag}: breathing room in every card, nothing wider than its box`, room.length === 0, room.join(' | '))
+  // one line each: the number line never wraps (the card stays its fixed size)
+  const wrapped = await page.evaluate(() => [...document.querySelectorAll('.kit-modal .kit-card .kit-text[data-kind="label"]')].filter((el) => /→|\(max\)/.test(el.textContent)).filter((el) => {
+    const r = document.createRange(); r.selectNodeContents(el); return new Set([...r.getClientRects()].map((x) => Math.round(x.top))).size > 1
+  }).map((el) => el.closest('.kit-card').querySelector('.kit-card-title').textContent))
+  check(`${tag}: every number line on one line`, wrapped.length === 0, wrapped.join(', '))
+  await shot(page, `f43-shop-top-${tag}`)
+  for (const id of ['junkUniformer', 'tougherTank', 'crackMatcher']) {
+    await card(page, id).evaluate((el) => el.scrollIntoView({ block: 'center' }))
+    await shot(page, `f43-shop-${id}-${tag}`)
+  }
+  await scrollList(page, 'end')
+  await shot(page, `f43-shop-end-${tag}`)
+  // buy / take back a level of each new upgrade: the card keeps its size
+  for (const id of ['junkUniformer', 'sealingBonus', 'tougherTank', 'slowCracks']) {
+    const before = await size(card(page, id))
+    await buy(page, id).click()
+    await page.waitForTimeout(120)
+    const bought = await size(card(page, id))
+    await takeBack(page, id).click()
+    await page.waitForTimeout(120)
+    check(`${tag}: ${items[id].name} — buy then take back a level, the card keeps its size`, bought === before && (await size(card(page, id))) === before, `${before} → ${bought}`)
+  }
+  check(`${tag}: no card grew`, (await growth(page)).length === 0, (await growth(page)).join(' | '))
+  check(`${tag}: no page errors`, errors.length === 0, errors.join(' | '))
+  await close()
+}
+
 const part = process.argv[2] // 'shop' = the screen only · 'shift' = the measuring, the HUD buttons, the level number
-// · 'abilities' = F42's charge buttons only · none = all
+// · 'abilities' = F42's charge buttons only · 'f43' = Sprint 20's upgrades only · none = all
 try {
-  if (part === 'abilities') {
+  if (part === 'f43' || !part) {
+    await measureF43()
+    await quickFix()
+    for (const [width, height] of F43_SIZES) await shopCardsAt(width, height)
+  }
+  if (part === 'f43') { /* (Sprint 20's part only) */ } else if (part === 'abilities') {
     for (const n of [1, 2, 3]) for (const [width, height] of F42_SIZES) await abilitiesAt(n, width, height)
     await abilityLayouts()
   } else if (part !== 'shop') {
@@ -546,7 +777,7 @@ try {
     await abilityLayouts()
     await levelNumbers()
   }
-  if (part !== 'shift' && part !== 'abilities') {
+  if (part !== 'shift' && part !== 'abilities' && part !== 'f43') {
   // ---------------- rank 5: buy → reload → still owned → take back ----------------
   {
     const { page, errors, close } = await device(V1_RANK5)
