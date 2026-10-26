@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch (BMUZ). The planner's Sketches tab uses the title as the tab name and the description as its blurb. -->
+<title>Ability buttons layout</title>
+<meta name="description" content="Where do 1 to 3 active-ability charge buttons go in the in-shift HUD? Four layouts drawn at the real HUD's sizes (phone 360 and 390, desktop 1440): A small rings in the top row, B a column beside the tank, C in the bottom panel sharing the bars' row, C+ in the panel on their own row. Watch them charge, tap a bright one to fire, and read the fit report above the screen.">
+<style>
+  @font-face { font-family: 'Nokia Cellphone FC'; src: url(data:font/ttf;base64,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BgAAAAYAAAAGAAAABgAAAAYAAAAGAAAAAwAAAAUAAAAHAAAABQAAAAgAAAAHAAAABwAAAAYAAAAHAAAABgAAAAUAAAAHAAAABgAAAAcAAAAIAAAABwAAAAcAAAAGAAAABgAAAAYAAAAGAAAABQAAAAYAAAAGAAAABAAAAAYAAAAGAAAAAwAAAAQAAAAGAAAAAwAAAAkAAAAGAAAABgAAAAYAAAAGAAAABQAAAAUAAAAEAAAABgAAAAYAAAAIAAAABgAAAAYAAAAGAAAAAwAAAAQAAAAGAAAABgAAAAcAAAAHAAAAAgAAAAQAAAAEAAAABgAAAAYAAAADAAAABQAAAAMAAAAEAAAAAwAAAAMAAAAFAAAABQAAAAUAAAAGAAAABAAAAAQAAAAEAAAABgAAAAQAAAADAAAABAAAAAYAAAAGAAAABgAAAAYAAAAGAAAABgAAAAYAAAAGAAAABgAAAAYAAAAGAAAABgAAAAUAAAAGAAAABgAAAAYAAAAGAAAAAwAAAAMAAAADAAAAAwAAAAQAAAAGAAAABwAAAAcAAAAHAAAABgAAAAYAAAAGAAAABgAAAAYAAAAHAAAABAAAAAYAAAAHAAAAAwAAAAcAAAAFAAAABgAAAAYAAAAGAAAABAAAAAYAAAAGAAAABgAAAAgAAAAIAAAABgAAAAYAAAAGAAAABgAAAAQAAAAEAAAABAAAAAQAAAAHAAAABgAAAAYAAAAGAAAABgAAAAYAAAAGAAAABwAAAAIAAAADAAAABgAAAAYAAAAEAAAAAwAAAAcAAAAGAAAABgAAAAYAAAADAAAABwAAAAYAAAAGAAAABAAAAAcAAAAGAAAAAAEAAAAABQAHAAARAAARIREhESERIREhESERIREhESEBAAIA/QAEAAEA/wD+AAMA+wADAAEAAgABAP8A/gD/AP4A/wAAAgAAAAAFAAcAAAMAEwAAASERIQERIREhESERIREhESERIRECAAEA/wD/AAIA/gD/AAEAAwABAP8AAwADAPoAAQABAAEAAwABAP8A+wD/AAABAAAAAAUABwAAEwAAESERIREhESERIREhESERIREhESEEAAEA/wABAP8A/AADAP4AAgD9AAcA/wD+AP8A/gD/AAEAAgABAAIAAAAAAgAAAAAFAAcAAAMAEgAAASERKQEjJzUhESERIREhESERIQIA/wABAAEA/gIBAAIA/gD9AAEAAgAEAAEAAv4BAPkAAgACAP8AAAAAAAEAAAAABQAHAAAPAAABESERIREhESERIREhESERBQD/APwAAwD9AAQA/QADAAQA/QD/AAEAAwADAP8A/wD/AAACAAAAAAUABwAAAwATAAABESERIREhESERIREhESERIREhEQIAAQACAP8A/QD/AAEAAwD+AAIABAD9AAMA/QD/AAEABQABAP8A/wD/AAAAAAEAAAAABQAHAAANAAABIREhESERIREhESERIQEAAQABAP0ABQD/AP8A/gADAAIAAQABAP4A/gD9AAAAAAMAAAAABQAHAAADAAcAGwAAAREhEQERIREBESERIREhESERIREhESERIREhEQMA/wABAP8AAwD/AP0A/wABAP8AAQADAAEA/wAEAAIA/gD9AAIA/gACAP4A/wABAAIAAQACAAEA/wD+AP8AAAMAAAAABQAHAAADAAcAEwAAASERIQEhESEBESERIREhESERIRECAAEA/wABAP8AAQABAAEA/wABAP8A/AAFAAEA/gD9AAYA/wD/AP8A/QD/AAcAAAEAAAAABQAHAAALAAABIREhESERIREhESEBAAQA/QADAPwA/wABAAcA/wD7AP8AAQAFAAACAAAAAAUABwAAAwALAAABESERAREhESERIREDAP8AAgABAP8A/AABAAUA+wAGAP8A+wD/AAcAAAEAAAAABQAHAAAJAAABESERIREhESERBAD+AP4ABQD9AAUA/wD8AAcA/wD/AAAAAAIAAAAABQAHAAALAA8AAAERIREhESERIREhEQERIRECAP4AAQADAAEA/gD/AAEAAgD+AAYAAQD/APoAAgAEAP0AAwAAAQAAAAAFAAcAAA0AAAEhESERIREhESERIREhAQADAP4AAQACAPwA/wABAAcA/wD7AAMA/AABAAUAAAAAAQAAAAAFAAcAAAsAABEhESERIREhESERIQIAAQACAP4A/wD+AAcA/gACAPkABAD8AAAAAAEAAAAAAgAHAAADAAAxESERAgAHAPkAAAEAAAAABAAHAAAHAAAxESERIREhEQIAAgD/AAEABgD6AP8AAAEAAAAABgAHAAAbAAABIREhESERIREhESERIREhESERIREhESERIREhBAD/AP8A/gACAAEAAQACAP8A/wD/AAEAAQABAP4AAQABAP4ABwD+AAEAAQD/AP8A/wD/AP8A/wD/AAABAAAAAAQABwAABQAAESERIREhAgACAPwABwD6AP8AAAEAAAAABwAHAAAXAAABIREhESERIREhESERIREhESERIREhESEFAP8A/wD/AP4AAQABAAEAAQABAAEAAQD+AAMA/wABAP0ABwD/AP8A/wABAAEAAQD5AAABAAAAAAYABwAAEwAAIREhESERIREhESERIREhESERIREFAP8A/wD/AP4AAQABAAEAAQACAAEAAQABAP0ABwD/AP8A/wADAPkAAAAAAgAAAAAGAAcAAAMADwAAAREhEQERIREhESERIREhEQQA/gD/AP8AAQAEAAEA/wABAAUA+wD/AAEABQABAP8A+wD/AAACAAAAAAUABwAAAwANAAABESERAREhESERIREhEQMA/wACAAEA/wD+AP4AAwADAP0ABAD/AP0A/wD+AAcAAAAAAgAA/wAGAAcAAAUAFQAAAREhESERASERIREhESERIREhESERIQMAAQD+AAIA/QD/AAEABAABAP8AAQD+AAEAAQAEAPsA/wABAAUAAQD/APsA/wD/AAAAAAIAAAAABQAHAAADABEAAAERIREBESERIREhESERIREhEQMA/wADAP4A/wD+AAQAAQD/AAMAAwD9AP4A/wACAP4ABwD/AP0A/gAAAAABAAAAAAQABwAAEwAAESERIREhESERIREhESERIREhESECAP8A/wABAAMA/gABAAEA/wD9AAEAAgABAAIAAQD/AP4A/wD+AP8AAAAAAQAAAAAGAAcAAAcAAAERIREhESERBgD+AP4A/gAHAP8A+gAGAAEAAAEAAAAABQAHAAALAAABESERIREhESERIREDAAIA/wD9AP8AAgABAAYA+gD/AAEABgD6AAABAAAAAAYABwAADwAAASERIREhESERIREhESERIQIA/wD/AAIAAgACAP8A/wD+AAIAAgADAP0AAwD9AP4A/gAAAQAAAAAHAAcAABMAAAEhESERIREhESERIREhESERIREhBQACAP8A/gD/AP4A/wACAAEAAQABAAcA/AD9AAEA/wADAAQA/QABAP8AAAEAAAAABgAHAAAbAAAxESERIREhESERIREhESERIREhESERIREhESERAQABAP8A/wACAAIAAgD/AP8AAQABAP4A/gACAAEAAQABAAIA/gACAP4A/wD/AP8A/gACAP4AAAEAAAAABgAHAAAPAAABIREhESERIREhESERIREhAgD/AP8AAgACAAIA/wD/AP4ABAABAAIA/gACAP4A/wD8AAABAAAAAAUABwAAEwAAASERIREhESERIREhESERIREhESEFAP8A/wD/AAMA+wABAAEAAQD9AAUABAD/AP8A/wD/AAMAAQABAAEAAQAAAQAAAAAFAAcAAAsAAAERIREhESERIREhEQQA/gADAPsABQD9AAUA/wD9AP8ABwD/AP8AAAIAAAAABQAFAAADABEAAAEhESEBESERIREhESERIREhEQIAAQD/AAMA/AD/AAEAAgD+AAMAAQABAAIA/AABAAEAAQABAAEA/wAAAAACAAAAAAUABwAAAwANAAABIREhAREhESERIREhEQMA/wABAAEAAQD/APwAAgAEAP0ABAD/AP0A/wAHAP4AAAAAAQAAAAAEAAUAAAsAABkBIREhESERIREhEQEAAwD+AAIA/QABAAMAAQD/AP0A/wABAAAAAAIAAAAABQAHAAADAA0AAAEhESEBESERIREhESERAwD/AAEA/gD/AAEAAgACAAQA/QD/AAEAAwABAAIA+QAAAAACAAAAAAUABQAAAwARAAABIREpAREhESERIREhESERIRECAAEA/wADAP0AAwD8AP8AAQADAAMAAQD+AP8A/wABAAMAAQD/AAABAAAAAAMABwAACwAAAREhESERIREhESERAwD/AP4AAQACAP8ABQD/APwABgABAP8A/wAAAgAA/wAFAAUAAAMAEQAAASERIQEhESERIREhESERIREhAgABAP8A/wACAP4A/wABAAQA/wD9AAIAAgD8AAEAAQACAAEA+wD/AAAAAAEAAAAABQAHAAALAAAhESERIREhESERIREDAP8A/gACAAIAAQAEAPwABwD+AP8A/AAAAAACAAAAAAIABwAAAwAHAAABIREhAREhEQIA/gACAP4AAgAGAAEA+QAFAPsAAAIAAP8AAwAHAAADAAsAAAEhESEBIREhESERIQMA/gACAP0AAQACAP8A/gAGAAEA+QAFAPsA/wAAAQAAAAAFAAcAABMAACkBESERIREhESERIREhESERIREhAgD+AAIAAQACAP8A/wABAAEA/gD/AAcA/QABAP8A/wD/AP8A/wABAAAAAAEAAAAAAgAHAAADAAARIREhAgD+AAcA+QAAAAABAAAAAAgABQAADQAAASERIREhESERIREhESEGAP8A/gD/AP4ABwABAP4ABAD8AAQA/AAFAP8A/AAAAAABAAAAAAUABQAACQAAAREhESERIREhEQUA/gD/AP4ABAAEAPwABAD8AAUA/wAAAAACAAAAAAUABQAAAwAPAAABESERAREhESERIREhESERAwD/AP8A/wABAAMAAQD/AAEAAwD9AP8AAQADAAEA/wD9AP8AAAIAAP8ABQAFAAADAA0AAAERIREBESERIREhESERAwD/AAIAAQD/AP4A/gACAAIA/gADAP8A/gD/AP4ABgAAAAACAAD/AAUABQAACQANAAABESERIREhESERAREhEQUA/gD+AP8AAQACAP8ABQD6AAIAAQACAAEA/QACAP4AAAAAAQAAAAAEAAUAAAkAADERIREhESERIRECAAEAAQD+AAUA/wABAP4A/QAAAAABAAAAAAQABQAADwAAAREhESERIREhESERIREhEQQA/wD9AAIA/gABAAMA/gADAP4A/wABAAEAAgABAP8A/wAAAQAAAAADAAcAAAsAAAERIREhESERIREhEQMA/gD/AAIAAQD/AAEA/wABAAYA/gD/AP0AAAEAAAAABQAFAAAJAAABIREhESERIREhAQD/AAIAAQACAPwAAQAEAPwABAD7AAAAAAEAAAAABQAFAAAPAAABIREhESERIREhESERIREhAgD/AP8AAgABAAIA/wD/AP8AAQACAAIA/gACAP4A/gD/AAABAAAAAAcABQAAEwAAASERIREhESERIREhESERIREhESEFAAIA/wD+AP8A/gD/AAIAAQABAAEABQD9AP4AAQD/AAIAAwD9AAIA/gAAAQAAAAAFAAUAABMAADERIREhESERIREhESERIREhESERAQD/AAIAAQACAP8AAQD+AP8AAgABAAIA/gACAP4A/wD+AAIA/gAAAQAA/wAFAAUAAA8AAAERIREhESERIREhESERIREDAAIA/wD9AAIA/gD/AAIAAgADAPsA/wABAAEAAQADAP0AAAEAAAAABQAFAAARAAARIREhESERIREhESERIREhESEFAP8A/wD/AAMA+wABAAEA/gAFAP8A/wD/AP8A/wACAAEAAQAAAgAAAAACAAcAAAMABwAAESERIQEhESECAP4AAgD+AAIAAQD/AAIABQAAAAACAAAFAAMABwAAAwAHAAABIREhASERIQIAAQD/AP4AAQD/AAcA/gACAP4AAAIAAAAABQAHAAADAB8AAAEhESEBESERIREhESERIREhESERIREhESERIREhESERAgABAP8AAwD/AAEA/wD/AP8A/wD/AAEA/wABAAEAAQABAAMAAQACAP4A/wD+AP8AAQD/AAEAAgABAAIAAQD/AAEA/wAAAwAA/wAFAAcAAAMABwAjAAABIREhGQEhGQEhESERIREhESERIREhESERIREhESERIREhESECAAEA/wABAP8A/wD/AAEA/wABAAEAAQABAAEA/wABAP8A/wAEAAEA/QD/AAEA/gD/AAEAAQACAAIAAgD/AAEA/wD/AP4A/gD+AAADAAAAAAYABwAAAwAHABcAACERIREBIREhASERIREhESERIREhESERIQQAAgD6AAIA/gAEAP8A/wD/AAEAAQABAAEA/wACAP4ABwD+AP4A/gD/AAIAAgACAAEA/fsAAAADAAAAAAYABwAAAwAHAB8AAAERIREBESERKQERIREhESERIREhESERIREhESERIREhAwD/AAEA/wADAP8A/QD/AAEA/wABAAMAAQD/AAEAAQD/AAUAAQD/APwAAgD+AP8AAQADAAEAAQABAP8A/wD+AAEA/AAAAAABAAAFAAEABwAAAwAAESERIQEA/wAHAP4AAAAAAwAA/wADAAcAAAMABwAPAAAhESEZASERIQERIREhESERAwD/AAEA/wD/AP8AAQABAP8AAQAHAP8A+gABAAQAAQD6AAADAAD/AAMABwAABwALAA8AACERIREhESERASERIRkBIREBAAEAAQD/AP8A/wABAP8ABgD/APwA/wAGAAEA+QD/AAEAAAEAAAAABQAHAAAbAAABESERIREhESERIREhESERIREhESERIREhESERBQD/AP8A/wD/AP8AAQD/AAEAAQABAAEAAQD/AAMA/gABAP4AAgD/AAIAAQACAP8AAgD+AAEA/gD/AAABAAABAAUABgAACwAAASERIREhESERIREhAwD/AP4AAgABAAIA/gABAAIAAQACAP4A/wAAAQAA/wACAAIAAAcAABEhESERIREhAQABAP8A/wABAAEA/gD/AAAAAAEAAAMABAAEAAADAAAZASERBAADAAEA/wAAAAABAAAAAAIAAgAAAwAAESERIQIA/gACAP4AAAAAAQAAAAADAAcFAAsAAAEhESERIREhESERIQIA/wD/AAEAAQABAP8AAfv+BQMAAgACBfz7AAIAAAAAAgAFAAADAAcAABEhESERIREhAgD+AAIA/gAFAP4A/wD+AAACAAD/AAIABQAABwALAAARIREhESERIREhESEBAAEA/wD/AAIA/gABAAEA/gD/AAYA/gAAAQAAAAAEAAcAABcAAAERIREhESERIREhESERIREhESERIREhEQQA/wD/AP8A/wABAAEAAQABAP8A/wABAAIA/gABAAEAAQABAAEAAQABAP4A/wD/AP8AAAIAAAEABAAEAAADAAcAABkBIREBESERBAD8AAQAAQABAP8AAgABAP8AAAAAAQAAAAAEAAcAABcAAAERIREhESERIREhESERIREhESERIREhEQEAAQD/AP8AAQABAAEAAQD/AP8A/wD/AAIAAQABAAEAAgD/AP8A/wD/AP8A/wD/AAIAAAIAAAAABQAHAAADABMAAAEhESERIREhESERIREhESERIREhAQACAP4AAQABAP0ABAABAP8A/wD+AAEA/wAEAAEAAQABAP8A/wD/AP4AAAAAAQAA/wADAAcAAAcAABEhESERIREhAwD/AAEA/QAHAP8A+gD/AAAAAAEAAAAAAwAHBQALAAABIREhESERIREhESEBAP8AAQABAAEA/wD/AAQAAwX9+/4A/QAB+wABAAD/AAMABwAABwAAASERIREhESEDAP0AAQD/AAMA/wABAAYAAQAAAQAAAAAGAAEAAAMAABEhESEGAPoAAQD/AAAAAAEAAP8AAwAHAAAHAAARIREhESERIQMA/wABAP0ABwD/APoA/wAAAAABAAD/AAIABwAAAwAAESERIQIA/gAHAPgAAAAAAQAA/wADAAcAAAcAAAEhESERIREhAwD9AAEA/wADAP8AAQAGAAEAAAMAAAAABQAHAAADAAcAFwAAASERIQEhESEBIREhESERIREhESERIREhAgABAP8A/wABAP8AAQD+AAEAAQABAAEAAQD+AP8AAwABAAMA/wD6AAQAAQABAP8A/wD8AAIAAAMAAAAABQAHAAADAAcAFwAAASERIQEhESERIREhESERIREhESERIREhAwABAP8A/wABAP8A/gABAAEAAQABAAEA/gD/AAcA/wD9AAEA/AAEAAEAAQD/AP8A/AACAAAAAAIAAAAABQAHAAADABgAAAEhESERFSERIREhESERIREhESERIREhETMCAAEA/wABAP8AAQABAAEA/gD/AP4AAQD+AwABAAH+/gEAAQD/AP8A+wACAP4ABQABAAAAAwAAAAAFAAcAAAMABwAeAAABIREhASERIQEVIREhESERIREhESERIREhESERIREzBAABAP8A/gABAP8A/wABAP8AAgABAAEA/gD/AP4AAQD/AP4HAP8A/QABAAH+/gEAAQD/AP4A/AACAP4ABAABAAEAAAACAAAAAAUABwAAAwAXAAABIREhESERIREhESERIREhESERIREhESECAAEA/wABAAEAAQD8AP8AAQACAP4AAgD/AAEAAQAFAP8A/gD8AAEAAQABAAEAAQABAAAAAAMAAAAABQAHAAADAAcAGQAAASERIQEhESEBESERIREhESERIREhESERIRECAAEA/wABAAEA/wACAPwA/wABAAIA/gABAAEAAQABAAEABQD/AP4A/AABAAEAAQABAAEAAQD/AP8AAAAAAgAAAAAFAAcAAAMAHAAAASERIREVIREhESERIREhESERIREhESERIREhETMCAAEA/wABAP8AAQABAAEA/AD/AAEAAgD9AAEA/gEAAQAD/v4BAAEA/wD/APsAAQABAAEAAQABAAEAAAADAAAAAAUABwAAAwAHACAAAAEhESEBIREhASERIREhESERIREhESERIREhESERIREzFwQAAQD/AP4AAQD/AP8AAQD/AAIAAQABAPwA/wABAAIA/gD/AP4CBwD/APsAAQADAAEAAQD/AP4A/AABAAEAAQABAAEAAQACAAAABAAAAAAFAAcAAAMABwALABkAAAEhESEBIREhASERIREhESERIREhESERIREhAgABAP8AAQABAP8A/gABAP8AAwABAPwA/wABAAIA/gABAAEABQD/AAEA/wD/AP8A/AABAAEAAQABAAACAAAAAAUABwAAAwAcAAABIREhASERIREhESMnNSERIREhESERIREhESERIQQAAQD/AP0AAQABAP8A/gICAAEAAQD/AP8A/wD+AAEABwD/AP4A/wACAAEAAv7/AP8A+wABAAEA/gAGAAAAAAACAAAAAAUABwAAAwAWAAABIREhBRUhESERIREhESERIREhESERMwQAAQD/AP0AAQD/AAIAAQABAP4A/wD+AP4HAP8AAv4BAAEA/wD+APwABAD8AAYAAAAAAQAA/wAFAAcAAA8AACkBESERIREhESERIREhESECAP8A/wABAAQA/QADAP4A/wABAAUAAQD/APsA/wD/AAAAAAEAAP8ABAAFAAAPAAApAREhESERIREhESERIREhAgD/AP8AAQADAP4AAgD/AP8AAQADAAEA/wD9AP8A/wAAAAACAAAAAAUABwAAAwATAAABIREhAREhESERIREhESERIREhEQMAAQD/AAEA/gADAPsAAgABAAIA/QAHAP8A/QD/AP8A/wAFAAEA/wD/AP8AAAEAAAAABQAHAAAXAAABIREhESERIREhESERIREhESERIREhESECAAEAAQABAP0AAgD+AAMA+wABAAEAAQD/AAcA/wD/AP8A/wD/AP8A/wAFAAEA/wABAAADAAAAAAUABwAAAwAHABkAAAEhESEBIREhAREhESERIREhESERMxEhESERAgABAP8AAQABAP8AAgD9AAMA/AD/AAEA+wEFAQADAAEAAwD/AP4A/gD/AP8AAQADAAEAAQD/AP8AAAAAAAIAAAAABQAHAAADABoAAAEhESERFSERIREhESERIREhESERIREhESERMwIAAQD/AAEA/wABAAEAAQD9AAMA/AD/AAEA/gMAAQAB/v4BAAEA/wD/AP0A/wD/AAEABAABAAAAAAACAAAAAAIABwAAAwAJAAABIREhAREhESERAQD/AAEA/wABAAEABgABAPkABQABAPoAAAAAAgAAAAACAAcAAAMACQAAASERIQERIREhEQIA/wABAP4AAQABAAYAAQD5AAYA/wD7AAAAAAIAAAAAAgAHAAADAAkAAAEhESEBESERIREBAP8AAQD/AAEAAQAGAAEA+QAFAAEA+gAAAAACAAAAAAIABwAAAwAJAAABIREhAREhESERAgD/AAEA/gABAAEABgABAPkABgD/APsAAAAAAQAABAADAAcAAAsAABEhESERIREhESERIQEAAQABAP8A/wD/AAYAAQD/AP4AAQD/AAAAAAMAAAUABQAHAAADAAcADwAAASERIQEhESERIREhESERIQQAAQD/AP0A/wABAAIAAQD+AP8ABwD/AP8AAQABAP8A/wABAAAAAAMAAAAABgAHAAADAAcAFwAAASERIQERIREBESERIREhESERIREhESERAwABAP8AAQD+AP8A/wABAAEAAQACAAEA/wAHAP8A+wADAP0A/wABAAMAAQABAP8A/wD9AP8AAAIAAAAABgAHAAADABgAAAERIRkBFSERIREhESERIREhESERIREhETMEAP4AAgD+AAIAAQABAP8A/AD/AAEA/gEAAwD9AAT+/gEAAQD/AP8A/AD/AAEABAABAAAAAwAAAAAGAAcAAAMABwAcAAABIREhAREhGQEVIREhESERIREhESERIREhESERMwUAAQD/AP8A/gABAP8AAgABAAEA/wD8AP8AAQD+BwD/APsAAwD9AAT+/gEAAQD/AP4A/QD/AAEAAwACAAAAAwAAAAAFAAcAAAMABwAXAAABIREhGQEhEQERIREhESERIREhESERIREDAAEA/wD/AP8A/wABAAEAAQABAAEA/wAHAP8A+wADAP0A/wABAAMAAQABAP8A/wD9AP8AAAAAAgAAAAAFAAcAAAMAGAAAAREhEQEhESERIREhESERIREhESERMxcVIQMA/wABAP8AAQABAAEA/wD9AP8AAQD+AgEAAQADAP0ABQABAP8A/wD8AP8AAQAEAAEAAv4AAAAAAwAAAAAFAAcAAAMABwAeAAABIREhAREhEQEVIREhESERIREhESERIREhESERIREzBAABAP8A/wD/AP8AAQD/AAIAAQABAP8A/QD/AAEA/wD+BwD/APsAAwD9AAT+/gEAAQD/AP4A/QD/AAEAAwABAAEAAAACAAAAAAUABwAAAwAUAAABIREhAREhESERIREhESERIREhESEDAAEA/wD/AAEA/wABAAIA/wD9AP8AAf4HAP8A/v78AgQAAQD/APwA/wABAAQAAAACAAAAAAUABwAAAwASAAABIREhAREhESERIREhESERIREhAwABAP8A/wABAP8AAQACAPwA/wAB/gcA/wD+/vwCBAABAP8A+wABAAQAAAAAAAMAAP8ABgAGAAADAAcAFQAAASERIREhESEBESERIREhESERIREhEQIAAQD/AAIA/gADAPwA/wABAAQAAQD8AAIAAQABAAEA+wD/AAEABQABAP8A/AD/AAABAAAAAAMABwAABwAAESERIREhESEBAAIA/gD/AAYAAQD5AAUAAAAABAAAAAAFAAcAAAMABwALABcAAAEhESEBIREhAREhEQERIREhESERIREhEQMAAQD/AP4AAQD/AAIA/wD/AP8AAQADAAEA/wAHAP8AAQD/APsAAwD9AP8AAQADAAEA/wD9AP8AAAQAAAAABgAHAAADAAcACwAXAAABIREhASERIQERIREBESERIREhESERIREEAAEA/wD9AAEA/wADAP4A/wD/AAEABAABAP8ABwD/AAEA/wD7AAMA/QD/AAEAAwABAP8A/QD/AAACAAAAAAIABwAAAwAHAAABIREhASERIQIA/gACAP4AAgD+AAYAAQD+APsAAAEAAAAABgAHAAAbAAARIREhESERIREhESERIREhESERIREhESERIREhAgD+AAEA/wACAAIAAgD/AAEA/gACAP4A/gD+AAMAAQABAAEAAQD/AAEA/wD/AP8A/wD/AP4AAgAAAAAFAAD/AAQABwAABAAJAA0AEQAlAAABNzMRIQEHIxEhASERIREhESEBIREhESERIREhESERIREhESERIQMAAv7/AP4AAv4BAAEAAQD/AP8AAQABAAEA/wD+AAEA/wD/AAEAAgD/AAEABf4C/wD7AgIBAAEAAQABAP8AAQD8AP8AAQABAAEABAABAP8A/wAAAAABAAAAAAUABwAAEwAAESERIREhESERIREhESERIREhESEBAP8AAQABAAMA/gABAP8AAgD7AAEAAQABAAMAAQD/AP0A/wD/AP8AAAAAAwAAAAAFAAcAAAMABwARAAABIREhASERIRkBIREhESERIREBAAEA/wACAAEA/wACAPwA/wACAAcA/wABAP8A+wAEAPsAAQAEAPwAAAMAAAAABQAHAAADAAcAEwAAASERIQEhESEZASERIREhESERIREBAAEA/wACAAEA/wACAP8A/QD/AAIABwD/AAEA/wD7AAQA/AD/AAEABAD8AAAAAAEAAAQAAwAHAAALAAARIREhESERIREhESEBAAEAAQD/AP8A/wAGAAEA/wD+AAEA/wAAAAACAAAAAAUABwAAAwATAAABIREhESERIREhESERIREhESERIQQA/gACAP8A/wADAPwA/wABAAEAAgAGAAEA/AD/AP8A/wABAAEAAQACAAAAAAQAAAAABQAGAAADAAcACwAfAAABIREhASERIQEhESEBIREhESERIREhESERIREhESERIQQAAQD/APwAAQD/AAMA/wABAP0AAQADAAEA/wABAP8A/QD/AAEA/wAGAP8A/AD/AAQA/gAEAP8A/wD+AP8A/wABAAEAAgABAAAEAAAAAAUABwAAAwAHAAsAFwAAASERIQEhESEBIREhASERIREhESERIREhAQABAP8AAQABAP8AAQABAP8A/wD+AAEAAwABAP4A/wAHAP8A/QABAAMA/wD6AAQAAQD/APwAAgAAAgAAAAAHAAcAAAMAFwAAASERIREhESERIREhESERIREhESERIREhAgABAP8ABQD+AAEA/wACAPwA/wD+AAEAAQAEAAEAAgD/AP4A/wD+AP8AAwD9AAUAAQAAAAACAAAAAAcABQAAAwAaAAABIREhASE1NzMRIREhESERIREhESERIREhESECAAEA/wADAAEAAv7+AAIA+gD/AAEAAgD+AAUA/wABAAEAAQD+Av4A/wD/AAEAAQABAAEAAQD/AAAAAgAAAAAFAAcAAAMAEwAAAREhEQERIREhESERIREhESERIRECAP8AAwD+AAMA+wACAAEAAgD9AAcA/wABAPwA/wD/AP8ABQABAP8A/wD/AAADAAAAAAUABwAAAwAHABMAAAERIREpAREhAREhESERIREhESERAgD/AAIAAQD/AAEA/gADAPsABQD9AAcA/wABAP8A/QD/AP8A/wAFAP8A/wAAAAADAAAAAAUABwAAAwAHABkAAAEhESEBIREhAREhESERIREhESERMxEhESERAgABAP8A/wABAP8ABAD9AAMA/AD/AAEA+wEFAQADAAEAAwD/AP4A/gD/AP8AAQADAAEAAQD/AP8AAAAAAAQAAAAABQAHAAADAAcACwAZAAABIREhASERIQEhESEBESERIREhESERIREhEQMAAQD/AP8AAQD/AP8AAQD/AAQA/QADAPwA/wABAAMABwD/AP0AAQADAP8A/gD+AP8A/wABAAMAAQD/AAAAAAMAAAAAAwAHAAADAAcACwAAASERKQIRIQERIREDAP8AAQD9AAEA/wABAAIABgABAP8A+gAFAPsAAAAAAAMAAAAAAwAHAAAEAAgADgAAATU3MxEBIREhAREhESERAgAC/v4AAQD/AP8AAQABAAUA/gL/AAIA/wD6AAYA/wD7AAAAAwAAAAADAAcAAAQACAAOAAABNTczEQEhESEBESERIRECAAL+/gABAP8A/wABAAEABQD+Av8AAgD/APoABgD/APsAAAADAAAAAAMABwAAAwAHAAsAAAEhESkCESEBESERAwD/AAEA/QABAP8AAQACAAYAAQD/APoABQD7AAAAAAADAAAAAAYABwAAAwAHABcAAAEhESEBESERAREhESERIREhESERIREhEQIAAQD/AAIA/gD/AP8AAQACAAEAAQABAP8ABwD/APsAAwD9AP8AAQADAAEAAQD/AP8A/QD/AAADAAAAAAUABwAAAwAHABcAAAEhESEBESERAREhESERIREhESERIREhEQEAAQD/AAIA/wD/AP8AAQABAAEAAQABAP8ABwD/APsAAwD9AP8AAQADAAEAAQD/AP8A/QD/AAABAAAAAAUABwAAFAAAAREhESERIREhESERIREhESERIREzAgABAP8AAQABAAEA/wD9AP8AAQD+Bf77AgUAAQD/AP8A/AD/AAEABAABAAAAAAEAAAAABQAHAAAUAAABIREhESERIREhESERIRcRIREhESEBAAEAAQACAP8A/QD/AAH+AgEA/wD/AAcA/wD/APwA/wABAAQAAvwCBAABAAAAAQAAAAAFAAcAABIAAAEhESEXESERIREhESERIREhESEBAP8AAf4CAQD/AP8AAQABAAIA/AABAAQAAvwCBAABAAEA/wD/APsAAAAAAAEAAAAABQAHAAASAAABIREhETMXESERIREhESERIREhAQD/AAEA/gIBAP8AAQABAAEA/AABAAQAAQAC+wIFAAEA/wD/APsAAAIAAP8ABQAHAAADABUAAAEhESERIREhESERIREhESERIREhESEDAP8AAQD/AP4AAQADAAEA/wABAP8A/wAGAP8A/wD7AAcAAQD/AP8A/wD9AP8AAAMAAAAABgAHAAAFAAsAEwAAAREhESEZASERIREhASERIREhESECAAEAAQD/AP8AAgD9AAUA/wD7AAEABgD+AAEAAQD9AP8A/wAGAPoA/wAGAAAAAAEAAAUAAQAHAAADAAARIREhAQD/AAcA/gAAAAACAAAAAAUABwAAAwAPAAABESERAREhESERIREhESERAwD/AP8A/wABAAMAAQD/AAEABQD7AP8AAQAFAAEA/wD7AP8AAAMAAAAABQAFAAADAAcADwAAASERIREhESEBESERIREhEQMA/wABAP8AAQD+AAQA/wD8AAQA/wD/AP8AAwABAPwA/wAEAAAAAAMAAAIAAwAHAAAHAA8AEwAAAREhESERIREhESERIREhEQEhESECAP8AAQABAP8A/wD/AAEA/wADAP0ABQABAAEA/wD/AP8AAQABAP8A/gD/AAAAAAEAAAUAAgAHAAAHAAABIREhESERIQEA/wABAAEA/wAGAAEA/wD/AAADAAAAAAYABwAAAwAHABcAAAEhESEBIREhASERIREhESERIREhESERIQQAAQD/AP0AAQD/AAMAAgD/AP8A/gD/AP8AAgACAAcA/wABAP8A/wD/AP8A/QADAAEAAQD/AAACAAAAAAUABwAAAwAYAAABIREhERUhESERIREhESERIREhESERIREzAgABAP8AAQD/AAEAAQABAP4A/wD+AAEA/gMAAQAB/v4BAAEA/wD+APwAAgD+AAQAAgAAAAIAAAAABQAHAAADABoAAAEhESERFSERIREhESERIREhESERIREhESERMwIAAQD/AAEA/wABAAEAAQD8AP8AAQACAP4A/gEAAQAD/v4BAAEA/wD/APsAAQABAAEAAQACAAAAAAADAAD/AAUABwAAAwAHABcAAAEhESEBIREhGQEhESERIREhESERIREhEQEAAQD/AAIAAQD/AAIA/wD9AAIA/gD/AAIABwD/AAEA/wD8AAMA+wD/AAEAAQABAAMA/QAAAAABAAD/AAIABwAAAwAAESERIQIA/gAHAPgAAAAABAAAAAAGAAYAAAQACAAMAB4AAAE1NzMRASERIQEhESERIREhESERIREhESERIREhESEFAAL+/wABAP8A/QADAP0A/wD/AAEAAQADAP8A/gADAP0ABAD+Av8A/gD/AAUA/wD8AAEAAgABAP8A/wD/AP8A/wAAAAAAAwAA/wAFAAcAAAMABwAbAAABIREhASERIQEhESERIREhESERIREhESERIREhBAABAP8A/gABAP8A/gABAAMAAQD/AP0AAgD+AP8AAQD/AAcA/wD8AAIAAwD/AP8A+wD/AAEAAQABAAIAAgAAAgAAAAAFAAcAAAMAFQAAASERIQEhESERIREhESERIREhESERIQQAAQD/APwAAQADAP4AAQACAPwA/wABAP8ABwD/AAEA/wD+AP0AAgD9AAEAAwACAAAAAAEAAP4AAQAIAAADAAARIREhAQD/AAgA9gAAAAACAAAAAAYABwAAAwAXAAABIREpAhEhESERIREhESERIREhESERIQQAAQD/AP8AAQACAP8A/wD+AP8A/wACAAIA/wAHAP8A/wD/AP8A/QADAAEAAQD/AAEAAAAAAAMAAP8ABQAHAAADAAcAGAAAASERIQEhESEZASERIREhESERIREhESEXEQIAAQD/AAEAAQD/AAIA/wD9AAIA/gD/AAH+AgYA/wACAP8A/AADAPsA/wABAAEAAQADAAL9AgAAAAAAAAAAAAAAAAAAIgBKAHAAlgC2AN4A/AEyAVwBdgGSAaoBzAHqAgQCEAIiAlQCZAKQArYC2AL4AyQDSgNwA4QDngO+A+QEFAQ0BFoEdASaBLoE1AT0BRgFMgVYBXIFiAWkBcoF2AX2Bg4GMAZQBnAGhgamBsAG2Ab4Bx4HQgdiB4QHmgewB+oIKghaCJYIpAjGCOgJGgk0CUgJVglkCX4JkgmsCdgJ7goaCkIKVgpwCoQKkgqmCrQKyAr4CygLVguQC74L8gwmDGQMmAzODPoNGg06DWINjg3CDfQODg4oDkIOXA52DpoOyg74Dy4PXg+OD8gP8hAaEEYQWhCMEL4Q1BEGEU4RdBGaEcQR3hIGEkQSdhKkEtYS/hMoE1wTkhOwE9IT9BQSFEIUchSaFMIU6BUMFTYVYBVuFW4VkBW0Fd4V8hYiFlAWghayFsAW/BcyF14XbBeaF8wAAAACAAAAAAAA/wABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKwAAAECAAIBAwAVABwAFgAXABgAGQAaABsAJQAmACcAKQAkACoAKwAsAC0ALgAvADAAMQAyADMANAA1ADYANwA4ADkAOgA7ADwAPQAoAEQARQBGAEcASABJAEoASwBMAE0ATgBPAFAAUQBSAFMAVABVAFYAVwBYAFkAWgBbAFwAXQAEAAUABgAHAAgACQAKAAsADAANAA4ADwAQABEAEgAdAB4AHwAgACEAIgA+AD8AQABCAF4AXwBgAK0AyQDHAK4AagBpAGsAbQBsAGYAeABkAG8AZQDIAHAAcgDPAMwAdQB0AEEAYQDQANEArwB5AHsAfQDUAH4AIwAUAHwAZwCjAJYAhgCFAIEAaADYAKIAvQBiAJAAoADLAMoAcQBzAM4AzQB2AHcA0wB6ANUA1gB/AIAAiQCRALcAAwATAKEAngBDALsAYwBuALoA6AEEAAAAAADlAOsA7AUubnVsbAx2aXNpYmxlc3BhY2UERXVybwAA) format('truetype'); }
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #22d3ee;
+    --cyan: #22d3ee; --cyanBright: #67e8f9; --hudInk: #f1f5f9; --px: 'Nokia Cellphone FC', ui-monospace, monospace; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #a5f3fc; }
+  #bottom button { min-height: 48px; font-size: 15px; }
+  #bottom .lbl { flex: 0 0 auto; font-size: 12px; color: var(--dim); }
+  #fps { flex: 0 0 56px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #hint { position: fixed; left: 16px; right: 16px; text-align: center; font-size: 12.5px; line-height: 1.35; color: var(--dim); z-index: 2; pointer-events: none; }
+  #hint b { color: #cbd5e1; font-weight: 600; }
+  #hint .bad { color: #fca5a5; } #hint .ok { color: #86efac; }
+  body.side #hint { right: 316px; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 10px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 84px; }
+  #panel input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel select { flex: 1; min-width: 0; height: 30px; padding: 0 4px; font: 600 12px system-ui, sans-serif; color: var(--ink);
+    background: #0b1224; border: 1px solid var(--line); border-radius: 6px; }
+  /* the value box: type any number, even past the slider's ends (the slider then sits at its end, the box turns amber) */
+  #panel input.num { flex: 0 0 52px; width: 52px; box-sizing: border-box; padding: 3px 4px; text-align: right; font: 600 12px ui-monospace, monospace;
+    color: #94a3b8; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; -moz-appearance: textfield; }
+  #panel input.num::-webkit-inner-spin-button, #panel input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #panel input.num:focus { outline: none; border-color: var(--accent); color: var(--ink); }
+  #panel input.num.over { color: #fbbf24; border-color: #fbbf2480; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+
+  /* ===== The preview screen: the real HUD drawn at its real pixel size, then scaled to fit ===== */
+  #frameLbl { position: fixed; z-index: 1; font: 600 11px system-ui, sans-serif; color: var(--dim); text-align: center; pointer-events: none; }
+  #frame { position: fixed; z-index: 1; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; background: #04060b;
+    outline: 1px solid #1e293b; font-family: var(--px); color: var(--hudInk); }
+  #frame * { box-sizing: border-box; }
+  .abs { position: absolute; }
+  /* the tank: the dark green glass with its faint grid, curved like the game's */
+  .tank { border-radius: 18px / 26px; background: radial-gradient(120% 70% at 50% 35%, #12302b 0%, #0b1d1c 55%, #050c0d 100%);
+    box-shadow: inset 0 0 40px #000, 0 0 0 2px #000; overflow: hidden; }
+  .tank .grid { position: absolute; inset: 0; opacity: .5;
+    background-image: linear-gradient(#1f3f3b55 1px, transparent 1px), linear-gradient(90deg, #1f3f3b55 1px, transparent 1px); }
+  .goop { position: absolute; border-radius: 22%; box-shadow: inset 0 -5px 10px #0006, inset 4px 5px 8px #fff4; }
+  .goop::after { content: ''; position: absolute; left: 16%; top: 12%; width: 30%; height: 16%; border-radius: 50%; background: #fff7; filter: blur(1px); }
+  .crack { position: absolute; pointer-events: none; }
+  /* cut-corner shapes (pause, score, charge buttons, panel): the outer layer is the border colour, the inner one the fill */
+  .cut { position: absolute; clip-path: polygon(var(--k) 0, calc(100% - var(--k)) 0, 100% var(--k), 100% calc(100% - var(--k)), calc(100% - var(--k)) 100%, var(--k) 100%, 0 calc(100% - var(--k)), 0 var(--k)); }
+  .shape { inset: 0; background: var(--bd, var(--cyan)); }
+  .shape > .in { position: absolute; inset: 2px; background: var(--fill, #071722); }
+  .glowy { filter: drop-shadow(0 0 4px #22d3ee88); }
+  .hudtxt { position: absolute; white-space: nowrap; text-shadow: 0 0 6px #22d3ee66, 0 2px 0 #000; line-height: 1; }
+  .dock .lbl { position: absolute; text-align: center; white-space: nowrap; line-height: 1; text-shadow: 0 2px 0 #000; }
+  .meter { position: absolute; background: #22e1ff; clip-path: polygon(7px 0, calc(100% - 7px) 0, 100% 50%, calc(100% - 7px) 100%, 7px 100%, 0 50%);
+    box-shadow: 0 0 8px #22d3ee; }
+  .meter .lbl { position: absolute; inset: 0; display: grid; place-items: center; color: #0b3440; text-shadow: none; }
+  .bad-outline { outline: 2px dashed #f87171; outline-offset: 2px; }
+  /* the charge buttons */
+  .ab { position: absolute; cursor: pointer; touch-action: manipulation; }
+  .ab .shape { --bd: #475569; --fill: #0b1220; transition: background .15s; }
+  .ab svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .ab .trk { stroke: #1e293b; fill: none; }
+  .ab .arc { stroke: var(--cyan); opacity: .55; fill: none; stroke-linecap: round; }
+  .ab .ico { color: #64748b; }
+  .ab .num { position: absolute; left: 0; right: 0; text-align: center; color: #94a3b8; line-height: 1; pointer-events: none; }
+  .ab.ready { filter: drop-shadow(0 0 calc(var(--g) * 14px) rgba(34, 211, 238, calc(var(--g) * 1))); animation: abPulse 1.2s ease-in-out infinite; }
+  .ab.ready .shape { --bd: var(--cyanBright); --fill: #0c3442; }
+  .ab.ready .arc { stroke: var(--cyanBright); opacity: 1; }
+  .ab.ready .ico { color: #a5f3fc; }
+  .ab.ready .num { color: #cffafe; }
+  @keyframes abPulse { 50% { filter: drop-shadow(0 0 calc(var(--g) * 6px) rgba(34, 211, 238, calc(var(--g) * .7))); } }
+  .ab.fired .shape { --fill: #e0fbff; }
+  .ab .flash { position: absolute; inset: -10%; border-radius: 50%; border: 3px solid #e0fbff; opacity: 0; pointer-events: none; }
+  .ab.fired .flash { animation: abFlash .45s ease-out; }
+  @keyframes abFlash { 0% { opacity: 1; transform: scale(.7); } 100% { opacity: 0; transform: scale(1.9); } }
+  .ab.refused { animation: abNo .3s; }
+  @keyframes abNo { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+  .thumb { position: absolute; border-radius: 50%; border: 2px dashed #4ade8088; background: radial-gradient(closest-side, #4ade8018, #4ade8008); pointer-events: none; }
+  .thumbLbl { position: absolute; font: 600 12px system-ui, sans-serif; color: #86efac; pointer-events: none; text-shadow: 0 1px 2px #000; }
+  .fxname { position: absolute; font-size: 14px; color: #cffafe; pointer-events: none; white-space: nowrap; text-shadow: 0 0 6px #22d3ee, 0 2px 0 #000; animation: fxUp .9s ease-out forwards; }
+  @keyframes fxUp { from { opacity: 1; transform: translate(-50%, 0); } to { opacity: 0; transform: translate(-50%, -28px); } }
+</style>
+</head>
+<body>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <span style="display:contents" id="screens"><button data-s="0">360</button><button data-s="1">390</button><button data-s="2">1440</button></span>
+  <button id="bThumb">Thumb</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="hint"></div>
+<div id="frameLbl"></div>
+<div id="frame"></div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <span class="lbl">Layout</span>
+  <span style="display:contents" id="looks"><button data-l="0">A</button><button data-l="1">B</button><button data-l="2">C</button><button data-l="3">C+</button></span>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+// Sizes in real screen pixels (CSS px on the phone / desktop being previewed, before the preview is scaled to fit).
+const UI = {
+  layout: 3,     // 0 = A top row, 1 = B column beside the tank, 2 = C panel (shares the bars' row), 3 = C+ panel (own row) — Claude's pick
+  side: 1,       // B only: 0 = left edge, 1 = right edge
+  colPos: 0.5,   // B only: where the column sits, 0 = top of the tank, 1 = bottom
+  count: 3,      // how many actives are equipped (1 to 3 buttons)
+  size: 46,      // each button's width and height
+  gap: 8,        // space between the buttons
+  ring: 3.5,     // the charge ring's thickness
+  number: 0,     // 0 = no % number, 1 = the % shown under the icon
+  glow: 0.6,     // how much a ready button glows
+  screen: 1,     // 0 = phone 360 x 780, 1 = phone 390 x 844, 2 = desktop 1440 x 900
+  loadout: 0,    // which actives are equipped (so you can see all four icons)
+};
+const LAYOUT_NAMES = ['A · top row', 'B · column beside the tank', 'C · panel, sharing the bars row', 'C+ · panel, own row'];
+const SCREEN_NAMES = ['Phone 360 × 780', 'Phone 390 × 844', 'Desktop 1440 × 900'];
+const LOADOUT_NAMES = ['Booster · Dump · Colorizer', 'Booster · Dump · Crack Down', 'Dump · Colorizer · Crack Down'];
+// [name, min, max, step] rows, [name, 'choice', [labels]] rows; a one-item row is a group heading.
+const KNOBS = [['Layout'], ['layout', 'choice', LAYOUT_NAMES], ['side', 'choice', ['Left', 'Right']], ['colPos', 0, 1, 0.01],
+  ['Buttons'], ['count', 1, 3, 1], ['size', 28, 72, 1], ['gap', 0, 24, 1], ['ring', 1, 8, 0.5], ['number', 'choice', ['Off', 'On']], ['glow', 0, 1, 0.01],
+  ['Preview'], ['screen', 'choice', SCREEN_NAMES], ['loadout', 'choice', LOADOUT_NAMES]];
+const KNOB_LABEL = { layout: 'Layout', side: 'B: side', colPos: 'B: height', count: 'Equipped', size: 'Button size', gap: 'Gap', ring: 'Ring', number: 'Number', glow: 'Glow', screen: 'Screen', loadout: 'Loadout' };
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it.
+const KNOB_HELP = {
+  layout: 'A = small buttons in the top row beside pause (where the one button is today). B = a column on the tank\'s edge. C = in the bottom panel, squeezed into the row with the machine bars. C+ = Claude\'s pick: the panel gets its own row of buttons (a bit taller, tank a bit shorter). Also the A / B / C / C+ buttons under the screen.',
+  side: 'B only: which edge of the tank the column hugs. Right = under a right thumb.',
+  colPos: 'B only: slide the column from the top of the tank (0) to the bottom (1). Lower = easier for a thumb, but that\'s where the goop piles up.',
+  count: 'How many actives are equipped: 1 (today), 2 (Expansion Slot, rank 20) or 3 (Slot 2, rank 38). Watch what gets squeezed at 3.',
+  size: 'Each button\'s width and height in real pixels. 44 = the pause button and the smallest comfortable tap. Under 44 the fit report turns red.',
+  gap: 'Space between buttons. Too small and a thumb hits the neighbour.',
+  ring: 'How thick the charge ring is. Thin reads as "detail", thick reads from across the room.',
+  number: 'On = the charge % under the icon. At small sizes it crowds the icon (today\'s button hides it for that reason).',
+  glow: 'How strongly a full (ready) button glows and pulses. 0 = it only turns bright.',
+  screen: 'Which screen to preview, at its real size. Also the 360 / 390 / 1440 buttons on top.',
+  loadout: 'Which three actives are equipped, so you can see all four icons: bolt = Cooldown Booster, drops = Goop Dump, paint drop = Goop Colorizer, crack + arrow = Crack Down.',
+};
+
+// ===== The sketch itself =====
+// The real HUD's sizes, measured from the game's screenshots (e2e-shots/twists/r40-compare-*). Real pixels.
+const FRAMES = [
+  { w: 360, h: 780, phone: true, tank: { x: 8, y: 40, w: 344, h: 590 }, dock: { x: 0, y: 652, w: 360, h: 128 }, row: { x: 16, w: 328, cy: 34 } },
+  { w: 390, h: 844, phone: true, tank: { x: 8, y: 40, w: 374, h: 650 }, dock: { x: 0, y: 715, w: 390, h: 129 }, row: { x: 16, w: 358, cy: 35 } },
+  { w: 1440, h: 900, phone: false, tank: { x: 510, y: 20, w: 420, h: 740 }, dock: { x: 495, y: 772, w: 450, h: 128 }, row: { x: 510, w: 420, cy: 38 } }];
+const PAUSE = 44, ROW_GAP = 8, EDGE = 8;  // pause button size, gap between top-row items, B's breathing room from the tank edge
+const CRACK_BIG = 27, CRACK_MIN = 16;     // the crack count's size, and the body-text floor it may shrink to (kit HudText fit)
+const SCORE_FONT = 24, BAR_FONT = 18, BAR_FONT_MIN = 12; // (sizes matched to the game's screenshots)
+// The widest real numbers (App.tsx F34 note, e2e-shots/upgrades/widest-count): a 5-digit score beside "CRACKS 56 / 57"
+const SCORE_TXT = '99999', CRACK_TXT = 'CRACKS 56 / 57', CRACK_SHORT = '56 / 57';
+const MACHINES = ['VISOR', 'LASER', 'CONTROLS'];
+// The actives: icon (24-unit SVG path, drawn in the button's colour) and a sped-up demo charge time (real: 15-30 s)
+const ACTIVES = {
+  booster:   { name: 'Cooldown Booster', secs: 7, icon: '<path d="M13.5 2 4 13.5h6.5L9 22l10-12.5h-6.5L13.5 2z" fill="currentColor"/>' },
+  dump:      { name: 'Goop Dump', secs: 5, icon: '<path d="M6 2.5c-1.6 2.6-3 4.4-3 6a3 3 0 0 0 6 0c0-1.6-1.4-3.4-3-6zM17.5 1.5c-1.6 2.6-3 4.4-3 6a3 3 0 0 0 6 0c0-1.6-1.4-3.4-3-6zM12 11c-2 3.2-3.7 5.4-3.7 7.4a3.7 3.7 0 0 0 7.4 0c0-2-1.7-4.2-3.7-7.4z" fill="currentColor"/>' },
+  colorizer: { name: 'Goop Colorizer', secs: 9, icon: '<path d="M10 2.5C7.4 6.7 5 9.6 5 12.6a5 5 0 0 0 10 0c0-3-2.4-5.9-5-10.1z" fill="currentColor"/><rect x="15.5" y="14" width="6" height="6" rx="1.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7.6 12.4a2.6 2.6 0 0 0 2.4 2.7" stroke="#0b1220" stroke-width="1.6" fill="none" stroke-linecap="round"/>' },
+  crackdown: { name: 'Crack Down', secs: 11, icon: '<path d="M9 1.5 6.5 6l3 2.5-3 4 2 2" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/><path d="M17 3v13m-4.5-4.5L17 16l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/><path d="M3 21h18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>' } };
+const LOADOUTS = [['booster', 'dump', 'colorizer'], ['booster', 'dump', 'crackdown'], ['dump', 'colorizer', 'crackdown']];
+// Goop sitting in the tank (column 0-5, row counted up from the bottom, colour): piles at both edges, so B's cover shows
+const GOOP_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#e2e8f0'];
+const GOOP = [[0, 0, 0], [1, 0, 1], [2, 0, 2], [4, 0, 3], [5, 0, 4], [0, 1, 4], [1, 1, 1], [4, 1, 2], [5, 1, 0], [0, 2, 2], [5, 2, 3], [0, 3, 5],
+  [5, 3, 1], [5, 4, 2], [0, 4, 0], [3, 0, 5], [3, 1, 3]];
+const CRACKS = [[5, 5, '#a855f7'], [0, 5, '#ef4444'], [2, 1, '#3b82f6']];  // cracks waiting to be sealed (col, row from bottom)
+
+// ---- the measuring tape: text widths in the game's pixel font
+const meas = document.createElement('canvas').getContext('2d');
+const textW = (s, px) => { meas.font = `${px}px 'Nokia Cellphone FC'`; return meas.measureText(s).width; };
+
+// ---- plan(): where everything goes on one screen, plus an honest fit report. Pure numbers, so Copy values can
+// report every screen size at once.
+function plan(fi, V) {
+  const F = FRAMES[fi], n = Math.round(V.count), S = V.size, g = V.gap, L = Math.round(V.layout);
+  const P = { F, buttons: [], notes: [], bad: [] };
+  const tank = { ...F.tank }, dock = { ...F.dock };
+  // C+: the panel grows by however much its own row of buttons needs (the tank gets that much shorter)
+  const dockInner = () => dock.h - 24;
+  const barsH = 38 + 10 + 24;      // machine row (name + bar) + gap + integrity bar
+  if (L === 3) {
+    const need = S + 10 + barsH, grow = Math.max(0, need - dockInner());
+    dock.y -= grow; dock.h += grow; tank.h -= grow;
+    if (grow) P.notes.push(`panel ${grow}px taller, tank ${grow}px shorter (${Math.round(grow / F.tank.h * 100)}% of its height)`);
+    else P.notes.push('the panel fits the row as it is');
+  }
+  P.tank = tank; P.dock = dock;
+  // the top row: score · crack count · (A: the buttons) · pause
+  const row = F.row, cy = row.cy;
+  const scoreW = Math.ceil(textW(SCORE_TXT, SCORE_FONT)) + 20;
+  P.score = { x: row.x, y: cy - 20, w: scoreW, h: 40 };
+  P.pause = { x: row.x + row.w - PAUSE, y: cy - PAUSE / 2, w: PAUSE, h: PAUSE };
+  let right = P.pause.x - ROW_GAP;
+  if (L === 0) {
+    for (let i = n - 1; i >= 0; i--) { P.buttons[i] = { x: right - S, y: cy - S / 2, w: S, h: S }; right -= S + (i ? g : ROW_GAP); }
+  }
+  const room = right - (P.score.x + scoreW + ROW_GAP);
+  // the crack count shrinks to fit, then drops its name, like the game (kit HudText fit + App.tsx shortCount)
+  let txt = CRACK_TXT, px = CRACK_BIG;
+  while (px > CRACK_MIN && textW(txt, px) > room) px--;
+  if (textW(txt, px) > room) { txt = CRACK_SHORT; px = CRACK_BIG; while (px > CRACK_MIN && textW(txt, px) > room) px--; }
+  const tw = textW(txt, px), fits = tw <= room;
+  P.cracks = { txt, px, x: P.score.x + scoreW + ROW_GAP + Math.max(0, (room - tw) / 2), cy, fits, room };
+  if (!fits) P.bad.push(`crack count doesn't fit even as "${CRACK_SHORT}" at ${CRACK_MIN}px (needs ${Math.ceil(tw)}px, has ${Math.floor(room)}px)`);
+  else if (txt !== CRACK_TXT) P.notes.push(`crack count drops its word: "${txt}" at ${px}px`);
+  else if (px < CRACK_BIG) P.notes.push(`crack count shrinks to ${px}px`);
+  else P.notes.push('crack count keeps its full size');
+  // B: a column hugging the tank's edge (phones: over the tank; desktop: in the empty space beside it)
+  if (L === 1) {
+    const colH = n * S + (n - 1) * g, right = V.side >= 1;
+    const x = F.phone ? (right ? tank.x + tank.w - EDGE - S : tank.x + EDGE) : (right ? tank.x + tank.w + 16 : tank.x - 16 - S);
+    const top0 = tank.y + 60, top1 = tank.y + tank.h - EDGE - colH;
+    const y = top0 + (top1 - top0) * Math.min(1, Math.max(0, V.colPos));
+    for (let i = 0; i < n; i++) P.buttons[i] = { x, y: y + i * (S + g), w: S, h: S };
+  }
+  // the panel: next-piece window at the left; the machine bars over the integrity bar to its right (C / C+: the buttons too)
+  const pad = 10, nextW = 66;
+  P.next = { x: dock.x + pad, y: dock.y + pad, w: nextW, h: dock.h - 2 * pad };
+  const ax = P.next.x + nextW + 9, aw = dock.x + dock.w - pad - ax;
+  let rowY, rowH = 38, barsAreaW = aw;
+  if (L === 2) {
+    rowH = Math.max(38, S);
+    barsAreaW = aw - n * S - n * g;
+    const top = dock.y + (dock.h - (rowH + 10 + 24)) / 2;
+    rowY = top;
+    for (let i = 0; i < n; i++) P.buttons[i] = { x: ax + barsAreaW + g + i * (S + g), y: rowY + (rowH - S) / 2, w: S, h: S };
+    if (rowH + 10 + 24 > dockInner()) P.bad.push('the buttons are taller than the panel');
+  } else if (L === 3) {
+    const total = S + 10 + barsH, top = dock.y + (dock.h - total) / 2;
+    const bw = n * S + (n - 1) * g, bx = ax + (aw - bw) / 2;
+    for (let i = 0; i < n; i++) P.buttons[i] = { x: bx + i * (S + g), y: top, w: S, h: S };
+    rowY = top + S + 10;
+    if (bw > aw) P.bad.push(`the button row is wider than the panel (${bw}px, room ${aw}px)`);
+  } else rowY = dock.y + (dock.h - barsH) / 2;
+  // machine bars, like the game (hud.json machineWidth, kit Bar atMost): each never narrower than its name, the spare
+  // room shared out, each at most 31% of the room; centred. Too little room: the names shrink (red below 12px).
+  const mGap = 8, gaps = (MACHINES.length - 1) * mGap;
+  const widths = px => { const lw = MACHINES.map(m => textW(m, px) + 4), spare = barsAreaW - gaps - lw.reduce((a, b) => a + b, 0);
+    return { lw, spare, w: lw.map(l => Math.max(l, Math.min(barsAreaW * 0.31, l + Math.max(0, spare) / MACHINES.length))) }; };
+  let lpx = BAR_FONT; while (lpx > BAR_FONT_MIN && widths(lpx).spare < 0) lpx--;
+  const WB = widths(lpx), lFits = WB.spare >= 0, total = WB.w.reduce((a, b) => a + b, 0) + gaps;
+  let bx = ax + Math.max(0, (barsAreaW - total) / 2);
+  P.bars = MACHINES.map((m, i) => { const r = { name: m, x: bx, y: rowY + (rowH - 38), w: WB.w[i], px: lpx }; bx += WB.w[i] + mGap; return r; });
+  P.integrity = { x: ax, y: rowY + rowH + 10, w: aw, h: 24 };
+  if (!lFits) P.bad.push(`machine bars squeezed into ${Math.floor(barsAreaW)}px: their names overlap even at ${BAR_FONT_MIN}px`);
+  else if (lpx < BAR_FONT) P.notes.push(`machine names shrink to ${lpx}px`);
+  // how much tank the buttons cover (B on a phone), in cells (the tank is 6 cells wide)
+  const cell = tank.w / 6;
+  let cover = 0;
+  for (const b of P.buttons) {
+    const ox = Math.max(0, Math.min(b.x + b.w, tank.x + tank.w) - Math.max(b.x, tank.x)), oy = Math.max(0, Math.min(b.y + b.h, tank.y + tank.h) - Math.max(b.y, tank.y));
+    if (L !== 0) cover += ox * oy; // (A's buttons sit in the top row over the tank's empty top, like the pause button)
+  }
+  P.coverCells = cover / (cell * cell);
+  if (P.coverCells > 0.05) P.bad.push(`buttons cover ${P.coverCells.toFixed(1)} tank cells (the ${V.side >= 1 ? 'right' : 'left'} edge column)`);
+  else if (L === 1) P.notes.push('tank stays clear');
+  if (S < 44) P.bad.push(`${S}px buttons: under the 44px comfortable tap`);
+  // the % number at this size
+  if (V.number >= 1 && S < 40) P.notes.push('the % number is tiny at this size');
+  return P;
+}
+
+// ---- drawing the preview screen (DOM at real pixels, scaled to fit)
+const frame = $('frame');
+const box = (r, cls, html = '', style = '') => `<div class="${cls}" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;${style}">${html}</div>`;
+const shape = (k, bd, fill) => `<div class="cut shape" style="--k:${k}px;${bd ? '--bd:' + bd + ';' : ''}${fill ? '--fill:' + fill : ''}"><div class="cut in" style="--k:${k - 1}px"></div></div>`;
+let P = null, abEls = [], pieceEl = null, thumbOn = true;
+// charge per equipped slot (0..1); kept across redraws
+const charge = [0.92, 0.45, 0.1];
+function render() {
+  P = plan(Math.round(UI.screen), UI);
+  const F = P.F, T = P.tank, cell = T.w / 6;
+  let h = '';
+  // the tank, its goop and cracks
+  let goop = '';
+  for (const [c, r, k] of GOOP) {
+    const gx = c * cell + cell * 0.08, gy = T.h - (r + 1) * cell + cell * 0.08;
+    goop += `<div class="goop" style="left:${gx}px;top:${gy}px;width:${cell * 0.84}px;height:${cell * 0.84}px;background:${GOOP_COLORS[k]}"></div>`;
+  }
+  for (const [c, r, col] of CRACKS) {
+    const gx = c * cell, gy = T.h - (r + 1) * cell;
+    goop += `<svg class="crack" style="left:${gx}px;top:${gy}px;width:${cell}px;height:${cell}px" viewBox="0 0 10 10"><path d="M2 2.2 4 4.4 3.3 5.6 6 7.1 5.6 8.2 8 8.6" fill="none" stroke="${col}" stroke-width=".8" stroke-linejoin="round" style="filter:drop-shadow(0 0 1.5px ${col})"/></svg>`;
+  }
+  goop += `<div id="piece" style="position:absolute;left:0;top:0;width:${cell * 2}px;height:${cell * 2}px">`
+    + [[0, 0], [1, 0], [2, 0], [1, 1]].map(([x, y]) => `<div class="goop" style="left:${x * cell + cell * 0.08}px;top:${y * cell + cell * 0.08}px;width:${cell * 0.84}px;height:${cell * 0.84}px;background:#a855f7;opacity:.95"></div>`).join('') + '</div>';
+  h += box(T, 'abs tank', `<div class="grid" style="background-size:${cell}px ${cell}px"></div>${goop}`);
+  // the top row
+  h += box(P.score, 'abs glowy', shape(9) + `<div class="hudtxt" style="left:0;right:0;top:${(40 - SCORE_FONT) / 2}px;text-align:center;font-size:${SCORE_FONT}px">${SCORE_TXT}</div>`);
+  const C = P.cracks;
+  h += `<div class="hudtxt${C.fits ? '' : ' bad-outline'}" style="left:${C.x}px;top:${C.cy - C.px / 2}px;font-size:${C.px}px">${C.txt}</div>`;
+  h += `<div class="hudtxt" style="left:${C.x + textW(C.txt, C.px) * 0.45}px;top:${C.cy + C.px / 2 + 6}px;font-size:16px">100% PSI</div>`;
+  h += box(P.pause, 'abs glowy', shape(11) + '<svg viewBox="0 0 24 24" style="position:absolute;inset:25%;width:50%;height:50%"><rect x="5" y="4" width="5" height="16" fill="#e2f8ff"/><rect x="14" y="4" width="5" height="16" fill="#e2f8ff"/></svg>');
+  // the panel
+  const D = P.dock;
+  h += box(D, 'abs dock glowy', shape(16, '#22d3eeaa', '#06111b'));
+  h += box(P.next, 'abs', shape(10, '#22d3ee88', '#040b12')
+    + [[1, 0], [1, 1], [2, 1], [0, 2]].map(([x, y]) => `<div style="position:absolute;left:${P.next.w / 2 - 22 + x * 15}px;top:${P.next.h / 2 - 22 + y * 15}px;width:12px;height:12px;background:#ef4444;border-radius:2px;box-shadow:inset 0 -2px 0 #0004"></div>`).join(''));
+  for (const b of P.bars) {
+    h += `<div class="abs dock"><div class="lbl" style="left:${b.x}px;width:${b.w}px;top:${b.y}px;font-size:${b.px}px">${b.name}</div></div>`;
+    h += `<div class="meter" style="left:${b.x}px;top:${b.y + 24}px;width:${b.w}px;height:14px"></div>`;
+  }
+  const I = P.integrity;
+  h += `<div class="meter" style="left:${I.x}px;top:${I.y}px;width:${I.w}px;height:${I.h}px"><div class="lbl" style="font-size:16px">INTEGRITY</div></div>`;
+  // thumb reach (phones): the easy zone for a right thumb holding the phone one-handed
+  if (thumbOn && F.phone) {
+    const tw = F.w * 1.25, th = F.h * 0.62;
+    h += `<div class="thumb" style="left:${F.w - tw * 0.62}px;top:${F.h - th * 0.62}px;width:${tw}px;height:${th}px"></div>`;
+    h += `<div class="thumbLbl" style="left:${F.w * 0.36}px;top:${F.h - th * 0.62 + 10}px">easy thumb reach (right hand)</div>`;
+  }
+  // the charge buttons
+  const n = Math.round(UI.count), ids = LOADOUTS[Math.round(UI.loadout)] || LOADOUTS[0];
+  for (let i = 0; i < n; i++) {
+    const b = P.buttons[i], S = b.w, A = ACTIVES[ids[i]], t = UI.ring * 100 / S, r = 50 - 9 - t / 2, circ = 2 * Math.PI * r;
+    const num = UI.number >= 1, ico = num ? 0.36 : 0.46, icoY = num ? 0.42 : 0.5;
+    h += `<div class="ab" data-i="${i}" style="left:${b.x}px;top:${b.y}px;width:${S}px;height:${S}px;--g:${UI.glow}" title="${A.name}">`
+      + shape(Math.round(S * 0.24))
+      + `<svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="${r}" stroke-width="${t}"/><circle class="arc" cx="50" cy="50" r="${r}" stroke-width="${t}" stroke-dasharray="${circ}" transform="rotate(-90 50 50)"/></svg>`
+      + `<svg class="ico" viewBox="0 0 24 24" style="inset:auto;left:${(1 - ico) / 2 * 100}%;top:${(icoY - ico / 2) * 100}%;width:${ico * 100}%;height:${ico * 100}%">${A.icon}</svg>`
+      + (num ? `<div class="num" style="top:${S * 0.6}px;font-size:${Math.max(7, Math.round(S * 0.2))}px">0</div>` : '')
+      + '<div class="flash"></div></div>';
+  }
+  frame.style.width = F.w + 'px'; frame.style.height = F.h + 'px';
+  frame.innerHTML = h;
+  pieceEl = $('piece');
+  abEls = [...frame.querySelectorAll('.ab')].map(el => ({ el, arc: el.querySelector('.arc'), num: el.querySelector('.num'), circ: +el.querySelector('.arc').getAttribute('stroke-dasharray'), ready: null }));
+  report(); fitFrame();
+}
+// the fit report above the screen
+function report() {
+  const L = Math.round(UI.layout), sizes = FRAMES.map((_, i) => plan(i, UI));
+  const line = (p, i) => `<b>${['360', '390', '1440'][i]}:</b> ` + (p.bad.length ? `<span class="bad">${p.bad.join('; ')}</span>` : `<span class="ok">fits</span>`) + (p.notes.length ? ' · ' + p.notes.join('; ') : '');
+  $('hint').innerHTML = `<b>${LAYOUT_NAMES[L]}</b>${L === 3 ? ' (Claude\'s pick)' : ''} · tap a bright button (or 1 / 2 / 3) to fire<br>`
+    + line(sizes[Math.round(UI.screen)], Math.round(UI.screen));
+  $('frameLbl').textContent = SCREEN_NAMES[Math.round(UI.screen)] + ' — real size, scaled to fit';
+}
+// scale the screen to the room between the bars
+let scale = 1;
+function fitFrame() {
+  if (!P) return;
+  $('hint').style.top = $('top').getBoundingClientRect().bottom + 2 + 'px';
+  const F = P.F, top = $('hint').getBoundingClientRect().bottom + 22, bot = $('bottom').getBoundingClientRect().top - 8, w = playW() - 32;
+  scale = Math.min(w / F.w, (bot - top) / F.h, 1);
+  const left = (playW() - F.w * scale) / 2;
+  frame.style.transform = `translate(${left}px, ${top}px) scale(${scale})`;
+  const lb = $('frameLbl'); lb.style.left = '16px'; lb.style.width = playW() - 32 + 'px'; lb.style.top = (top - 17) + 'px';
+}
+// firing: a ready button flashes and empties; a charging one shakes ("not yet")
+function fire(i) {
+  const a = abEls[i]; if (!a) return;
+  a.el.classList.remove('fired', 'refused'); void a.el.offsetWidth;
+  if (charge[i] >= 1) {
+    charge[i] = 0; a.el.classList.add('fired');
+    const ids = LOADOUTS[Math.round(UI.loadout)] || LOADOUTS[0], b = P.buttons[i];
+    const t = document.createElement('div'); t.className = 'fxname'; t.textContent = ACTIVES[ids[i]].name.toUpperCase() + '!';
+    t.style.left = Math.min(P.F.w - 90, Math.max(90, b.x + b.w / 2)) + 'px'; t.style.top = (b.y > P.F.h / 2 ? b.y - 26 : b.y + b.h + 8) + 'px';
+    frame.appendChild(t); setTimeout(() => t.remove(), 950);
+  } else a.el.classList.add('refused');
+}
+frame.addEventListener('pointerdown', e => { const el = e.target.closest('.ab'); if (el) fire(+el.dataset.i); });
+addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return; const k = '123'.indexOf(e.key); if (k >= 0) fire(k); });
+function update(dt) {
+  const ids = LOADOUTS[Math.round(UI.loadout)] || LOADOUTS[0];
+  for (let i = 0; i < 3; i++) charge[i] = Math.min(1, charge[i] + dt / ACTIVES[ids[i]].secs);
+  pieceT = (pieceT + dt * 0.9) % 7;
+}
+let pieceT = 0;
+function draw() {
+  for (let i = 0; i < abEls.length; i++) {
+    const a = abEls[i], c = charge[i], ready = c >= 1;
+    a.arc.style.strokeDashoffset = a.circ * (1 - c);
+    if (a.num) a.num.textContent = Math.floor(c * 100);
+    if (a.ready !== ready) { a.el.classList.toggle('ready', ready); a.ready = ready; }
+  }
+  if (pieceEl && P) { const cell = P.tank.w / 6; pieceEl.style.transform = `translate(${cell * 2}px, ${(pieceT - 1.2) * cell}px)`; }
+}
+const LOOK_BTNS = () => document.querySelectorAll('#looks button');
+function showLook() {
+  for (const b of LOOK_BTNS()) b.classList.toggle('on', +b.dataset.l === Math.round(UI.layout));
+  for (const b of document.querySelectorAll('#screens button')) b.classList.toggle('on', +b.dataset.s === Math.round(UI.screen));
+  render();
+}
+$('looks').onclick = e => { if (e.target.dataset.l !== undefined) { UI.layout = +e.target.dataset.l; showKnob('layout'); } };
+$('screens').onclick = e => { if (e.target.dataset.s !== undefined) { UI.screen = +e.target.dataset.s; showKnob('screen'); } };
+$('bThumb').onclick = () => { thumbOn = !thumbOn; $('bThumb').classList.toggle('on', thumbOn); render(); };
+$('bThumb').classList.toggle('on', thumbOn);
+function layout() { dockKnobs(); fitFrame(); }
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+const isChoice = row => row[1] === 'choice';
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(row => { const [k, lo, hi, st] = row; return lo === undefined ? `<h4>${k}</h4>` :
+  (isChoice(row) ? `<label><span>${KNOB_LABEL[k] || k}</span><select id="k_${k}">${hi.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select></label>`
+  : `<label><span>${KNOB_LABEL[k] || k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${UI[k]}"><input class="num" type="number" inputmode="decimal" id="v_${k}" step="${st}" value="${UI[k]}" title="Type any value, even past the slider's ends"></label>`)
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : ''); }).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+for (const row of KNOBS) if (isChoice(row)) $('k_' + row[0]).value = UI[row[0]]; // the drop-downs start on the current values
+// show a value in both the slider (pinned at its end when past it) and the box (amber when past the slider's ends)
+function showKnob(k) {
+  const row = KNOBS.find(r => r[0] === k), v = UI[k];
+  if (isChoice(row)) { $('k_' + k).value = v; showLook(); return; }
+  const box = $('v_' + k);
+  $('k_' + k).value = v; if (document.activeElement !== box) box.value = v;
+  box.classList.toggle('over', v < row[1] || v > row[2]);
+  render();
+}
+// typing in the box updates the sketch live; Enter or leaving the box applies, Escape puts back what was there
+for (const row of KNOBS) {
+  const [k, lo] = row; if (lo === undefined) continue;
+  if (isChoice(row)) { $('k_' + k).onchange = e => { UI[k] = +e.target.value; showKnob(k); }; continue; }
+  const box = $('v_' + k); let before = UI[k];
+  $('k_' + k).oninput = e => { UI[k] = +e.target.value; showKnob(k); };
+  box.onfocus = () => { before = UI[k]; };
+  box.oninput = () => { const v = parseFloat(box.value); if (Number.isFinite(v)) { UI[k] = v; showKnob(k); } };
+  box.onkeydown = e => {
+    if (e.key === 'Enter') box.blur();
+    if (e.key === 'Escape') { UI[k] = before; box.value = before; showKnob(k); box.blur(); }
+  };
+  box.onblur = () => { box.value = UI[k]; showKnob(k); };
+}
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = UI[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { UI[k] = v[k]; showKnob(k); } }
+const DEFAULTS = readKnobs();
+// The three starting presets (until you save your own over them): one per layout family, at sensible values.
+const STARTERS = [
+  { name: 'A top row', values: { ...DEFAULTS, layout: 0, size: 40, gap: 6, ring: 3, number: 0, glow: 0.6 } },
+  { name: 'B beside tank', values: { ...DEFAULTS, layout: 1, side: 1, colPos: 0.45, size: 50, gap: 10, ring: 4, number: 0, glow: 0.6 } },
+  { name: 'C panel', values: { ...DEFAULTS, layout: 2, size: 44, gap: 6, ring: 3.5, number: 0, glow: 0.6 } }];
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || STARTERS; } catch (e) { presets = STARTERS; }
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  // the fit at every screen size travels with the values, so Claude sees what this pick costs everywhere
+  const fit = {}; FRAMES.forEach((F, i) => { const p = plan(i, UI); fit[F.w + 'x' + F.h] = { problems: p.bad, notes: p.notes }; });
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ now: readKnobs(), layoutName: LAYOUT_NAMES[Math.round(UI.layout)], fit, presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+dockKnobs();
+// the pixel font must be loaded before the text is measured
+document.fonts.load(`20px 'Nokia Cellphone FC'`).catch(() => {}).then(() => { showLook(); layout(); });
+showLook(); layout();
+// fixed-step loop + fps (one-second average)
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0, paused = false;
+const STEP = 1 / 60;
+function frameLoop(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (!paused) { acc += dt; while (acc >= STEP) { update(STEP); acc -= STEP; } }
+  draw();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frameLoop);
+}
+requestAnimationFrame(frameLoop);
+// for Playwright checks: pause the clock, set knobs, read the plan for any screen, fire a slot
+window.sketch = { UI, readKnobs, setKnobs, plan: i => plan(i, UI), fire, charge,
+  pause: on => { paused = on; acc = 0; },
+  advance: sec => { for (let n = Math.round(sec / STEP); n > 0; n--) update(STEP); draw(); } };
+</script>
+</body>
+</html>
