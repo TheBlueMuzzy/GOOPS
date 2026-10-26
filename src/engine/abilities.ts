@@ -1,7 +1,7 @@
 // Active abilities (F22): charge up during the shift, fire with act({ type: 'ability', id }).
 // Each ability names an EFFECT. An effect's fire function starts it and says whether it could;
 // a lasting effect keeps its state in ShiftState.effects, and the engine reads it at the exact spot it changes.
-import type { MachineId, MachineState, ShiftPhase } from './types'
+import type { Color, MachineId, MachineState, ShiftPhase } from './types'
 
 // One equipped ability, as resolveUpgrades() works it out from upgrades.json.
 export interface AbilitySpec {
@@ -15,6 +15,11 @@ export interface AbilitySpec {
 // Effects that last after firing. One entry per kind; firing again restarts it.
 export interface ActiveEffects {
   lowCracks?: { id: string; left: number; rows: number } // the next `left` cracks form in the bottom `rows` rows
+  // F42 Goop Dump: single cells of `color` rain in, one every cellMs; `cellsLeft` more in this wave, then waveMs of quiet
+  // before the next (`wavesLeft` counts this one). waitMs = time until the next cell (the engine counts it down).
+  dump?: { id: string; color: Color; wavesLeft: number; cellsLeft: number; cellsPerWave: number; cellMs: number; waveMs: number; waitMs: number }
+  // F42 Goop Colorizer: the next `left` pieces to come into the next window take `color`
+  colorize?: { id: string; color: Color; left: number }
 }
 
 // Start an effect. Returns false if it can't do anything right now (the charge is then kept).
@@ -22,6 +27,9 @@ export interface ActiveEffects {
 // effect changes them in place; still pure: no time, no randomness, only the numbers it's given).
 export interface FireTarget {
   phase: ShiftPhase
+  // F42: the falling piece's colour (a two-colour piece: its main colour — pieces.ts mainColor); null = no falling
+  // piece, or a wild one (it has no colour of its own to copy)
+  pieceColor: Color | null
   effects: ActiveEffects
   machines: Record<MachineId, MachineState>
 }
@@ -47,6 +55,30 @@ export const ABILITY_EFFECTS: Record<string, FireEffect> = {
     const rows = Math.floor(params.rows)
     if (!(left >= 1 && rows >= 1)) return false // numbers missing from upgrades.json: nothing to do
     shift.effects.lowCracks = { id, left, rows }
+    return true
+  },
+  // F42 Goop Dump (v1): waves of single cells in the falling piece's colour rain into random columns (the engine drops
+  // them on the rules clock, seeded — shift.ts stepDump). Refused with no colour to copy, during a rupture (the goop
+  // would only block the next piece), or while the last dump is still raining (the charge waits for it).
+  goopDump: (shift, params, id) => {
+    if (shift.phase !== 'playing' || shift.pieceColor === null || shift.effects.dump) return false
+    const waves = Math.floor(params.waves)
+    const cellsPerWave = Math.floor(params.cellsPerWave)
+    const cellMs = Number(params.cellMs)
+    const waveMs = Number(params.waveMs)
+    // numbers missing from upgrades.json: nothing to do
+    if (!(waves >= 1 && cellsPerWave >= 1 && cellMs >= 0 && waveMs >= 0)) return false
+    shift.effects.dump = { id, color: shift.pieceColor, wavesLeft: waves, cellsLeft: cellsPerWave, cellsPerWave, cellMs, waveMs, waitMs: 0 }
+    return true
+  },
+  // F42 Goop Colorizer (v1): the next N pieces take the falling piece's colour, starting with the one already in the
+  // next window (the engine recolours it at once, so the window shows it — shift.ts colorizeNext). Firing again starts
+  // the count again in the new colour. Refused with no falling piece (or a wild one): no colour to copy.
+  colorize: (shift, params, id) => {
+    if (shift.pieceColor === null) return false
+    const left = Math.floor(params.pieces)
+    if (!(left >= 1)) return false // a number missing from upgrades.json: nothing to do
+    shift.effects.colorize = { id, color: shift.pieceColor, left }
     return true
   },
 }

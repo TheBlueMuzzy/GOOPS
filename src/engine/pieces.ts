@@ -66,6 +66,26 @@ export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCo
 /** The colour of a piece's k-th cell (two-colour pieces have one per cell; the rest are all def.color). */
 export const cellColor = (def: PieceDef, k: number): Color => def.colors?.[k] ?? def.color
 
+/**
+ * F42: the piece's MAIN colour — what Goop Dump and Goop Colorizer copy. One colour: that colour. A two-colour piece:
+ * the colour most of its cells have (a tie: its first colour, def.color). A wild piece has none (null): wild is never
+ * copied, so those abilities never make wild goop.
+ */
+export function mainColor(def: PieceDef): Color | null {
+  if (def.color === WILD) return null
+  if (!def.colors) return def.color
+  const first = def.colors.filter((c) => c === def.color).length
+  const other = def.colors.find((c) => c !== def.color)
+  return other !== undefined && def.colors.length - first > first ? other : def.color
+}
+
+/** F42 Goop Colorizer: the same piece (shape, corruption) all in one colour — a copy; the original is left alone. */
+export function recolored(def: PieceDef, color: Color): PieceDef {
+  const out: PieceDef = { ...def, cells: def.cells.map(([x, y]) => [x, y] as Cell), color }
+  delete out.colors
+  return out
+}
+
 export function rotationCenter(cells: Cell[]): Cell {
   const sx = cells.reduce((sum, c) => sum + c[0], 0)
   const sy = cells.reduce((sum, c) => sum + c[1], 0)

@@ -115,7 +115,8 @@ export interface UpgradeDef {
   testOnly?: boolean // for tests only: the game never lists or grants it
   effects?: UpgradeEffect[] // passive
   ability?: AbilityDef // active
-  feature?: string // feature: the flag name the screens read (defaults to the id)
+  feature?: string // feature: the flag name the screens read (defaults to the id); several upgrades on one flag add up
+  cardNumber?: string // F42: 'count' = the shop card shows an active's first number as it is (1 → 2 waves), not as a %
 }
 
 export interface UpgradeBook {
@@ -163,7 +164,9 @@ export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>
         else muls[effect.modifier] = (muls[effect.modifier] ?? 1) * value
       }
     } else if (def.type === 'feature') {
-      features[def.feature ?? def.id] = level
+      // (F42: upgrades on the same flag add up — each Active Expansion Slot is one more abilitySlots)
+      const flag = def.feature ?? def.id
+      features[flag] = (features[flag] ?? 0) + level
     }
   }
 
