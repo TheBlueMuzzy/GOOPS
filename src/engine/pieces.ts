@@ -127,3 +127,17 @@ export function landingRow(grid: Uint8Array, cells: Cell[], originX: number, y: 
   while (!collides(grid, placeCells(cells, originX, row + 1, width), width, height)) row++
   return row
 }
+
+/**
+ * F43 Crack Matcher: the same piece with its MAIN colour (mainColor) changed to `color` — a one-colour piece all of it;
+ * a two-colour piece only its main colour's cells (if that leaves one colour, it becomes a plain one-colour piece).
+ * A copy; the original is left alone. A wild piece has no main colour: it comes back as it was.
+ */
+export function withMainColor(def: PieceDef, color: Color): PieceDef {
+  const main = mainColor(def)
+  if (main === null) return def
+  if (!def.colors) return recolored(def, color)
+  const colors = def.colors.map((c) => (c === main ? color : c))
+  if (colors.every((c) => c === color)) return recolored(def, color)
+  return { ...def, cells: def.cells.map(([x, y]) => [x, y] as Cell), color: def.color === main ? color : def.color, colors }
+}

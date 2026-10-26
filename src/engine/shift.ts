@@ -23,9 +23,10 @@ import {
   randomPiece,
   recolored,
   rotateCells,
+  withMainColor,
 } from './pieces'
 import { type GroupBook, dropLoose, regroup } from './groups'
-import { crackEveryMs, firstPoppableRow, popLine, spawnCrack, updatePlugs } from './cracks'
+import { crackEveryMs, firstPoppableRow, lowestOpenCrack, popLine, spawnCrack, updatePlugs } from './cracks'
 import { popPoints, popRefundMs } from './score'
 import { type Modifiers, clampModifiers } from './upgrades'
 import { ABILITY_EFFECTS, type AbilitySpec, type ActiveEffects } from './abilities'
@@ -628,7 +629,8 @@ class Shift implements ShiftEngine {
     for (const a of this.abilities) {
       if (a.ready) continue
       const spec = this.abilitySpecs.get(a.id)!
-      a.charge = Math.min(1, a.charge + seconds * spec.chargePerSecond + seals * spec.chargePerSeal)
+      // (F43 Sealing Bonus: each seal's charge × abilityChargePerSealMult)
+      a.charge = Math.min(1, a.charge + seconds * spec.chargePerSecond + seals * spec.chargePerSeal * this.mods.abilityChargePerSealMult)
       if (a.charge >= 1 - 1e-9) {
         a.charge = 1
         a.ready = true
@@ -720,7 +722,19 @@ class Shift implements ShiftEngine {
     // (a lesson can hold the size: e.g. 'tetra' keeps every piece 4 cells however long it runs)
     // (F39 rank twists: never in a lesson's training shift)
     const twists = this.options.twists && !this.training ? { config: this.options.twists, rank: this.state.rank } : undefined
-    return randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount, twists)
+    return this.matchCrack(randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount, twists))
+  }
+
+  // F43 Crack Matcher: with chance crackColorBias, a newly made piece takes the colour of the lowest open crack not yet
+  // plugged (cracks.ts lowestOpenCrack; a two-colour piece: its main colour's cells; a wild piece stays wild). It's the piece made for
+  // the NEXT window, so the window shows it. One extra roll, only when the chance is above 0 and there is such a crack
+  // — without the upgrade the same seed makes the same pieces. (Goop Colorizer, if running, still wins after this.)
+  private matchCrack(def: PieceDef): PieceDef {
+    const bias = this.mods.crackColorBias
+    if (bias <= 0 || this.training || mainColor(def) === null) return def
+    const crack = lowestOpenCrack(this.state.cracks)
+    if (!crack || !this.rng.chance(bias)) return def
+    return withMainColor(def, crack.color)
   }
 
   // The piece after the one coming in: a lesson's chosen piece first (F30), then the lesson's fallback rule (F31),
@@ -982,7 +996,16 @@ class Shift implements ShiftEngine {
       const j = this.rng.int(i + 1)
       ;[columns[i], columns[j]] = [columns[j], columns[i]]
     }
-    for (const x of columns.slice(0, count)) s.grid[(s.height - 1) * s.width + x] = 1 + this.rng.int(this.colorCount)
+    // F43 Junk Uniformer: the first junk cell's colour is random; each later one copies it with junkSameColorChance.
+    // One extra roll a cell, and only when the chance is above 0 — without the upgrade the same seed lays the same junk.
+    const same = this.mods.junkSameColorChance
+    let first: Color | null = null
+    for (const x of columns.slice(0, count)) {
+      const copy = first !== null && same > 0 && this.rng.chance(same)
+      const color: Color = copy ? first! : 1 + this.rng.int(this.colorCount)
+      first ??= color
+      s.grid[(s.height - 1) * s.width + x] = color
+    }
     regroup(s, this.book)
   }
 

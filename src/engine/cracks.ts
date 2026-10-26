@@ -193,3 +193,15 @@ export function updatePlugs(state: ShiftState, events: ShiftEvent[]): void {
     }
   }
 }
+
+// F43 Crack Matcher: the LOWEST open crack not already plugged with its own colour (a grown crack: its lowest cell
+// counts). Same height → the older one (first in the list). None → null.
+export function lowestOpenCrack(cracks: Crack[]): Crack | null {
+  let best: Crack | null = null, bestY = -Infinity
+  for (const c of cracks) {
+    if (c.plugged) continue
+    const y = Math.max(...crackCells(c).map(([, cy]) => cy))
+    if (y > bestY) { best = c; bestY = y }
+  }
+  return best
+}

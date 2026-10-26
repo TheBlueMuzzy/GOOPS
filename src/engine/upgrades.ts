@@ -5,7 +5,9 @@
 import type { AbilitySpec } from './abilities'
 import type { MachineId } from './types'
 
-// Every modifier is a multiplier; 1 = no change. Each one names the tuning value it multiplies.
+// Most modifiers are multipliers; 1 = no change. Each one names the tuning value it multiplies.
+// A few (F43) are CHANCES instead: 0 = no change — and at 0 the engine makes no extra random rolls, so a shift without
+// them plays exactly as before with the same seed.
 export interface Modifiers {
   integrityDrainMult: number // × integrity.drainPerCrackPerSec — 0.5 = open cracks wear the tank half as fast
   ruptureDrainTimeMult: number // × rupture.drainMs — 1.5 = after a rupture, pressure takes 50% longer to drain
@@ -22,6 +24,13 @@ export interface Modifiers {
   // Read by the GAME, not the engine (F34, Focus Mode): × breakdowns.json consoleTimeScale, how fast the shift runs
   // while you're at the console mid-shift — 0.8 = 20% slower there (the App passes it to the shift's speed)
   consoleTimeScaleMult: number
+  // F43 (ranks 10–38):
+  abilityChargePerSealMult: number // × every active's chargePerSeal — 1.6 = each sealed crack charges actives 60% more (Sealing Bonus)
+  junkSameColorChance: number // CHANCE 0..1: each starting junk cell after the first copies the first one's colour (Junk Uniformer)
+  crackColorBias: number // CHANCE 0..1: a new next piece takes the lowest open crack's colour (Crack Matcher)
+  // Read by the INPUT layer, not the engine (F43, Goop Swap): × tank.json holdToSwapMs, how long you hold to swap —
+  // 0.5 = half as long (never under tank.json holdToSwapMinMs — src/input/controls.ts swapHoldMs)
+  swapHoldTimeMult: number
 }
 
 export type ModifierName = keyof Modifiers
@@ -52,6 +61,10 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   controlsCoolMult: 1,
   breakdownCooldownMult: 1,
   consoleTimeScaleMult: 1,
+  abilityChargePerSealMult: 1,
+  junkSameColorChance: 0, // (a chance: 0 = off)
+  crackColorBias: 0, // (a chance: 0 = off)
+  swapHoldTimeMult: 1,
 })
 
 // Safety rails, not tuning: whatever the upgrades add up to, each modifier stays in this range.
@@ -69,6 +82,10 @@ const LIMITS: Record<ModifierName, [min: number, max: number]> = {
   controlsCoolMult: [0, 10],
   breakdownCooldownMult: [0, 10],
   consoleTimeScaleMult: [0.1, 1], // never stops the shift, never speeds it up
+  abilityChargePerSealMult: [0, 10],
+  junkSameColorChance: [0, 1], // a chance
+  crackColorBias: [0, 1], // a chance
+  swapHoldTimeMult: [0.1, 1], // never a longer hold than without it
 }
 
 export function isModifierName(name: string): name is ModifierName {
@@ -138,8 +155,8 @@ export interface ResolvedUpgrades {
 // What a player's upgrades add up to. `owned` = level per upgrade id (missing or 0 = not owned);
 // `equipped` = ids of the actives they took into the shift.
 export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>, equipped: string[] = []): ResolvedUpgrades {
-  // 'add' effects are summed and 'mul' effects multiplied, then combined as (1 + sum) × product,
-  // so the result never depends on the order of upgrades in the JSON.
+  // 'add' effects are summed and 'mul' effects multiplied, then combined as (neutral + sum) × product — (1 + sum) ×
+  // product for a multiplier, sum × product for a chance (F43) — so the result never depends on the JSON's order.
   const adds: Record<string, number> = {}
   const muls: Record<string, number> = {}
   const features: Record<string, number> = {}
@@ -181,7 +198,7 @@ export function resolveUpgrades(book: UpgradeBook, owned: Record<string, number>
   }
 
   const mods: Record<ModifierName, number> = { ...NEUTRAL_MODIFIERS }
-  for (const name of Object.keys(mods) as ModifierName[]) mods[name] = (1 + (adds[name] ?? 0)) * (muls[name] ?? 1)
+  for (const name of Object.keys(mods) as ModifierName[]) mods[name] = (NEUTRAL_MODIFIERS[name] + (adds[name] ?? 0)) * (muls[name] ?? 1)
   for (const id of Object.keys(fewerRepairSteps) as MachineId[]) fewerRepairSteps[id] = Math.max(0, Math.floor(fewerRepairSteps[id]))
   return { modifiers: clampModifiers(mods), abilities, features, fewerRepairSteps }
 }
