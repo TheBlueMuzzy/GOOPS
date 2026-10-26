@@ -176,6 +176,8 @@ One moment per rank-up, shown at the console before the next shift (not skippabl
 | 49 | SPK | Last stretch, kid. ── they know you know. ── next shift they come at you with everything. | The speaker and the monitor both flicker |
 | 50 | MON → him | FINAL PERFORMANCE REVIEW IN PROGRESS. PRESSURE INCREASED 400%. · (a white clump falls) oh! hi! · it's me! · …oof. · glad you're not goop yet. I'll help how I can. | The final shift starts (see **The final shift**); at each valve stage: "valve's open on your console — go!" |
 
+**Built (F45, 2026-10-26): ranks 40–49 play as written** — content/story/moments.json + en.json story.lines; "SPK (the goop)" = voice `goop` (the speaker bubble's place and wave in the goop's colours); 45's glitch and self-correcting slip, 46/47's rattling hatch (it opens in F64), 48's all-mouths-open in the next shift (eyes.json chorus*). Waiting for a piece: 41's grille buzz, 42's glowing pressure line. Rows 0–39 were built in F35 / F40 / F63.
+
 Checks on this table: 51 rows, one voice each; the hand-overs have no gap (5 MON→SPK · 30 SPK→MON cut-in · 31 HEAD at once · 40 SPK back · 50 everything); the machines and twists line up with their unlocks (1 next piece · 2 visor · 3 swap · 4 laser · 5 upgrades · 6 controls · 10 eyes · 20 multi-colour · 30 cracks spread + white · 40 wild goop + mouths).
 
 **In-shift whispers (no tap, the blobby bubble drifts up and fades):** 3 "…cold…" · 8+ one feeling a shift ("…warm…", "…tight…", "…nnn…") · 15+ single words ("…don't…", "…heavy…", "…hold…") · 24+ names ("…Odile…", "…Bram…") · 31+ sentences. **Monitor in-shift:** a new G.O.O.P.S. guess on the report every ~5 ranks; rank 12+: "THERE ARE NO VOICES IN THE TANK. HEARING VOICES IS A FINEABLE OFFENCE." when a whisper shows.

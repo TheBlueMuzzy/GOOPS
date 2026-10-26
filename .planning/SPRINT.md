@@ -12,9 +12,17 @@ Check: unit tests (moments 40–49 load, voices and looks valid) · e2e/story.mj
 - [x] 🤖 4. The release valve is named (46, 47): a console panel that rattles as an attention call (it opens in F64 — The final shift); look numbers in content/ — src/ui/Console.tsx
 - [x] 🤖 5. Tank looks in the next shift: mouths appear at 40 (F62 already grows them), every mouth opens at once at the start of the shift after 48 — src/goo/shared/faces.ts
 - [x] 🤖 6. e2e: ranks 40–49 play at the console at every portrait size; story.mjs's 0–39 run extended to 49 — e2e/story.mjs
-- [ ] 🤖 7. Update design/story.md (40–49 built), GDD story section, TDD if a real build choice is made (next free decision D25) — .planning/design/story.md
+- [x] 🤖 7. Update design/story.md (40–49 built), GDD story section, TDD if a real build choice is made (next free decision D25) — .planning/design/story.md
 
 ## Notes
 - Muzzy 2026-10-26: picked "Story 40–49" for Sprint 21 (Claude's pick — it starts the chain F45 → F64 — The final shift → F65 — The ending, the longest road left to beta).
 - Already built before this sprint (checked in content/): the 40+ silly fine "Talking back to the speaker", the rank titles, the debt line going up after 30, in-shift whispers 31+.
 - Muzzy 2026-10-26: asked for F54 — Offline install + replace v1; chose to keep F45 now and leave F54 for the 1.0 /deliver (offline install already built in F38; the rest is the go-live move).
+- Claude 2026-10-26 (build): the goop through the speaker = the speaker bubble's place AND its speech wave, in the goop's dark colours (not his light ones) — it's coming out of the speaker, but it's the goop. moments.json looks.goopOutline 'plain' switches it to the in-your-head outline.
+- Claude 2026-10-26 (build): 45's slip line is a cut Management line — no Got it, it types, the glitch shows for 0.18 s half a second in, and "*OPERATOR. …" replaces it by itself (looks.cutSeconds after typing).
+- Claude 2026-10-26 (build): the hatch shows on the console from rank 46 (art.json console.hatch.fromRank), so ranks 0–45 look the same as before; it rattles 3 × 0.5 s and the moment's outline (look "hatch") points at it.
+- Claude 2026-10-26 (surprise): a shift starts with an empty tank, so "every mouth opens at once at the start of the shift" can't happen at the very start — it waits until 3 mouths show (eyes.json chorusMouths), then all open for 1.6 s; marked seen only when it actually plays (D25).
+- Claude 2026-10-26 (surprise): this game has no content/devkit/select.json (no Select tab), so data-knobs="hatch" is on the hatch but there's no list to add it to.
+- Ask Muzzy: the hatch and the not-a-face are placeholder drawings by Claude (public/art/ConsoleHatch.svg, public/art/NotAFace.svg) — redraw either any time; the hatch's box is art.json console.hatch.at.
+- Ask Muzzy: should the hatch be on the console from the start (it was always there, nobody looked) instead of appearing at 46? One number: art.json console.hatch.fromRank.
+- Not built (no piece for them yet): 41's grille buzzing with the mouths, 42's glowing pressure line — the words play.
