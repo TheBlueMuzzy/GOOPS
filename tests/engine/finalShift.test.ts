@@ -139,9 +139,9 @@ describe('the final shift (rank 50)', () => {
     expect(ofType(ready, 'valveReady')).toEqual([{ type: 'valveReady', stage: 1 }])
     expect(s.final).toMatchObject({ stage: 0, seals: 6, waiting: true })
     // waiting: seals don't count
-    playerSeal(shift, 14, 200)
-    playerSeal(shift, 16, 201)
+    const meanwhile = [...playerSeal(shift, 14, 200), ...playerSeal(shift, 16, 201)]
     expect(s.final!.seals).toBe(6)
+    expect(ofType(meanwhile, 'valveReady')).toHaveLength(0) // (still the same stage waiting)
     expect(s.cracksSealed).toBe(8) // (every seal is still a seal on the report)
     // the console's panel opens it: stage 2 needs 8, counting from 0
     expect(shift.openValveStage()).toBe(true)
