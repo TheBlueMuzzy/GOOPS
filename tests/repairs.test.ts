@@ -1,6 +1,8 @@
 // F24: the console's repair puzzles (src/game/repairs.ts) — Muzzy's rules, 2026-10-18.
 import { describe, expect, it } from 'vitest'
 import breakdowns from '../content/tuning/breakdowns.json'
+import upgradesJson from '../content/tuning/upgrades.json'
+import { resolveUpgrades, type UpgradeBook } from '../src/engine'
 import { controlAnswers, controlsDone, controlsTurn, laserSolved, newControls, newLaser, newVisor, repairSteps, visorDone, visorLitButton, visorPress, visorSlide } from '../src/game/repairs'
 
 // a seeded random (mulberry32), so every run is the same
@@ -25,6 +27,12 @@ describe('repairSteps: how many steps each repair takes (the tuning, minus upgra
     expect(repairSteps('visor', 2)).toBe(1)
     expect(repairSteps('visor', 9)).toBe(1)
     expect(repairSteps('laser', -3)).toBe(4)
+  })
+  it('F48 the real Quick Fix (upgrades.json, rank 28) at level 2 + every machine fix at max: 4 / 3 / 4 → 1 / 1 / 1, never below 1', () => {
+    const fewer = resolveUpgrades(upgradesJson as UpgradeBook, { quickFix: 2, circuitStabilizer: 4, capacitorEfficiency: 4, gearLubrication: 4 }).fewerRepairSteps
+    expect((['laser', 'visor', 'controls'] as const).map((m) => repairSteps(m, fewer[m]))).toEqual([1, 1, 1])
+    const quick = resolveUpgrades(upgradesJson as UpgradeBook, { quickFix: 2 }).fewerRepairSteps
+    expect((['laser', 'visor', 'controls'] as const).map((m) => repairSteps(m, quick[m]))).toEqual([2, 1, 2])
   })
   it('the puzzles take those counts: 2 sliders lit, 2 corners, a 1-button visor that still slides up and down', () => {
     expect(newLaser(seeded(1), repairSteps('laser', 2)).filter((w) => w !== null)).toHaveLength(2)

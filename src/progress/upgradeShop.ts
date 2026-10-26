@@ -156,15 +156,21 @@ export function levelPercent(def: UpgradeDef, level: number): number {
 
 /**
  * F42: does the card show this upgrade's number as a plain count instead of a %? Features (an Active Expansion Slot:
- * 0 → 1) and actives marked cardNumber 'count' in upgrades.json (Goop Dump's waves, Colorizer's pieces, Crack Down's
- * cracks).
+ * 0 → 1) and actives / passives marked cardNumber 'count' in upgrades.json (Goop Dump's waves, Colorizer's pieces,
+ * Crack Down's cracks; F48 Quick Fix's steps off a repair).
  */
 export const showsCount = (def: UpgradeDef) => def.type === 'feature' || def.cardNumber === 'count'
 
-/** The plain number a level brings, for a count card: a feature's level, an active's first number. Level 0 → 0. */
+/**
+ * The plain number a level brings, for a count card: a feature's level, an active's first number, a passive's first
+ * effect (Quick Fix: 1 → 2 steps). Level 0 → 0.
+ */
 export function levelCount(def: UpgradeDef, level: number): number {
   if (level < 1) return 0
   if (def.type === 'feature') return Math.min(level, maxLevelOf(def))
-  const value = Object.values(def.ability?.byLevel[Math.min(level, def.ability.byLevel.length) - 1] ?? {}).find((v) => typeof v === 'number')
+  const effect = def.effects?.[0]
+  const value = effect
+    ? effect.byLevel[Math.min(level, effect.byLevel.length) - 1]
+    : Object.values(def.ability?.byLevel[Math.min(level, def.ability.byLevel.length) - 1] ?? {}).find((v) => typeof v === 'number')
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
 }

@@ -142,11 +142,13 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
 
 describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 decisions")', () => {
   const shop = playableUpgrades(book)
-  it('one upgrade for each rank 2–9, then F42’s actives and slots (15, 20, 25, 35, 38), in that order, with v1’s max levels', () => {
+  it('one upgrade for each rank 2–9, then ranks 10–38 (F42 actives + slots, F43 passives, F48 Quick Fix), in that order, with v1’s max levels', () => {
     expect(shop.map((u) => [u.id, u.rank, u.maxLevel])).toEqual([
       ['circuitStabilizer', 2, 4], ['autoPopper', 3, 4], ['capacitorEfficiency', 4, 4], ['cooldownBooster', 5, 3],
       ['gearLubrication', 6, 4], ['focusMode', 7, 4], ['denseGoop', 8, 4], ['pressureControl', 9, 8],
-      ['goopDump', 15, 3], ['activeSlot', 20, 1], ['goopColorizer', 25, 3], ['crackDown', 35, 3], ['activeSlot2', 38, 1],
+      ['junkUniformer', 10, 4], ['goopSwap', 12, 4], ['goopDump', 15, 3], ['sealingBonus', 18, 4], ['activeSlot', 20, 1],
+      ['tougherTank', 22, 4], ['goopColorizer', 25, 3], ['quickFix', 28, 2], ['slowCracks', 30, 4], ['crackMatcher', 32, 4],
+      ['crackDown', 35, 3], ['activeSlot2', 38, 1],
     ])
   })
 
@@ -187,6 +189,34 @@ describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 d
     grows('focusMode', (r) => r.modifiers.consoleTimeScaleMult, -1)
     grows('denseGoop', (r) => r.modifiers.fallSpeedMult, 1)
     grows('pressureControl', (r) => r.modifiers.pressureRiseTimeMult, 1)
+    // F43 / F48
+    grows('junkUniformer', (r) => r.modifiers.junkSameColorChance, 1)
+    grows('goopSwap', (r) => r.modifiers.swapHoldTimeMult, -1)
+    grows('sealingBonus', (r) => r.modifiers.abilityChargePerSealMult, 1)
+    grows('tougherTank', (r) => r.modifiers.integrityDrainMult, -1)
+    grows('slowCracks', (r) => r.modifiers.crackEveryMult, 1)
+    grows('crackMatcher', (r) => r.modifiers.crackColorBias, 1)
+    grows('quickFix', (r) => r.fewerRepairSteps.laser + r.fewerRepairSteps.visor + r.fewerRepairSteps.controls, 1)
+  })
+
+  it('F43: the per-level numbers (v1’s steps): junk 0.1 a level, crack colour 0.25 a level, ×1.15 seal charge, ×0.875 wear, ×1.15 crack time', () => {
+    const m = (id: string, level: number) => resolveUpgrades(book, { [id]: level }).modifiers
+    expect([1, 2, 3, 4].map((n) => m('junkUniformer', n).junkSameColorChance)).toEqual([0.1, 0.2, 0.3, 0.4])
+    expect([1, 2, 3, 4].map((n) => m('crackMatcher', n).crackColorBias)).toEqual([0.25, 0.5, 0.75, 1])
+    expect(m('sealingBonus', 4).abilityChargePerSealMult).toBeCloseTo(1.6, 9)
+    expect(m('tougherTank', 4).integrityDrainMult).toBeCloseTo(0.5, 9)
+    expect(m('slowCracks', 4).crackEveryMult).toBeCloseTo(1.6, 9)
+    expect(m('goopSwap', 4).swapHoldTimeMult).toBeCloseTo(1 / 3, 3)
+    // a chance adds from 0 (not from 1 like a multiplier) — owning nothing leaves it at 0
+    expect(m('junkUniformer', 0).junkSameColorChance).toBe(0)
+  })
+
+  it('F48 Quick Fix: 1 / 2 steps off every repair, adding to the max-level machine fixes', () => {
+    expect(resolveUpgrades(book, { quickFix: 1 }).fewerRepairSteps).toEqual({ laser: 1, visor: 1, controls: 1 })
+    expect(resolveUpgrades(book, { quickFix: 2 }).fewerRepairSteps).toEqual({ laser: 2, visor: 2, controls: 2 })
+    const all = resolveUpgrades(book, { quickFix: 2, circuitStabilizer: 4, capacitorEfficiency: 4, gearLubrication: 4 }).fewerRepairSteps
+    expect(all).toEqual({ laser: 3, visor: 3, controls: 3 })
+    expect(resolveUpgrades(book, { quickFix: 2 }).modifiers).toEqual(NEUTRAL_MODIFIERS) // steps only, no multiplier
   })
 
   it('max level of each machine fix = its repair takes 1 step less (and only at max)', () => {

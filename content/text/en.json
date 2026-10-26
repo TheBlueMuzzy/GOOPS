@@ -123,17 +123,45 @@
         "name": "Pressure Control",
         "desc": "Pressure takes longer to rise, so new cracks come slower too."
       },
+      "junkUniformer": {
+        "name": "Junk Uniformer",
+        "desc": "More of the junk on the floor at the start comes in one colour, so it joins up and pops together."
+      },
+      "goopSwap": {
+        "name": "Goop Swap",
+        "desc": "Holding to swap with the next piece takes less time."
+      },
       "goopDump": {
         "name": "Goop Dump",
         "desc": "An active: fire it to rain waves of goop in the falling piece's colour. More levels, more waves."
+      },
+      "sealingBonus": {
+        "name": "Sealing Bonus",
+        "desc": "Each crack you seal charges your actives more."
       },
       "activeSlot": {
         "name": "Active Expansion Slot",
         "desc": "Take a second active into the shift."
       },
+      "tougherTank": {
+        "name": "Tougher Tank",
+        "desc": "Open cracks wear the tank down slower."
+      },
       "goopColorizer": {
         "name": "Goop Colorizer",
         "desc": "An active: fire it and the next pieces all come in the falling piece's colour. More levels, more pieces."
+      },
+      "quickFix": {
+        "name": "Quick Fix",
+        "desc": "Every repair at the console takes fewer steps: 1 less, then 2 less. Never under 1 step."
+      },
+      "slowCracks": {
+        "name": "Slow Cracks",
+        "desc": "New cracks come less often, and growing cracks spread slower."
+      },
+      "crackMatcher": {
+        "name": "Crack Matcher",
+        "desc": "New pieces more often come in the colour of the lowest open crack."
       },
       "crackDown": {
         "name": "Crack Down",
