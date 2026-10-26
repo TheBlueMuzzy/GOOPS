@@ -83,7 +83,7 @@
     "takeBackLabel": "Take back a level of {name}",
     "equip": "Equip",
     "equipLabel": "Equip {name}: take it into the shift",
-    "swapped": "{name} stays behind: one active at a time.",
+    "swapped": "{name} stays behind: every active slot is full.",
     "locked": "Opens at rank {rank}",
     "lockedLabel": "Locked",
     "amount": "{now} → {next}",
@@ -122,6 +122,26 @@
       "pressureControl": {
         "name": "Pressure Control",
         "desc": "Pressure takes longer to rise, so new cracks come slower too."
+      },
+      "goopDump": {
+        "name": "Goop Dump",
+        "desc": "An active: fire it to rain waves of goop in the falling piece's colour. More levels, more waves."
+      },
+      "activeSlot": {
+        "name": "Active Expansion Slot",
+        "desc": "Take a second active into the shift."
+      },
+      "goopColorizer": {
+        "name": "Goop Colorizer",
+        "desc": "An active: fire it and the next pieces all come in the falling piece's colour. More levels, more pieces."
+      },
+      "crackDown": {
+        "name": "Crack Down",
+        "desc": "An active: fire it and the next cracks form low in the tank, in the bottom rows. More levels, more cracks."
+      },
+      "activeSlot2": {
+        "name": "Active Expansion Slot 2",
+        "desc": "Take a third active into the shift."
       }
     }
   },

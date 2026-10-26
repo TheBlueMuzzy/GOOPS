@@ -19,7 +19,9 @@ import {
   newFallingPiece,
   placeCells,
   cellColor,
+  mainColor,
   randomPiece,
+  recolored,
   rotateCells,
 } from './pieces'
 import { type GroupBook, dropLoose, regroup } from './groups'
@@ -314,6 +316,7 @@ class Shift implements ShiftEngine {
       this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
       if (!t || t.integrity) this.drainIntegrity(dt)
       if (s.phase === 'playing' && this.breakdownsOn()) this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
+      if (s.phase === 'playing') this.stepDump(dt) // F42 Goop Dump's rain (a rupture has ended it)
     } else {
       // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
       const speed = this.training ? Math.max(0.01, this.training.ruptureDrainSpeed) : 1 // (a lesson may slow the drain)
@@ -410,6 +413,12 @@ class Shift implements ShiftEngine {
     s.phase = 'rupture'
     s.ruptureReason = reason
     this.events.push({ type: 'rupture', reason })
+    // F42: a Goop Dump still raining stops here — more goop now would only block the pieces while you zap
+    const dump = this.effects.dump
+    if (dump) {
+      delete this.effects.dump
+      this.events.push({ type: 'abilityEnd', id: dump.id })
+    }
   }
 
   private fallPiece(dt: number): void {
@@ -634,11 +643,73 @@ class Shift implements ShiftEngine {
     const a = this.abilities.find((x) => x.id === id)
     if (!a || !a.ready) return false
     const fire = ABILITY_EFFECTS[a.effect]
-    if (!fire || !fire({ phase: this.state.phase, effects: this.effects, machines: this.machines.state }, this.abilitySpecs.get(id)!.params, id)) return false
+    const pieceColor = this.piece ? mainColor(this.piece.def) : null // (F42: what Goop Dump / Colorizer copy)
+    if (!fire || !fire({ phase: this.state.phase, pieceColor, effects: this.effects, machines: this.machines.state }, this.abilitySpecs.get(id)!.params, id)) return false
     a.charge = 0
     a.ready = false
     this.events.push({ type: 'ability', id })
+    if (a.effect === 'colorize') this.colorizeNext() // the piece already in the next window is the first one
     return true
+  }
+
+  // F42 Goop Colorizer: the piece that just became the NEXT one takes the colour (so the next window shows it), and
+  // one fewer is left. After the last: the effect ends.
+  private colorizeNext(): void {
+    const c = this.effects.colorize
+    if (!c) return
+    this.nextDef = recolored(this.nextDef, c.color)
+    c.left--
+    if (c.left <= 0) {
+      delete this.effects.colorize
+      this.events.push({ type: 'abilityEnd', id: c.id })
+    }
+  }
+
+  // F42 Goop Dump: count down to the next cell on the rules clock (tick — so both Dev Kit pauses stop it) and drop it;
+  // after a wave's last cell, waveMs of quiet; after the last wave, the effect ends.
+  private stepDump(dt: number): void {
+    const d = this.effects.dump
+    if (!d) return
+    d.waitMs -= dt
+    while (d.waitMs <= 0) {
+      this.dropDumpCell(d.color)
+      d.cellsLeft--
+      if (d.cellsLeft > 0) {
+        d.waitMs += d.cellMs
+        continue
+      }
+      d.wavesLeft--
+      if (d.wavesLeft <= 0) {
+        delete this.effects.dump
+        this.events.push({ type: 'abilityEnd', id: d.id })
+        return
+      }
+      d.cellsLeft = d.cellsPerWave
+      d.waitMs += d.waveMs
+    }
+  }
+
+  // One dumped cell: into a random column (seeded) whose hidden top rows are clear — so it never rests up there and
+  // blocks the next piece — and not into a column the falling piece is in. It comes in at the top (a 'dump'
+  // event) and drops onto whatever is below (the 'fall' event right after). No column free: this cell is skipped.
+  private dropDumpCell(color: Color): void {
+    const s = this.state
+    // (not into any column the falling piece is in, however low it is: the piece isn't in the grid, so the cell would
+    // settle straight through it)
+    const pieceCols = new Set<number>()
+    if (this.piece) for (const [x] of this.pieceCells(this.piece)) pieceCols.add(x)
+    const free: number[] = []
+    for (let x = 0; x < s.width; x++) {
+      let clear = !pieceCols.has(x)
+      for (let y = 0; clear && y <= s.bufferRows; y++) if (s.grid[y * s.width + x] !== 0) clear = false
+      if (clear) free.push(x)
+    }
+    if (free.length === 0) return
+    const x = free[this.rng.int(free.length)]
+    s.grid[x] = color // row 0, the very top
+    this.events.push({ type: 'dump', x, color })
+    for (const id of regroup(s, this.book)) this.events.push({ type: 'merge', groupId: id })
+    this.settle()
   }
 
   // ---------------------------------------------------------------- pieces
@@ -797,6 +868,7 @@ class Shift implements ShiftEngine {
     if (this.blockedAt(piece.cells, this.state.spin, 0)) return false
     if (ruled && !ruled.buildUp) this.fallback!.index++ // (a build-up piece doesn't use up the rule's turn)
     this.nextDef = this.takeNextDef()
+    this.colorizeNext() // (F42: while Goop Colorizer lasts, the new next piece takes its colour)
     this.lockMs = null
     this.lockResets = 0
     this.piece = piece

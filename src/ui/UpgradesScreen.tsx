@@ -3,7 +3,8 @@
 // its name and what it does (content/text/en.json upgrades.items), level pips (filled = owned, all of them = the max),
 // the cost, and − (take a level back: free, the scrap comes back) / + (buy a level). Upgrades above your rank are shown
 // locked with the rank they open at (v1: you can see what's coming). Actives get a switch to take them into the shift
-// (activeSlots, 1 for now — switching on another when the slot is full swaps them, and a toast says which stayed behind).
+// (activeSlots: 1, + one per Active Expansion Slot owned (F42) — switching on another when the slots are full swaps out
+// the one equipped longest, and a toast says which stayed behind).
 // Every change is saved at once (the App's onChange). The rules: src/progress/upgradeShop.ts.
 // The App passes its state through UpgradeShopContext, so this screen stays mounted while you buy (the list keeps its
 // scroll); each card holds the same parts whatever you buy, so it never changes size (kit Card: fixed size).
@@ -11,7 +12,7 @@ import { useContext, useState } from 'react'
 import { Button, Card, Modal, Pips, Row, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
 import { playableUpgrades, type UpgradeDef } from '../engine'
 import { scrapsAt } from '../progress/progression'
-import { buyLevel, costOf, isActive, levelOf, levelPercent, maxLevelOf, ownsAny, respec, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
+import { buyLevel, costOf, isActive, levelCount, levelOf, levelPercent, maxLevelOf, ownsAny, respec, setEquipped, showsCount, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
 import { UpgradeShopContext, type UpgradeShop } from './upgradeShopContext'
 import text from '../../content/text/en.json'
 
@@ -21,9 +22,11 @@ const nameOf = (def: UpgradeDef) => items[def.id]?.name ?? def.name
 const percent = (n: number) => `${n < 0 ? '−' : '+'}${Math.abs(n)}%`
 // the card's numbers (Muzzy, 2026-10-22): what it does now → at the next level, from upgrades.json — "+30% → +45%"
 // (beside − / +, so it reads as what a buy does; short, so it never wraps and the card never grows)
+// (F42: a slot or a count-type active shows plain numbers — "1 → 2" waves — not a %)
 function amountLine(def: UpgradeDef, level: number, max: number) {
-  const now = percent(levelPercent(def, level))
-  return level >= max ? fill(w.amountMax, { now }) : fill(w.amount, { now, next: percent(levelPercent(def, level + 1)) })
+  const at = (n: number) => (showsCount(def) ? String(levelCount(def, n)) : percent(levelPercent(def, n)))
+  const now = at(level)
+  return level >= max ? fill(w.amountMax, { now }) : fill(w.amount, { now, next: at(level + 1) })
 }
 // the shop's list: rank order (the JSON's order breaks ties)
 const SHOP = playableUpgrades(upgradeBook).map((def, i) => ({ def, i })).sort((a, b) => a.def.rank - b.def.rank || a.i - b.i).map(({ def }) => def)

@@ -1,5 +1,5 @@
 {
-  "_about": "Upgrade definitions (F22, TDD 'Upgrades & abilities'; F34: ranks 2–9 as decided in design/upgrades-map.md 'F33 decisions'). type: passive = modifiers (always on) · active = an ability you equip, charge and fire · feature = a flag the screens read. rank = the rank it can be bought from (the shop itself opens at progression.json unlocks.upgrades). maxLevel = how many levels; cost = scraps a level (missing = 1, v1's price). byLevel[n-1] = the value AT level n (not added up). Passive effects: modifier = a name from src/engine/upgrades.ts Modifiers (or a repair's fewer steps), op = 'mul' (multiply) or 'add'. Abilities: charge 0..1 (1 = ready), chargePerSecond while the shift is playing, chargePerSeal per crack sealed; byLevel = the effect's numbers. What players READ (names, descriptions) is in content/text/en.json upgrades.items — 'name' here is only a label for whoever edits this file. Per-level steps start at v1's and get checked by the bots / economy sim (F51). testOnly upgrades are for tests only: nothing in the game lists or grants them.",
+  "_about": "Upgrade definitions (F22, TDD 'Upgrades & abilities'; F34: ranks 2–9 as decided in design/upgrades-map.md 'F33 decisions'). type: passive = modifiers (always on) · active = an ability you equip, charge and fire · feature = a flag the screens read. rank = the rank it can be bought from (the shop itself opens at progression.json unlocks.upgrades). maxLevel = how many levels; cost = scraps a level (missing = 1, v1's price). byLevel[n-1] = the value AT level n (not added up). Passive effects: modifier = a name from src/engine/upgrades.ts Modifiers (or a repair's fewer steps), op = 'mul' (multiply) or 'add'. Abilities: charge 0..1 (1 = ready), chargePerSecond while the shift is playing, chargePerSeal per crack sealed; byLevel = the effect's numbers. cardNumber 'count' = the shop card shows an active's first number as it is (1 → 2 waves), not as a %. Features: feature = the flag the game reads; upgrades on the same flag add up (abilitySlots: each adds an active slot). What players READ (names, descriptions) is in content/text/en.json upgrades.items — 'name' here is only a label for whoever edits this file. Per-level steps start at v1's and get checked by the bots / economy sim (F51). testOnly upgrades are for tests only: nothing in the game lists or grants them.",
   "upgrades": [
     {
       "id": "circuitStabilizer",
@@ -96,6 +96,73 @@
       ]
     },
     {
+      "id": "goopDump",
+      "name": "Goop Dump",
+      "_note": "Active (F42, v1). Full in 15 s (0.0667 a second) + 25% per seal. Fire: waves of single goop cells in the falling piece's colour rain into random columns — waves 1 / 2 / 3, cellsPerWave cells a wave (v1 18), cellMs between cells (v1 80), waveMs between waves (v1 600). Seeded. Refused (charge kept) with no falling piece, a wild one (no colour to copy), during a rupture, or while a dump is still raining. cardNumber 'count': the shop card shows the first number (waves) as a plain number, not a %.",
+      "type": "active",
+      "rank": 15,
+      "maxLevel": 3,
+      "cardNumber": "count",
+      "ability": {
+        "effect": "goopDump",
+        "chargePerSecond": 0.0667,
+        "chargePerSeal": 0.25,
+        "byLevel": [
+          { "waves": 1, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 },
+          { "waves": 2, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 },
+          { "waves": 3, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 }
+        ]
+      }
+    },
+    {
+      "id": "activeSlot",
+      "name": "Active Expansion Slot",
+      "_note": "Feature (F42, v1). Owning it = one more active slot (2 with this, 3 with Active Expansion Slot 2 too). Every upgrade with feature 'abilitySlots' adds its level to progression.json activeSlots. Taking it back unequips the active equipped longest if they no longer fit.",
+      "type": "feature",
+      "rank": 20,
+      "maxLevel": 1,
+      "feature": "abilitySlots"
+    },
+    {
+      "id": "goopColorizer",
+      "name": "Goop Colorizer",
+      "_note": "Active (F42, v1). Full in 25 s (0.04 a second) + 25% per seal. Fire: the next 6 / 7 / 8 pieces (from the one in the next window on) take the falling piece's colour (a two-colour piece: its main colour — the one most of its cells have). Refused (charge kept) with no falling piece or a wild one. Firing again starts the count again in the new colour.",
+      "type": "active",
+      "rank": 25,
+      "maxLevel": 3,
+      "cardNumber": "count",
+      "ability": {
+        "effect": "colorize",
+        "chargePerSecond": 0.04,
+        "chargePerSeal": 0.25,
+        "byLevel": [{ "pieces": 6 }, { "pieces": 7 }, { "pieces": 8 }]
+      }
+    },
+    {
+      "id": "crackDown",
+      "name": "Crack Down",
+      "_note": "Active (F42, v1). Full in 30 s (0.0333 a second) + 25% per seal. Fire: the next 3 / 5 / 7 cracks form in the bottom `rows` rows (v1 4; no room there → a normal crack, which doesn't count). Refused (charge kept) during a rupture (no new cracks then).",
+      "type": "active",
+      "rank": 35,
+      "maxLevel": 3,
+      "cardNumber": "count",
+      "ability": {
+        "effect": "lowCracks",
+        "chargePerSecond": 0.0333,
+        "chargePerSeal": 0.25,
+        "byLevel": [{ "cracks": 3, "rows": 4 }, { "cracks": 5, "rows": 4 }, { "cracks": 7, "rows": 4 }]
+      }
+    },
+    {
+      "id": "activeSlot2",
+      "name": "Active Expansion Slot 2",
+      "_note": "Feature (F42, v1): one more active slot (3 with both slot upgrades).",
+      "type": "feature",
+      "rank": 38,
+      "maxLevel": 1,
+      "feature": "abilitySlots"
+    },
+    {
       "id": "sturdyTankTest",
       "name": "Sturdy tank (test)",
       "desc": "Open cracks wear the tank 50% slower.",
@@ -109,6 +176,7 @@
       "id": "lowCracksTest",
       "name": "Low cracks (test)",
       "desc": "When fired, the next 3 cracks form in the bottom 4 rows.",
+      "_note": "The F22 plumbing proof, kept for tests: the same effect as Crack Down, but charged only by seals (no time), so the tests are exact.",
       "type": "active",
       "rank": 0,
       "maxLevel": 1,

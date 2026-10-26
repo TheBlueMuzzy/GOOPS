@@ -2,9 +2,11 @@
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
 import { freshProgress, scrapsAt, xpToNext, type Progress } from '../src/progress/progression'
-import { activeSlots, buyLevel, costOf, levelOf, levelPercent, ownsAny, respec, setEquipped, takeBackLevel, upgradeBook, whyNotBuy } from '../src/progress/upgradeShop'
+import { activeSlots, buyLevel, costOf, levelCount, levelOf, levelPercent, ownsAny, respec, setEquipped, showsCount, takeBackLevel, upgradeBook, upgradesForShift, whyNotBuy } from '../src/progress/upgradeShop'
 import { playableUpgrades, type UpgradeBook } from '../src/engine/upgrades'
 import text from '../content/text/en.json'
+import { SAVE_VERSION, loadProgress, saveProgress } from '../src/progress/save'
+import goldenV3 from './saves/goops-progress-v3.json'
 
 const book: UpgradeBook = { upgrades: [
   { id: 'cheap', name: 'Cheap', type: 'passive', rank: 2, maxLevel: 2, effects: [] },
@@ -81,7 +83,7 @@ describe('taking a level back', () => {
 })
 
 describe('equipping actives', () => {
-  it('one slot for now (content/tuning/progression.json activeSlots)', () => {
+  it('one slot to start (content/tuning/progression.json activeSlots; the Expansion Slots add more — below)', () => {
     expect(tuning.activeSlots).toBe(1)
     expect(activeSlots()).toBe(1)
   })
@@ -148,7 +150,104 @@ describe('the card number line (levelPercent): read from the real upgrades.json'
     const items = text.upgrades.items as Record<string, { desc?: string }>
     for (const u of playableUpgrades(upgradeBook)) {
       expect(items[u.id]?.desc, u.id).toBeTruthy()
-      for (let n = 1; n <= u.maxLevel; n++) expect(levelPercent(u, n), `${u.id} ${n}`).not.toBe(0)
+      const card = (n: number) => (showsCount(u) ? levelCount(u, n) : levelPercent(u, n))
+      for (let n = 1; n <= u.maxLevel; n++) expect(card(n), `${u.id} ${n}`).not.toBe(0)
     }
+  })
+  it('F42: the count cards show plain numbers — Dump waves 1 / 2 / 3, Colorizer pieces 6 / 7 / 8, Crack Down cracks 3 / 5 / 7, a slot 0 → 1', () => {
+    const counts = (id: string) => [0, 1, 2, 3].map((n) => levelCount(def(id), n))
+    expect(counts('goopDump')).toEqual([0, 1, 2, 3])
+    expect(counts('goopColorizer')).toEqual([0, 6, 7, 8])
+    expect(counts('crackDown')).toEqual([0, 3, 5, 7])
+    expect([0, 1].map((n) => levelCount(def('activeSlot'), n))).toEqual([0, 1])
+    expect(['goopDump', 'goopColorizer', 'crackDown', 'activeSlot', 'activeSlot2'].every((id) => showsCount(def(id)))).toBe(true)
+    expect(showsCount(def('cooldownBooster'))).toBe(false) // still "+25%"
+  })
+})
+
+// F42 task 4: Active Expansion Slot (rank 20) and Slot 2 (rank 38), bought with scraps like any upgrade
+describe('active slots: 1 → 2 → 3 with the Active Expansion Slots', () => {
+  const rich = (): Progress => ({ ...freshProgress(), totalXp: 1e9 }) // scraps for everything
+  const owning = (owned: Record<string, number>, equipped: string[] = []): Progress => ({ ...rich(), owned, equipped })
+  const ACTIVES = ['cooldownBooster', 'goopDump', 'goopColorizer', 'crackDown']
+  const def = (id: string) => upgradeBook.upgrades.find((u) => u.id === id)!
+
+  it('the slots are upgrades.json feature upgrades at v1’s ranks and price (1 scrap, one level)', () => {
+    const slot = def('activeSlot'), slot2 = def('activeSlot2')
+    expect([slot.type, slot.rank, slot.maxLevel, costOf(slot), slot.feature]).toEqual(['feature', 20, 1, 1, 'abilitySlots'])
+    expect([slot2.type, slot2.rank, slot2.maxLevel, costOf(slot2), slot2.feature]).toEqual(['feature', 38, 1, 1, 'abilitySlots'])
+  })
+
+  it('bought with scraps from their rank (not before), each adds a slot', () => {
+    expect(whyNotBuy(rich(), 'activeSlot', 19)).toBe('locked')
+    let p = buyLevel(rich(), 'activeSlot', 20)
+    expect(levelOf(p, 'activeSlot')).toBe(1)
+    expect(p.scrapsSpent).toBe(1)
+    expect(activeSlots(p)).toBe(2)
+    expect(whyNotBuy(p, 'activeSlot2', 37)).toBe('locked')
+    p = buyLevel(p, 'activeSlot2', 38)
+    expect(activeSlots(p)).toBe(3)
+    expect(whyNotBuy(p, 'activeSlot', 38)).toBe('maxed')
+    expect(whyNotBuy({ ...at(20), scrapsSpent: 20 }, 'activeSlot', 20)).toBe('scraps')
+  })
+
+  it('no slot upgrade = 1 slot; a slot owned but the base raised in progression.json adds on top', () => {
+    expect(activeSlots(freshProgress())).toBe(1)
+    expect(activeSlots(owning({ activeSlot: 1 }), upgradeBook, { ...tuning, activeSlots: 2 })).toBe(3)
+  })
+
+  it('with 3 slots three actives are equipped at once; a 4th swaps out the one equipped longest', () => {
+    let p = owning({ activeSlot: 1, activeSlot2: 1, cooldownBooster: 1, goopDump: 1, goopColorizer: 1, crackDown: 1 })
+    for (const id of ACTIVES.slice(0, 3)) p = setEquipped(p, id, true).progress
+    expect(p.equipped).toEqual(['cooldownBooster', 'goopDump', 'goopColorizer'])
+    const fourth = setEquipped(p, 'crackDown', true)
+    expect(fourth.progress.equipped).toEqual(['goopDump', 'goopColorizer', 'crackDown'])
+    expect(fourth.swappedOut).toBe('cooldownBooster')
+  })
+
+  it('taking a slot back unequips the actives that no longer fit, the one equipped longest first', () => {
+    const p = owning({ activeSlot: 1, activeSlot2: 1, cooldownBooster: 1, goopDump: 1, goopColorizer: 1 }, ['cooldownBooster', 'goopDump', 'goopColorizer'])
+    const two = takeBackLevel(p, 'activeSlot2')
+    expect(two.equipped).toEqual(['goopDump', 'goopColorizer'])
+    expect(levelOf(two, 'activeSlot2')).toBe(0)
+    const one = takeBackLevel(two, 'activeSlot')
+    expect(one.equipped).toEqual(['goopColorizer'])
+    // taking back something else keeps every equipped active that still fits
+    expect(takeBackLevel(p, 'goopDump').equipped).toEqual(['cooldownBooster', 'goopColorizer'])
+  })
+
+  it('the save shape is unchanged (still version 3): slots are owned levels like any upgrade — old saves load with 1 slot, new ones keep 3 equipped', () => {
+    const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) } }
+    expect(SAVE_VERSION).toBe(3)
+    const old = memory()
+    old.setItem('goops-progress', JSON.stringify(goldenV3))
+    expect(activeSlots(loadProgress(old))).toBe(1)
+    const s = memory()
+    const p = owning({ activeSlot: 1, activeSlot2: 1, goopDump: 1, goopColorizer: 1, crackDown: 1 }, ['goopDump', 'goopColorizer', 'crackDown'])
+    saveProgress(p, s)
+    const back = loadProgress(s)
+    expect(back.equipped).toEqual(['goopDump', 'goopColorizer', 'crackDown'])
+    expect(activeSlots(back)).toBe(3)
+    expect(upgradesForShift(back).abilities).toHaveLength(3)
+  })
+
+  it('respec takes the slots back too: nothing owned, nothing equipped, every scrap back', () => {
+    const p = owning({ activeSlot: 1, activeSlot2: 1, goopDump: 2 }, ['goopDump'])
+    const r = respec({ ...p, scrapsSpent: 4 })
+    expect([r.owned, r.equipped, r.scrapsSpent]).toEqual([{}, [], 0])
+    expect(activeSlots(r)).toBe(1)
+  })
+
+  it('the shift gets as many actives as there are slots (the newest kept), at their owned levels', () => {
+    const all = ['cooldownBooster', 'goopDump', 'goopColorizer', 'crackDown']
+    const owned = { cooldownBooster: 1, goopDump: 2, goopColorizer: 1, crackDown: 3 }
+    expect(upgradesForShift(owning(owned, all)).abilities.map((a) => a.id)).toEqual(['crackDown'])
+    expect(upgradesForShift(owning({ ...owned, activeSlot: 1 }, all)).abilities.map((a) => a.id)).toEqual(['goopColorizer', 'crackDown'])
+    const three = upgradesForShift(owning({ ...owned, activeSlot: 1, activeSlot2: 1 }, all)).abilities
+    expect(three.map((a) => a.id)).toEqual(['goopDump', 'goopColorizer', 'crackDown'])
+    expect(three.map((a) => a.params)).toEqual([
+      { waves: 2, cellsPerWave: 18, cellMs: 80, waveMs: 600 }, { pieces: 6 }, { cracks: 7, rows: 4 },
+    ])
+    expect(upgradesForShift(owning({ ...owned, activeSlot: 1, activeSlot2: 1 }, all)).features).toEqual({ abilitySlots: 2 })
   })
 })

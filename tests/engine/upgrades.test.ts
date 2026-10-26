@@ -142,11 +142,26 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
 
 describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 decisions")', () => {
   const shop = playableUpgrades(book)
-  it('one upgrade for each rank 2–9, in that order, with v1’s max levels', () => {
+  it('one upgrade for each rank 2–9, then F42’s actives and slots (15, 20, 25, 35, 38), in that order, with v1’s max levels', () => {
     expect(shop.map((u) => [u.id, u.rank, u.maxLevel])).toEqual([
       ['circuitStabilizer', 2, 4], ['autoPopper', 3, 4], ['capacitorEfficiency', 4, 4], ['cooldownBooster', 5, 3],
       ['gearLubrication', 6, 4], ['focusMode', 7, 4], ['denseGoop', 8, 4], ['pressureControl', 9, 8],
+      ['goopDump', 15, 3], ['activeSlot', 20, 1], ['goopColorizer', 25, 3], ['crackDown', 35, 3], ['activeSlot2', 38, 1],
     ])
+  })
+
+  it('F42 actives: v1’s numbers per level and v1’s charging (15 / 25 / 30 s to full, +0.25 a seal)', () => {
+    const at = (id: string, level: number) => resolveUpgrades(book, { [id]: level }, [id]).abilities[0]
+    expect([1, 2, 3].map((n) => at('goopDump', n).params.waves)).toEqual([1, 2, 3])
+    expect(at('goopDump', 1).params).toMatchObject({ cellsPerWave: 18, cellMs: 80, waveMs: 600 })
+    expect([1, 2, 3].map((n) => at('goopColorizer', n).params.pieces)).toEqual([6, 7, 8])
+    expect([1, 2, 3].map((n) => at('crackDown', n).params)).toEqual([{ cracks: 3, rows: 4 }, { cracks: 5, rows: 4 }, { cracks: 7, rows: 4 }])
+    const secondsToFull = { goopDump: 15, goopColorizer: 25, crackDown: 30 }
+    for (const [id, s] of Object.entries(secondsToFull)) {
+      expect(1 / at(id, 1).chargePerSecond, id).toBeCloseTo(s, 1)
+      expect(at(id, 1).chargePerSeal, id).toBe(0.25)
+    }
+    expect([at('goopDump', 1).effect, at('goopColorizer', 1).effect, at('crackDown', 1).effect]).toEqual(['goopDump', 'colorize', 'lowCracks'])
   })
 
   it('every modifier is a name the shift (or the game, for Focus Mode) reads, with a value for every level', () => {

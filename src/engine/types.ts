@@ -156,6 +156,7 @@ export type ShiftEvent =
   | { type: 'abilityReady'; id: string } // an ability's charge just became full (F22)
   | { type: 'ability'; id: string } // an ability was fired (F22)
   | { type: 'abilityEnd'; id: string } // a fired ability's lasting effect ran out (F22)
+  | { type: 'dump'; x: number; color: Color } // F42 Goop Dump: a cell came in at the top of tank column x (row 0); the 'fall' right after drops it
   | { type: 'breakdown'; machine: MachineId } // a machine broke (F23)
   | { type: 'repaired'; machine: MachineId } // its repair was finished at the console (F23)
   | { type: 'prime'; groupId: number } // broken laser: a first zap primed this group; zap it again to pop (F23)
