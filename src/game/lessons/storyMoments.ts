@@ -11,20 +11,23 @@ import text from '../../../content/text/en.json'
 import { operatorName } from '../../progress/save'
 
 // F63: head = the goop in your head (ranks 31–39) — the whisper bubble over the monitor area; him = the Veteran from
-// inside the white goop is the one talking (35, 37)
-export type Voice = 'mon' | 'spk' | 'head'
+// inside the white goop is the one talking (35, 37) · F45: goop = the goop through the speaker (41, 43, 48) — the
+// Veteran's bubble place, the goop's look (StoryView.tsx)
+export type Voice = 'mon' | 'spk' | 'head' | 'goop'
 // F40: monitor = what the monitor does while the line is up · crackle = the bubble squelches more often · cut = the line
 // is cut off once typed (the moment moves on by itself) — moments.json _about · F66 sign = the line puts a name box on
-// the monitor (PLEASE SIGN HERE, rank 0): Sign or Skip moves on instead of Got it (Console.tsx)
-export type MonitorLook = 'flicker' | 'alarm'
-export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean; sign?: boolean; him?: boolean }
+// the monitor (PLEASE SIGN HERE, rank 0): Sign or Skip moves on instead of Got it (Console.tsx) · F45: monitor glitch =
+// for a beat something that isn't a face (45) · rattle = the hatch under the console rattles (46, 47; Console.tsx)
+export type MonitorLook = 'flicker' | 'alarm' | 'glitch'
+export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean; sign?: boolean; him?: boolean; rattle?: boolean }
 type Moment = { look?: string; lines: StoryLine[] }
 // F40: the goop gets better at talking — each stage (from a rank on) has its own words: feelings (8) → single words
 // (15) → names (24). From noVoicesFrom, Management answers a whisper (en.json story.lines.noVoices).
 type WhisperStage = { from: number; say: string[] }
 type Whispers = { coldAt: number; stages: WhisperStage[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number
   noVoicesFrom: number; noVoicesDelaySeconds: number; noVoicesSeconds: number }
-export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; alarmWords: string; crackleEvery: number; cutSeconds: number }
+export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; alarmWords: string; crackleEvery: number; cutSeconds: number
+  goopOutline: 'wave' | 'plain'; glitchAfterSeconds: number; glitchSeconds: number; glitchColour: string; rattleSeconds: number; rattleShake: number; rattleTimes: number }
 type MomentsFile = { catchUp: number; moments: Record<string, Moment>; whispers: Whispers; looks: StoryLooks }
 
 export const storyFile = momentsFile as unknown as MomentsFile

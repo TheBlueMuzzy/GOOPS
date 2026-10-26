@@ -47,6 +47,44 @@ describe('story moments', () => {
     expect(storyFile.moments['36'].lines.some((l) => lines[l.words].includes('{name}'))).toBe(true)
     expect(storyWords('r36c')).toContain(en.story.sign.fallback) // never signed (no save here): Operator #4471
   })
+  it('F45: 40–49 — every rank has a moment; the speaker is back: him (spk), the goop (goop at 41, 43, 48), Management slipping (45, 47)', () => {
+    const lines = en.story.lines as Record<string, string>
+    const voices: Record<number, string> = { 40: 'spk', 41: 'goop', 42: 'spk', 43: 'goop', 44: 'spk', 45: 'mon', 46: 'spk', 47: 'mon', 48: 'goop', 49: 'spk' }
+    for (let r = 40; r <= 49; r++) {
+      const m = storyFile.moments[String(r)]
+      expect(m?.lines.length, `rank ${r}`).toBeGreaterThan(0)
+      for (const l of m.lines) {
+        expect(l.voice, `rank ${r}`).toBe(voices[r])
+        expect(lines[l.words], `rank ${r} ${l.words}`).toBeTruthy()
+        if (l.monitor) expect(['flicker', 'alarm', 'glitch']).toContain(l.monitor)
+        if (l.voice === 'mon') expect(lines[l.words]).toBe(lines[l.words].toUpperCase()) // Management types in capitals
+      }
+    }
+    expect(storyFile.moments['40'].lines[0].crackle).toBe(true) // the speaker crackles back to life
+    expect(storyFile.moments['43'].lines.some((l) => l.monitor === 'flicker')).toBe(true)
+    // 45: the slip types, is cut (no Got it) and corrects itself, with the glitch
+    const slip = storyFile.moments['45'].lines
+    expect(slip[0]).toMatchObject({ voice: 'mon', monitor: 'glitch', cut: true })
+    expect(lines[slip[0].words]).toContain('HUMAN RESOURCE.')
+    expect(lines[slip[1].words].startsWith('*OPERATOR.')).toBe(true)
+    // 46 and 47: the hatch under the console rattles and is outlined
+    for (const r of [46, 47]) {
+      expect(storyFile.moments[String(r)].look, `rank ${r}`).toBe('hatch')
+      expect(storyFile.moments[String(r)].lines.some((l) => l.rattle), `rank ${r}`).toBe(true)
+    }
+    expect(storyFile.moments['49'].lines[0]).toMatchObject({ monitor: 'flicker', crackle: true })
+    // the looks' numbers are there
+    const L = storyFile.looks
+    expect(['wave', 'plain']).toContain(L.goopOutline)
+    for (const n of [L.glitchAfterSeconds, L.glitchSeconds, L.rattleSeconds, L.rattleShake, L.rattleTimes]) expect(n).toBeGreaterThan(0)
+  })
+  it('every line has a voice and flags the runner knows', () => {
+    const known = new Set(['voice', 'words', 'monitor', 'crackle', 'cut', 'sign', 'him', 'rattle'])
+    for (const [r, m] of Object.entries(storyFile.moments)) for (const l of m.lines) {
+      expect(['mon', 'spk', 'head', 'goop'], `rank ${r}`).toContain(l.voice)
+      for (const k of Object.keys(l)) expect(known.has(k), `rank ${r} ${k}`).toBe(true)
+    }
+  })
   it('Management 0–4, the Veteran 5–29 (story.md pacing)', () => {
     for (let r = 0; r <= 29; r++) for (const l of storyFile.moments[String(r)].lines) expect(l.voice).toBe(r < 5 ? 'mon' : 'spk')
   })
