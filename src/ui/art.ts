@@ -32,6 +32,7 @@ export const art = {
     monitor: layer(scene.layers.monitor),
     // F32: the monitor's screen as the lesson message (its colours and edges) · F45 glitch: the not-a-face (rank 45)
     crt: { ...scene.crt, glitch: url(scene.crt.glitch) },
+    hatch: { src: url(scene.hatch.file), at: rect(scene.hatch.at), fromRank: scene.hatch.fromRank }, // F45: rattles at 46, 47
     monitorDrop: scene.monitorDrop, // F35: how much lower the monitor hangs at rest (0 while a lesson shows the periscope)
     periscope: { ...layer(scene.layers.periscope), travel: scene.layers.periscope.travel, grip: scene.layers.periscope.grip },
     // the meter's words + bar sit over its art; the bar picture's shape = width / height

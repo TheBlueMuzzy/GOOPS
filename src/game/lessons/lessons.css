@@ -65,6 +65,25 @@
 :root[data-reduce-motion] .crt-glitch { animation-name: story-glitch-still; }
 @keyframes story-glitch-still { from, to { opacity: 1; } }
 
+/* F45 the hatch under the console (Console.tsx Hatch): rattle = it knocks in its frame rattleTimes times, each
+   rattleSeconds, shaking rattleShake of its own width (moments.json looks). Reduce motion: it stays still (the moment's
+   outline still points at it). */
+.console-hatch { position: relative; inline-size: 100%; block-size: 100%; }
+.console-hatch img { display: block; inline-size: 100%; block-size: 100%; }
+.console-hatch[data-rattle] { animation: story-rattle var(--rattle) linear var(--rattle-times); }
+.console-hatch[data-paused] { animation-play-state: paused; }
+@keyframes story-rattle {
+  0%, 100% { transform: none; }
+  10% { transform: translate(calc(var(--rattle-shake) * -100%), calc(var(--rattle-shake) * -40%)) rotate(-1.5deg); }
+  20% { transform: translate(calc(var(--rattle-shake) * 100%), 0) rotate(1.5deg); }
+  30% { transform: translate(calc(var(--rattle-shake) * -70%), calc(var(--rattle-shake) * 30%)) rotate(-1deg); }
+  40% { transform: translate(calc(var(--rattle-shake) * 60%), 0) rotate(1deg); }
+  50% { transform: translate(calc(var(--rattle-shake) * -30%), 0); }
+  60% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .console-hatch[data-rattle] { animation: none; } }
+:root[data-reduce-motion] .console-hatch[data-rattle] { animation: none; }
+
 /* slid down past the bezel: the bezel's colour round it (sides and bottom; the top is the monitor's own) */
 .crt[data-grown] {
   box-shadow: 0 0 0 calc(var(--crt-bezel-w) * var(--u)) var(--crt-bezel);

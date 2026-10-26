@@ -19,6 +19,7 @@ import { SOUNDS } from '../game/shiftSounds'
 import { art } from './art'
 import { useShort } from './useShort'
 import { CrtLook, TypedText } from '../game/CrtLook'
+import { clockPause, onClockPause } from '../devkit/gameClock'
 import text from '../../content/text/en.json'
 import { versionLabel } from '../version'
 import { RankSelectButton } from './RankSelect'
@@ -135,6 +136,24 @@ function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | nul
   )
 }
 
+// F45 THE HATCH under the panels (ranks 46, 47: the release valve is named): from art.json hatch.fromRank it's on the
+// console's front; while a story line says rattle it rattles (lessons.css, numbers moments.json looks.rattle*) — the
+// key restarts it for each line. Looks clock: the Dev Kit's full pause holds it. It opens in F64 (The final shift).
+function Hatch({ rattle, dim }: { rattle: string | null; dim: boolean }) {
+  const [paused, setPaused] = useState(() => clockPause() === 'full')
+  useEffect(() => onClockPause((mode) => setPaused(mode === 'full')), [])
+  const looks = storyFile.looks
+  return (
+    <ArtLayer at={a.hatch.at} dim={dim}>
+      <div key={rattle ?? 'still'} className="console-hatch" data-tag="hatch" data-knobs="hatch" data-rattle={rattle ? '' : undefined}
+        data-paused={paused || undefined}
+        style={{ '--rattle': `${looks.rattleSeconds}s`, '--rattle-times': looks.rattleTimes, '--rattle-shake': looks.rattleShake } as CSSProperties}>
+        <img src={a.hatch.src} alt="" draggable={false} />
+      </div>
+    </ArtLayer>
+  )
+}
+
 // F59: the console's Upgrades button, over the GOOPS title — the scraps count on it; grey (and asleep) until upgrading
 // unlocks, then it opens the Upgrades screen. data-tag: the unlock lesson outlines it (content/lessons/unlock-upgrades.json).
 function UpgradesButton({ scraps, open, opensAt, onOpen }: NonNullable<Props['upgrades']>) {
@@ -216,6 +235,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} outlined={outlined} />
         <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
         <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
+        {now.rank >= a.hatch.fromRank && <Hatch dim={leaving} rattle={story?.line.rattle ? `${story.rank}:${story.line.words}` : null} />}
         <ArtLayer data-version-spot="main-menu" {...a.words.version} tone="muted" align="start" dim={leaving}>{versionLabel}</ArtLayer>
         {rankSelect && <ArtLayer {...a.words.rankSelect} align="center" dim={leaving}><RankSelectButton /></ArtLayer>}
         <ArtLayer {...(rankSelect ? a.words.creditBeside : a.words.credit)} tone="muted" align="end" dim={leaving}>{rankSelect ? t.creditShort : t.credit}</ArtLayer>
