@@ -9,8 +9,13 @@ import look from '../../content/tuning/cracks-look.json'
 import tank from '../../content/tuning/tank.json'
 import { WILD_COLOR } from '../goo/shared/palette'
 import { twoColourGlow, wildStops } from '../goo/shared/wildLook'
+import { GALAXY_SLOT, galaxyColours, galaxyCrackStars } from '../goo/shared/galaxyLook'
 
 export type ColorOf = (c: number) => string
+
+// F64: the colour a line or mark of goop colour c is drawn in on the dark tank — black's would vanish, so black (the
+// galaxy, rank 50) is drawn in its rim glow (galaxy-look.json rim); every other colour as it is
+const paintOf = (c: number, colorOf: ColorOf) => (c === GALAXY_SLOT ? galaxyColours().rim : colorOf(c))
 
 /** F39: a wild cell's paint on a 2D canvas — the wild look's body with its sheen band across (x0, y0) → (x1, y1). */
 export function wildPaint(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, colorOf: ColorOf, timeSec: number): CanvasGradient {
@@ -78,14 +83,15 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     const sx = centreX + screenColumn(c.x, view.camera, s.width) * cp
     const sy = topY + (c.y - s.bufferRows + 0.5) * cp
     if (sx < left - cp || sx > right + cp) continue
-    drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.key, timeSec)
+    if (c.color === GALAXY_SLOT) drawGalaxyCrack(ctx, sx, sy, cp, c.key, timeSec, still) // F64: a black crack, with stars
+    else drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.key, timeSec)
   }
   // F39 a grown crack reads as ONE crack: a thin seam in its colour from each grown cell back to the cell it grew from
   for (const c of s.cracks) {
     if (!c.cells || c.cells.length < 2) continue
     ctx.save()
     ctx.lineCap = 'round'
-    ctx.strokeStyle = colorOf(c.color)
+    ctx.strokeStyle = paintOf(c.color, colorOf) // (F64: a black crack's seam glows in the galaxy's rim colour)
     ctx.lineWidth = Math.max(1, cp * tank.crackWidth * 0.6)
     ctx.shadowColor = ctx.strokeStyle
     ctx.shadowBlur = cp * tank.crackGlow * 0.5
@@ -136,7 +142,7 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
       const sx = centreX + screenColumn(x, s.spin, s.width) * cp
       const sy = topY + (y - s.bufferRows + 0.5) * cp
       const h = cp * 0.42
-      ctx.strokeStyle = c === WILD_COLOR ? wildPaint(ctx, sx - h, sy - h, sx + h, sy + h, colorOf, timeSec) : colorOf(c)
+      ctx.strokeStyle = c === WILD_COLOR ? wildPaint(ctx, sx - h, sy - h, sx + h, sy + h, colorOf, timeSec) : paintOf(c, colorOf)
       ctx.strokeRect(sx - h, sy - h, h * 2, h * 2)
     }
     ctx.setLineDash([])
@@ -230,7 +236,7 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     const toRight = sx > right
     const tip = toRight ? right - 3 : left + 3
     const base = toRight ? tip - arrow : tip + arrow
-    ctx.fillStyle = colorOf(c.color)
+    ctx.fillStyle = paintOf(c.color, colorOf)
     ctx.beginPath(); ctx.moveTo(base, sy - arrow); ctx.lineTo(tip, sy); ctx.lineTo(base, sy + arrow); ctx.closePath()
     ctx.fill(); ctx.stroke()
   }
@@ -277,6 +283,39 @@ function drawCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp: numb
   ctx.lineWidth = cp * tank.crackWidth
   traceCrack(ctx, crackShape(x, y, cp, id))
   ctx.stroke()
+  ctx.restore()
+}
+
+// F64 a black crack (the final shift): the same jagged crack, a glow in the galaxy's rim colour round a dark core, and a
+// few stars twinkling along it (galaxy-look.json crackStars; still = reduce motion: they hold steady)
+function drawGalaxyCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp: number, id: number, t: number, still: boolean) {
+  const g = galaxyColours()
+  const shape = crackShape(x, y, cp, id)
+  ctx.save()
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.shadowColor = g.rim
+  ctx.shadowBlur = cp * tank.crackGlow * (0.7 + 0.3 * Math.sin(t * 3 + id))
+  ctx.strokeStyle = g.rim
+  ctx.lineWidth = cp * tank.crackWidth * 1.6
+  traceCrack(ctx, shape)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+  ctx.strokeStyle = g.core
+  ctx.lineWidth = cp * tank.crackWidth * 0.9
+  traceCrack(ctx, shape)
+  ctx.stroke()
+  const stars = galaxyCrackStars()
+  ctx.fillStyle = g.star
+  for (let k = 0; k < stars.count; k++) {
+    const [px, py] = shape.pts[1 + ((k * 2 + id) % (shape.pts.length - 2))] // (on the crack's inner points, spread out)
+    const tw = still ? 0.8 : 0.3 + 0.7 * Math.max(0, Math.sin(t * stars.twinkle * (1 + 0.37 * k) + id * 1.7 + k * 2.1)) ** 2
+    const r = Math.max(0.6, cp * 0.05 * stars.size) * (0.6 + 0.6 * tw)
+    ctx.globalAlpha = tw
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill()
+    ctx.fillRect(px - r * 2.4, py - r * 0.2, r * 4.8, r * 0.4) // a little cross glint
+    ctx.fillRect(px - r * 0.2, py - r * 2.4, r * 0.4, r * 4.8)
+  }
   ctx.restore()
 }
 

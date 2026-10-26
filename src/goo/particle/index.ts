@@ -9,6 +9,7 @@ import particleFile from '../../../content/tuning/goo-particle.json' // live: fo
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
 import { DEFAULT_COLOR_NAMES, gooSlot, paletteTable } from '../shared/palette'
 import { WILD_UNIFORMS, setWild } from '../shared/wildLook'
+import { GALAXY_UNIFORMS, setGalaxy } from '../shared/galaxyLook'
 import { groupFillLines, inWindow, tankWindow, unwrapCells, viewOrigin, wrapNear, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
@@ -984,7 +985,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   const blurP: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uStep', 'uSigma', 'uOut', 'uTaps'])
   const shadeP: Program = makeProgram(gl, FULLSCREEN_VS, SHADE_FS, [
     'uT0', 'uT1', 'uT2', 'uW0', 'uW1', 'uW2', 'uRes', 'uOrigin', 'uCell', 'uScale', 'uTh', 'uWet', 'uBulge', 'uAbsorb',
-    'uFres', 'uTrans', 'uTime', 'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS, ...WILD_UNIFORMS,
+    'uFres', 'uTrans', 'uTime', 'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS, ...WILD_UNIFORMS, ...GALAXY_UNIFORMS,
   ])
   const xrayBuf = new Float32Array(XRAY_MAX * 4)
   const faceDraw = new FaceDrawer(gl) // F62
@@ -1158,6 +1159,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     gl.uniform3fv(u.uCols, cols)
     gl.uniform1f(u.uWhite, Z.whiteHot) // F67: how far toward white zapped goo turns
     setWild(gl, u, cols) // F39: the wild goop's look (twists-look.json, live)
+    setGalaxy(gl, u) // F64: black goop's galaxy look (galaxy-look.json, live)
     setXray(gl, u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)

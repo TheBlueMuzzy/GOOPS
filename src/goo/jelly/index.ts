@@ -9,6 +9,7 @@ import jellyFile from '../../../content/tuning/goo-jelly.json' // live: follows 
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
 import { DEFAULT_COLOR_NAMES, WILD_COLOR, gooSlot, paletteTable } from '../shared/palette'
 import { WILD_UNIFORMS, setWild } from '../shared/wildLook'
+import { GALAXY_UNIFORMS, setGalaxy } from '../shared/galaxyLook'
 import { groupFillLines, tankWindow, unwrapAround, unwrapCells, viewOrigin, wrapNear, wrapTurns, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
@@ -1103,7 +1104,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   const PB: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uSize', 'uStep', 'uSigma', 'uR'])
   const PF: Program = makeProgram(gl, FULLSCREEN_VS, FINAL_FS, [
     'uS0', 'uS1', 'uS2', 'uQ0', 'uQ1', 'uQ2', 'uM1', 'uRes', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet',
-    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS, ...WILD_UNIFORMS,
+    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS, ...WILD_UNIFORMS, ...GALAXY_UNIFORMS,
   ])
   const xrayBuf = new Float32Array(XRAY_MAX * 4)
   const faceDraw = new FaceDrawer(gl) // F62
@@ -1394,6 +1395,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     gl.uniform3fv(PF.u.uCols, cols)
     gl.uniform1f(PF.u.uWhite, zapWhite) // F67: how far toward white a zapped jelly turns
     setWild(gl, PF.u, cols) // F39: the wild goop's look (twists-look.json, live)
+    setGalaxy(gl, PF.u) // F64: black goop's galaxy look (galaxy-look.json, live)
     setXray(gl, PF.u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)

@@ -3,8 +3,10 @@
 // Field textures: tex0 = colours 1-4, tex1.rgb = colours 5-7, tex2 = r unfilled weight / g ready weight / b white-hot
 // weight (zapped goo, F67).
 // F39: wild goop = colour 8, in tex1.a, shaded with the wild look (src/goo/shared/wildLook.ts).
+// F64: black = colour 7, in tex1.b (only at rank 50), shaded with the galaxy look (src/goo/shared/galaxyLook.ts).
 import { XRAY_GLSL } from '../shared/xray'
 import { WILD_GLSL } from '../shared/wildLook'
+import { GALAXY_GLSL } from '../shared/galaxyLook'
 
 export const SPLAT_VS = `#version 300 es
 layout(location=0) in vec2 aCorner;
@@ -62,6 +64,7 @@ uniform vec3 uCols[9];
 out vec4 outColor;
 ${XRAY_GLSL}
 ${WILD_GLSL}
+${GALAXY_GLSL}
 float field(vec2 uv, vec4 m0, vec4 m1){ return (dot(texture(uT0, uv), m0) + dot(texture(uT1, uv), m1)) * uScale; }
 float hgt(float f){ return sqrt(clamp((f - uTh) / 0.9, 0.0, 1.0)); }   // steep wet edge, soft dome on top
 vec4 over(vec4 top, vec4 under){ return top + under * (1.0 - top.a); }
@@ -116,9 +119,11 @@ void main(){
     int wc = 0; float wb = 0.0;
     for (int i = 0; i < 8; i++) if (wf[i] > wb) { wb = wf[i]; wc = i; }
     float g = uGlow * clamp(wr * 1.2, 0.0, 1.0) * (0.35 + 0.65 * pulse) * 0.4;
-    outc = over(vec4((uCols[wc + 1] * 0.7 + 0.3) * g, g), outc);
+    vec3 wcol = wc == 6 ? uGRim : uCols[wc + 1];   // (F64: black's ready glow in its rim colour — dark would never show)
+    outc = over(vec4((wcol * 0.7 + 0.3) * g, g), outc);
   }
   outc = over(wildHalo(p, texture(uW1, uv).w * uScale), outc);   // F39: the wild goop's soft pulsing halo
+  outc = over(galaxyHalo(texture(uW1, uv).z * uScale), outc);    // F64: the soft glow round black goop, so it reads on the dark tank
   if (f1 > uTh * 0.5) {
     // the winner's field minus part of the rival's -> same colours fuse, different colours meet at a clean seam
     float fe = f1 - 0.6 * f2, aa = fwidth(fe) * 0.9 + 1e-4;
@@ -126,9 +131,12 @@ void main(){
     vec4 m1 = vec4(float(ci == 4), float(ci == 5), float(ci == 6), float(ci == 7));
     vec3 wg = vec3(0.0);
     // F39: wild goop is shaded with the wild look, never a palette colour
-    vec3 base = ci == 7 ? wildBase(p, vec3(0.0, 0.0, 1.0), clamp(f1 - uTh, 0.0, 1.0), wg) : uCols[ci + 1];
+    // F64: black is the galaxy (lit = what its glows use: its rim colour)
+    vec3 base = ci == 7 ? wildBase(p, vec3(0.0, 0.0, 1.0), clamp(f1 - uTh, 0.0, 1.0), wg) : ci == 6 ? galaxyBase(p) : uCols[ci + 1];
+    vec3 lit = ci == 6 ? uGRim : base;
     vec3 col = shade(uv, tx, f1, f2, m0, m1, base);
     if (ci == 7) col += wildExtras(p, 1.0 - smoothstep(uTh, uTh + 0.6, fe), wg);
+    if (ci == 6) col += galaxyExtras(p, 1.0 - smoothstep(uTh, uTh + 0.6, fe));   // F64: the stars + the glowing edge
     float cover = smoothstep(uTh - aa, uTh + aa, fe);
     // filling: the part above the fill level is dimmer and more see-through, with a soft bright level line
     vec4 fl = texture(uT2, uv) * uScale;
@@ -136,8 +144,8 @@ void main(){
     float rd = clamp(fl.g / max(fsum, 1e-4), 0.0, 1.0);
     float level = (1.0 - smoothstep(0.0, 0.3, abs(un - 0.5)));
     col *= 1.0 - uUnDim * un;
-    col += (base * 0.5 + 0.35) * level * 0.3;
-    col += base * uGlow * rd * (0.25 + 0.75 * pulse) * 0.8;   // ready: a gentle pulse inside the goo
+    col += (lit * 0.5 + 0.35) * level * 0.3;
+    col += lit * uGlow * rd * (0.25 + 0.75 * pulse) * 0.8;   // ready: a gentle pulse inside the goo
     // zapped (F67, Jelly's white-hot): lit from inside, toward white by uWhite
     float rh = clamp(fl.b / max(fsum, 1e-4), 0.0, 1.0) * clamp(uWhite * 3.0, 0.0, 1.0);
     col = mix(col, mix(base, vec3(1.0), uWhite) * (1.0 + 0.3 * uWhite) * 0.95, rh);

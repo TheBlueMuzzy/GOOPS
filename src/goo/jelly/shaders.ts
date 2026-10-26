@@ -6,8 +6,10 @@
 // 4) final: strongest colour wins (clean seams), glossy translucent jelly, written as premultiplied colour over the
 //    TRANSPARENT canvas (the tank underneath is the lead's 2D canvas).
 // F39: wild goop gets an 8th channel of its own, tex2.a, and the wild look (src/goo/shared/wildLook.ts).
+// F64: black (colour 7, tex1.b — only at rank 50) is shaded with the galaxy look (src/goo/shared/galaxyLook.ts).
 import { XRAY_GLSL } from '../shared/xray'
 import { WILD_GLSL } from '../shared/wildLook'
+import { GALAXY_GLSL } from '../shared/galaxyLook'
 
 export const MASK_VS = `#version 300 es
 layout(location=0) in vec4 aPos; uniform vec2 uOrigin, uCover; uniform float uCell; out vec2 vUv;
@@ -45,6 +47,7 @@ uniform vec3 uCols[9];
 out vec4 outColor;
 ${XRAY_GLSL}
 ${WILD_GLSL}
+${GALAXY_GLSL}
 float pick(vec4 t0, vec4 t1, vec4 s0, vec3 s1){ return dot(t0, s0) + dot(t1.rgb, s1); }
 // the thickness of the winning colour at u (sw = 1 when it's wild, which lives in tex2.a)
 float thick(vec2 u, vec4 s0, vec3 s1, float sw){ return pick(texture(uQ0, u), texture(uQ1, u), s0, s1) + texture(uQ2, u).a * sw; }
@@ -70,9 +73,11 @@ void main(){
     if (q1.r > qb) { qb = q1.r; qc = 5; } if (q1.g > qb) { qb = q1.g; qc = 6; } if (q1.b > qb) { qb = q1.b; qc = 7; }
     if (q2.a > qb) { qb = q2.a; qc = 8; }
     float g = uGlow * clamp(qr * 1.6, 0.0, 1.0) * (0.35 + 0.65 * pulse) * 0.4;
-    res = over(vec4((uCols[qc] * 0.7 + 0.3) * g, g), res);
+    vec3 qcol = qc == 7 ? uGRim : uCols[qc];   // (F64: black's ready glow in its rim colour — dark would never show)
+    res = over(vec4((qcol * 0.7 + 0.3) * g, g), res);
   }
   res = over(wildHalo(p, q2.a), res);   // F39: the wild goop's soft pulsing halo
+  res = over(galaxyHalo(q1.b), res);    // F64: the soft glow round black goop, so it reads on the dark tank
   // strongest colour wins -> clean seams, never mixed (wild = colour 8, in tex2.a)
   vec4 s0 = texture(uS0, uv), s1 = texture(uS1, uv), s2 = texture(uS2, uv);
   float f = s0.r, f2 = 0.0; int c = 1; vec4 sel = vec4(1, 0, 0, 0); vec3 sel1 = vec3(0.0); float selW = 0.0;   // f2 = runner-up colour
@@ -97,7 +102,9 @@ void main(){
     vec3 n = normalize(vec3(-(gq * 7.0 + ge * 0.9 * bev), 1.0));
     vec3 L = normalize(vec3(-0.45, 0.65, 0.62)), Hh = normalize(L + vec3(0.0, 0.0, 1.0));
     vec3 wg = vec3(0.0);
-    vec3 base = c == 8 ? wildBase(p, n, th, wg) : uCols[c];   // F39: wild goop is shaded, never a palette colour
+    // F39: wild goop is shaded, never a palette colour; F64: black is the galaxy (lit = what its glows use: its rim colour)
+    vec3 base = c == 8 ? wildBase(p, n, th, wg) : c == 7 ? galaxyBase(p) : uCols[c];
+    vec3 lit = c == 7 ? uGRim : base;
     float t = smoothstep(0.45, 1.0, th);                  // 0 thin edge .. 1 deep inside
     float diff = max(dot(n, L), 0.0);
     vec3 body = base * (0.5 + 0.55 * diff);
@@ -115,17 +122,18 @@ void main(){
     float rd = clamp(s2.g / max(f, 0.05), 0.0, 1.0);
     float level = (1.0 - smoothstep(0.0, 0.3, abs(u - 0.5))) * step(0.02, s2.r);
     body *= 1.0 - uUnDim * u;
-    body += (base * 0.5 + 0.35) * level * 0.3;
+    body += (lit * 0.5 + 0.35) * level * 0.3;
     op *= mix(1.0, uUnA, u);
     hl *= 1.0 - 0.6 * u;
     // ready: a gentle pulse inside the body
-    body += base * uGlow * rd * (0.25 + 0.75 * pulse) * 0.8;
+    body += lit * uGlow * rd * (0.25 + 0.75 * pulse) * 0.8;
     // zapped (F67, the sketch's white-hot): lit from inside, toward white by uWhite, solid while it burns
     float rh = clamp(s2.b / max(f, 0.05), 0.0, 1.0) * clamp(uWhite * 3.0, 0.0, 1.0);
     vec3 hotCol = mix(base, vec3(1.0), uWhite) * (1.0 + 0.3 * uWhite) * (0.7 + 0.35 * diff) * (1.0 - 0.25 * rim);
     body = mix(body, hotCol, rh);
     op = mix(op, 1.0, rh);
     if (c == 8) body += wildExtras(p, rim, wg) * (1.0 - rh);   // F39: the wild glow rim + sparkles
+    if (c == 7) body += galaxyExtras(p, rim) * (1.0 - rh);   // F64: the stars + the glowing edge
     vec3 col = a * ((1.0 - op) * base * 0.12 + op * body + vec3(spec + hl));
     res = over(vec4(col, a * op), res);
   }

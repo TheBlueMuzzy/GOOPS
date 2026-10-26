@@ -12,6 +12,7 @@ import { CrtLook } from './CrtLook'
 import hud from '../../content/tuning/hud.json'
 import { WILD_COLOR } from '../goo/shared/palette'
 import { wildStops } from '../goo/shared/wildLook'
+import { GALAXY_SLOT, galaxyColours } from '../goo/shared/galaxyLook'
 
 export type NextPiece = { cells: [number, number][]; color: number; colors?: number[] } // colors: one per cell (F39 two-colour pieces)
 
@@ -39,8 +40,11 @@ export function NextWindow({ piece, label }: { piece: NextPiece | null; label: s
         )}
         {piece?.cells.map(([x, y], i) => {
           const c = piece.colors?.[i] ?? piece.color
+          // (F64 black, the final shift: the galaxy's night with its rim glow round it — plain black would vanish here)
+          const galaxy = c === GALAXY_SLOT ? galaxyColours() : null
           return <rect key={i} x={left + x + gap / 2} y={top + y + gap / 2} width={1 - gap} height={1 - gap} rx={W.cornerCells}
-            fill={c === WILD_COLOR ? 'url(#next-wild)' : colorOf(c)} />
+            fill={c === WILD_COLOR ? 'url(#next-wild)' : galaxy ? galaxy.body : colorOf(c)}
+            {...(galaxy ? { stroke: galaxy.rim, strokeWidth: 0.08 } : {})} />
         })}
       </svg>
       </CrtLook>
