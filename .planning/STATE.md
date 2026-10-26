@@ -43,6 +43,7 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 **Remote:** github.com/TheBlueMuzzy/GOOPS
 
 ## Log
+- 2026-10-26 — F42 approved. Three new abilities (Goop Dump, Goop Colorizer, Crack Down) join Cooldown Booster; buy up to two extra slots and bring three at once, each with its own charge button above the machine bars (keys 1 / 2 / 3)
 - 2026-10-24 — F70 approved. The zap is in the game: a white laser angles from the top of the tank to your finger, the goop goes white-hot, swells, gets sucked into the laser point and sprays droplets (Jelly and Particle)
 - 2026-10-24 — F68 approved (first-day touches). Zap look picked: the laser + spray together, the beam now angling down from the top centre of the view
 - 2026-10-24 — F70: the console's bottom row shows the real version and a RANK SELECT (testers jump to any rank, or 0 for a fresh first day); F67 zap-look sketch to play with
@@ -52,4 +53,3 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 - 2026-10-20 — Sprint 10: phones get finger-by-finger touch (each finger its own gesture, swap ring by the holding finger); a fresh save now plays "your first day" — 15 guided steps from the periscope pull to rank 1
 - 2026-10-19 — Sprint 09: each early promotion brings something (next-piece window at 1, swap with the next piece at 3, Upgrades button at 5); the CRT look is reusable and the window wears it
 - 2026-10-19 — Sprint 08 done: each machine's first break teaches its fix (spotlight, monitor typed like an old DOS screen, only the outlined part answers, Replay lessons); portrait only; `npm run check:full`; lesson-module notes for the framework
-- 2026-10-17 — Overnight M1 build: clean remake scaffold (React 19 + Vite 7), engine (v1 rules, 100 tests), tank view + v1 controls, Jelly/Particle goo switch, kit UI (Neon); ui-kit 0.10.5 (phone HUD fix)
