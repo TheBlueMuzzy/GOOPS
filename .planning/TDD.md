@@ -193,6 +193,12 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D23 · 2026-10-26 · One charge button per equipped active; where they sit is a content/ value (F42)
+  Proposed by: Claude   Options: A top row · B a column beside the tank · C in the bottom panel · C+ own panel row
+  Chose: hud.json abilities.layout — panelRow (C+, stand-in: fits 3 × 46 px at every portrait size for ~24 px of
+  tank height) or topRow (fits only one; 2–3 go in the panel row anyway); topRowWhenOne keeps a single button up
+  top. Keys 1 / 2 / 3 fire slot 1 / 2 / 3 (v1 had no ability keys); F / Numpad . stay on slot 1. Each active has its
+  own icon (src/ui/abilityIcons.tsx); the ring is sized from the button. Muzzy's sketch pick replaces the stand-in.
 D22 · 2026-10-25 · A grown crack is one Crack with a list of cells; wild goop is a colour value (F39)
   Proposed by: Claude (Muzzy's rule 2026-10-25: a grown crack is ONE crack, sealed only when every cell is covered,
   counting its cell count toward the quota)

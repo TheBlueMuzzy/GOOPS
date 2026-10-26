@@ -12,12 +12,12 @@ Check: unit tests (each effect, refusals keep charge, slot count, respec, save u
 - [x] 🤖 4. Active Expansion Slot (20) + Slot 2 (38): bought with scraps, slots 1 → 2 → 3, Respec unequips what no longer fits, save upgrade step + golden save; tests — src/progress/upgradeShop.ts (80e8612, 1fa5c8b)
 - [ ] 🤖 5. HUD: one charge button per equipped active (own icon) in the picked layout (all 3 layouts behind a content/ value until Muzzy picks), keys 1 / 2 / 3 — src/ui/App.tsx
 - [ ] 🤖 6. e2e: 3 actives equipped, each fires, buttons fit and don't overlap at every portrait size, in check:full — e2e/upgrades.mjs
-- [ ] 🤖 7. Update GDD §5 upgrades, TDD §2c + D19, upgrades-map — .planning/design/upgrades-map.md
-- [ ] 🤖 8. (tuning) Charge speeds from v1 (Dump 15 s, Colorizer 25 s, Crack Down 30 s, +25 % a seal); Muzzy judges by playing — content/tuning/upgrades.json
+- [x] 🤖 7. Update GDD §5 upgrades, TDD §2c + D23 (HUD buttons), upgrades-map — .planning/design/upgrades-map.md (58b1662 + D23)
+- [x] 🤖 8. (tuning) Charge speeds from v1 (Dump 15 s, Colorizer 25 s, Crack Down 30 s, +25 % a seal); Muzzy judges by playing — content/tuning/upgrades.json (in since 80e8612)
 
 ## Notes
 - Muzzy 2026-10-26 "go auto" on the plan: all three missing actives come in now (Claude's pick — a 2nd slot can't be tested in a real game without a 2nd real active); slots 2 and 3 are bought as upgrades at 20 / 38 like v1 (Claude's pick); F47 cut (duplicate of F67, done).
-- Claude's calls: keys 1 / 2 / 3 per slot (v1's code has no ability keys); F / Numpad . keep firing slot 1 (TDD D19). The other rank 10–38 passives stay in F43.
+- Claude's calls: keys 1 / 2 / 3 per slot (v1's code has no ability keys); F / Numpad . keep firing slot 1 (TDD D23). The other rank 10–38 passives stay in F43.
 - Auto run: the sketch is built first and published; the rules (tasks 3–4) go ahead in a helper meanwhile; the HUD (task 5) builds all 3 layouts behind a content/ value with Claude's pick as the stand-in, and switches to Muzzy's pick when he copies values.
 - Known: the kit's TimerRing has one size and always prints its number (framework request, sprint-12 Notes) — the sketch shows what each layout needs from it.
 - Sketch (3256265, https://claude.ai/artifact/7ibLomV9zfK6VLkCnNkhE8): 4 layouts measured at real sizes — A top row only fits 1 button (2 at 360: crack count doesn't fit); B covers 1.6–1.9 tank cells on phones; C squeezes the machine names past 12px at 360/390; C+ (panel, own row) fits 3 × 46 px everywhere, costs ~24 px tank height (~4%). Claude's pick C+; variant: 1 active stays in the top row, C+ from 2 equipped (known at shift start). Every layout needs the kit TimerRing size + no-number option.
