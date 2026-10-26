@@ -10,6 +10,8 @@
 //   - squashes as he oozes a cell, breathes while he seals, flinches with his eyes squeezed shut (> <) when the laser
 //     goes through him
 //   - a ring round the crack he's sealing that fills as he seals (the sketch's progress ring)
+//   - F64 the final shift: he shrinks as he uses himself up (state.vet.size = how much of him is left, drawn as an area,
+//     so his width and height go by its square root), easing to each new size over shrinkSec; used up = gone
 // The engine says where he is (state.vet); this only keeps his looks: squash, gaze, the ouch. Times = the goo's clock
 // (the looks clock × the rules rate), so the Dev Kit pause holds him still. Numbers: content/tuning/whiteGoop.json
 // (live); the x-ray line: content/tuning/cracks-look.json xray.
@@ -33,7 +35,7 @@ export interface WhiteGoopView {
    *  goop's eyes look there instead of their usual focus; null otherwise. */
   eyesOnHim(s: ShiftState, out: TapPoint): TapPoint | null
   /** (dev + tests) how he looks right now */
-  report(): { ouch: boolean; squash: number; gaze: [number, number] }
+  report(): { ouch: boolean; squash: number; gaze: [number, number]; shown: number }
 }
 
 const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fallback)
@@ -51,6 +53,7 @@ export function createWhiteGoopView(): WhiteGoopView {
   let gy = 0 // gaze, -1..1
   let time = 0
   let landedAt = -1 // goo-clock time he finished dropping in (-1 = still dropping)
+  let shown = 1 // F64: the size he's drawn at, easing to state.vet.size
 
   return {
     step(s, events, dt, focus) {
@@ -70,6 +73,7 @@ export function createWhiteGoopView(): WhiteGoopView {
       inGoop += ((v.behind ? 1 : 0) - inGoop) * Math.min(1, dt * 8)
       if (inGoop > 0.5) want *= 0.94
       sq += (want - sq) * Math.min(1, dt * 18)
+      shown += (Math.max(0, v.size ?? 1) - shown) * Math.min(1, (dt * 3) / Math.max(0.01, num(look.shrinkSec, 0.6)))
       // gaze: the crack he's after, else the goop's own focus
       // (F39 a grown crack: the cell of it nearest him — the one he's heading for or sitting on, not its root)
       const crack = v.targetId !== null ? s.cracks.find((c) => c.id === v.targetId) : undefined
@@ -98,10 +102,12 @@ export function createWhiteGoopView(): WhiteGoopView {
       // the ring round the crack he's sealing (drawn even when he's just out of view: the crack may not be)
       if (v.mode === 'seal') drawRing(ctx, s, view, v.targetId, v.seal)
       if (cx < left - cp || cx > left + (s.visibleWidth + 1) * cp || top > view.topY + visRows * cp) return
+      const k = Math.sqrt(Math.max(0, shown)) // (F64: how much of him is left, as an area)
+      if (k < 0.05) return // used up
       const squash = Math.max(0.5, sq + flinch)
       const wide = 1 + (1 - squash) * 0.6
       const bottom = top + cp
-      const w = cp * 0.92 * wide, h = cp * 0.92 * squash
+      const w = cp * 0.92 * wide * k, h = cp * 0.92 * squash * k
       const alpha = num(look.alpha, 1) * (1 - inGoop) + num(look.behindAlpha, 0.7) * inGoop
       ctx.save()
       ctx.globalAlpha = alpha
@@ -112,7 +118,7 @@ export function createWhiteGoopView(): WhiteGoopView {
       const ouch = owT >= 0 && owT < Math.min(OUCH_MAX, num(look.owTime, 1) * OUCH_SHARE)
       ctx.save()
       ctx.globalAlpha = Math.max(alpha, 0.85)
-      drawFace(ctx, cx, bottom - 0.56 * cp * squash, cp, ouch, gx, gy)
+      drawFace(ctx, cx, bottom - 0.56 * cp * squash * k, cp * k, ouch, gx, gy)
       ctx.restore()
     },
 
@@ -132,7 +138,7 @@ export function createWhiteGoopView(): WhiteGoopView {
       return out
     },
 
-    report: () => ({ ouch: owT >= 0, squash: sq + flinch, gaze: [gx, gy] }),
+    report: () => ({ ouch: owT >= 0, squash: sq + flinch, gaze: [gx, gy], shown }),
   }
 }
 

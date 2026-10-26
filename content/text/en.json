@@ -426,6 +426,15 @@
     "_about": "F63 the white goop (the Veteran, gooped — rank 31+): what he says when the laser goes through him (the whisper bubble above him). Numbers: content/tuning/whiteGoop.json.",
     "ow": "ow"
   },
+  "finalShift": {
+    "_about": "F64 the final shift (rank 50, design/story.md row 50): the Veteran's lines as he drops in first — the same bubble above him as his 'ow'. When each plays: content/tuning/finalShift.json intro.",
+    "vet": {
+      "hi": "oh! hi!",
+      "itsMe": "it's me!",
+      "oof": "…oof.",
+      "help": "glad you're not goop yet. I'll help how I can."
+    }
+  },
   "lessons": {
     "gotIt": "Got it",
     "replayed": "The lessons will play again.",

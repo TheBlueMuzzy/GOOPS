@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 import { crackCells, whiteGoopAt, type MachineId, type ShiftEngine, type ShiftEvent, type ShiftStatus, type ShiftPhase, type ShiftState, type TapPoint } from '../engine'
 import { createWhiteGoopView } from '../view/whiteGoopView'
 import whiteGoopLook from '../../content/tuning/whiteGoop.json'
+import finalShiftTuning from '../../content/tuning/finalShift.json'
 import eyesLook from '../../content/tuning/eyes.json'
 import talk from '../../content/tuning/talk.json'
 import text from '../../content/text/en.json'
@@ -97,8 +98,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
   const lessonMark = useRef<HTMLDivElement>(null)
   const swapRing = useRef<SVGSVGElement>(null)
   // F63: the white goop's "ow" when the laser goes through him — the game's whisper bubble (kit TalkingBubble, plain
-  // outline), above him; n = which ow (a new one restarts the bubble). Set only on the event, never per frame.
-  const [ow, setOw] = useState<{ x: number; y: number; n: number } | null>(null)
+  // outline), above him; n = which one (a new one restarts the bubble). Set only on the event, never per frame.
+  // F64: his lines as he drops into the final shift ("oh! hi!" …) use the same bubble.
+  const [vetSays, setVetSays] = useState<{ x: number; y: number; n: number; words: string } | null>(null)
   const live = useRef({ inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole })
   useEffect(() => { live.current = { inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
@@ -149,7 +151,14 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     const white = createWhiteGoopView() // F63 the white goop's look (on the tank canvas, behind the goop)
     const vetAt: TapPoint = { x: 0, y: 0 }
     const xray = { cells: [] as number[], pad: 0, alpha: 1 } // view.xray, refilled each frame (no garbage per frame)
-    let owT = -1, owN = 0 // F63: seconds the "ow" bubble has been up (goo clock; -1 = none), and which ow it is
+    // F63: seconds his bubble has been up (goo clock; -1 = none), how long it stays, and which one it is
+    let sayT = -1, sayFor = 0, sayN = 0
+    const say = (words: string, seconds: number) => {
+      const [x, y] = vetOnScreen(s, view, 0, visorFx.current?.curve() ?? 0) // (his top middle, where he's seen)
+      sayT = 0
+      sayFor = seconds
+      setVetSays({ x, y, n: ++sayN, words })
+    }
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
     // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
     let camera = s.spin, last = looksClock.now(), hudAt = 0, raf = 0, ended = false
@@ -264,11 +273,11 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
           : [view.centreX + screenColumn(e.at.x - 0.5, view.camera, s.width) * view.cellPx, view.topY + (e.at.y - s.bufferRows) * view.cellPx]
         if (!events.some((p) => p.type === 'pop')) beam.fire([rect.left + rect.width / 2, rect.top], to, String(whiteGoopLook.color))
         laser = { at: e.at, t: 0 }
-        const [x, y] = vetOnScreen(s, view, 0, visorFx.current?.curve() ?? 0) // (his top middle, where he's seen)
-        owT = 0
-        setOw({ x, y, n: ++owN })
+        say(text.whiteGoop.ow, whiteGoopLook.owTime)
       }
-      if (owT >= 0 && (owT += gooDt) >= whiteGoopLook.owTime) { owT = -1; setOw(null) }
+      // F64 his lines as he drops into the final shift: the same bubble, finalShift.json intro.lineSec each
+      for (const e of events) if (e.type === 'vetSay' && s.vet) say(text.finalShift.vet[e.line], finalShiftTuning.intro.lineSec)
+      if (sayT >= 0 && (sayT += gooDt) >= sayFor) { sayT = -1; setVetSays(null) }
       beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
@@ -411,8 +420,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       {/* F67 the zap's beam + laser point: above the visor (a laser from the viewer — it lands exactly on the finger) */}
       <canvas className="stage-layer stage-zap" ref={zapCanvas} />
       <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
-      {ow && <TalkingBubble key={ow.n} target={{ x: ow.x, y: ow.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
-        text={text.whiteGoop.ow} />}
+      {vetSays && <TalkingBubble key={vetSays.n} target={{ x: vetSays.x, y: vetSays.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
+        text={vetSays.words} />}
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>
       </div>

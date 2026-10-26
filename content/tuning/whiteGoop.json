@@ -29,7 +29,8 @@
     "ringWidth": "The ring round a crack while he seals it: its line width (cells). It fills as he seals.",
     "ringPad": "How far the ring sits outside the crack's cell (cells).",
     "ringColor": "The sealing ring's colour.",
-    "dots": "Particle goo style: how many soft dots make up his clump."
+    "dots": "Particle goo style: how many soft dots make up his clump.",
+    "shrinkSec": "The final shift (F64): how long he takes to shrink to his new size after a seal uses some of him up (finalShift.json vet.shrinkPerSeal)."
   },
   "_ranges": {
     "fromRank": [1, 50, 1],
@@ -52,7 +53,8 @@
     "flinch": [0, 0.5, 0.01],
     "ringWidth": [0.02, 0.2, 0.01],
     "ringPad": [0, 0.4, 0.01],
-    "dots": [6, 40, 1]
+    "dots": [6, 40, 1],
+    "shrinkSec": [0.05, 3, 0.05]
   },
   "fromRank": 31,
   "dropFromCentre": -3,
@@ -82,5 +84,6 @@
   "ringWidth": 0.07,
   "ringPad": 0.12,
   "ringColor": "#f8fafc",
-  "dots": 18
+  "dots": 18,
+  "shrinkSec": 0.6
 }

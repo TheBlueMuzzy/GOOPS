@@ -8,7 +8,7 @@ why: the last shift should feel slightly overwhelming — a boss level: no colou
 Check: unit tests (black merges/seals everything, valve counting + pause, the three losses, his shrink) · bot run of rank 50 (win rate, length, how bots lose) · e2e/final-shift.mjs with shots looked at · check:full
 - [x] 🤖 1. Rules at rank 50: all goop + cracks one galaxy-black colour, faster / more frequent spawns, seals count to 3 valve stages (6 / 8 / 10, paused while a stage waits), the three losses — new content/tuning/finalShift.json — src/engine/shift.ts
 - [x] 🤖 2. Pace proof: bot run of rank 50 (same settings on several seeds first, to see the swing) — how often bots win, how long, which way they lose; tune finalShift.json toward "slightly overwhelming", log it in Notes — scripts/bots/runShift.ts
-- [ ] 🤖 3. The Veteran in the final shift: drops in first as a falling white clump with his lines, seeks the cracks you can't reach, shrinks per seal (his seals count), used up = a loss — src/engine/whiteGoop.ts
+- [x] 🤖 3. The Veteran in the final shift: drops in first as a falling white clump with his lines, seeks the cracks you can't reach, shrinks per seal (his seals count), used up = a loss — src/engine/whiteGoop.ts
 - [ ] 🤖 4. The galaxy-black look: black goop + black cracks with shimmering stars, Jelly and Particle — src/goo/shared/palette.ts
 - [ ] 🙋 5. Muzzy designs the valve mini-game (how opening each stage works) — .planning/design/story.md
 - [ ] 🤖 6. The release-valve panel at the console mid-shift: "valve's open on your console — go!", Muzzy's mini-game from task 5, the shift slowed like repairs, the hatch from F45 — Ranks 40–49 story opens — src/ui/RepairPanels.tsx
