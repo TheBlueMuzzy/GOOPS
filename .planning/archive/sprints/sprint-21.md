@@ -27,3 +27,8 @@ Checked: unit tests 601 pass (moments 40–49 load, voices/looks/flags valid) ·
 - Muzzy 2026-10-26: noted — the hatch and the not-a-face are placeholder drawings by Claude (public/art/ConsoleHatch.svg, public/art/NotAFace.svg) — redraw either any time; the hatch's box is art.json console.hatch.at.
 - Muzzy 2026-10-26: the hatch stays from rank 46 (Claude's pick). Feel question ("walls closing in…?") → "approved". F45 ✅.
 - Not built (no piece for them yet): 41's grille buzzing with the mouths, 42's glowing pressure line — the words play.
+
+Retro: (Muzzy 2026-10-26: "approved" — Claude's draft kept)
+- Went well: all 7 tasks of F45 — Ranks 40–49 story in ~45 min by one helper, no bugs in review, approved first time.
+- Went wrong: check:full waited ~30 min on a framework helper's port (5291); the eyes e2e flaked again on a wall-clock wait — a lesson we already had.
+- Change: helper briefs say "wait on the game's clock, never wall-clock" up front, so a new e2e can't repeat the flake.
