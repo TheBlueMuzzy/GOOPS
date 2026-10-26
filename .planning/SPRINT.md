@@ -17,3 +17,4 @@ Check: unit tests (moments 40–49 load, voices and looks valid) · e2e/story.mj
 ## Notes
 - Muzzy 2026-10-26: picked "Story 40–49" for Sprint 21 (Claude's pick — it starts the chain F45 → F64 — The final shift → F65 — The ending, the longest road left to beta).
 - Already built before this sprint (checked in content/): the 40+ silly fine "Talking back to the speaker", the rank titles, the debt line going up after 30, in-shift whispers 31+.
+- Muzzy 2026-10-26: asked for F54 — Offline install + replace v1; chose to keep F45 now and leave F54 for the 1.0 /deliver (offline install already built in F38; the rest is the go-live move).

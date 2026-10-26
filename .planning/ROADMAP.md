@@ -155,6 +155,7 @@ Goal: Goops 2 goes live at the old address, works offline, sounds finished, and 
 - 🟢 F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
   what: step 1 = swap in the sounds Muzzy finds for the 26 placeholder moments (he hunts; Claude trims, matches loudness, credits — Muzzy 2026-10-19: "add a step during polish to update sounds")
 - 🟢 F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
+  what: the offline install is already built (F38, works at /GOOPS/alpha/); what is left = move the remake to /GOOPS/ so it replaces v1, retire v1's offline copy, send /alpha/ installs to the new address. Muzzy 2026-10-26: waits for the 1.0 /deliver (once it sits at /GOOPS/, every beta update reaches v1 players before the ending and balance are done).
 - ⏳ F55 🎮 Credits screen — must:1.0
 - ⏳ F56 ✨ Periscope zoom — should:1.0
 - ⏳ F57 🎮 Colour-blind help — should:1.0
