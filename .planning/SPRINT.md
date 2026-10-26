@@ -10,8 +10,8 @@ Check: unit tests (each effect, refusals keep charge, slot count, respec, save u
 - [ ] 🙋 2. Pick the button layout in the sketch, press Copy values — .planning/research/sketches/ability-buttons.html
 - [x] 🤖 3. Goop Dump, Goop Colorizer, Crack Down: effects (seeded; refused = charge kept), in content/tuning/upgrades.json; unit tests — src/engine/abilities.ts (80e8612)
 - [x] 🤖 4. Active Expansion Slot (20) + Slot 2 (38): bought with scraps, slots 1 → 2 → 3, Respec unequips what no longer fits, save upgrade step + golden save; tests — src/progress/upgradeShop.ts (80e8612, 1fa5c8b)
-- [ ] 🤖 5. HUD: one charge button per equipped active (own icon) in the picked layout (all 3 layouts behind a content/ value until Muzzy picks), keys 1 / 2 / 3 — src/ui/App.tsx
-- [ ] 🤖 6. e2e: 3 actives equipped, each fires, buttons fit and don't overlap at every portrait size, in check:full — e2e/upgrades.mjs
+- [x] 🤖 5. HUD: one charge button per equipped active (own icon) in the picked layout (all 3 layouts behind a content/ value until Muzzy picks), keys 1 / 2 / 3 — src/ui/App.tsx (c0c931f; hud.json abilities.layout panelRow / topRow — "beside the tank" left out: the sketch showed it covers ~2 tank cells on phones)
+- [x] 🤖 6. e2e: 3 actives equipped, each fires, buttons fit and don't overlap at every portrait size, in check:full — e2e/upgrades.mjs (d9bc930; check:full ALL PASS 31 checks 2026-10-26)
 - [x] 🤖 7. Update GDD §5 upgrades, TDD §2c + D23 (HUD buttons), upgrades-map — .planning/design/upgrades-map.md (58b1662 + D23)
 - [x] 🤖 8. (tuning) Charge speeds from v1 (Dump 15 s, Colorizer 25 s, Crack Down 30 s, +25 % a seal); Muzzy judges by playing — content/tuning/upgrades.json (in since 80e8612)
 
