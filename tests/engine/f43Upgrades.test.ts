@@ -14,6 +14,43 @@ import { dropPiece, oneShapeConfig, realConfig, sealACrack, straightLineCracks, 
 const book = upgradesJson as UpgradeBook
 const mods = (id: string, level: number) => resolveUpgrades(book, { [id]: level }).modifiers
 
+// ---------------------------------------------------------------- the golden shifts (no extra rolls when off)
+
+// A short busy shift (drops and pops on a fixed rhythm) summed up as a few numbers. GOLDEN holds what the engine made
+// BEFORE F43 (commit 7b8ae0b) for the same seeds — so a roll taken while an upgrade is off would show up here (comparing
+// "off" with "not owned" can't catch it: both run the same new code).
+function goldenRun(seed: number, rank: number, modifiers?: Partial<Modifiers>) {
+  const config = straightLineCracks(realConfig(), 3000, 1200)
+  const shift = createShift(config, { seed, rank, modifiers })
+  const s = shift.state
+  for (let i = 0; i < 30 && s.status === 'playing'; i++) {
+    shift.tick(700)
+    for (const g of s.groups.values()) if (g.ready) { const c = g.cells[0]; shift.act({ type: 'pop', x: c % s.width, y: Math.floor(c / s.width) }); break }
+    if (i % 3 === 0) shift.act({ type: 'spin', dir: 1 })
+    if (i % 2 === 0) dropPiece(shift, config)
+  }
+  let hash = 0
+  for (let i = 0; i < s.grid.length; i++) hash = (hash * 31 + s.grid[i] * (i + 1)) >>> 0
+  return { score: s.score, sealed: s.cracksSealed, cracks: s.cracks.length, hash, rng: shift.snapshot().rng }
+}
+// (rng = where the random sequence ended: seed + rolls × a constant, so the same number of rolls gives seed + the same)
+const GOLDEN: Record<string, ReturnType<typeof goldenRun>> = {
+  '1/9': { score: 2479, sealed: 0, cracks: 7, hash: 410222361, rng: 112729795 },
+  '2/12': { score: 2925, sealed: 0, cracks: 7, hash: 2752831848, rng: 112729796 },
+  '42/32': { score: 2918, sealed: 0, cracks: 7, hash: 3053442205, rng: 112729836 },
+}
+
+describe('golden: with every F43 chance off, the same shifts as before F43', () => {
+  for (const [seed, rank] of [[1, 9], [2, 12], [42, 32]]) {
+    it(`seed ${seed}, rank ${rank}`, () => {
+      const off = { junkSameColorChance: 0, crackColorBias: 0, abilityChargePerSealMult: 1, swapHoldTimeMult: 1 }
+      const got = goldenRun(seed, rank, off)
+      expect(got).toEqual(GOLDEN[`${seed}/${rank}`])
+      expect(goldenRun(seed, rank)).toEqual(got)
+    })
+  }
+})
+
 // ---------------------------------------------------------------- Junk Uniformer
 
 // the junk on the floor at the start: every non-empty cell of the bottom row, left to right
