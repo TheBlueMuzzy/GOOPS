@@ -24,6 +24,6 @@ Checked: unit tests 601 pass (moments 40–49 load, voices/looks/flags valid) ·
 - Claude 2026-10-26 (build): the hatch shows on the console from rank 46 (art.json console.hatch.fromRank), so ranks 0–45 look the same as before; it rattles 3 × 0.5 s and the moment's outline (look "hatch") points at it.
 - Claude 2026-10-26 (surprise): a shift starts with an empty tank, so "every mouth opens at once at the start of the shift" can't happen at the very start — it waits until 3 mouths show (eyes.json chorusMouths), then all open for 1.6 s; marked seen only when it actually plays (D25).
 - Claude 2026-10-26 (surprise): this game has no content/devkit/select.json (no Select tab), so data-knobs="hatch" is on the hatch but there's no list to add it to.
-- Ask Muzzy: the hatch and the not-a-face are placeholder drawings by Claude (public/art/ConsoleHatch.svg, public/art/NotAFace.svg) — redraw either any time; the hatch's box is art.json console.hatch.at.
-- Ask Muzzy: should the hatch be on the console from the start (it was always there, nobody looked) instead of appearing at 46? One number: art.json console.hatch.fromRank.
+- Muzzy 2026-10-26: noted — the hatch and the not-a-face are placeholder drawings by Claude (public/art/ConsoleHatch.svg, public/art/NotAFace.svg) — redraw either any time; the hatch's box is art.json console.hatch.at.
+- Muzzy 2026-10-26: the hatch stays from rank 46 (Claude's pick). Feel question ("walls closing in…?") → "approved". F45 ✅.
 - Not built (no piece for them yet): 41's grille buzzing with the mouths, 42's glowing pressure line — the words play.
