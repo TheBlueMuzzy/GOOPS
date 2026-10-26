@@ -11,7 +11,7 @@ Check: unit tests (moments 40–49 load, voices and looks valid) · e2e/story.mj
 - [x] 🤖 3. Management slips (45): the monitor glitches for a beat ("something that isn't a face") and the slip line ("HUMAN RESOURCE. · *OPERATOR.") types, corrects itself — a new monitor look — src/ui/Console.tsx
 - [x] 🤖 4. The release valve is named (46, 47): a console panel that rattles as an attention call (it opens in F64 — The final shift); look numbers in content/ — src/ui/Console.tsx
 - [x] 🤖 5. Tank looks in the next shift: mouths appear at 40 (F62 already grows them), every mouth opens at once at the start of the shift after 48 — src/goo/shared/faces.ts
-- [ ] 🤖 6. e2e: ranks 40–49 play at the console at every portrait size; story.mjs's 0–39 run extended to 49 — e2e/story.mjs
+- [x] 🤖 6. e2e: ranks 40–49 play at the console at every portrait size; story.mjs's 0–39 run extended to 49 — e2e/story.mjs
 - [ ] 🤖 7. Update design/story.md (40–49 built), GDD story section, TDD if a real build choice is made (next free decision D25) — .planning/design/story.md
 
 ## Notes

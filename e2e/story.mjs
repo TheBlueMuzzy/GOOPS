@@ -13,6 +13,11 @@
 //   F63 ranks 31–39: the goop in your head — the whisper's plain bubble over the monitor area, every line typed; 36 says
 //     your name back (the signed one, or Operator #4471), at every portrait size; from the shift that reaches 39 the
 //     report's last row is "Pending retirements: Operator #4471 — <your name>" (not at 37)
+//   F45 ranks 40–49 (the 0–39 run goes on to 49): the speaker back (40 crackles, 49 flickers too), the goop through the
+//     speaker (41, 43, 48: the bubble with looks.goopOutline in the goop's colours), Management's slip (45: the glitch
+//     set on the monitor, "HUMAN RESOURCE." with no Got it, corrected by itself), the hatch rattling (46, 47) and on the
+//     console from 46; at every portrait size 41's bubble, 45's not-a-face and 46's hatch are on screen (shots goop41-,
+//     glitch45-, slip45-, hatch46-<size>)
 //   fines (F40): the first report at 30 fines "Association with a retired employee" first, once; paydays from 30 say
 //     the after-capture words
 // Screenshots: e2e-shots/story/
@@ -28,6 +33,7 @@ const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const story = JSON.parse(readFileSync('content/story/moments.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const payslip = JSON.parse(readFileSync('content/tuning/payslip.json', 'utf8'))
+const art = JSON.parse(readFileSync('content/ui/art.json', 'utf8'))
 const L = en.story.lines
 const W = en.story.whispers
 const xpToNext = (rank) => prog.xpBase + prog.xpPerRank * rank
@@ -61,16 +67,25 @@ async function device(totalXp, { width = 390, height = 844, name = null } = {}) 
   return { page, errors, close: () => context.close() }
 }
 // …at the start of this rank, with every older moment seen (as a player who had them), so only this rank's is due
-async function deviceAt(rank, size = {}) {
+// (F45 quick: no settling wait — 45's first line moves on by itself about a second in)
+async function deviceAt(rank, size = {}, { quick = false } = {}) {
   const d = await device(xpFor(rank) + 10, size)
   await d.page.evaluate((r) => window.__goopsSeen?.(Array.from({ length: r }, (_, i) => `story:${i}`)), rank)
-  await d.page.reload(); await d.page.locator('.kit-art-stage').waitFor(); await d.page.waitForTimeout(800)
+  await d.page.reload(); await d.page.locator('.kit-art-stage').waitFor(); await d.page.waitForTimeout(quick ? 0 : 800)
   return d
 }
 const monitorSays = (page) => page.locator('[data-tag="crt"] .crt-read').textContent()
 const monitorLook = (page) => page.locator('[data-tag="crt"]').getAttribute('data-story-look')
 const periscopeOff = (page) => page.locator('.kit-pull-grip').first().isDisabled()
 const typeMs = (words) => words.length / 22 * 1000 // (talk.json typeSpeed 22 letters a second)
+// F45: a rattle line has the hatch under the console rattling (its animation set to looks.rattleTimes × rattleSeconds);
+// any other line, it's still
+const rattles = (page, line) => page.evaluate(([want, secs, times]) => {
+  const h = document.querySelector('[data-tag="hatch"]')
+  if (!want) return !h?.hasAttribute('data-rattle')
+  const s = h && getComputedStyle(h)
+  return !!s && h.hasAttribute('data-rattle') && s.animationName === 'story-rattle' && parseFloat(s.animationDuration) === secs && Number(s.animationIterationCount) === times
+}, [!!line.rattle, story.looks.rattleSeconds, story.looks.rattleTimes])
 // play the moment that's up, line by line, checking each line's voice and look; returns what was seen per line
 async function playMoment(page, rank, shot, name = null) {
   const seen = []
@@ -82,9 +97,25 @@ async function playMoment(page, rank, shot, name = null) {
       seen.push(['sign', (await monitorSays(page)).trim() === words, (await monitorLook(page)) === (line.monitor ?? null)])
       await page.waitForTimeout(200)
       await skip.click()
+    } else if (line.voice === 'mon' && line.cut) {
+      // F45 (45's slip): a cut Management line has no Got it — it types, then the next line takes over by itself
+      const says = await page.waitForFunction((w) => document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim() === w, words, { timeout: 3000 })
+        .then(() => true, () => false)
+      const look = (await monitorLook(page)) === (line.monitor ?? null)
+      const gotIt = await page.locator('[data-tag="crt"]').getByRole('button', { name: en.lessons.gotIt }).count()
+      let glitched = line.monitor !== 'glitch'
+      // the not-a-face is on the screen, set to show for glitchSeconds, glitchAfterSeconds in (seen on screen: the
+      // sizes check below — here the line may be well under way already)
+      if (!glitched) glitched = await page.locator('[data-tag="crt"] .crt-glitch').evaluate((el, [after, len]) => {
+        const s = getComputedStyle(el)
+        return s.animationName === 'story-glitch' && parseFloat(s.animationDelay) === after && parseFloat(s.animationDuration) === len
+      }, [story.looks.glitchAfterSeconds, story.looks.glitchSeconds]).catch(() => false)
+      const gone = await page.waitForFunction((w) => document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim() !== w,
+        words, { timeout: typeMs(words) * 3 + story.looks.cutSeconds * 1000 + 4000 }).then(() => true, () => false)
+      seen.push(['mon cut', says && gotIt === 0 && gone && glitched, look])
     } else if (line.voice === 'mon') {
       await page.locator('[data-tag="crt"]').getByRole('button', { name: en.lessons.gotIt }).waitFor({ timeout: 4000 })
-      seen.push(['mon', (await monitorSays(page)).trim() === words, (await monitorLook(page)) === (line.monitor ?? null)])
+      seen.push(['mon', (await monitorSays(page)).trim() === words && await rattles(page, line), (await monitorLook(page)) === (line.monitor ?? null)])
       if (line.monitor === 'alarm') { // the alarm's words: looks.alarmWords (Muzzy 2026-10-24: white)
         const ink = await page.locator('[data-tag="crt"] .crt-words').first().evaluate((el) => getComputedStyle(el).color)
         const hex = story.looks.alarmWords.replace('#', ''), want = `rgb(${[0, 2, 4].map((k) => parseInt(hex.slice(k, k + 2), 16)).join(', ')})`
@@ -107,13 +138,21 @@ async function playMoment(page, rank, shot, name = null) {
       } else {
         await page.waitForTimeout(typeMs(words) + 2000) // (it types out, rests at the static)
         if (shot && i === 0) await page.screenshot({ path: `${OUT}/${shot}.png` })
-        if (line.voice === 'head') {
+        if (line.voice === 'goop') {
+          // F45 the goop through the speaker: the bubble at the monitor with looks.goopOutline, the goop's colours (not
+          // the Veteran's light bubble), the whole line typed
+          const outline = await page.locator('.kit-talk-layer').first().getAttribute('data-outline')
+          const typed = (await b.locator('.kit-talk-typed').textContent()).trim() === words
+          const fill = await b.evaluate((el) => { const s = el.querySelector('.kit-talk-shape'); return s && getComputedStyle(s).fill })
+          if (shot && i > 0) await page.screenshot({ path: `${OUT}/${shot}-${i + 1}.png` })
+          seen.push(['goop', said && typed && outline === story.looks.goopOutline && fill !== 'rgb(244, 244, 242)', look === (line.monitor ?? null)])
+        } else if (line.voice === 'head') {
           // F63 the goop in your head: the whisper's bubble (plain outline — no speech wave), the whole line typed
           const outline = await page.locator('.kit-talk-layer').first().getAttribute('data-outline')
           const typed = (await b.locator('.kit-talk-typed').textContent()).trim() === words
           if (shot && i > 0) await page.screenshot({ path: `${OUT}/${shot}-${i + 1}.png` })
           seen.push(['head', said && typed && outline === 'plain', look === (line.monitor ?? null)])
-        } else seen.push(['spk', said, look === (line.monitor ?? null)])
+        } else seen.push(['spk', said && await rattles(page, line), look === (line.monitor ?? null)])
         await b.click()
       }
     }
@@ -134,9 +173,9 @@ const allSeen = (page, more = []) => page.evaluate((m) => window.__goopsSeen?.(A
 try {
   // ---------------- every rank 0–39: its moment, in its voice, with its look, once ----------------
   // (STORY_FROM=31 starts at the goop's moments; F63: from 31 the device has signed "Muzzy", so 36 says it back)
-  for (let rank = Number(process.env.STORY_FROM ?? 0); rank <= 39; rank++) {
+  for (let rank = Number(process.env.STORY_FROM ?? 0); rank <= 49; rank++) {
     const name = rank >= 31 ? NAME : null
-    const { page, errors, close } = await deviceAt(rank, { name })
+    const { page, errors, close } = await deviceAt(rank, { name }, { quick: rank === 45 })
     check(`rank ${rank}: the periscope waits while the moment plays`, await periscopeOff(page))
     const seen = await playMoment(page, rank, `rank${rank}-390x844`, name)
     check(`rank ${rank}: every line in its voice, with its words and monitor look`, seen.length && seen.every(([, ok, look]) => ok && look), JSON.stringify(seen))
@@ -146,6 +185,9 @@ try {
     if (rank >= 5) check(`rank ${rank}: the upgrades lesson comes right after the moment`, after === en.lessons['unlock-upgrades'].upgrades, after)
     else check(`rank ${rank}: then the console's own words`, after === en.console.hint, after)
     check(`rank ${rank}: the monitor look is gone after the moment`, (await monitorLook(page)) === null)
+    // F45: the hatch under the console is there from art.json hatch.fromRank (46), still once the moment is over
+    const hatch = await page.locator('[data-tag="hatch"]').count(), still = await rattles(page, {})
+    check(`rank ${rank}: the hatch ${rank >= art.console.hatch.fromRank ? 'is on the console, still' : 'is not there yet'}`, (hatch === 1) === (rank >= art.console.hatch.fromRank) && still)
     await page.reload(); await page.locator('.kit-art-stage').waitFor(); await page.waitForTimeout(1200)
     const again = (await monitorSays(page)).trim()
     check(`rank ${rank}: once only — after a reload no moment`, !Object.values(L).includes(again) && !(await page.locator('.kit-talk').count()), again)
@@ -173,6 +215,46 @@ try {
     await page.screenshot({ path: `${OUT}/goop36-${w}x${h}.png` })
     check(`${w}x${h}: rank 36 no page errors`, errors.length === 0, errors.join(' | '))
     await close()
+  }
+
+  // ---------------- F45 at every portrait size: 41 the goop through the speaker, 45 the glitch, 46 the hatch rattling ----------------
+  const onScreen = (loc) => loc.evaluate((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5 })
+  for (const [w, h] of SIZES) {
+    { // 41: the goop's bubble, over the monitor, on screen
+      const { page, errors, close } = await deviceAt(41, { width: w, height: h, name: NAME })
+      const b = page.locator('.kit-talk').first()
+      await b.waitFor({ timeout: 4000 })
+      await page.waitForTimeout(typeMs(L.r41a) + 1500)
+      check(`${w}x${h}: the goop through the speaker (41) is on screen`, await onScreen(b))
+      await page.screenshot({ path: `${OUT}/goop41-${w}x${h}.png` })
+      check(`${w}x${h}: rank 41 no page errors`, errors.length === 0, errors.join(' | '))
+      await close()
+    }
+    { // 45: the not-a-face shows for a beat (words hidden), then the slip corrects itself
+      const { page, errors, close } = await deviceAt(45, { width: w, height: h }, { quick: true })
+      const showed = await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-tag="crt"] .crt-glitch') ?? document.body).opacity === '1'
+        && document.querySelector('[data-tag="crt"] .crt-glitch'), null, { polling: 'raf', timeout: 4000 }).then(() => true, () => false)
+      const face = showed && await onScreen(page.locator('[data-tag="crt"] .crt-glitch'))
+      if (showed) await page.screenshot({ path: `${OUT}/glitch45-${w}x${h}.png` })
+      check(`${w}x${h}: rank 45 the monitor glitches — something that isn't a face, on screen`, showed && face)
+      const corrected = await page.waitForFunction((t) => document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim() === t, L.r45b, { timeout: 6000 }).then(() => true, () => false)
+      await page.waitForTimeout(typeMs(L.r45b) + 500)
+      await page.screenshot({ path: `${OUT}/slip45-${w}x${h}.png` })
+      check(`${w}x${h}: …then "*OPERATOR." corrects it`, corrected)
+      check(`${w}x${h}: rank 45 no page errors`, errors.length === 0, errors.join(' | '))
+      await close()
+    }
+    { // 46: the hatch on screen, rattling, outlined
+      const { page, errors, close } = await deviceAt(46, { width: w, height: h })
+      const hatch = page.locator('[data-tag="hatch"]')
+      await page.locator('.kit-talk').first().waitFor({ timeout: 4000 })
+      const rattling = await rattles(page, { rattle: true })
+      await page.waitForTimeout(typeMs(L.r46) + 1500)
+      check(`${w}x${h}: rank 46 the hatch rattles, on screen`, rattling && await onScreen(hatch))
+      await page.screenshot({ path: `${OUT}/hatch46-${w}x${h}.png` })
+      check(`${w}x${h}: rank 46 no page errors`, errors.length === 0, errors.join(' | '))
+      await close()
+    }
   }
 
   // ---------------- F63: rank 39's report — "Pending retirements: Operator #4471 — <your name>" ----------------
