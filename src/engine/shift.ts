@@ -690,15 +690,17 @@ class Shift implements ShiftEngine {
   }
 
   // One dumped cell: into a random column (seeded) whose hidden top rows are clear — so it never rests up there and
-  // blocks the next piece — and not where the falling piece is at the very top. It comes in at the top (a 'dump'
+  // blocks the next piece — and not into a column the falling piece is in. It comes in at the top (a 'dump'
   // event) and drops onto whatever is below (the 'fall' event right after). No column free: this cell is skipped.
   private dropDumpCell(color: Color): void {
     const s = this.state
-    const pieceTop = new Set<number>()
-    if (this.piece) for (const [x, y] of this.pieceCells(this.piece)) if (y <= s.bufferRows) pieceTop.add(x)
+    // (not into any column the falling piece is in, however low it is: the piece isn't in the grid, so the cell would
+    // settle straight through it)
+    const pieceCols = new Set<number>()
+    if (this.piece) for (const [x] of this.pieceCells(this.piece)) pieceCols.add(x)
     const free: number[] = []
     for (let x = 0; x < s.width; x++) {
-      let clear = !pieceTop.has(x)
+      let clear = !pieceCols.has(x)
       for (let y = 0; clear && y <= s.bufferRows; y++) if (s.grid[y * s.width + x] !== 0) clear = false
       if (clear) free.push(x)
     }

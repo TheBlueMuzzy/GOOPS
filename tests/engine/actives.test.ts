@@ -138,6 +138,21 @@ describe('Goop Dump (F42, rank 15)', () => {
     expect(ofType(shift.takeEvents(), 'dump')).toHaveLength(4)
   })
 
+  it('never rains into a column the falling piece is in, however low the piece is (it would settle through it)', () => {
+    const { shift, cfg } = withActive('goopDump', 3)
+    // move the hanging piece halfway down the tank (through a snapshot: the piece itself is private)
+    const snap = shift.snapshot()
+    snap.inner.piece!.y += 10
+    const low = createShift(cfg, { ...snap.options, startGrid: new Uint8Array(30 * 24) })
+    low.restore(snap)
+    const pieceCols = new Set(low.state.piece!.cells.map(([x]) => x))
+    makeReady(low)
+    low.act({ type: 'ability', id: 'goopDump' })
+    const dumps = ofType(timed(low, 6000).map((x) => x.e), 'dump')
+    expect(dumps.length).toBeGreaterThan(40)
+    for (const d of dumps) expect(pieceCols.has(d.x)).toBe(false)
+  })
+
   it('a snapshot mid-rain carries on exactly (the rain is in state.effects)', () => {
     const { shift, cfg } = withActive('goopDump', 2)
     makeReady(shift)
@@ -302,6 +317,13 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     expect(ofType(wild.shift.takeEvents(), 'reject')).toHaveLength(1)
     expect(wild.a().ready).toBe(true)
     expect(wild.s.next).toEqual(next) // nothing recoloured
+
+    // a rupture, like the other actives
+    const rupture = ruptured('goopColorizer', 25)
+    Object.assign(rupture.state.abilities![0], { charge: 1, ready: true })
+    rupture.act({ type: 'ability', id: 'goopColorizer' })
+    expect(ofType(rupture.takeEvents(), 'reject')).toHaveLength(1)
+    expect(rupture.state.effects!.colorize).toBeUndefined()
 
     const again = withActive('goopColorizer', 1)
     makeReady(again.shift)

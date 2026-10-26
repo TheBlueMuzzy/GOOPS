@@ -73,9 +73,10 @@ export const ABILITY_EFFECTS: Record<string, FireEffect> = {
   },
   // F42 Goop Colorizer (v1): the next N pieces take the falling piece's colour, starting with the one already in the
   // next window (the engine recolours it at once, so the window shows it — shift.ts colorizeNext). Firing again starts
-  // the count again in the new colour. Refused with no falling piece (or a wild one): no colour to copy.
+  // the count again in the new colour. Refused with no falling piece (or a wild one): no colour to copy — and during a
+  // rupture, like the other actives (it doesn't charge then either).
   colorize: (shift, params, id) => {
-    if (shift.pieceColor === null) return false
+    if (shift.phase !== 'playing' || shift.pieceColor === null) return false
     const left = Math.floor(params.pieces)
     if (!(left >= 1)) return false // a number missing from upgrades.json: nothing to do
     shift.effects.colorize = { id, color: shift.pieceColor, left }
