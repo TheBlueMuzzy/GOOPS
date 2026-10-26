@@ -9,6 +9,7 @@
 //     squelchEvery swapped for moments.json looks.crackleEvery) · cut = he's cut off: once his line has typed out, the
 //     moment moves on by itself after looks.cutSeconds (looks clock: the Dev Kit's full pause holds it; a tap still
 //     works) — at 30 that's Management cutting in. (The monitor's own looks, flicker / alarm: Console.tsx's Crt.)
+// F45: the goop through the speaker ("goop", 41 / 43 / 48) — his bubble's place, the goop's look (below).
 // Enter moves a Management line on (the bubble takes its own tap / Enter / Space) — not the sign line (F66): there
 // Enter signs the name box (Console.tsx).
 import { useEffect, useRef, useSyncExternalStore } from 'react'
@@ -59,6 +60,14 @@ export function StoryView() {
         <TalkingBubble key={`${view.rank}:${line.words}`} target='[data-tag="crt"]' placement="bottom" outline="plain"
           text={storyWords(line.words)} speaker={line.him ? text.story.goopVeteran : text.story.goop} onConfirm={storyMoments.next}
           feel={talk} />
+      )}
+      {/* F45 the goop through the speaker (41, 43, 48): his bubble's place over the monitor, but the goop's look — the
+          head bubble's colours (the style's, not his light ones) with the speaker's speech wave (looks.goopOutline:
+          'plain' = the in-your-head outline); screen readers name the goop */}
+      {line.voice === 'goop' && (
+        <TalkingBubble key={`${view.rank}:${line.words}`} target='[data-tag="crt"]' placement="bottom" outline={looks.goopOutline === 'plain' ? 'plain' : 'wave'}
+          text={storyWords(line.words)} speaker={text.story.goop} onConfirm={storyMoments.next}
+          feel={line.crackle ? { ...talk, squelchEvery: looks.crackleEvery } : talk} onTyped={line.cut ? cutOff : undefined} />
       )}
     </>
   )
