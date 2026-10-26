@@ -255,7 +255,8 @@ try {
       const sang = await until(page, `F.filter((f) => f.mouth >= 0.99).length >= ${EYES.chorusMouths} && F.filter((f) => f.mouth >= 0.99).every((f) => f.chorus > 0.9)`, 15000)
       if (sang) await page.screenshot({ path: `${SHOTS}/${style.toLowerCase()}-rank${EYES.chorusRank}-mouths-open-${w}x${h}.png` })
       check(`${style} ${w}x${h} rank ${EYES.chorusRank}: once ${EYES.chorusMouths}+ mouths show, every mouth opens at once`, sang, '')
-      const shut = await until(page, 'F.every((f) => f.chorus === 0)', (EYES.chorusTime + 3) * 1000)
+      // (the chorus runs on the game's clock — under check:full load that's slower than wall time, so a roomy wait)
+      const shut = await until(page, 'F.every((f) => f.chorus === 0)', 15000)
       check(`${style} ${w}x${h}: …then they shut again`, shut, '')
       check(`${style} ${w}x${h}: it's kept as seen on the device`, await page.evaluate(() => JSON.stringify(localStorage).includes('look:mouths-open')), '')
       if (w === 390) { // the next shift: not again
