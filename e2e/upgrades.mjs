@@ -1,6 +1,6 @@
 // F34 — THE UPGRADES SCREEN (the console's shop), with real input in Playwright's own Chromium (never the user's Chrome).
 // A REAL save is seeded (a version-1 save from the alpha, so the save upgrade runs in the browser too), not ?rank=N:
-//   rank 5 — Upgrades opens: "Scraps: 5", one card per upgrade for ranks 2–9 in rank order; 6–9 locked with "Opens at
+//   rank 5 — Upgrades opens: "Scraps: 5", one card per upgrade in rank order (F42: up to 38); 6 and up locked with "Opens at
 //            rank N" and no buttons; buy a level of Circuit Stabilizer → scraps 4, its pips 1 of 4, the card the same
 //            size, saved (version 2) → reload → still owned, scraps still 4 → take it back → scraps 5, nothing owned;
 //            Cooldown Booster: its switch is off and asleep until a level is bought, then takes it into the shift (saved),
@@ -40,7 +40,9 @@ const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} 
 // all the XP to reach a rank (progression.json: xpBase + xpPerRank × rank per rank)
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]))
-const ORDER = ['circuitStabilizer', 'autoPopper', 'capacitorEfficiency', 'cooldownBooster', 'gearLubrication', 'focusMode', 'denseGoop', 'pressureControl']
+const ORDER = ['circuitStabilizer', 'autoPopper', 'capacitorEfficiency', 'cooldownBooster', 'gearLubrication', 'focusMode', 'denseGoop', 'pressureControl',
+  'goopDump', 'activeSlot', 'goopColorizer', 'crackDown', 'activeSlot2'] // (F42: the actives and slots of ranks 15–38)
+const ABOVE_9 = ORDER.slice(8) // locked at rank 9 too
 
 // a device with this save, on the console
 async function device(save, { width = 390, height = 844, touch = false } = {}) {
@@ -420,9 +422,9 @@ try {
     await openShop(page)
     check('the shop: "Scraps: 5"', await scrapsShown(page, 5) === 1)
     const titles = await page.locator('.kit-modal .kit-card-title').allTextContents()
-    const LOCKED5 = ['gearLubrication', 'focusMode', 'denseGoop', 'pressureControl']
+    const LOCKED5 = ['gearLubrication', 'focusMode', 'denseGoop', 'pressureControl', ...ABOVE_9]
     const want = ORDER.map((id) => LOCKED5.includes(id) ? `${items[id].name} ${w.lockedLabel}` : items[id].name)
-    check('one card per upgrade, ranks 2–9 in rank order (the locked ones read out "… Locked")', JSON.stringify(titles) === JSON.stringify(want), titles.join(', '))
+    check('one card per upgrade, in rank order (the locked ones read out "… Locked")', JSON.stringify(titles) === JSON.stringify(want), titles.join(', '))
     for (const [id, rank] of [['gearLubrication', 6], ['focusMode', 7], ['denseGoop', 8], ['pressureControl', 9]]) {
       check(`${items[id].name}: locked (kit greyed card), "Opens at rank ${rank}", no buttons`, await card(page, id).getByText(fill(w.locked, { rank })).count() === 1
         && await card(page, id).getByRole('button').count() === 0 && await card(page, id).getAttribute('data-locked') !== null)
@@ -546,9 +548,9 @@ try {
     {
       const { page, errors, close } = await device(RANK9, { width, height })
       await openShop(page)
-      check(`${tag} rank 9: "Scraps: 1", Circuit Stabilizer at max, Cooldown Booster switched on, nothing locked`,
+      check(`${tag} rank 9: "Scraps: 1", Circuit Stabilizer at max, Cooldown Booster switched on, nothing up to rank 9 locked`,
         await scrapsShown(page, 1) === 1 && await level(page, 'circuitStabilizer') === 4 && await equipSwitch(page, 'cooldownBooster').getAttribute('aria-checked') === 'true'
-        && await page.getByText(/Opens at rank/).count() === 0)
+        && await page.getByText(/Opens at rank/).count() === ABOVE_9.length)
       await shot(page, `rank9-bought-${tag}`)
       await page.evaluate(() => [...document.querySelectorAll('.kit-modal .kit-card')][3].scrollIntoView({ block: 'center' })) // Cooldown Booster: its switch
       await shot(page, `rank9-active-${tag}`)
@@ -560,7 +562,7 @@ try {
         const list = document.querySelector('.kit-modal .kit-scroll').getBoundingClientRect(), last = [...document.querySelectorAll('.kit-modal .kit-card')].pop().getBoundingClientRect()
         return last.bottom <= list.bottom + 1 && last.top >= list.top - 1
       })
-      check(`${tag} rank 9: scrolled to the end, the last card (Pressure Control) shows whole`, visible)
+      check(`${tag} rank 9: scrolled to the end, the last card shows whole`, visible)
       check(`${tag}: no page errors`, errors.length === 0, errors.join(' | '))
       await close()
     }
