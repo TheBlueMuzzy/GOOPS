@@ -3,7 +3,7 @@
 
 
 ## Where we are
-Stage: develop · Milestone: M5 Beta · Sprint: 20 (F43, F48) · Doing: F43 — next up · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M5 Beta · Sprint: 20 (F43, F48) · Doing: F43 — building (helper f43-upgrades in a worktree builds F43 + F48; main chat merges, runs check:full, reviews) · Branch: dev/m5-beta · Version: 0.1.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's alpha, v0.1.0, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
