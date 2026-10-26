@@ -77,13 +77,13 @@ const $ = id => document.getElementById(id);
 // ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
 // Sizes in cells (1 = one grid square). The look is drawn in the shader, so every knob changes it live.
 const GOO = {
-  look: 1,          // 0 = rainbow wave (v1), 1 = oil-slick sheen (Claude's pick), 2 = pearl glow
-  speed: 1,         // how fast the colour moves (1 = rainbow's v1 400 ms per colour)
-  band: 4,          // wave / band / swirl size, in cells
-  saturation: 0.45, // how colourful the sheen is (rainbow: 1 = the real goop colours)
-  tint: 0.4,        // base brightness (oil: gunmetal -> pewter; pearl: dusky lavender -> bright pearl)
-  glow: 0.35,       // soft glow round a wild clump (pulses gently)
-  sparkle: 0.25,    // tiny twinkles on a wild clump
+  look: 2,          // 0 = rainbow wave (v1), 1 = oil-slick sheen, 2 = pearl glow (Muzzy's pick, 2026-10-25)
+  speed: 0.6,       // how fast the colour moves (1 = rainbow's v1 400 ms per colour)
+  band: 3,          // wave / band / swirl size, in cells
+  saturation: 0.43, // how colourful the sheen is (rainbow: 1 = the real goop colours)
+  tint: 0.55,       // base brightness (oil: gunmetal -> pewter; pearl: dusky lavender -> bright pearl)
+  glow: 0.6,        // soft glow round a wild clump (pulses gently)
+  sparkle: 0.5,     // tiny twinkles on a wild clump
   pixelSize: 0,     // 0 = smooth; else the whole tank drawn in blocks this many screen px wide
 };
 const LOOK_NAMES = ['Rainbow wave (v1)', 'Oil-slick sheen', 'Pearl glow'];

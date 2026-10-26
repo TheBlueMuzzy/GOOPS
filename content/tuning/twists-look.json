@@ -1,7 +1,7 @@
 {
   "_about": "How the F39 rank twists LOOK (looks only: nothing here changes a rule). wild = wild goop (rank 40+, seals any colour of crack), from the sketch .planning/research/sketches/wild-goop.html — paste its 'Copy values' here (its look 0 / 1 / 2 = rainbow / oil / pearl; pixelSize isn't in the game). It must never read as a real goop colour, as black goop or as white (the Veteran). twoColour = the soft glow round a two-colour piece as it falls (story.md rank 20: 'a multi-colour piece glows as it falls'). Drawn by both goo renderers (Jelly + Particle) and the tank canvas (ghost, next window); on the looks clock.",
   "_help": {
-    "wild.look": "Which wild look: oil = a grey-violet body with a rainbow film sliding over it (Claude's pick) · rainbow = v1's wave through the real goop colours (it IS red for a moment — the problem) · pearl = milky lavender with a pastel shimmer.",
+    "wild.look": "Which wild look: oil = a grey-violet body with a rainbow film sliding over it · rainbow = v1's wave through the real goop colours (it IS red for a moment — the problem) · pearl = milky lavender with a pastel shimmer (Muzzy's pick, 2026-10-25).",
     "wild.speed": "How fast the colour moves. Rainbow: 1 = v1's 400 ms per colour. Oil: how fast the shiny band slides across. Pearl: how fast the shimmer drifts and the glow pulses. 0 = frozen.",
     "wild.band": "Size of the colour bands, in cells. Rainbow: cells from one colour to the next. Oil: how wide the shiny band is. Pearl: how big the shimmer swirls are.",
     "wild.saturation": "How colourful the sheen gets (0 = grey). Rainbow at 1 = exactly the real goop colours. Oil / Pearl top out well below a real goop.",
@@ -25,19 +25,19 @@
   },
   "_choices": {
     "wild.look": {
-      "oil": "oil · oil-slick sheen (Claude's pick)",
+      "oil": "oil · oil-slick sheen",
       "rainbow": "rainbow · v1's colour wave",
-      "pearl": "pearl · pearl glow"
+      "pearl": "pearl · pearl glow (Muzzy's pick)"
     }
   },
   "wild": {
-    "look": "oil",
-    "speed": 1,
-    "band": 4,
-    "saturation": 0.45,
-    "tint": 0.4,
-    "glow": 0.35,
-    "sparkle": 0.25
+    "look": "pearl",
+    "speed": 0.6,
+    "band": 3,
+    "saturation": 0.43,
+    "tint": 0.55,
+    "glow": 0.6,
+    "sparkle": 0.5
   },
   "twoColour": {
     "glow": 0.6,

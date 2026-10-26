@@ -1,8 +1,8 @@
 // F39 THE WILD GOOP LOOK (rank 40+): ported from the sketch .planning/research/sketches/wild-goop.html (wildBase).
 // Three looks in one shader piece, picked in content/tuning/twists-look.json "wild.look" (live in the Dev Kit):
-//   oil     = a grey-violet body no goop has, with a thin-film rainbow band sliding across it (Claude's pick)
+//   oil     = a grey-violet body no goop has, with a thin-film rainbow band sliding across it
 //   rainbow = v1: the real goop colours in turn, a wave sliding sideways (it IS red for a moment — kept to compare)
-//   pearl   = a milky lavender body (well short of white — that's the Veteran) with a slow pastel shimmer
+//   pearl   = a milky lavender body (well short of white — that's the Veteran) with a slow pastel shimmer (Muzzy's pick)
 // Plus a soft pulsing halo + rim and tiny sparkles, on wild goop only. Both goo renderers include WILD_GLSL in their
 // last shader (after their own uTime) and call setWild each frame; the tank canvas + next window use wildStops().
 import looks from '../../../content/tuning/twists-look.json' // live: read where it's used (the Dev Kit's edits show at once)
