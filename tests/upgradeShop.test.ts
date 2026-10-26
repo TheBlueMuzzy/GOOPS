@@ -5,6 +5,8 @@ import { freshProgress, scrapsAt, xpToNext, type Progress } from '../src/progres
 import { activeSlots, buyLevel, costOf, levelCount, levelOf, levelPercent, ownsAny, respec, setEquipped, showsCount, takeBackLevel, upgradeBook, upgradesForShift, whyNotBuy } from '../src/progress/upgradeShop'
 import { playableUpgrades, type UpgradeBook } from '../src/engine/upgrades'
 import text from '../content/text/en.json'
+import { SAVE_VERSION, loadProgress, saveProgress } from '../src/progress/save'
+import goldenV3 from './saves/goops-progress-v3.json'
 
 const book: UpgradeBook = { upgrades: [
   { id: 'cheap', name: 'Cheap', type: 'passive', rank: 2, maxLevel: 2, effects: [] },
@@ -212,6 +214,21 @@ describe('active slots: 1 → 2 → 3 with the Active Expansion Slots', () => {
     expect(one.equipped).toEqual(['goopColorizer'])
     // taking back something else keeps every equipped active that still fits
     expect(takeBackLevel(p, 'goopDump').equipped).toEqual(['cooldownBooster', 'goopColorizer'])
+  })
+
+  it('the save shape is unchanged (still version 3): slots are owned levels like any upgrade — old saves load with 1 slot, new ones keep 3 equipped', () => {
+    const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) } }
+    expect(SAVE_VERSION).toBe(3)
+    const old = memory()
+    old.setItem('goops-progress', JSON.stringify(goldenV3))
+    expect(activeSlots(loadProgress(old))).toBe(1)
+    const s = memory()
+    const p = owning({ activeSlot: 1, activeSlot2: 1, goopDump: 1, goopColorizer: 1, crackDown: 1 }, ['goopDump', 'goopColorizer', 'crackDown'])
+    saveProgress(p, s)
+    const back = loadProgress(s)
+    expect(back.equipped).toEqual(['goopDump', 'goopColorizer', 'crackDown'])
+    expect(activeSlots(back)).toBe(3)
+    expect(upgradesForShift(back).abilities).toHaveLength(3)
   })
 
   it('respec takes the slots back too: nothing owned, nothing equipped, every scrap back', () => {
