@@ -132,7 +132,7 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - ✅ F41 🎮 Credits, fines and payday on the end report: the rank meter becomes CREDITS / PAYMENT DUE, fines as theatre (net = real XP), payday at each rank-up in 5 lines, passage debt line (sketch S8 approved; design/story.md "Credits, payday and fines" + "Fines and payday — the lines") — must:beta · needs: F09
 - ✅ F42 🎮 Active abilities: equip slots + the charge button in the HUD — must:beta · needs: F34
 - ✅ F43 🎮 Upgrades ranks 10–38 (Hold Viewer + Goop Window retired by F59 — two slots to fill with new upgrades for the new pacing, Muzzy 2026-10-19) — must:beta · needs: F34, F42
-- 🟢 F45 🎮 Ranks 40–49: the speaker comes back (him + the goop), Management slips, the valve is named — must:beta · needs: F63, F39
+- 🔨 F45 🎮 Ranks 40–49: the speaker comes back (him + the goop), Management slips, the valve is named — must:beta · needs: F63, F39
 - ✅ F61 🧱 Talking bubble (shipped in UI kit 0.31.0 as <TalkingBubble>, installed 2026-10-24; Goops wires it in F35 with its S9 feel in content/tuning/talk.json — framework UI kit piece: open / type / talk wave / rests / idle squelch; Goops' spiky-wave style for the Veteran, a blobby one for the goop) — sketch S9 approved 2026-10-23 (research/speaker-bubble/picks.json); requested from the framework session, logged in its ROADMAP Ideas — must:beta
 - ✅ F62 🎮 The goop grows eyes and mouths: eyes at 10, following at 20, worried at 30, mouths at 40 (looks, design/story.md "The Goop changes") — must:beta · needs: F09
 - ✅ F63 🎮 The goop's voice (ranks 31–39) + the white goop = the Veteran in the tank (never merges or pops, drifts to the worst crack and seals it slowly) — must:beta · needs: F40, F62
