@@ -48,9 +48,9 @@
   "rank": 50,
   "colour": "black",
   "fallSpeedMult": 1.6,
-  "pressureRiseMult": 1.5,
-  "crackRateMult": 1.5,
-  "rain": { "everySec": 6, "cells": 2 },
+  "pressureRiseMult": 1.25,
+  "crackRateMult": 2.2,
+  "rain": { "everySec": 10, "cells": 2 },
   "valve": { "stages": [6, 8, 10] },
   "vet": {
     "sealTime": 3,

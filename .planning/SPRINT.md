@@ -7,7 +7,7 @@ Done when: rank 50's shift plays as design/story.md "The final shift": all goop 
 why: the last shift should feel slightly overwhelming — a boss level: no colour sorting, just place and pop while it overruns you, with the one friend you have left giving himself up so you can open the valve.
 Check: unit tests (black merges/seals everything, valve counting + pause, the three losses, his shrink) · bot run of rank 50 (win rate, length, how bots lose) · e2e/final-shift.mjs with shots looked at · check:full
 - [x] 🤖 1. Rules at rank 50: all goop + cracks one galaxy-black colour, faster / more frequent spawns, seals count to 3 valve stages (6 / 8 / 10, paused while a stage waits), the three losses — new content/tuning/finalShift.json — src/engine/shift.ts
-- [ ] 🤖 2. Pace proof: bot run of rank 50 (same settings on several seeds first, to see the swing) — how often bots win, how long, which way they lose; tune finalShift.json toward "slightly overwhelming", log it in Notes — scripts/bots/runShift.ts
+- [x] 🤖 2. Pace proof: bot run of rank 50 (same settings on several seeds first, to see the swing) — how often bots win, how long, which way they lose; tune finalShift.json toward "slightly overwhelming", log it in Notes — scripts/bots/runShift.ts
 - [ ] 🤖 3. The Veteran in the final shift: drops in first as a falling white clump with his lines, seeks the cracks you can't reach, shrinks per seal (his seals count), used up = a loss — src/engine/whiteGoop.ts
 - [ ] 🤖 4. The galaxy-black look: black goop + black cracks with shimmering stars, Jelly and Particle — src/goo/shared/palette.ts
 - [ ] 🙋 5. Muzzy designs the valve mini-game (how opening each stage works) — .planning/design/story.md
@@ -18,3 +18,15 @@ Check: unit tests (black merges/seals everything, valve counting + pause, the th
 ## Notes
 - Muzzy 2026-10-26: Sprint 22 plan OK ("/develop").
 - Muzzy 2026-10-26: "for the valve mini game. let's stop before you code that." → tasks 1–4 get built; the valve panel (task 6) waits for his design (task 5). Options on the table: a) the repair motion with valve art · b) turn a wheel · c) hold a lever — or his own.
+- Task 1 (rules): the losses end the final shift AT ONCE — no rupture drain (TDD D26). **Ask Muzzy:** keep the hard stop, or play the usual rupture drain first (zapping can't win it either way)? Default: at once.
+- Task 1: "cracks you can't reach" = at least `vet.reachRows` (3) empty rows to build under the crack in its column; with none he waits (TDD D26). The shift's clock waits for his drop-in (no piece, no pressure) until he's landed + `intro.playSec`.
+- Task 2 bot run (`npm run bots:final`, scripts/bots/final.mjs + runFinal.ts; console stand-ins: a valve stage = `bots.valveSec` 6 s at the console at consoleTimeScale, a repair = bots.json `consoleRepairSec` 4 s). Rank 50 with breakdowns, the white goop and the twists as the game plays them.
+  - Noise: the same settings on 6 sets of 50 seeds swung Focused 4–20% wins, Sharp 6–10%, his loss share 2–30% → **200 seeds per bot** for every comparison (≈ ±3–4 points), ~27 s a run.
+  - Surprise: in the final shift **more cracks = easier** (cracks are the only way to the valve — every crack is a seal waiting to happen, any goop seals it) and **the rain is the hardest knob** (loose black cells glue the stack into one huge clump that takes ages to fill). Slower pieces also made it harder (fewer pieces to seal with). Pressure rise is the main "overwhelm" knob.
+  - Start (as written): Focused 12% · Sharp 9% · Casual 0% wins; ~93% of losses on integrity; 113–119 s.
+  - Tuning: pressureRiseMult 1.5→1.25 — at 1.5 integrity ran out before stage 3 for nearly everyone (Focused 12%); 1.0 gave 49%, but the boss shift should still climb faster than any other — result with the rest: see the last line.
+  - Tuning: crackRateMult 1.5→2.2 — more seals to open the valve with (1.0 → Focused 5%, 1.8 → 48%, 2.0 → 63%, 2.2 → 66–72%).
+  - Tuning: rain.everySec 6→10 — the rain every 6 s took Sharp from 56% (no rain) to 18%; every 10 s keeps the overrun feeling at a fair price.
+  - Kept: fallSpeedMult 1.6, vet.sealTime 3, vet.reachRows 3, vet.shrinkPerSeal 0.08 (0.06 → he's never used up, 1% losses; 0.08 → 7% of shifts lost by using him up — his sacrifice is a real risk), valve 6 / 8 / 10 (Muzzy's).
+  - **Result on fresh seeds** (1001–1200 / 2001–2200, 200 each): **Focused 65% / 61%** · **Sharp 60% / 63%** · **Casual 0% / 0%** (it ignores cracks, so it never gets past stage 1). Losses: integrity ~30%, him used up ~8%, over the top ≤1%. Length ~116 s (wins ~116 s, losses of Casual ~87 s); 3 repair trips; he does ~1/3 of the seals and ends at ~0.28 of his size. Target was "a decent player usually wins but feels pressed": strong bots 60–75%, a weak one rarely.
+  - Note: Sharp (waits for 8+ cell clumps) is no better than Focused here — with one colour every clump is huge anyway.

@@ -25,6 +25,7 @@
     "check:devkit": "node src/devkit/check-devkit.mjs",
     "check:framework": "node src/devkit/check-framework.mjs",
     "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs",
+    "bots:final": "node --import ./scripts/bots/ts-register.mjs scripts/bots/final.mjs",
     "audio:check": "node src/audio/audio-check.mjs"
   },
   "dependencies": {
