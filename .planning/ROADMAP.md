@@ -131,7 +131,7 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - ✅ F40 🎮 The Veteran, ranks 10–29, and his capture at 30 (speaker cut-in, the fine for YOU, white joins as a colour) — must:beta · needs: F35
 - ✅ F41 🎮 Credits, fines and payday on the end report: the rank meter becomes CREDITS / PAYMENT DUE, fines as theatre (net = real XP), payday at each rank-up in 5 lines, passage debt line (sketch S8 approved; design/story.md "Credits, payday and fines" + "Fines and payday — the lines") — must:beta · needs: F09
 - ✅ F42 🎮 Active abilities: equip slots + the charge button in the HUD — must:beta · needs: F34
-- 🔨 F43 🎮 Upgrades ranks 10–38 (Hold Viewer + Goop Window retired by F59 — two slots to fill with new upgrades for the new pacing, Muzzy 2026-10-19) — must:beta · needs: F34, F42
+- ✅ F43 🎮 Upgrades ranks 10–38 (Hold Viewer + Goop Window retired by F59 — two slots to fill with new upgrades for the new pacing, Muzzy 2026-10-19) — must:beta · needs: F34, F42
 - 🟢 F45 🎮 Ranks 40–49: the speaker comes back (him + the goop), Management slips, the valve is named — must:beta · needs: F63, F39
 - ✅ F61 🧱 Talking bubble (shipped in UI kit 0.31.0 as <TalkingBubble>, installed 2026-10-24; Goops wires it in F35 with its S9 feel in content/tuning/talk.json — framework UI kit piece: open / type / talk wave / rests / idle squelch; Goops' spiky-wave style for the Veteran, a blobby one for the goop) — sketch S9 approved 2026-10-23 (research/speaker-bubble/picks.json); requested from the framework session, logged in its ROADMAP Ideas — must:beta
 - ✅ F62 🎮 The goop grows eyes and mouths: eyes at 10, following at 20, worried at 30, mouths at 40 (looks, design/story.md "The Goop changes") — must:beta · needs: F09
@@ -144,10 +144,10 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - ✅ F69 ❓ The first day's voice — decided 2026-10-24 (Muzzy: "Management teaches tutorial. Vet comes in at 5. i forgot."): Management teaches the first day (as built), the Veteran first speaks at rank 5 — must:beta · needs: F09
 - ✅ F70 🧱 Rank select (approved 2026-10-24) + the framework version label at the bottom of the console (Muzzy 2026-10-24: "maybe we need the v1's rank selector back again at the bottom between the version (which should be using the frameworks version module so it's up to date when I open it) and \"muzzymade 2026\"" — the ?rank links left him at his own save's rank 18, and a fresh first day had no way in) — must:beta · needs: F38
 - 🟢 F46 🎮 Operator Journal — should:beta · needs: F30
-- 🔨 F48 🎮 Quick Fix upgrade at rank 28 (fewer repair steps) — should:beta · needs: F34
+- ✅ F48 🎮 Quick Fix upgrade at rank 28 (fewer repair steps) — should:beta · needs: F34
 - 🟢 F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
-- ⏳ F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
-- ⏳ F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
+- 🟢 F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
+- 🟢 F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
 
 ## M6 — 1.0: polished, balanced, replaces v1
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
