@@ -14,7 +14,6 @@
 // Enter signs the name box (Console.tsx).
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { TalkingBubble } from '../../ui/kit'
-import { looksClock } from '../../devkit/gameClock'
 import { boxAround, gameColumn } from './goopsLessons'
 import { Spotlight } from './Spotlight'
 import { storyFile, storyMoments, storyWords } from './storyMoments'
@@ -39,8 +38,7 @@ export function StoryView() {
   const looks = storyFile.looks
   const cutOff = () => {
     cutTimer.current()
-    const at = view
-    cutTimer.current = looksClock.after(looks.cutSeconds * 1000, () => { if (storyMoments.view() === at) storyMoments.next() })
+    cutTimer.current = storyMoments.cutAfterTyped()
   }
   return (
     <>

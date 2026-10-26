@@ -55,7 +55,8 @@ const NOTHING: string[] = []
 // just toasters down if it needs more room"): its words (the hint), or a lesson's line with its Got it. Words that
 // need more room than the screen has make it slide down past the bezel, in the screen's colours (art.json console.crt).
 // sign (F66): the line is "PLEASE SIGN HERE" — the name box + Sign + Skip instead of Got it (both move on: onGotIt)
-type CrtLine = { text: string; gotIt: boolean; sign?: boolean; onGotIt(): void }
+// onTyped (F45): the line has typed out (a cut Management line moves on by itself then: storyMoments.cutAfterTyped)
+type CrtLine = { text: string; gotIt: boolean; sign?: boolean; onGotIt(): void; onTyped?(): () => void }
 
 // F66 YOUR NAME (story.md "Your name", TDD D20): rank 0's "PLEASE SIGN HERE" on the monitor — the kit's TextInput (at
 // most content/tuning/name.json maxLength letters) with Sign and Skip. Sign keeps the name in the save (trimmed; empty =
@@ -119,13 +120,16 @@ function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | nul
   return (
     <ArtLayer at={[x, y, w, h]} text={a.words.hint.text}>
       <CrtLook place="monitor" unit={unit} ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined} data-story-look={look}
-        style={{ '--story-flicker': `${looks.flickerSeconds}s`, '--story-alarm': `${looks.alarmSeconds}s`, '--story-alarm-colour': looks.alarmColour, ...(look === 'alarm' && { '--crt-ink': looks.alarmWords, '--crt-glow': looks.alarmWords }), '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
+        style={{ '--story-flicker': `${looks.flickerSeconds}s`, '--story-alarm': `${looks.alarmSeconds}s`, '--story-alarm-colour': looks.alarmColour,
+          '--story-glitch': `${looks.glitchSeconds}s`, '--story-glitch-after': `${looks.glitchAfterSeconds}s`, '--story-glitch-colour': looks.glitchColour, '--story-glitch-art': `url("${a.crt.glitch}")`, ...(look === 'alarm' && { '--crt-ink': looks.alarmWords, '--crt-glow': looks.alarmWords }), '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
           '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
         <div ref={body} className="crt-body">
-          <TypedText text={words} className="lesson-words" />
+          <TypedText text={words} className="lesson-words" onTyped={lesson?.onTyped} />
           {lesson?.gotIt && <Button onClick={lesson.onGotIt}>{text.lessons.gotIt}</Button>}
           {lesson?.sign && <SignHere onDone={lesson.onGotIt} />}
         </div>
+        {/* F45 (45, Management slips): for a beat the screen shows something that isn't a face (art.json crt.glitch) */}
+        {look === 'glitch' && <span className="crt-glitch" aria-hidden />}
       </CrtLook>
     </ArtLayer>
   )
@@ -162,7 +166,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   // F35: a story moment's Management line types on the monitor too (the Veteran's lines are his bubble: StoryView.tsx)
   const story = useSyncExternalStore(storyMoments.subscribe, storyMoments.view)
   // (F66: the sign line has the name box's Sign / Skip instead of Got it)
-  const storyLine = story?.line.voice === 'mon' ? { text: storyWords(story.line.words), gotIt: !story.line.sign, sign: story.line.sign, onGotIt: storyMoments.next }
+  // (F45: a cut Management line — 45's slip, "HUMAN RESOURCE." — has no Got it: once typed it corrects itself)
+  const storyLine = story?.line.voice === 'mon' ? { text: storyWords(story.line.words), gotIt: !story.line.sign && !story.line.cut, sign: story.line.sign,
+    onGotIt: storyMoments.next, onTyped: story.line.cut ? storyMoments.cutAfterTyped : undefined }
     // (while the Veteran talks, the monitor's "pull down the periscope" would be wrong — the periscope waits: blank)
     : story ? { text: '', gotIt: false, onGotIt: storyMoments.next } : null
   const spotlit = useSpotlitTags()

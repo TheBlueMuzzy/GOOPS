@@ -45,7 +45,9 @@
       "screenTop": 60.46,
       "screenWidth": 537.16,
       "screenBottom": 886.33,
-      "radius": 39.53
+      "radius": 39.53,
+      "_glitch": "F45 (rank 45, Management slips): the shape the screen shows for a beat — 'something that isn't a face'. One colour: the game paints it in moments.json looks.glitchColour through this picture's shape (a placeholder by Claude — redraw it any time).",
+      "glitch": "art/NotAFace.svg"
     },
     "repairs": {
       "_about": "F24: the repair panels' moving parts, drawn by the game over the panels (art-prep strips the same parts out of them: stripClasses = the knobs, the dial face and the lamps; strip = the three arcade buttons). Boxes are [x, y, width, height] in the mock-up's units, read off Example1.svg. viewShort = what a phone on its side shows mid-shift: just the three panels (the way back is then the Back to the tank button). knob = the slider knob's share of its track (50.23 / 175.86). Laser: sliders in the order row 1 left, row 1 right, row 2 left, row 2 right, each with its two lamps [left end, right end]. Controls: the dial, its four corner lamps (top-left, top-right, bottom-right, bottom-left) and the angle (degrees clockwise from up) the dial's arrow points at each. Visor (RESET LIGHTS): the up/down slider, its top lamp and its bottom lamp, and the three buttons top to bottom with their lamps. F32 (Muzzy: the slider sat too low and the bottom lamp overlapped it): the track is cut out of the panel into its own file (track: its shapes by colour class, from = where the mock-up had it) and drawn at `slider` — 92% of its size and higher, so both lamps fit above and below it.",

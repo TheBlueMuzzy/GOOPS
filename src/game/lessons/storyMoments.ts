@@ -6,6 +6,7 @@
 // so Settings → Replay lessons plays them again. App asks atConsole(rank) before the console's lessons (the first day,
 // the upgrades unlock), and those wait while a moment plays.
 import { tipsMemory } from '../../ui/kit'
+import { looksClock } from '../../devkit/gameClock'
 import momentsFile from '../../../content/story/moments.json'
 import text from '../../../content/text/en.json'
 import { operatorName } from '../../progress/save'
@@ -107,6 +108,12 @@ export const storyMoments = {
   },
   /** Stop without marking anything seen (the console went away). */
   stop() { queue = []; at = 0; show() },
+  /** F40 / F45: a cut line has typed out — the moment moves on by itself after looks.cutSeconds (looks clock: the Dev
+   *  Kit's full pause holds it), unless it went on another way first. Returns "cancel". */
+  cutAfterTyped(): () => void {
+    const at = view
+    return looksClock.after(storyFile.looks.cutSeconds * 1000, () => { if (view === at) storyMoments.next() })
+  },
   playing: () => !!view,
   view: (): StoryView => view,
   subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
