@@ -74,6 +74,8 @@ interface Props {
   // F42: the charge buttons' row in the bottom panel, above the machine bars: its height in px (0 = no row) — the panel
   // grows by it (+ the small gap under it) and the tank gets that much shorter. Known when the shift starts.
   abilityRowPx: number
+  // F43 Goop Swap: × how long a hold takes to swap (the shift's swapHoldTimeMult; 1 = no upgrade) — the input layer reads it
+  swapHoldMult: number
   readout: ReactNode // the pressure readout's words ("10% PSI"), hung on the pressure line by the frame loop
   onHud(h: HudSnapshot): void
   onEnd(status: ShiftStatus): void
@@ -81,7 +83,7 @@ interface Props {
   onConsole(): void
 }
 
-export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, abilityRowPx, readout, onHud, onEnd, onMessage, onConsole }: Props) {
+export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, abilityRowPx, swapHoldMult, readout, onHud, onEnd, onMessage, onConsole }: Props) {
   const style = useSyncExternalStore(gooStyle.subscribe, gooStyle.get)
   const readoutAt = useSyncExternalStore(readoutSetting.subscribe, readoutSetting.get)
   const host = useRef<HTMLDivElement>(null)
@@ -95,8 +97,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
   // F63: the white goop's "ow" when the laser goes through him — the game's whisper bubble (kit TalkingBubble, plain
   // outline), above him; n = which ow (a new one restarts the bubble). Set only on the event, never per frame.
   const [ow, setOw] = useState<{ x: number; y: number; n: number } | null>(null)
-  const live = useRef({ inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
-  useEffect(() => { live.current = { inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
+  const live = useRef({ inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole })
+  useEffect(() => { live.current = { inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
   // of this (rulesClock.rate = 0); the frame loop ticks the engine by rate.
   useEffect(() => { rulesClock.scale = speed }, [speed])
@@ -369,6 +371,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
         placeSwapRing(swapRing.current, el, p, at, layoutRef.current.side ? hud.sideTopPx : hud.topRowPx)
       },
       canSwap: () => engine.allows('hold'), // F59: off before its rank (and in lessons) — no charging ring then
+      swapHoldMult: () => live.current.swapHoldMult, // F43 Goop Swap: a shorter hold (the Swap bar and the ring both follow)
       // broken controls (F23/F24): a held turn repeats slower; single presses and quick swipes stay the same
       spinSlowdown: () => (s.machines?.controls.broken ? breakdowns.controls.heldSpinSlowdown : 1),
       tapCell: (px, py) => {

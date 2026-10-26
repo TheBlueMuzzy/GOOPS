@@ -44,6 +44,19 @@ export interface ControlCallbacks {
   // F24: how many times slower a HELD spin repeats right now (broken controls: 2; fine: 1). Single presses and quick
   // swipes are never slowed — only the repeats while a key or a sideways drag is held.
   spinSlowdown?(): number
+  // F43 Goop Swap: × how long a hold takes to swap (the upgrade's swapHoldTimeMult; 1 = tank.json holdToSwapMs). Read
+  // at every frame of a hold, so the held key's Swap bar and the finger's ring both fill in the shorter time. Left out = 1.
+  swapHoldMult?(): number
+}
+
+// F43: how long a hold takes to swap — tank.json holdToSwapMs × the Goop Swap upgrade's multiplier, never under
+// holdToSwapMinMs (v1's 0.5 s floor — unless holdToSwapMs itself is shorter: the upgrade never makes it longer) and
+// always longer than holdDelayMs (when the timer starts to show).
+// (read from the live tuning each time — the Dev Kit's sliders reach the next hold)
+export function swapHoldMs(mult = 1): number {
+  const m = Number.isFinite(mult) && mult > 0 ? Math.min(1, mult) : 1
+  const floor = Math.min(tank.holdToSwapMs, tank.holdToSwapMinMs)
+  return Math.max(tank.holdDelayMs + 1, floor, Math.round(tank.holdToSwapMs * m))
 }
 
 // F28: the touch distances live in tank.json in rem (dragLockRem, dragDeadZoneRem, flickRem) so they feel the same on
@@ -114,8 +127,9 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     if (!isActive()) { stopHold(); return } // paused (a lesson, the Dev Kit, a menu): the charge is dropped, no frozen ring
     const at = f ? { x: f.nowX, y: f.nowY } : undefined
     const held = clock() - holdStart
-    if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (tank.holdToSwapMs - tank.holdDelayMs)), at)
-    if (held >= tank.holdToSwapMs) {
+    const swapMs = swapHoldMs(cb.swapHoldMult?.()) // (F43: Goop Swap makes it shorter)
+    if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (swapMs - tank.holdDelayMs)), at)
+    if (held >= swapMs) {
       if (f) f.consumed = true
       holdTimer = 0; stopHold(); cb.holdProgress?.(null)
       if (isActive()) cb.hold()

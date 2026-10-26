@@ -569,7 +569,7 @@ export function App() {
       {engine && mode !== 'console' && (
         <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length && !sideways}
           panel={unlocked.length ? 'machines' : 'integrity'} side={short} nextWindow={showNext && !short}
-          abilityRowPx={abilityRow && !short ? A.sizePx : 0}
+          abilityRowPx={abilityRow && !short ? A.sizePx : 0} swapHoldMult={upgrades.modifiers.swapHoldTimeMult}
           readout={readout}
           onHud={setHud} onEnd={onEnd} onMessage={onMessage} onConsole={peekIn} />
       )}

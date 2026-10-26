@@ -2,8 +2,10 @@
 // presses and quick swipes are unchanged. Runs the real controller (src/input/controls.ts) on a stand-in element,
 // with the clock, the frames and the window faked.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { attachControls } from '../../src/input/controls'
+import { attachControls, swapHoldMs } from '../../src/input/controls'
 import tank from '../../content/tuning/tank.json'
+import upgradesJson from '../../content/tuning/upgrades.json'
+import type { UpgradeBook } from '../../src/engine'
 
 const g = globalThis as unknown as Record<string, unknown>
 let detach: (() => void) | null = null
@@ -113,6 +115,64 @@ describe('hold to swap', () => {
     expect(seen.holds).toBe(0)
     expect(seen.rings).toEqual([])
     expect(seen.rotates).toBe(0)
+  })
+})
+
+// F43 Goop Swap (rank 12): the hold to swap gets shorter — tank.json holdToSwapMs × the upgrade's swapHoldTimeMult,
+// never under holdToSwapMinMs. Read by the input layer: the key's Swap bar and the finger's ring both follow it.
+describe('Goop Swap: a shorter hold', () => {
+  const swapLevels = (upgradesJson as UpgradeBook).upgrades.find((u) => u.id === 'goopSwap')!.effects![0].byLevel
+  it('v1’s times: 1.5 s → 1.25 / 1 / 0.75 / 0.5 s a level, never under 0.5 s, never longer than without it', () => {
+    expect(swapHoldMs()).toBe(1500)
+    expect(swapLevels.map((m) => swapHoldMs(m))).toEqual([1250, 1000, 750, 500])
+    expect(swapHoldMs(0.1)).toBe(tank.holdToSwapMinMs) // (two upgrades stacked, or a silly number: the floor)
+    expect(swapHoldMs(3)).toBe(1500)
+    expect(swapHoldMs(NaN)).toBe(1500)
+  })
+
+  function setup(mult: number | undefined) {
+    const el = Object.assign(new EventTarget(), {
+      setPointerCapture: () => {},
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }),
+    }) as unknown as HTMLElement
+    const seen = { holds: 0, rings: [] as { p: number | null; key: boolean }[] }
+    detach = attachControls(el, {
+      spin: () => {}, rotate: () => {}, softDrop: () => {}, tapCell: () => false, console: () => {},
+      hold: () => { seen.holds++ }, holdProgress: (p, at) => { seen.rings.push({ p, key: !at }) },
+      ...(mult === undefined ? {} : { swapHoldMult: () => mult }),
+    }, () => true)
+    const key = (type: 'keydown' | 'keyup', code: string) => (window as unknown as EventTarget).dispatchEvent(event(type, { code, repeat: false }))
+    const pointer = (type: string) => el.dispatchEvent(event(type, { pointerId: 1, clientX: 200, clientY: 400 }))
+    return { seen, key, pointer }
+  }
+
+  for (const how of ['key', 'finger'] as const) {
+    it(`max level (0.5 s), a held ${how}: no swap at 450 ms, one swap by 550 ms — the ${how === 'key' ? 'Swap bar' : 'ring'} full by then`, () => {
+      const { seen, key, pointer } = setup(swapLevels[3])
+      if (how === 'key') key('keydown', 'KeyR'); else pointer('pointerdown')
+      vi.advanceTimersByTime(450)
+      expect(seen.holds).toBe(0)
+      const mid = seen.rings.filter((r) => r.p !== null).at(-1)!
+      expect(mid.key).toBe(how === 'key') // (a key: the HUD's bar — no finger position; a finger: the ring beside it)
+      expect(mid.p).toBeGreaterThan(0.6) // 450 ms of a 500 ms hold (the timer shows after 250 ms): ~80%
+      vi.advanceTimersByTime(100)
+      expect(seen.holds).toBe(1)
+      expect(Math.max(...seen.rings.map((r) => r.p ?? 0))).toBe(1)
+      if (how === 'key') key('keyup', 'KeyR'); else pointer('pointerup')
+    })
+  }
+
+  it('without the upgrade (left out, or 1): still 1.5 s', () => {
+    for (const mult of [undefined, 1]) {
+      const { seen, key } = setup(mult)
+      key('keydown', 'KeyR')
+      vi.advanceTimersByTime(1400)
+      expect(seen.holds).toBe(0)
+      vi.advanceTimersByTime(150)
+      expect(seen.holds).toBe(1)
+      key('keyup', 'KeyR')
+      detach!(); detach = null
+    }
   })
 })
 
