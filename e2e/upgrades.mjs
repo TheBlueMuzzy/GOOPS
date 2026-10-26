@@ -14,7 +14,9 @@
 // F34 tasks 5–7 (the 'shift' part, first): each of the 8 upgrades MEASURED in a real shift (see "what you own MEASURED"
 // below), Cooldown Booster's HUD charge button (empty / charging / ready shots at the three sizes, F refused while not
 // full, a tap and F fire it), and the cards' level number ("2/4"). Shots also in ~/Documents/dev/.scratch/goops-upgrades-2/.
-// Run: node e2e/upgrades.mjs [shop | shift]  (own dev server on port 5345; no part = both)
+// F42 (Sprint 19): one charge button per equipped active — 1, 2 and 3 equipped at every portrait size (abilitiesAt), the
+// layout switch live (abilityLayouts). Shots: e2e-shots/upgrades/abilities-<n>-<size>.png.
+// Run: node e2e/upgrades.mjs [shop | shift | abilities]  (own dev server on port 5345; no part = all)
 import { chromium } from 'playwright-core'
 import { checkVersion, skipFirstDay } from './start.mjs'
 import { spawn } from 'node:child_process'
@@ -252,35 +254,55 @@ async function measureShift() {
 // Cooldown Booster in the HUD at one size: shots empty → charging → ready; F refused while not full; a real tap fires it
 const ability = (page) => page.locator('[data-tag="ability"]')
 const abilityState = (page) => page.evaluate(() => { const a = window.__goops.engine.state.abilities[0]; return { charge: a.charge, ready: a.ready } })
-// the HUD with the button: every part on screen, the button clear of the tank, the score, the crack count, the
-// Console button and the bottom panel, with room to its edges (measured to the visible border)
+// F42: the HUD's charge buttons, wherever the layout put them (content/tuning/hud.json abilities): each fully on screen
+// with ≥ 6 px to the screen's edges; none overlapping another; in the bottom panel (panelRow): inside the panel's
+// VISIBLE frame (its box minus its border) with ≥ 6 px room on every side, below the tank, clear of the next-piece
+// window and every bar; in the top row (topRow): e2e/hud-shots.mjs' rule (it may hang over the tank's top edge — a part
+// that starts above it, no deeper than 60 px — never lower than the Console button beside it) and clear of the score,
+// the crack count, the Console button and the panel. Returns the problems as plain lines.
 const hudProblems = (page) => page.evaluate(() => {
-  const out = [], v = window.__goops.view, stage = document.querySelector('.kit-hud-dock').parentElement.getBoundingClientRect()
-  const b = document.querySelector('[data-tag="ability"]').getBoundingClientRect()
-  const tankTop = v.topY // (the stage fills the window)
-  if (b.left < 0 || b.top < 0 || b.right > innerWidth || b.bottom > innerHeight) out.push('the button is off the screen')
-  // (e2e/hud-shots.mjs' rule: the top row may hang over the tank's top edge — a part that starts above it, no deeper
-  // than 60 px — and the button never hangs lower than the Console button beside it)
-  const pause = [...document.querySelectorAll('.kit-hud-slot button')].find((x) => x.dataset.tag !== 'ability').getBoundingClientRect()
-  if (b.top > tankTop + 8 || b.bottom > tankTop + 60) out.push(`the button reaches ${Math.round(b.bottom - tankTop)} px into the tank`)
-  if (b.bottom > pause.bottom + 1 || b.top < pause.top - 1) out.push(`the button (${Math.round(b.top)}–${Math.round(b.bottom)}) is taller than the Console button (${Math.round(pause.top)}–${Math.round(pause.bottom)})`)
-  const others = [['score', document.querySelector('.kit-hud-chip')], ['crack count', [...document.querySelectorAll('.kit-hud-slot .kit-hud-text, .kit-hud-slot [class*="hud-text"]')][0]],
-    ['Console button', [...document.querySelectorAll('.kit-hud-slot button')].find((x) => x.dataset.tag !== 'ability')], ['bottom panel', document.querySelector('.kit-hud-dock')]]
-  for (const [name, el] of others) {
-    if (!el) continue
-    const r = el.getBoundingClientRect()
-    if (r.width && b.left < r.right && b.right > r.left && b.top < r.bottom && b.bottom > r.top) out.push(`overlaps the ${name}`)
-  }
+  const out = [], v = window.__goops.view, s = window.__goops.engine.state
+  const tankTop = v.topY, tankBottom = v.topY + (s.height - s.bufferRows) * v.cellPx // (the stage fills the window)
+  const box = (el) => el.getBoundingClientRect()
+  const hits = (a, b) => b.width && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+  const buttons = [...document.querySelectorAll('[data-tag="ability"]')]
+  const consoleBtn = [...document.querySelectorAll('.kit-hud-slot button')].find((x) => x.dataset.tag !== 'ability')
+  buttons.forEach((btn, i) => {
+    const b = box(btn), name = btn.dataset.ability
+    if (Math.min(b.left, b.top, innerWidth - b.right, innerHeight - b.bottom) < 6) out.push(`${name}: under 6 px from the screen's edge`)
+    for (const other of buttons.slice(i + 1)) if (hits(b, box(other))) out.push(`${name} overlaps ${other.dataset.ability}`)
+    const dock = btn.closest('.kit-hud-dock')
+    if (dock) {
+      const panel = dock.querySelector('.kit-panel'), r = box(panel), st = getComputedStyle(panel)
+      const inner = { left: r.left + parseFloat(st.borderLeftWidth), right: r.right - parseFloat(st.borderRightWidth), top: r.top + parseFloat(st.borderTopWidth), bottom: r.bottom - parseFloat(st.borderBottomWidth) }
+      const room = Math.min(b.left - inner.left, inner.right - b.right, b.top - inner.top, inner.bottom - b.bottom)
+      if (room < 6) out.push(`${name}: only ${Math.round(room)} px from the panel's visible edge`)
+      if (b.top < tankBottom) out.push(`${name}: reaches ${Math.round(tankBottom - b.top)} px into the tank`)
+      for (const el of document.querySelectorAll('.kit-hud-dock .next-window, .kit-hud-dock .kit-bar, .kit-hud-dock .kit-hud-chip')) {
+        if (hits(b, box(el))) out.push(`${name}: overlaps ${el.classList.contains('next-window') ? 'the next-piece window' : `the bar "${el.textContent.trim().slice(0, 12)}"`}`)
+      }
+    } else {
+      const pause = box(consoleBtn)
+      if (b.top > tankTop + 8 || b.bottom > tankTop + 60) out.push(`${name}: reaches ${Math.round(b.bottom - tankTop)} px into the tank`)
+      if (b.bottom > pause.bottom + 1 || b.top < pause.top - 1) out.push(`${name} (${Math.round(b.top)}–${Math.round(b.bottom)}) is taller than the Console button (${Math.round(pause.top)}–${Math.round(pause.bottom)})`)
+      const others = [['score', document.querySelector('.kit-hud-chip')], ['crack count', document.querySelector('.kit-hud-slot .kit-hud-text')],
+        ['Console button', consoleBtn], ['bottom panel', document.querySelector('.kit-hud-dock')]]
+      for (const [what, el] of others) if (el && hits(b, box(el))) out.push(`${name}: overlaps the ${what}`)
+    }
+  })
   if (document.documentElement.scrollWidth > innerWidth + 1) out.push('the page is wider than the screen')
-  void stage
   return out
 })
-const ringInside = (page) => page.evaluate(() => {
-  const btn = document.querySelector('[data-tag="ability"]'), ring = btn.querySelector('.kit-timer')
+// the Dev Kit's way to change hud.json live (the same browser event its Tuning tab sends): the file with these changes
+const hudJson = JSON.parse(readFileSync('content/tuning/hud.json', 'utf8'))
+const sendHud = (page, abilities) => page.evaluate((data) => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'hud', data } })),
+  { ...hudJson, abilities: { ...hudJson.abilities, ...abilities } })
+const ringInside = (page) => page.evaluate(() => Math.min(...[...document.querySelectorAll('[data-tag="ability"]')].map((btn) => {
+  const ring = btn.querySelector('.kit-timer')
   const b = btn.getBoundingClientRect(), s = getComputedStyle(btn), r = ring.getBoundingClientRect()
   const inner = { left: b.left + parseFloat(s.borderLeftWidth), right: b.right - parseFloat(s.borderRightWidth), top: b.top + parseFloat(s.borderTopWidth), bottom: b.bottom - parseFloat(s.borderBottomWidth) }
   return Math.round(Math.min(r.left - inner.left, inner.right - r.right, r.top - inner.top, inner.bottom - r.bottom))
-})
+})))
 
 async function boosterAt(width, height) {
   const tag = `${width}x${height}`
@@ -288,7 +310,9 @@ async function boosterAt(width, height) {
   await page.waitForTimeout(400)
   check(`${tag}: the HUD has the charge button`, await ability(page).count() === 1)
   const hp = await hudProblems(page)
-  check(`${tag}: the button fits the top row — on screen, clear of the tank, the score, the crack count, the Console button and the panel`, hp.length === 0, hp.join(' | '))
+  const inPanel = await page.locator('.kit-hud-dock [data-tag="ability"]').count() === 1
+  check(`${tag}: the button sits in the bottom panel's own row (hud.json abilities, the default panelRow) — on screen, clear of the tank, the window and the bars, room to the panel's edge`,
+    inPanel && hp.length === 0, `${inPanel ? 'in the panel' : 'NOT in the panel'} ${hp.join(' | ')}`)
   const room = await ringInside(page)
   check(`${tag}: the ring sits inside the button with room (≥ 2 px to its border)`, room >= 2, `${room} px`)
   await shot(page, `hud-ability-empty-${tag}`)
@@ -339,6 +363,107 @@ async function boosterKey() {
   await close()
 }
 
+// ============ F42: one charge button per equipped active ============
+// A rank-40 save owning both Active Expansion Slots (3 slots) and all four actives, equipping 1, 2 or 3 — so every
+// picture shows: 1 = Cooldown Booster; 2 = Booster + Goop Dump; 3 = Goop Dump, Goop Colorizer, Crack Down. At every
+// portrait size, with the default layout (panelRow: their own row in the bottom panel):
+//   one button per equipped active, in equip order, each with its own picture (data-picture) · all grey while charging,
+//   the first one full → bright (primary) and "ready", the others still grey · each fits (hudProblems: on screen, no
+//   overlaps with each other / the window / the bars / the tank, room to the panel's visible edge and the screen's) and
+//   its ring sits inside it · a click on each sends THAT active's id to the engine and nothing else (no rotate or pop
+//   from the tank under it) · a click on the panel beside the buttons still reaches the tank (a rotate) · keys 1 / 2 / 3
+//   fire slot 1 / 2 / 3, F the first · no page errors. Shots: abilities-<n>-<size>.png.
+const F42_SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
+const F42_OWNED = { ...ALL_OWNED, activeSlot: 1, activeSlot2: 1, goopDump: 1, goopColorizer: 1, crackDown: 1 }
+const F42_LOADOUTS = { 1: ['cooldownBooster'], 2: ['cooldownBooster', 'goopDump'], 3: ['goopDump', 'goopColorizer', 'crackDown'] }
+const f42Save = (equipped) => JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: Object.values(F42_OWNED).reduce((a, b) => a + b, 0), owned: F42_OWNED, equipped })
+// every action the HUD and the tank send the engine from now on (window.__acts)
+const spyActs = (page) => page.evaluate(() => {
+  const e = window.__goops.engine, act = e.act.bind(e)
+  window.__acts = []
+  e.act = (a) => { window.__acts.push(a); return act(a) }
+})
+const takeActs = (page) => page.evaluate(() => window.__acts.splice(0))
+async function abilitiesAt(n, width, height) {
+  const tag = `${width}x${height}`, ids = F42_LOADOUTS[n]
+  const { page, errors, close } = await inShift(f42Save(ids), { width, height })
+  await page.waitForTimeout(400)
+  const engineIds = await page.evaluate(() => window.__goops.engine.state.abilities.map((a) => a.id))
+  const shown = await page.evaluate(() => [...document.querySelectorAll('[data-tag="ability"]')].map((b) => ({ id: b.dataset.ability, picture: b.querySelector('.hud-ability-icon')?.dataset.picture, variant: b.dataset.variant })))
+  check(`${n} equipped ${tag}: the shift has them, in equip order`, JSON.stringify(engineIds) === JSON.stringify(ids), engineIds.join(', '))
+  check(`${n} equipped ${tag}: one button each, in that order, each with its own picture, all grey while charging`,
+    JSON.stringify(shown.map((b) => b.id)) === JSON.stringify(ids) && shown.every((b) => b.picture === b.id && b.variant === 'secondary'), JSON.stringify(shown))
+  // the first full, the others part-charged (so their rings show), held still under the pause menu
+  await hold(page)
+  await page.evaluate(() => window.__goops.engine.state.abilities.forEach((a, i) => { a.charge = i === 0 ? 1 : 0.3 + 0.25 * i; a.ready = i === 0 }))
+  await letGo(page)
+  await page.waitForTimeout(300)
+  const variants = await page.evaluate(() => [...document.querySelectorAll('[data-tag="ability"]')].map((b) => `${b.dataset.variant}${b.dataset.ready !== undefined ? ' ready' : ''}`))
+  check(`${n} equipped ${tag}: the full one turns bright (primary, "ready"), the charging ones stay grey`,
+    variants[0] === 'primary ready' && variants.slice(1).every((v) => v === 'secondary'), variants.join(', '))
+  const hp = await hudProblems(page)
+  const inPanel = await page.locator('.kit-hud-dock [data-tag="ability"]').count()
+  check(`${n} equipped ${tag}: every button in the panel row, on screen, no overlaps (each other, window, bars, tank), room to the panel's visible edge`,
+    inPanel === n && hp.length === 0, `${inPanel} in the panel · ${hp.join(' | ')}`)
+  const room = await ringInside(page)
+  check(`${n} equipped ${tag}: every ring sits inside its button with room (≥ 2 px)`, room >= 2, `${room} px`)
+  await page.mouse.move(0, 0)
+  await shot(page, `abilities-${n}-${tag}`)
+  // clicks: each button sends its own id, and nothing reaches the tank under it
+  await spyActs(page)
+  for (const id of ids) {
+    await page.locator(`[data-tag="ability"][data-ability="${id}"]`).click()
+    await page.waitForTimeout(50)
+    const acts = await takeActs(page)
+    check(`${n} equipped ${tag}: a click on ${id} fires ${id} — and only that (no rotate / pop underneath)`,
+      acts.length === 1 && acts[0].type === 'ability' && acts[0].id === id, JSON.stringify(acts))
+  }
+  // the rest of the panel still lets taps through to the tank: a click on the integrity bar's middle → a rotate
+  const bar = await page.locator('.kit-hud-dock .kit-bar').last().boundingBox()
+  await page.mouse.click(bar.x + bar.width / 2, bar.y + bar.height / 2)
+  await page.waitForTimeout(50)
+  const through = await takeActs(page)
+  check(`${n} equipped ${tag}: a tap on the panel beside the buttons still reaches the tank (rotate)`, through.some((a) => a.type === 'rotate'), JSON.stringify(through))
+  // keys: 1 / 2 / 3 = slot 1 / 2 / 3, F = slot 1 (once is enough — at the phone size)
+  if (width === 390) {
+    for (let i = 0; i < 3; i++) await page.keyboard.press(`Digit${i + 1}`)
+    await page.keyboard.press('KeyF')
+    const keyed = (await takeActs(page)).filter((a) => a.type === 'ability').map((a) => a.id)
+    check(`${n} equipped: keys 1 / 2 / 3 fire slot 1 / 2 / 3 (none past what's equipped), F the first`,
+      JSON.stringify(keyed) === JSON.stringify([...ids, ids[0]]), keyed.join(', '))
+  }
+  check(`${n} equipped ${tag}: no page errors`, errors.length === 0, errors.join(' | '))
+  await close()
+}
+// the layout switch, live (the Dev Kit's way): topRow takes ONE button to the top row (and gives the tank its height
+// back); with 2 equipped they stay in the panel row; topRowWhenOne does the same for one in the panel layout
+async function abilityLayouts() {
+  const { page, close } = await inShift(f42Save(F42_LOADOUTS[1]), { width: 390, height: 844 })
+  const where = () => page.evaluate(() => { const b = document.querySelector('[data-tag="ability"]'); return { dock: !!b.closest('.kit-hud-dock'), cell: window.__goops.view.cellPx, panelPx: parseFloat(document.documentElement.style.getPropertyValue('--kit-hud-dock-size')) } })
+  await page.waitForTimeout(300)
+  const panel = await where()
+  await sendHud(page, { layout: 'topRow' })
+  await page.waitForTimeout(400)
+  const top = await where()
+  // (the panel gets shorter; the tank takes the room back — on a phone the tank is as wide as the screen allows, so its
+  // cells may stay the same size and the room goes above it)
+  check('one equipped, layout topRow (live): its button moves to the top row, the panel gets shorter, the tank no smaller',
+    panel.dock && !top.dock && top.panelPx < panel.panelPx && top.cell >= panel.cell, `${JSON.stringify(panel)} → ${JSON.stringify(top)}`)
+  const hp = await hudProblems(page)
+  check('one equipped, topRow: it fits the top row', hp.length === 0, hp.join(' | '))
+  await shot(page, 'abilities-1-topRow-390x844')
+  await sendHud(page, { layout: 'panelRow', topRowWhenOne: true })
+  await page.waitForTimeout(400)
+  check('one equipped, panelRow + topRowWhenOne: in the top row too', !(await where()).dock)
+  await close()
+  const two = await inShift(f42Save(F42_LOADOUTS[2]), { width: 390, height: 844 })
+  await sendHud(two.page, { layout: 'topRow' })
+  await two.page.waitForTimeout(400)
+  const inDock = await two.page.locator('.kit-hud-dock [data-tag="ability"]').count()
+  check('two equipped, layout topRow: they stay in the panel row (the top row only fits one)', inDock === 2, `${inDock} in the panel`)
+  await two.close()
+}
+
 // the Upgrades card's level as a number beside the pips ("2/4")
 // The top row's WORST case with the charge button in it (game-ui: HUD checks use the widest text a real game shows):
 // the biggest quota (every colour in play + progression.json maxRank 50 = 57) with two-digit seals, quota met with 99
@@ -355,6 +480,7 @@ async function widestTopRow() {
     const tag = `${width}x${height}`
     for (const [name, c] of cases) {
       const { page, errors, close } = await inShift(ALL, { width, height })
+      await sendHud(page, { layout: 'topRow' }) // (F42: one equipped goes in the top row only in this layout)
       await page.evaluate((c) => {
         const s = window.__goops.engine.state
         Object.assign(s, { cracksSealed: c.sealed, cracksNeeded: c.needed, score: 99999, quotaMet: c.sealed >= c.needed })
@@ -405,16 +531,22 @@ async function levelNumbers() {
   }
 }
 
-const part = process.argv[2] // 'shop' = the screen only · 'shift' = the measuring, the HUD button, the level number · none = all
+const part = process.argv[2] // 'shop' = the screen only · 'shift' = the measuring, the HUD buttons, the level number
+// · 'abilities' = F42's charge buttons only · none = all
 try {
-  if (part !== 'shop') {
+  if (part === 'abilities') {
+    for (const n of [1, 2, 3]) for (const [width, height] of F42_SIZES) await abilitiesAt(n, width, height)
+    await abilityLayouts()
+  } else if (part !== 'shop') {
     await measureShift()
     for (const [width, height] of [[360, 740], [390, 844], [1440, 900]]) await boosterAt(width, height)
     await boosterKey()
     await widestTopRow()
+    for (const n of [1, 2, 3]) for (const [width, height] of F42_SIZES) await abilitiesAt(n, width, height)
+    await abilityLayouts()
     await levelNumbers()
   }
-  if (part !== 'shift') {
+  if (part !== 'shift' && part !== 'abilities') {
   // ---------------- rank 5: buy → reload → still owned → take back ----------------
   {
     const { page, errors, close } = await device(V1_RANK5)

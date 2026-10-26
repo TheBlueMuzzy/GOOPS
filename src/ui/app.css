@@ -22,10 +22,10 @@ html, body, #root { margin: 0; height: 100%; }
    number" options, or a "charge button" part; then these lines go. (The two game values are named --kit-… because the
    UI rule checker only lets a game read style names and --kit-… helpers.) */
 .hud-ability { display: inline-grid; place-items: center; }
-.hud-ability .kit-timer { flex: none; inline-size: 2rem; block-size: auto;
+.hud-ability .kit-timer { flex: none; inline-size: var(--kit-hud-ability-ring-size, 2rem); block-size: var(--kit-hud-ability-ring-size, 2rem);
   background: radial-gradient(closest-side, var(--surface) calc(100% - var(--kit-hud-ability-ring, 0.25rem) - 0.03rem), transparent calc(100% - var(--kit-hud-ability-ring, 0.25rem) + 0.03rem)),
     conic-gradient(var(--kit-ring) calc(var(--kit-fill) * 1turn), var(--border) 0); }
-.hud-ability[data-sized] .kit-timer { inline-size: 70%; } /* (a panel button, abilities.sizePx big) */
+.hud-ability[data-sized] { --kit-hud-ability-ring-size: calc(var(--kit-button-size) * 0.7); } /* (a panel button, abilities.sizePx big) */
 .hud-ability .kit-timer > * { visibility: hidden; }
 /* its picture (abilityIcons.tsx — a lightning bolt for Cooldown Booster, Muzzy 2026-10-22) in the ring's middle: the
    button's own ink while charging, the bright colour on the ring's dark middle when ready */
