@@ -57,8 +57,9 @@ export interface HudSnapshot {
   // breaks = how many times each has broken this shift (a new repair puzzle each time)
   machines: Record<MachineId, { unlocked: boolean; health: number; broken: boolean }>
   breaks: Record<MachineId, number>
-  // F34: the equipped active (Cooldown Booster): its charge 0..1 and whether it's full — the HUD's charge button
-  ability: { id: string; charge: number; ready: boolean } | null
+  // F34 / F42: the equipped actives, in equip order (none to three): each one's charge 0..1 and whether it's full — the
+  // HUD's charge buttons, one each
+  abilities: { id: string; charge: number; ready: boolean }[]
 }
 
 interface Props {
@@ -70,6 +71,9 @@ interface Props {
   panel: 'machines' | 'integrity'
   side: boolean // a phone on its side: the panel is a column beside the tank, which keeps the whole height
   nextWindow: boolean // F59: the next-piece window shows in the bottom panel (from its rank) — the panel is at least its height
+  // F42: the charge buttons' row in the bottom panel, above the machine bars: its height in px (0 = no row) — the panel
+  // grows by it (+ the small gap under it) and the tank gets that much shorter. Known when the shift starts.
+  abilityRowPx: number
   readout: ReactNode // the pressure readout's words ("10% PSI"), hung on the pressure line by the frame loop
   onHud(h: HudSnapshot): void
   onEnd(status: ShiftStatus): void
@@ -77,7 +81,7 @@ interface Props {
   onConsole(): void
 }
 
-export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, readout, onHud, onEnd, onMessage, onConsole }: Props) {
+export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, abilityRowPx, readout, onHud, onEnd, onMessage, onConsole }: Props) {
   const style = useSyncExternalStore(gooStyle.subscribe, gooStyle.get)
   const readoutAt = useSyncExternalStore(readoutSetting.subscribe, readoutSetting.get)
   const host = useRef<HTMLDivElement>(null)
@@ -103,10 +107,10 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     return wallKick.subscribe(() => engine.setWallKick(wallKick.get()))
   }, [engine])
   const viewRef = useRef<GooView | null>(null)
-  const layoutRef = useRef({ panel, side, nextWindow })
+  const layoutRef = useRef({ panel, side, nextWindow, abilityRowPx })
   const relayout = useRef<() => void>(() => {})
   // (a phone turned on its side, or a new shift's panel: the tank re-fits straight away)
-  useEffect(() => { layoutRef.current = { panel, side, nextWindow }; relayout.current() }, [panel, side, nextWindow])
+  useEffect(() => { layoutRef.current = { panel, side, nextWindow, abilityRowPx }; relayout.current() }, [panel, side, nextWindow, abilityRowPx])
 
   // the goo renderer: rebuilt when the style changes (a fresh canvas each time — see key below)
   const gooRef = useRef<GooRenderer | null>(null)
@@ -163,15 +167,17 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       // the bottom panel: a share of the window's height, but tall enough for its rows at the current text size — and
       // (F59, from rank 1) for the next-piece window at its left: its cells + its frame (padding gap-xs + border) + the
       // panel's own padding (gap-s + border; kit tokens on the root). On a phone on its side a column beside the tank
-      // instead (content/tuning/hud.json → panel, nextWindow)
-      const P = hud.panel, { panel, side, nextWindow } = layoutRef.current
+      // instead (content/tuning/hud.json → panel, nextWindow). F42: the charge buttons' own row (+ the gap under it) goes on
+      // top of the bars' rows (hud.json abilities; the window beside them is often taller already, so it may not grow)
+      const P = hud.panel, { panel, side, nextWindow, abilityRowPx } = layoutRef.current
       const css = getComputedStyle(root), remPx = parseFloat(css.fontSize) || 16
       const token = (name: string) => parseFloat(css.getPropertyValue(`--${name}`)) || 0
       const frame = token('border-width')
       const NW = hud.nextWindow // (its box of cells: rows + the room round them, cellRem each — NextWindow.tsx)
       const windowPx = nextWindow ? (NW.rows + 2 * NW.padCells) * NW.cellRem * remPx + 2 * (token('gap-xs') + frame) + 2 * (token('gap-s') + frame) : 0
+      const buttonsPx = abilityRowPx > 0 ? abilityRowPx + token('gap-s') : 0
       const dock = Math.ceil(side ? P.sideRem * remPx
-        : Math.max(windowPx, panel === 'machines' ? Math.max(P.share * r.height, P.machinesRem * remPx) : Math.max(P.integrityShare * r.height, P.integrityRem * remPx)))
+        : Math.max(windowPx, panel === 'machines' ? Math.max(P.share * r.height, P.machinesRem * remPx + buttonsPx) : Math.max(P.integrityShare * r.height, P.integrityRem * remPx + buttonsPx)))
       const L = layoutTank({ screenW: r.width, screenH: r.height, visibleWidth: s.visibleWidth, visibleRows: s.height - s.bufferRows,
         reserveTop: side ? hud.sideTopPx : hud.topRowPx, reserveBottom: side ? 2 * hud.gutterPx : dock + P.gapPx, gutter: hud.gutterPx })
       Object.assign(view, { cellPx: L.cellPx, centreX: L.centreX, topY: L.topY, width: r.width, height: r.height, dpr })
@@ -272,7 +278,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
           integrity: s.integrity, phase: s.phase, holdProgress, machines: machinesNow(s.machines), breaks: { ...breaks },
           next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0], colors: s.next } : null, // (F39: colors = per cell)
-          ability: s.abilities?.[0] ? { id: s.abilities[0].id, charge: s.abilities[0].charge, ready: s.abilities[0].ready } : null })
+          abilities: (s.abilities ?? []).map((a) => ({ id: a.id, charge: a.charge, ready: a.ready })) })
         still = reduceMotion()
         const box = readoutEl.current?.querySelector('.kit-pinned')?.getBoundingClientRect()
         if (box?.width) { readoutSize.w = box.width; readoutSize.h = box.height }
@@ -354,8 +360,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       softDrop,
       hold: () => engine.act({ type: 'hold' }),
       console: () => live.current.onConsole(),
-      // F34: F / Numpad . fire the equipped active (refused unless it's full — the engine says no); none equipped: no key
-      ...(s.abilities?.length ? { ability: () => engine.act({ type: 'ability', id: s.abilities![0].id }) } : {}),
+      // F34 / F42: F / Numpad . / 1 fire the first equipped active, 2 / 3 the second / third (refused unless it's full —
+      // the engine says no; a slot with nothing in it: nothing happens); none equipped: no keys
+      ...(s.abilities?.length ? { ability: (slot: number) => { const a = s.abilities![slot]; if (a) engine.act({ type: 'ability', id: a.id }) } } : {}),
       // F28: a held key's swap timer is the HUD's Swap bar; a finger's (or the mouse's) is the ring beside it
       holdProgress: (p, at) => {
         holdProgress = at ? null : p

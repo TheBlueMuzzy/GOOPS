@@ -14,18 +14,28 @@ html, body, #root { margin: 0; height: 100%; }
    now — Bar atMost, Hud dockTight, UI kit 0.25.0) */
 .hud-machines { flex-wrap: nowrap; }
 
-/* F34: the HUD's charge button for the equipped active (Cooldown Booster) — the kit's TimerRing (3.5rem) inside an icon
-   button, made small enough to sit inside the button at the Console button's size, and without its number (the
-   button's label reads the % out; at this size the number wrapped out of the ring). KIT GAP (framework request in
-   SPRINT Notes): a TimerRing size + "no number" option, or a "charge button" part; then these lines go. */
-.hud-ability .kit-timer { flex: none; inline-size: 2rem; block-size: 2rem; }
-.hud-ability .kit-timer > * { visibility: hidden; }
-/* its picture (Muzzy, 2026-10-22: a lightning bolt) in the ring's middle: the button's own ink while charging, the bright
-   colour on the ring's dark middle when ready */
+/* F34 / F42: the HUD's charge buttons, one per equipped active — the kit's TimerRing (3.5rem) inside an icon button,
+   made small enough to sit inside the button (70% of it: 2rem in the top row beside the Console button), without its
+   number (the button's label reads the % out; at this size the number wrapped out of the ring), and with its ring
+   --kit-hud-ability-ring thick (hud.json abilities.ringPx, set on each button; the same two gradients as the kit's ring,
+   only the hole's size changed). KIT GAP (framework request in SPRINT Notes): TimerRing size, ring thickness and "no
+   number" options, or a "charge button" part; then these lines go. (The two game values are named --kit-… because the
+   UI rule checker only lets a game read style names and --kit-… helpers.) */
 .hud-ability { display: inline-grid; place-items: center; }
-.hud-ability > * { grid-area: 1 / 1; } /* (ring and bolt in the same cell: one on top of the other) */
+.hud-ability .kit-timer { flex: none; inline-size: 2rem; block-size: auto;
+  background: radial-gradient(closest-side, var(--surface) calc(100% - var(--kit-hud-ability-ring, 0.25rem) - 0.03rem), transparent calc(100% - var(--kit-hud-ability-ring, 0.25rem) + 0.03rem)),
+    conic-gradient(var(--kit-ring) calc(var(--kit-fill) * 1turn), var(--border) 0); }
+.hud-ability[data-sized] .kit-timer { inline-size: 70%; } /* (a panel button, abilities.sizePx big) */
+.hud-ability .kit-timer > * { visibility: hidden; }
+/* its picture (abilityIcons.tsx — a lightning bolt for Cooldown Booster, Muzzy 2026-10-22) in the ring's middle: the
+   button's own ink while charging, the bright colour on the ring's dark middle when ready */
+.hud-ability > * { grid-area: 1 / 1; } /* (ring and picture in the same cell: one on top of the other) */
 .hud-ability-icon { inline-size: 1.1rem; block-size: 1.1rem; pointer-events: none; }
 .hud-ability[data-ready] .hud-ability-icon { color: var(--primary); }
+/* F42: their own row in the bottom panel, above the machine bars, abilities.gapPx apart. The panel lets taps through to
+   the tank (kit Hud dock); the buttons catch theirs, so a tap on one never rotates or pops anything under it. */
+.hud-abilities { flex-wrap: nowrap; gap: var(--kit-hud-abilities-gap, var(--gap-s)); }
+.hud-abilities .hud-ability { pointer-events: auto; }
 
 /* Upgrades: Respec flashes the scraps number green, then it fades to its normal colour (Muzzy, 2026-10-23, instead of a toast) */
 .upgrades-scraps-n[data-gained] { animation: upgrades-scraps-gain calc(var(--motion-normal) * 4) var(--ease); }

@@ -374,13 +374,13 @@ describe('two fingers', () => {
   })
 })
 
-describe('F34: the active ability key (F / Numpad .)', () => {
+describe('F34 / F42: the active ability keys (F / Numpad . and 1 / 2 / 3)', () => {
   function abilitySetup(withAbility: boolean, active = true) {
     const el = Object.assign(new EventTarget(), { setPointerCapture: () => {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }) }) as unknown as HTMLElement
-    const seen = { fired: 0, prevented: 0 }
+    const seen = { fired: 0, prevented: 0, slots: [] as number[] }
     detach = attachControls(el, {
       spin: () => {}, rotate: () => {}, softDrop: () => {}, tapCell: () => false, hold: () => {}, console: () => {},
-      ...(withAbility ? { ability: () => { seen.fired++ } } : {}),
+      ...(withAbility ? { ability: (slot: number) => { seen.fired++; seen.slots.push(slot) } } : {}),
     }, () => active)
     const key = (code: string, target?: object) => {
       const e = event('keydown', { code, repeat: false, preventDefault: () => { seen.prevented++ } })
@@ -390,25 +390,31 @@ describe('F34: the active ability key (F / Numpad .)', () => {
     return { seen, key }
   }
 
-  it('F and Numpad . fire it (once per press)', () => {
+  it('F and Numpad . fire the first equipped (once per press)', () => {
     const { seen, key } = abilitySetup(true)
     key('KeyF'); key('NumpadDecimal')
-    expect(seen).toEqual({ fired: 2, prevented: 2 })
+    expect(seen).toEqual({ fired: 2, prevented: 2, slots: [0, 0] })
   })
 
-  it('typing an F into a text box is a letter, not the ability', () => {
+  it('1 / 2 / 3 fire the 1st / 2nd / 3rd equipped (F42)', () => {
     const { seen, key } = abilitySetup(true)
-    key('KeyF', { tagName: 'INPUT' })
+    key('Digit1'); key('Digit2'); key('Digit3')
+    expect(seen).toEqual({ fired: 3, prevented: 3, slots: [0, 1, 2] })
+  })
+
+  it('typing an F or a 2 into a text box is a letter, not the ability', () => {
+    const { seen, key } = abilitySetup(true)
+    key('KeyF', { tagName: 'INPUT' }); key('Digit2', { tagName: 'INPUT' })
     expect(seen.fired).toBe(0)
   })
 
   it('no ability equipped (no callback) or the tank paused: the key does nothing and is left to the page', () => {
     const none = abilitySetup(false)
-    none.key('KeyF')
-    expect(none.seen).toEqual({ fired: 0, prevented: 0 })
+    none.key('KeyF'); none.key('Digit1')
+    expect(none.seen).toEqual({ fired: 0, prevented: 0, slots: [] })
     detach!(); detach = null
     const paused = abilitySetup(true, false)
-    paused.key('KeyF')
+    paused.key('KeyF'); paused.key('Digit3')
     expect(paused.seen.fired).toBe(0)
   })
 })

@@ -4,7 +4,7 @@
 // Mid-shift (F23/F24): swipe up / W / ↑ → the same console slides over the tank while the shift runs on at
 // consoleTimeScale (content/tuning/breakdowns.json); broken machines are repaired on its panels; its gear opens the pause
 // menu (which fully pauses; End shift = the run is thrown away, no XP); pulling the periscope goes back to the shift.
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Bar, Button, GameOver, Hud, HudText, Modal, Pause, Row, Score, ScreenStack, ScrollArea, Settings, Stack, StatList, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema, Stat } from './kit'
 import { clampModifiers, createShift, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
@@ -33,6 +33,7 @@ import { afterCaught, makePayslip, type Payslip, type ShiftFacts } from '../prog
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
 import { UpgradesScreen } from './UpgradesScreen'
+import { AbilityIcon } from './abilityIcons'
 import { RankSelectScreen } from './RankSelect'
 import { rankSelectOn } from '../game/rankSelect'
 import { UpgradeShopContext } from './upgradeShopContext'
@@ -513,44 +514,62 @@ export function App() {
   const integrityAlert = ruptured ? 'flash' : hud && hud.integrity < low ? 'pulse' : undefined
   const integrityBar = hud && <Bar plain label={text.hud.integrity} labelAt="inside" width={short ? 1 : hudTuning.bars.integrityWidth} thickness="l"
     value={Math.round(hud.integrity * 100)} variant={integrityAlert ? 'danger' : 'primary'} alert={integrityAlert} />
-  // F34: with an active equipped its charge button takes ~50 px of the top row, and the widest count a real game shows
+  // F42: the charge buttons, one per equipped active (1 to 3, in equip order) — where they go (content/tuning/hud.json →
+  // abilities, live in the Dev Kit): 'panelRow' = a row of their own in the bottom panel, above the machine bars (Claude's
+  // pick C+ in the sketch; the panel grows, the tank gets that much shorter — ShiftStage); 'topRow' = beside the Console
+  // button (F34's spot), which only has room for ONE — with 2 or 3 they go in the panel row anyway. topRowWhenOne: with
+  // exactly one equipped it stays in the top row whatever the layout. Known when the shift starts (what's equipped).
+  const A = hudTuning.abilities
+  const equipped = engine?.state.abilities?.length ?? 0
+  const abilitiesOnTop = equipped === 1 && (A.layout === 'topRow' || A.topRowWhenOne)
+  const abilityRow = equipped > 0 && !abilitiesOnTop
+  // F34: with an active in the top row its charge button takes ~50 px of it, and the widest count a real game shows
   // ("CRACKS 56 / 57", "QUOTA MET · 99" beside a 5-digit score) no longer fits a 360 / 390 phone even shrunk to the
   // body-text floor (kit HudText fit) — so then the count drops its name: "56 / 57", and past the quota the same count in
   // the accent colour ("61 / 57"). Known when the shift starts, so it never switches mid-shift. (Ask Muzzy in SPRINT Notes.)
-  const shortCount = !short && !!engine?.state.abilities?.length && !ruptured && !!hud
+  const shortCount = !short && abilitiesOnTop && !ruptured && !!hud
   const status = <HudText size="l" fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>
     {shortCount ? fill(text.hud.cracksShort, { n: hud.cracksSealed, total: hud.cracksNeeded }) : statusText}</HudText>
+  // Each charge button: a ring that fills as it charges, round the active's own picture (abilityIcons.tsx), on a grey
+  // button; full = the bright (primary) button, which glows in the style. Tap it (or its key: F / Numpad . / 1 for the
+  // first, 2, 3) to fire; not full = the engine refuses, nothing happens. In the panel each is abilities.sizePx big; in the
+  // top row it matches the Console button. (The panel lets taps through to the tank; the buttons catch theirs — app.css.)
+  const abilityButtons = (hud?.abilities ?? []).map((ability, slot) => {
+    const name = (text.upgrades.items as Record<string, { name: string }>)[ability.id]?.name ?? ability.id
+    const pct = Math.floor(ability.charge * 100)
+    const words = fill(ability.ready ? text.hud.abilityReady : text.hud.abilityCharging, { name, n: pct, key: text.hud.abilityKeys[slot] ?? '' })
+    return (
+      <Button key={ability.id} variant={ability.ready ? 'primary' : 'secondary'} icon size={abilitiesOnTop ? undefined : A.sizePx}
+        aria-label={words} title={words} sound={ability.ready ? 'tap' : false}
+        className="hud-ability" data-tag="ability" data-ability={ability.id} data-ready={ability.ready || undefined}
+        style={{ '--kit-hud-ability-ring': `${A.ringPx}px` } as CSSProperties}
+        onClick={() => engineRef.current?.act({ type: 'ability', id: ability.id })}>
+        <TimerRing seconds={pct} total={100} warnAt={-1} label={words} />
+        <AbilityIcon id={ability.id} />
+      </Button>
+    )
+  })
+  const abilitiesRow = abilityRow && abilityButtons.length > 0
+    ? <Row gap="s" justify="center" className="hud-abilities" style={{ '--kit-hud-abilities-gap': `${A.gapPx}px` } as CSSProperties}>{abilityButtons}</Row>
+    : undefined
   // F59: the next-piece window, from its rank (known when the shift starts, like the machines)
   const showNext = !!engine && isUnlocked('nextPiece', engine.state.rank)
   const nextWindow = hud && showNext ? <NextWindow piece={hud.next} label={text.hud.next} /> : undefined
   // The panel: the window at the left, the bars to its right — the machines in a row (each at most bars.machineWidth of
-  // that room, never narrower than its name: the kit Bar's atMost) over the integrity bar. (A short window: the crack count heads the
-  // panel column, the machine bars stack beside the window, and the tank takes the whole height.)
+  // that room, never narrower than its name: the kit Bar's atMost) over the integrity bar; F42: the charge buttons' row
+  // above them, centred over the bars. (A short window: the crack count heads the panel column, then the charge
+  // buttons, then the machine bars stacked beside the window; the tank takes the whole height.)
   const bars = short ? <>{machineBars}{integrityBar}</>
-    : <>{unlocked.length > 0 && <Row gap="s" justify="center" className="hud-machines">{machineBars}</Row>}{integrityBar}</>
+    : <>{abilitiesRow}{unlocked.length > 0 && <Row gap="s" justify="center" className="hud-machines">{machineBars}</Row>}{integrityBar}</>
   const panelRow = <Row gap="s" className="hud-panel">{nextWindow}<Stack gap="s" className="hud-panel-bars">{bars}</Stack></Row>
-  const panel = hud && (short ? <Stack gap="s">{status}{panelRow}</Stack> : panelRow)
-  // F34: the equipped active's charge button (Cooldown Booster) — in the top row beside the Console button, so it never
-  // covers the tank or the bars. A ring that fills as it charges, on a grey button; full = the bright (primary) button,
-  // which glows in the style. Tap it (or F / Numpad .) to fire; not full = the engine refuses, nothing happens.
-  const ability = hud?.ability
-  const abilityName = ability ? (text.upgrades.items as Record<string, { name: string }>)[ability.id]?.name ?? ability.id : ''
-  const abilityPct = ability ? Math.floor(ability.charge * 100) : 0
-  const abilityWords = ability && fill(ability.ready ? text.hud.abilityReady : text.hud.abilityCharging, { name: abilityName, n: abilityPct })
-  const abilityButton = ability && (
-    <Button variant={ability.ready ? 'primary' : 'secondary'} icon aria-label={abilityWords || ''} title={abilityWords || ''} sound={ability.ready ? 'tap' : false}
-      className="hud-ability" data-tag="ability" data-ready={ability.ready || undefined} onClick={() => engineRef.current?.act({ type: 'ability', id: ability.id })}>
-      <TimerRing seconds={abilityPct} total={100} warnAt={-1} label={abilityWords || ''} />
-      {/* a lightning bolt (Muzzy, 2026-10-22), drawn in the button's colour */}
-      <svg className="hud-ability-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 2 4 13.5h6.5L9 22l10-12.5h-6.5L13.5 2z" /></svg>
-    </Button>
-  )
+  const panel = hud && (short ? <Stack gap="s">{status}{abilitiesRow}{panelRow}</Stack> : panelRow)
   const readout = hud && <HudText size="s" live numbers>{fill(text.hud.pressureReadout, { n: Math.round(hud.pressure * 100) })}</HudText>
   return (
     <>
       {engine && mode !== 'console' && (
         <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length && !sideways}
           panel={unlocked.length ? 'machines' : 'integrity'} side={short} nextWindow={showNext && !short}
+          abilityRowPx={abilityRow && !short ? A.sizePx : 0}
           readout={readout}
           onHud={setHud} onEnd={onEnd} onMessage={onMessage} onConsole={peekIn} />
       )}
@@ -558,7 +577,7 @@ export function App() {
         <ScreenStack overlay screens={screenMap}>
           {hud && (
             <Hud words={{ pause: text.hud.pause }} onPause={() => { if (lessonPlay.pauseOn()) screens.push('pause') }} oneRow
-              vitals={<Score value={hud.score} compact />} status={short ? undefined : status} currency={abilityButton || undefined}
+              vitals={<Score value={hud.score} compact />} status={short ? undefined : status} currency={abilitiesOnTop && abilityButtons.length ? abilityButtons : undefined}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
               dock={panel} dockSide={short ? 'right' : 'bottom'} dockTight />
           )}

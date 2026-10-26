@@ -139,7 +139,8 @@
     "controls": "CONTROLS",
     "pressureReadout": "{n}% PSI",
     "abilityCharging": "{name}: charging, {n}%",
-    "abilityReady": "{name}: ready — tap or press F"
+    "abilityReady": "{name}: ready — tap or press {key}",
+    "abilityKeys": ["F or 1", "2", "3"]
   },
   "messages": {
     "refusedAboveLine": "Above the pressure line",
