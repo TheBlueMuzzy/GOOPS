@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 import { crackCells, whiteGoopAt, type MachineId, type ShiftEngine, type ShiftEvent, type ShiftStatus, type ShiftPhase, type ShiftState, type TapPoint } from '../engine'
 import { createWhiteGoopView } from '../view/whiteGoopView'
 import whiteGoopLook from '../../content/tuning/whiteGoop.json'
+import eyesLook from '../../content/tuning/eyes.json'
 import talk from '../../content/tuning/talk.json'
 import text from '../../content/text/en.json'
 import type { GooRenderer, GooView } from '../goo/types'
@@ -25,7 +26,7 @@ import { createZapBeam } from '../view/zapBeam'
 import { zapLook } from '../goo/shared/zap'
 import type { FaceStory } from '../goo/shared/faces'
 import { screenColumn } from '../goo/types'
-import { PinnedBox, TalkingBubble, reduceMotion } from '../ui/kit'
+import { PinnedBox, TalkingBubble, reduceMotion, tipsMemory } from '../ui/kit'
 import tank from '../../content/tuning/tank.json'
 import hud from '../../content/tuning/hud.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
@@ -35,6 +36,7 @@ import { clockPause, looksClock, rulesClock } from '../devkit/gameClock'
 import { onTuning } from '../devkit/tuning/liveTuning'
 import { session } from './session'
 import { lessonPlay, placeLessonMark, runner as lessonRunner } from './lessons/goopsLessons'
+import { CHORUS_SEEN } from './lessons/storyMoments'
 import { playGameSound, playShiftSounds } from './sound'
 import { SOUNDS } from './shiftSounds'
 import type { NextPiece } from './NextWindow'
@@ -138,7 +140,10 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     const beam = createZapBeam(zapCanvas.current!) // F67: the zap's beam + laser point (src/view/zapBeam.ts)
     let lastTap: { x: number; y: number; at: TapPoint } | null = null // the last zap tap: stage px + the tank point it sent
     // F62 the goop's faces: told the rank, the pressure and what the eyes look at (one object, refilled every frame)
-    const story: FaceStory = { rank: 0, pressure: 0, focus: null }
+    // F45 (story 48 "…we go… home…"): the first shift from eyes.json chorusRank, once per device (tips memory, so Replay
+    // lessons plays it again), every mouth in the tank opens at once — the faces say when it starts
+    const chorusSeen = () => tipsMemory().seen(CHORUS_SEEN)
+    const story: FaceStory = { rank: 0, pressure: 0, focus: null, onChorus: () => tipsMemory().markSeen(CHORUS_SEEN) }
     const pieceAt: TapPoint = { x: 0, y: 0 }
     let laser: { at: TapPoint; t: number } | null = null // the last zap's tap point while its beam is up (goo clock)
     const white = createWhiteGoopView() // F63 the white goop's look (on the tank canvas, behind the goop)
@@ -222,6 +227,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       const focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)
       white.step(s, events, gooDt, focus)
       story.rank = s.rank
+      if (story.chorus === undefined) story.chorus = s.rank >= eyesLook.chorusRank && !chorusSeen() // (decided once, at the shift's first frame)
       story.pressure = s.pressure
       story.still = still
       story.focus = white.eyesOnHim(s, vetAt) ?? focus

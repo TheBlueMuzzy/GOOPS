@@ -51,6 +51,8 @@ export function whisperStage(rank: number, w: Whispers = storyFile.whispers): Wh
  *  (feelings from 8, single words from 15, names from 24); before the first stage, "cold" once per device from coldAt.
  *  pick = a random 0..1. */
 export const COLD_SEEN = 'whisper:cold'
+/** F45: the shift after story 48 — every mouth opened at once (ShiftStage.tsx, eyes.json chorus*): once per device */
+export const CHORUS_SEEN = 'look:mouths-open'
 export function whisperFor(rank: number, coldSeen: boolean, pick: number, w: Whispers = storyFile.whispers): string | null {
   const stage = whisperStage(rank, w)
   if (stage) return stage.say[Math.floor(pick * stage.say.length) % stage.say.length]

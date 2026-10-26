@@ -31,7 +31,11 @@
     "mouthDrop": "Rank 40+: how far below the eyes' spot the mouth sits (cells).",
     "eyeLift": "Rank 40+: how far the eyes move up to make room for a mouth (cells), as the mouth fades in.",
     "browHeight": "Rank 30+: how high the worried brows sit above the eyes (in eye sizes).",
-    "worriedShake": "Rank 30+: how much the worried pupils tremble (share of the eye). 0 = still. With reduce motion on they never tremble (Muzzy 2026-10-25)."
+    "worriedShake": "Rank 30+: how much the worried pupils tremble (share of the eye). 0 = still. With reduce motion on they never tremble (Muzzy 2026-10-25).",
+    "chorusRank": "F45 (story rank 48: '…when you open it… we go… home…'): the first shift at this rank or later — once per device (Settings → Replay lessons plays it again) — every mouth in the tank opens at once.",
+    "chorusMouths": "F45: it waits until this many mouths are showing in that shift (the tank starts empty).",
+    "chorusTime": "F45: how long the mouths stay open together (seconds): they open fast, hold, and close.",
+    "chorusOpen": "F45: how wide they open (0–1, like mouthOpen — 1 = as wide as a mouth goes)."
   },
   "_ranges": {
     "eyeSize": [0.04, 0.4, 0.01],
@@ -61,7 +65,11 @@
     "mouthDrop": [0, 0.6, 0.01],
     "eyeLift": [0, 0.4, 0.01],
     "browHeight": [1, 3, 0.05],
-    "worriedShake": [0, 0.3, 0.01]
+    "worriedShake": [0, 0.3, 0.01],
+    "chorusRank": [40, 50, 1],
+    "chorusMouths": [1, 12, 1],
+    "chorusTime": [0.3, 5, 0.1],
+    "chorusOpen": [0.1, 1, 0.05]
   },
   "eyeSize": 0.1,
   "pupilSize": 0.45,
@@ -92,6 +100,10 @@
   "eyeLift": 0.1,
   "browHeight": 1.45,
   "worriedShake": 0.07,
+  "chorusRank": 48,
+  "chorusMouths": 3,
+  "chorusTime": 1.6,
+  "chorusOpen": 1,
   "appearSpread": 5,
   "appearFade": 0.3
 }

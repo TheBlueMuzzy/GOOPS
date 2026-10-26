@@ -5,7 +5,8 @@
 // through the shared FaceDrawer (faceDraw.ts). Knobs: content/tuning/eyes.json (live). Story (design/story.md):
 //   rank 0–9 nothing (the renderers don't even call this) · 10–19 a few tiny eyes in big clumps, shut when zapped ·
 //   20–29 eyes in most clumps, following the falling piece / the laser · 30–39 blinks, worried at high pressure ·
-//   40+ some clumps grow mouths, shut most of the time, now and then saying something.
+//   40+ some clumps grow mouths, shut most of the time, now and then saying something · F45: the shift after story 48,
+//   once, every mouth opens at once (FaceStory.chorus).
 // A face belongs to a clump's exact set of cells, so a clump keeps its dice rolls (eyes? mouth?) across rebuilds —
 // no flicker. A clump that changes (a piece lands on it, it falls, it splits) carries on the face it mostly came
 // from (fades, gaze, clocks), with new rolls for its new shape. Times are seconds on the goo's clock (the looks clock
@@ -21,6 +22,10 @@ export interface FaceStory {
   pressure: number // 0..1
   still?: boolean // reduce motion: the worried pupils don't tremble (Muzzy 2026-10-25)
   focus: TapPoint | null // what the eyes look at: the falling piece's centre, or the laser's tap while it fires (tank cells, like a pop's `at`)
+  // F45 (story 48): this shift every mouth opens at once — when chorusMouths are showing (eyes.json chorus*); onChorus
+  // = told as it starts (the game marks it seen: once per device)
+  chorus?: boolean
+  onChorus?(): void
 }
 
 export interface EyesLook {
@@ -56,6 +61,9 @@ export interface EyesLook {
   worriedShake: number
   appearSpread: number
   appearFade: number
+  chorusMouths: number
+  chorusTime: number
+  chorusOpen: number
 }
 
 const num = (v: unknown, min: number) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(min, v) : min)
@@ -98,6 +106,9 @@ export function readEyesLook(out?: EyesLook): EyesLook {
   L.worriedShake = num(f.worriedShake, 0)
   L.appearSpread = num(f.appearSpread, 0)
   L.appearFade = num(f.appearFade, 0.01)
+  L.chorusMouths = Math.max(1, Math.round(num(f.chorusMouths, 1)))
+  L.chorusTime = num(f.chorusTime, 0.1)
+  L.chorusOpen = Math.min(1, num(f.chorusOpen, 0))
   return L
 }
 
@@ -140,6 +151,7 @@ export interface FaceReport {
   brows: number
   mouth: number
   talking: boolean
+  chorus: number // F45: 0..1 how far open in the all-mouths-at-once moment (0 = not now)
   shut: number // 0 open … 1 shut (blink or zap squeeze)
   worried: number // 0..1
   gaze: [number, number] // where the pupils look (-1 … 1)
@@ -209,6 +221,8 @@ export class FaceBook {
   focusX = 0 // view cells
   focusY = 0
   time = 0
+  chorusT = -1 // F45: seconds into every mouth opening at once (-1 = not now)
+  private chorusDone = false // (played this shift)
   built = false // faces have been handed out since the book was last switched on
   private faces = new Map<string, Face>()
   private building: Map<string, Face> | null = null
@@ -233,6 +247,7 @@ export class FaceBook {
       this.focusY = f.y
     }
     this.time += dt
+    this.stepChorus(story, dt)
     if (this.on) readEyesLook(this.look)
     if (wasOn && !this.on) this.clear()
   }
@@ -412,6 +427,28 @@ export class FaceBook {
     } else if (f.mouth.a > 0 && (f.talkIn -= dt) <= 0) f.talkT = 0 // its turn to say something
   }
 
+  // F45 (story 48: every mouth opens at once): in a chorus shift, once chorusMouths mouths are fully showing, they all
+  // open together for chorusTime (goo clock: pauses hold it) — once; the game hears it start (onChorus)
+  private stepChorus(story: FaceStory | undefined, dt: number) {
+    if (!story?.chorus) { this.chorusDone = false; this.chorusT = -1; return }
+    const L = this.look
+    if (this.chorusT >= 0) {
+      if ((this.chorusT += dt) >= L.chorusTime) { this.chorusT = -1; this.chorusDone = true }
+      return
+    }
+    if (this.chorusDone || this.rank < 40 || !this.built) return
+    let shown = 0
+    for (const f of this.faces.values()) if (f.mouth.a >= 1) shown++
+    if (shown < L.chorusMouths) return
+    this.chorusT = 0
+    story.onChorus?.()
+  }
+  // 0..1 how open the mouths are in the chorus: the eyes' squeeze curve the other way round — wide open fast, held, shut
+  // again at the end (never mid-squeeze)
+  private chorusOf(zapS: number): number {
+    return zapS >= 0.5 ? 0 : shutCurve(this.chorusT, this.look.chorusTime, 0.1)
+  }
+
   // ---- how shut, how open ----
   private blinkOf(f: Face): number {
     return f.blinkT >= 0 ? Math.sin(Math.PI * Math.min(1, f.blinkT / Math.max(0.01, this.look.blinkTime))) : 0
@@ -469,8 +506,8 @@ export class FaceBook {
     if (f.mouth.a > 0) { // a mouth: a shut line most of the time; while it says something, a few quick flaps
       place(cx, cy, ca, sa, scale, 0, L.mouthDrop)
       const mw = L.mouthSize * 0.5 * scale
-      const say = this.sayOf(f, zapS)
-      D.mouth(P[0], P[1], mw, Math.max(pxCell, mw * 0.7 * (0.08 + 0.92 * L.mouthOpen * say)), alpha * f.mouth.a)
+      const open = Math.max(L.mouthOpen * this.sayOf(f, zapS), L.chorusOpen * this.chorusOf(zapS)) // (F45: or all at once)
+      D.mouth(P[0], P[1], mw, Math.max(pxCell, mw * 0.7 * (0.08 + 0.92 * open)), alpha * f.mouth.a)
     }
   }
 
@@ -479,7 +516,7 @@ export class FaceBook {
     const zapS = this.zapShutOf(f, dying)
     return {
       cells: f.cells.slice(), size: f.size, eyes: f.eyes.a, due: f.eyes.want, brows: f.brows.a, mouth: f.mouth.a,
-      talking: this.sayOf(f, zapS) > 0.05, shut: Math.max(this.blinkOf(f), zapS), worried: dying ? 0 : this.worriedOf(f),
+      talking: this.sayOf(f, zapS) > 0.05, chorus: f.mouth.a > 0 ? this.chorusOf(zapS) : 0, shut: Math.max(this.blinkOf(f), zapS), worried: dying ? 0 : this.worriedOf(f),
       gaze: [f.gx, f.gy], at: toPx(x, y), dying,
     }
   }

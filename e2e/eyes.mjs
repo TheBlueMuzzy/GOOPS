@@ -4,7 +4,9 @@
 //   gaze swings toward the falling piece (moved left, then right) · a zap squeezes the neighbours' eyes shut (and the
 //   zapped clump's) · the eyes are drawn in the goo's own picture (eye-white pixels where the faces are, none at rank 9)
 //   · rank 10: only clumps of minClump10+ cells have eyes, fewer than at 20 · rank 30: brows only once pressure passes
-//   worriedAt, then worried brows; they blink · rank 40: mouths, shut most of the time.
+//   worriedAt, then worried brows; they blink · rank 40: mouths, shut most of the time · F45 rank 48 (chorusRank): once
+//   chorusMouths mouths show, every mouth opens at once, then shuts; kept as seen, so the next shift doesn't (shots:
+//   <style>-rank48-mouths-open-<size>.png).
 // The board is set up by hand and the rules held still (the piece hangs where it's put), so the faces are on known clumps.
 // Then shots at every portrait size (the game is portrait only), both styles, ranks 10/20/30/40, into e2e-shots/eyes/
 // (faces shown at once for the shots: appearSpread 0 sent the way the Dev Kit's Tuning tab sends an edit).
@@ -95,11 +97,11 @@ const changed = (page, a, b) => page.evaluate(({ a, b }) => {
   return n
 }, { a, b })
 
-async function openShift(w, h, style) {
+async function openShift(w, h, style, rank = 9) {
   const page = await browser.newPage({ viewport: { width: w, height: h } })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto(`http://localhost:${PORT}/?seed=7&visor=off&rank=9`)
+  await page.goto(`http://localhost:${PORT}/?seed=7&visor=off&rank=${rank}`)
   await startShift(page)
   await page.evaluate((st) => window.__goops.gooStyle.setFromSetting(st), style)
   await sleep(400)
@@ -241,6 +243,37 @@ try {
     check(`${style} rank 40: …shut most of the time`, samples > 20 && talking / samples < 0.4, `talking in ${talking} of ${samples} looks (${samples ? Math.round((100 * talking) / samples) : 0}%)`)
     check(`${style}: no page errors`, errors.length === 0, errors.join(' | '))
     await page.close()
+  }
+
+  // --- F45 (story 48): the first shift from chorusRank, every mouth opens at once — once per device ---
+  // (every eyed clump gets a mouth and they show at once: mouthChance 1, appearSpread 0, sent like a Dev Kit edit)
+  for (const style of STYLES) {
+    for (const [w, h] of [[390, 844], [1440, 900]]) {
+      const { page, errors } = await openShift(w, h, style, EYES.chorusRank)
+      await sendEyes(page, { ...EYES, appearSpread: 0, mouthChance: 1, talkEvery: 30 })
+      await setRank(page, EYES.chorusRank)
+      const sang = await until(page, `F.filter((f) => f.mouth >= 0.99).length >= ${EYES.chorusMouths} && F.filter((f) => f.mouth >= 0.99).every((f) => f.chorus > 0.9)`, 15000)
+      if (sang) await page.screenshot({ path: `${SHOTS}/${style.toLowerCase()}-rank${EYES.chorusRank}-mouths-open-${w}x${h}.png` })
+      check(`${style} ${w}x${h} rank ${EYES.chorusRank}: once ${EYES.chorusMouths}+ mouths show, every mouth opens at once`, sang, '')
+      const shut = await until(page, 'F.every((f) => f.chorus === 0)', (EYES.chorusTime + 3) * 1000)
+      check(`${style} ${w}x${h}: …then they shut again`, shut, '')
+      check(`${style} ${w}x${h}: it's kept as seen on the device`, await page.evaluate(() => JSON.stringify(localStorage).includes('look:mouths-open')), '')
+      if (w === 390) { // the next shift: not again
+        await page.goto(`http://localhost:${PORT}/?seed=7&visor=off&rank=${EYES.chorusRank}`)
+        await startShift(page)
+        await page.evaluate((st) => window.__goops.gooStyle.setFromSetting(st), style)
+        await sleep(400)
+        await setup(page, BOARD)
+        await sendEyes(page, { ...EYES, appearSpread: 0, mouthChance: 1, talkEvery: 30 })
+        await setRank(page, EYES.chorusRank)
+        await until(page, `F.filter((f) => f.mouth >= 0.99).length >= ${EYES.chorusMouths}`, 10000)
+        let again = false
+        for (let t = Date.now(); Date.now() - t < 3000; await sleep(100)) if ((await faces(page)).some((f) => f.chorus > 0)) again = true
+        check(`${style}: the next shift, the mouths don't all open again`, !again, '')
+      }
+      check(`${style} ${w}x${h} chorus: no page errors`, errors.length === 0, errors.join(' | '))
+      await page.close()
+    }
   }
 
   // --- shots: every portrait size, both styles, ranks 10 / 20 / 30 / 40 (faces shown at once: appearSpread 0) ---
