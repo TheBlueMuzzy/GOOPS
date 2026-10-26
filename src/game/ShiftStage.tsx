@@ -351,6 +351,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: softDrop,
+      openValve: () => engine.openValveStage(), // F64: as if the valve panel's stage were done (the panel waits for Muzzy's design)
       bubbles: { count: () => bubbles.count(), from: (crackId: number) => bubbles.from(crackId) }, // F36 e2e/cracks-look.mjs
       zapBeam: () => beam.shots(), // F67 e2e/zap.mjs: the beams on screen (from, to: stage px; t: seconds)
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,

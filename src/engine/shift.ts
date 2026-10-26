@@ -37,6 +37,7 @@ import { type PieceChoice, type PieceFallback, type TrainingCommand, type Traini
 import { type WhiteGoopConfig, newWhiteGoop, stepWhiteGoop, whiteGoopAt, whiteGoopIn } from './whiteGoop'
 import { type TwistsConfig, crackCells, crackHas, crackSize, growCracks as growCrackCells, growOn } from './twists'
 import { type Color, WILD } from './types'
+import { type FinalShiftConfig, type VetLine, finalNum, finalShiftIn, finalVet, valveStages } from './finalShift'
 import { neighbours } from './tank'
 
 export interface ShiftOptions {
@@ -60,6 +61,8 @@ export interface ShiftOptions {
   // F39 rank twists: content/tuning/twists.json (read live) — two-colour pieces (20), growing cracks (30), wild goop
   // (40). Leave it out (or a lesson's training shift) and there are none.
   twists?: TwistsConfig
+  // F64 the final shift: content/tuning/finalShift.json (read live). Leave it out and no shift is the final one.
+  finalShift?: FinalShiftConfig
 }
 
 const MAX_STEP_MS = 16 // long ticks are cut into small steps so nothing skips a row
@@ -99,6 +102,11 @@ class Shift implements ShiftEngine {
   // F31: what comes when the queue runs out (null = random pieces), how far round its pieces it is, and whether the
   // next piece came from it (then it's decided again as it comes in — the stack may have changed since)
   private fallback: { rule: PieceFallback; index: number; nextFromRule: boolean } | null = null
+  // F64 the final shift (finalShift.ts): is this it, its one colour, and its own clocks — the Veteran's intro (ms since
+  // the shift opened; when he landed; how many intro lines were said) and the goop rain's timer
+  private readonly isFinal: boolean
+  private readonly black: Color
+  private fin = { introMs: 0, landedMs: null as number | null, said: 0, rainMs: 0 }
 
   constructor(config: ShiftConfig, options: ShiftOptions) {
     this.config = config
@@ -107,6 +115,9 @@ class Shift implements ShiftEngine {
     this.rng = createRng(options.seed)
     const { width, height, bufferRows, visibleWidth } = config.tank
     this.colorCount = paletteSize(config, options.rank)
+    this.isFinal = finalShiftIn(options.finalShift, options.rank, !!options.training)
+    // (the final shift's colour: its name in shift.json colors; a name that isn't there = the last colour in play)
+    this.black = this.isFinal ? config.colors.indexOf(options.finalShift!.colour) + 1 || this.colorCount : 0
     this.wallKick = options.wallKick ?? 'rotateVat'
     this.mods = clampModifiers(options.modifiers)
     for (const a of options.abilities ?? []) {
@@ -147,16 +158,27 @@ class Shift implements ShiftEngine {
       machines: this.machines.state,
       primed: [],
     }
+    if (this.isFinal) {
+      const stages = valveStages(options.finalShift!)
+      this.state.final = { intro: false, stage: 0, stages: stages.length, seals: 0, need: stages[0] ?? 0, waiting: false, outcome: null }
+      this.state.cracksNeeded = stages.reduce((a, b) => a + b, 0) // (the screens' seal count: every stage's seals)
+    }
 
     if (options.startGrid) {
       this.state.grid.set(options.startGrid)
       regroup(this.state, this.book)
     } else if (!this.training) this.placeJunk(junkCount(config, options.rank))
     // F63: from rank 31 the white goop drops in (never in a lesson's shift)
-    this.state.vet = whiteGoopIn(options.whiteGoop, options.rank, !!this.training) ? newWhiteGoop(this.state, options.whiteGoop!) : null
+    this.state.vet = whiteGoopIn(options.whiteGoop, options.rank, !!this.training) ? newWhiteGoop(this.state, this.vetConfig()!) : null
+    // F64: in the final shift he drops in FIRST — the shift waits for his intro (stepIntro); he starts whole
+    if (this.isFinal && this.state.vet) {
+      this.state.vet.size = 1
+      this.state.final!.intro = true
+    }
     this.nextDef = this.randomDef()
-    // (a lesson's shift: no piece until the lesson brings one in — train({ type: 'spawn' }))
-    if (!this.training) this.spawnNext()
+    // (a lesson's shift: no piece until the lesson brings one in — train({ type: 'spawn' }); the final shift: not
+    // until the Veteran's intro is over)
+    if (!this.training && !this.state.final?.intro) this.spawnNext()
     this.refreshView()
   }
 
@@ -187,13 +209,13 @@ class Shift implements ShiftEngine {
         grid: Array.from(s.grid), spin: s.spin, pressure: s.pressure, integrity: s.integrity, phase: s.phase,
         ruptureReason: s.ruptureReason, cracks: s.cracks, sealedCracks: s.sealedCracks ?? [], cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
         quotaMet: s.quotaMet, score: s.score, status: s.status, leftoverPenalty: s.leftoverPenalty ?? null,
-        groups: [...s.groups.values()], abilities: this.abilities, effects: this.effects, vet: s.vet ?? null,
+        groups: [...s.groups.values()], abilities: this.abilities, effects: this.effects, vet: s.vet ?? null, final: s.final ?? null,
       },
       inner: {
         fillMs: [...this.book.fillMs], nextGroupId: this.book.nextId, nextCrackId: this.nextCrackId, colorCount: this.colorCount,
         piece: this.piece, nextDef: this.nextDef, softDrop: this.softDrop, lockMs: this.lockMs,
         lockResets: this.lockResets, crackTimerMs: this.crackTimerMs, popStreak: this.popStreak, playedMs: this.playedMs,
-        primed: [...this.primed], machines: this.machines.save(),
+        primed: [...this.primed], machines: this.machines.save(), final: { ...this.fin },
         ...(this.training ? { training: { rules: this.training, queue: this.queue, fallback: this.fallback } } : {}),
       },
     })
@@ -217,6 +239,7 @@ class Shift implements ShiftEngine {
       status: st.status, rank: x.options.rank,
       sealedCracks: st.sealedCracks ?? [], // (snapshots from before F36 have none)
       vet: st.vet ?? null, // F63 the white goop (snapshots from before F63 have none)
+      final: st.final ?? null, // F64 the final shift (snapshots from before F64 have none)
     })
     if (st.leftoverPenalty === null) delete s.leftoverPenalty
     else s.leftoverPenalty = st.leftoverPenalty
@@ -241,6 +264,7 @@ class Shift implements ShiftEngine {
     for (const [id, cells] of inner.primed) this.primed.set(id, cells)
     s.primed = [...this.primed.keys()]
     this.machines.load(inner.machines)
+    this.fin = inner.final ? { ...inner.final } : { introMs: 0, landedMs: null, said: 0, rainMs: 0 }
     // a lesson's training shift (F30): its rules and chosen pieces as they were
     this.training = inner.training ? inner.training.rules : null
     this.queue = inner.training ? inner.training.queue : []
@@ -304,6 +328,10 @@ class Shift implements ShiftEngine {
 
   private step(dt: number): void {
     const s = this.state
+    if (s.final?.intro) {
+      this.stepIntro(dt) // F64: the Veteran drops in first; everything else waits for him
+      return
+    }
     this.playedMs += dt
     if (s.phase === 'playing') {
       // (a lesson's training shift: each of these only while its rule is on — training.ts)
@@ -318,6 +346,7 @@ class Shift implements ShiftEngine {
       if (!t || t.integrity) this.drainIntegrity(dt)
       if (s.phase === 'playing' && this.breakdownsOn()) this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
       if (s.phase === 'playing') this.stepDump(dt) // F42 Goop Dump's rain (a rupture has ended it)
+      if (s.phase === 'playing' && this.isFinal) this.stepRain(dt) // F64 the final shift's goop rain
     } else {
       // Rupture: pressure drains at a steady rate (the pop line sinks with it); at 0 the shift is over.
       const speed = this.training ? Math.max(0.01, this.training.ruptureDrainSpeed) : 1 // (a lesson may slow the drain)
@@ -340,7 +369,7 @@ class Shift implements ShiftEngine {
   // No pressure vent and no score (those come from zapping).
   private stepVet(dt: number): void {
     const s = this.state
-    const cfg = this.options.whiteGoop
+    const cfg = this.vetConfig()
     if (!s.vet || !cfg || s.status !== 'playing') return
     const crack = stepWhiteGoop(s, cfg, dt)
     if (!crack) return
@@ -352,11 +381,114 @@ class Shift implements ShiftEngine {
     if (cfg.integrityRefund && s.phase === 'playing') s.integrity = Math.min(1, s.integrity + size * this.config.integrity.sealRefund)
     if (cfg.countsForQuota) {
       s.cracksSealed += size
-      if (!s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
+      this.countValve(size)
+      if (!this.isFinal && !s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
         s.quotaMet = true
         this.events.push({ type: 'quotaMet' })
       }
     }
+    // F64 the final shift: each cell he seals uses a little of him up; the last of him = the shift is lost
+    const shrink = this.isFinal ? finalNum(cfg.shrinkPerSeal, 0) * size : 0
+    if (shrink > 0) {
+      s.vet.size = Math.max(0, (s.vet.size ?? 1) - shrink)
+      if (s.vet.size <= 1e-9) {
+        s.vet.size = 0
+        this.events.push({ type: 'vetGone' })
+        this.finalLoss('vetGone')
+      }
+    }
+  }
+
+  // The white goop's tuning: whiteGoop.json — in the final shift with finalShift.json's `vet` laid over it (F64).
+  // (Made fresh each time it's asked for, so both files' Dev Kit edits apply at once.)
+  private vetConfig(): WhiteGoopConfig | undefined {
+    const white = this.options.whiteGoop
+    return white && this.isFinal ? finalVet(white, this.options.finalShift!) : white
+  }
+
+  // ---------------------------------------------------------------- F64 the final shift (finalShift.ts)
+
+  // The Veteran's drop-in: he waits at the top for his first two lines, falls (whiteGoop.ts drop, at his final-shift
+  // drop speed), lands ("…oof."), says he'll help; then the first piece comes in and the shift's clock starts.
+  private stepIntro(dt: number): void {
+    const s = this.state
+    const f = this.fin
+    const intro = this.options.finalShift!.intro ?? {}
+    const sec = (v: unknown) => finalNum(v, 0) * 1000
+    f.introMs += dt
+    if (f.landedMs === null && s.vet && f.introMs >= sec(intro.fallSec)) {
+      this.stepVet(dt)
+      if (s.vet.mode !== 'drop') {
+        f.landedMs = f.introMs
+        this.events.push({ type: 'vetLand' })
+      }
+    } else if (f.landedMs !== null) this.stepVet(dt)
+    const landed = f.landedMs
+    const lines: [VetLine, number | null][] = [
+      ['hi', sec(intro.hiSec)],
+      ['itsMe', sec(intro.itsMeSec)],
+      ['oof', landed],
+      ['help', landed === null ? null : landed + sec(intro.helpSec)],
+    ]
+    while (f.said < lines.length) {
+      const at = lines[f.said][1]
+      if (at === null || f.introMs < at) break
+      this.events.push({ type: 'vetSay', line: lines[f.said][0] })
+      f.said++
+    }
+    if (landed !== null && f.introMs >= landed + sec(intro.playSec)) {
+      s.final!.intro = false
+      this.spawnNext()
+    }
+  }
+
+  // The goop rain: every rain.everySec, rain.cells loose cells come in at the top of random columns (Goop Dump's drop).
+  private stepRain(dt: number): void {
+    const rain = this.options.finalShift!.rain
+    const every = finalNum(rain?.everySec, 0) * 1000
+    if (every <= 0) return
+    this.fin.rainMs += dt
+    while (this.fin.rainMs >= every) {
+      this.fin.rainMs -= every
+      const cells = Math.round(finalNum(rain.cells, 0))
+      for (let k = 0; k < cells; k++) this.dropDumpCell(this.black)
+    }
+  }
+
+  // Seals toward the release valve: they count only while no stage is waiting at the console; a stage that has its
+  // seals waits (the extra seals are lost).
+  private countValve(seals: number): void {
+    const f = this.state.final
+    if (!f || f.waiting || seals <= 0 || f.stage >= f.stages || this.state.status !== 'playing') return
+    f.seals = Math.min(f.need, f.seals + seals)
+    if (f.seals >= f.need) {
+      f.waiting = true
+      this.events.push({ type: 'valveReady', stage: f.stage + 1 })
+    }
+  }
+
+  // The valve panel's stage is done: open it. The last one = the win.
+  openValveStage(): boolean {
+    const s = this.state
+    const f = s.final
+    if (!f || !f.waiting || s.status !== 'playing') return false
+    f.stage++
+    f.waiting = false
+    f.seals = 0
+    this.events.push({ type: 'valveOpen', stage: f.stage })
+    if (f.stage >= f.stages) {
+      f.outcome = 'won'
+      s.quotaMet = true
+      this.end('won')
+    } else f.need = valveStages(this.options.finalShift!)[f.stage] ?? f.need
+    this.refreshView()
+    return true
+  }
+
+  // A final-shift loss ends it at once (no rupture drain — the boss level is a hard stop).
+  private finalLoss(outcome: 'vetGone' | 'overflow' | 'integrity'): void {
+    this.state.final!.outcome = outcome
+    this.end('lost')
   }
 
   // Do the machines wear down? Always in a normal shift; in a lesson's training shift only when a step turns it on.
@@ -366,7 +498,9 @@ class Shift implements ShiftEngine {
 
   // How long pressure takes to rise 0 → 100% (tuning × upgrades). Vents are "ms of rise", so they use it too.
   private riseMsToFull(): number {
-    return this.config.pressure.riseMsToFull * this.mods.pressureRiseTimeMult
+    // (F64 the final shift: ÷ pressureRiseMult — it climbs faster)
+    const fast = this.isFinal ? Math.max(0.1, finalNum(this.options.finalShift!.pressureRiseMult, 1)) : 1
+    return (this.config.pressure.riseMsToFull * this.mods.pressureRiseTimeMult) / fast
   }
 
   private setPressure(value: number): void {
@@ -379,7 +513,8 @@ class Shift implements ShiftEngine {
   private growCracks(dt: number): void {
     const s = this.state
     this.crackTimerMs += dt
-    if (this.crackTimerMs < crackEveryMs(this.config, s.pressure) * this.mods.crackEveryMult) return
+    const often = this.isFinal ? Math.max(0.1, finalNum(this.options.finalShift!.crackRateMult, 1)) : 1 // (F64)
+    if (this.crackTimerMs < (crackEveryMs(this.config, s.pressure) * this.mods.crackEveryMult) / often) return
     // The low-cracks ability: this crack goes in the bottom rows (if there's no room there, a normal crack instead).
     const low = this.effects.lowCracks
     let crack = low ? spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId, low.rows) : null
@@ -387,6 +522,7 @@ class Shift implements ShiftEngine {
     crack ??= spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId)
     // Nowhere for it right now: keep the timer, so it tries again next step (not a whole interval later).
     if (!crack) return
+    if (this.isFinal) crack.color = this.black // F64: every crack is the final shift's one colour
     this.crackTimerMs = 0
     this.nextCrackId++
     s.cracks.push(crack)
@@ -414,6 +550,7 @@ class Shift implements ShiftEngine {
     s.phase = 'rupture'
     s.ruptureReason = reason
     this.events.push({ type: 'rupture', reason })
+    if (this.isFinal) return this.finalLoss(reason) // F64: in the final shift a rupture is the loss, at once
     // F42: a Goop Dump still raining stops here — more goop now would only block the pieces while you zap
     const dump = this.effects.dump
     if (dump) {
@@ -434,7 +571,8 @@ class Shift implements ShiftEngine {
       return
     }
     this.lockMs = null
-    const msPerRow = this.config.fall.msPerRow / this.mods.fallSpeedMult / (this.softDrop ? this.config.fall.softDropFactor : 1)
+    const fast = this.isFinal ? Math.max(0.1, finalNum(this.options.finalShift!.fallSpeedMult, 1)) : 1 // (F64)
+    const msPerRow = this.config.fall.msPerRow / this.mods.fallSpeedMult / fast / (this.softDrop ? this.config.fall.softDropFactor : 1)
     p.fall += dt / msPerRow
     while (p.fall >= 1 && !this.grounded()) {
       p.y++
@@ -589,6 +727,7 @@ class Shift implements ShiftEngine {
     // gives (vent, integrity, ability charge): one cell = one seal
     const seals = sealedNow.reduce((sum, c) => sum + crackSize(c), 0)
     s.cracksSealed += seals
+    this.countValve(seals) // F64 the final shift's release valve
 
     // Zapping vents pressure, sealing vents more (v1's time refunds, turned into pressure: ms of rise).
     // Not during a rupture: there pressure drains on its own, and venting would only shorten the time to zap.
@@ -614,7 +753,7 @@ class Shift implements ShiftEngine {
     if (s.phase === 'playing' && this.breakdownsOn()) this.machines.zapped(g.cells.length)
 
     this.settle()
-    if (!s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
+    if (!this.isFinal && !s.quotaMet && s.cracksSealed >= s.cracksNeeded) {
       s.quotaMet = true // play goes on: every seal from here is bonus
       this.events.push({ type: 'quotaMet' })
     }
@@ -722,7 +861,8 @@ class Shift implements ShiftEngine {
     // (a lesson can hold the size: e.g. 'tetra' keeps every piece 4 cells however long it runs)
     // (F39 rank twists: never in a lesson's training shift)
     const twists = this.options.twists && !this.training ? { config: this.options.twists, rank: this.state.rank } : undefined
-    return this.matchCrack(randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount, twists))
+    const def = this.matchCrack(randomPiece(this.rng, this.config, this.training?.zone ?? zones[zone], this.colorCount, twists))
+    return this.isFinal ? recolored(def, this.black) : def // F64: every piece is the final shift's one colour (wild and two-colour too)
   }
 
   // F43 Crack Matcher: with chance crackColorBias, a newly made piece takes the colour of the lowest open crack not yet
@@ -1002,21 +1142,23 @@ class Shift implements ShiftEngine {
     let first: Color | null = null
     for (const x of columns.slice(0, count)) {
       const copy = first !== null && same > 0 && this.rng.chance(same)
-      const color: Color = copy ? first! : 1 + this.rng.int(this.colorCount)
+      const rolled: Color = copy ? first! : 1 + this.rng.int(this.colorCount)
+      const color: Color = this.isFinal ? this.black : rolled // (F64: the final shift's one colour)
       first ??= color
       s.grid[(s.height - 1) * s.width + x] = color
     }
     regroup(s, this.book)
   }
 
-  private end(): void {
+  // (status: F64's final shift says won / lost itself; every other shift is won when the crack quota was met)
+  private end(status?: ShiftStatus): void {
     const s = this.state
     if (s.status !== 'playing') return
     let left = 0
     for (const c of s.grid) if (c !== 0) left++
     s.leftoverPenalty = Math.floor(left * this.config.score.leftoverPerCell * this.mods.leftoverPenaltyMult)
     s.score = Math.max(0, s.score - s.leftoverPenalty)
-    const status: ShiftStatus = s.cracksSealed >= s.cracksNeeded ? 'won' : 'lost'
+    status ??= s.cracksSealed >= s.cracksNeeded ? 'won' : 'lost'
     s.status = status
     this.piece = null
     this.events.push({ type: 'end', status })

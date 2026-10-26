@@ -25,7 +25,9 @@ export interface WhiteGoopConfig {
   dropSecPerCell: number // drop-in: seconds per row as he falls
   secPerCell: number // oozing: seconds per cell through empty tank
   oozeSlow: number // × slower through a cell with goop in it
-  targetBy: string // 'hardestForYou' (Muzzy's pick) · 'oldest' · 'closest'
+  targetBy: string // 'hardestForYou' (Muzzy's pick) · 'oldest' · 'closest' · F64 'outOfReach' (the final shift)
+  reachRows?: number // F64 outOfReach: only cracks with at least this many rows to build under them (hardness); none → he waits
+  shrinkPerSeal?: number // F64 the final shift: how much of him each sealed crack cell uses up (shift.ts; unset = none)
   coveredHardness: number // hardestForYou: a crack covered by the wrong colour counts this many rows harder (you'd dig)
   sealTime: number // seconds sitting on a crack to seal it
   // F39 grown cracks: each cell past the first adds sealTime × this (1 = sealTime × the crack's size). Unset = 1.
@@ -171,7 +173,10 @@ function decide(s: ShiftState, v: WhiteGoop, cfg: WhiteGoopConfig): void {
   // (F39: a grown crack is reached at its nearest cell)
   const nearest = (c: Crack) => crackCells(c).map(([x, y]) => y * s.width + x).reduce((a, b) => (dist[b] < dist[a] ? b : a))
   const cost = (c: Crack) => dist[nearest(c)]
-  const pick = [...s.cracks].sort((a, b) => danger(s, b, cfg, cost(b)) - danger(s, a, cfg, cost(a)) || a.id - b.id)
+  // F64 outOfReach (the final shift): only the cracks you can't reach — at least reachRows rows to build under them
+  const reach = num(cfg.reachRows, 0)
+  const wanted = cfg.targetBy === 'outOfReach' ? s.cracks.filter((c) => crackHardness(s, c, cfg) >= reach) : s.cracks
+  const pick = [...wanted].sort((a, b) => danger(s, b, cfg, cost(b)) - danger(s, a, cfg, cost(a)) || a.id - b.id)
     .find((c) => Number.isFinite(cost(c))) // (oozing reaches every cell: always the first)
   if (!pick) { wait(v, cfg); return }
   v.targetId = pick.id

@@ -245,6 +245,7 @@ export const lessonPlay = {
       restore: (snap) => e.restore(snap),
       train: (cmd) => e.train(cmd),
       allows: (type) => e.allows(type),
+      openValveStage: () => e.openValveStage(),
     }
   },
   /** App: a REAL shift started — its first breakdowns may start lessons (F32, firstBreakdowns.ts). The engine isn't

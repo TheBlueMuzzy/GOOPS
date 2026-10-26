@@ -90,6 +90,20 @@ export interface ShiftState {
   machines?: Record<MachineId, MachineState> // the three machines (F23); the engine always sets it
   primed?: number[] // group ids primed by a first zap while the laser is broken (F23); a second zap pops them
   vet?: WhiteGoop | null // F63 the white goop (the Veteran, gooped) from rank 31; null/unset = not in this shift (whiteGoop.ts)
+  final?: FinalShiftState | null // F64 the final shift (rank 50, finalShift.ts); null/unset = any other shift
+}
+
+// F64 THE FINAL SHIFT (src/engine/finalShift.ts, content/tuning/finalShift.json): the release valve's stages and how
+// the shift ended. Plain data, so a snapshot keeps it.
+export type FinalOutcome = 'won' | 'vetGone' | 'overflow' | 'integrity'
+export interface FinalShiftState {
+  intro: boolean // the Veteran's drop-in is still playing: no piece yet, the shift's clock waits
+  stage: number // valve stages opened so far (0 … stages)
+  stages: number // how many stages the valve has (finalShift.json valve.stages)
+  seals: number // seals counted toward the next stage
+  need: number // seals the next stage needs
+  waiting: boolean // the next stage has its seals and waits at the console (seals don't count meanwhile)
+  outcome: FinalOutcome | null // how the shift ended (null while playing)
 }
 
 // F63 THE WHITE GOOP (src/engine/whiteGoop.ts): not a grid cell — his own thing, behind the goop. Plain data, so a
@@ -110,6 +124,7 @@ export interface WhiteGoop {
   seal: number // 0..1: how far through sealing it
   waitMs: number // rest / wait time left
   behind: boolean // goop covers his cell: drawn behind it, with the x-ray outline
+  size?: number // F64 the final shift: how much of him is left (1 = all; each seal takes some; 0 = used up). Unset = 1
 }
 
 // The console's three machines (F23, GDD §5 Breakdowns). Contract shared by the engine (F23) and the console (F24).
@@ -162,6 +177,11 @@ export type ShiftEvent =
   | { type: 'prime'; groupId: number } // broken laser: a first zap primed this group; zap it again to pop (F23)
   | { type: 'vetOw'; at: TapPoint } // F63: a zap went through the white goop — "ow" and a flinch (he never pops)
   | { type: 'vetSeal'; crackId: number } // F63: the white goop finished sealing this crack (it's gone from cracks)
+  | { type: 'vetSay'; line: import('./finalShift').VetLine } // F64: one of the Veteran's intro lines in the final shift (words: en.json finalShift.vet)
+  | { type: 'vetLand' } // F64: his drop-in landed ('…oof.')
+  | { type: 'vetGone' } // F64: he sealed his last — used up (the final shift is lost)
+  | { type: 'valveReady'; stage: number } // F64: valve stage `stage` (1-based) has its seals: it waits at the console
+  | { type: 'valveOpen'; stage: number } // F64: valve stage `stage` was opened (openValveStage); the last one wins
   | { type: 'overflowRail'; cells: number } // F31: a lesson's overflow rail cleared this many goop cells at the top (no rupture)
 
 // Why a zap on goop was refused (F26), so the screen can say it: 'aboveLine' = the group reaches above the pressure line
@@ -199,4 +219,7 @@ export interface ShiftEngine {
   // restore() needs an engine made with the snapshot's own options (restoreShift does both).
   snapshot(): import('./snapshot').ShiftSnapshot
   restore(snapshot: import('./snapshot').ShiftSnapshot): void
+  // F64 the final shift: open the valve stage waiting at the console (the valve panel calls it when its mini-game is
+  // done; Dev / tests: __goops.engine). false = not the final shift, or no stage is waiting.
+  openValveStage(): boolean
 }
