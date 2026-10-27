@@ -55,3 +55,8 @@ Checked: unit tests 639 (final shift 14, valve 16, crack stars, livedThrough) ·
   - Tuning: vet.shrinkPerSeal 0.08→0.07 — so the faster Veteran lasts: a cliff (0.05 → Focused 100%, 0.06 97%, 0.065 91%, 0.07 78%, 0.08 42%; 200 seeds each); 0.07 confirmed on fresh seeds 2001–2200: Focused 75% / Sharp 61% / Casual 0%, he now does ~half the seals (was ~1/3) and usually ends nearly used up. Easier option if wanted: 0.065.
 - Muzzy 2026-10-27: "A" — the faster Veteran is strong enough → F64 ✅ approved (feel: "overwhelming in a good way").
   - Feel question: "it's good now" (Muzzy 2026-10-27).
+
+Retro: (Muzzy 2026-10-27: "approved" — Claude's draft kept)
+- Went well: Muzzy's valve idea went from words to a playable sketch to the real panel in one night; the bots caught that "2× faster" alone would have made the Veteran weaker.
+- Went wrong: a ?rank=50 link put the tutorial on top of the boss shift, and a drawing crash froze the screen that only real play found (the bots never draw).
+- Change: every new rank's e2e plays a long real-keys run with page errors watched, and Muzzy always jumps ranks with RANK SELECT.
