@@ -229,6 +229,31 @@ try {
     check('during the first day: no page errors', !errors.length, errors.join(' | '))
     await close()
   }
+
+  // ════════════ 5. A JUMP = a player who lived through the ranks before (Muzzy 2026-10-26: RANK SELECT → 50 on a
+  //              fresh device played the first day's lessons on top of the final shift) ════════════
+  {
+    const { page, errors, close } = await device(390, 844, { seen: ['lesson:first-day'], progress: { totalXp: 0, scrapsSpent: 0, owned: {}, equipped: [] } })
+    await rankButton(page).click()
+    await list(page).waitFor()
+    await list(page).locator('.kit-listrow').nth(50).click()
+    await page.waitForEvent('load', { timeout: 10000 }).catch(() => {})
+    await page.locator('.kit-art-stage').waitFor()
+    await sleep(800)
+    const memory = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])))
+    const tipsKey = Object.keys(memory).find((k) => k.startsWith('kit-tips'))
+    const seen = tipsKey ? JSON.parse(memory[tipsKey]).seen ?? [] : []
+    check('pick 50 on a fresh device → the console shows rank 50', (await consoleRank(page)) === 50, String(await consoleRank(page)))
+    const had = ['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:visor', 'lesson:laser', 'lesson:controls', 'consoleNote:1', 'story:0', 'story:49', 'whisper:cold', 'look:mouths-open']
+    check('…every lesson, console note, story moment and look of ranks 0–49 counts as seen', had.every((id) => seen.includes(id)), JSON.stringify(had.filter((id) => !seen.includes(id))))
+    check("…rank 50's own story moment does not", !seen.includes('story:50'))
+    await startShift(page)
+    await sleep(6000) // (the shift's opening; a breakdown or unlock lesson would be on screen by now)
+    check('…the shift starts with no lesson on screen', !(await page.locator('.lesson-words').count()))
+    await page.screenshot({ path: `${OUT}/jump-50-shift-390x844.png` })
+    check('pick 50: no page errors', !errors.length, errors.join(' | '))
+    await close()
+  }
 } catch (e) {
   check('the run finished', false, e.message)
 } finally {
