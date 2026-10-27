@@ -53,13 +53,13 @@
   "rain": { "everySec": 10, "cells": 2 },
   "valve": { "stages": [6, 8, 10] },
   "vet": {
-    "sealTime": 3,
-    "secPerCell": 0.5,
+    "sealTime": 1.5,
+    "secPerCell": 0.25,
     "restAfter": 0.5,
     "dropSecPerCell": 0.12,
     "targetBy": "outOfReach",
     "reachRows": 3,
-    "shrinkPerSeal": 0.08
+    "shrinkPerSeal": 0.07
   },
   "intro": { "hiSec": 0.4, "itsMeSec": 1.6, "fallSec": 2.8, "helpSec": 1.2, "playSec": 4, "lineSec": 1.6 },
   "bots": { "valveSec": 6 }
