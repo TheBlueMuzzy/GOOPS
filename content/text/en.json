@@ -499,6 +499,7 @@
     "empty": "The console, empty. The periscope hangs still.",
     "endScreen": {
       "title": "THE GOOP IS FREE",
+      "subtitleNamed": "{name} — {title}",
       "rank": "OPERATOR RANK",
       "topRank": "TOP RANK",
       "freed": "EMPLOYEES FREED",

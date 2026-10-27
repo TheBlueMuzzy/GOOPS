@@ -54,6 +54,9 @@ type Props = {
   // goop crosses it out). While it plays the console is bare — no Upgrades, no gear, the periscope still, the monitor
   // blank — but for the badge step, when the monitor shows the badge being rewritten
   ending?: { step: EndingStepId; oldTitle: BadgeTitle }
+  // F65 the new career: careers this device finished — from art.json console.career fromCareers the console and its
+  // periscope are gold-trimmed (a look only)
+  careers?: number
 }
 
 const t = text.console
@@ -214,7 +217,7 @@ function UpgradesButton({ scraps, open, opensAt, onOpen }: NonNullable<Props['up
   )
 }
 
-export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades, rankSelect, ending }: Props) {
+export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades, rankSelect, ending, careers = 0 }: Props) {
   const now = rankInfo(progress)
   // (only the XP moves the meter: buying an upgrade changes the progress but must not replay the fill — F34)
   const totalXp = progress.totalXp
@@ -269,6 +272,16 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
     return () => window.removeEventListener('keydown', key)
   }, [idle])
 
+  // F65 the gold trim: on the parts art.json career.layers names, once a career is done (not in the ending itself)
+  const G = a.career, gold = careers >= G.fromCareers && !ending
+  const trim = (part: string) => (gold && G.layers.includes(part) ? 'career-gold' : undefined)
+  // (its colour and sizes on the page root, like the HUD's sizes — the kit's art stage takes no style of its own)
+  useEffect(() => {
+    const root = document.documentElement.style
+    root.setProperty('--kit-career-gold', G.colour)
+    root.setProperty('--kit-career-trim', `${G.trimRem}rem`)
+    root.setProperty('--kit-career-glow', `${G.glowRem}rem`)
+  }, [G.colour, G.trimRem, G.glowRem])
   return (
     <Screen label={t.label} column backdrop={a.backdrop}
       slide={phase === 'idle' ? undefined : phase === 'leaving' ? 'out' : 'in'} slideEdge="bottom" onSlideEnd={onSlideEnd}
@@ -277,9 +290,10 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         : <TitleArt src={a.title} alt={t.title} size="s" />}
       bottomLeft={midShift && short ? <Button variant="secondary" onClick={onPull} disabled={phase !== 'idle'}>{t.backToTank}</Button> : undefined}
       bottomRight={ending ? undefined : <Button art={a.settings} onClick={onSettings}>{t.settings}</Button>}>
-      <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end">
-        <ArtLayer {...a.body} dim={leaving} />
-        <ArtLayer {...a.meter} dim={leaving} />
+      <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end"
+        className={gold ? 'career-gold-console' : undefined}>
+        <ArtLayer {...a.body} dim={leaving} className={trim('body')} />
+        <ArtLayer {...a.meter} dim={leaving} className={trim('meter')} />
         <ArtLayer at={a.meter.at} text={a.meterText} dim={leaving}>
           <LevelMeter level={now.rank} xp={now.xpIntoRank} xpToNext={now.xpToNext} format={format}
             words={{ label: t.rank, unit: t.xp, max: t.maxRank }} art={a.meterFill}
@@ -296,7 +310,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <ArtLayer {...(rankSelect ? a.words.creditBeside : a.words.credit)} tone="muted" align="end" dim={leaving}>{rankSelect ? t.creditShort : t.credit}</ArtLayer>
         {/* (with RANK SELECT — Dev Kit builds only — the short credit: on a phone the words can't shrink below 10 px,
             and the whole credit leaves the row no room inside the console's dark strip) */}
-        <ArtLayer at={a.periscope.at}>
+        <ArtLayer at={a.periscope.at} className={trim('periscope')}>
           <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving}
             onPull={() => { playUiSound(SOUNDS.periscope); onPull() } /* the clunk as it reaches the end */}
             disabled={phase === 'arriving' || (!!midShift && short) /* a phone on its side: Back to the tank does it (the periscope is mostly off screen) */
@@ -305,7 +319,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
-        <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]}><LessonTag tag="monitor" /></ArtLayer>
+        <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]} className={trim('monitor')}><LessonTag tag="monitor" /></ArtLayer>
         <Crt hint={hint} lesson={ending ? null : storyLine ?? lessonLine} drop={drop} look={ending?.step === 'badge' ? 'glitch' : story?.line.monitor}
           badge={ending?.step === 'badge' ? <EndingBadge oldTitle={ending.oldTitle} /> : undefined} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
       </ArtStage>

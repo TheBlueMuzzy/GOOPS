@@ -21,6 +21,9 @@ import { StoryView } from '../game/lessons/StoryView'
 import { Whisper } from '../game/Whisper'
 import { ending } from '../game/ending'
 import { EndingConsole, EndingTank } from '../game/EndingView'
+import { beginNewCareer } from '../game/newCareer'
+import { EndGameScreen } from './EndGameScreen'
+import { valveStages } from '../engine/finalShift'
 import { storyMoments } from '../game/lessons/storyMoments'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
 import { unlockLessons } from '../game/lessons/unlockLessons'
@@ -284,8 +287,19 @@ export function App() {
   const endingView = useSyncExternalStore(ending.subscribe, ending.view)
   const endingAt = endingView?.step.at ?? null
   useEffect(() => { if (mode === 'shift' && endingAt === 'console') toConsole() }, [mode, endingAt, toConsole])
-  // (a page opened after the win, before the new career began: straight to the end-game screen)
-  useEffect(() => { if (progressRef.current.badge === 'savior' && !ending.playing()) ending.start('endScreen') }, [])
+  // F65 the end-game screen's button: the new career — rank 0 again on the console (src/game/newCareer.ts)
+  const newCareer = useCallback(() => {
+    const p = beginNewCareer()
+    ending.stop()
+    storyMoments.stop() // (rank 0's moment starts at the console: the sign-in asks the name again)
+    progressRef.current = p; setProgress(p)
+    meterShown.current = p; setMeterFrom(null)
+    engineRef.current = null
+    setResult(null); setHud(null); setEngine(null); setMode('console')
+  }, [])
+  // (a page opened after the win, before the new career began: straight to the end-game screen — before the console's
+  // first story moment or lesson could start)
+  useState(() => { if (saved.badge === 'savior' && !ending.playing()) ending.start('endScreen') })
   // (the last shift's engine stays in state on the console, unmounted; the next pull replaces it)
   const consoleSlid = useCallback(() => setMode((m) => (m === 'leaving' || m === 'peekOut' ? 'shift' : m === 'arriving' ? 'console' : m === 'peekIn' ? 'peek' : m)), [])
   // mid-shift: to the console and back (swipe up / W / ↑ in the shift; the periscope or Back to the tank on the console)
@@ -485,7 +499,7 @@ export function App() {
   useEffect(() => {
     if (mode !== 'console') return
     rulesClock.scale = 1
-    if (endingAt) return // (F65: the ending plays on the console — no story moment or lesson over it)
+    if (ending.playing()) return // (F65: the ending plays on the console — no story moment or lesson over it)
     if (storyMoments.atConsole(rank)) return
     if (dayDue(progress)) firstDay.atConsole()
     else unlockLessons.atConsole(rank)
@@ -643,7 +657,7 @@ export function App() {
             midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair, fewerRepairSteps: upgrades.fewerRepairSteps,
               valve: hud.final?.waiting ? { stage: hud.final.stage, stages: hud.final.stages, onOpen: openValve } : undefined } : undefined}
             upgrades={peeking || endingAt ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }}
-            rankSelect={showRankSelect} ending={endingView?.step.at === 'console' ? { step: endingView.step.id, oldTitle: result?.oldTitle ?? 'deputy' } : undefined} />
+            rankSelect={showRankSelect} careers={careers} ending={endingView?.step.at === 'console' ? { step: endingView.step.id, oldTitle: result?.oldTitle ?? 'deputy' } : undefined} />
         </ScreenStack>
         </UpgradeShopContext.Provider>
       )}
@@ -657,6 +671,9 @@ export function App() {
       {/* F65 the ending: the goop pouring out and speaking in the tank, then its console part */}
       {mode === 'shift' && endingAt === 'tank' && <EndingTank />}
       {mode === 'console' && <EndingConsole />}
+      {mode === 'console' && endingView?.step.id === 'endScreen' && (
+        <EndGameScreen rank={rank} stages={valveStages(finalShift).length} careers={careers} onNewCareer={newCareer} />
+      )}
       {/* F35: the goop's first whispers in a real shift (not a lesson's training shift) */}
       {engine && lessonPlay.realShift() && (mode === 'shift' || peeking) && !result && !menuOpen && <Whisper engine={engine} onMonitor={onMonitor} />}
       {sideways && <UprightScreen />}

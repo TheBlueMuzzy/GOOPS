@@ -5,6 +5,28 @@
     "again": { "up": "art/Btn_Green-Up.svg", "down": "art/Btn_Green-Down.svg", "size": "m" },
     "quit": { "up": "art/Btn_Blue-Up.svg", "down": "art/Btn_Blue-Down.svg", "size": "m" }
   },
+  "_endGame": "F65 the end-game screen (after the ending): Muzzy's art/EndGameScreen.svg — its frame, full rank meter and four stat boxes (art-prep takes its mock-up words and swipe arrow out: public/art/EndGameScreen.svg). size = its viewBox; words = where the game writes over it, `at` [x, y, width, height] + `text` (letter size), in that file's units — the same spots as the mock-up's words (title, subtitle, the rank row over the meter, two big numbers, a label + value in each box); boxPad = the room round each box's label + value inside it; boxLabelShare = the label's share of that height (the value below it); button = the new career's button, where the mock-up's swipe arrow and line were. Words: en.json ending.endScreen.",
+  "endGame": {
+    "file": "art/EndGameScreen.svg",
+    "size": [583.67, 909.59],
+    "words": {
+      "title": { "at": [40, 84, 504, 50], "text": 34 },
+      "subtitle": { "at": [40, 134, 504, 26], "text": 17 },
+      "rankLabel": { "at": [50, 190, 190, 28], "text": 19 },
+      "rankValue": { "at": [262, 180, 80, 40], "text": 32 },
+      "topRank": { "at": [330, 190, 200, 28], "text": 16 },
+      "freedLabel": { "at": [44, 298, 244, 28], "text": 18 },
+      "freedValue": { "at": [44, 334, 244, 66], "text": 50 },
+      "careersLabel": { "at": [296, 298, 244, 28], "text": 18 },
+      "careersValue": { "at": [296, 334, 244, 66], "text": 50 },
+      "boxes": [[56, 467.3, 219.4, 117.6], [308.4, 467.3, 219.4, 117.6], [56, 613.6, 219.4, 117.6], [308.4, 613.6, 219.4, 117.6]],
+      "boxLabel": 15,
+      "boxValue": 30,
+      "boxPad": 12,
+      "boxLabelShare": 0.36
+    },
+    "button": [107, 762, 370, 88]
+  },
   "console": {
     "_about": "The console = the main menu (F21), drawn from Muzzy's mock-up art/Example1.svg. Every number is in that file's own units (its viewBox: 648 wide). size = the whole mock-up; view = the part that shows (the phone-shaped page, from the monitor's bottom edge down to the footer — the GOOPS title and the gear sit under it, written by the game); viewShort = the part shown on a phone on its side (down to the bottom of the laser panel). layers = groups cut out of the mock-up by art-prep, each at its box `at` [x, y, width, height]; strip = bits taken out (they'd show fake numbers or do nothing). periscope.travel = how far it pulls down, as a share of its own height (Example3 has it 362 units lower); grip = the share of it (from the bottom: goggles + bar + arrow) you can grab — its long stem hides behind the monitor. words = where the game writes words over the art: `at` + `text` (letter size in mock-up units).",
     "source": "art/Example1.svg",
@@ -28,6 +50,8 @@
     "valve": { "at": [60, 1234, 528, 492], "openFile": "art/ConsoleHatchOpen.svg" },
     "_monitorDrop": "F35 (Muzzy 2026-10-24: 'the console monitor can come down much lower. like 2x the distance, so long as the top of the graphic isn't in view. this will give more room for the company message'): how far (mock-up units) the monitor and its screen hang lower than the mock-up at rest. 78 = twice what showed before. A lesson step that outlines the periscope lifts it back to 0, so the periscope shows.",
     "monitorDrop": 78,
+    "_career": "F65 the new career's look (Muzzy 2026-10-27: 'a look only — gold-trimmed console + periscope'): from fromCareers careers done on this device, the console's parts in `layers` (body, meter, monitor, periscope) get a gold trim round their outline — trimRem thick (crisp), with a soft glowRem glow, in `colour`. A look only: the same game.",
+    "career": { "fromCareers": 1, "colour": "#f2c14e", "trimRem": 0.14, "glowRem": 0.5, "layers": ["body", "meter", "monitor", "periscope"] },
     "words": {
       "hint": { "at": [72, 806, 504, 62], "text": 22 },
       "laser": { "at": [226, 1298, 200, 24], "text": 17 },

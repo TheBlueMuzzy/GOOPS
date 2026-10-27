@@ -5,6 +5,18 @@
     "goopOutline": "wave", "glitchAfterSeconds": 0.5, "glitchSeconds": 0.18, "glitchColour": "#c8ffd8", "rattleSeconds": 0.5, "rattleShake": 0.04, "rattleTimes": 3 },
   "_catchUp": "Most moments played in one visit to the console (the newest ones), e.g. after two rank-ups in one shift or on a device that skipped some.",
   "catchUp": 2,
+  "_newCareer": "F65 the new career (after the ending, a career done on this device): these moments play instead of the usual ones of the same rank. Rank 0: the monitor slips — 'WELCOME BA—' (cut off: it moves on by itself) — then the usual welcome, your title (Former Employee), and the sign-in again, so the goop learns the name (story.md 'Rank titles').",
+  "newCareer": {
+    "0": {
+      "lines": [
+        { "voice": "mon", "words": "r0back", "cut": true },
+        { "voice": "mon", "words": "r0a" },
+        { "voice": "mon", "words": "r0former" },
+        { "voice": "mon", "words": "r0sign", "sign": true },
+        { "voice": "mon", "words": "r0b" }
+      ]
+    }
+  },
   "_whispers": "In-shift whispers (design/story.md: 3 '…cold…' — one you'll doubt, once per device · then one whisper a shift, the goop getting better at talking: stages = from a rank on, the words it says (8+ feelings · 15+ single words · 24+ names; a stage replaces the one before). A plain bubble pointing into the tank; no tap, it goes by itself. Seconds are rules time (pauses stop them). noVoicesFrom = from this rank Management answers each whisper ('THERE ARE NO VOICES IN THE TANK…', en.json story.lines.noVoices) noVoicesDelaySeconds after the whisper goes, for noVoicesSeconds, where the in-shift messages show. Words: en.json story.whispers.",
   "whispers": {
     "coldAt": 3,

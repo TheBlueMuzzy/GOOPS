@@ -9,7 +9,7 @@ import { tipsMemory } from '../../ui/kit'
 import { looksClock } from '../../devkit/gameClock'
 import momentsFile from '../../../content/story/moments.json'
 import text from '../../../content/text/en.json'
-import { operatorName } from '../../progress/save'
+import { loadCareers, operatorName } from '../../progress/save'
 
 // F63: head = the goop in your head (ranks 31–39) — the whisper bubble over the monitor area; him = the Veteran from
 // inside the white goop is the one talking (35, 37) · F45: goop = the goop through the speaker (41, 43, 48) — the
@@ -29,7 +29,7 @@ type Whispers = { coldAt: number; stages: WhisperStage[]; afterSeconds: [number,
   noVoicesFrom: number; noVoicesDelaySeconds: number; noVoicesSeconds: number }
 export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; alarmWords: string; crackleEvery: number; cutSeconds: number
   goopOutline: 'wave' | 'plain'; glitchAfterSeconds: number; glitchSeconds: number; glitchColour: string; rattleSeconds: number; rattleShake: number; rattleTimes: number }
-type MomentsFile = { catchUp: number; moments: Record<string, Moment>; whispers: Whispers; looks: StoryLooks }
+type MomentsFile = { catchUp: number; moments: Record<string, Moment>; newCareer?: Record<string, Moment>; whispers: Whispers; looks: StoryLooks }
 
 export const storyFile = momentsFile as unknown as MomentsFile
 const seenId = (rank: number) => `story:${rank}`
@@ -38,6 +38,12 @@ const seenId = (rank: number) => `story:${rank}`
 export function dueRanks(rank: number, seen: (rank: number) => boolean, file: MomentsFile = storyFile): number[] {
   const due = Object.keys(file.moments).map(Number).filter((r) => r <= rank && !seen(r)).sort((a, b) => a - b)
   return due.slice(Math.max(0, due.length - Math.max(1, file.catchUp)))
+}
+
+/** F65: a rank's moment — in a new career (a career done on this device) its newCareer one when it has one (rank 0's
+ *  "WELCOME BA—" and your title), else the usual. */
+export function momentFor(rank: number, careers: number, file: MomentsFile = storyFile): Moment {
+  return (careers > 0 ? file.newCareer?.[String(rank)] : undefined) ?? file.moments[String(rank)]
 }
 
 /** The whisper stage at this rank: the last one whose `from` it has reached (null = none yet). */
@@ -90,9 +96,9 @@ export const storyMoments = {
   atConsole(rank: number): boolean {
     if (view) return true
     if (quietForChecks()) return false
-    const memory = tipsMemory()
+    const memory = tipsMemory(), careers = loadCareers()
     queue = dueRanks(rank, (r) => memory.seen(seenId(r)))
-      .map((r) => ({ rank: r, moment: storyFile.moments[String(r)] }))
+      .map((r) => ({ rank: r, moment: momentFor(r, careers) }))
       .filter((m) => m.moment?.lines.length)
     at = 0
     show()

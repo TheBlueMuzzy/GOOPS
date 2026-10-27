@@ -65,3 +65,11 @@ html, body, #root { margin: 0; height: 100%; }
 .valve-handle { fill: var(--accent); }
 .valve-grab { fill: transparent; pointer-events: auto; touch-action: none; cursor: grab; outline: none; }
 .valve-grab:active { cursor: grabbing; }
+
+/* F65 the new career's gold trim (content/ui/art.json console.career, Console.tsx): a crisp outline round each trimmed
+   part's picture (four drop shadows, --kit-career-trim thick) and a soft glow (--kit-career-glow), in --kit-career-gold */
+.career-gold img {
+  filter: drop-shadow(var(--kit-career-trim) 0 0 var(--kit-career-gold)) drop-shadow(calc(var(--kit-career-trim) * -1) 0 0 var(--kit-career-gold))
+    drop-shadow(0 var(--kit-career-trim) 0 var(--kit-career-gold)) drop-shadow(0 calc(var(--kit-career-trim) * -1) 0 var(--kit-career-gold))
+    drop-shadow(0 0 var(--kit-career-glow) var(--kit-career-gold));
+}

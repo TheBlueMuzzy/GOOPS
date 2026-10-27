@@ -54,6 +54,21 @@ for (const file of ['Background.svg', 'Btn_Green-Up.svg', 'Btn_Green-Down.svg', 
     .replace(/<\?xml[^>]*>\s*/, '')
   writeFileSync(`${OUT}/EndGameFrame.svg`, `${frame}\n  </g>\n</svg>\n`)
   console.log(`EndGameFrame.svg: ${w} × ${h}`)
+
+  // F65 the end-game screen (after the ending): the whole mock-up — frame, rank meter, the four stat boxes — with its
+  // words taken out (the game writes the real ones: content/ui/art.json endGame.words) and the swipe arrow (a button sits
+  // there instead). The meter's fill runs the whole track: the career ends at the top rank.
+  const words = [...svg.matchAll(/<text[\s\S]*?<\/text>/g)].length
+  const arrow = /\s*<path class="cls-18" d="M268\.4,808\.13[^>]*\/>/
+  if (!arrow.test(svg) || !/id="Meter_Fill"[^>]*h366\.31/.test(svg)) throw new Error('EndGameScreen.svg: the swipe arrow or the meter fill moved — check the file')
+  const screen = svg
+    .replace(/<svg ([^>]*)>/, `<svg $1 width="${w}" height="${h}">`)
+    .replace(/<\?xml[^>]*>\s*/, '')
+    .replace(/\s*<text[\s\S]*?<\/text>/g, '')
+    .replace(arrow, '')
+    .replace(/<path id="Meter_Fill"([^>]*?) d="[^"]*"\/>/, '<rect id="Meter_Fill"$1 x="49.07" y="223.09" width="486.02" height="19.77" rx="9.885"/>')
+  writeFileSync(`${OUT}/EndGameScreen.svg`, screen)
+  console.log(`EndGameScreen.svg: ${words} words + the arrow taken out, the meter full`)
 }
 
 // The console (F21): layers cut out of the mock-up, each cropped to its box in art.json

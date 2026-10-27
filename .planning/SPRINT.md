@@ -9,8 +9,8 @@ Check: unit tests (titles + save upgrade, the ending's order, the new career's s
 - [x] 🤖 1. Titles that stick: lose the final shift → One Of Us until you win; win → The Savior of Goopkind; the next career's rank 0 → Former Employee; saved on the device with an upgrade step so old saves load — src/progress/save.ts
 - [x] 🤖 2. The ending in the tank: the tank opens and the goop pours out (the periscope view fills), the goop speaks out loud through its mouths (thank you + its names) — src/game/lessons/StoryView.tsx
 - [x] 🤖 3. The ending at the console: the speaker's last clear line then silence, the last payday line, the monitor glitch + the badge rewritten (win title + the real acronym), you leave → the empty console — src/ui/Console.tsx
-- [ ] 🤖 4. The end-game screen from art/EndGameScreen.svg — src/ui/App.tsx
-- [ ] 🤖 5. The new career: rank 0 again, Former Employee, gold-trimmed console + periscope (look only, numbers in content/), first day skipped, the sign-in kept — src/progress/progression.ts
+- [x] 🤖 4. The end-game screen from art/EndGameScreen.svg — src/ui/App.tsx
+- [x] 🤖 5. The new career: rank 0 again, Former Employee, gold-trimmed console + periscope (look only, numbers in content/), first day skipped, the sign-in kept — src/progress/progression.ts
 - [ ] 🤖 6. e2e: win → the whole ending → end-game screen → new career; lose → One Of Us; every portrait size; a long real-keys run with page errors watched — e2e/ending.mjs
 - [ ] 🤖 7. Update design/story.md (ending built), GDD story section, TDD (data files + decisions; next free D28) — .planning/design/story.md
 
