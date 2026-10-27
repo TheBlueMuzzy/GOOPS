@@ -89,3 +89,19 @@
   box-shadow: 0 0 0 calc(var(--crt-bezel-w) * var(--u)) var(--crt-bezel);
   clip-path: inset(0 calc(var(--crt-bezel-w) * -1 * var(--u)) calc(var(--crt-bezel-w) * -1 * var(--u)));
 }
+
+/* F65 THE BADGE (the ending, Console.tsx EndingBadge): your title crossed out by the goop — a line drawn through it in
+   the goop's colour (--badge-goop, galaxy-look.json rim) over --badge-strike — and The Savior of Goopkind written under
+   it in the same colour, then the acronym. The CRT's own words otherwise (phosphor green, typed). */
+.crt-badge { text-align: center; }
+.crt-badge > * { max-inline-size: 100%; text-wrap: balance; }
+.crt-badge-label { opacity: 0.7; letter-spacing: 0.1em; }
+.crt-badge-old { position: relative; align-self: center; }
+.crt-badge-old::after { content: ''; position: absolute; inset-inline: -0.25em; inset-block-start: 45%; block-size: 0.16em; border-radius: 0.1em;
+  background: var(--badge-goop); box-shadow: 0 0 0.4em var(--badge-goop); transform: scaleX(0); transform-origin: left; }
+.crt-badge-old[data-struck]::after { animation: badge-strike var(--badge-strike) ease-in forwards; }
+@keyframes badge-strike { to { transform: scaleX(1); } }
+.crt-look .crt-badge-new .crt-words { color: var(--badge-goop); font-size: 1.25em; text-shadow: 0 0 0.5em var(--badge-goop); }
+.crt-badge-acronym { letter-spacing: 0.06em; }
+@media (prefers-reduced-motion: reduce) { .crt-badge-old[data-struck]::after { animation: none; transform: none; } }
+:root[data-reduce-motion] .crt-badge-old[data-struck]::after { animation: none; transform: none; }

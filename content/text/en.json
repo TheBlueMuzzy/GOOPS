@@ -355,6 +355,8 @@
       "r0a": "WELCOME, OPERATOR #4471. YOUR PASSAGE DEBT HAS BEEN PRE-APPROVED.",
       "r0sign": "PLEASE SIGN HERE.",
       "r0b": "PLEASE KEEP THE TANK FROM EXPLODING.",
+      "r0back": "WELCOME BA—",
+      "r0former": "YOUR TITLE: FORMER EMPLOYEE. WE HAVE NEVER MET.",
       "r1a": "CONGRATULATIONS ON YOUR FIRST PAYDAY.",
       "r1b": "A NEXT-PIECE WINDOW HAS BEEN INSTALLED. ITS RENTAL IS ON YOUR BILL.",
       "r2a": "YOUR PERISCOPE IS ON BACKORDER. ESTIMATED ARRIVAL: SOON.",
@@ -470,6 +472,45 @@
       "oof": "…oof.",
       "help": "glad you're not goop yet. I'll help how I can.",
       "valveGo": "valve's open on your console — go!"
+    }
+  },
+  "ending": {
+    "_about": "F65 the ending (design/story.md 'The ending — save the goop'; order + numbers: content/tuning/ending.json). goop = its lines out loud through its mouths ({name} = your name or Operator #4471, {more} = how many more it doesn't name) · vet = the speaker's last clear line · payday = the last payday · badge = the monitor as the goop rewrites your badge · empty = the empty console (screen readers) · endScreen = the end-game screen (Muzzy's art EndGameScreen.svg) and the new career's button.",
+    "goop": {
+      "thanks": "thank you.",
+      "names": "I am Odile. I am Bram. I am Ines. I am Teodor.",
+      "more": "…and {more} more of us. We remember our names now.",
+      "yours": "Go home, {name}. We are going home too."
+    },
+    "vet": "told you you'd make a good veteran, kid.",
+    "payday": {
+      "title": "Last payday",
+      "message": "Payment due: 0 cr. Thank you for your continued employment.",
+      "debtValue": "0 cr — paid by: {n} former employees",
+      "done": "Done"
+    },
+    "badge": {
+      "label": "Your badge",
+      "operator": "OPERATOR #4471 — {name}",
+      "noName": "OPERATOR #4471",
+      "acronym": "GRADUAL ONBOARDING OF PERMANENT STAFF",
+      "next": "Got it"
+    },
+    "empty": "The console, empty. The periscope hangs still.",
+    "endScreen": {
+      "title": "THE GOOP IS FREE",
+      "rank": "OPERATOR RANK",
+      "topRank": "TOP RANK",
+      "freed": "EMPLOYEES FREED",
+      "careers": "CAREERS DONE",
+      "stages": "VALVE STAGES",
+      "debt": "PASSAGE DEBT",
+      "debtValue": "0 cr",
+      "tanks": "TANKS OPENED",
+      "tanksValue": "ALL",
+      "speaker": "THE SPEAKER",
+      "speakerValue": "SILENT",
+      "newCareer": "Begin a new career"
     }
   },
   "lessons": {

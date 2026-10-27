@@ -6,13 +6,16 @@
 // a broken machine's repair panel comes alive (RepairPanels.tsx), the gear opens the pause menu, and pulling the
 // periscope goes back to the same shift. On a phone on its side only the panels show, with a Back to the tank button.
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type FormEvent, type ReactNode } from 'react'
 import { useCrtLesson, useSpotlitTags } from '../game/lessons/lessonLine'
 import { storyFile, storyMoments, storyWords, type MonitorLook } from '../game/lessons/storyMoments'
 import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Row, Screen, Stack, TextInput, TitleArt, fill, screens } from './kit'
 import { cleanName, loadOperatorName, nameMaxLength, saveOperatorName } from '../progress/save'
 import type { FewerRepairSteps, MachineId } from '../engine'
-import { meterSteps, rankInfo, type Progress } from '../progress/progression'
+import { meterSteps, rankInfo, type BadgeTitle, type Progress } from '../progress/progression'
+import { ending as endingSteps, type EndingStepId } from '../game/ending'
+import endingTuning from '../../content/tuning/ending.json'
+import galaxy from '../../content/tuning/galaxy-look.json'
 import { ControlsPanel, LaserPanel, LessonTag, VisorPanel } from './RepairPanels'
 import { ValvePanel } from './ValvePanel'
 import { playUiSound } from '../game/sound'
@@ -20,7 +23,7 @@ import { SOUNDS } from '../game/shiftSounds'
 import { art } from './art'
 import { useShort } from './useShort'
 import { CrtLook, TypedText } from '../game/CrtLook'
-import { clockPause, onClockPause } from '../devkit/gameClock'
+import { clockPause, looksClock, onClockPause } from '../devkit/gameClock'
 import text from '../../content/text/en.json'
 import { versionLabel } from '../version'
 import { RankSelectButton } from './RankSelect'
@@ -47,6 +50,10 @@ type Props = {
   // F70: RANK SELECT on the bottom row, between the version and the credit (the App says when: a Dev Kit build, between
   // shifts, no lesson or story moment on the console)
   rankSelect?: boolean
+  // F65 THE ENDING at the console (src/game/ending.ts): the step playing, and the title the badge had before the win (the
+  // goop crosses it out). While it plays the console is bare — no Upgrades, no gear, the periscope still, the monitor
+  // blank — but for the badge step, when the monitor shows the badge being rewritten
+  ending?: { step: EndingStepId; oldTitle: BadgeTitle }
 }
 
 const t = text.console
@@ -89,10 +96,37 @@ function SignHere({ onDone }: { onDone(): void }) {
     </form>
   )
 }
+// F65 THE BADGE (the ending, story.md step 5): on the monitor, after its glitch (looks.glitch*, rank 45's not-a-face), the goop
+// crosses out your title (a line drawn through it, console.strikeAfterSeconds + strikeSeconds — content/tuning/ending.json)
+// and writes The Savior of Goopkind under it in its own colour (galaxy-look.json rim), then the real acronym types out —
+// GRADUAL ONBOARDING OF PERMANENT STAFF. Got it moves on once it's all written.
+function EndingBadge({ oldTitle }: { oldTitle: BadgeTitle }) {
+  const B = text.ending.badge, C = endingTuning.console
+  const [phase, setPhase] = useState(0) // 0 your title · 1 crossed out · 2 the new title typing · 3 the acronym typing · 4 done
+  useEffect(() => {
+    const strike = looksClock.after(C.strikeAfterSeconds * 1000, () => setPhase(1))
+    const write = looksClock.after((C.strikeAfterSeconds + C.strikeSeconds) * 1000, () => setPhase(2))
+    return () => { strike(); write() }
+  }, [C.strikeAfterSeconds, C.strikeSeconds])
+  const name = loadOperatorName()
+  return (
+    <Stack gap="s" className="crt-badge" data-tag="badge"
+      style={{ '--badge-goop': galaxy.rim, '--badge-strike': `${C.strikeSeconds}s` } as CSSProperties}>
+      <span className="crt-badge-label">{B.label}</span>
+      <span>{name ? fill(B.operator, { name }) : B.noName}</span>
+      <span className="crt-badge-old" data-struck={phase >= 1 || undefined} data-tag="badge-old">{text.story.titles[oldTitle]}</span>
+      {phase >= 2 && <span className="crt-badge-new" data-tag="badge-new"><TypedText text={text.story.titles.savior} onTyped={() => setPhase((p) => Math.max(p, 3))} /></span>}
+      {phase >= 3 && <span className="crt-badge-acronym" data-tag="badge-acronym"><TypedText text={B.acronym} onTyped={() => setPhase(4)} /></span>}
+      {phase >= 4 && <Button onClick={endingSteps.next}>{B.next}</Button>}
+    </Stack>
+  )
+}
+
 // drop: how much lower than the mock-up the monitor hangs (F35, art.json monitorDrop) — the screen moves with it
 // look (F40): a story line's monitor look — 'flicker' (it heard that) or 'alarm' (red flashes: the Veteran's capture at
 // 30); its numbers are content/story/moments.json looks, the CSS is lessons.css
-function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | null; drop: number; look?: MonitorLook }) {
+// badge (F65): the monitor shows this instead of a line (the ending's badge)
+function Crt({ hint, lesson, drop, look, badge }: { hint: string; lesson: CrtLine | null; drop: number; look?: MonitorLook; badge?: ReactNode }) {
   const c = a.crt, [x, artY, w, h] = a.words.hint.at, y = artY + drop
   const box = useRef<HTMLDivElement>(null)
   const body = useRef<HTMLDivElement>(null)
@@ -129,9 +163,11 @@ function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | nul
           '--story-glitch': `${looks.glitchSeconds}s`, '--story-glitch-after': `${looks.glitchAfterSeconds}s`, '--story-glitch-colour': looks.glitchColour, '--story-glitch-art': `url("${a.crt.glitch}")`, ...(look === 'alarm' && { '--crt-ink': looks.alarmWords, '--crt-glow': looks.alarmWords }), '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
           '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
         <div ref={body} className="crt-body">
-          <TypedText text={words} className="lesson-words" onTyped={lesson?.onTyped} />
-          {lesson?.gotIt && <Button onClick={lesson.onGotIt}>{text.lessons.gotIt}</Button>}
-          {lesson?.sign && <SignHere onDone={lesson.onGotIt} />}
+          {badge ?? <>
+            <TypedText text={words} className="lesson-words" onTyped={lesson?.onTyped} />
+            {lesson?.gotIt && <Button onClick={lesson.onGotIt}>{text.lessons.gotIt}</Button>}
+            {lesson?.sign && <SignHere onDone={lesson.onGotIt} />}
+          </>}
         </div>
         {/* F45 (45, Management slips): for a beat the screen shows something that isn't a face (art.json crt.glitch) */}
         {look === 'glitch' && <span className="crt-glitch" aria-hidden />}
@@ -178,7 +214,7 @@ function UpgradesButton({ scraps, open, opensAt, onOpen }: NonNullable<Props['up
   )
 }
 
-export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades, rankSelect }: Props) {
+export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades, rankSelect, ending }: Props) {
   const now = rankInfo(progress)
   // (only the XP moves the meter: buying an upgrade changes the progress but must not replay the fill — F34)
   const totalXp = progress.totalXp
@@ -188,7 +224,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const broken = MACHINES.filter((id) => midShift?.machines[id].broken)
   // the monitor always says what to do (Muzzy); XP + rank-ups are on the report and the rank bar
   const valve = midShift?.valve
-  const hint = !midShift ? t.hint : broken.length ? fill(t.hintRepair, { name: t.machineNames[broken[0]] })
+  const hint = ending ? '' : !midShift ? t.hint : broken.length ? fill(t.hintRepair, { name: t.machineNames[broken[0]] })
     : valve ? fill(t.hintValve, { n: valve.stage + 1 }) : t.hintBack
   // F64: the valve panel is up while a stage waits, unless the player shut the hatch (to repair) — each stage opens it again
   const [shutAt, setShutAt] = useState<number | null>(null)
@@ -240,7 +276,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
       bottom={upgrades ? <Stack gap="s"><UpgradesButton {...upgrades} /><TitleArt src={a.title} alt={t.title} size="s" /></Stack>
         : <TitleArt src={a.title} alt={t.title} size="s" />}
       bottomLeft={midShift && short ? <Button variant="secondary" onClick={onPull} disabled={phase !== 'idle'}>{t.backToTank}</Button> : undefined}
-      bottomRight={<Button art={a.settings} onClick={onSettings}>{t.settings}</Button>}>
+      bottomRight={ending ? undefined : <Button art={a.settings} onClick={onSettings}>{t.settings}</Button>}>
       <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end">
         <ArtLayer {...a.body} dim={leaving} />
         <ArtLayer {...a.meter} dim={leaving} />
@@ -264,12 +300,14 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
           <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving}
             onPull={() => { playUiSound(SOUNDS.periscope); onPull() } /* the clunk as it reaches the end */}
             disabled={phase === 'arriving' || (!!midShift && short) /* a phone on its side: Back to the tank does it (the periscope is mostly off screen) */
-              || (!midShift && !!story) /* F35: a story moment is short and not skippable — the shift waits for it */}>
+              || (!midShift && !!story) /* F35: a story moment is short and not skippable — the shift waits for it */
+              || !!ending /* F65: the ending — there's no next shift for this operator */}>
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
         <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]}><LessonTag tag="monitor" /></ArtLayer>
-        <Crt hint={hint} lesson={storyLine ?? lessonLine} drop={drop} look={story?.line.monitor} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
+        <Crt hint={hint} lesson={ending ? null : storyLine ?? lessonLine} drop={drop} look={ending?.step === 'badge' ? 'glitch' : story?.line.monitor}
+          badge={ending?.step === 'badge' ? <EndingBadge oldTitle={ending.oldTitle} /> : undefined} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
       </ArtStage>
     </Screen>
   )

@@ -19,6 +19,8 @@ import { lessonFromUrl, lessonNow, lessonPlay, runner as lessonRunner } from '..
 import { LessonView } from '../game/lessons/LessonView'
 import { StoryView } from '../game/lessons/StoryView'
 import { Whisper } from '../game/Whisper'
+import { ending } from '../game/ending'
+import { EndingConsole, EndingTank } from '../game/EndingView'
 import { storyMoments } from '../game/lessons/storyMoments'
 import { firstBreakdowns } from '../game/lessons/firstBreakdowns'
 import { unlockLessons } from '../game/lessons/unlockLessons'
@@ -182,7 +184,7 @@ export function App() {
   const [hud, setHud] = useState<HudSnapshot | null>(null)
   // (F64: final = the final shift's valve and how it ended — null in any other shift)
   const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward; payslip: Payslip
-    final: FinalShiftState | null; newTitle: BadgeTitle | null } | null>(null)
+    final: FinalShiftState | null; newTitle: BadgeTitle | null; oldTitle: BadgeTitle } | null>(null)
   // F41: the payday on screen (0 = the first) and what the report's button asked for, done after the last payday
   const [payIndex, setPayIndex] = useState(0)
   const afterPay = useRef<(() => void) | null>(null)
@@ -234,7 +236,7 @@ export function App() {
   // the periscope is down: the shift is made (paused) under the console, which slides away to show it
   // (F31: while the first day is due, its shift — at the phase it got to; the console's own step, A1, is done)
   const leaveConsole = useCallback(() => {
-    if (storyMoments.playing()) return // (F35: the periscope waits for a story moment — Console disables it too)
+    if (storyMoments.playing() || ending.playing()) return // (F35: the periscope waits for a story moment — Console disables it too; F65: the ending)
     const lesson = urlLesson.current ?? (dayDue(progressRef.current) ? { id: FIRST_DAY, step: firstDay.startStep() } : null)
     urlLesson.current = null
     start(lesson ?? undefined); setMeterFrom(null); setMode('leaving')
@@ -258,10 +260,13 @@ export function App() {
   // The report closed some other way (Esc, phone Back) after the shift ended: that means "back to the console" too,
   // never a frozen, finished tank
   // (a shift that ended while its player was at the console mid-shift: the console slides away, then the report opens)
+  // (F65: the final shift won → the ending plays instead of the report: src/game/ending.ts)
   const endPending = useRef(false)
+  const endIsEnding = useRef(false)
+  const showEnd = useCallback(() => { if (endIsEnding.current) ending.start(); else screens.push('end') }, [])
   useEffect(() => {
-    if (mode === 'shift' && endPending.current) { endPending.current = false; screens.push('end') }
-  }, [mode])
+    if (mode === 'shift' && endPending.current) { endPending.current = false; showEnd() }
+  }, [mode, showEnd])
   // the Dev Kit's Lessons tab / window.__goops.lesson (F30): a lesson from any step, straight to the tank
   const startLessonNow = useCallback((id: string, step: number | string = 1) => {
     if (!lessonNow(id)) return false
@@ -273,8 +278,14 @@ export function App() {
   }, [start])
   useEffect(() => { session.startLesson = startLessonNow; return () => { session.startLesson = null } }, [startLessonNow])
   useEffect(() => {
-    if (mode === 'shift' && result && !screens.current.includes('end') && !screens.current.includes('payday')) { lessonPlay.screen('reportClosed'); toConsole() } // (Esc / Back finish day one too)
+    if (mode === 'shift' && result && !screens.current.includes('end') && !screens.current.includes('payday') && !ending.playing()) { lessonPlay.screen('reportClosed'); toConsole() } // (Esc / Back finish day one too)
   }, [mode, result, open, toConsole])
+  // F65 the ending: once its tank part is over, the console slides up over the tank for the rest
+  const endingView = useSyncExternalStore(ending.subscribe, ending.view)
+  const endingAt = endingView?.step.at ?? null
+  useEffect(() => { if (mode === 'shift' && endingAt === 'console') toConsole() }, [mode, endingAt, toConsole])
+  // (a page opened after the win, before the new career began: straight to the end-game screen)
+  useEffect(() => { if (progressRef.current.badge === 'savior' && !ending.playing()) ending.start('endScreen') }, [])
   // (the last shift's engine stays in state on the console, unmounted; the next pull replaces it)
   const consoleSlid = useCallback(() => setMode((m) => (m === 'leaving' || m === 'peekOut' ? 'shift' : m === 'arriving' ? 'console' : m === 'peekIn' ? 'peek' : m)), [])
   // mid-shift: to the console and back (swipe up / W / ↑ in the shift; the periscope or Back to the tank on the console)
@@ -331,6 +342,7 @@ export function App() {
     const reward = (dayOne ? rewardFirstDay : rewardShift)(progressRef.current, e.state.score)
     // F65 the final shift's end titles: lost → One Of Us until a win; won → The Savior of Goopkind, and one more career done
     const fin = e.state.final, before = reward.progress.badge
+    const oldTitle = badgeTitle(reward.before.rank, before, loadCareers()) // (the one the goop crosses out in the ending)
     if (fin?.outcome) reward.progress = { ...reward.progress, badge: badgeAfterFinal(before, fin.outcome === 'won') }
     const newTitle = reward.progress.badge && reward.progress.badge !== before ? reward.progress.badge : null
     progressRef.current = reward.progress
@@ -348,15 +360,16 @@ export function App() {
     if (payslip.fines.some((l) => l.key === 'fines.association')) tipsMemory().markSeen(ASSOCIATION_FINED)
     setPayIndex(0); afterPay.current = null
     setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
-      cause: e.state.ruptureReason ?? 'integrity', reward, payslip, final: e.state.final ? { ...e.state.final } : null, newTitle })
+      cause: e.state.ruptureReason ?? 'integrity', reward, payslip, final: e.state.final ? { ...e.state.final } : null, newTitle, oldTitle })
     toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
-    if (modeRef.current === 'shift') screens.push('end')
+    endIsEnding.current = fin?.outcome === 'won'
+    if (modeRef.current === 'shift') showEnd()
     else { // at the console mid-shift: back to the tank first, then the report
       endPending.current = true
       while (screens.current.length) screens.pop()
       setMode((m) => (m === 'peekIn' || m === 'peek' ? 'peekOut' : m))
     }
-  }, [])
+  }, [showEnd])
 
   const screenMap = useMemo(() => ({
     settings: SettingsScreen,
@@ -472,10 +485,11 @@ export function App() {
   useEffect(() => {
     if (mode !== 'console') return
     rulesClock.scale = 1
+    if (endingAt) return // (F65: the ending plays on the console — no story moment or lesson over it)
     if (storyMoments.atConsole(rank)) return
     if (dayDue(progress)) firstDay.atConsole()
     else unlockLessons.atConsole(rank)
-  }, [mode, rank, progress, tips, storyUp])
+  }, [mode, rank, progress, tips, storyUp, endingAt])
   // (the console going away mid-moment — a Dev Kit snapshot, a lesson started from the Dev Kit: it plays again next time)
   useEffect(() => { if (mode !== 'console') storyMoments.stop() }, [mode])
 
@@ -506,7 +520,7 @@ export function App() {
   // F70: RANK SELECT — a Dev Kit build, between shifts. Lessons and story moments too (Muzzy 2026-10-24: "I should be
   // able to click the rank selector even during tutorial"): the lesson's dim lets taps through to it (LessonView), and
   // its list hides the lesson while it's open (overMenu)
-  const showRankSelect = rankSelectOn && !peeking
+  const showRankSelect = rankSelectOn && !peeking && !endingAt
   // at the console mid-shift the tank runs on under it, a little quieter (content/audio.json snapshots.console)
   useAudioSnapshot(getAudio(), peeking ? 'console' : null)
   // how fast the shift runs: full in the tank, slowed at the console mid-shift, stopped under any menu or a slide.
@@ -613,7 +627,7 @@ export function App() {
       {mode === 'shift' && (
         <ScreenStack overlay screens={screenMap}>
           {hud && (
-            <Hud words={{ pause: text.hud.pause }} onPause={() => { if (lessonPlay.pauseOn()) screens.push('pause') }} oneRow
+            <Hud words={{ pause: text.hud.pause }} onPause={() => { if (lessonPlay.pauseOn() && !ending.playing()) screens.push('pause') }} oneRow
               vitals={<Score value={hud.score} compact />} status={short ? undefined : status} currency={abilitiesOnTop && abilityButtons.length ? abilityButtons : undefined}
               banner={hud.holdProgress !== null ? <Bar label={text.hud.swap} value={Math.round(hud.holdProgress * 100)} variant="accent" width="s" /> : undefined}
               dock={panel} dockSide={short ? 'right' : 'bottom'} dockTight />
@@ -628,8 +642,8 @@ export function App() {
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
             midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair, fewerRepairSteps: upgrades.fewerRepairSteps,
               valve: hud.final?.waiting ? { stage: hud.final.stage, stages: hud.final.stages, onOpen: openValve } : undefined } : undefined}
-            upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }}
-            rankSelect={showRankSelect} />
+            upgrades={peeking || endingAt ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }}
+            rankSelect={showRankSelect} ending={endingView?.step.at === 'console' ? { step: endingView.step.id, oldTitle: result?.oldTitle ?? 'deputy' } : undefined} />
         </ScreenStack>
         </UpgradeShopContext.Provider>
       )}
@@ -640,6 +654,9 @@ export function App() {
       {/* (F31: and over the end report — day one's last step points at its "Back to the console") */}
       {(mode === 'shift' || peeking || mode === 'console') && <LessonView overMenu={menuOpen} atConsole={mode !== 'shift'} />}
       {mode === 'console' && !menuOpen && <StoryView />}
+      {/* F65 the ending: the goop pouring out and speaking in the tank, then its console part */}
+      {mode === 'shift' && endingAt === 'tank' && <EndingTank />}
+      {mode === 'console' && <EndingConsole />}
       {/* F35: the goop's first whispers in a real shift (not a lesson's training shift) */}
       {engine && lessonPlay.realShift() && (mode === 'shift' || peeking) && !result && !menuOpen && <Whisper engine={engine} onMonitor={onMonitor} />}
       {sideways && <UprightScreen />}

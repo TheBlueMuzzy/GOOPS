@@ -283,7 +283,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       for (const e of events) if (e.type === 'vetSay' && s.vet) say(text.finalShift.vet[e.line], finalShiftTuning.intro.lineSec)
       // …and when a valve stage has its seals: "valve's open on your console — go!" (valve.json goSec)
       for (const e of events) if (e.type === 'valveReady' && s.vet) say(text.finalShift.vet.valveGo, valveTuning.goSec)
-      if (sayT >= 0 && (sayT += gooDt) >= sayFor) { sayT = -1; setVetSays(null) }
+      // (F65: the shift over, his bubble goes — the ending's goop talks next, not his last "go!")
+      if (sayT >= 0 && (s.status !== 'playing' || (sayT += gooDt) >= sayFor)) { sayT = -1; setVetSays(null) }
       beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
