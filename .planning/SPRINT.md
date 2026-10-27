@@ -1,0 +1,19 @@
+# Sprint 23 — the ending: saving the goop, and a new career
+Started 2026-10-27 · Milestone M5 Beta · Features: F65
+What changes for Muzzy: opening the valve the third time plays the real ending — the tank opens and the goop pours out, the goop thanks you through its own mouths, the Veteran's last clear line, the last payday, the badge rewritten with the real acronym, you're carried out to an empty console — then the end-game screen and a new career at rank 0 with a gold-trimmed console. Losing the final shift leaves "One Of Us" on your badge until you win. Stays the same: ranks 0–50 and the final shift itself.
+
+## F65 🎮 The ending + the new career
+Done when: winning the final shift (third valve stage) plays design/story.md "The ending — save the goop" steps 1–7 in order (the tank opens + the goop pours out filling the periscope view · the goop speaks through its mouths, thank you + its names · the speaker's last clear line, then silent for good · the last payday "Remaining passage debt: 0 cr — paid by: 1,312 former employees" · the monitor glitches, the goop crosses out your title and writes The Savior of Goopkind + GRADUAL ONBOARDING OF PERMANENT STAFF · you leave: the goop carries you out, the last screen is the empty console · the end-game screen from art/EndGameScreen.svg) then a new career: rank 0 again, the badge Former Employee, a gold-trimmed console + periscope (look only — same game, Muzzy's pick a), the first day skipped but the rank-0 sign-in kept so the goop learns the new name (Muzzy: yes); losing the final shift → One Of Us on the badge until you win; titles saved on the device (old saves load — an upgrade step); every word in en.json, every number in content/; works at every portrait size (390x844, 360x780, ~1100 wide, 1440x900, 1920x1080 — portrait only).
+why: the whole game earns this — the goop you zapped for 50 ranks were people, and the ending lets you save them; it should feel like relief and a quiet goodbye, not a victory fanfare.
+Check: unit tests (titles + save upgrade, the ending's order, the new career's start) · e2e/ending.mjs (win → every ending step → end-game screen → new career; lose → One Of Us; every portrait size; a page-error watch) with shots looked at · check:full
+- [ ] 🤖 1. Titles that stick: lose the final shift → One Of Us until you win; win → The Savior of Goopkind; the next career's rank 0 → Former Employee; saved on the device with an upgrade step so old saves load — src/progress/save.ts
+- [ ] 🤖 2. The ending in the tank: the tank opens and the goop pours out (the periscope view fills), the goop speaks out loud through its mouths (thank you + its names) — src/game/lessons/StoryView.tsx
+- [ ] 🤖 3. The ending at the console: the speaker's last clear line then silence, the last payday line, the monitor glitch + the badge rewritten (win title + the real acronym), you leave → the empty console — src/ui/Console.tsx
+- [ ] 🤖 4. The end-game screen from art/EndGameScreen.svg — src/ui/App.tsx
+- [ ] 🤖 5. The new career: rank 0 again, Former Employee, gold-trimmed console + periscope (look only, numbers in content/), first day skipped, the sign-in kept — src/progress/progression.ts
+- [ ] 🤖 6. e2e: win → the whole ending → end-game screen → new career; lose → One Of Us; every portrait size; a long real-keys run with page errors watched — e2e/ending.mjs
+- [ ] 🤖 7. Update design/story.md (ending built), GDD story section, TDD (data files + decisions; next free D28) — .planning/design/story.md
+
+## Notes
+- Muzzy 2026-10-27: plan OK, "ok go auto mode" (overnight-style: one helper for the feature; this chat plans, reviews, runs check:full, saves; taste calls → Ask Muzzy lines with a default).
+- Muzzy 2026-10-27: the new career's upgrade = (a) a look only: gold-trimmed console + periscope, Former Employee, same game from rank 0 · skip the first day's tutorial but keep the rank-0 sign-in (yes).
