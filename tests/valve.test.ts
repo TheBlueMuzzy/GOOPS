@@ -100,6 +100,8 @@ describe('a new valve, and solving it', () => {
     expect(held).toBe(0)
     for (let i = 0; i < 61; i++) held = holdStep(held, true, 0.01)
     expect(holdDone(held, cfg)).toBe(true)
-    expect(holdDone(0, { ...cfg, hold: 0 })).toBe(true)
+    // hold 0 = it opens the moment the needle touches the green — never before it does
+    expect(holdDone(0, { ...cfg, hold: 0 })).toBe(false)
+    expect(holdDone(holdStep(0, true, 0.01), { ...cfg, hold: 0 })).toBe(true)
   })
 })

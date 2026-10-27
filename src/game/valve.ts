@@ -89,8 +89,9 @@ export function stepNeedle(needle: { pos: number; vel: number }, want: number, s
 /** Time held in the green after `dt` more seconds: it adds up while the needle is in the green and no wheel is held,
  *  and starts again from 0 the moment it isn't. */
 export const holdStep = (held: number, counts: boolean, dt: number) => (counts ? held + dt : 0)
-/** Held long enough: the stage opens. */
-export const holdDone = (held: number, cfg: ValveConfig) => held >= cfg.hold
+/** Held long enough: the stage opens. Never at 0 held — with `hold` 0 the needle must still touch the green (review:
+ *  a Dev Kit hold of 0 opened the stage on the first frame, needle anywhere). */
+export const holdDone = (held: number, cfg: ValveConfig) => held > 0 && held >= cfg.hold
 
 /** A seeded 0..1 random (mulberry32) — the same valve every run under scripted checks and in tests. */
 export function seededRand(seed: number): Rand {
