@@ -13,7 +13,8 @@
     "stars": "How many stars (0 = none, 1 = lots).",
     "starSize": "How big the stars are (1 = normal).",
     "starColor": "The stars' colour.",
-    "twinkle": "How fast the stars twinkle (0 = steady).",
+    "twinkle": "How fast the stars twinkle (0 = steady). Muzzy 2026-10-26: \"the stars should twinkle\" — 1.4 was a slow 2–6 s pulse; 4 flickers.",
+    "twinkleDepth": "How far a star dims when it twinkles (0 = steady glow, 1 = it blinks right out).",
     "crackStars": "Black cracks on the tank wall: how many stars twinkle along each one.",
     "crackCore": "Black cracks: the colour of the crack's dark middle (its glow is the rim colour)."
   },
@@ -25,7 +26,8 @@
     "halo": [0, 1, 0.01],
     "stars": [0, 1, 0.01],
     "starSize": [0.3, 3, 0.05],
-    "twinkle": [0, 5, 0.05],
+    "twinkle": [0, 12, 0.1],
+    "twinkleDepth": [0, 1, 0.01],
     "crackStars": [0, 8, 1]
   },
   "body": "#0a0820",
@@ -40,7 +42,8 @@
   "stars": 0.55,
   "starSize": 1,
   "starColor": "#f4f1ff",
-  "twinkle": 1.4,
+  "twinkle": 4,
+  "twinkleDepth": 0.85,
   "crackStars": 3,
   "crackCore": "#0a0820"
 }

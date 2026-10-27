@@ -20,7 +20,7 @@ const num = (v: unknown, fallback: number) => (typeof v === 'number' && Number.i
 // galaxyExtras(p, rim) = the stars + the edge glow to add (rim = 1 at the very edge .. 0 inside);
 // galaxyHalo(w) = the soft glow just outside a black clump (w = the wide-blurred black field here).
 export const GALAXY_GLSL = `
-uniform vec3 uGBody, uGNeb1, uGNeb2, uGRim, uGStar; uniform float uGNeb, uGNebSize, uGDrift, uGRimGlow, uGHalo, uGStars, uGStarSize, uGTwinkle;
+uniform vec3 uGBody, uGNeb1, uGNeb2, uGRim, uGStar; uniform float uGNeb, uGNebSize, uGDrift, uGRimGlow, uGHalo, uGStars, uGStarSize, uGTwinkle, uGTwinkleDepth;
 uint gHash(uvec2 v){ uint h = v.x * 1664525u + v.y * 1013904223u; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
 float gH01(ivec2 g, uint s){ return float(gHash(uvec2(g + 8192) + uvec2(s * 7919u, s * 104729u)) & 0xffffffu) / 16777216.0; }
 float gNoise(vec2 q){
@@ -43,7 +43,9 @@ vec3 gStars(vec2 p, float sc, float chance, float k, float bright, uint seed){
   float core = exp(-dot(d, d) * k / (s * s));
   float glint = max(0.0, 1.0 - abs(d.x) * 14.0 / s) * max(0.0, 1.0 - abs(d.y) * 2.2 / s)
               + max(0.0, 1.0 - abs(d.y) * 14.0 / s) * max(0.0, 1.0 - abs(d.x) * 2.2 / s);
-  float tw = 0.3 + 0.7 * pow(0.5 + 0.5 * sin(uTime * uGTwinkle * (0.7 + 1.6 * gH01(g, seed + 3u)) + 6.2832 * gH01(g, seed + 4u)), 3.0);
+  // twinkle: two waves at odd speeds (uneven, like a real star's flicker); uGTwinkleDepth = how far it dims (0 = steady)
+  float a = uTime * uGTwinkle * (0.7 + 1.6 * gH01(g, seed + 3u)) + 6.2832 * gH01(g, seed + 4u);
+  float tw = 1.0 - clamp(uGTwinkleDepth, 0.0, 1.0) * (1.0 - pow(0.5 + 0.5 * (0.6 * sin(a) + 0.4 * sin(a * 2.37 + 1.9)), 2.0));
   return uGStar * (core + glint * 0.35 * bright) * tw * bright;
 }
 vec3 galaxyExtras(vec2 p, float rim){
@@ -56,7 +58,7 @@ vec4 galaxyHalo(float w){
   return vec4(uGRim * g, g * 0.6);
 }`
 
-export const GALAXY_UNIFORMS = ['uGBody', 'uGNeb1', 'uGNeb2', 'uGRim', 'uGStar', 'uGNeb', 'uGNebSize', 'uGDrift', 'uGRimGlow', 'uGHalo', 'uGStars', 'uGStarSize', 'uGTwinkle']
+export const GALAXY_UNIFORMS = ['uGBody', 'uGNeb1', 'uGNeb2', 'uGRim', 'uGStar', 'uGNeb', 'uGNebSize', 'uGDrift', 'uGRimGlow', 'uGHalo', 'uGStars', 'uGStarSize', 'uGTwinkle', 'uGTwinkleDepth']
 
 const rgb = new Float32Array(3) // (one buffer, refilled: no garbage per frame)
 function setRgb(gl: WebGL2RenderingContext, at: WebGLUniformLocation | null, hex: unknown) {
@@ -79,7 +81,8 @@ export function setGalaxy(gl: WebGL2RenderingContext, u: Record<string, WebGLUni
   gl.uniform1f(u.uGHalo, num(look.halo, 0.45))
   gl.uniform1f(u.uGStars, num(look.stars, 0.55))
   gl.uniform1f(u.uGStarSize, num(look.starSize, 1))
-  gl.uniform1f(u.uGTwinkle, num(look.twinkle, 1.4))
+  gl.uniform1f(u.uGTwinkle, num(look.twinkle, 4))
+  gl.uniform1f(u.uGTwinkleDepth, num(look.twinkleDepth, 0.85))
 }
 
 // ---------------------------------------------------------------- the same look in 2D (tank canvas, next window)
@@ -90,6 +93,7 @@ export function galaxyColours(): { body: string; rim: string; star: string; core
 }
 
 /** How many stars twinkle along a black crack, and how fast. */
-export function galaxyCrackStars(): { count: number; twinkle: number; size: number } {
-  return { count: Math.max(0, Math.round(num(look.crackStars, 3))), twinkle: num(look.twinkle, 1.4), size: num(look.starSize, 1) }
+export function galaxyCrackStars(): { count: number; twinkle: number; depth: number; size: number } {
+  return { count: Math.max(0, Math.round(num(look.crackStars, 3))), twinkle: num(look.twinkle, 4),
+    depth: Math.min(1, Math.max(0, num(look.twinkleDepth, 0.85))), size: num(look.starSize, 1) }
 }

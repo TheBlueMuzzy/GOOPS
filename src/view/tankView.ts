@@ -309,7 +309,8 @@ function drawGalaxyCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp
   ctx.fillStyle = g.star
   for (let k = 0; k < stars.count; k++) {
     const [px, py] = shape.pts[1 + ((k * 2 + id) % (shape.pts.length - 2))] // (on the crack's inner points, spread out)
-    const tw = still ? 0.8 : 0.3 + 0.7 * Math.max(0, Math.sin(t * stars.twinkle * (1 + 0.37 * k) + id * 1.7 + k * 2.1)) ** 2
+    const a = t * stars.twinkle * (1 + 0.37 * k) + id * 1.7 + k * 2.1 // (the goo's star twinkle: two uneven waves, galaxyLook.ts)
+    const tw = still ? 0.8 : 1 - stars.depth * (1 - (0.5 + 0.5 * (0.6 * Math.sin(a) + 0.4 * Math.sin(a * 2.37 + 1.9))) ** 2)
     const r = Math.max(0.6, cp * 0.05 * stars.size) * (0.6 + 0.6 * tw)
     ctx.globalAlpha = tw
     ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill()
