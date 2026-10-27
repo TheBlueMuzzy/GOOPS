@@ -7,6 +7,7 @@ import { crackCells, whiteGoopAt, type MachineId, type ShiftEngine, type ShiftEv
 import { createWhiteGoopView } from '../view/whiteGoopView'
 import whiteGoopLook from '../../content/tuning/whiteGoop.json'
 import finalShiftTuning from '../../content/tuning/finalShift.json'
+import valveTuning from '../../content/tuning/valve.json'
 import eyesLook from '../../content/tuning/eyes.json'
 import talk from '../../content/tuning/talk.json'
 import text from '../../content/text/en.json'
@@ -63,6 +64,9 @@ export interface HudSnapshot {
   // F34 / F42: the equipped actives, in equip order (none to three): each one's charge 0..1 and whether it's full — the
   // HUD's charge buttons, one each
   abilities: { id: string; charge: number; ready: boolean }[]
+  // F64 the final shift's release valve (null in any other shift): stages opened, seals toward the next, and whether
+  // the next stage waits at the console (the top bar shows it instead of the crack count; the console opens the hatch)
+  final: { stage: number; stages: number; seals: number; need: number; waiting: boolean } | null
 }
 
 interface Props {
@@ -277,6 +281,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       }
       // F64 his lines as he drops into the final shift: the same bubble, finalShift.json intro.lineSec each
       for (const e of events) if (e.type === 'vetSay' && s.vet) say(text.finalShift.vet[e.line], finalShiftTuning.intro.lineSec)
+      // …and when a valve stage has its seals: "valve's open on your console — go!" (valve.json goSec)
+      for (const e of events) if (e.type === 'valveReady' && s.vet) say(text.finalShift.vet.valveGo, valveTuning.goSec)
       if (sayT >= 0 && (sayT += gooDt) >= sayFor) { sayT = -1; setVetSays(null) }
       beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
@@ -295,7 +301,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
           integrity: s.integrity, phase: s.phase, holdProgress, machines: machinesNow(s.machines), breaks: { ...breaks },
           next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0], colors: s.next } : null, // (F39: colors = per cell)
-          abilities: (s.abilities ?? []).map((a) => ({ id: a.id, charge: a.charge, ready: a.ready })) })
+          abilities: (s.abilities ?? []).map((a) => ({ id: a.id, charge: a.charge, ready: a.ready })),
+          final: s.final ? { stage: s.final.stage, stages: s.final.stages, seals: s.final.seals, need: s.final.need, waiting: s.final.waiting } : null })
         still = reduceMotion()
         const box = readoutEl.current?.querySelector('.kit-pinned')?.getBoundingClientRect()
         if (box?.width) { readoutSize.w = box.width; readoutSize.h = box.height }
@@ -360,7 +367,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: softDrop,
-      openValve: () => engine.openValveStage(), // F64: as if the valve panel's stage were done (the panel waits for Muzzy's design)
+      openValve: () => engine.openValveStage(), // F64: as if the valve panel's stage were done (src/ui/ValvePanel.tsx)
       bubbles: { count: () => bubbles.count(), from: (crackId: number) => bubbles.from(crackId) }, // F36 e2e/cracks-look.mjs
       zapBeam: () => beam.shots(), // F67 e2e/zap.mjs: the beams on screen (from, to: stage px; t: seconds)
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
@@ -420,7 +427,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       {/* F67 the zap's beam + laser point: above the visor (a laser from the viewer — it lands exactly on the finger) */}
       <canvas className="stage-layer stage-zap" ref={zapCanvas} />
       <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
-      {vetSays && <TalkingBubble key={vetSays.n} target={{ x: vetSays.x, y: vetSays.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
+      {/* (not over the console mid-shift or a menu: the bubble sits above everything — F64 found it over the valve) */}
+      {vetSays && inputOn && <TalkingBubble key={vetSays.n} target={{ x: vetSays.x, y: vetSays.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
         text={vetSays.words} />}
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>

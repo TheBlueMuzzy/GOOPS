@@ -14,6 +14,7 @@ import { cleanName, loadOperatorName, nameMaxLength, saveOperatorName } from '..
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type Progress } from '../progress/progression'
 import { ControlsPanel, LaserPanel, LessonTag, VisorPanel } from './RepairPanels'
+import { ValvePanel } from './ValvePanel'
 import { playUiSound } from '../game/sound'
 import { SOUNDS } from '../game/shiftSounds'
 import { art } from './art'
@@ -36,7 +37,10 @@ type Props = {
   onSettings(): void // the gear (mid-shift: the pause menu)
   // mid-shift only: the machines now, how many times each has broken (a new puzzle each time), and a repair solved.
   // fewerRepairSteps: upgrades that shorten the repairs (resolveUpgrades; none yet, so left out = 0)
-  midShift?: { machines: ConsoleMachines; breaks: Record<MachineId, number>; onRepair(machine: MachineId): void; fewerRepairSteps?: FewerRepairSteps }
+  midShift?: { machines: ConsoleMachines; breaks: Record<MachineId, number>; onRepair(machine: MachineId): void; fewerRepairSteps?: FewerRepairSteps
+    // F64 the final shift: a release-valve stage waiting at the console (stage 0 = the first) — the hatch is open and
+    // the valve panel up; onOpen = the needle was held in the green
+    valve?: { stage: number; stages: number; onOpen(): void } }
   // F59: the Upgrades button (between shifts only): the scraps in hand, and whether upgrading is unlocked yet (before
   // its rank the button is greyed out, showing the scraps saved so far); onOpen opens the Upgrades screen.
   upgrades?: { scraps: number; open: boolean; opensAt: number; onOpen(): void }
@@ -138,11 +142,19 @@ function Crt({ hint, lesson, drop, look }: { hint: string; lesson: CrtLine | nul
 
 // F45 THE HATCH under the panels (ranks 46, 47: the release valve is named): from art.json hatch.fromRank it's on the
 // console's front; while a story line says rattle it rattles (lessons.css, numbers moments.json looks.rattle*) — the
-// key restarts it for each line. Looks clock: the Dev Kit's full pause holds it. It opens in F64 (The final shift).
-function Hatch({ rattle, dim }: { rattle: string | null; dim: boolean }) {
+// key restarts it for each line. Looks clock: the Dev Kit's full pause holds it.
+// F64 (the final shift): while a valve stage waits it's OPEN (art.json console.valve.openFile) and a button that shuts
+// and opens the valve panel over the repair panels (shut it to repair a machine, tap it again for the valve).
+function Hatch({ rattle, dim, valve }: { rattle: string | null; dim: boolean; valve?: { up: boolean; onToggle(): void } }) {
   const [paused, setPaused] = useState(() => clockPause() === 'full')
   useEffect(() => onClockPause((mode) => setPaused(mode === 'full')), [])
   const looks = storyFile.looks
+  if (valve) return (
+    <ArtLayer at={a.hatch.at} dim={dim}>
+      <Button art={{ up: a.valve.hatchOpen, down: a.valve.hatchOpen, label: 'hidden', size: 'fill' }} onClick={valve.onToggle}
+        data-tag="hatch" aria-pressed={valve.up}>{valve.up ? t.valve.hatchClose : t.valve.hatchOpen}</Button>
+    </ArtLayer>
+  )
   return (
     <ArtLayer at={a.hatch.at} dim={dim}>
       <div key={rattle ?? 'still'} className="console-hatch" data-tag="hatch" data-knobs="hatch" data-rattle={rattle ? '' : undefined}
@@ -175,7 +187,12 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const leaving = phase === 'leaving'
   const broken = MACHINES.filter((id) => midShift?.machines[id].broken)
   // the monitor always says what to do (Muzzy); XP + rank-ups are on the report and the rank bar
-  const hint = !midShift ? t.hint : broken.length ? fill(t.hintRepair, { name: t.machineNames[broken[0]] }) : t.hintBack
+  const valve = midShift?.valve
+  const hint = !midShift ? t.hint : broken.length ? fill(t.hintRepair, { name: t.machineNames[broken[0]] })
+    : valve ? fill(t.hintValve, { n: valve.stage + 1 }) : t.hintBack
+  // F64: the valve panel is up while a stage waits, unless the player shut the hatch (to repair) — each stage opens it again
+  const [shutAt, setShutAt] = useState<number | null>(null)
+  const valveUp = !!valve && shutAt !== valve.stage
   const live = (id: MachineId) => !!midShift?.machines[id].broken && !leaving
   const repair = (id: MachineId) => () => midShift?.onRepair(id)
   const key = (id: MachineId) => `${id}-${midShift?.breaks[id] ?? 0}`
@@ -235,7 +252,9 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} outlined={outlined} />
         <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
         <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
-        {now.rank >= a.hatch.fromRank && <Hatch dim={leaving} rattle={story?.line.rattle ? `${story.rank}:${story.line.words}` : null} />}
+        {valveUp && <ValvePanel key={valve.stage} stage={valve.stage} stages={valve.stages} live={!leaving} onOpen={valve.onOpen} />}
+        {(now.rank >= a.hatch.fromRank || valve) && <Hatch dim={leaving} rattle={story?.line.rattle ? `${story.rank}:${story.line.words}` : null}
+          valve={valve && { up: valveUp, onToggle: () => setShutAt(valveUp ? valve.stage : null) }} />}
         <ArtLayer data-version-spot="main-menu" {...a.words.version} tone="muted" align="start" dim={leaving}>{versionLabel}</ArtLayer>
         {rankSelect && <ArtLayer {...a.words.rankSelect} align="center" dim={leaving}><RankSelectButton /></ArtLayer>}
         <ArtLayer {...(rankSelect ? a.words.creditBeside : a.words.credit)} tone="muted" align="end" dim={leaving}>{rankSelect ? t.creditShort : t.credit}</ArtLayer>

@@ -40,3 +40,28 @@ html, body, #root { margin: 0; height: 100%; }
 /* Upgrades: Respec flashes the scraps number green, then it fades to its normal colour (Muzzy, 2026-10-23, instead of a toast) */
 .upgrades-scraps-n[data-gained] { animation: upgrades-scraps-gain calc(var(--motion-normal) * 4) var(--ease); }
 @keyframes upgrades-scraps-gain { 0%, 40% { color: var(--success); } }
+
+/* F64 THE RELEASE VALVE PANEL (src/ui/ValvePanel.tsx): one SVG over the repair panels, in the style's colours. Its
+   backing catches every tap (nothing under it answers); the wheels' grab circles are the controls. */
+.valve { display: block; inline-size: 100%; block-size: 100%; user-select: none; -webkit-user-select: none; }
+.valve-bg { fill: var(--surface); stroke: var(--border); stroke-width: 3; pointer-events: auto; }
+.valve text { font-family: var(--font-body); font-weight: 600; text-transform: var(--text-case); }
+.valve-title { fill: var(--on-surface); }
+.valve[data-opened] .valve-title { fill: var(--success); }
+.valve-name { fill: var(--muted); }
+.valve-red { fill: none; stroke: var(--danger); opacity: 0.55; }
+.valve-green { fill: none; stroke: var(--success); }
+.valve[data-opened] .valve-green { filter: brightness(1.4); }
+.valve-hold { fill: none; stroke: var(--success); stroke-linecap: round; }
+.valve-needle { stroke: var(--on-surface); stroke-linecap: round; }
+.valve-hub { fill: var(--muted); }
+.valve-stage { fill: var(--border); }
+.valve-stage[data-state="now"] { fill: var(--accent); }
+.valve-stage[data-state="open"] { fill: var(--success); }
+.valve-tick { stroke: var(--border); }
+.valve-rim, .valve-spoke { fill: none; stroke: var(--muted); }
+.valve-wheel[data-dragging] :is(.valve-rim, .valve-spoke) { stroke: var(--primary); }
+.valve-boss { fill: var(--border); }
+.valve-handle { fill: var(--accent); }
+.valve-grab { fill: transparent; pointer-events: auto; touch-action: none; cursor: grab; outline: none; }
+.valve-grab:active { cursor: grabbing; }

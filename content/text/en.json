@@ -27,6 +27,21 @@
     "settings": "Settings",
     "hintBack": "Pull the periscope to go back",
     "hintRepair": "Repair the {name}!",
+    "hintValve": "Release valve, stage {n}: turn the wheels till the needle sits in the green",
+    "valve": {
+      "_about": "F64 the release valve panel (the final shift): it rises out of the open hatch while a valve stage waits (src/ui/ValvePanel.tsx). The wheels' names say their keys.",
+      "label": "Release valve",
+      "title": "RELEASE VALVE · STAGE {n} / {total}",
+      "opened": "STAGE {n} OPEN!",
+      "coarse": "COARSE · A D",
+      "fine": "FINE · ← →",
+      "left": "LEFT · A D",
+      "right": "RIGHT · ← →",
+      "leftWheel": "Left valve wheel (A / D)",
+      "rightWheel": "Right valve wheel (← / →)",
+      "hatchOpen": "Open the valve hatch",
+      "hatchClose": "Close the valve hatch"
+    },
     "backToTank": "Back to the tank",
     "upgrades": "Upgrades",
     "upgradesLocked": "Upgrades: {n} scraps saved. Upgrading opens at rank {rank}.",
@@ -177,6 +192,9 @@
     "cracks": "CRACKS {n} / {total}",
     "cracksDone": "QUOTA MET · {n}",
     "cracksShort": "{n} / {total}",
+    "valve": "VALVE {n} · {seals} / {need}",
+    "valveGo": "VALVE {n} · GO TO THE CONSOLE",
+    "valveShort": "{seals} / {need}",
     "pause": "Console",
     "swap": "Swapping piece",
     "next": "Next piece",
@@ -227,6 +245,18 @@
     "wonOverflow": "Quota met. Then the tank overfilled and burst.",
     "lostCracks": "Too many open cracks broke the tank before you met the quota.",
     "lostOverflow": "The tank overfilled and burst before you met the quota.",
+    "final": {
+      "_about": "F64 the final shift's report: the win (a placeholder until F65 — The ending) and which of the three losses happened (design/story.md 'You lose if').",
+      "wonTitle": "THE VALVE OPENS",
+      "won": "The third stage opens and the goop pours out of every tank on the station. (The ending is still being built.)",
+      "lostTitle": "Final shift failed",
+      "vetGone": "The Veteran is used up. He gave the last of himself sealing cracks for you.",
+      "overflow": "The goop went over the top of the tank.",
+      "integrity": "The tank's integrity hit 0. Management got its explosion.",
+      "tryAgain": "You can try the final shift again.",
+      "again": "Try again",
+      "stages": "Valve stages opened"
+    },
     "xp": "XP",
     "xpValue": "+{xp}",
     "xpRankUp": "+{xp} · Rank up! {rank}",
@@ -393,7 +423,8 @@
       "r48a": "…when you open it…",
       "r48b": "…we go… home…",
       "r49": "Last stretch, kid. ── they know you know. ── next shift they come at you with everything.",
-      "noVoices": "THERE ARE NO VOICES IN THE TANK. HEARING VOICES IS A FINEABLE OFFENCE."
+      "noVoices": "THERE ARE NO VOICES IN THE TANK. HEARING VOICES IS A FINEABLE OFFENCE.",
+      "r50": "FINAL PERFORMANCE REVIEW IN PROGRESS. PRESSURE INCREASED 400%."
     },
     "titles": {
       "intern": "Probationary Intern (Unpaid)",
@@ -432,7 +463,8 @@
       "hi": "oh! hi!",
       "itsMe": "it's me!",
       "oof": "…oof.",
-      "help": "glad you're not goop yet. I'll help how I can."
+      "help": "glad you're not goop yet. I'll help how I can.",
+      "valveGo": "valve's open on your console — go!"
     }
   },
   "lessons": {

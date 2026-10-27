@@ -286,6 +286,9 @@ export function App() {
     setMode('console')
   }, [])
   const repair = useCallback((machine: MachineId) => engineRef.current?.act({ type: 'repair', machine }), [])
+  // F64 the final shift: the valve panel's needle held in the green → this stage opens, and back to the tank (the last
+  // stage ends the shift: onEnd takes it from there)
+  const openValve = useCallback(() => { engineRef.current?.openValveStage(); peekOut() }, [peekOut])
   // The Dev Kit's Snapshots (src/devkit-game/goopsAdapter.ts): a saved moment → a new engine carrying on from it, on
   // the tank straight away (menus closed); null → back to the console. Junk throws (restoreShift says why).
   const restoreSnapshot = useCallback((snapshot: ShiftSnapshot | null) => {
@@ -590,7 +593,8 @@ export function App() {
           <Console progress={progress} shownFrom={peeking ? null : meterFrom} onSlideEnd={consoleSlid}
             phase={mode === 'console' || mode === 'peek' ? 'idle' : mode === 'leaving' || mode === 'peekOut' ? 'leaving' : 'arriving'}
             onPull={peeking ? peekOut : leaveConsole} onSettings={() => screens.push(peeking ? 'pause' : 'settings')}
-            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair, fewerRepairSteps: upgrades.fewerRepairSteps } : undefined}
+            midShift={peeking && hud ? { machines: hud.machines, breaks: hud.breaks, onRepair: repair, fewerRepairSteps: upgrades.fewerRepairSteps,
+              valve: hud.final?.waiting ? { stage: hud.final.stage, stages: hud.final.stages, onOpen: openValve } : undefined } : undefined}
             upgrades={peeking ? undefined : { scraps, open: isUnlocked('upgrades', rank), opensAt: unlockRank('upgrades'), onOpen: openUpgrades }}
             rankSelect={showRankSelect} />
         </ScreenStack>

@@ -1,0 +1,37 @@
+{
+  "_about": "F64 THE RELEASE VALVE (the final shift, rank 50 — Muzzy's mini-game, 2026-10-26: 'as you rotate a valve, it moves the needle, but as you rotate the other valve, it also moves the needle. you have to figure out the correct rotate position for both to get the needle to move to the green position in the center'). When a valve stage's seals are in (finalShift.json valve.stages), the hatch under the console opens: two wheels steer one needle on a dial between red and green. Hold the needle in the green for `hold` seconds and the stage opens; then you're back in the tank. Every stage hides new right positions. Built from sketch S11 (.planning/research/sketches/valve-wheels.html) with its defaults. Read by src/game/valve.ts + src/ui/ValvePanel.tsx at the moment each number is used — live in the Dev Kit. The panel's time is real time (the shift around it runs slowed at the console, breakdowns.json consoleTimeScale) and stops whenever the shift is paused.",
+  "_help": {
+    "rule": "How the two wheels move the one needle: 1 Add — both push it the same amount (two wrong turns can cancel out into the green) · 2 Coarse + fine — the left wheel makes big moves, the right small ones (like tuning a radio) · 3 Worst wins — the needle shows whichever wheel is further off, so both must be right.",
+    "detents": "Clicks per full turn of a wheel: each A / D / ← / → press turns one click, and a drag clicks from one to the next. Fewer = fewer positions to try (quicker). 0 = smooth spinning (a key then turns 1/24 of a turn).",
+    "fine": "Rule 2 only: how much the right (fine) wheel moves the needle, as a share of the left wheel's.",
+    "coarseGain": "Rule 2 only: how far the needle swings for the wheels' combined error (bigger = it hits the red ends sooner, so small errors show more).",
+    "green": "Width of the green zone at stage 1, as a share of the dial. Wider = easier.",
+    "shrink": "Stages 2 and 3 get a narrower green: each stage's green = the last one's × this (1 = all the same).",
+    "hold": "Seconds the needle must stay in the green (not while you're dragging a wheel) before the stage opens. 0 = it opens the moment it touches.",
+    "sway": "How fast the needle swings to where the wheels say. Low = a lazy, wobbly needle; high = it snaps there.",
+    "openSec": "After a stage opens: seconds the panel shows 'STAGE n OPEN' before you're back in the tank.",
+    "goSec": "How long the Veteran's 'valve's open on your console — go!' stays in his bubble."
+  },
+  "_ranges": {
+    "rule": [1, 3, 1],
+    "detents": [0, 16, 1],
+    "fine": [0.1, 1, 0.05],
+    "coarseGain": [0.5, 3, 0.1],
+    "green": [0.04, 0.4, 0.01],
+    "shrink": [0.4, 1, 0.05],
+    "hold": [0, 2, 0.1],
+    "sway": [2, 30, 1],
+    "openSec": [0, 3, 0.1],
+    "goSec": [0.5, 8, 0.1]
+  },
+  "rule": 2,
+  "detents": 8,
+  "fine": 0.3,
+  "coarseGain": 1.6,
+  "green": 0.16,
+  "shrink": 0.75,
+  "hold": 0.6,
+  "sway": 9,
+  "openSec": 1.1,
+  "goSec": 3
+}
