@@ -117,7 +117,7 @@ function EndingBadge({ oldTitle }: { oldTitle: BadgeTitle }) {
       style={{ '--badge-goop': galaxy.rim, '--badge-strike': `${C.strikeSeconds}s` } as CSSProperties}>
       <span className="crt-badge-label">{B.label}</span>
       <span>{name ? fill(B.operator, { name }) : B.noName}</span>
-      <span className="crt-badge-old" data-struck={phase >= 1 || undefined} data-tag="badge-old">{text.story.titles[oldTitle]}</span>
+      <span className="crt-badge-old" data-struck={phase >= 1 || undefined} data-tag="badge-old"><span className="crt-badge-strike">{text.story.titles[oldTitle]}</span></span>
       {phase >= 2 && <span className="crt-badge-new" data-tag="badge-new"><TypedText text={text.story.titles.savior} onTyped={() => setPhase((p) => Math.max(p, 3))} /></span>}
       {phase >= 3 && <span className="crt-badge-acronym" data-tag="badge-acronym"><TypedText text={B.acronym} onTyped={() => setPhase(4)} /></span>}
       {phase >= 4 && <Button onClick={endingSteps.next}>{B.next}</Button>}

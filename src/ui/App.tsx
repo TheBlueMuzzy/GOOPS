@@ -416,22 +416,19 @@ export function App() {
           frame={art.end.frame} art={{ continue: art.end.quit }} stats={stats} reveal={payslipTuning.lineMs}
           onContinue={back} onSwipeUp={back} />
       )
-      // F64 the final shift: the win (a placeholder "THE VALVE OPENS" until F65 — The ending) or which of its three
-      // losses happened, and that you can try again; the valve's stages instead of the crack count
+      // F64 the final shift's loss: which of its three happened, and that you can try again; the valve's stages instead
+      // of the crack count (its win never comes here: F65 — The ending plays instead, src/game/ending.ts)
       const final = result.final
       if (final) {
         const F = text.end.final
         // (F65: a loss puts One Of Us on the badge — said here the first time)
         const finalStats = [{ label: F.stages, value: `${final.stage} / ${final.stages}` }, ...payslipStats(result.payslip, result.reward),
           ...(result.newTitle ? [{ label: P.newTitle, value: text.story.titles[result.newTitle] }] : [])]
-        return final.outcome === 'won'
-          ? <Victory words={{ title: F.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }} message={F.won}
-              frame={art.end.frame} art={{ continue: art.end.again, quit: art.end.quit }} stats={finalStats} reveal={payslipTuning.lineMs}
-              onContinue={again} onQuit={back} onSwipeUp={back} />
-          : <GameOver words={{ title: F.lostTitle, retry: F.again, quit: text.end.quit, swipe: text.end.swipe }}
-              message={`${F[final.outcome ?? 'integrity']} ${F.tryAgain}`}
-              frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={finalStats} reveal={payslipTuning.lineMs}
-              onRetry={again} onQuit={back} onSwipeUp={back} />
+        const lost = final.outcome === 'won' ? 'integrity' : final.outcome ?? 'integrity'
+        return <GameOver words={{ title: F.lostTitle, retry: F.again, quit: text.end.quit, swipe: text.end.swipe }}
+          message={`${F[lost]} ${F.tryAgain}`}
+          frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={finalStats} reveal={payslipTuning.lineMs}
+          onRetry={again} onQuit={back} onSwipeUp={back} />
       }
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}

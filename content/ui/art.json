@@ -25,7 +25,7 @@
       "boxPad": 12,
       "boxLabelShare": 0.36
     },
-    "button": [107, 762, 370, 88]
+    "button": [52, 752, 480, 104]
   },
   "console": {
     "_about": "The console = the main menu (F21), drawn from Muzzy's mock-up art/Example1.svg. Every number is in that file's own units (its viewBox: 648 wide). size = the whole mock-up; view = the part that shows (the phone-shaped page, from the monitor's bottom edge down to the footer — the GOOPS title and the gear sit under it, written by the game); viewShort = the part shown on a phone on its side (down to the bottom of the laser panel). layers = groups cut out of the mock-up by art-prep, each at its box `at` [x, y, width, height]; strip = bits taken out (they'd show fake numbers or do nothing). periscope.travel = how far it pulls down, as a share of its own height (Example3 has it 362 units lower); grip = the share of it (from the bottom: goggles + bar + arrow) you can grab — its long stem hides behind the monitor. words = where the game writes words over the art: `at` + `text` (letter size in mock-up units).",

@@ -96,12 +96,12 @@
 .crt-badge { text-align: center; }
 .crt-badge > * { max-inline-size: 100%; text-wrap: balance; }
 .crt-badge-label { opacity: 0.7; letter-spacing: 0.1em; }
-.crt-badge-old { position: relative; align-self: center; }
-.crt-badge-old::after { content: ''; position: absolute; inset-inline: -0.25em; inset-block-start: 45%; block-size: 0.16em; border-radius: 0.1em;
-  background: var(--badge-goop); box-shadow: 0 0 0.4em var(--badge-goop); transform: scaleX(0); transform-origin: left; }
-.crt-badge-old[data-struck]::after { animation: badge-strike var(--badge-strike) ease-in forwards; }
-@keyframes badge-strike { to { transform: scaleX(1); } }
+/* (the line is the words' own background, one per line of a title that wraps — drawn left to right on every line) */
+.crt-badge-strike { background: linear-gradient(var(--badge-goop), var(--badge-goop)) no-repeat left 55% / 0% 0.16em;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.crt-badge-old[data-struck] .crt-badge-strike { animation: badge-strike var(--badge-strike) ease-in forwards; }
+@keyframes badge-strike { to { background-size: 100% 0.16em; } }
 .crt-look .crt-badge-new .crt-words { color: var(--badge-goop); font-size: 1.25em; text-shadow: 0 0 0.5em var(--badge-goop); }
 .crt-badge-acronym { letter-spacing: 0.06em; }
-@media (prefers-reduced-motion: reduce) { .crt-badge-old[data-struck]::after { animation: none; transform: none; } }
-:root[data-reduce-motion] .crt-badge-old[data-struck]::after { animation: none; transform: none; }
+@media (prefers-reduced-motion: reduce) { .crt-badge-old[data-struck] .crt-badge-strike { animation: none; background-size: 100% 0.16em; } }
+:root[data-reduce-motion] .crt-badge-old[data-struck] .crt-badge-strike { animation: none; background-size: 100% 0.16em; }

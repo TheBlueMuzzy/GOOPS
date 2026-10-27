@@ -247,9 +247,7 @@
     "lostCracks": "Too many open cracks broke the tank before you met the quota.",
     "lostOverflow": "The tank overfilled and burst before you met the quota.",
     "final": {
-      "_about": "F64 the final shift's report: the win (a placeholder until F65 — The ending) and which of the three losses happened (design/story.md 'You lose if').",
-      "wonTitle": "THE VALVE OPENS",
-      "won": "The third stage opens and the goop pours out of every tank on the station. (The ending is still being built.)",
+      "_about": "F64 the final shift's report when it's lost: which of the three losses happened (design/story.md 'You lose if'). Its win plays F65's ending instead (en.json ending).",
       "lostTitle": "Final shift failed",
       "vetGone": "The Veteran is used up. He gave the last of himself sealing cracks for you.",
       "overflow": "The goop went over the top of the tank.",

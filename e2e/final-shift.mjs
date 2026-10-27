@@ -6,8 +6,7 @@
 //   console — go!" · W → the console: the hatch is open, the valve panel is up (inside its card with room on every
 //   side, inside the screen, above the hatch), the shift runs at consoleTimeScale · the hatch shuts and opens the panel
 //   · the wheels solved with REAL keys (A / D, ← / →; at 390 a real drag round a wheel first) → "STAGE 1 OPEN!" → the
-//   stage opens and you're back in the tank · stages 2 and 3 (the green narrower each time) · the win: "THE VALVE OPENS"
-//   with "Valve stages opened 3 / 3".
+//   stage opens and you're back in the tank · stages 2 and 3 (the green narrower each time) · the win: F65's ending starts (e2e/ending.mjs plays the rest).
 // The three losses, forced through the engine's own paths (he's used up · goop over the top · integrity 0): "Final
 // shift failed", which one, "You can try the final shift again", Try again.
 // A long run with REAL keys + taps (and the whispers on) that plays rank 50 until a black crack GROWS (the rank-30+
@@ -201,12 +200,11 @@ try {
           && await page.evaluate((n) => window.__goops.engine.state.final.need === n, finalJson.valve.stages[stage + 1]))
       }
     }
-    // the win: THE VALVE OPENS (a placeholder until F65 — The ending)
-    const won = await page.getByRole('heading', { name: F.wonTitle }).waitFor({ timeout: 15000 }).then(() => true, () => false)
+    // the win: F65 — The ending starts in the tank (the goop pours out; no report) — e2e/ending.mjs plays it all
+    const won = await page.locator('[data-tag="ending-goop"]').waitFor({ timeout: 15000 }).then(() => true, () => false)
     await page.waitForTimeout(1500)
-    const report = won ? await page.locator('.kit-end').innerText() : ''
-    check(`${size}: the third stage = the win "${F.wonTitle}", valve stages 3 / 3`, won && report.includes(F.won.slice(0, 30)) && report.includes(F.stages)
-      && await page.evaluate(() => window.__goops.engine.state.final.outcome === 'won'))
+    check(`${size}: the third stage = the win: the ending starts (the goop pours out), no report`, won && await page.locator('.kit-end').count() === 0
+      && await page.evaluate(() => window.__goops.engine.state.final.outcome === 'won' && window.__goops.engine.state.final.stage === 3))
     await page.screenshot({ path: `${SHOTS}/won-${size}.png` })
     check(`${size}: no page errors`, errors.length === 0, errors.slice(0, 3).join(' | '))
     await close()

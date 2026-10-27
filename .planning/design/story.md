@@ -239,6 +239,7 @@ Muzzy: "i removed colors because this final rush is more intense, less methodica
 - ⚠ **To prove:** that "slightly overwhelming" pace — a sketch or a bot run before it's built.
 
 ## The ending — save the goop (rewritten 2026-10-23 to follow the final shift)
+**Built in F65 (2026-10-27)** — steps 1–7 below, in order, each line tap-to-move-on (src/game/ending.ts; numbers `content/tuning/ending.json`, words en.json `ending`): the goop pours up and fills the periscope view (galaxy black, stars), five faces open in it and it speaks with every mouth at once ("thank you." · its four whisper names · "…and 1,308 more of us" · "Go home, <name>") · his last line in his bubble with no static, then quiet · the last payday · the monitor glitches and the badge is rewritten on it (your title struck through in the goop's colour, The Savior of Goopkind, the acronym) · the goop rises over the console and carries you away · the empty console · the end-game screen (Muzzy's EndGameScreen.svg with the game's words) → Begin a new career. **Placeholders / Claude's calls:** the goop's words after "thank you" (Claude's draft), the pour and the faces (CSS, not the goo renderer — the shift is over, so the real goop can't move), "the console shakes" = the whole view shakes in the tank, the end-game screen's stat boxes (valve · debt · tanks · speaker). "Out of every tank on the station" is said, not shown.
 Muzzy: "we'll need an ending where we save the goop instead of zapping it." The final shift IS the saving (the 3 valve stages); the ending is what plays after the third one. All text, on the console and the tank:
 1. **The tank opens.** The console shakes; the goop pours out of the tank and out of every tank on the station (the periscope view fills).
 2. **The goop speaks out loud**, through its mouths (the blobby bubble, now from the goop itself): thank you, and its names.
@@ -262,7 +263,8 @@ How it works:
 - **The end titles** (Muzzy 2026-10-23: "former employee is funny. but I think you get that at lvl 0 of the next game. but when you get to 50, maybe if you lose lvl 50, you get One Of Us, and it's like that until you actually beat it. then you get The Savior of Goopkind"):
   - **Lose the final shift → One Of Us.** It replaces Acting Deputy on your badge and stays until you beat it (Management's interim title is gone; the goop has claimed you).
   - **Beat it → The Savior of Goopkind**, written on your badge by the goop.
-  - **The next career's rank 0 → Former Employee** instead of Probationary Intern — it's you, hired back (Muzzy 2026-10-23: "they erase your memories.... idk? who cares about perfect continuity. this is a silly game"). It lasts one rank. The first monitor line slips: "WELCOME BA— …WELCOME, OPERATOR #4471."
+  - **Built in F65 (2026-10-27):** One Of Us / The Savior of Goopkind are saved with the career (save v4 `badge`); Former Employee = a new career's rank 0 (save v4 `careers` ≥ 1). One Of Us shows as "New title" on the lost report; the badge itself is seen in the ending, crossed out. There is no badge on the console between shifts (Ask Muzzy in SPRINT 23 Notes).
+- **The next career's rank 0 → Former Employee** instead of Probationary Intern — it's you, hired back (Muzzy 2026-10-23: "they erase your memories.... idk? who cares about perfect continuity. this is a silly game"). It lasts one rank. The first monitor line slips: "WELCOME BA— …WELCOME, OPERATOR #4471."
 - **Every title change lands on a story beat**, so a new title is a moment, not a number.
 
 | Ranks | Title | The beat it lands on |

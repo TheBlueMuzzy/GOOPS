@@ -52,6 +52,7 @@ const E2E = [
   ['zap', 'e2e/zap.mjs', ''],                  // 5355 (F67: the pop's tap point · beam top centre → tap · white-hot · spray · Particle · reduce motion; every portrait size)
   ['twists', 'e2e/twists.mjs', ''],            // 6420 (F39: two-colour pieces at 20, a crack growing + sealed whole at 30, wild goop at 40 + the white goop's ring round a grown crack; every portrait size + Particle)
   ['white-goop', 'e2e/white-goop.mjs', ''],    // 6400 (F63: the white goop — not at 30, drops in at 31, laser "ow", oozes + seals a crack, behind goop, Dev Kit pause; every portrait size + Particle)
+  ['ending', 'e2e/ending.mjs', ''],            // 6480 (F65: win → every ending step in order → the end-game screen → the new career (rank 0, Former Employee, gold trim, no first day, the sign-in); lose → One Of Us then a win; resume; RANK SELECT; every portrait size)
   ['final-shift', 'e2e/final-shift.mjs', ''],  // 6450 (F64: the final shift — black, his drop-in, the valve panel's 3 stages by real keys + a drag, the win, the 3 losses, rank 50's moment; every portrait size; a real keys + taps run until a black crack grows, failing on any page error)
 ]
 
