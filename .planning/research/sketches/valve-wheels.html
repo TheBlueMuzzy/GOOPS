@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch starter (BMUZ). The planner's Sketches tab uses the title as the tab name and the description as its blurb. -->
+<title>S11: Valve wheels</title>
+<meta name="description" content="F64's release valve: turn two wheels to steer one needle into the green — try the three Rules and see which feels like a quick puzzle you can solve while the tank runs behind you.">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  #bottom button { min-height: 56px; font-size: 20px; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 6px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 84px; }
+  #panel input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  /* the value box: type any number, even past the slider's ends (the slider then sits at its end, the box turns amber) */
+  #panel input.num { flex: 0 0 52px; width: 52px; box-sizing: border-box; padding: 3px 4px; text-align: right; font: 600 12px ui-monospace, monospace;
+    color: #94a3b8; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; -moz-appearance: textfield; }
+  #panel input.num::-webkit-inner-spin-button, #panel input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #panel input.num:focus { outline: none; border-color: var(--accent); color: var(--ink); }
+  #panel input.num.over { color: #fbbf24; border-color: #fbbf2480; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bReset">Restart</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <button id="bPoke">New valve</button>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+const GOO = {
+  rule: 2,          // how the two wheels move the one needle: 1 Add · 2 Coarse + fine · 3 Worst wins
+  detents: 8,       // clicks per full turn (0 = smooth)
+  fine: 0.3,        // Rule 2: how far the right wheel moves the needle, as a share of the left's
+  green: 0.16,      // width of the green zone (share of the meter)
+  shrink: 0.75,     // each stage's green = the last one's × this
+  hold: 0.6,        // seconds the needle must stay in green
+  sway: 9,          // how fast the needle follows (low = it lags and wobbles)
+};
+// [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
+const KNOBS = [['Puzzle'], ['rule', 1, 3, 1], ['detents', 0, 16, 1], ['fine', 0.1, 1, 0.05],
+  ['Difficulty'], ['green', 0.04, 0.4, 0.01], ['shrink', 0.4, 1, 0.05], ['hold', 0, 2, 0.1], ['Feel'], ['sway', 2, 30, 1]];
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
+const KNOB_HELP = {
+  rule: '1 Add: both wheels push the needle the same amount (wrong pairs can cancel into the green). 2 Coarse + fine: left = big moves, right = small (like tuning a radio). 3 Worst wins: the needle shows whichever wheel is further off — both must be right.',
+  detents: 'Clicks per turn. Fewer = fewer positions to try (quicker). 0 = smooth spinning.',
+  fine: 'Rule 2 only: how much the right (fine) wheel moves the needle compared to the left.',
+  green: 'How wide the green zone is at stage 1. Wider = easier.',
+  shrink: 'Stages 2 and 3 get a narrower green: each is this × the one before (1 = all the same).',
+  hold: 'How long the needle must sit in green before the valve opens. 0 = it opens the moment it touches.',
+  sway: 'How fast the needle swings to where the wheels say. Low = a lazy, wobbly needle.',
+};
+
+// ===== The sketch: two valve wheels, one needle, 3 stages =====
+const canvas = $('c'), ctx = canvas.getContext('2d');
+let dpr = 1, viewW = 0, viewH = 0;
+const TAU = Math.PI * 2;
+const wheels = [{ a: 0, t: 0 }, { a: 0, t: 0 }] // a = its rotation, t = its hidden right rotation (radians)
+const st = { stage: 0, needle: 0, nv: 0, inGreen: 0, time: 0, times: [], opened: 0, done: false }
+let drag = null // { w, last } — the wheel being dragged and the pointer's last angle round it
+
+const wrap = (x) => { x = (x + Math.PI) % TAU; if (x < 0) x += TAU; return x - Math.PI } // −π..π
+const step = () => GOO.detents > 0 ? TAU / Math.round(GOO.detents) : 0
+const snap = (a) => step() ? Math.round(a / step()) * step() : a
+// how far a wheel is from right: −1..1 (0 = right), signed
+const off = (w) => wrap(w.a - w.t) / Math.PI
+function target() { // where the needle wants to be, −1..1 (0 = the green centre)
+  const e1 = off(wheels[0]), e2 = off(wheels[1])
+  if (Math.round(GOO.rule) === 1) return (e1 + e2) / 2
+  if (Math.round(GOO.rule) === 3) return Math.abs(e1) >= Math.abs(e2) ? e1 : e2
+  return Math.max(-1, Math.min(1, (e1 + e2 * GOO.fine) / (1 + GOO.fine) * 1.6))
+}
+const greenNow = () => GOO.green * Math.pow(GOO.shrink, st.stage)
+function newValve() { // fresh hidden positions, never already solved
+  for (const w of wheels) {
+    const n = step() ? Math.round(GOO.detents) : 360
+    w.t = snap(Math.floor(Math.random() * n) * (TAU / n))
+    w.a = w.t
+  }
+  do { for (const w of wheels) w.a = snap(Math.random() * TAU) } while (Math.abs(target()) < greenNow())
+  st.inGreen = 0; st.time = 0
+}
+function reset() { Object.assign(st, { stage: 0, needle: 0, nv: 0, inGreen: 0, time: 0, times: [], opened: 0, done: false }); newValve(); st.needle = target() }
+function poke() { reset() }
+function turn(i, by) { wheels[i].a += by; if (!drag) wheels[i].a = snap(wheels[i].a) }
+function update(dt) {
+  if (st.opened > 0) { st.opened -= dt; if (st.opened <= 0) { if (st.stage >= 3) st.done = true; else newValve() } return }
+  if (st.done) return
+  st.time += dt
+  // the needle: a spring towards where the wheels say (sway = how stiff)
+  const want = target(), k = GOO.sway
+  st.nv += ((want - st.needle) * k * k - st.nv * 2 * k * 0.55) * dt
+  st.needle = Math.max(-1.05, Math.min(1.05, st.needle + st.nv * dt))
+  if (Math.abs(st.needle) <= greenNow() / 2 && !drag) st.inGreen += dt; else st.inGreen = 0
+  if (st.inGreen >= GOO.hold) { st.times.push(st.time); st.stage++; st.opened = 1.1 }
+}
+
+// ---- drawing
+function geom() {
+  const w = viewW, h = viewH, top = 70, bottom = 96
+  const R = Math.min(w * 0.2, (h - top - bottom) * 0.17)
+  const meter = { x: w / 2, y: top + (h - top - bottom) * 0.36, r: Math.min(w * 0.38, (h - top - bottom) * 0.3) }
+  const wy = top + (h - top - bottom) * 0.74
+  return { R, meter, w: [{ x: w / 2 - R * 1.25, y: wy }, { x: w / 2 + R * 1.25, y: wy }] }
+}
+function drawWheel(c, r, a, i) {
+  ctx.save(); ctx.translate(c.x, c.y)
+  // detent ticks round it
+  if (step()) { ctx.strokeStyle = '#334155'; ctx.lineWidth = 2; for (let k = 0; k < Math.round(GOO.detents); k++) { const t = k * step() - Math.PI / 2; ctx.beginPath(); ctx.moveTo(Math.cos(t) * r * 1.08, Math.sin(t) * r * 1.08); ctx.lineTo(Math.cos(t) * r * 1.16, Math.sin(t) * r * 1.16); ctx.stroke() } }
+  ctx.rotate(a)
+  ctx.strokeStyle = drag && drag.w === i ? '#c084fc' : '#94a3b8'; ctx.lineWidth = r * 0.16
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.86, 0, TAU); ctx.stroke()
+  ctx.lineWidth = r * 0.1
+  for (let k = 0; k < 4; k++) { const t = k * Math.PI / 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(t) * r * 0.8, Math.sin(t) * r * 0.8); ctx.stroke() }
+  ctx.fillStyle = '#475569'; ctx.beginPath(); ctx.arc(0, 0, r * 0.18, 0, TAU); ctx.fill()
+  ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(0, -r * 0.86, r * 0.11, 0, TAU); ctx.fill() // the handle knob: shows its turn
+  ctx.restore()
+  ctx.fillStyle = '#64748b'; ctx.font = '600 12px system-ui'; ctx.textAlign = 'center'
+  ctx.fillText(Math.round(GOO.rule) === 2 ? (i ? 'FINE  (← →)' : 'COARSE  (A D)') : (i ? '← →' : 'A D'), c.x, c.y + r * 1.42)
+}
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#05070d'; ctx.fillRect(0, 0, innerWidth, innerHeight)
+  const g = geom(), m = g.meter
+  // the meter: a half dial, red | green | red
+  const span = Math.PI * 0.8, a0 = -Math.PI / 2 - span / 2
+  const gw = greenNow()
+  const at = (v) => a0 + (v + 1) / 2 * span
+  ctx.lineWidth = m.r * 0.16; ctx.lineCap = 'butt'
+  ctx.strokeStyle = '#7f1d1d'; ctx.beginPath(); ctx.arc(m.x, m.y, m.r, at(-1), at(1)); ctx.stroke()
+  ctx.strokeStyle = st.opened > 0 ? '#86efac' : '#16a34a'; ctx.beginPath(); ctx.arc(m.x, m.y, m.r, at(-gw / 2), at(gw / 2)); ctx.stroke()
+  // hold progress round the green
+  if (st.inGreen > 0 && GOO.hold > 0) { ctx.strokeStyle = '#bbf7d0'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(m.x, m.y, m.r * 1.13, at(-gw / 2), at(-gw / 2) + (at(gw / 2) - at(-gw / 2)) * Math.min(1, st.inGreen / GOO.hold)); ctx.stroke() }
+  // the needle
+  const na = at(Math.max(-1.05, Math.min(1.05, st.needle)))
+  ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 4; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x + Math.cos(na) * m.r * 1.05, m.y + Math.sin(na) * m.r * 1.05); ctx.stroke()
+  ctx.fillStyle = '#cbd5e1'; ctx.beginPath(); ctx.arc(m.x, m.y, 7, 0, TAU); ctx.fill()
+  // stage lights + words
+  for (let s = 0; s < 3; s++) { ctx.fillStyle = s < st.stage ? '#4ade80' : s === st.stage && !st.done ? '#fbbf24' : '#1e293b'; ctx.beginPath(); ctx.arc(m.x + (s - 1) * 26, m.y + 34, 8, 0, TAU); ctx.fill() }
+  ctx.textAlign = 'center'; ctx.fillStyle = '#e2e8f0'; ctx.font = '700 18px system-ui'
+  const words = st.done ? 'VALVE OPEN — all 3 stages' : st.opened > 0 ? `STAGE ${st.stage} OPEN` : `RELEASE VALVE · STAGE ${st.stage + 1}`
+  ctx.fillText(words, m.x, m.y + 70)
+  ctx.font = '600 13px ui-monospace, monospace'; ctx.fillStyle = '#94a3b8'
+  ctx.fillText(`this stage ${st.time.toFixed(1)} s` + (st.times.length ? `   ·   done: ${st.times.map((t) => t.toFixed(1)).join(' / ')} s` : ''), m.x, m.y + 92)
+  for (let i = 0; i < 2; i++) drawWheel(g.w[i], g.R, wheels[i].a, i)
+}
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  viewW = playW(); viewH = innerHeight; // the view lives left of the docked knobs, at full size
+}
+$('bReset').onclick = reset; $('bPoke').onclick = poke;
+// drag round a wheel to turn it (the pointer's angle round the wheel's centre); clicks into its detents on release
+const angleAt = (c, e) => Math.atan2(e.clientY - c.y, e.clientX - c.x)
+canvas.addEventListener('pointerdown', (e) => {
+  const g = geom()
+  for (let i = 0; i < 2; i++) if (Math.hypot(e.clientX - g.w[i].x, e.clientY - g.w[i].y) < g.R * 1.3) { drag = { w: i, last: angleAt(g.w[i], e), raw: wheels[i].a }; canvas.setPointerCapture(e.pointerId) }
+})
+canvas.addEventListener('pointermove', (e) => {
+  if (!drag) return
+  const c = geom().w[drag.w], now = angleAt(c, e)
+  drag.raw += wrap(now - drag.last); drag.last = now // (the hand's own turn, unsnapped — a slow drag still adds up)
+  wheels[drag.w].a = snap(drag.raw) // it clicks from detent to detent as you turn
+})
+const endDrag = () => { if (drag) { wheels[drag.w].a = snap(wheels[drag.w].a); drag = null } }
+canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag)
+addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return
+  const by = step() || TAU / 24
+  if (e.code === 'KeyA') turn(0, -by); if (e.code === 'KeyD') turn(0, by)
+  if (e.code === 'ArrowLeft') turn(1, -by); if (e.code === 'ArrowRight') turn(1, by)
+})
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) => lo === undefined ? `<h4>${k}</h4>` :
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><input class="num" type="number" inputmode="decimal" id="v_${k}" step="${st}" value="${GOO[k]}" title="Type any value, even past the slider's ends"></label>`
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : '')).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+// show a value in both the slider (pinned at its end when past it) and the box (amber when past the slider's ends)
+function showKnob(k) {
+  const row = KNOBS.find(r => r[0] === k), v = GOO[k], box = $('v_' + k);
+  $('k_' + k).value = v; if (document.activeElement !== box) box.value = v;
+  box.classList.toggle('over', v < row[1] || v > row[2]);
+}
+// typing in the box updates the sketch live; Enter or leaving the box applies, Escape puts back what was there
+for (const [k, lo] of KNOBS) if (lo !== undefined) {
+  const box = $('v_' + k); let before = GOO[k];
+  $('k_' + k).oninput = e => { GOO[k] = +e.target.value; showKnob(k); };
+  box.onfocus = () => { before = GOO[k]; };
+  box.oninput = () => { const v = parseFloat(box.value); if (Number.isFinite(v)) { GOO[k] = v; showKnob(k); } };
+  box.onkeydown = e => {
+    if (e.key === 'Enter') box.blur();
+    if (e.key === 'Escape') { GOO[k] = before; box.value = before; showKnob(k); box.blur(); }
+  };
+  box.onblur = () => { box.value = GOO[k]; showKnob(k); };
+}
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
+const DEFAULTS = readKnobs();
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+// first visit: the three Rules as presets, so each is one tap away
+if (!presets.length) presets = [
+  { name: 'Radio (coarse+fine)', values: { ...DEFAULTS, rule: 2, detents: 8, fine: 0.3, green: 0.16 } },
+  { name: 'Add (both push)', values: { ...DEFAULTS, rule: 1, detents: 8, green: 0.14 } },
+  { name: 'Worst wins', values: { ...DEFAULTS, rule: 3, detents: 6, green: 0.2 } },
+];
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; reset(); }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; reset(); }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ now: readKnobs(), presets, solveTimes: st.times }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+layout();
+reset();
+// fixed-step loop + fps (one-second average)
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  acc += dt; while (acc >= STEP) { update(STEP); acc -= STEP; }
+  draw();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.sketch = { GOO, readKnobs, setKnobs, wheels, st, target, reset }; // for Playwright checks
+</script>
+</body>
+</html>
