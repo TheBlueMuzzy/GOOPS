@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Bar, Button, GameOver, Hud, HudText, Modal, Pause, Row, Score, ScreenStack, ScrollArea, Settings, Stack, StatList, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema, Stat } from './kit'
-import { clampModifiers, createShift, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
+import { clampModifiers, createShift, type FinalShiftState, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
 import { upgradesForShift } from '../progress/upgradeShop'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
@@ -180,7 +180,9 @@ export function App() {
   const [mode, setMode] = useState<Mode>('console')
   const [engine, setEngine] = useState<ShiftEngine | null>(null)
   const [hud, setHud] = useState<HudSnapshot | null>(null)
-  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward; payslip: Payslip } | null>(null)
+  // (F64: final = the final shift's valve and how it ended — null in any other shift)
+  const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward; payslip: Payslip
+    final: FinalShiftState | null } | null>(null)
   // F41: the payday on screen (0 = the first) and what the report's button asked for, done after the last payday
   const [payIndex, setPayIndex] = useState(0)
   const afterPay = useRef<(() => void) | null>(null)
@@ -340,7 +342,7 @@ export function App() {
     if (payslip.fines.some((l) => l.key === 'fines.association')) tipsMemory().markSeen(ASSOCIATION_FINED)
     setPayIndex(0); afterPay.current = null
     setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
-      cause: e.state.ruptureReason ?? 'integrity', reward, payslip })
+      cause: e.state.ruptureReason ?? 'integrity', reward, payslip, final: e.state.final ? { ...e.state.final } : null })
     toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
     if (modeRef.current === 'shift') screens.push('end')
     else { // at the console mid-shift: back to the tank first, then the report
@@ -381,6 +383,21 @@ export function App() {
           frame={art.end.frame} art={{ continue: art.end.quit }} stats={stats} reveal={payslipTuning.lineMs}
           onContinue={back} onSwipeUp={back} />
       )
+      // F64 the final shift: the win (a placeholder "THE VALVE OPENS" until F65 — The ending) or which of its three
+      // losses happened, and that you can try again; the valve's stages instead of the crack count
+      const final = result.final
+      if (final) {
+        const F = text.end.final
+        const finalStats = [{ label: F.stages, value: `${final.stage} / ${final.stages}` }, ...payslipStats(result.payslip, result.reward)]
+        return final.outcome === 'won'
+          ? <Victory words={{ title: F.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }} message={F.won}
+              frame={art.end.frame} art={{ continue: art.end.again, quit: art.end.quit }} stats={finalStats} reveal={payslipTuning.lineMs}
+              onContinue={again} onQuit={back} onSwipeUp={back} />
+          : <GameOver words={{ title: F.lostTitle, retry: F.again, quit: text.end.quit, swipe: text.end.swipe }}
+              message={`${F[final.outcome ?? 'integrity']} ${F.tryAgain}`}
+              frame={art.end.frame} art={{ retry: art.end.again, quit: art.end.quit }} stats={finalStats} reveal={payslipTuning.lineMs}
+              onRetry={again} onQuit={back} onSwipeUp={back} />
+      }
       return result.status === 'won'
         ? <Victory words={{ title: text.end.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }}
             message={result.cause === 'overflow' ? text.end.wonOverflow : text.end.wonCracks}
@@ -512,7 +529,13 @@ export function App() {
   })
   const quotaMet = hud && hud.cracksSealed >= hud.cracksNeeded
   const ruptured = hud?.phase === 'rupture'
+  // F64 the final shift: the top bar shows the release valve instead of the cracks — "VALVE 1 · 4 / 6", and "GO TO THE
+  // CONSOLE!" (accent) while a stage waits there (the stage's number is on the panel; with it the line didn't fit a phone)
+  const fin = hud?.final
+  const valveText = fin && (fin.waiting ? text.hud.valveGo : fin.stage >= fin.stages ? text.hud.valveOpen
+    : fill(text.hud.valve, { n: fin.stage + 1, seals: fin.seals, need: fin.need }))
   const statusText = !hud ? '' : ruptured ? text.hud.rupture
+    : valveText ? valveText
     : quotaMet ? fill(text.hud.cracksDone, { n: hud.cracksSealed, total: hud.cracksNeeded })
     : fill(text.hud.cracks, { n: hud.cracksSealed, total: hud.cracksNeeded })
   const integrityAlert = ruptured ? 'flash' : hud && hud.integrity < low ? 'pulse' : undefined
@@ -532,8 +555,9 @@ export function App() {
   // body-text floor (kit HudText fit) — so then the count drops its name: "56 / 57", and past the quota the same count in
   // the accent colour ("61 / 57"). Known when the shift starts, so it never switches mid-shift. (Ask Muzzy in SPRINT Notes.)
   const shortCount = !short && abilitiesOnTop && !ruptured && !!hud
-  const status = <HudText size="l" fit tone={ruptured || quotaMet ? 'accent' : 'normal'}>
-    {shortCount ? fill(text.hud.cracksShort, { n: hud.cracksSealed, total: hud.cracksNeeded }) : statusText}</HudText>
+  const status = <HudText size="l" fit tone={ruptured || (fin ? fin.waiting : quotaMet) ? 'accent' : 'normal'}>
+    {shortCount && fin && !fin.waiting && fin.stage < fin.stages ? fill(text.hud.valveShort, { seals: fin.seals, need: fin.need })
+      : shortCount && !fin ? fill(text.hud.cracksShort, { n: hud.cracksSealed, total: hud.cracksNeeded }) : statusText}</HudText>
   // Each charge button: a ring that fills as it charges, round the active's own picture (abilityIcons.tsx), on a grey
   // button; full = the bright (primary) button, which glows in the style. Tap it (or its key: F / Numpad . / 1 for the
   // first, 2, 3) to fire; not full = the engine refuses, nothing happens. In the panel each is abilities.sizePx big; in the

@@ -73,6 +73,9 @@ describe('story moments', () => {
       expect(storyFile.moments[String(r)].lines.some((l) => l.rattle), `rank ${r}`).toBe(true)
     }
     expect(storyFile.moments['49'].lines[0]).toMatchObject({ monitor: 'flicker', crackle: true })
+    // F64 50: Management's final review, with the red alarm (the Veteran's lines are the final shift's drop-in)
+    expect(storyFile.moments['50'].lines).toEqual([{ voice: 'mon', words: 'r50', monitor: 'alarm' }])
+    expect(lines.r50).toBe('FINAL PERFORMANCE REVIEW IN PROGRESS. PRESSURE INCREASED 400%.')
     // the looks' numbers are there
     const L = storyFile.looks
     expect(['wave', 'plain']).toContain(L.goopOutline)
