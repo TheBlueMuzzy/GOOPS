@@ -53,3 +53,5 @@ Checked: unit tests 639 (final shift 14, valve 16, crack stars, livedThrough) ·
 - Muzzy 2026-10-27 (played rank 50): "looks and functions well" (placeholders kept) · "it was overwhelming in a good way. The veteran isn't strong enough. He needs to seal and move faster by 100%" · losing by the pressure rupture "felt normal" (the loss-at-once question was Claude's confusing wording — kept as built).
   - Tuning: vet.sealTime 3→1.5 + vet.secPerCell 0.5→0.25 (Muzzy: 100% faster) — alone it made the shift HARDER: he spends himself twice as fast (Focused 42% / Sharp 34% wins, 58–66% of losses = him used up).
   - Tuning: vet.shrinkPerSeal 0.08→0.07 — so the faster Veteran lasts: a cliff (0.05 → Focused 100%, 0.06 97%, 0.065 91%, 0.07 78%, 0.08 42%; 200 seeds each); 0.07 confirmed on fresh seeds 2001–2200: Focused 75% / Sharp 61% / Casual 0%, he now does ~half the seals (was ~1/3) and usually ends nearly used up. Easier option if wanted: 0.065.
+- Muzzy 2026-10-27: "A" — the faster Veteran is strong enough → F64 ✅ approved (feel: "overwhelming in a good way").
+  - Feel question: "it's good now" (Muzzy 2026-10-27).
