@@ -25,7 +25,7 @@
     "_hatch": "F45 (ranks 46, 47 — 'there's a valve… under your console'): the hatch on the console's front, under the panels. It shows from fromRank (it was always there; nobody looked) and rattles as an attention call while a story line says so (numbers: content/story/moments.json looks.rattle*); it opens in F64 (The final shift). file = its picture (a placeholder by Claude), at = its box in mock-up units.",
     "hatch": { "file": "art/ConsoleHatch.svg", "at": [276, 1748, 96, 45], "fromRank": 46 },
     "_valve": "F64 the release valve (the final shift): while a valve stage waits the hatch shows openFile (a placeholder by Claude) and is a button that opens / closes the valve panel; the panel (src/ui/ValvePanel.tsx, drawn in code) sits at `at` over the repair panels, inside what a phone on its side shows (repairs.viewShort).",
-    "valve": { "at": [52, 1234, 544, 492], "openFile": "art/ConsoleHatchOpen.svg" },
+    "valve": { "at": [60, 1234, 528, 492], "openFile": "art/ConsoleHatchOpen.svg" },
     "_monitorDrop": "F35 (Muzzy 2026-10-24: 'the console monitor can come down much lower. like 2x the distance, so long as the top of the graphic isn't in view. this will give more room for the company message'): how far (mock-up units) the monitor and its screen hang lower than the mock-up at rest. 78 = twice what showed before. A lesson step that outlines the periscope lifts it back to 0, so the periscope shows.",
     "monitorDrop": 78,
     "words": {
