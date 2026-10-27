@@ -286,6 +286,14 @@ function drawCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp: numb
   ctx.restore()
 }
 
+/** Which of a crack's points the k-th star sits on: an inner point (not the ends), spread out by the crack's key. A grown
+ *  crack's cells have NEGATIVE keys (crackBubbles.ts crackSpots) — JS's % keeps the sign, so it's wrapped to 0..n-1
+ *  (Muzzy 2026-10-26: a grown black crack threw on every frame and froze the picture of the final shift). */
+export function crackStarPoint(points: number, k: number, key: number): number {
+  const inner = points - 2
+  return 1 + ((((k * 2 + key) % inner) + inner) % inner)
+}
+
 // F64 a black crack (the final shift): the same jagged crack, a glow in the galaxy's rim colour round a dark core, and a
 // few stars twinkling along it (galaxy-look.json crackStars; still = reduce motion: they hold steady)
 function drawGalaxyCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp: number, id: number, t: number, still: boolean) {
@@ -308,7 +316,7 @@ function drawGalaxyCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp
   const stars = galaxyCrackStars()
   ctx.fillStyle = g.star
   for (let k = 0; k < stars.count; k++) {
-    const [px, py] = shape.pts[1 + ((k * 2 + id) % (shape.pts.length - 2))] // (on the crack's inner points, spread out)
+    const [px, py] = shape.pts[crackStarPoint(shape.pts.length, k, id)]
     const a = t * stars.twinkle * (1 + 0.37 * k) + id * 1.7 + k * 2.1 // (the goo's star twinkle: two uneven waves, galaxyLook.ts)
     const tw = still ? 0.8 : 1 - stars.depth * (1 - (0.5 + 0.5 * (0.6 * Math.sin(a) + 0.4 * Math.sin(a * 2.37 + 1.9))) ** 2)
     const r = Math.max(0.6, cp * 0.05 * stars.size) * (0.6 + 0.6 * tw)
