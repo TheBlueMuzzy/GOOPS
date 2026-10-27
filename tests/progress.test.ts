@@ -1,12 +1,13 @@
 // Ranks + XP (F20) and the save.
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
-import { freshProgress, isUnlocked, meterSteps, progressAtRank, rankInfo, rewardFirstDay, rewardShift, topRank, unlocksBetween, xpToNext } from '../src/progress/progression'
-import { SAVE_VERSION, cleanName, clearProgress, loadOperatorName, loadProgress, nameMaxLength, saveOperatorName, saveProgress } from '../src/progress/save'
+import { badgeAfterFinal, badgeTitle, freshProgress, isUnlocked, meterSteps, progressAtRank, rankInfo, rewardFirstDay, rewardShift, topRank, unlocksBetween, xpToNext } from '../src/progress/progression'
+import { SAVE_VERSION, cleanName, clearProgress, loadCareers, loadOperatorName, loadProgress, nameMaxLength, saveCareers, saveOperatorName, saveProgress } from '../src/progress/save'
 import nameTuning from '../content/tuning/name.json'
 import goldenV1 from './saves/goops-progress-v1.json'
 import goldenV2 from './saves/goops-progress-v2.json'
 import goldenV3 from './saves/goops-progress-v3.json'
+import goldenV4 from './saves/goops-progress-v4.json'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
@@ -78,7 +79,7 @@ describe('save', () => {
   const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m } }
 
   // tests/saves/: one golden save per version, kept forever (a new version adds its own)
-  const golden = (v: number) => JSON.stringify(v === 1 ? goldenV1 : v === 2 ? goldenV2 : goldenV3)
+  const golden = (v: number) => JSON.stringify(([goldenV1, goldenV2, goldenV3, goldenV4] as object[])[v - 1])
 
   it('round-trips (with what the scraps bought, F34)', () => {
     const s = memory()
@@ -88,14 +89,15 @@ describe('save', () => {
     expect(JSON.parse(s.m.get('goops-progress')!).v).toBe(SAVE_VERSION)
   })
 
-  it('golden version-1 save (the alpha) → version 3: XP and scraps spent KEPT, nothing owned yet, no name', () => {
+  it('golden version-1 save (the alpha) → version 4: XP and scraps spent KEPT, nothing owned yet, no name, no badge, no careers', () => {
     const s = memory()
     s.m.set('goops-progress', golden(1))
     expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [] })
     expect(loadOperatorName(s)).toBeNull()
-    // saving it again writes version 3, and it still loads the same
+    expect(loadCareers(s)).toBe(0)
+    // saving it again writes version 4, and it still loads the same
     saveProgress(loadProgress(s), s)
-    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 3, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], name: null })
+    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 4, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], badge: null, name: null, careers: 0 })
   })
 
   it('golden version-2 save loads as it was (and steps up to version 3 with no name)', () => {
@@ -110,6 +112,15 @@ describe('save', () => {
     s.m.set('goops-progress', golden(3))
     expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
     expect(loadOperatorName(s)).toBe('Muzzy')
+    expect(loadCareers(s)).toBe(0) // (F65: steps up to version 4 — no badge, no careers)
+  })
+
+  it('golden version-4 save loads as it was: the badge (One Of Us) and the careers done (F65)', () => {
+    const s = memory()
+    s.m.set('goops-progress', golden(4))
+    expect(loadProgress(s)).toEqual({ totalXp: 481250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], badge: 'oneOfUs' })
+    expect(loadOperatorName(s)).toBe('Muzzy')
+    expect(loadCareers(s)).toBe(1)
   })
 
   it('a missing, broken, unknown-version or nonsense save starts fresh instead of crashing', () => {
@@ -261,5 +272,60 @@ describe('rank select (F70: the start of a rank, upgrades refunded; 0 = a fresh 
     expect(rankInfo(loadProgress(storage)).rank).toBe(12)
     clearProgress(storage)
     expect(loadProgress(storage)).toEqual(freshProgress())
+  })
+})
+
+// F65 END TITLES (design/story.md "Rank titles", TDD D28)
+describe('end titles that stick', () => {
+  const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m } }
+
+  it('the badge: the rank band, unless the career has an end title; Former Employee for a new career at rank 0', () => {
+    expect(badgeTitle(0, null, 0)).toBe('intern')
+    expect(badgeTitle(49, null, 0)).toBe('deputy')
+    expect(badgeTitle(50, 'oneOfUs', 0)).toBe('oneOfUs')
+    expect(badgeTitle(50, 'savior', 0)).toBe('savior')
+    expect(badgeTitle(0, null, 1)).toBe('formerEmployee')
+    expect(badgeTitle(1, null, 1)).toBe('juniorAssociate') // (it lasts one rank, then the titles as usual)
+    expect(badgeTitle(45, null, 3)).toBe('deputy')
+  })
+
+  it('lose the final shift → One Of Us until a win; win → The Savior of Goopkind (never taken back by a loss)', () => {
+    expect(badgeAfterFinal(null, false)).toBe('oneOfUs')
+    expect(badgeAfterFinal('oneOfUs', false)).toBe('oneOfUs')
+    expect(badgeAfterFinal('oneOfUs', true)).toBe('savior')
+    expect(badgeAfterFinal(null, true)).toBe('savior')
+    expect(badgeAfterFinal('savior', false)).toBe('savior')
+  })
+
+  it('the badge and the careers are saved on the device; saving the progress or the name keeps the careers', () => {
+    const s = memory()
+    saveProgress({ ...progressAtRank(50), badge: 'oneOfUs' }, s)
+    expect(loadProgress(s).badge).toBe('oneOfUs')
+    saveCareers(1, s)
+    saveOperatorName('Muzzy', s)
+    saveProgress({ ...loadProgress(s), badge: 'savior' }, s)
+    expect(loadCareers(s)).toBe(1)
+    expect(loadProgress(s).badge).toBe('savior')
+    expect(loadOperatorName(s)).toBe('Muzzy')
+  })
+
+  it('a new career (fresh progress) has no badge; a rank pick (RANK SELECT) drops it too; careers stay', () => {
+    const s = memory()
+    saveProgress({ ...progressAtRank(50), badge: 'savior' }, s)
+    saveCareers(2, s)
+    saveProgress(freshProgress(), s)
+    expect(loadProgress(s).badge).toBeUndefined()
+    expect(loadCareers(s)).toBe(2)
+    saveProgress(progressAtRank(12), s)
+    expect(loadProgress(s).badge).toBeUndefined()
+  })
+
+  it('a broken badge or careers count = none (the rest of the save stays)', () => {
+    const s = memory()
+    s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: 'king', name: null, careers: -3 }))
+    expect(loadProgress(s)).toEqual({ totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [] })
+    expect(loadCareers(s)).toBe(0)
+    s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: null, name: null, careers: 'two' }))
+    expect(loadCareers(s)).toBe(0)
   })
 })

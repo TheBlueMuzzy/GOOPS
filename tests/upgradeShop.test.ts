@@ -216,9 +216,9 @@ describe('active slots: 1 → 2 → 3 with the Active Expansion Slots', () => {
     expect(takeBackLevel(p, 'goopDump').equipped).toEqual(['cooldownBooster', 'goopColorizer'])
   })
 
-  it('the save shape is unchanged (still version 3): slots are owned levels like any upgrade — old saves load with 1 slot, new ones keep 3 equipped', () => {
+  it('slots are owned levels like any upgrade (no save change of their own; F65 made it version 4) — old saves load with 1 slot, new ones keep 3 equipped', () => {
     const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) } }
-    expect(SAVE_VERSION).toBe(3)
+    expect(SAVE_VERSION).toBe(4)
     const old = memory()
     old.setItem('goops-progress', JSON.stringify(goldenV3))
     expect(activeSlots(loadProgress(old))).toBe(1)

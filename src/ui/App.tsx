@@ -27,8 +27,8 @@ import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
 import { soundSettingsChanged } from '../game/sound'
 import { getAudio, useAudioSnapshot } from '../audio'
-import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, titleAt, unlockRank, unlocksBetween, type Progress, type ShiftReward } from '../progress/progression'
-import { loadProgress, operatorName, saveProgress } from '../progress/save'
+import { badgeAfterFinal, badgeTitle, freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank, unlocksBetween, type BadgeTitle, type Progress, type ShiftReward } from '../progress/progression'
+import { loadCareers, loadProgress, operatorName, saveCareers, saveProgress } from '../progress/save'
 import { afterCaught, makePayslip, type Payslip, type ShiftFacts } from '../progress/payslip'
 import { NextWindow } from '../game/NextWindow'
 import { Console } from './Console'
@@ -182,7 +182,7 @@ export function App() {
   const [hud, setHud] = useState<HudSnapshot | null>(null)
   // (F64: final = the final shift's valve and how it ended — null in any other shift)
   const [result, setResult] = useState<{ status: ShiftStatus; score: number; sealed: number; needed: number; cause: 'integrity' | 'overflow'; reward: ShiftReward; payslip: Payslip
-    final: FinalShiftState | null } | null>(null)
+    final: FinalShiftState | null; newTitle: BadgeTitle | null } | null>(null)
   // F41: the payday on screen (0 = the first) and what the report's button asked for, done after the last payday
   const [payIndex, setPayIndex] = useState(0)
   const afterPay = useRef<(() => void) | null>(null)
@@ -202,6 +202,7 @@ export function App() {
   usePortraitLock()
   const engineRef = useRef<ShiftEngine | null>(null)
   const [saved] = useState(loadProgress)
+  const [careers, setCareers] = useState(loadCareers) // F65: careers this device finished (the new career's gold trim)
   const [progress, setProgress] = useState(saved) // for the console; progressRef for the handlers
   const progressRef = useRef<Progress>(saved)
   // the console's meter: the progress it showed when it was last on screen, so coming back it fills from there
@@ -328,9 +329,14 @@ export function App() {
     // (F31: the first day's shift tops it up to rank 1 when it started at rank 0 — the report says the rank-up)
     const dayOne = firstDay.running()
     const reward = (dayOne ? rewardFirstDay : rewardShift)(progressRef.current, e.state.score)
+    // F65 the final shift's end titles: lost → One Of Us until a win; won → The Savior of Goopkind, and one more career done
+    const fin = e.state.final, before = reward.progress.badge
+    if (fin?.outcome) reward.progress = { ...reward.progress, badge: badgeAfterFinal(before, fin.outcome === 'won') }
+    const newTitle = reward.progress.badge && reward.progress.badge !== before ? reward.progress.badge : null
     progressRef.current = reward.progress
     setProgress(reward.progress)
     saveProgress(reward.progress)
+    if (newTitle === 'savior') { saveCareers(loadCareers() + 1); setCareers(loadCareers()) }
     // F41: the payslip — fines from what really happened first (src/progress/payslip.ts)
     const f = facts.current, s = e.state
     const shiftFacts: ShiftFacts = { ruptured: s.ruptureReason !== null, broke: [...f.broke], openCracks: s.cracks.length,
@@ -342,7 +348,7 @@ export function App() {
     if (payslip.fines.some((l) => l.key === 'fines.association')) tipsMemory().markSeen(ASSOCIATION_FINED)
     setPayIndex(0); afterPay.current = null
     setResult({ status, score: e.state.score, sealed: e.state.cracksSealed, needed: e.state.cracksNeeded,
-      cause: e.state.ruptureReason ?? 'integrity', reward, payslip, final: e.state.final ? { ...e.state.final } : null })
+      cause: e.state.ruptureReason ?? 'integrity', reward, payslip, final: e.state.final ? { ...e.state.final } : null, newTitle })
     toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
     if (modeRef.current === 'shift') screens.push('end')
     else { // at the console mid-shift: back to the tank first, then the report
@@ -388,7 +394,9 @@ export function App() {
       const final = result.final
       if (final) {
         const F = text.end.final
-        const finalStats = [{ label: F.stages, value: `${final.stage} / ${final.stages}` }, ...payslipStats(result.payslip, result.reward)]
+        // (F65: a loss puts One Of Us on the badge — said here the first time)
+        const finalStats = [{ label: F.stages, value: `${final.stage} / ${final.stages}` }, ...payslipStats(result.payslip, result.reward),
+          ...(result.newTitle ? [{ label: P.newTitle, value: text.story.titles[result.newTitle] }] : [])]
         return final.outcome === 'won'
           ? <Victory words={{ title: F.wonTitle, continue: text.end.again, quit: text.end.quit, swipe: text.end.swipe }} message={F.won}
               frame={art.end.frame} art={{ continue: art.end.again, quit: art.end.quit }} stats={finalStats} reveal={payslipTuning.lineMs}
@@ -435,13 +443,14 @@ export function App() {
               { label: words.debt, value: fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) }), tone: 'danger' },
               { label: P.rankUp, value: what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to }), tone: 'success' },
               // F35: a rank that starts a new title band says the new title (story.md "Rank titles")
-              ...(titleAt(day.to) !== titleAt(day.from) ? [{ label: P.newTitle, value: text.story.titles[titleAt(day.to)], tone: 'success' as const }] : []),
+              // (F65: in a new career rank 0's is Former Employee, so rank 1 says its title too)
+              ...(badgeTitle(day.to, null, careers) !== badgeTitle(day.from, null, careers) ? [{ label: P.newTitle, value: text.story.titles[badgeTitle(day.to, null, careers)], tone: 'success' as const }] : []),
             ]} />
           </ScrollArea>
         </Modal>
       )
     },
-  }), [result, start, toConsole, payIndex])
+  }), [result, start, toConsole, payIndex, careers])
 
   // the console between shifts: Settings, and the Upgrades screen (F59 opens it from its rank; F34 the shop: buy, take
   // back, equip — src/ui/UpgradesScreen.tsx). What it changes is saved at once.

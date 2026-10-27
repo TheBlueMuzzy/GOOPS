@@ -809,7 +809,7 @@ try {
       && await page.locator('.kit-modal .kit-card[data-tone="success"]').count() === 1)
     await shot(page, 'green-card-390x844')
     const s1 = await saved(page)
-    check('saved at once, as version 3 (XP kept)', s1.v === 3 && s1.owned.circuitStabilizer === 1 && s1.scrapsSpent === 1 && s1.totalXp === xpFor(5), JSON.stringify(s1))
+    check('saved at once, as version 4 (XP kept)', s1.v === 4 && s1.owned.circuitStabilizer === 1 && s1.scrapsSpent === 1 && s1.totalXp === xpFor(5), JSON.stringify(s1))
     check('the console button says 4 scraps too', (await page.locator('[data-tag="upgrades"]').textContent()).includes('4'))
     await page.reload()
     await page.getByRole('button', { name: 'Start shift' }).waitFor()

@@ -438,7 +438,11 @@
       "supervisor": "Containment Supervisor",
       "seniorSupervisor": "Senior Containment Supervisor",
       "assistant": "Assistant to the Department Head",
-      "deputy": "Acting Deputy Department Head (Interim)"
+      "deputy": "Acting Deputy Department Head (Interim)",
+      "_endTitles": "F65: titles that are not a rank (progression.ts badgeTitle): oneOfUs after a lost final shift (until you win) · savior = the win, written by the goop · formerEmployee = a new career's rank 0.",
+      "oneOfUs": "One Of Us",
+      "savior": "The Savior of Goopkind",
+      "formerEmployee": "Former Employee"
     },
     "whispers": {
       "cold": "…cold…",

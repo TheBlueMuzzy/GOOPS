@@ -11,6 +11,7 @@ export interface Progress {
   scrapsSpent: number
   owned: Record<string, number> // F34: upgrade id → the level bought (missing = 0)
   equipped: string[] // F34: ids of the actives taken into the shift (at most the active slots)
+  badge?: EndBadge | null // F65: an end title on this career's badge (missing / null = the rank's own title)
 }
 // The rank part of the progress — all that ranks, XP and scraps-in-hand need
 export type XpProgress = Pick<Progress, 'totalXp' | 'scrapsSpent'>
@@ -78,6 +79,26 @@ export function titleAt(rank: number, t: ProgressionTuning = tuning): TitleId {
   let id = Object.keys(t.titles)[0] as TitleId
   for (const [key, from] of Object.entries(t.titles) as [TitleId, number][]) if (rank >= from) id = key
   return id
+}
+
+// F65 END TITLES (design/story.md "Rank titles"): titles that aren't a rank band — the goop gives them, not Management.
+//   oneOfUs = the final shift was lost: it replaces Acting Deputy and stays until you win · savior = you won it (the goop
+//   writes it on your badge in the ending) · formerEmployee = a new career's first band (rank 0), once a career is done.
+// Words: en.json story.titles (same ids). A new career starts with no badge (freshProgress).
+export type EndBadge = 'oneOfUs' | 'savior'
+export type BadgeTitle = TitleId | EndBadge | 'formerEmployee'
+
+/** The title on the badge: an end title if this career has one, else the rank's — Former Employee instead of the first
+ *  band once a career is done (careers = how many this device finished). */
+export function badgeTitle(rank: number, badge: EndBadge | null | undefined, careers: number, t: ProgressionTuning = tuning): BadgeTitle {
+  if (badge) return badge
+  const id = titleAt(rank, t)
+  return careers > 0 && id === titleAt(0, t) ? 'formerEmployee' : id
+}
+
+/** The badge after a final shift: the win → savior; a loss → One Of Us (a win already given is never taken back). */
+export function badgeAfterFinal(badge: EndBadge | null | undefined, won: boolean): EndBadge {
+  return won || badge === 'savior' ? 'savior' : 'oneOfUs'
 }
 
 export interface ShiftReward {
