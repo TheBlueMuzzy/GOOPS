@@ -254,7 +254,9 @@ try {
         })
         if (id === null) check(`${tag} r40: room for a grown crack beside the white goop`, false)
         else {
-          const sealing = await until(page, () => { const v = window.__goops.white(); return v && v.mode === 'seal' && v.seal > 0.35 }, null, 20000)
+          // (~9 s of game time; under check:full load — since final-shift + ending joined it — 20 s of wall time wasn't
+          // enough, B004: a roomy cap on a condition costs nothing when the PC isn't busy)
+          const sealing = await until(page, () => { const v = window.__goops.white(); return v && v.mode === 'seal' && v.seal > 0.35 }, null, 60000)
           check(`${tag} r40: the white goop seals a grown crack`, sealing)
           await page.screenshot({ path: `${SHOTS}/r40-white-ring-${tag}.png` })
         }

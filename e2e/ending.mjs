@@ -49,7 +49,9 @@ for (let r = 0; r < 50; r++) xp50 += prog.xpBase + prog.xpPerRank * r
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 const goopSays = (key, name) => fill(E.goop[key], { name: name ?? en.story.sign.fallback, more: (endingJson.paidBy - endingJson.named).toLocaleString('en') })
 const save = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') ?? 'null'))
-const roomy = { timeout: 20000 }
+// (the ending runs on the looks clock, which slows with the frame rate: under check:full load at 1920 a few seconds of
+// pour took over 20 s of wall time — the waits are conditions, so a roomy cap costs nothing when the PC isn't busy)
+const roomy = { timeout: 60000 }
 
 // a device at the start of rank 50, signed "Muzzy", every lesson + story moment had (badge: an end title already on it)
 async function open(w, h, { badge = null, careers = 0 } = {}) {
@@ -78,6 +80,11 @@ async function startFinal(page) {
 // the three valve stages, each filled and opened through the engine (the panel is final-shift.mjs's)
 const winFinal = (page) => page.evaluate(() => {
   const e = window.__goops.engine
+  // (watch for the opening shake from before the win: it lasts a couple of looks-clock seconds, and under check:full load
+  // at 1920 it was over before the check looked — window.__endingShook remembers it happened)
+  window.__endingShook = false
+  new MutationObserver(() => { if ('endingShake' in document.body.dataset) window.__endingShook = true })
+    .observe(document.body, { attributes: true, attributeFilter: ['data-ending-shake'] })
   for (let s = 0; s < 3; s++) { e.countValve(e.state.final.need); e.tick(16); e.openValveStage() }
 })
 // a talking bubble: its whole line showing (typed out), then a tap moves on
@@ -91,7 +98,7 @@ async function tapBubble(page) {
   const before = await bubble(page).innerText().catch(() => '')
   await bubble(page).click()
   // (gone, or the next line)
-  await page.waitForFunction((b) => { const el = document.querySelector('.kit-talk[data-confirm]'); return !el || el.innerText !== b }, before, { timeout: 8000 }).catch(() => {})
+  await page.waitForFunction((b) => { const el = document.querySelector('.kit-talk[data-confirm]'); return !el || el.innerText !== b }, before, roomy).catch(() => {})
 }
 // a box inside the window, with room (px) from every edge
 const inWindow = (page, sel) => page.evaluate((sel) => {
@@ -134,11 +141,13 @@ async function playEnding(page, size, { shots, oldTitle, name = 'Muzzy' }) {
   const shot = async (step) => { if (shots) await page.screenshot({ path: `${SHOTS}/${step}-${size}.png` }) }
   // 1. the tank opens: the view shakes, the goop pours out and fills the view
   const poured = await page.locator('[data-tag="ending-goop"][data-kind="pour"]').waitFor(roomy).then(() => true, () => false)
-  const shook = await page.evaluate(() => 'endingShake' in document.body.dataset)
+  const shook = await page.evaluate(() => window.__endingShook || 'endingShake' in document.body.dataset)
   if (shots) { await page.waitForTimeout(1600); await shot('1-pour') }
   const filled = await page.waitForFunction(() => { const r = document.querySelector('.ending-goop')?.getBoundingClientRect(); return !!r && r.top <= 1 }, null, roomy)
     .then(() => true, () => false)
-  check(`${size}: the tank opens — it shakes, the goop pours out and fills the whole view`, poured && shook && filled)
+  const goopAt = await page.evaluate(() => { const g = document.querySelector('.ending-goop'), r = g?.getBoundingClientRect()
+    return r ? { top: Math.round(r.top), flood: Math.round(g.parentElement.getBoundingClientRect().top), anim: getComputedStyle(g).animationPlayState, paused: g.parentElement.dataset.paused ?? null } : null })
+  check(`${size}: the tank opens — it shakes, the goop pours out and fills the whole view`, poured && shook && filled, JSON.stringify({ poured, shook, filled, goopAt }))
   if (poured) seen.push('pour')
   // 2. the goop speaks through its mouths: every line in order, every face's mouth open, the bubble from a face, in the window
   const lines = []
