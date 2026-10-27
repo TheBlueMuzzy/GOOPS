@@ -9,6 +9,7 @@ import finalJson from '../../content/tuning/finalShift.json'
 import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import twistsJson from '../../content/tuning/twists.json'
 import { idx, ofType, realConfig, straightLineCracks, tickUntil } from './helpers'
+import { GALAXY_SLOT } from '../../src/goo/shared/galaxyLook'
 
 const BLACK = 7 // shift.json colors: 'black' is the 7th
 const finalCfg = () => {
@@ -50,6 +51,12 @@ function pastIntro(shift: ShiftEngine): ShiftEvent[] {
   events.push(...shift.takeEvents())
   return events
 }
+
+// The galaxy look is drawn on one colour slot (galaxyLook.ts GALAXY_SLOT, in both shaders + the next window), while the
+// engine picks the final shift's colour by name (finalShift.json colour) — they must be the same slot.
+it("the final shift's colour is the slot the galaxy look is drawn on", () => {
+  expect(realConfig().colors.indexOf(finalJson.colour) + 1).toBe(GALAXY_SLOT)
+})
 
 describe('the final shift (rank 50)', () => {
   it('is rank 50 only: not 49, never in a lesson, not without its tuning', () => {
