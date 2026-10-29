@@ -62,7 +62,8 @@ export interface ShiftOutcome {
   won: boolean // quota met (a normal shift) · the third valve stage opened (the final shift)
   outcome: string // won / lost · the final shift: won / vetGone / overflow / integrity / timeout
   score: number // the final score (after the leftover penalty) = what becomes XP
-  survivedMs: number // the player's time until the tank ruptured (or the shift ended)
+  survivedMs: number // the SHIFT's time (rules clock) until the tank ruptured, or the shift ended — console trips count
+  // at their slowed speed, so a shorter repair doesn't look like a shorter-lived tank
   realMs: number // the player's time until the shift ended, console trips included
   sealed: number
   needed: number
@@ -96,7 +97,8 @@ export function playShift(input: ShiftInput): ShiftOutcome {
   const valveSec = finalShift.bots?.valveSec ?? 6
   const r: ShiftOutcome = { seed: input.seed, rank, final: !!s.final, won: false, outcome: 'timeout', score: 0, survivedMs: 0, realMs: 0, sealed: 0,
     needed: s.cracksNeeded, quota: 0, consoleMs: 0, repairs: 0, swaps: 0, fired: {}, stage: 0 }
-  let now = 0
+  let now = 0 // the player's time
+  let rulesMs = 0 // the shift's own clock (slower while at the console)
   let trip: { leftMs: number; valve: boolean } | null = null
   let brokenSince: number | null = null
   let swapAt: number | null = null // a swap being held: it happens at this time
@@ -122,6 +124,7 @@ export function playShift(input: ShiftInput): ShiftOutcome {
     }
     if (trip) {
       engine.tick(dt * consoleScale)
+      rulesMs += dt * consoleScale
       r.consoleMs += dt
       trip.leftMs -= dt
       if (trip.leftMs <= 0) {
@@ -133,9 +136,9 @@ export function playShift(input: ShiftInput): ShiftOutcome {
         bot.newPiece(now, false) // (back at the tank: it takes a moment to see the piece again)
       }
     } else {
-      // a ready active: fired once the bot has noticed it
+      // a ready active: fired once the bot has noticed it (and, for some, only when it helps — economy.json fireWhen)
       for (const a of s.abilities ?? []) {
-        if (!a.ready) { readySince.delete(a.id); continue }
+        if (!a.ready || !fireNow(s, a.id)) { readySince.delete(a.id); continue }
         const since = readySince.get(a.id) ?? now
         readySince.set(a.id, since)
         if (now - since >= reactionMs) {
@@ -152,6 +155,7 @@ export function playShift(input: ShiftInput): ShiftOutcome {
         if (swapAt === null) { swapAt = now + swapMs; pieceAtSwap = pieces; r.swaps++ }
       } else if (action && !(swapAt !== null && action.type === 'softDrop')) engine.act(action) // (while holding, the other hand still turns, rotates and zaps — but no fast drop)
       engine.tick(dt)
+      rulesMs += dt
     }
     now += dt
     for (const e of engine.takeEvents()) {
@@ -171,13 +175,13 @@ export function playShift(input: ShiftInput): ShiftOutcome {
           r.fired[e.id] = (r.fired[e.id] ?? 0) + 1
           break
         case 'rupture':
-          r.survivedMs ||= now
+          r.survivedMs ||= rulesMs
           break
       }
     }
   }
   r.realMs = now
-  r.survivedMs ||= now
+  r.survivedMs ||= rulesMs
   r.score = Math.max(0, Math.round(s.score))
   r.sealed = s.cracksSealed
   r.quota = s.cracksNeeded > 0 ? Math.min(1, s.cracksSealed / s.cracksNeeded) : 1
@@ -190,6 +194,15 @@ export function playShift(input: ShiftInput): ShiftOutcome {
     r.won = s.status === 'won'
   }
   return r
+}
+
+// Should the bot fire this ready active now? economy.json fireWhen: 'pieceMatchesCrack' = only while the falling piece's
+// colour is the colour of an open crack (a player using Colorizer / Goop Dump to feed a crack); anything else = at once.
+function fireNow(s: ShiftEngine['state'], id: string): boolean {
+  const rule = (economy.fireWhen as Record<string, string>)[id]
+  if (rule !== 'pieceMatchesCrack') return true
+  const colour = s.piece?.colors[0]
+  return colour !== undefined && s.cracks.some((c) => !c.plugged && c.color === colour)
 }
 
 // ---------------------------------------------------------------- the shop
@@ -223,8 +236,8 @@ export function shop(p: Progress, rank: number, style: BuyStyle): Progress {
   return equipBest(next)
 }
 
-export function equipBest(p: Progress): Progress {
-  const owned = shopUpgrades().filter((u) => u.type === 'active' && levelOf(p, u.id) > 0).map((u) => u.id)
+export function equipBest(p: Progress, leaveOut: string[] = []): Progress {
+  const owned = shopUpgrades().filter((u) => u.type === 'active' && levelOf(p, u.id) > 0 && !leaveOut.includes(u.id)).map((u) => u.id)
   const order = [...owned].sort((a, b) => rankIn(a) - rankIn(b))
   const want = order.slice(0, activeSlots(p))
   let next: Progress = { ...p, equipped: [] }
@@ -271,6 +284,7 @@ export interface CareerResult {
   ownedAt: Record<number, Record<string, number>> // what it owned when it reached ranks 10, 20, 30, 40, 50
   equippedAt: Record<number, string[]>
   loadout50: Progress | null // what it took into its first final shift
+  loadout50Raw: Progress | null // the same before leaving out economy.json finalLeaveOut (what it had equipped till then)
   scrapsEarned: number
   scrapsSpent: number
   unspentByRank: Record<number, number> // scraps left in hand after shopping, at the start of each rank
@@ -283,7 +297,7 @@ export function runCareer(input: CareerInput): CareerResult {
   const maxFinal = input.finalTries ?? economy.finalTries
   const top = progressionJson.maxRank
   const r: CareerResult = { bot: input.bot, style: input.style, seed: input.seed, shifts: [], reachedRank: 0, finalWon: false, finalTries: 0,
-    ownedAt: {}, equippedAt: {}, loadout50: null, scrapsEarned: 0, scrapsSpent: 0, unspentByRank: {} }
+    ownedAt: {}, equippedAt: {}, loadout50: null, loadout50Raw: null, scrapsEarned: 0, scrapsSpent: 0, unspentByRank: {} }
   // the first day (a guided training shift) always ends at rank 1 — rewardFirstDay with no score
   let p = rewardFirstDay(freshProgress(), 0).progress
   r.shifts.push({ rank: 0, won: true, xp: p.totalXp, survivedS: 0, quota: 1, scraps: 0, spent: 0, fired: 0, repairs: 0 })
@@ -292,6 +306,11 @@ export function runCareer(input: CareerInput): CareerResult {
     const rank = rankInfo(p).rank
     if (input.toRank !== undefined && rank >= input.toRank) break
     p = shop(p, rank, input.style)
+    if (rank >= top) {
+      // the final shift: a player who has lost to the dump's rain leaves it at home (economy.json finalLeaveOut)
+      if (!r.loadout50Raw) r.loadout50Raw = structuredClone(p)
+      p = equipBest(p, economy.finalLeaveOut)
+    }
     if (rank !== lastRank) {
       r.unspentByRank[rank] = scrapsAt(rank, p)
       if (rank % 10 === 0 && rank > 0) { r.ownedAt[rank] = { ...p.owned }; r.equippedAt[rank] = [...p.equipped] }
@@ -325,15 +344,20 @@ export function effectProgress(id: string | null, level: number): Progress {
   if (!id) return freshProgress()
   const def = shopUpgrades().find((u) => u.id === id)!
   if (def.feature === 'abilitySlots') return withSlotActives(id, { [id]: level })
-  let p: Progress = { ...freshProgress(), owned: { [id]: level } }
+  let p: Progress = { ...effectBaseline(id), owned: { ...effectBaseline(id).owned, [id]: level } }
   if (def.type === 'active') p = setEquipped(p, id, true).progress
   return p
 }
 
-/** The baseline an upgrade is compared with: owning nothing — for a slot upgrade, the same actives without it. */
+/** The baseline an upgrade is compared with: owning nothing — for a slot upgrade, the same actives without it; for an
+ *  upgrade that only works through an active (Sealing Bonus), that active (economy.json effectCompanions). */
 export function effectBaseline(id: string | null): Progress {
   const def = id ? shopUpgrades().find((u) => u.id === id) : null
-  return def?.feature === 'abilitySlots' ? withSlotActives(def.id, {}) : freshProgress()
+  if (def?.feature === 'abilitySlots') return withSlotActives(def.id, {})
+  const companions = id ? (economy.effectCompanions as Record<string, string[]>)[id] ?? [] : []
+  let p: Progress = { ...freshProgress(), owned: Object.fromEntries(companions.map((c) => [c, 1])) }
+  for (const c of companions) p = setEquipped(p, c, true).progress
+  return p
 }
 
 // the slot upgrades that come before this one (owned in both runs), plus enough actives to fill one more slot

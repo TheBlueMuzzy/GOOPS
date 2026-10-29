@@ -13,7 +13,13 @@ const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : nu
 const r1 = (n) => (n === null || n === undefined ? null : Math.round(n * 10) / 10)
 const r3 = (n) => (n === null || n === undefined ? null : Math.round(n * 1000) / 1000)
 
-export const BANDS = [[1, 9], [10, 19], [20, 29], [30, 39], [40, 49]]
+/** Which baseline an upgrade's on/off runs share: owning nothing ('none'), or its own (a slot, or effectCompanions). */
+export const baselineOf = (u, eco) => (u.feature === 'abilitySlots' || eco.effectCompanions[u.id] ? u.id : 'none')
+
+/** The ranks an upgrade's on/off runs play at: the rank it opens, then economy.json effectLateRanks (the final shift = 50). */
+export const effectRanks = (u, eco) => [...new Set([u.rank, ...eco.effectLateRanks.filter((r) => r >= u.rank)])]
+
+export const BANDS =[[1, 9], [10, 19], [20, 29], [30, 39], [40, 49]]
 const bandName = ([a, b]) => `${a}–${b}`
 const CHECKPOINTS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 
@@ -91,8 +97,8 @@ function effectRows({ eco, upgrades, effectJobs, effectResults }) {
   const t = eco.feelThreshold
   const rows = []
   for (const u of upgrades) {
-    const ranks = [...new Set([u.rank, Math.max(u.rank, eco.effectLateRank)])]
-    const bk = u.feature === 'abilitySlots' ? u.id : 'none'
+    const ranks = effectRanks(u, eco)
+    const bk = baselineOf(u, eco)
     const cells = []
     for (const rank of ranks) for (const level of [...new Set([1, u.maxLevel])]) for (const bot of eco.effectSkills) {
       const pairs = []
@@ -111,11 +117,24 @@ function effectRows({ eco, upgrades, effectJobs, effectResults }) {
         dXp: Math.round(d((r) => r.score) ?? 0), changed: r3(pairs.filter(([a, b]) => a.score !== b.score || a.survivedMs !== b.survivedMs).length / pairs.length),
         fired: r1(mean(pairs.map(([, b]) => Object.values(b.fired).reduce((x, y) => x + y, 0)))),
       }
-      cell.feel = Math.abs(cell.dSurvivedS) >= t.seconds || Math.abs(cell.dWin) >= t.winRate || Math.abs(cell.dQuota) >= t.quota
+      // noise: any change reshuffles the whole shift (the same seed plays out differently), so a difference only counts
+      // when it's bigger than twice its standard error over the seeds as well as over the feel line
+      const se = (f) => {
+        const ds = pairs.map(([a, b]) => f(b) - f(a))
+        const m = mean(ds)
+        return ds.length > 1 ? Math.sqrt(ds.reduce((x, v) => x + (v - m) ** 2, 0) / (ds.length - 1) / ds.length) : Infinity
+      }
+      cell.seSurvivedS = r1(se((r) => r.survivedMs / 1000))
+      cell.seWin = r3(se((r) => (r.won ? 1 : 0)))
+      cell.seQuota = r3(se((r) => r.quota))
+      const clear = (v, s, line) => Math.abs(v) >= line && Math.abs(v) > 2 * s
+      cell.feel = clear(cell.dSurvivedS, cell.seSurvivedS, t.seconds) || clear(cell.dWin, cell.seWin, t.winRate) || clear(cell.dQuota, cell.seQuota, t.quota)
       cells.push(cell)
     }
     const at = (level) => cells.filter((c) => c.level === level)
+    const good = (c) => c.feel && (c.dQuota > 0 || c.dWin > 0 || (c.dQuota === 0 && c.dSurvivedS > 0))
     const verdict = eco.feltDirectly.includes(u.id) ? 'feltDirectly'
+      : cells.some((c) => c.feel) && !cells.some(good) ? 'hurts'
       : at(1).some((c) => c.feel) ? 'feelable'
       : at(u.maxLevel).some((c) => c.feel) ? 'onlyAtMax'
       : cells.length ? 'none' : 'notRun'
@@ -136,6 +155,8 @@ function finalRows({ eco, finalJobs, finalResults, styles }) {
       const rs = pick((k) => k.with && k.bot === bot && k.style === style)
       rows.push({ label: `${bot} · ${eco.buyStyles[style].label}`, bot, style, upgrades: 'career', n: rs.length, winRate: winOf(rs), stages: r1(mean(rs.map((r) => r.stage))) })
     }
+    const raw = pick((k) => k.raw && k.bot === bot)
+    rows.push({ label: `${bot} · career, ${eco.finalLeaveOut.join(' + ')} still on`, bot, upgrades: 'raw', n: raw.length, winRate: winOf(raw), stages: r1(mean(raw.map((r) => r.stage))) })
     const none = pick((k) => k.with === false && k.bot === bot)
     rows.push({ label: `${bot} · no upgrades`, bot, upgrades: 'none', n: none.length, winRate: winOf(none), stages: r1(mean(none.map((r) => r.stage))) })
     const old = pick((k) => k.path === 'runFinal' && k.bot === bot)

@@ -28,6 +28,7 @@ const VERDICT = {
   feelable: 'one level is big enough to notice',
   onlyAtMax: 'only noticeable at max level',
   none: 'no measurable effect',
+  hurts: 'measurably worse for the bots',
   feltDirectly: 'felt in your hands, not judged by outcomes',
   notRun: 'not measured',
 }
@@ -45,7 +46,7 @@ th{color:#c3c2b7;font-weight:600}td:first-child,th:first-child{text-align:left}.
 .bars{display:grid;gap:4px;margin:8px 0;max-width:760px}.bar{display:grid;grid-template-columns:230px 1fr 70px;align-items:center;gap:8px;font-size:13px}
 .track{background:#262624;height:12px;border-radius:0 4px 4px 0}.fill{display:block;height:12px;border-radius:0 4px 4px 0}.v{text-align:right}
 i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}.legend span{margin-right:16px}
-.tag{padding:1px 6px;border-radius:4px;background:#383835}.tag.none{background:#d03b3b;color:#fff}.tag.feelable{background:#0ca30c;color:#fff}.tag.onlyAtMax{background:#fab219;color:#0b0b0b}
+.tag{padding:1px 6px;border-radius:4px;background:#383835}.tag.none{background:#d03b3b;color:#fff}.tag.feelable{background:#0ca30c;color:#fff}.tag.onlyAtMax{background:#fab219;color:#0b0b0b}.tag.hurts{background:#ec835a;color:#0b0b0b}
 </style>
 <h1>Goops — the economy sim ${s.quick ? '(QUICK RUN — a check, not the numbers to read)' : ''}</h1>
 <p>Bots play whole careers — rank 0 to the final shift — on the real game and the real tuning files, earning XP and scraps and buying upgrades three different ways. ${s.careerCount} careers (${s.careerSeeds} per bot × buy style), ${s.shiftsPlayed} shifts in all, ${s.seconds} s. Made ${esc(s.made)}. Same seeds = the same numbers.</p>
@@ -88,7 +89,7 @@ ${ids.map((id) => `<tr><td>${esc(id)}</td>${one.map((r) => `<td${shade(r.owned[a
   }).join('')}
 
 <h2>5. What every upgrade really does</h2>
-<p>Each upgrade on vs owning nothing, the same seeds both ways, at the rank it opens and at rank ${s.settings.effectLateRank} (late game). "Noticeable" uses a <b>placeholder</b> line until Muzzy calibrates it: ${t.seconds} s longer before the tank breaks, or ${Math.round(t.winRate * 100)}% more shifts won, or ${Math.round(t.quota * 100)}% more of the quota sealed. The best bot × rank is shown; hover for the seeds that changed at all.</p>
+<p>Each upgrade on vs owning nothing, the same seeds both ways, at the rank it opens and at ranks ${s.settings.effectLateRanks.join(' and ')} (late game; 50 = the final shift, where "won" = the valve opened). "Noticeable" uses a <b>placeholder</b> line until Muzzy calibrates it: ${t.seconds} s longer before the tank breaks, or ${Math.round(t.winRate * 100)}% more shifts won, or ${Math.round(t.quota * 100)}% more of the quota sealed — and bigger than twice the seed-to-seed wobble (any change reshuffles the whole shift, so small differences are just luck). The best bot × rank is shown; hover for the seeds that changed at all. "Tank lasts" is counted on the shift's own clock (time at the console runs slower there), so a quicker repair doesn't look like a shorter-lived tank. Bots fire Colorizer and Goop Dump only while the falling piece matches an open crack; Sealing Bonus is measured with Goop Dump equipped both ways.</p>
 <div class="scroll"><table><tr><th>Upgrade (opens at)</th><th>verdict</th><th>1 level: tank lasts</th><th>won</th><th>quota</th><th>XP</th><th>max level: tank lasts</th><th>won</th><th>quota</th><th>XP</th><th>shift length (max)</th></tr>
 ${s.effects.map((e) => `<tr><td>${esc(e.name)} (${e.rank})</td><td><span class="tag ${e.verdict}">${esc(VERDICT[e.verdict])}</span></td>${[e.best1, e.bestMax].map((c) => c
     ? `<td title="${c.bot}, rank ${c.rank}: ${pct(c.changed)} of seeds changed">${signed(c.dSurvivedS, ' s')}</td><td>${signedPct(c.dWin)}</td><td>${signedPct(c.dQuota)}</td><td>${signed(c.dXp)}</td>`

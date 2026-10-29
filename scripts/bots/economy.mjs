@@ -73,7 +73,7 @@ async function main() {
   const progression = readJson('content/tuning/progression.json')
   const bots = readJson('scripts/bots/bots.json').bots
   const careerSeeds = Number(arg('--seeds', quick ? eco.quick.careerSeeds : eco.careerSeeds))
-  const effectSeeds = quick ? eco.quick.effectSeeds : eco.effectSeeds
+  const effectSeeds = Number(arg('--effect-seeds', quick ? eco.quick.effectSeeds : eco.effectSeeds))
   const finalSeeds = quick ? eco.quick.finalSeeds : eco.finalSeeds
   const styles = Object.keys(eco.buyStyles)
   const started = Date.now()
@@ -87,12 +87,13 @@ async function main() {
 
   // 2. every upgrade on vs off: at the rank it opens and late (effectLateRank), level 1 and max, the same seeds
   const { effectProgress, effectBaseline } = await import('./career.ts')
+  const { effectRanks, baselineOf } = await import('./economy-summary.mjs')
   const effectList = quick ? upgrades.filter((u) => eco.quick.effectUpgrades.includes(u.id)) : upgrades
   const effectJobs = []
-  const baselineKey = (u) => (u.feature === 'abilitySlots' ? u.id : 'none')
+  const baselineKey = (u) => baselineOf(u, eco)
   const seen = new Set()
   for (const u of effectList) {
-    for (const rank of [...new Set([u.rank, Math.max(u.rank, eco.effectLateRank)])]) {
+    for (const rank of effectRanks(u, eco)) {
       for (const bot of eco.effectSkills) for (let seed = 1; seed <= effectSeeds; seed++) {
         const input = (progress) => ({ bot, seed: 7_000_000 + seed, progress, rank })
         const base = `${baselineKey(u)}|${rank}|${bot}|${seed}`
@@ -107,7 +108,11 @@ async function main() {
   const finalJobs = []
   careers.forEach((c, ci) => {
     if (!c.loadout50) return
-    for (let seed = 1; seed <= finalSeeds; seed++) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50, rank: progression.maxRank } })
+    for (let seed = 1; seed <= finalSeeds; seed++) {
+      finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50, rank: progression.maxRank } })
+      const raw = JSON.stringify(c.loadout50Raw.equipped) !== JSON.stringify(c.loadout50.equipped)
+      if (raw) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, raw: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50Raw, rank: progression.maxRank } })
+    }
   })
   const { freshProgress } = await import('../../src/progress/progression.ts')
   for (const bot of eco.skills) for (let seed = 1; seed <= Math.max(finalSeeds, quick ? 0 : 20); seed++) {
