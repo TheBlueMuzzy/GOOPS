@@ -3,7 +3,7 @@
 //     <GameHud />            ← the always-there bottom layer
 //   </ScreenStack>
 // Each screen is a component that returns a <Screen>. A dialog is just <Screen dialog> pushed on top.
-// The kit's own screens (kitScreens: confirm) are always added under yours — no need to list them (0.25.0).
+// The kit's own screens (kitScreens: confirm, whats-new) are always added under yours — no need to list them (0.25.0).
 // A name pushed that has no screen warns in the console and closes again.
 // Everything under the top screen is inert: it can't be clicked, tapped or focused. Open screens under the top one
 // are also hidden (so a Pause panel never peeks out from behind the Rules opened from it): only the top screen shows,
@@ -23,11 +23,7 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type Componen
 import { screens as store } from './screens'
 import { moveFocus } from './arrowKeys'
 import { kitScreens } from './blocks/dialogs'
-
-// Until a key is pressed, a screen that opens shouldn't show the keyboard focus ring
-// (browsers show it for focus moved by code before any click or key, e.g. a screen opened at load).
-let keyPressed = false
-if (typeof window !== 'undefined') window.addEventListener('keydown', () => { keyPressed = true }, { once: true, capture: true })
+import { focusRing } from './keysOrPad'
 
 type ScreenStackProps = { screens: Record<string, ComponentType>; children?: ReactNode; overlay?: boolean }
 
@@ -87,8 +83,8 @@ export function ScreenStack({ screens, children, overlay }: ScreenStackProps) {
       // The first button or input; a scroll box only if there's nothing else (it would wear the focus ring)
       const layer = layers.current[depth]
       const first = layer?.querySelector<HTMLElement>('button:not(:disabled), input') ?? layer?.querySelector<HTMLElement>('[tabindex="0"]')
-      // ("as FocusOptions": older TypeScript versions, like many games use, don't know focusVisible yet)
-      first?.focus(keyPressed ? undefined : ({ focusVisible: false } as FocusOptions))
+      // With the focus ring only for key and pad players (keysOrPad.ts — a pad press counts, F142)
+      first?.focus(focusRing())
     }
     last.current = { depth, top }
   }, [depth, top])

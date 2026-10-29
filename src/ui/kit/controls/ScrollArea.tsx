@@ -19,7 +19,7 @@ export function ScrollArea({ label, max, children }: { label: string; max?: 's' 
     const check = () => markMore(el)
     check()
     el.addEventListener('scroll', check, { passive: true })
-    watcher.current = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(check)
+    watcher.current = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => { markMore(el); measureContents(el) })
     watcher.current?.observe(el)
     return () => {
       el.removeEventListener('scroll', check)
@@ -34,6 +34,7 @@ export function ScrollArea({ label, max, children }: { label: string; max?: 's' 
     if (!el) return
     for (const child of Array.from(el.children)) watcher.current?.observe(child)
     markMore(el)
+    measureContents(el)
   })
 
   // tabIndex lets keyboard players focus it and scroll with the arrow keys
@@ -51,4 +52,19 @@ function markMore(el: HTMLElement) {
   el.toggleAttribute('data-more-end', room > 1 && above < room - 1)
   el.style.setProperty('--kit-more-start', `${Math.round(above)}px`)
   el.style.setProperty('--kit-more-end', `${Math.round(room - above)}px`)
+}
+
+// How tall its contents are (0.35.1, F145) → --kit-scroll-contents: in a card it never gives up height below
+// --kit-scroll-min (kit.css), but a short list is never held taller than itself. (scrollHeight can't tell: it's never
+// less than the box's own height.) Measured on a resize or a render only, never per scroll, and set only when it changes.
+function measureContents(el: HTMLElement) {
+  let top = Infinity, bottom = -Infinity
+  for (const child of Array.from(el.children)) {
+    const r = child.getBoundingClientRect()
+    top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom)
+  }
+  const s = getComputedStyle(el)
+  const contents = bottom > top ? bottom - top + parseFloat(s.paddingTop) + parseFloat(s.paddingBottom) : 0
+  const tall = `${Math.ceil(contents)}px`
+  if (el.style.getPropertyValue('--kit-scroll-contents') !== tall) el.style.setProperty('--kit-scroll-contents', tall)
 }

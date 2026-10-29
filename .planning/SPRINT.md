@@ -13,6 +13,7 @@ Checked: tests/economySim.test.ts green (same seed → the same career shift for
 - [x] 🤖 4. Tests: repeatable career, upgrades reach the tuning — tests/economySim.test.ts
 - [x] 🤖 5. Run it in full, write research/economy-sim.md (findings + a suggested knob each for F52), TDD data/decisions (next free D30), GDD line — .planning/research/economy-sim.md
 - [x] 🤖 6. Beta release prep (/deliver, alongside the sim): review through a1d4ecd + security review (no issues), release-checks/beta.md, v0.2.0 notes draft, beta audits → favicon link fixed, B005–B007 logged, F71 + F72 added — index.html
+- [x] 🤖 7. UI kit 0.33.2 → 0.37.3 before the beta (fixes B006 "Acces/sibilit/y" at 200%) — check:fast green (658 tests), check:full next — src/ui/kit
 
 ## Notes
 - 2026-10-29, auto mode (Muzzy: "go auto. i'm driving to work"): F51 — Economy sim is the last open beta must; Claude planned this sprint so /deliver beta can go without `--musts-open-ok`. Taste calls → Ask Muzzy lines with a default.

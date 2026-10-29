@@ -10,7 +10,7 @@ type AvatarProps = { name: string; src?: string; active?: boolean; color?: strin
 export function Avatar({ name, src, active, color }: AvatarProps) {
   const initials = name.split(/\s+/).map((word) => word[0]).join('').slice(0, 2).toUpperCase()
   return (
-    <span className="kit-avatar" data-state={active ? 'active' : undefined} role="img" aria-label={name} data-color={color ? '' : undefined}
+    <span className="kit-avatar" data-state={active ? 'active' : undefined} role="img" aria-label={name} data-color={color ? '' : undefined} translate="no"
       style={{ '--kit-avatar-color': color } as CSSProperties}>
       {src ? <img src={src} alt="" data-ui-bleed /> : initials /* (the picture fills its circle on purpose: data-ui-bleed) */}
     </span>

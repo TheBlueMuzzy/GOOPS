@@ -8,6 +8,7 @@ import { askConfirm, Modal } from './dialogs'
 import { useFixedSize } from '../fixedSize'
 import { useCountUp } from './motion'
 import { fill } from './words'
+import { shown } from '../shown'
 
 // PAUSE — a dialog over the game. Resume closes it; Quit asks first (turn off with confirmQuit={false}).
 // note: one quiet caption line under the title, above the buttons (e.g. this game's settings: "Small garden · 2-letter words off").
@@ -26,7 +27,7 @@ export function Pause({ onResume = () => screens.pop(), onSettings, onHowToPlay,
     : onQuit?.()
   return (
     <Modal title={w.title} className="kit-pause">
-      {note && <Text kind="caption">{note}</Text>}
+      {shown(note) && <Text kind="caption">{note}</Text>}
       <Stack gap="s" className="kit-menu">
         <Button sound="back" onClick={onResume}>{w.resume}</Button>
         {onSettings && <Button variant="secondary" onClick={onSettings}>{w.settings}</Button>}
@@ -60,11 +61,11 @@ type HudProps = {
 export function Hud({ vitals, status, currency, onPause, actions, banner, bottomLeft, bottomRight, oneRow, dock, dockSide = 'bottom', dockTight, words }: HudProps) {
   const w = { ...hudWords, ...words }
   // Each slot's contents sit in kit-hud-slot, which lets taps through to the game (blocks.css)
-  const slot = (content: ReactNode, one?: boolean) => content && <div className="kit-hud-slot" data-one-row={one || undefined}>{content}</div>
+  const slot = (content: ReactNode, one?: boolean) => (shown(content) ? <div className="kit-hud-slot" data-one-row={one || undefined}>{content}</div> : null)
   const pause = onPause && <Button variant="secondary" icon aria-label={w.pause} onClick={onPause}>❚❚</Button>
   const screen = (
     <Screen label={w.label} topLeft={slot(vitals)} top={slot(status, oneRow)}
-      topRight={slot((currency || pause) && <Row gap="s">{currency}{pause}</Row>)}
+      topRight={slot((shown(currency) || pause) && <Row gap="s">{currency}{pause}</Row>)}
       bottomLeft={slot(bottomLeft)} bottom={slot(actions)} bottomRight={slot(bottomRight)}>
       {slot(banner)}
     </Screen>
@@ -80,7 +81,7 @@ export function Hud({ vitals, status, currency, onPause, actions, banner, bottom
 
 // A small readable plate behind a HUD piece, so it shows up over any game art.
 type ChipProps = { children: ReactNode; active?: boolean; role?: string; 'aria-label'?: string; 'data-width'?: string
-  'data-thickness'?: string; 'data-alert'?: string; 'data-label-at'?: string; style?: CSSProperties }
+  'data-thickness'?: string; 'data-alert'?: string; 'data-label-at'?: string; 'data-wrap'?: boolean; style?: CSSProperties }
 function Chip({ children, active, ...rest }: ChipProps) {
   return <Row gap="s" className="kit-hud-chip" data-state={active ? 'active' : undefined} {...rest}>{children}</Row>
 }
@@ -127,7 +128,7 @@ export function Bar({ label, value, max = 100, variant = 'primary', pips, icon, 
   }
   const parts = (
     <>
-      {icon && <span aria-hidden="true">{icon}</span>}
+      {shown(icon) && <span className="kit-hud-icon" data-symbol={typeof icon === 'string' || undefined} aria-hidden="true">{icon}</span>}
       {labelAt === 'beside' && <span className="kit-bar-label" aria-hidden="true">{label}</span>}
       {labelAt === 'above' && <span className="kit-bar-label-above" aria-hidden="true">{label}</span>}
       {bar}
@@ -159,7 +160,7 @@ function useFloatUps(value: number) {
 export function Counter({ label, value, icon }: { label: string; value: number; icon?: ReactNode }) {
   return (
     <Chip role="group" aria-label={label}>
-      {icon && <span aria-hidden="true">{icon}</span>}
+      {shown(icon) && <span className="kit-hud-icon" data-symbol={typeof icon === 'string' || undefined} aria-hidden="true">{icon}</span>}
       <span className="kit-float-anchor"><Text kind="label">{value}</Text>{useFloatUps(value)}</span>
     </Chip>
   )
@@ -237,6 +238,7 @@ function useFitText(box: RefObject<HTMLDivElement | null>, text: string | null) 
       if (!line || !open || (room === lastRoom && !force)) return
       lastRoom = room
       el.removeAttribute('data-fitted')
+      el.removeAttribute('data-fit-wrap')
       el.style.removeProperty('--kit-fit-size')
       el.style.removeProperty('--kit-fit-line')
       const natural = line.scrollWidth
@@ -247,13 +249,20 @@ function useFitText(box: RefObject<HTMLDivElement | null>, text: string | null) 
         // the line keeps its own height, so the box around it never changes size as the words change (0.17.1)
         el.style.setProperty('--kit-fit-line', lineHeight === 'normal' ? `${size * 1.2}px` : lineHeight)
         el.setAttribute('data-fitted', '')
+        // Still too wide at the body text size (its floor — big text, a wide font): the words take two lines instead
+        // of running over the corners beside them (0.35.2, F145)
+        if (line.scrollWidth > room + 0.5) el.setAttribute('data-fit-wrap', '')
       }
     }
     fitNow(true)
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => fitNow())
     observer?.observe(el)
+    // …and when its words change on the page without React (a browser's translate button, the fake language: 0.37.0,
+    // F156 — the fit stayed measured on the English word). The fit itself only sets attributes, so it never loops.
+    const rewritten = typeof MutationObserver === 'undefined' ? null : new MutationObserver(() => fitNow(true))
+    rewritten?.observe(el, { characterData: true, childList: true, subtree: true })
     document.fonts?.ready.then(() => fitNow(true))
-    return () => { open = false; observer?.disconnect() }
+    return () => { open = false; observer?.disconnect(); rewritten?.disconnect() }
   }, [box, text])
 }
 
@@ -296,7 +305,7 @@ export function PlayerSeats({ players, activeId, onSeatTap, showNames = true }: 
               : avatar}
             {showNames && (
               <Stack gap="xs">
-                <Text kind="label">{p.name}</Text>
+                <Text kind="label" translate="no">{p.name}</Text>
                 {p.score !== undefined && <Text kind="caption">{p.score}</Text>}
               </Stack>
             )}
@@ -341,24 +350,24 @@ export function PlayerChip({
   const shownScore = useCountUp(score ?? 0)
   const floats = useFloatUps(score ?? 0)
   const oneLine = size === 'xs' // the detail sits beside the name and badge instead of on a line below
-  const hasNameLine = showName || badge || (oneLine && detail)
+  const hasNameLine = showName || shown(badge) || (oneLine && shown(detail))
   const fixed = useFixedSize()
   return (
     // (a plain kit-row div, not <Row>: React 18 hands a ref only to real elements)
     <div ref={fixed} className="kit-row kit-hud-chip kit-player-chip kit-nowrap" data-gap={size === 'm' ? 's' : 'xs'} role="group" aria-label={name}
       data-state={active ? 'active' : undefined} data-dim={dim || undefined} data-size={size}>
-      {icon && <span className="kit-player-chip-icon" aria-hidden="true">{icon}</span>}
+      {shown(icon) && <span className="kit-player-chip-icon" aria-hidden="true">{icon}</span>}
       {!icon && avatar !== false && <Avatar name={name} src={avatar || undefined} color={color} active={active} />}
-      {(showName || detail || badge) && (
+      {(showName || shown(detail) || shown(badge)) && (
         <Stack gap="xs" className="kit-player-chip-text">
           {hasNameLine && (
             <Row gap="xs" className="kit-nowrap">
-              {showName && <Text kind="label">{name}</Text>}
-              {badge && <Badge>{badge}</Badge>}
-              {oneLine && detail && <Text kind="caption">{detail}</Text>}
+              {showName && <Text kind="label" translate="no">{name}</Text>}
+              {shown(badge) && <Badge>{badge}</Badge>}
+              {oneLine && shown(detail) && <Text kind="caption">{detail}</Text>}
             </Row>
           )}
-          {!oneLine && detail && <Text kind="caption">{detail}</Text>}
+          {!oneLine && shown(detail) && <Text kind="caption">{detail}</Text>}
         </Stack>
       )}
       {score !== undefined && (
@@ -388,11 +397,14 @@ export function Rank({ place, of, format = ordinal, label = 'Place' }: RankProps
 }
 
 // CONNECTION DOT — online status. Says it in words too when something's wrong.
+// Its words may take two lines (between words) when its HUD corner gives way — big text on an upright phone (0.35.2).
+// A word too long for the room beside the dot breaks there as the last resort (0.37.0, F156: a translated "connection"
+// ran out of the chip) — data-ui-split-ok tells the page check that's on purpose.
 export const connectionWords = { good: 'Connected', weak: 'Weak connection', lost: 'Offline' }
 export function ConnectionDot({ status, words }: { status: 'good' | 'weak' | 'lost'; words?: Partial<typeof connectionWords> }) {
   const w = { ...connectionWords, ...words }
   return (
-    <Chip role="status" aria-label={w[status]}>
+    <Chip role="status" aria-label={w[status]} data-wrap data-ui-split-ok>
       <span className="kit-dot" data-status={status} />
       {status !== 'good' && <Text kind="caption">{w[status]}</Text>}
     </Chip>

@@ -67,6 +67,14 @@ export const fontRoleTokens = {
   'font-heading': 'var(--font-display)', // headings: Text kind heading, card titles, room-code boxes, art buttons' words
 } as const
 
+// In-game words at big text (0.35.2, F145). Presets leave it out; a game's tweaks may set it. The player's Text size
+// grows every word, but HUD words (HudText, HUD chips, seats, player chips, the timer, pinned pieces) stop growing at
+// this many times their normal size — at 200% a phone's HUD had no room left for the game (words over words, Roll off
+// the screen). Menus and dialogs, read at rest, keep growing all the way. 1 = HUD words never grow; never below 1.
+export const hudTokens = {
+  'hud-text-max': 1.25,
+} as const
+
 // Menu sizes (0.10.0): a style or a game's tweaks MAY set these; left out, the kit's CSS uses the default shown.
 // They're not written onto the page unless set, so the desktop default (menu-max-h-wide) can differ from the phone one.
 export const menuSizeTokens = {
@@ -88,11 +96,16 @@ export const derivedTokens = {
   'text-heading': 'body × font-scale',
   'text-title': 'body × font-scale²',
   'text-display': 'body × font-scale³',
+  'hud-rem': 'A rem for HUD pieces: grows with Text size up to hud-text-max × 16px, then stops (timer ring, bar lengths, pips)',
+  'hud-text-body': 'text-body for HUD words (stops at hud-text-max × its normal size)',
+  'hud-text-heading': 'text-heading for HUD words',
+  'hud-text-title': 'text-title for HUD words',
+  'hud-text-display': 'text-display for HUD words',
   'target-min': 'Smallest tap target (accessibility floor: 44px)',
 } as const
 
 type RequiredName = keyof typeof colourTokens | keyof typeof lineColourTokens | keyof typeof otherTokens
-export type TokenName = RequiredName | keyof typeof optionalTokens | keyof typeof fontRoleTokens | keyof typeof menuSizeTokens
+export type TokenName = RequiredName | keyof typeof optionalTokens | keyof typeof fontRoleTokens | keyof typeof hudTokens | keyof typeof menuSizeTokens
 export type StylePreset = Record<RequiredName, string | number> & Partial<Record<TokenName, string | number>>
 export type StyleTweaks = Partial<Record<TokenName, string | number>>
 
@@ -101,5 +114,5 @@ export const requiredTokenNames = [...Object.keys(colourTokens), ...Object.keys(
 
 // Every CSS variable the kit may read (the rule checker uses this list).
 export const allVariableNames = [
-  ...requiredTokenNames, ...Object.keys(optionalTokens), ...Object.keys(fontRoleTokens), ...Object.keys(menuSizeTokens), ...Object.keys(derivedTokens),
+  ...requiredTokenNames, ...Object.keys(optionalTokens), ...Object.keys(fontRoleTokens), ...Object.keys(hudTokens), ...Object.keys(menuSizeTokens), ...Object.keys(derivedTokens),
 ]

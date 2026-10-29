@@ -4,6 +4,7 @@ import { isValidElement, useEffect, useRef, useState, type CSSProperties, type R
 import { Panel, Row, Screen, Stack, type PanelFrame } from '../layout'
 import { Avatar, Badge, Button, ListRow, ProgressBar, ScrollArea, Text, type ButtonArt } from '../controls'
 import { Spinner } from './dialogs'
+import { useTitleFit } from './MenuHeader'
 import { ordinal, TurnBanner } from './hud'
 import { reduceMotion } from './motion'
 import { fill } from './words'
@@ -12,10 +13,12 @@ import { fill } from './words'
 export const loadingWords = { title: 'Loading…' }
 export function Loading({ progress, tip, words }: { progress?: number; tip?: string; words?: Partial<typeof loadingWords> }) {
   const w = { ...loadingWords, ...words }
+  const titleBox = useRef<HTMLSpanElement>(null)
+  useTitleFit(titleBox, true, false, w.title) // a word wider than its line drops a step, like every title (0.37.0, F156)
   return (
     <Screen label={w.title}>
       <Panel depth={2} gap="m" className="kit-menu kit-centred">
-        <Text kind="title">{w.title}</Text>
+        <span ref={titleBox} className="kit-fit-title"><Text kind="title">{w.title}</Text></span>
         {progress === undefined ? <Row justify="center"><Spinner label={w.title} /></Row> : <ProgressBar label={w.title} value={progress} />}
         {tip && <Text kind="caption">{tip}</Text>}
       </Panel>
@@ -45,13 +48,14 @@ export function Countdown({ from = 3, seconds = 1, onDone, words }: CountdownPro
 }
 
 // ROUND INTRO — "Round 2 of 5" and what this round is about. Plain words, not a card: it's information,
-// and anything that isn't a button must not look like one.
+// and anything that isn't a button must not look like one. Its words are on-game words, so the game behind it
+// wears the dark shade, not the light veil, in every look (shade, 0.35.10 — Muzzy 2026-10-26).
 export const roundIntroWords = { round: 'Round {n}', roundOf: 'Round {n} of {total}' }
 type RoundIntroProps = { round: number; total?: number; detail?: string; words?: Partial<typeof roundIntroWords> }
 export function RoundIntro({ round, total, detail, words }: RoundIntroProps) {
   const w = { ...roundIntroWords, ...words }
   const text = fill(total ? w.roundOf : w.round, { n: round, total: total ?? '' })
-  return <Screen label={text}><TurnBanner variant="plain" text={text} detail={detail} /></Screen>
+  return <Screen label={text} shade><TurnBanner variant="plain" text={text} detail={detail} /></Screen>
 }
 
 // RESULTS — everyone's score, best first. Equal scores share a place (1st, 1st, 3rd).
@@ -76,10 +80,12 @@ export function Results({ players, meId, lowestWins, title, message, onContinue,
   const heading = title ?? w.title
   const stagger = reduceMotion() ? 0 : 1 // 1: each row waits a little longer than the one above it; 0: all at once
   const hasButtons = actions || onQuit || onRematch || onContinue
+  const titleBox = useRef<HTMLSpanElement>(null)
+  useTitleFit(titleBox, true, false, heading) // like the end screens' (0.35.1)
   return (
     <Screen label={heading} dialog={dim} grow="down">
       <Panel depth={2} gap="m" className="kit-modal kit-results">
-        <span className="kit-end-title"><Text kind="title">{heading}</Text></span>
+        <span ref={titleBox} className="kit-end-title"><Text kind="title">{heading}</Text></span>
         {message && <Text>{message}</Text>}
         <ScrollArea label={heading} max="l">
           {rankPlayers(players, lowestWins).map((p, i) => (
@@ -89,7 +95,7 @@ export function Results({ players, meId, lowestWins, title, message, onContinue,
                   <span className="kit-place"><Text kind="heading">{format(p.place)}</Text></span>
                   <Avatar name={p.name} src={p.avatar} color={p.color} active={p.place === 1} />
                   <Row gap="xs" className="kit-result-name">
-                    <Text kind="label">{p.name}</Text>
+                    <Text kind="label" translate="no">{p.name}</Text>
                     {p.place === 1 && <Badge variant="primary"><span role="img" aria-label={w.winner}>★</span></Badge>}
                     {p.id === meId && <Badge variant="primary">{w.you}</Badge>}
                   </Row>
@@ -218,7 +224,7 @@ export function StatList({ stats, reveal, onRevealed, words }: StatListProps) {
           style={{ '--kit-i': waits(i), '--kit-step': step } as CSSProperties}>
           <ListRow label={s.label}>
             {s.tone
-              ? <Row gap="xs" className="kit-nowrap"><Badge variant={s.tone}><span role="img" aria-label={w[s.tone]}>{toneMark[s.tone]}</span></Badge><Text kind="label">{s.value}</Text></Row>
+              ? <Row gap="xs" className="kit-nowrap"><Badge variant={s.tone}><span className="kit-tone-mark" role="img" aria-label={w[s.tone]}>{toneMark[s.tone]}</span></Badge><Text kind="label">{s.value}</Text></Row>
               : <Text kind="label">{s.value}</Text>}
           </ListRow>
         </div>
@@ -229,11 +235,13 @@ export function StatList({ stats, reveal, onRevealed, words }: StatListProps) {
 type EndArt = { frame?: PanelFrame; backdrop?: string; onSwipeUp?: () => void }
 type EndScreenProps = EndArt & RevealProps & { title: string; message?: string; stats?: Stat[]; swipeHint?: string; children: ReactNode }
 function EndScreen({ title, message, stats = [], reveal, onRevealed, children, frame, backdrop, onSwipeUp, swipeHint }: EndScreenProps) {
+  const titleBox = useRef<HTMLSpanElement>(null)
+  useTitleFit(titleBox, true, false, title) // a word wider than its line drops a step, never splits (0.35.1, F145)
   return (
     <Screen label={title} backdrop={backdrop} swipe={onSwipeUp ? { up: onSwipeUp } : undefined}>
       <Panel depth={2} gap="m" className="kit-modal kit-centred kit-end" frame={frame}>
         <Stack gap="m" className="kit-end-info">
-          <span className="kit-end-title"><Text kind="display">{title}</Text></span>
+          <span ref={titleBox} className="kit-end-title"><Text kind="display">{title}</Text></span>
           {message && <Text>{message}</Text>}
           {stats.length > 0
             ? <ScrollArea label={title}><StatList stats={stats} reveal={reveal} onRevealed={onRevealed} /></ScrollArea>

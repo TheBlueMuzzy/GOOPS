@@ -33,6 +33,7 @@ import { type CalloutPlacement, type CalloutSide, type CalloutTarget } from './c
 import { announce, liveRegion } from './emotes'
 import { reduceMotion } from './motion'
 import { useCalloutPlace, useShownPopover, type CalloutPlaceInput } from './teach'
+import { focusRing } from '../keysOrPad'
 
 // ─── The numbers ────────────────────────────────────────────────────
 
@@ -288,6 +289,29 @@ export function waveOffsets(points: OutlinePoint[], s: TalkState, feel: TalkFeel
   return { out, sides }
 }
 
+/** The wave never leaves the screen (0.35.4, F147: at 200% text a bubble as wide as the phone allows had no room left
+ *  beside it, and its right-hand spikes ran past the screen's edge). Each point's push-out `out` is cut to what keeps it
+ *  inside `room` (screen px: the window or game picture, minus the edge room). `origin` = where the outline's 0,0 is on
+ *  screen; `centre` + `pop` = the swell round the bubble's middle (outline px). Changes `out` in place. */
+export function keepWaveInside(points: OutlinePoint[], out: Float32Array, origin: { x: number; y: number },
+  room: { left: number; top: number; right: number; bottom: number }, centre: { x: number; y: number }, pop = 1) {
+  const cx = origin.x + centre.x, cy = origin.y + centre.y
+  // the swell moves a point away from the middle: where it may sit before the swell, so it's inside after
+  const left = cx + (room.left - cx) / pop, right = cx + (room.right - cx) / pop
+  const top = cy + (room.top - cy) / pop, bottom = cy + (room.bottom - cy) / pop
+  for (let i = 0; i < points.length; i++) {
+    if (out[i] <= 0) continue
+    const q = points[i], px = origin.x + q.x, py = origin.y + q.y
+    let most = out[i]
+    if (q.nx > 0.001) most = Math.min(most, (right - px) / q.nx)
+    if (q.nx < -0.001) most = Math.min(most, (left - px) / q.nx)
+    if (q.ny > 0.001) most = Math.min(most, (bottom - py) / q.ny)
+    if (q.ny < -0.001) most = Math.min(most, (top - py) / q.ny)
+    out[i] = Math.max(0, most)
+  }
+  return out
+}
+
 /** The grow (0.15 → 1, ease-out-back) at `t` 0..1. */
 export const growScale = (t: number) => { const c1 = 1.7, u = Math.min(1, Math.max(0, t)) - 1; return 0.15 + 0.85 * (1 + (c1 + 1) * u ** 3 + c1 * u ** 2) }
 
@@ -503,7 +527,7 @@ export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave',
     if (!button) return
     const before = document.activeElement as HTMLElement | null
     const el = bubble.current
-    const frame = schedule(() => { if (!typingIn(document.activeElement)) el?.focus({ preventScroll: true, focusVisible: false } as FocusOptions) })
+    const frame = schedule(() => { if (!typingIn(document.activeElement)) el?.focus(focusRing({ preventScroll: true })) })
     return () => {
       cancel(frame)
       if (before?.isConnected && before !== el && el?.contains(document.activeElement)) before.focus({ preventScroll: true })
@@ -559,6 +583,16 @@ export function TalkingBubble({ target, text, lineId, speaker, outline = 'wave',
         tipY: parseFloat(layerStyle.getPropertyValue('--kit-callout-tip-y')) || 0, reach,
       })
       const { out, sides } = waveOffsets(points, s, f, scale)
+      // …cut where it would leave the screen: the window or game picture, minus the edge room every bubble keeps (gap-m,
+      // its words' padding). The bubble sits at --kit-callout-x / -y; the outline's 0,0 is inside its border.
+      const frameEl = el.querySelector<HTMLElement>('.kit-callout-frame'), bodyEl = box.querySelector<HTMLElement>('.kit-talk-body')
+      if (frameEl && bodyEl && !plain && !still) {
+        const fr = frameEl.getBoundingClientRect(), edge = parseFloat(getComputedStyle(bodyEl).paddingLeft) || 0
+        keepWaveInside(points, out,
+          { x: (parseFloat(layerStyle.getPropertyValue('--kit-callout-x')) || 0) + border, y: (parseFloat(layerStyle.getPropertyValue('--kit-callout-y')) || 0) + border },
+          { left: fr.left + edge, top: fr.top + edge, right: fr.right - edge, bottom: fr.bottom - edge },
+          { x: box.clientWidth / 2, y: box.clientHeight / 2 }, 1 + s.pop)
+      }
       let d = ''
       for (let i = 0; i < points.length; i++) {
         const q = points[i], o = plain || still ? 0 : out[i]

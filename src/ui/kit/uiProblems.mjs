@@ -6,7 +6,8 @@
 //              screen edge (and not in something that scrolls), or text cut off
 //   "overlap:" two things on screen sit on top of each other (text over text, a control over text…) — new in 0.18.0;
 //              and a solid chip, badge or panel slid part-way onto a bar, meter or picture — 0.33.1 — or onto
-//              another card's words — 0.33.2
+//              another card's words — 0.33.2. A toast or tooltip (the top layer) over the page is on top by design
+//              and never counts — two of them over each other do (0.35.3)
 //   "focus:"   a focus ring showing although nobody used the keyboard
 //   "faint:"   text too faint to read against what's behind it: under 4.5:1, or 3:1 for big text (24 px, or 18.66 px
 //              bold) — the WCAG AA line. Skipped where it can't be judged: text over a picture, gradient, canvas or
@@ -16,6 +17,16 @@
 //              to edge (a cover picture, a divider) carry data-ui-bleed; things in a scroll area, hanging outside the
 //              box or moving right now (a "+4" floating away) are skipped. Words are measured by their ink. — 0.21.0
 //   "grows:"   a card that grew after it first appeared (noted by the kit's useFixedSize, fixedSize.ts) — 0.21.0
+//   "ring:"    words or a badge closer than ~2 px to an avatar's visible edge, measured as drawn: its ring (an outline)
+//              included and its round shape (a circle, not its box) — 0.35.8
+//   "contrast:" light on-game words (HudText, a plain toast, a bar's inside label) on a plain light background: under
+//              3:1 against what's behind their letters, their halo not counted (it's for busy game art) — 0.35.9
+//   "split:"   a word broken across lines in the middle ("Accessibil / ity") although it would fit on one line of the
+//              box it's drawn in; a word wider than that box may still wrap — 0.34.1 — unless it's in a title (0.35.1:
+//              a title can drop a size instead — "Reconnecti / ng…"). A part whose words have nowhere else to go and no
+//              smaller size (ConnectionDot's chip: its dot never moves, its corner gives way) carries data-ui-split-ok:
+//              there a word too long for the room left beside its fixed parts breaks as the last resort; so may a word
+//              in a ◀ ▶ picker that's already stacked (data-fit="stack": the value has the picker's whole width) — 0.37.0
 // Used by the gallery's screenshots (scripts/shoot.mjs) and by a game's npm run check:framework (conformance.mjs).
 // Skipped: the Dev Kit (#devkit-root), anything hidden, inert or aria-hidden, anything inside [data-ui-check="skip"]
 // (a game's on-purpose overlap, e.g. a title drawn over its own shadow copy), and things covered by something else
@@ -112,6 +123,27 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
     return s.backgroundColor !== 'rgba(0, 0, 0, 0)' || s.backgroundImage !== 'none' || [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())
   }
   const part = (el, x) => el === x || x.contains(el) // x itself or something inside it
+  // A sticky piece over words of its own scroll box (F149: a card that has to scroll keeps its last row of buttons at
+  // its bottom, kit.css, and the words scroll under it): not an overlap when scrolling the box moves the words out
+  // from under it — tried at both ends of the box's scroll, then put back. A sticky piece over words that no scroll
+  // ever uncovers is still an overlap.
+  const scrollsOutFromUnder = (a, b) => {
+    const stickyOf = (el) => { for (let e = el; e && e !== document.body; e = e.parentElement) if (getComputedStyle(e).position === 'sticky') return e; return null }
+    const sticky = stickyOf(a) ?? stickyOf(b)
+    if (!sticky || (sticky.contains(a) && sticky.contains(b))) return false
+    const words = sticky.contains(a) ? b : a
+    let box = sticky.parentElement
+    for (; box && box !== document.documentElement; box = box.parentElement) if (/(auto|scroll)/.test(getComputedStyle(box).overflowY)) break
+    if (!box || box === document.documentElement || !box.contains(words) || box.scrollHeight <= box.clientHeight + 1) return false
+    const was = box.scrollTop
+    let uncovered = false
+    for (const top of [0, box.scrollHeight - box.clientHeight]) {
+      box.scrollTo({ top, behavior: 'instant' })
+      if (!crossing(visibleBox(sticky), visibleBox(words))) uncovered = true
+    }
+    box.scrollTo({ top: was, behavior: 'instant' })
+    return uncovered
+  }
 
   // ---- colours (0.21.0) ----
   // A colour as [r, g, b, alpha] whatever way CSS wrote it (rgb(), color-mix(), oklch()…): the browser paints it on
@@ -143,6 +175,50 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
   // the text: each background colour until a solid one; see-through ones mixed in; the page itself is white).
   // Fading by opacity counts on the text and its holders up to its background — a faded whole card (dim) fades its
   // background too, so it's left alone. Returns the plain-words problem, or '' (fine, or can't be judged).
+  // The solid colour you see behind text `el` at point x, y: going down from the text, each background colour until a
+  // solid one (see-through ones mixed in; the page itself is white). null when it can't be judged: off the screen,
+  // something else covers the text there, or a picture / gradient / canvas / video is behind it.
+  const colourBehind = (el, x, y) => coloursBehind(el, x, y)?.[0] ?? null
+  // …and every colour that can be behind it there, when `gradients`: a CSS gradient is made of plain colours (its
+  // stops), so each stop is one of them (the gallery's striped stand-in game, F153). A picture (url()), canvas or video
+  // still can't be judged: null.
+  const gradientStops = (el) => {
+    const image = getComputedStyle(el).backgroundImage
+    if (['IMG', 'CANVAS', 'VIDEO', 'svg', 'PICTURE'].includes(el.tagName) || /url\(/.test(image) || !/gradient\(/.test(image)) return null
+    const stops = image.match(/(?:rgba?|hsla?|color|oklch|oklab|lab|lch)\([^()]*\)|#[0-9a-f]{3,8}\b/gi)
+    return stops?.length ? stops.map(rgba) : null
+  }
+  const coloursBehind = (el, x, y, { gradients = false } = {}) => {
+    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return null
+    const layers = [] // top to bottom; each is the colours it can be there (one, or a gradient's stops)
+    let reached = false
+    for (const below of document.elementsFromPoint(x, y)) {
+      if (!reached) {
+        if (below === el) reached = true
+        else if (el.contains(below)) continue // a word inside the text (a <strong>)
+        else if (paints(below)) return null // something covers the text here
+        else continue
+      }
+      if (pictureLike(below)) {
+        const stops = gradients && gradientStops(below)
+        if (!stops) return null
+        layers.push(stops.filter((c) => c[3] > 0.01))
+        if (stops.every((c) => c[3] > 0.99)) break
+      }
+      const bg = rgba(getComputedStyle(below).backgroundColor) // (painted under its own picture or gradient)
+      if (bg[3] > 0.01) layers.push([bg])
+      if (bg[3] > 0.99) break
+    }
+    if (!reached) return null
+    return layers.reduceRight((unders, tops) => tops.length ? tops.flatMap((top) => unders.map((under) => over(top, under))) : unders, [[255, 255, 255, 1]])
+  }
+  // The text's colour as [r, g, b, alpha], faded by opacity on the text and its holders up to its background (a faded
+  // whole card fades its background too, so that doesn't count) — null when it's invisible
+  const inkOf = (el) => {
+    let alpha = rgba(getComputedStyle(el).color)[3]
+    for (let e = el; e && e !== document.documentElement && seeThrough(getComputedStyle(e).backgroundColor); e = e.parentElement) alpha *= Number(getComputedStyle(e).opacity)
+    return alpha < 0.05 ? null : [...rgba(getComputedStyle(el).color).slice(0, 3), alpha]
+  }
   const faintText = (el) => {
     if (el.closest('svg, [disabled], [aria-disabled="true"]')) return ''
     const s = getComputedStyle(el)
@@ -153,31 +229,45 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
     const line = range.getClientRects()[0]
     if (!line) return ''
     const x = line.left + line.width / 2, y = line.top + line.height / 2
-    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return ''
-    const layers = []
-    let reached = false
-    for (const below of document.elementsFromPoint(x, y)) {
-      if (!reached) {
-        if (below === el) reached = true
-        else if (el.contains(below)) continue // a word inside the text (a <strong>)
-        else if (paints(below)) return '' // something covers the text here
-        else continue
-      }
-      if (pictureLike(below)) return ''
-      const bg = rgba(getComputedStyle(below).backgroundColor)
-      if (bg[3] > 0.01) layers.push(bg)
-      if (bg[3] > 0.99) break
-    }
-    if (!reached) return ''
-    const behind = layers.reduceRight((under, top) => over(top, under), [255, 255, 255, 1])
-    let alpha = rgba(s.color)[3]
-    for (let e = el; e && e !== document.documentElement && seeThrough(getComputedStyle(e).backgroundColor); e = e.parentElement) alpha *= Number(getComputedStyle(e).opacity)
-    if (alpha < 0.05) return '' // invisible text (e.g. a gradient painted through it): not "faint"
-    const ratio = contrast(over([...rgba(s.color).slice(0, 3), alpha], behind), behind)
+    const behind = colourBehind(el, x, y)
+    if (!behind) return ''
+    const ink = inkOf(el)
+    if (!ink) return '' // invisible text (e.g. a gradient painted through it): not "faint"
+    const ratio = contrast(over(ink, behind), behind)
     const size = parseFloat(s.fontSize)
     const big = size >= 24 || (size >= 18.66 && Number(s.fontWeight) >= 700)
     const needs = big ? 3 : 4.5
     return ratio < needs ? `${ratio.toFixed(1)}:1 against its background (needs ${needs}:1${big ? ' for big text' : ''})` : ''
+  }
+
+  // ---- light words on a light background (0.35.9, F153) ----
+  // On-game words — HudText ("Your turn", "Game over"), a plain toast, a bar's inside label — are drawn in the light
+  // on-game colour with a dark halo, made for the GAME's own picture. On a plain light page they all but vanish (the
+  // turn-based starter, Sprint 42) and the faint check never saw it: it skips words with a halo. So here the halo
+  // doesn't count (it's for busy game art, not a plain page): what's behind the letters, at 5 points along each line,
+  // against the words' own colour. A plain colour, or a gradient's best stop, must give 3:1 (white on light grey fails,
+  // white on a mid-to-dark table passes: the starter's felt #235b45 is 7.9:1). A picture, canvas or video behind them
+  // can't be judged and is left alone; so are words under a dialog's dim or inside a dialog (not really on show).
+  const lightWords = (el) => {
+    if (!el.closest('.kit-hud-text, .kit-bar-label-inside')) return ''
+    if (el.closest('dialog, [role="dialog"], [role="alertdialog"], [aria-modal="true"]')) return ''
+    const ink = inkOf(el)
+    if (!ink) return ''
+    const range = document.createRange()
+    let worst = null
+    for (const n of wordsIn(el, false)) {
+      range.selectNodeContents(n)
+      for (const line of range.getClientRects()) {
+        for (const f of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+          const behinds = coloursBehind(el, line.left + line.width * f, line.top + line.height / 2, { gradients: true })
+          if (!behinds) continue
+          // (a gradient: the stop that reads best — words across a light and a dark stripe are fine)
+          const ratio = Math.max(...behinds.map((b) => contrast(over(ink, b), b)))
+          if (worst === null || ratio < worst) worst = ratio
+        }
+      }
+    }
+    return worst !== null && worst < 3 ? `is light on-game words on a plain light background — ${worst.toFixed(1)}:1 (needs 3:1; their halo is for busy game art, not a plain page: put the game's picture or table colour behind them)` : ''
   }
 
   // ---- breathing room (0.21.0) ----
@@ -205,7 +295,10 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
     const rects = nodes.flatMap((n) => {
       range.selectNodeContents(n)
       const s = getComputedStyle(n.parentElement)
-      pixel.font = s.font
+      // (from its parts: the `font` shorthand reads "" when the text has a font-variant the shorthand can't say — the kit's
+      // lining-nums, 0.34.0 — and the canvas then kept its last font, 10px sans-serif: every word was measured in the
+      // wrong font, so "Settings" in Cozy read as touching its button's edge with 6 px of room — 0.35.4, F147)
+      pixel.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`
       const words = n.textContent.trim()
       const ink = pixel.measureText(s.textTransform === 'uppercase' ? words.toUpperCase() : words)
       return [...range.getClientRects()].map((r) => {
@@ -247,10 +340,52 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
     const midX = (content.left + content.right) / 2, midY = (content.top + content.bottom) / 2
     if (midX < b.left || midX > b.right || midY < b.top || midY > b.bottom) return '' // it sits outside the box, not in it
     const room = Math.min(content.left - inside.left, content.top - inside.top, inside.right - content.right, inside.bottom - content.bottom)
-    if (room >= 1.5) return ''
+    // (a box shrunk onto the table is a small copy of one that has room: its 1.5 px shrinks with it, like the ring's
+    // below — 0.37.1, F161: the gallery's pinned chips at 200% text sideways had 3 px, drawn at 0.4 as 1)
+    if (room >= 1.5 * Math.min(1, k)) return ''
     const what = box.classList[0] ? `.${box.classList[0]}` : `<${box.tagName.toLowerCase()}>`
     return `touches the edge of its box (${what}${box === el ? ', its own' : ''}) — ${Math.max(0, Math.round(room))} px of room`
   }
+
+  // ---- words split in the middle (0.34.1) ----
+  // A word broken across two lines in the middle ("Accessibil / ity" in a ◀ tab ▶ picker at 200% text). Flagged only
+  // when the word would fit on one line of the box it's drawn in (the nearest card, chip, button or panel around it —
+  // or the screen, when there's none): then the layout squeezed it (arrows too wide, a row's neighbour taking the room).
+  // A word wider than that box has nowhere to go and may still wrap. Breaks at a space, hyphen, dash or slash are
+  // where words end, not "in the middle".
+  const splitWords = (el) => {
+    const out = []
+    // (a part that marks it OK, or a ◀ ▶ picker already stacked — its last step: the value has the picker's whole width)
+    if (el.closest('[data-ui-split-ok], .kit-picker[data-fit="stack"]')) return out
+    const range = document.createRange()
+    for (const n of wordsIn(el, false)) {
+      for (const m of n.textContent.matchAll(/[^\s\-­‐-—/]{2,}/g)) {
+        range.setStart(n, m.index)
+        range.setEnd(n, m.index + m[0].length)
+        const lines = [...range.getClientRects()].filter((r) => r.width > 0.5)
+        if (lines.length < 2) continue
+        const tops = lines.map((r) => r.top)
+        if (Math.max(...tops) - Math.min(...tops) < Math.min(...lines.map((r) => r.height)) / 2) continue // one line
+        let box = el
+        while (box && box !== document.body && !drawsBox(box)) box = box.parentElement
+        let room = innerWidth, what = 'the screen'
+        if (box && box !== document.body) {
+          const s = getComputedStyle(box)
+          const k = box.offsetWidth ? box.getBoundingClientRect().width / box.offsetWidth : 1 // (shrunk by a transform)
+          room = box.getBoundingClientRect().width - k * ['borderLeftWidth', 'borderRightWidth', 'paddingLeft', 'paddingRight'].reduce((sum, side) => sum + parseFloat(s[side]), 0)
+          what = box.classList[0] ? `.${box.classList[0]}` : `<${box.tagName.toLowerCase()}>`
+        }
+        const wide = lines.reduce((sum, r) => sum + r.width, 0)
+        if (wide <= room + 0.5) out.push(`split: "${m[0]}" is broken in the middle across ${lines.length} lines, though it fits on one line of its box (${what})`)
+        // …and a TITLE's word even when it's wider than its box (0.35.1, F145: "Reconnecti / ng…" at 200% text): a title
+        // has a smaller size to go to (MenuHeader and the end screens drop a step), so a split one was never fitted —
+        // unless its fit already went all the way down (data-fit="split": body size, the last resort — 0.37.0, F156)
+        else if (el.matches('.kit-text:is([data-kind="title"], [data-kind="display"])') && !el.closest('[data-fit="split"]')) out.push(`split: "${m[0]}" is broken in the middle across ${lines.length} lines — a title word wider than its box (${what}): drop the title a size instead (MenuHeader / useTitleFit)`)
+      }
+    }
+    return out
+  }
+  for (const el of texts) problems.push(...splitWords(el))
 
   const boxes = things.map(visibleBox)
   const hitAll = document.createElement('style')
@@ -261,16 +396,25 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
       const faint = faintText(el)
       if (faint) problems.push(`faint: "${name(el)}" is hard to read — ${faint}`)
     }
+    for (const el of texts) {
+      const light = lightWords(el)
+      if (light) problems.push(`contrast: "${name(el)}" ${light}`)
+    }
     const items = [...texts.map((el) => [el, true]), ...[...document.querySelectorAll('img, svg, canvas, video, .kit-avatar, .kit-badge, [role="img"]')].map((el) => [el, false])]
     for (const [el, isText] of items) {
       const edge = tooClose(el, isText)
       if (edge) problems.push(`edge: "${name(el)}" ${edge}`)
     }
     const crossed = [] // pairs already said as "X × Y" (the covered-piece check below doesn't say them twice)
+    // A toast or tooltip floats in the top layer on purpose, over whatever is under it (at 200% text the toasts covered
+    // the card's words — Muzzy 2026-10-25: on top by design, 0.35.3). Only things in the SAME layer can collide: two
+    // toasts over each other still count.
+    const inTopLayer = (el) => !!el.closest(':popover-open')
     for (let i = 0; i < things.length; i++) {
       for (let j = i + 1; j < things.length; j++) {
         const a = things[i], b = things[j]
         if (a.contains(b) || b.contains(a)) continue
+        if (inTopLayer(a) !== inTopLayer(b)) continue
         const at = crossing(boxes[i], boxes[j])
         if (!at) continue
         let seenA = false, seenB = false
@@ -281,7 +425,7 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
           else if (paints(el)) break // something else — or one's own card / dialog — covers the other there
           if (seenA && seenB) break
         }
-        if (seenA && seenB) { problems.push(`overlap: "${name(a)}" × "${name(b)}"`); crossed.push([a, b]) }
+        if (seenA && seenB && !scrollsOutFromUnder(a, b)) { problems.push(`overlap: "${name(a)}" × "${name(b)}"`); crossed.push([a, b]) }
       }
     }
     // Covered bars and pictures (0.33.1): a solid piece (a chip, badge, button or panel — its own background, not
@@ -342,13 +486,62 @@ export function findProblems({ screenWidth = innerWidth, checkFocus = true } = {
           else if (paints(el)) break // something else covers them there
           if (seenT && seenP) break
         }
-        if (!seenT || !seenP) continue
+        if (!seenT || !seenP || scrollsOutFromUnder(piece, target)) continue
         found.push(piece)
         problems.push(`overlap: "${name(piece)}" covers part of "${name(target)}"`)
       }
     }
   } finally {
     hitAll.remove()
+  }
+
+  // ---- an avatar's ring (0.35.8, F152) ----
+  // Words or a badge closer than ~2 px to an avatar's VISIBLE edge — its ring included: Results' 1st place wears an accent
+  // outline 5 px out (10 px at 200% text) that isn't part of its box, so every box check saw the 8 px gap and never the
+  // ring crossing "1ST", the name and its ★. Both shapes are measured as drawn: a box rounded by its border-radius (a
+  // round avatar is a circle — a badge by its box's corner can be clear of it, or not, whatever the boxes say), the
+  // avatar's grown by its outline. Something laid ON the avatar's body (a seat's badge on its portrait's corner) is
+  // there on purpose and left alone.
+  // (style lengths are before any transform: a chip pinned to the table at 0.25 draws its 16 px corners at 4 px — `k`)
+  const shrunk = (el) => (el.offsetWidth ? el.getBoundingClientRect().width / el.offsetWidth : 1)
+  const rounded = (box, el, grow = 0) => { // a box with round corners: its inner box + the corner radius (≤ half a side)
+    const r = Math.min((parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0) * shrunk(el), (box.right - box.left) / 2, (box.bottom - box.top) / 2)
+    const R = r > 0 ? r + grow : 0 // (an outline follows the rounding; around square corners it stays square)
+    return { left: box.left - grow + R, right: box.right + grow - R, top: box.top - grow + R, bottom: box.bottom + grow - R, R }
+  }
+  const apart = (a, b) => { // px between two rounded shapes, below 0 when they cross
+    const dx = Math.max(a.left - b.right, b.left - a.right), dy = Math.max(a.top - b.bottom, b.top - a.bottom)
+    return (dx > 0 || dy > 0 ? Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) : Math.max(dx, dy)) - a.R - b.R
+  }
+  for (const av of [...document.querySelectorAll('.kit-avatar')].filter((el) => shown(el) && !moving(el))) {
+    const s = getComputedStyle(av)
+    const reach = s.outlineStyle === 'none' ? 0 : Math.max(0, parseFloat(s.outlineWidth) + parseFloat(s.outlineOffset)) * shrunk(av)
+    const b = av.getBoundingClientRect()
+    const body = rounded(b, av), ring = rounded(b, av, reach)
+    // What a scroll area (or any box hiding overflow) around the avatar cuts off isn't drawn (0.37.1, F161: Results'
+    // last row under the list's edge — "Continue" below the list "touched" the hidden part's ring). Words outside that
+    // box are measured to the part it shows, as a plain box; words inside it to the whole ring, as before.
+    let clipper = av.parentElement
+    while (clipper && clipper !== document.documentElement && getComputedStyle(clipper).overflowY === 'visible' && getComputedStyle(clipper).overflowX === 'visible') clipper = clipper.parentElement
+    if (clipper === document.documentElement) clipper = null
+    const seen = clipper && visibleBox(av)
+    if (clipper && !seen) continue // all of it scrolled out of sight
+    const seenRing = seen && { left: Math.max(seen.left - reach, b.left - reach), right: Math.min(seen.right + reach, b.right + reach), R: 0,
+      top: seen.top > b.top + 0.5 ? seen.top : seen.top - reach, bottom: seen.bottom < b.bottom - 0.5 ? seen.bottom : seen.bottom + reach }
+    const near = [
+      ...texts.filter((el) => !el.closest('.kit-badge')).map((el) => [el, wordsBox(wordsIn(el, false)), null]),
+      ...[...document.querySelectorAll('.kit-badge')].filter((el) => shown(el)).map((el) => [el, el.getBoundingClientRect(), el]),
+    ]
+    for (const [el, box, shape] of near) {
+      if (!box || av.contains(el) || el.contains(av) || moving(el)) continue
+      const piece = shape ? rounded(box, shape) : { ...box, R: 0 } // (words: the box of their letters)
+      if (apart(piece, body) <= 0) continue // ON the avatar: on purpose
+      const cut = seenRing && (seen.top > b.top + 0.5 || seen.bottom < b.bottom - 0.5 || seen.left > b.left + 0.5 || seen.right < b.right - 0.5)
+      const room = cut && !clipper.contains(el) ? apart(piece, seenRing) : apart(piece, ring)
+      // (a chip shrunk onto the table is a small copy of one that has room: its 1.5 px shrinks with it — the gallery's
+      // pinned chips at 200% text: "Bot" 1 px from its 10 px portrait)
+      if (room < 1.5 * Math.min(1, shrunk(av))) problems.push(`ring: "${name(el)}" touches the ring around "${name(av)}" — ${Math.max(0, Math.round(room))} px of room`)
+    }
   }
 
   // Cards that grew after they appeared — noted as it happens by the kit's useFixedSize (fixedSize.ts, dev builds)

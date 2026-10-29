@@ -88,7 +88,18 @@
     "credit": "Nokia Cellphone FC by Zeh Fernando"
   },
   {
-    "paths": ["public/audio/sfx/sfx_goop_land_01.mp3", "public/audio/sfx/sfx_goop_land_02.mp3", "public/audio/sfx/sfx_goop_land_03.mp3", "public/audio/sfx/sfx_crack_form_01.mp3", "public/audio/sfx/sfx_crack_form_02.mp3", "public/audio/sfx/sfx_crack_seal_01.mp3", "public/audio/sfx/sfx_visor_break_01.mp3", "public/audio/sfx/sfx_tank_rupture_01.mp3", "public/audio/ui/ui_periscope_pull_01.mp3", "public/audio/ui/ui_repair_wrong_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_goop_land_01.mp3",
+      "public/audio/sfx/sfx_goop_land_02.mp3",
+      "public/audio/sfx/sfx_goop_land_03.mp3",
+      "public/audio/sfx/sfx_crack_form_01.mp3",
+      "public/audio/sfx/sfx_crack_form_02.mp3",
+      "public/audio/sfx/sfx_crack_seal_01.mp3",
+      "public/audio/sfx/sfx_visor_break_01.mp3",
+      "public/audio/sfx/sfx_tank_rupture_01.mp3",
+      "public/audio/ui/ui_periscope_pull_01.mp3",
+      "public/audio/ui/ui_repair_wrong_01.mp3"
+    ],
     "source": "Kenney — Impact Sounds (soft thud under the goop landings, glass tick in the cracks and visor, metal-plate thunk in the seal and periscope, heavy glass in the rupture, plank + tin bonk for a wrong button; mixed, F29)",
     "author": "Kenney",
     "licence": "CC0",
@@ -97,7 +108,11 @@
     "credit": ""
   },
   {
-    "paths": ["public/audio/sfx/sfx_machine_fix_01.mp3", "public/audio/ui/ui_button_tap_01.mp3", "public/audio/ui/ui_button_back_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_machine_fix_01.mp3",
+      "public/audio/ui/ui_button_tap_01.mp3",
+      "public/audio/ui/ui_button_back_01.mp3"
+    ],
     "source": "Kenney — RPG Audio (metalLatch for a fixed machine; metalClick press / release for the buttons)",
     "author": "Kenney",
     "licence": "CC0",
@@ -106,7 +121,10 @@
     "credit": ""
   },
   {
-    "paths": ["public/audio/sfx/sfx_piece_rotate_01.mp3", "public/audio/sfx/sfx_piece_swap_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_piece_rotate_01.mp3",
+      "public/audio/sfx/sfx_piece_swap_01.mp3"
+    ],
     "source": "Kenney — Casino Audio (plastic chip clicks)",
     "author": "Kenney",
     "licence": "CC0",
@@ -115,7 +133,20 @@
     "credit": ""
   },
   {
-    "paths": ["public/audio/sfx/sfx_goop_land_01.mp3", "public/audio/sfx/sfx_goop_land_02.mp3", "public/audio/sfx/sfx_goop_land_03.mp3", "public/audio/sfx/sfx_goop_merge_01.mp3", "public/audio/sfx/sfx_goop_merge_02.mp3", "public/audio/sfx/sfx_goop_pop_01.mp3", "public/audio/sfx/sfx_goop_pop_02.mp3", "public/audio/sfx/sfx_goop_pop_03.mp3", "public/audio/sfx/sfx_goop_poke_01.mp3", "public/audio/sfx/sfx_goop_poke_02.mp3", "public/audio/sfx/sfx_crack_seal_01.mp3", "public/audio/sfx/sfx_tank_rupture_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_goop_land_01.mp3",
+      "public/audio/sfx/sfx_goop_land_02.mp3",
+      "public/audio/sfx/sfx_goop_land_03.mp3",
+      "public/audio/sfx/sfx_goop_merge_01.mp3",
+      "public/audio/sfx/sfx_goop_merge_02.mp3",
+      "public/audio/sfx/sfx_goop_pop_01.mp3",
+      "public/audio/sfx/sfx_goop_pop_02.mp3",
+      "public/audio/sfx/sfx_goop_pop_03.mp3",
+      "public/audio/sfx/sfx_goop_poke_01.mp3",
+      "public/audio/sfx/sfx_goop_poke_02.mp3",
+      "public/audio/sfx/sfx_crack_seal_01.mp3",
+      "public/audio/sfx/sfx_tank_rupture_01.mp3"
+    ],
     "source": "OpenGameArt — 40 CC0 water / splash / slime SFX (slime squelches for land, merge, poke and the seal; splashes for the pops and the rupture)",
     "author": "rubberduck",
     "licence": "CC0",
@@ -124,7 +155,26 @@
     "credit": ""
   },
   {
-    "paths": ["public/audio/sfx/sfx_goop_ready_01.mp3", "public/audio/sfx/sfx_goop_pop_01.mp3", "public/audio/sfx/sfx_goop_pop_02.mp3", "public/audio/sfx/sfx_goop_pop_03.mp3", "public/audio/sfx/sfx_tank_spin_01.mp3", "public/audio/sfx/sfx_tank_spin_02.mp3", "public/audio/sfx/sfx_laser_break_01.mp3", "public/audio/sfx/sfx_visor_break_01.mp3", "public/audio/sfx/sfx_controls_break_01.mp3", "public/audio/sfx/sfx_machine_fix_01.mp3", "public/audio/sfx/sfx_tank_rupture_01.mp3", "public/audio/sfx/sfx_shift_quota_01.mp3", "public/audio/sfx/sfx_shift_won_01.mp3", "public/audio/sfx/sfx_shift_lost_01.mp3", "public/audio/ui/ui_periscope_pull_01.mp3", "public/audio/ui/ui_repair_step_01.mp3", "public/audio/ui/ui_toggle_on_01.mp3", "public/audio/ui/ui_toggle_off_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_goop_ready_01.mp3",
+      "public/audio/sfx/sfx_goop_pop_01.mp3",
+      "public/audio/sfx/sfx_goop_pop_02.mp3",
+      "public/audio/sfx/sfx_goop_pop_03.mp3",
+      "public/audio/sfx/sfx_tank_spin_01.mp3",
+      "public/audio/sfx/sfx_tank_spin_02.mp3",
+      "public/audio/sfx/sfx_laser_break_01.mp3",
+      "public/audio/sfx/sfx_visor_break_01.mp3",
+      "public/audio/sfx/sfx_controls_break_01.mp3",
+      "public/audio/sfx/sfx_machine_fix_01.mp3",
+      "public/audio/sfx/sfx_tank_rupture_01.mp3",
+      "public/audio/sfx/sfx_shift_quota_01.mp3",
+      "public/audio/sfx/sfx_shift_won_01.mp3",
+      "public/audio/sfx/sfx_shift_lost_01.mp3",
+      "public/audio/ui/ui_periscope_pull_01.mp3",
+      "public/audio/ui/ui_repair_step_01.mp3",
+      "public/audio/ui/ui_toggle_on_01.mp3",
+      "public/audio/ui/ui_toggle_off_01.mp3"
+    ],
     "source": "OpenGameArt — 100 CC0 SFX (plop — ready retuned to D5; ratchet ticks; machine motors slowed / sped for break and fix; noise; explosion; bells pitched into rising dings; gong; switches)",
     "author": "rubberduck",
     "licence": "CC0",
@@ -133,7 +183,11 @@
     "credit": ""
   },
   {
-    "paths": ["public/audio/sfx/sfx_crack_form_01.mp3", "public/audio/sfx/sfx_crack_form_02.mp3", "public/audio/sfx/sfx_shift_lost_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_crack_form_01.mp3",
+      "public/audio/sfx/sfx_crack_form_02.mp3",
+      "public/audio/sfx/sfx_shift_lost_01.mp3"
+    ],
     "source": "OpenGameArt — 100 CC0 metal and wood SFX (wood_cracking for the cracks; metal_falling clatter under the lost gong)",
     "author": "rubberduck",
     "licence": "CC0",
@@ -142,7 +196,12 @@
     "credit": ""
   },
   {
-    "paths": ["public/audio/sfx/sfx_laser_break_01.mp3", "public/audio/sfx/sfx_controls_break_01.mp3", "public/audio/sfx/sfx_shift_quota_01.mp3", "public/audio/sfx/sfx_shift_won_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_laser_break_01.mp3",
+      "public/audio/sfx/sfx_controls_break_01.mp3",
+      "public/audio/sfx/sfx_shift_quota_01.mp3",
+      "public/audio/sfx/sfx_shift_won_01.mp3"
+    ],
     "source": "OpenGameArt — 80 CC0 RPG SFX (spell_fire hiss / fizz under the breaks; item_coins under the quota and won stingers)",
     "author": "rubberduck",
     "licence": "CC0",
@@ -151,7 +210,10 @@
     "credit": ""
   },
   {
-    "paths": ["public/audio/sfx/sfx_piece_swap_01.mp3", "public/audio/sfx/sfx_piece_drop_01.mp3"],
+    "paths": [
+      "public/audio/sfx/sfx_piece_swap_01.mp3",
+      "public/audio/sfx/sfx_piece_drop_01.mp3"
+    ],
     "source": "OpenGameArt — Swishes Sound Pack (fast drop pitched down 4 semitones)",
     "author": "artisticdude",
     "licence": "CC0",
@@ -160,7 +222,9 @@
     "credit": ""
   },
   {
-    "paths": ["public/art/"],
+    "paths": [
+      "public/art/"
+    ],
     "source": "Muzzy's own art (the art/ SVGs: console, buttons, title, end frame, background)",
     "author": "Muzzy",
     "licence": "own work",
@@ -169,12 +233,36 @@
     "credit": ""
   },
   {
-    "paths": ["public/icons/"],
+    "paths": [
+      "public/icons/"
+    ],
     "source": "Made from Muzzy's title art (scripts/make-maskable-icon.mjs)",
     "author": "Muzzy",
     "licence": "own work",
     "light": "🟢",
     "url": "",
     "credit": ""
+  },
+  {
+    "paths": [
+      "src/ui/kit/fonts/cinzel.woff2"
+    ],
+    "source": "Google Fonts (via Fontsource, self-hosted)",
+    "author": "Natanael Gama",
+    "licence": "SIL OFL 1.1",
+    "light": "🟡",
+    "url": "https://fonts.google.com/specimen/Cinzel",
+    "credit": "Cinzel by Natanael Gama, SIL Open Font License 1.1"
+  },
+  {
+    "paths": [
+      "src/ui/kit/fonts/alegreya.woff2"
+    ],
+    "source": "Google Fonts (via Fontsource, self-hosted)",
+    "author": "Juan Pablo del Peral (Huerta Tipográfica)",
+    "licence": "SIL OFL 1.1",
+    "light": "🟡",
+    "url": "https://fonts.google.com/specimen/Alegreya",
+    "credit": "Alegreya by Juan Pablo del Peral (Huerta Tipográfica), SIL Open Font License 1.1"
   }
 ]
