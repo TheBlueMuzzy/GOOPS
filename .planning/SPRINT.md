@@ -11,6 +11,7 @@ Checked:
 - [ ] 🤖 2. Upgrade effect runs: each upgrade on vs off at its rank, actives fired by the bots — scripts/bots/career.ts
 - [ ] 🤖 3. The command + results page (npm run sim:economy, e2e-shots/sim/index.html) + a quick mode in check:full — scripts/bots/economy.mjs
 - [ ] 🤖 4. Tests: repeatable career, upgrades reach the tuning — tests/economySim.test.ts
+- [x] 🤖 6. Beta release prep (/deliver, alongside the sim): review through a1d4ecd + security review (no issues), release-checks/beta.md, v0.2.0 notes draft, beta audits → favicon link fixed, B005–B007 logged, F71 + F72 added — index.html
 - [ ] 🤖 5. Run it in full, write research/economy-sim.md (findings + a suggested knob each for F52), TDD data/decisions (next free D30), GDD line — .planning/research/economy-sim.md
 
 ## Notes
