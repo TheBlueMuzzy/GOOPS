@@ -11,7 +11,7 @@
 - **New for careers:** the bots go to the **console** to repair broken machines, **swap** with a real hold (1.5 s, shorter with Goop Swap), **fire their actives**, and **shop between shifts**.
 - **Three buy styles** (every scrap spent, every time): **Spread evenly** (one level at a time into whatever has fewest) · **Rush one band** (the newest band of upgrades first) · **Actives first**. No bot buys Dense Goop (it's a challenge, not help).
 - **Each upgrade on vs off:** the same seeds with and without one upgrade (level 1, and max level), at the rank it opens, at rank 45, and in the final shift.
-- **Run:** 72 careers (3 skills × 3 styles × 8 seeds) + 8,520 on/off shifts + 1,560 final shifts = 14,368 shifts, 757 s on 24 threads.
+- **Run:** 72 careers (3 skills × 3 styles × 8 seeds) + 8,520 on/off shifts + 3,000 final shifts = 15,808 shifts, 776 s on 24 threads.
 
 ## Words used below
 - **Quota** = the cracks a shift asks you to seal. A shift is **won** when the quota is met. A lost shift still earns XP (its score).
@@ -46,7 +46,7 @@
 **4. Goop Dump is an XP farm — and, with Goop Colorizer, a score killer.**
 - Goop Dump level 3 (one active) adds **+35,000 to +42,000 score a shift at rank 15** (+16,000 to +24,000 at rank 45): over 4 ranks of XP. One shift with it can jump 5+ ranks (Sharp, rank 24: 54,000–126,000 a shift).
 - Goop Dump + Goop Colorizer equipped together: **score 0 in 4 of 6 shifts** (rank 27, Sharp) — every piece one colour plus a rain of that colour fills the tank, and the leftover penalty wipes the score. That's why "Actives first" careers earn only the floor (2,900 XP) at ranks 20–29.
-- In the final shift Goop Dump **loses it**: −45% to −60% wins (all goop is one colour; the rain buries the tank). Careers that took it in won **0 of 720** final shifts, so the bots now leave it home there (economy.json `finalLeaveOut`).
+- In the final shift Goop Dump **loses it**: −45% to −60% wins (all goop is one colour; the rain buries the tank). Careers that took it in won **0 of 1,440** final shifts, so the bots now leave it home there (economy.json `finalLeaveOut`).
 - Knob: `content/tuning/upgrades.json` → `goopDump` → `cellsPerWave` (18) **down**.
 
 **5. Ten upgrades have no measurable effect for the bots.**
@@ -77,9 +77,9 @@
 - Knob: `content/tuning/progression.json` → `scrapsPerRank` (1) — leave it; fix the dead upgrades first.
 
 **9. The final shift with a real career's upgrades.**
-- Focused: **80–100%** won (no upgrades: 85%). Sharp: **70% / 20% / 40%** (Spread / Rush / Actives first; no upgrades: 70%). Casual: 0% always.
+- Focused: **85% / 85% / 95%** won (Spread / Rush / Actives first; no upgrades: 85%). Sharp: **65% / 30% / 40%** (no upgrades: 70%). Casual: 0% always. (Re-run 2026-10-29 after the review: both sides now play the same 20 seeds — the first run compared 10 seeds with 20.)
 - Every Focused/Sharp career reached and won the final shift (median 1–2 tries).
-- Rush and Actives-first Sharp careers do worse than no upgrades. Rush carries max-level Slow Cracks (finding 7: fewer cracks to seal for the valve); why Actives first loses is not pinned down yet (its loadout: Cooldown Booster, Colorizer, Crack Down at max). Focused with the same loadouts doesn't lose — 8 careers each, so treat the Sharp gap as a lead, not a fact. The F64 final-shift bot (no swap hold, no actives) gets 75–90% on the same seeds.
+- Rush and Actives-first Sharp careers do worse than no upgrades. Rush carries max-level Slow Cracks (finding 7: fewer cracks to seal for the valve); why Actives first loses is not pinned down yet (its loadout: Cooldown Booster, Colorizer, Crack Down at max). Focused with the same loadouts doesn't lose — 8 careers each × 20 seeds, so treat the Sharp gap as a lead, not a fact. The F64 final-shift bot (no swap hold, no actives) gets 75–90% on the same seeds.
 - Knob: `content/tuning/upgrades.json` → `slowCracks` → `byLevel` **smaller steps** (it's the upgrade that costs final-shift wins).
 
 ## Felt in your hands, not judged by these numbers
