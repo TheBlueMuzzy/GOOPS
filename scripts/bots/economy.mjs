@@ -115,7 +115,7 @@ async function main() {
     }
   })
   const { freshProgress } = await import('../../src/progress/progression.ts')
-  for (const bot of eco.skills) for (let seed = 1; seed <= Math.max(finalSeeds, quick ? 0 : 20); seed++) {
+  for (const bot of eco.skills) for (let seed = 1; seed <= finalSeeds; seed++) {
     finalJobs.push({ kind: 'shift', key: { bot, with: false }, input: { bot, seed: 9_000_000 + seed, progress: freshProgress(), rank: progression.maxRank } })
     finalJobs.push({ kind: 'final', key: { bot, path: 'runFinal' }, bot, seed: 9_000_000 + seed })
   }

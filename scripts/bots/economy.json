@@ -30,7 +30,7 @@
   "feltDirectly": ["denseGoop", "goopSwap"],
   "_final": "The final shift with a real career's upgrades: each career's loadout on the day it reached rank 50, finalSeeds shifts each (seeds 1…n), plus the same seeds with no upgrades. finalLeaveOut = actives the bots take OFF for the final shift (a first sim run: Goop Dump's rain of one-colour goop drowned every final shift, 0 of 10 won — a player would learn to leave it home); the results page also shows the loadout with them still on.",
   "finalLeaveOut": ["goopDump"],
-  "finalSeeds": 10,
+  "finalSeeds": 20,
   "_quick": "npm run sim:economy -- --quick (check:full): careers cut at quickToRank, 1 seed, a few effect runs, a few final shifts — it only proves the sim runs and repeats; the full run's numbers are the ones to read.",
   "quick": { "careerSeeds": 1, "toRank": 7, "effectSeeds": 2, "effectUpgrades": ["pressureControl", "cooldownBooster", "tougherTank"], "finalSeeds": 2 }
 }
