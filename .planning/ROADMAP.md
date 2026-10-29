@@ -147,7 +147,7 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - ✅ F48 🎮 Quick Fix upgrade at rank 28 (fewer repair steps) — should:beta · needs: F34
 - 🟢 F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
 - 🟢 F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
-- 🟢 F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
+- 🔨 F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
 
 ## M6 — 1.0: polished, balanced, replaces v1
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
