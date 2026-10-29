@@ -29,3 +29,8 @@ Checked: unit tests 654 (titles + save v4 upgrade + golden save, the ending's st
 - F65 check:full (1st run, 27.5 min): zap + twists + ending failed under load, all pass alone. ending: the opening shake (looks clock) was over before the check looked at 1920 → a shake watcher from before the win + 60 s caps; twists: a 20 s cap on ~9 s of game time → 60 s (B004 note). ending + twists + zap side by side then all pass.
 - Muzzy 2026-10-27: F65 — The ending + the new career "approved" (at /deliver).
 - Muzzy 2026-10-27 (answers): goop lines — keep ("i'll do a script rewrite later") · the new career replays the story, lessons skipped — yes · a title badge between shifts — later, during an art redesign (ROADMAP parking lot) · feel ("relief and a quiet goodbye?") — "it's fine as is". Not yet said "approved".
+
+Retro: (Claude's draft 2026-10-29, auto mode — Muzzy's words win)
+- Went well: the whole ending was built and checked in one overnight run, and Muzzy's answers kept every default but one (the title badge → art redesign).
+- Went wrong: check:full under load failed three e2e files that passed alone (a shake over before the check looked, a too-tight cap) — a second 27-minute run.
+- Change: e2e checks watch for a moment from before it can start (never "look after"), and their caps count game time, not wall time.
