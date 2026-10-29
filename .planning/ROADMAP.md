@@ -159,6 +159,9 @@ Goal: Goops 2 goes live at the old address, works offline, sounds finished, and 
 - ⏳ F55 🎮 Credits screen — must:1.0
 - ⏳ F56 ✨ Periscope zoom — should:1.0
 - ⏳ F57 🎮 Colour-blind help — should:1.0
+  what: beta audit 2026-10-29: same-colour merge + colour-only crack squiggles; red and green goop side by side; lesson words name colours ("Click the yellow goop"). Settings already has a hidden Colour-blind mode row (settings.json colourBlind) — needs a per-colour shape/pattern (goop face, crack glyph, next window) or another palette
+- 🟢 F71 🧱 Real-phone performance pass — a mid + a low Android with ?fps through a busy rank-30+ shift, jelly vs particle, result in TDD Key facts (the beta audit 2026-10-29 couldn't measure the phone GPU; desktop: 8.3 ms a frame); plus a lighter first visit: drop the 6 kit fonts Goops never uses from the offline copy (~146 KB) and shrink the 512 icons — should:1.0
+- 🟢 F72 ❓ Pinch zoom on or off — the page turns pinch-zoom off (normal for a game, flagged by WCAG); OK only once Text size really works everywhere (B005) — decide + note in TDD — should:1.0
 
 ## Parking lot
 - 💡 2026-10-27 — **Title badge on the console between shifts (Muzzy, F65):** add one during the art redesign — titles show only on paydays, reports and the ending's badge rewrite now.
