@@ -134,7 +134,8 @@ async function main() {
   // quick mode is a check: every career must play, gain ranks and repeat
   if (quick) {
     const problems = []
-    for (const c of careers) if (c.reachedRank < eco.quick.toRank) problems.push(`${c.bot}/${c.style} seed ${c.seed} stopped at rank ${c.reachedRank}`)
+    // (F74 — Rank lock: a bot that never meets a quota is held at its rank — economy.json quick.mustClimb names the bots that must climb)
+    for (const c of careers) if (eco.quick.mustClimb.includes(c.bot) && c.reachedRank < eco.quick.toRank) problems.push(`${c.bot}/${c.style} seed ${c.seed} stopped at rank ${c.reachedRank}`)
     const again = await runPool([careerJobs[0]], 'repeat check')
     if (JSON.stringify(again[0]) !== JSON.stringify(careers[0])) problems.push('the same career seed gave a different career the second time')
     if (!effectResults.every((r) => r && r.realMs > 0)) problems.push('an upgrade on/off shift did not play')

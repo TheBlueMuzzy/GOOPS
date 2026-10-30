@@ -19,7 +19,7 @@ import { createShift } from '../../src/engine'
 import type { BreakdownConfig, MachineId, ShiftConfig, ShiftEngine, TwistsConfig, UpgradeDef, WhiteGoopConfig } from '../../src/engine'
 import type { FinalShiftConfig } from '../../src/engine/finalShift'
 import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, type Progress } from '../../src/progress/progression'
-import { activeSlots, buyLevel, costOf, levelOf, maxLevelOf, setEquipped, upgradeBook, upgradesForShift, whyNotBuy } from '../../src/progress/upgradeShop'
+import { activeSlots, buyLevel, costOf, levelOf, maxLevelOf, setEquipped, takeBackLevel, upgradeBook, upgradesForShift, whyNotBuy } from '../../src/progress/upgradeShop'
 import { playableUpgrades } from '../../src/engine/upgrades'
 import { repairSteps } from '../../src/game/repairs'
 import { swapHoldMs } from '../../src/input/controls'
@@ -212,8 +212,8 @@ export const shopUpgrades = (): UpgradeDef[] => playableUpgrades(book)
 const bandOf = (rank: number) => economy.bands.filter((b) => rank >= b).length - 1
 
 /** The next level a buy style wants, or null (nothing it can buy). Only upgrades the shop would sell right now. */
-export function nextBuy(p: Progress, rank: number, style: BuyStyle): string | null {
-  const neverBuy: string[] = economy.neverBuy // (an empty list in the JSON reads as never[])
+export function nextBuy(p: Progress, rank: number, style: BuyStyle, skip: string[] = []): string | null {
+  const neverBuy: string[] = [...economy.neverBuy, ...skip] // (an empty list in the JSON reads as never[])
   const open = shopUpgrades().filter((u) => !neverBuy.includes(u.id) && whyNotBuy(p, u.id, rank) === null)
   if (!open.length) return null
   // fewest levels (as a share of its max) first, then the older one (lower rank), then file order
@@ -230,10 +230,10 @@ export function nextBuy(p: Progress, rank: number, style: BuyStyle): string | nu
 }
 
 /** Spend every scrap the style wants to, then take the best actives into the shift (economy.json activePriority). */
-export function shop(p: Progress, rank: number, style: BuyStyle): Progress {
+export function shop(p: Progress, rank: number, style: BuyStyle, skip: string[] = []): Progress {
   if (!isUnlocked('upgrades', rank)) return p
   let next = p
-  for (let id = nextBuy(next, rank, style); id; id = nextBuy(next, rank, style)) next = buyLevel(next, id, rank)
+  for (let id = nextBuy(next, rank, style, skip); id; id = nextBuy(next, rank, style, skip)) next = buyLevel(next, id, rank)
   return equipBest(next)
 }
 
@@ -299,8 +299,8 @@ export function runCareer(input: CareerInput): CareerResult {
   const top = progressionJson.maxRank
   const r: CareerResult = { bot: input.bot, style: input.style, seed: input.seed, shifts: [], reachedRank: 0, finalWon: false, finalTries: 0,
     ownedAt: {}, equippedAt: {}, loadout50: null, loadout50Raw: null, scrapsEarned: 0, scrapsSpent: 0, unspentByRank: {} }
-  // the first day (a guided training shift) always ends at rank 1 — rewardFirstDay with no score
-  let p = rewardFirstDay(freshProgress(), 0).progress
+  // the first day (a guided training shift) always ends at rank 1 — rewardFirstDay with no score (it needs no quota)
+  let p = rewardFirstDay(freshProgress(), 0, { quotaMet: false }).progress
   r.shifts.push({ rank: 0, won: true, xp: p.totalXp, survivedS: 0, quota: 1, scraps: 0, spent: 0, fired: 0, repairs: 0 })
   let lastRank = -1
   for (let k = 1; r.shifts.length < maxShifts; k++) {
@@ -310,6 +310,10 @@ export function runCareer(input: CareerInput): CareerResult {
     if (rank >= top) {
       // the final shift: a player who has lost to the dump's rain leaves it at home (economy.json finalLeaveOut)
       if (!r.loadout50Raw) r.loadout50Raw = structuredClone(p)
+      // …and takes back what slows it there (economy.json finalTakeBack: Dense Goop), spending the scraps elsewhere
+      const takeBack: string[] = economy.finalTakeBack
+      for (const id of takeBack) while (levelOf(p, id) > 0) p = takeBackLevel(p, id)
+      p = shop(p, rank, input.style, takeBack)
       p = equipBest(p, economy.finalLeaveOut)
     }
     if (rank !== lastRank) {
@@ -319,7 +323,7 @@ export function runCareer(input: CareerInput): CareerResult {
     }
     if (rank >= top && !r.loadout50) r.loadout50 = structuredClone(p)
     const o = playShift({ bot: input.bot, seed: shiftSeed(input.seed, k), progress: p })
-    const reward = rewardShift(p, o.score)
+    const reward = rewardShift(p, o.score, { quotaMet: o.won }) // F74 — Rank lock: a rank-up needs a quota met this rank
     r.shifts.push({ rank, won: o.won, xp: reward.xp, survivedS: Math.round(o.survivedMs / 100) / 10, quota: Math.round(o.quota * 1000) / 1000,
       scraps: scrapsAt(rank, p), spent: p.scrapsSpent, fired: Object.values(o.fired).reduce((a, b) => a + b, 0), repairs: o.repairs,
       ...(o.final ? { outcome: o.outcome } : {}) })
