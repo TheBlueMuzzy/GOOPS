@@ -10,6 +10,11 @@ import { mainColor, type PieceDef } from '../../src/engine/pieces'
 import { dropPiece, ofType, oneShapeConfig, straightLineCracks } from './helpers'
 
 const book = upgradesJson as UpgradeBook
+// an active's numbers at a level, read from the book (F52 tunes them: the tests follow)
+const level = (id: string, n: number) => book.upgrades.find((u) => u.id === id)!.ability!.byLevel[n - 1] as Record<string, number>
+const dump = (n: number) => level('goopDump', n)
+const dumpTotal = (n: number) => dump(n).waves * dump(n).cellsPerWave
+const colorized = (n: number) => level('goopColorizer', n).pieces
 
 // a 2×2 square, 4 colours in play, pieces hang still at the top (they only fall when a test drops them), a tank that
 // never wears out
@@ -77,7 +82,7 @@ describe('Goop Dump (F42, rank 15)', () => {
     expect(ofType(shift.takeEvents(), 'abilityReady')).toEqual([{ type: 'abilityReady', id: 'goopDump' }])
   })
 
-  it('level 3: 3 waves of 18 single cells in the falling piece’s colour, 80 ms apart, 600 ms between waves; then it ends', () => {
+  it('level 3: its waves of single cells in the falling piece’s colour, cellMs apart, waveMs between waves; then it ends', () => {
     const { shift, s, a } = withActive('goopDump', 3)
     const color = mainOfFalling(shift)
     makeReady(shift)
@@ -86,29 +91,30 @@ describe('Goop Dump (F42, rank 15)', () => {
     expect(a()).toMatchObject({ charge: 0, ready: false })
     const log = timed(shift, 6000)
     const dumps = log.filter((x) => x.e.type === 'dump')
-    expect(dumps).toHaveLength(54)
+    const { cellsPerWave: n, cellMs, waveMs } = dump(3)
+    expect(dumps).toHaveLength(dumpTotal(3))
     for (const { e } of dumps) expect(e).toMatchObject({ type: 'dump', color })
-    // cell k of wave w comes at w × (17 × 80 + 600) + k × 80 ms after firing (the first on the very first tick)
-    const want = dumps.map((_, i) => Math.max(1, Math.floor(i / 18) * (17 * 80 + 600) + (i % 18) * 80))
+    // cell k of wave w comes at w × ((n − 1) × cellMs + waveMs) + k × cellMs after firing (the first on the very first tick)
+    const want = dumps.map((_, i) => Math.max(1, Math.floor(i / n) * ((n - 1) * cellMs + waveMs) + (i % n) * cellMs))
     expect(dumps.map((d) => d.t)).toEqual(want)
-    // all 54 are goop in the tank, in that colour (nothing else was there), none wild
-    expect(goopCells(s)).toBe(54)
+    // all of them are goop in the tank, in that colour (nothing else was there), none wild
+    expect(goopCells(s)).toBe(dumpTotal(3))
     expect([...s.grid].every((c) => c === 0 || c === color)).toBe(true)
     // the effect ends right after the last cell
     const end = log.find((x) => x.e.type === 'abilityEnd')!
     expect(end.e).toEqual({ type: 'abilityEnd', id: 'goopDump' })
-    expect(end.t).toBe(dumps[53].t)
+    expect(end.t).toBe(dumps[dumpTotal(3) - 1].t)
     expect(s.effects!.dump).toBeUndefined()
   })
 
-  it('level 1: one wave of 18; each cell drops to the floor (a fall event), in random columns', () => {
+  it('level 1: one wave; each cell drops to the floor (a fall event), in random columns', () => {
     const { shift, s } = withActive('goopDump', 1)
     makeReady(shift)
     shift.act({ type: 'ability', id: 'goopDump' })
     const events = timed(shift, 3000).map((x) => x.e)
     const dumps = ofType(events, 'dump')
-    expect(dumps).toHaveLength(18)
-    expect(ofType(events, 'fall').length).toBeGreaterThanOrEqual(18)
+    expect(dumps).toHaveLength(dumpTotal(1))
+    expect(ofType(events, 'fall').length).toBeGreaterThanOrEqual(dumpTotal(1))
     expect(new Set(dumps.map((d) => d.x)).size).toBeGreaterThan(5)
     // nothing rests in the hidden rows at the top
     for (let i = 0; i < (s.bufferRows + 1) * s.width; i++) expect(s.grid[i]).toBe(0)
@@ -149,7 +155,7 @@ describe('Goop Dump (F42, rank 15)', () => {
     makeReady(low)
     low.act({ type: 'ability', id: 'goopDump' })
     const dumps = ofType(timed(low, 6000).map((x) => x.e), 'dump')
-    expect(dumps.length).toBeGreaterThan(40)
+    expect(dumps.length).toBeGreaterThan(dumpTotal(3) * 0.7)
     for (const d of dumps) expect(pieceCols.has(d.x)).toBe(false)
   })
 
@@ -158,13 +164,14 @@ describe('Goop Dump (F42, rank 15)', () => {
     makeReady(shift)
     shift.act({ type: 'ability', id: 'goopDump' })
     shift.tick(500)
-    shift.takeEvents()
+    const before = ofType(shift.takeEvents(), 'dump').length
     const snap = shift.snapshot()
     const copy = createShift(cfg, { ...snap.options, startGrid: new Uint8Array(30 * 24) })
     copy.restore(snap)
     const rest = (e: ShiftEngine) => { e.tick(3000); return ofType(e.takeEvents(), 'dump') }
     const a = rest(shift), b = rest(copy)
-    expect(a.length).toBeGreaterThan(20)
+    expect(a.length).toBe(dumpTotal(2) - before) // (the rest of the rain)
+    expect(a.length).toBeGreaterThan(0)
     expect(b).toEqual(a)
   })
 
@@ -237,35 +244,35 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     expect(a().ready).toBe(true)
   })
 
-  it('level 1: the next 6 pieces take the falling piece’s colour — the one in the next window at once — then it ends', () => {
+  it('level 1: the next pieces (its count) take the falling piece’s colour — the one in the next window at once — then it ends', () => {
     const { shift, s, cfg } = withActive('goopColorizer', 1, { seed: 3 })
     const color = s.piece!.colors[0]
     makeReady(shift)
     shift.act({ type: 'ability', id: 'goopColorizer' })
     expect(shift.takeEvents()).toEqual([{ type: 'ability', id: 'goopColorizer' }])
     expect(s.next!.every((c) => c === color)).toBe(true) // the next window shows it straight away
-    expect(s.effects!.colorize).toEqual({ id: 'goopColorizer', color, left: 5 })
+    expect(s.effects!.colorize).toEqual({ id: 'goopColorizer', color, left: colorized(1) - 1 })
     const log: ShiftEvent[] = []
     const colours: number[][] = []
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < colorized(1); i++) {
       log.push(...dropPiece(shift, cfg))
       colours.push([...s.piece!.colors])
       s.grid.fill(0); s.groupOf.fill(-1); s.groups.clear()
     }
     expect(colours.every((p) => p.every((c) => c === color))).toBe(true)
-    // the 6th came into the next window as the 5th fell: the effect ended then, and the pieces after are random again
+    // the last came into the next window as the one before it fell: the effect ended then, and the pieces after are random again
     expect(ofType(log, 'abilityEnd')).toEqual([{ type: 'abilityEnd', id: 'goopColorizer' }])
     expect(s.effects!.colorize).toBeUndefined()
     const later = nextColours(shift, cfg, 12).map((p) => p[0])
     expect(later.some((c) => c !== color)).toBe(true)
   })
 
-  it('level 3: 8 pieces', () => {
+  it('level 3: its count of pieces', () => {
     const { shift, s, cfg } = withActive('goopColorizer', 3, { seed: 4 })
     const color = s.piece!.colors[0]
     makeReady(shift)
     shift.act({ type: 'ability', id: 'goopColorizer' })
-    expect(nextColours(shift, cfg, 8).every((p) => p.every((c) => c === color))).toBe(true)
+    expect(nextColours(shift, cfg, colorized(3)).every((p) => p.every((c) => c === color))).toBe(true)
     expect(s.effects!.colorize).toBeUndefined()
   })
 
@@ -279,7 +286,7 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     shift.act({ type: 'ability', id: 'goopColorizer' })
     expect(s.effects!.colorize!.color).toBe(main)
     expect(s.next).toEqual([main, main, main, main])
-    for (const p of nextColours(shift, cfg, 6)) expect(p).toEqual([main, main, main, main])
+    for (const p of nextColours(shift, cfg, colorized(1))) expect(p).toEqual([main, main, main, main])
   })
 
   it('wild pieces coming next are coloured too (wild only from rank 40)', () => {
@@ -290,7 +297,7 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     t.wild.chance = 1 // (read live: from now on every new piece is wild)
     makeReady(shift)
     shift.act({ type: 'ability', id: 'goopColorizer' })
-    for (const p of nextColours(shift, cfg, 6)) expect(p.every((c) => c === color && c !== WILD)).toBe(true)
+    for (const p of nextColours(shift, cfg, colorized(1))) expect(p.every((c) => c === color && c !== WILD)).toBe(true)
   })
 
   it('seeded: the same seed gives the same pieces with the colorizer on', () => {
@@ -325,14 +332,15 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     expect(ofType(rupture.takeEvents(), 'reject')).toHaveLength(1)
     expect(rupture.state.effects!.colorize).toBeUndefined()
 
-    const again = withActive('goopColorizer', 1)
+    // (level 3: the most pieces — fire, let all but one go by, fire again: the count starts over)
+    const again = withActive('goopColorizer', 3)
     makeReady(again.shift)
     again.shift.act({ type: 'ability', id: 'goopColorizer' })
-    nextColours(again.shift, again.cfg, 2)
-    expect(again.s.effects!.colorize!.left).toBe(3)
+    nextColours(again.shift, again.cfg, colorized(3) - 2)
+    expect(again.s.effects!.colorize!.left).toBe(1)
     makeReady(again.shift)
     again.shift.act({ type: 'ability', id: 'goopColorizer' })
-    expect(again.s.effects!.colorize!.left).toBe(5)
+    expect(again.s.effects!.colorize!.left).toBe(colorized(3) - 1)
   })
 })
 

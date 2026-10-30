@@ -120,7 +120,7 @@
     {
       "id": "goopDump",
       "name": "Goop Dump",
-      "_note": "Active (F42, v1). Full in 15 s (0.0667 a second) + 25% per seal. Fire: waves of single goop cells in the falling piece's colour rain into random columns — waves 1 / 2 / 3, cellsPerWave cells a wave (v1 18), cellMs between cells (v1 80), waveMs between waves (v1 600). Seeded. Refused (charge kept) with no falling piece, a wild one (no colour to copy), during a rupture, or while a dump is still raining. cardNumber 'count': the shop card shows the first number (waves) as a plain number, not a %.",
+      "_note": "Active (F42, v1). Full in 15 s (0.0667 a second) + 25% per seal. Fire: waves of single goop cells in the falling piece's colour rain into random columns — waves 1 / 2 / 3, cellsPerWave cells a wave (v1 18; F52 balance pass: 8 — 18 added +30–37k score a shift at level 3, 4–5 ranks of XP; 8 adds about one rank's worth), cellMs between cells (v1 80), waveMs between waves (v1 600). Seeded. Refused (charge kept) with no falling piece, a wild one (no colour to copy), during a rupture, or while a dump is still raining. cardNumber 'count': the shop card shows the first number (waves) as a plain number, not a %.",
       "type": "active",
       "rank": 15,
       "maxLevel": 3,
@@ -130,9 +130,9 @@
         "chargePerSecond": 0.0667,
         "chargePerSeal": 0.25,
         "byLevel": [
-          { "waves": 1, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 },
-          { "waves": 2, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 },
-          { "waves": 3, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 }
+          { "waves": 1, "cellsPerWave": 8, "cellMs": 80, "waveMs": 600 },
+          { "waves": 2, "cellsPerWave": 8, "cellMs": 80, "waveMs": 600 },
+          { "waves": 3, "cellsPerWave": 8, "cellMs": 80, "waveMs": 600 }
         ]
       }
     },
@@ -170,7 +170,7 @@
     {
       "id": "goopColorizer",
       "name": "Goop Colorizer",
-      "_note": "Active (F42, v1). Full in 25 s (0.04 a second) + 25% per seal. Fire: the next 6 / 7 / 8 pieces (from the one in the next window on) take the falling piece's colour (a two-colour piece: its main colour — the one most of its cells have). Refused (charge kept) with no falling piece or a wild one. Firing again starts the count again in the new colour.",
+      "_note": "Active (F42, v1). Full in 25 s (0.04 a second) + 25% per seal. Fire: the next 2 / 3 / 4 pieces (from the one in the next window on) take the falling piece's colour (a two-colour piece: its main colour — the one most of its cells have). Refused (charge kept) with no falling piece or a wild one. Firing again starts the count again in the new colour. F52 (balance pass): a short burst toward a crack — v1's 6 / 7 / 8 built one-colour blobs too big to pop in time (the bots lost 4–9% of the quota; with Goop Dump the score was wiped to 0 in 65–98% of shifts).",
       "type": "active",
       "rank": 25,
       "maxLevel": 3,
@@ -179,7 +179,7 @@
         "effect": "colorize",
         "chargePerSecond": 0.04,
         "chargePerSeal": 0.25,
-        "byLevel": [{ "pieces": 6 }, { "pieces": 7 }, { "pieces": 8 }]
+        "byLevel": [{ "pieces": 2 }, { "pieces": 3 }, { "pieces": 4 }]
       }
     },
     {

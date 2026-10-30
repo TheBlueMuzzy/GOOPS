@@ -152,11 +152,12 @@ describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 d
     ])
   })
 
-  it('F42 actives: v1’s numbers per level and v1’s charging (15 / 25 / 30 s to full, +0.25 a seal)', () => {
+  it('F42 actives: each level’s numbers reach the shift as the book has them, and v1’s charging (15 / 25 / 30 s to full, +0.25 a seal)', () => {
     const at = (id: string, level: number) => resolveUpgrades(book, { [id]: level }, [id]).abilities[0]
+    // (F52 tunes the sizes — Goop Dump's cells a wave, Colorizer's pieces: read from the book, not written here)
+    const inBook = (id: string) => book.upgrades.find((u) => u.id === id)!.ability!.byLevel
     expect([1, 2, 3].map((n) => at('goopDump', n).params.waves)).toEqual([1, 2, 3])
-    expect(at('goopDump', 1).params).toMatchObject({ cellsPerWave: 18, cellMs: 80, waveMs: 600 })
-    expect([1, 2, 3].map((n) => at('goopColorizer', n).params.pieces)).toEqual([6, 7, 8])
+    for (const id of ['goopDump', 'goopColorizer']) expect([1, 2, 3].map((n) => at(id, n).params), id).toEqual(inBook(id))
     expect([1, 2, 3].map((n) => at('crackDown', n).params)).toEqual([{ cracks: 3, rows: 4 }, { cracks: 5, rows: 4 }, { cracks: 7, rows: 4 }])
     const secondsToFull = { goopDump: 15, goopColorizer: 25, crackDown: 30 }
     for (const [id, s] of Object.entries(secondsToFull)) {

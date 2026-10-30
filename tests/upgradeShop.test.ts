@@ -154,10 +154,10 @@ describe('the card number line (levelPercent): read from the real upgrades.json'
       for (let n = 1; n <= u.maxLevel; n++) expect(card(n), `${u.id} ${n}`).not.toBe(0)
     }
   })
-  it('F42: the count cards show plain numbers — Dump waves 1 / 2 / 3, Colorizer pieces 6 / 7 / 8, Crack Down cracks 3 / 5 / 7, a slot 0 → 1', () => {
+  it('F42: the count cards show plain numbers — Dump waves 1 / 2 / 3, Colorizer’s pieces (the book’s), Crack Down cracks 3 / 5 / 7, a slot 0 → 1', () => {
     const counts = (id: string) => [0, 1, 2, 3].map((n) => levelCount(def(id), n))
     expect(counts('goopDump')).toEqual([0, 1, 2, 3])
-    expect(counts('goopColorizer')).toEqual([0, 6, 7, 8])
+    expect(counts('goopColorizer')).toEqual([0, ...def('goopColorizer').ability!.byLevel.map((l) => l.pieces)])
     expect(counts('crackDown')).toEqual([0, 3, 5, 7])
     expect([0, 1].map((n) => levelCount(def('activeSlot'), n))).toEqual([0, 1])
     expect(['goopDump', 'goopColorizer', 'crackDown', 'activeSlot', 'activeSlot2'].every((id) => showsCount(def(id)))).toBe(true)
@@ -245,9 +245,8 @@ describe('active slots: 1 → 2 → 3 with the Active Expansion Slots', () => {
     expect(upgradesForShift(owning({ ...owned, activeSlot: 1 }, all)).abilities.map((a) => a.id)).toEqual(['goopColorizer', 'crackDown'])
     const three = upgradesForShift(owning({ ...owned, activeSlot: 1, activeSlot2: 1 }, all)).abilities
     expect(three.map((a) => a.id)).toEqual(['goopDump', 'goopColorizer', 'crackDown'])
-    expect(three.map((a) => a.params)).toEqual([
-      { waves: 2, cellsPerWave: 18, cellMs: 80, waveMs: 600 }, { pieces: 6 }, { cracks: 7, rows: 4 },
-    ])
+    const params = (id: string, level: number) => def(id).ability!.byLevel[level - 1]
+    expect(three.map((a) => a.params)).toEqual([params('goopDump', 2), params('goopColorizer', 1), params('crackDown', 3)])
     expect(upgradesForShift(owning({ ...owned, activeSlot: 1, activeSlot2: 1 }, all)).features).toEqual({ abilitySlots: 2 })
   })
 })
