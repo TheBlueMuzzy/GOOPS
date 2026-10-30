@@ -13,7 +13,7 @@
 // 5264 is console-shots', 5265 the visor sketch helper's)
 import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { startShift } from './start.mjs'
 
 const PORT = 5267, OUT = 'e2e-shots/repairs'
@@ -26,6 +26,8 @@ await new Promise((ok, fail) => {
   server.on('exit', () => fail(new Error('dev server stopped (port busy?)')))
 })
 
+// how fast the tank runs at the console mid-shift (breakdowns.json consoleTimeScale; F52: 0.75) — the checks allow ±0.1
+const CONSOLE_SPEED = JSON.parse(readFileSync('content/tuning/breakdowns.json', 'utf8')).consoleTimeScale
 const only = process.env.SIZES?.split(',') // e.g. SIZES=1440x900 node e2e/repairs.mjs
 const sizes = [[360, 780], [390, 844], [844, 390], [768, 343], [654, 900], [1100, 800], [1440, 900], [1920, 1080], [2560, 1440]]
 let failed = 0
@@ -150,7 +152,7 @@ try {
     await toConsole(how)
     const slow = await page.evaluate(async () => { const t0 = window.__ticked, r0 = performance.now(); await new Promise((r) => setTimeout(r, 1000)); return { game: window.__ticked - t0, real: performance.now() - r0 } })
     const ratio = slow.game / slow.real
-    check(name, `${how}: console mid-shift, the tank still running slowly`, ratio > 0.15 && ratio < 0.35 && await page.evaluate(() => window.__goops.engine.state.status === 'playing'),
+    check(name, `${how}: console mid-shift, the tank still running slowly`, Math.abs(ratio - CONSOLE_SPEED) < 0.1 && ratio < 1 && await page.evaluate(() => window.__goops.engine.state.status === 'playing'),
       `${Math.round(slow.game)} ms game time in ${Math.round(slow.real)} ms (${ratio.toFixed(2)})`)
     check(name, 'at the console the engine is told (act console on): the machines\' break-progress pauses',
       await page.evaluate(() => window.__acts.some((a) => a.type === 'console' && a.on)))
@@ -282,7 +284,7 @@ try {
       await page.keyboard.press('Escape')
       await page.waitForTimeout(200)
       const again = await page.evaluate(async () => { const t0 = window.__ticked; await new Promise((r) => setTimeout(r, 600)); return window.__ticked - t0 })
-      check(name, 'Esc closes it: slow again', again > 50 && again < 300, `${Math.round(again)} ms`)
+      check(name, 'Esc closes it: slow again', Math.abs(again / 600 - CONSOLE_SPEED) < 0.15 && again < 600, `${Math.round(again)} ms`)
     }
 
     // ── 7. back to the same shift: the periscope (a mouse drag) or, on a phone on its side, Back to the tank ──

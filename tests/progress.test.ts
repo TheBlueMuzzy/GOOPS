@@ -297,6 +297,13 @@ describe('the rank lock (F74)', () => {
     expect(r.progress).toMatchObject({ quotaMet: false, xpHeld: false }) // the rank-up used the quota up
   })
 
+  it('winning the final shift is not paid double (its valve sets quotaMet, but there is no rank to unlock) — review 2026-10-29', () => {
+    const r = rewardShift(progressAtRank(topRank()), 20000, met) // (above rank 50's XP floor of minXpPerRank × 50)
+    expect(r.xp).toBe(20000)
+    expect(r.quotaMet).toBe(false)
+    expect(r.rankUps).toBe(0)
+  })
+
   it('a met quota stays met until the rank-up, over later shifts that miss it', () => {
     const a = rewardShift(rank3(0), 500, met) // met early: 1000 XP, far from the goal
     expect(a.after).toMatchObject({ rank: 3, xpIntoRank: 1000 })

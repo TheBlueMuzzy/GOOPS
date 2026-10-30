@@ -173,6 +173,8 @@ const crtLogger = () => {
 }
 const CRT = JSON.parse(readFileSync('content/tuning/crt.json', 'utf8'))
 const MONITOR = CRT.presets[CRT.use.monitor] // (F60: the preset the monitor wears)
+// the console's speed mid-shift, in % (breakdowns.json consoleTimeScale — the lesson words fill it in; F52: 75)
+const SPEED = Math.round(JSON.parse(readFileSync('content/tuning/breakdowns.json', 'utf8')).consoleTimeScale * 100)
 // how one text typed out: did it type (letters in between), how long it took, and did any box change size meanwhile
 // (outer = the screen itself too: only where nothing makes it slide down like a toaster, the start console)
 // (sizes are compared once the game's fonts have loaded: on the very first page load the font arriving re-lays every
@@ -369,8 +371,8 @@ try {
     check('V2 insists: a flick up opens the console', true)
     await consoleStill(page)
     await page.waitForTimeout(400)
-    check('V3a (the very first breakdown lesson): "fully paused… normally 25%" on the monitor with Got it, no bubble, the tank frozen',
-      (await crt(page).textContent()).includes('Normally it keeps running at 25% speed') && (await crt(page).getByRole('button', { name: 'Got it' }).count()) === 1
+    check(`V3a (the very first breakdown lesson): "fully paused… normally ${SPEED}%" on the monitor with Got it, no bubble, the tank frozen`,
+      (await crt(page).textContent()).includes(`Normally it keeps running at ${SPEED}% speed`) && (await crt(page).getByRole('button', { name: 'Got it' }).count()) === 1
       && (await bubble(page).count()) === 0 && (await gameMs(page, 600)) === 0)
     check('V3a: the monitor\'s screen is cut out of the dim', await dimmed(page) && await undimmed(page, '[data-tag="crt"]'))
     await page.screenshot({ path: `${OUT}/f32-visor-3-fully-paused-1440x900.png` })
@@ -438,10 +440,10 @@ try {
       await page.keyboard.press('KeyW')
       await consoleStill(page)
       await page.waitForTimeout(300)
-      notes.push((await crt(page).textContent()).includes('keeps running at 25% speed'))
+      notes.push((await crt(page).textContent()).includes(`keeps running at ${SPEED}% speed`))
       if (i === 0) {
         const ms = await gameMs(page, 1000)
-        check('console visit 1: the note shows on the monitor (no bubble) and the tank really runs at about 25%', notes[0] && (await bubble(page).count()) === 0 && ms > 150 && ms < 350, `${Math.round(ms)} ms in 1 s`)
+        check(`console visit 1: the note shows on the monitor (no bubble) and the tank really runs at about ${SPEED}%`, notes[0] && (await bubble(page).count()) === 0 && Math.abs(ms - SPEED * 10) < 100 && ms < 1000, `${Math.round(ms)} ms in 1 s`)
         await page.screenshot({ path: `${OUT}/f32-console-note-1440x900.png` })
       }
       await page.getByRole('button', { name: 'Back to the tank' }).click()
@@ -640,10 +642,10 @@ try {
     await page.screenshot({ path: `${OUT}/f32-console-note-390x844.png` })
     const grip = await page.locator('.kit-pull-grip').boundingBox(), screen = await crt(page).boundingBox()
     check('phone console note: on the monitor, no bubble, no Got it, and the screen doesn\'t slide over the periscope',
-      (await crt(page).textContent()).includes('25% speed') && (await bubble(page).count()) === 0 && (await crt(page).getByRole('button').count()) === 0
+      (await crt(page).textContent()).includes(`${SPEED}% speed`) && (await bubble(page).count()) === 0 && (await crt(page).getByRole('button').count()) === 0
       && screen.y + screen.height <= grip.y + 1, JSON.stringify({ screen, grip }))
     await page.waitForTimeout(6500)
-    check('…it goes by itself after ~6 s; the monitor says its own words again', !(await crt(page).textContent()).includes('25% speed'))
+    check('…it goes by itself after ~6 s; the monitor says its own words again', !(await crt(page).textContent()).includes(`${SPEED}% speed`))
     await page.getByRole('button', { name: 'Back to the tank' }).click()
     await page.waitForFunction(() => document.querySelector('.kit-art-stage') === null, null, { timeout: 5000 })
     check('phone console note: no page errors', errors.length === 0, errors.join(' | '))

@@ -151,7 +151,9 @@ export type ShiftDone = { quotaMet: boolean }
 export function rewardShift(p: Progress, finalScore: number, shift?: ShiftDone, t: ProgressionTuning = tuning): ShiftReward {
   const before = rankInfo(p, t)
   const earned = Math.max(Math.max(0, Math.round(finalScore)), t.minXp, t.minXpPerRank * before.rank)
-  const quotaMet = !!shift?.quotaMet
+  // (only below the top rank: the final shift's win sets quotaMet when the valve opens, but it has no rank to unlock —
+  // review 2026-10-29: winning it paid double)
+  const quotaMet = !!shift?.quotaMet && before.rank < t.maxRank
   const xp = quotaMet ? Math.round(earned * t.quotaXpMult) : earned
   const progress = shift ? addXp(p, xp, quotaMet, t) : { ...p, totalXp: p.totalXp + xp }
   const after = rankInfo(progress, t)
