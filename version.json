@@ -1,12 +1,17 @@
 {
   "name": "goops",
-  "version": "0.1.0",
-  "build": 38,
+  "version": "0.2.0",
+  "build": 0,
   "history": [
     {
       "version": "0.1.0",
       "date": "2026-10-20",
       "summary": "Alpha: the playable game"
+    },
+    {
+      "version": "0.2.0",
+      "date": "2026-10-29",
+      "summary": "Beta: the whole career, rank 0 to the ending"
     }
   ]
 }
