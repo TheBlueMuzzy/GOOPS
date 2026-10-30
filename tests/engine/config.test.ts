@@ -24,11 +24,13 @@ describe('colours by rank (v1)', () => {
   })
 })
 
-describe('cracks needed = colours + rank (v1)', () => {
-  it('matches the formula', () => {
-    expect(cracksNeededFor(config, 0)).toBe(4)
-    expect(cracksNeededFor(config, 12)).toBe(17)
-    expect(createShift(config, { seed: 3, rank: 5 }).state.cracksNeeded).toBe(9)
+describe('cracks needed (the quota)', () => {
+  it('matches the formula with shift.json quota', () => {
+    const q = config.quota
+    const want = (rank: number) => Math.max(1, Math.round(q.base + q.perColour * paletteSize(config, rank) + q.perRank * rank))
+    expect(cracksNeededFor(config, 0)).toBe(want(0))
+    expect(cracksNeededFor(config, 12)).toBe(want(12))
+    expect(createShift(config, { seed: 3, rank: 5 }).state.cracksNeeded).toBe(want(5))
   })
   it('follows shift.json quota (F52): base + perColour × colours + perRank × rank, rounded, at least 1', () => {
     const withQuota = (quota: typeof config.quota) => ({ ...config, quota })
