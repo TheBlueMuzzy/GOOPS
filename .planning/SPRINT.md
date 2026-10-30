@@ -27,6 +27,11 @@ Checked: the full sim after Muzzy's answers (2026-10-30 10:27, 72 careers, 33,28
 - [x] 🙋 8. Play the tuned game: the climb, a mid-rank shift, the final shift — how does it feel?
 - [x] 🤖 9. Muzzy's answers (2026-10-30): the final shift's own console speed 25% · the white goop's seals off the quota (the valve still counts them) · growing cracks back at 30 · the quota by rank band (shift.json quota.addByRank: 30–39 ask 6 fewer) — built + paced; then the full sim re-run + the before/after table ✓ · Focus Mode split into two 1-point upgrades: Focus Mode (rank 7, 75% → 50%) + Focus Mode II (rank 31, → 25%), each × a share so the final shift goes 25% → 17% → 8% — src/engine/config.ts
 
+Retro: (Muzzy 2026-10-30: "all approved" — Claude's draft)
+- Went well: Muzzy's design calls fixed what numbers couldn't — the quota as the key, the white goop's seals not counting, big changes on the 0s, two Focus Mode upgrades.
+- Went wrong: Claude tuned around problems the rules caused (growth moved to 31; the Veteran had become the final shift's clock), and two helper hand-offs dropped (the code-review helper came back empty, the pacing helper missed the go-ahead).
+- Change: when a number can't fix it, bring Muzzy the rule question sooner, before tuning around it.
+
 ## Notes
 - Muzzy 2026-10-29 (planning): the rank lock is the quota's real job (new rule → F74 — Rank lock, built before the tuning) · XP past the goal while locked: "stops at the goal" · quota bonus: "double that shift's XP sounds interesting" · console time: "keep it as it is. we CAN make the game run at 75% while at the console, and have upgrades knock 25% off that" → Focus Mode 2 levels ("freeing up scrap is good") · a career for a human: 60–80 shifts.
 - No open P0/P1. B005 (P2, the console at big Text size) waits on the UI kit change (framework session).
