@@ -1,6 +1,6 @@
 // F39 rank twists in a real shift (Jelly; Particle at 1440). Checks:
 //   rank 20: a two-colour piece falls (glowing) and locks as two clumps, each cell its own colour
-//   rank 30: a crack grows over several cells; covering all but one doesn't plug it (popping there seals nothing);
+//   rank 31 (grow.fromRank): a crack grows over several cells; covering all but one doesn't plug it (popping there seals nothing);
 //            covering every cell plugs it; one pop seals it whole and the quota counts its cell count
 //   rank 40: a wild piece falls and locks in the wild look; wild goop on a crack of another colour plugs + seals it;
 //            a normal piece landing on a wild clump turns the whole clump its colour; faces never doubled
@@ -110,7 +110,7 @@ try {
 
     // ---------------- rank 30: a crack grows; sealed only when every cell is covered; counts its size
     {
-      const { page, errors } = await open(w, h, 30)
+      const { page, errors } = await open(w, h, TWISTS.grow.fromRank)
       await page.evaluate(() => { window.__goops.engine.fallPiece = () => {} }) // the piece hangs at the top
       await sendTwists(page, { grow: { everyMsMin: 300, everyMsMax: 400, baseChance: 1, leafMult: 1, hopFalloff: 0, minFalloff: 1 } })
       const id = await page.evaluate(async () => {

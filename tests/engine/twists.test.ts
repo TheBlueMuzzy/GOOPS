@@ -1,5 +1,5 @@
 // F39 rank twists (src/engine/twists.ts, content/tuning/twists.json): two-colour pieces from rank 20, growing cracks
-// from 30 (one crack over many cells — Muzzy 2026-10-25), wild goop from 40.
+// from grow.fromRank (31 since F52; one crack over many cells — Muzzy 2026-10-25), wild goop from 40.
 import { describe, expect, it } from 'vitest'
 import { createShift, WILD, type Crack, type ShiftEngine, type TwistsConfig, type WhiteGoopConfig } from '../../src/engine'
 import { restoreShift } from '../../src/engine/snapshot'
@@ -13,6 +13,7 @@ import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, straightLineCracks, tank, tickUntil } from './helpers'
 
 const twists = () => structuredClone(twistsJson) as TwistsConfig
+const GROW = twistsJson.grow.fromRank // growing cracks start here (31 since F52 — Balance pass)
 // no cracks of the shift's own (the tests place theirs), pieces hanging still at the top
 function quietConfig(colours = 4) {
   const config = straightLineCracks(realConfig(), 1e12, 1e12)
@@ -126,9 +127,9 @@ describe('corrupt and wild pieces never split', () => {
   })
 })
 
-describe('growing cracks (rank 30)', () => {
-  it('starts at rank 30, not 29', () => {
-    for (const [rank, grows] of [[29, false], [30, true]] as const) {
+describe('growing cracks (grow.fromRank)', () => {
+  it('starts at its rank, not the one before', () => {
+    for (const [rank, grows] of [[GROW - 1, false], [GROW, true]] as const) {
       const shift = createShift(quietConfig(), { seed: 1, rank, twists: fastGrowth(), startGrid: new Uint8Array(30 * 24) })
       addCrack(shift, crack(500, [[10, 23]]))
       shift.tick(1000)
@@ -139,12 +140,12 @@ describe('growing cracks (rank 30)', () => {
 
   it('grows only into empty cells, never above the pressure line — and goop covering a cell stops it growing', () => {
     // covered: goop on the crack's only cell → it never grows
-    const covered = createShift(quietConfig(), { seed: 2, rank: 30, twists: fastGrowth(), startGrid: tank(['1'], 10) })
+    const covered = createShift(quietConfig(), { seed: 2, rank: GROW, twists: fastGrowth(), startGrid: tank(['1'], 10) })
     addCrack(covered, crack(500, [[10, 23]]))
     covered.tick(3000)
     expect(crackSize(covered.state.cracks[0])).toBe(1)
     // open, with goop beside it on one side: it grows along the floor (the pressure line is on the floor at 0 pressure)
-    const open = createShift(quietConfig(), { seed: 2, rank: 30, twists: fastGrowth(), startGrid: tank(['1'], 9) })
+    const open = createShift(quietConfig(), { seed: 2, rank: GROW, twists: fastGrowth(), startGrid: tank(['1'], 9) })
     addCrack(open, crack(500, [[10, 23]]))
     open.tick(500)
     const c = open.state.cracks[0]
@@ -209,7 +210,7 @@ describe('growing cracks (rank 30)', () => {
 
   it('a snapshot keeps a grown crack (and one from before F39 still loads)', () => {
     const config = quietConfig()
-    const shift = createShift(config, { seed: 8, rank: 30, twists: fastGrowth(), startGrid: new Uint8Array(30 * 24) })
+    const shift = createShift(config, { seed: 8, rank: GROW, twists: fastGrowth(), startGrid: new Uint8Array(30 * 24) })
     addCrack(shift, crack(500, [[10, 23]]))
     shift.tick(450)
     const snap = shift.snapshot()

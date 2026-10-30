@@ -1,9 +1,9 @@
 {
-  "_about": "F39 RANK TWISTS (GDD rank twists; v1 numbers from research/v1/PRD.md): from rank 20 some pieces fall in two colours (two even, connected halves that lock as two clumps); from rank 30 cracks grow into the cells next to them (a grown crack is ONE crack: sealed only when every cell is covered by its colour, then it counts its cell count toward the quota; it drains per cell); from rank 40 some pieces are wild goop (plugs any crack colour; a normal piece landing next to a wild clump turns the whole clump its colour). Read by the engine (src/engine/twists.ts) at the moment each number is used, on the rules clock — live in the Dev Kit. Seeded by the shift's random numbers, so ?seed plays repeat. Chances are 0..1, times in ms.",
+  "_about": "F39 RANK TWISTS (GDD rank twists; v1 numbers from research/v1/PRD.md): from rank 20 some pieces fall in two colours (two even, connected halves that lock as two clumps); from rank 31 (grow.fromRank) cracks grow into the cells next to them (a grown crack is ONE crack: sealed only when every cell is covered by its colour, then it counts its cell count toward the quota; it drains per cell); from rank 40 some pieces are wild goop (plugs any crack colour; a normal piece landing next to a wild clump turns the whole clump its colour). Read by the engine (src/engine/twists.ts) at the moment each number is used, on the rules clock — live in the Dev Kit. Seeded by the shift's random numbers, so ?seed plays repeat. Chances are 0..1, times in ms.",
   "_help": {
     "split.fromRank": "Two-colour pieces start at this rank.",
     "split.chance": "The share of pieces that fall in two colours (0.25 = one in four). Corrupt and wild pieces never split.",
-    "grow.fromRank": "Cracks start growing at this rank.",
+    "grow.fromRank": "Cracks start growing at this rank. F52 (2026-10-30): 31, with the white goop — at 30 (v1) growth came one rank before his help, and the bots sealed ~4 cracks a shift there: a wall of 12–77 shifts under the rank lock.",
     "grow.everyMsMin": "Each uncovered crack cell rolls to grow once every so often: at least this long between rolls…",
     "grow.everyMsMax": "…and at most this long (picked at random in between each time). Slow Cracks stretches it.",
     "grow.baseChance": "The chance a roll grows the crack, before pressure (0.1 = 10%).",
@@ -31,7 +31,7 @@
   },
   "split": { "fromRank": 20, "chance": 0.25 },
   "grow": {
-    "fromRank": 30,
+    "fromRank": 31,
     "everyMsMin": 5000,
     "everyMsMax": 10000,
     "baseChance": 0.1,

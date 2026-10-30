@@ -12,6 +12,7 @@ const FLOOR = '2'.repeat(30)
 function calmConfig(drain = 0): ShiftConfig {
   const config = straightLineCracks(oneShapeConfig([[0, 0]]))
   config.integrity.drainPerCrackPerSec = drain
+  config.quota = { base: 0, perColour: 1, perRank: 0 } // one colour → a quota of 1 (whatever shift.json's quota is)
   return config
 }
 
