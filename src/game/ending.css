@@ -74,6 +74,24 @@ body[data-ending-shake] #root { animation: ending-shake 0.12s linear infinite; }
 }
 @keyframes ending-fade { from { opacity: 0; } }
 
+/* F75 the happy ending: the Veteran's white clump riding in the goop (his look in the tank: a soft white blob, rounder
+   on top, the jelly's highlight up on the left; his eyes, the right one in his squint) */
+.ending-vet {
+  position: absolute; inset-inline-start: calc(var(--x) * 100%); inset-block-start: calc(var(--y) * 100%);
+  inline-size: var(--ending-vet); block-size: calc(var(--ending-vet) * 0.9); translate: -50% -50%;
+  border-radius: 46% 46% 30% 30%;
+  /* (the tank's jelly blob: white at the highlight → his colour → his colour shaded 0.82, rimmed at 0.7 — whiteGoopView drawBlob) */
+  background: radial-gradient(circle at 35% 30%, white 0 6%, var(--ending-vet-colour) 45%, color-mix(in srgb, var(--ending-vet-colour) 82%, black) 100%);
+  box-shadow: inset 0 0 0 max(1px, calc(var(--ending-vet) * 0.04)) color-mix(in srgb, var(--ending-vet-colour) 70%, black);
+  display: flex; align-items: center; justify-content: center; padding-block-end: calc(var(--ending-vet) * 0.1);
+}
+.ending-vet .ending-eyes { gap: calc(var(--ending-vet) * 0.14); }
+.ending-vet .ending-eye {
+  inline-size: calc(var(--ending-vet) * 0.24); block-size: calc(var(--ending-vet) * 0.24);
+  box-shadow: 0 0 0 0.1rem color-mix(in srgb, var(--ending-pupil) 60%, transparent);
+}
+.ending-vet .ending-eye[data-squint] { clip-path: inset(38% 0 0 0); }
+
 /* the empty console's words: for screen readers only (what shows is the console itself) */
 .ending-empty { position: fixed; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
 

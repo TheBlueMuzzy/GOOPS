@@ -1,7 +1,10 @@
 {
-  "_about": "F65 THE ENDING (design/story.md 'The ending — save the goop', TDD D28): what plays after the final shift's third valve stage opens, in order (src/game/ending.ts) — in the tank: the goop pours out (pour) and speaks through its mouths (goopLines, mouths) · at the console: the Veteran's last clear line, then the speaker quiet for good · the last payday · the badge rewritten on the monitor · you leave: the goop carries you out · the empty console · the end-game screen and its new career. Words: content/text/en.json ending. Seconds run on the looks clock (the Dev Kit's full pause holds them); read when used, so Dev Kit edits apply to the next ending.",
+  "_about": "F65 THE ENDING (design/story.md 'The ending — save the goop', TDD D28): what plays after the final shift's third valve stage opens, in order (src/game/ending.ts) — in the tank: the goop pours out (pour) and speaks through its mouths (goopLines, mouths) · F75: if the Veteran made it through the final shift, the happy ending — his white clump rises with the goop (vet) and he says his lines out loud (vetLines), and the speaker's line + quiet don't come · at the console (he didn't make it): the Veteran's last clear line, then the speaker quiet for good · the last payday · the badge rewritten on the monitor · you leave: the goop carries you out · the empty console · the end-game screen and its new career. Words: content/text/en.json ending. Seconds run on the looks clock (the Dev Kit's full pause holds them); read when used, so Dev Kit edits apply to the next ending.",
   "_help": {
     "goopLines": "The goop's lines out loud, in order (keys in en.json ending.goop). Each waits for a tap.",
+    "vetLines": "F75 the happy ending (the Veteran made it): his lines out loud after the goop's, in order (keys in en.json ending.vetSaved), in his bubble from his clump. Each waits for a tap.",
+    "vet.spot": "F75 the happy ending: where his white clump sits in the goop once it has filled the view — [share of the width, share of the height]. He rises with it.",
+    "vet.size": "His clump's width (share of the view's smaller side).",
     "paidBy": "How many former employees paid off your passage debt — the last payday, and the goop's '{more}' line.",
     "named": "How many of them the goop names in its 'names' line ('{more}' = paidBy − named).",
     "pour.shakeSeconds": "The tank opens: how long the view shakes first.",
@@ -32,6 +35,7 @@
     "pour.stars": [0, 120, 1],
     "pour.twinkleSeconds": [0.3, 4, 0.1],
     "mouths.size": [0.05, 0.3, 0.01],
+    "vet.size": [0.05, 0.3, 0.01],
     "console.quietSeconds": [0, 5, 0.1],
     "console.strikeAfterSeconds": [0, 3, 0.1],
     "console.strikeSeconds": [0.1, 3, 0.1],
@@ -39,6 +43,8 @@
     "console.emptySeconds": [0.5, 10, 0.1]
   },
   "goopLines": ["thanks", "names", "more", "yours"],
+  "vetLines": ["didIt", "earth"],
+  "vet": { "spot": [0.5, 0.2], "size": 0.13 },
   "paidBy": 1312,
   "named": 4,
   "pour": { "shakeSeconds": 0.9, "shake": 0.012, "seconds": 3.2, "holdSeconds": 0.8, "lumps": 7, "lumpSize": 0.26, "stars": 36, "twinkleSeconds": 1.4 },

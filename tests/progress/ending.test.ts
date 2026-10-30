@@ -1,7 +1,7 @@
 // F65 THE ENDING (design/story.md "The ending — save the goop" steps 1–7, TDD D28): its step order, which steps wait
 // for the player, and its words.
 import { describe, expect, it } from 'vitest'
-import { ending, endingSteps, goopWords, stepSeconds } from '../../src/game/ending'
+import { ending, endingSteps, goopWords, stepSeconds, vetSavedLine } from '../../src/game/ending'
 import endingFile from '../../content/tuning/ending.json'
 import en from '../../content/text/en.json'
 
@@ -15,6 +15,27 @@ describe('the ending', () => {
     // the goop's lines in the file's order, each from a face in turn
     expect(steps.filter((s) => s.id === 'goop').map((s) => s.id === 'goop' && [s.words, s.face]))
       .toEqual(endingFile.goopLines.map((w, i) => [w, i % endingFile.mouths.spots.length]))
+  })
+
+  it('F75 the happy ending (he made it): after the goop his lines out loud in the tank, then the console WITHOUT the speaker line + quiet', () => {
+    const steps = endingSteps(endingFile, true)
+    expect(steps.map((s) => s.id)).toEqual(['pour', ...endingFile.goopLines.map(() => 'goop'), ...endingFile.vetLines.map(() => 'vetSays'),
+      'payday', 'badge', 'leave', 'empty', 'endScreen'])
+    expect(steps.filter((s) => s.id === 'vetSays').map((s) => s.id === 'vetSays' && s.at === 'tank' && s.words)).toEqual(endingFile.vetLines)
+    for (const key of endingFile.vetLines) expect(vetSavedLine(key), key).not.toBe(key) // (every line has its words)
+    expect(vetSavedLine('didIt')).toBe('you did it, kid.')
+    expect(vetSavedLine('earth')).toMatch(/Earth.*family/)
+    expect(stepSeconds(steps.find((s) => s.id === 'vetSays')!)).toBeNull() // (waits for a tap)
+    // which one plays: start(…, saved) — the view says so (the tank draws his clump)
+    ending.start(undefined, true)
+    expect(ending.view()).toMatchObject({ saved: true, step: { id: 'pour' } })
+    expect(endingSteps(endingFile, false).some((s) => s.id === 'vetSays')).toBe(false)
+    ending.stop()
+    ending.start()
+    expect(ending.view()?.saved).toBe(false)
+    for (let i = 0; i < 1 + endingFile.goopLines.length; i++) ending.next()
+    expect(ending.view()?.step.id).toBe('vet') // (he's gone: today's ending, the speaker's line)
+    ending.stop()
   })
 
   it('the looks move on by themselves (pour, quiet, leave, empty); every line waits for a tap', () => {

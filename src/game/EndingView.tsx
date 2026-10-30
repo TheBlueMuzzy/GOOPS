@@ -5,6 +5,9 @@
 //     mouth opens at once on each line — the rank-48 chorus (eyes.json chorusTime / chorusOpen) — and the line's bubble
 //     points at the face that says it: the goop's own bubble (the in-your-head one, plain outline — story.md: "the same
 //     one for telepathy and, at the end, for its real mouths"), now from the goop itself. A tap moves on.
+//     F75 the happy ending (the Veteran made it): his white clump rides up in the goop (whiteGoop.json colour, his eyes),
+//     and after the goop's lines he speaks out loud from it — the same bubble he used in the final shift (plain outline,
+//     his colours), a tap moving on.
 //   EndingConsole (on the console): the Veteran's last line in his bubble — clear for the first time: no static squelch
 //     while it waits — then nothing (the speaker is quiet for good); the last payday (the payday card, its debt row);
 //     you leave: the same goop rises over the console and carries you up and out; the empty console (a tap moves on).
@@ -13,11 +16,12 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Button, Modal, ScrollArea, StatList, Text, TalkingBubble } from '../ui/kit'
 import { clockPause, looksClock, onClockPause } from '../devkit/gameClock'
-import { ending, goopLine } from './ending'
+import { ending, goopLine, vetSavedLine } from './ending'
 import { hash01 } from '../goo/shared/faces'
 import endingTuning from '../../content/tuning/ending.json'
 import galaxy from '../../content/tuning/galaxy-look.json'
 import eyes from '../../content/tuning/eyes.json'
+import whiteGoop from '../../content/tuning/whiteGoop.json'
 import talk from '../../content/tuning/talk.json'
 import payslipTuning from '../../content/tuning/payslip.json'
 import text from '../../content/text/en.json'
@@ -33,7 +37,8 @@ function useFullPause() {
 
 // THE GOOP pouring out: kind 'pour' = shakes, rises and stays (the tank) · 'carry' = rises over the console, holds, and
 // sweeps up and away with you (leave) — the same goop, the same motion
-function GoopFlood({ kind }: { kind: 'pour' | 'carry' }) {
+// (F75 withVet: the happy ending — his white clump in it, rising with it to ending.json vet.spot)
+function GoopFlood({ kind, withVet = false }: { kind: 'pour' | 'carry'; withVet?: boolean }) {
   const paused = useFullPause()
   const P = endingTuning.pour
   // its blobs along the rising edge and its stars: fixed for this flood (hash01 of their number, no Math.random)
@@ -64,6 +69,7 @@ function GoopFlood({ kind }: { kind: 'pour' | 'carry' }) {
         {lumps.map((l, i) => <span key={`t${i}`} className="ending-lump" style={{ '--x': l.x, '--s': l.s } as CSSProperties} />)}
         {kind === 'carry' && lumps.map((l, i) => <span key={`b${i}`} className="ending-lump" data-under style={{ '--x': 1 - l.x, '--s': l.s } as CSSProperties} />)}
         {stars.map((s, i) => <span key={i} className="ending-star" style={{ '--x': s.x, '--y': s.y, '--d': s.d } as CSSProperties} />)}
+        {withVet && <VetClump />}
       </div>
     </div>
   )
@@ -89,6 +95,19 @@ function GoopFaces({ line }: { line: number }) {
   )
 }
 
+// F75 the Veteran in the happy ending: his white clump with his eyes (whiteGoop.json colour, eyes.json eye colours),
+// riding in the goop at ending.json vet.spot
+function VetClump() {
+  const V = endingTuning.vet
+  const style = { '--x': V.spot[0], '--y': V.spot[1], '--ending-vet': `${V.size * 100}vmin`, '--ending-vet-colour': String(whiteGoop.color),
+    '--ending-eye': eyes.eyeColor, '--ending-pupil': eyes.pupilColor } as CSSProperties
+  return (
+    <span className="ending-vet" data-tag="ending-vet" style={style}>
+      <span className="ending-eyes"><span className="ending-eye" /><span className="ending-eye" data-squint /></span>
+    </span>
+  )
+}
+
 /** The ending in the tank (App shows it in the shift once the ending has started). */
 export function EndingTank() {
   const view = useSyncExternalStore(ending.subscribe, ending.view)
@@ -103,13 +122,21 @@ export function EndingTank() {
   const step = view.step
   const spot = step.id === 'goop' ? endingTuning.mouths.spots[step.face] : null
   const faceTop = spot && { x: spot[0] * size.w, y: spot[1] * size.h - endingTuning.mouths.size * Math.min(size.w, size.h) * 0.55 }
+  // (F75: his clump's bottom, where his bubble points — it opens under him: he sits high in the goop, so there's room)
+  const V = endingTuning.vet
+  const vetBottom = { x: V.spot[0] * size.w, y: V.spot[1] * size.h + V.size * Math.min(size.w, size.h) * 0.45 }
   return (
     <>
-      <GoopFlood kind="pour" />
+      <GoopFlood kind="pour" withVet={view.saved} />
       {step.id === 'goop' && <GoopFaces line={view.index} />}
       {step.id === 'goop' && faceTop && (
         <TalkingBubble key={view.index} lineId={view.index} target={faceTop} placement="top" outline="plain" feel={talk}
           text={goopLine(step.words)} speaker={text.story.goop} onConfirm={ending.next} />
+      )}
+      {/* F75 the happy ending: he says it out loud — his final-shift bubble (plain outline, his colours) */}
+      {step.id === 'vetSays' && (
+        <TalkingBubble key={view.index} lineId={view.index} target={vetBottom} placement="bottom" outline="plain" feel={talk} colours={talk.colours}
+          text={vetSavedLine(step.words)} speaker={text.story.veteran} onConfirm={ending.next} />
       )}
     </>
   )

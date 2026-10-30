@@ -277,7 +277,8 @@ export function App() {
   // (F65: the final shift won → the ending plays instead of the report: src/game/ending.ts)
   const endPending = useRef(false)
   const endIsEnding = useRef(false)
-  const showEnd = useCallback(() => { if (endIsEnding.current) ending.start(); else screens.push('end') }, [])
+  const endVetSaved = useRef(false) // (F75: won with the Veteran still in the tank → the happy ending)
+  const showEnd = useCallback(() => { if (endIsEnding.current) ending.start(undefined, endVetSaved.current); else screens.push('end') }, [])
   useEffect(() => {
     if (mode === 'shift' && endPending.current) { endPending.current = false; showEnd() }
   }, [mode, showEnd])
@@ -389,6 +390,7 @@ export function App() {
       cause: e.state.ruptureReason ?? 'integrity', reward, payslip, final: e.state.final ? { ...e.state.final } : null, newTitle, oldTitle })
     toasts.current.forEach((t) => toasts.dismiss(t.id)) // a rupture alert must not sit on the report
     endIsEnding.current = fin?.outcome === 'won'
+    endVetSaved.current = !!fin?.vetAlive
     if (modeRef.current === 'shift') showEnd()
     else { // at the console mid-shift: back to the tank first, then the report
       endPending.current = true
@@ -430,7 +432,7 @@ export function App() {
           frame={art.end.frame} art={{ continue: art.end.quit }} stats={stats} reveal={payslipTuning.lineMs}
           onContinue={back} onSwipeUp={back} />
       )
-      // F64 the final shift's loss: which of its three happened, and that you can try again; the valve's stages instead
+      // F64 the final shift's loss: which of its two happened (F75: only the tank breaking), and that you can try again; the valve's stages instead
       // of the crack count (its win never comes here: F65 — The ending plays instead, src/game/ending.ts)
       const final = result.final
       if (final) {

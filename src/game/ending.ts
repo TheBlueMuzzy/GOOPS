@@ -2,7 +2,10 @@
 // valve stage opens, one step at a time. Not skippable, but each line moves on with a tap (like the story moments):
 //   in the tank   pour   the view shakes, the goop pours out and fills the periscope view (moves on by itself)
 //                 goop   the goop speaks out loud through its mouths — thank you, and its names (one step a line)
-//   at the console  vet  the speaker's last clear line, in the Veteran's voice
+//                 vetSays  F75 the happy ending (the Veteran made it through the final shift): his white clump rose
+//                        with the goop, and he speaks out loud — you did it, and he'll try for Earth (one step a line)
+//   at the console  vet  the speaker's last clear line, in the Veteran's voice (F75: only when he didn't make it —
+//                        the happy ending has said his lines in the tank, so it has no vet / quiet)
 //                 quiet  then the speaker is quiet for good (moves on by itself)
 //                 payday the last payday: "Remaining passage debt: 0 cr — paid by: 1,312 former employees"
 //                 badge  the monitor glitches; the goop crosses out your title and writes The Savior of Goopkind, with the
@@ -23,20 +26,27 @@ type ConsoleStep = 'vet' | 'quiet' | 'payday' | 'badge' | 'leave' | 'empty' | 'e
 export type EndingStep =
   | { id: 'pour'; at: 'tank' }
   | { id: 'goop'; at: 'tank'; words: string; face: number } // face = which of mouths.spots says it
+  | { id: 'vetSays'; at: 'tank'; words: string } // F75: words = a key in en.json ending.vetSaved
   | { id: ConsoleStep; at: 'console' }
 export type EndingStepId = EndingStep['id']
 
 const CONSOLE: ConsoleStep[] = ['vet', 'quiet', 'payday', 'badge', 'leave', 'empty', 'endScreen']
 
-/** The ending's steps in order (story.md steps 1–7). */
-export function endingSteps(t: EndingTuning = endingFile): EndingStep[] {
+/** The ending's steps in order (story.md steps 1–7). saved (F75) = the Veteran made it through the final shift: the
+ *  happy ending — after the goop's lines he says his (ending.json vetLines) in the tank, and the speaker's last line
+ *  and its quiet don't come (he isn't on the speaker: he's right there). */
+export function endingSteps(t: EndingTuning = endingFile, saved = false): EndingStep[] {
   const faces = Math.max(1, t.mouths.spots.length)
   return [
     { id: 'pour', at: 'tank' },
     ...t.goopLines.map((words, i): EndingStep => ({ id: 'goop', at: 'tank', words, face: i % faces })),
-    ...CONSOLE.map((id): EndingStep => ({ id, at: 'console' })),
+    ...(saved ? t.vetLines.map((words): EndingStep => ({ id: 'vetSays', at: 'tank', words })) : []),
+    ...CONSOLE.filter((id) => !saved || (id !== 'vet' && id !== 'quiet')).map((id): EndingStep => ({ id, at: 'console' })),
   ]
 }
+
+/** F75 the happy ending: one of the Veteran's lines out loud (en.json ending.vetSaved). */
+export const vetSavedLine = (key: string) => (text.ending.vetSaved as Record<string, string>)[key] ?? key
 
 /** How long a step stays before it moves on by itself (seconds), or null: it waits for the player. */
 export function stepSeconds(step: EndingStep, t: EndingTuning = endingFile): number | null {
@@ -56,15 +66,17 @@ export function goopWords(key: string, name: string | null, t: EndingTuning = en
 }
 export const goopLine = (key: string) => goopWords(key, operatorName())
 
-export type EndingView = { step: EndingStep; index: number } | null
+// saved (F75): the happy ending — the Veteran's clump rides up with the goop
+export type EndingView = { step: EndingStep; index: number; saved: boolean } | null
 
 let steps: EndingStep[] = []
 let at = -1
+let saved = false
 let view: EndingView = null
 let cancel = () => {}
 const listeners = new Set<() => void>()
 const show = () => {
-  view = at >= 0 && steps[at] ? { step: steps[at], index: at } : null
+  view = at >= 0 && steps[at] ? { step: steps[at], index: at, saved } : null
   listeners.forEach((l) => l())
 }
 // a timed step moves on by itself (unless something moved it on first)
@@ -77,9 +89,10 @@ function enter() {
 
 export const ending = {
   /** The third valve stage opened: the ending plays from its first step (or from `from`: a page opened after the win
-   *  goes straight to the end-game screen). */
-  start(from?: EndingStepId) {
-    steps = endingSteps()
+   *  goes straight to the end-game screen). vetSaved (F75) = he made it through the final shift: the happy ending. */
+  start(from?: EndingStepId, vetSaved = false) {
+    saved = vetSaved
+    steps = endingSteps(undefined, saved)
     at = from ? Math.max(0, steps.findIndex((s) => s.id === from)) : 0
     enter()
   },
@@ -90,7 +103,7 @@ export const ending = {
     enter()
   },
   /** The ending is over (the new career began) or went away. */
-  stop() { cancel(); cancel = () => {}; steps = []; at = -1; show() },
+  stop() { cancel(); cancel = () => {}; steps = []; at = -1; saved = false; show() },
   playing: () => at >= 0,
   view: (): EndingView => view,
   subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener) } },
