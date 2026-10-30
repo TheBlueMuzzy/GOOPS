@@ -1,4 +1,5 @@
 # Log archive (newest first)
+- 2026-10-24 — F70 approved. The zap is in the game: a white laser angles from the top of the tank to your finger, the goop goes white-hot, swells, gets sucked into the laser point and sprays droplets (Jelly and Particle)
 - 2026-10-24 — F68 approved (first-day touches). Zap look picked: the laser + spray together, the beam now angling down from the top centre of the view
 - 2026-10-24 — F70: the console's bottom row shows the real version and a RANK SELECT (testers jump to any rank, or 0 for a fresh first day); F67 zap-look sketch to play with
 - 2026-10-24 — F68 built: in the first day, poking goop you aren't allowed to zap now jiggles and squelches; in shifts a "Wrong colour on a crack — zap it" hint shows when the wrong goop covers a crack
