@@ -89,7 +89,7 @@
 | 4 | Capacitor Efficiency | passive · 4 | laser drains less per pop; max = 1 fewer repair step | `laserDrainMult` ready |
 | 5 | Cooldown Booster | active · 3 | on fire, every machine's calm time +25/35/50 % | fire effect to build (F34) |
 | 6 | Gear Lubrication | passive · 4 | controls cool faster; max = 1 fewer repair step | `controlsCoolMult` ready |
-| 7 | Focus Mode | passive · 4 | shift runs slower while you're at the console (× `consoleTimeScale`) | screen-side, to build (F34) |
+| 7 | Focus Mode | passive · 4 (F52: 1 — the console 75% → 50%; its old level 2 is Focus Mode II at 31) | shift runs slower while you're at the console (× `consoleTimeScale`) | screen-side, to build (F34) |
 | 8 | Dense Goop | passive · 4 | pieces fall faster (self-chosen challenge) | `fallSpeedMult` ready |
 | 9 | Pressure Control | passive · 8 | pressure rises slower | `pressureRiseTimeMult` ready |
 All bought from rank 5 (the store opens then). Per-level steps start at v1's (≈ +12.5–15 % a level) and get checked by the bots/economy sim (F51) — tuning, not taste. Claude's calls (change any): actives keep charging at the console's slowed speed (same clock as the shift) and stop during a rupture (already built).
@@ -117,6 +117,7 @@ Muzzy's picks at planning: rank 28 = Quick Fix (the slot Goop Window left); Seal
 | 25 | Goop Colorizer | active · 3 | (F42) | | |
 | 28 | Quick Fix | passive · 2 | every console repair 1 / 2 steps shorter, on top of the max-level machine fixes, never under 1 (Quick Fix 2: 4 / 3 / 4 → 2 / 1 / 2; with every machine fix at max: 1 / 1 / 1) | 1, 2 | `laser/visor/controlsRepairFewerSteps` → repairs.ts `repairSteps` |
 | 30 | Slow Cracks | passive · 4 | new cracks come less often, and growing cracks spread slower (the same number stretches the F39 growth roll) | × 1.15 a level | `crackEveryMult` |
+| 31 | Focus Mode II | passive · 1 | (F52, Muzzy 2026-10-30) Focus Mode's old level 2 as its own upgrade: the console 50% → 25% with both (the final shift 25% → 16.7% → 8.3%) | × 0.5 (multiplies Focus Mode's × 0.6667) | `consoleTimeScaleMult` (App, like Focus Mode) |
 | 32 | Crack Matcher | passive · 4 | a new piece takes the lowest unplugged crack's colour with the chance (a two-colour piece: its main colour's cells; wild stays wild). It's the piece made for the next window, so the window shows it; Goop Colorizer still wins while it runs | +0.25 (v1) | `crackColorBias` (shift.ts matchCrack, cracks.ts `lowestOpenCrack`, pieces.ts `withMainColor`) |
 | 35 | Crack Down | active · 3 | (F42) | | |
 | 38 | Active Expansion Slot 2 | feature · 1 | (F42) | | |

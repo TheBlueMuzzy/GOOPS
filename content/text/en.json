@@ -176,6 +176,10 @@
         "name": "Slow Cracks",
         "desc": "New cracks come less often, and growing cracks spread slower."
       },
+      "focusMode2": {
+        "name": "Focus Mode II",
+        "desc": "The tank runs slower still while you're at the console during a shift. Stacks with Focus Mode."
+      },
       "crackMatcher": {
         "name": "Crack Matcher",
         "desc": "New pieces more often come in the colour of the lowest open crack."

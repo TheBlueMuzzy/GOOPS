@@ -48,8 +48,8 @@ const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} 
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]))
 const ORDER = ['circuitStabilizer', 'autoPopper', 'capacitorEfficiency', 'cooldownBooster', 'gearLubrication', 'focusMode', 'denseGoop', 'pressureControl',
-  'junkUniformer', 'goopSwap', 'goopDump', 'sealingBonus', 'activeSlot', 'tougherTank', 'goopColorizer', 'quickFix', 'slowCracks', 'crackMatcher',
-  'crackDown', 'activeSlot2'] // (F42: the actives and slots of ranks 15–38; F43 / F48: the rest of ranks 10–38)
+  'junkUniformer', 'goopSwap', 'goopDump', 'sealingBonus', 'activeSlot', 'tougherTank', 'goopColorizer', 'quickFix', 'slowCracks', 'focusMode2', 'crackMatcher',
+  'crackDown', 'activeSlot2'] // (F42: the actives and slots of ranks 15–38; F43 / F48: the rest of ranks 10–38; F52: Focus Mode II at 31)
 const ABOVE_9 = ORDER.slice(8) // locked at rank 9 too
 
 // a device with this save, on the console
@@ -135,20 +135,20 @@ const RANK9 = JSON.stringify({ v: 2, totalXp: xpFor(9), scrapsSpent: 8,
 
 // ============ F34 tasks 5–7: what you own MEASURED in a real shift ============
 // Two rank-40 saves (enough scraps for everything at once — the same rank, so only the upgrades differ): one owning
-// nothing, one owning every machine fix at max (4), Auto-Popper 4, Focus Mode 4, Dense Goop 4, Pressure Control 4 and
+// nothing, one owning every machine fix at max (4), Auto-Popper 4, Focus Mode + Focus Mode II, Dense Goop 4, Pressure Control 4 and
 // Cooldown Booster 3 equipped. Each change is measured the same way in both shifts and compared:
 //   the modifiers in the running engine's snapshot = upgrades.json's numbers at those levels
 //   pressure rise (2 s) · a piece's fall (3 rows) · the rupture drain (pressure lost in 1 s) · the visor's grace (ms until
 //   its signal starts to fade) · the laser's drain per zapped cell · the controls' cooling (health back in 0.4 s after
 //   10 turns) — each ratio = the upgrade's number · Focus Mode: the rules clock's rate at the console mid-shift
-//   (consoleTimeScale × Focus Mode's max level) · the repair panels at the console: each machine's puzzle 1 step shorter
+//   (consoleTimeScale × Focus Mode × Focus Mode II — the two multiply) · the repair panels at the console: each machine's puzzle 1 step shorter
 //   Cooldown Booster: the HUD's charge button (empty → charging → ready), F refused while not full, then a real tap with
 //   the visor's calm time running → it grows by 50%
 // The measuring runs with the shift held under the pause menu (the frame loop doesn't tick it) and moves the engine
 // by hand (window.__goops.engine.tick): pure and seeded, so both saves see the same shift.
 const XP40 = xpFor(40)
 const NONE = JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: 0, owned: {}, equipped: [] })
-const ALL_OWNED = { circuitStabilizer: 4, autoPopper: 4, capacitorEfficiency: 4, cooldownBooster: 3, gearLubrication: 4, focusMode: 2, denseGoop: 4, pressureControl: 4 }
+const ALL_OWNED = { circuitStabilizer: 4, autoPopper: 4, capacitorEfficiency: 4, cooldownBooster: 3, gearLubrication: 4, focusMode: 1, focusMode2: 1, denseGoop: 4, pressureControl: 4 }
 const ALL = JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: Object.values(ALL_OWNED).reduce((a, b) => a + b, 0), owned: ALL_OWNED, equipped: ['cooldownBooster'] })
 const LESSONS_SEEN = ['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:laser', 'lesson:visor', 'lesson:controls',
   ...Array.from({ length: 9 }, (_, i) => `consoleNote:${i + 1}`)]
@@ -222,7 +222,7 @@ async function measureShift() {
   const want = {
     visorGraceMult: byLevel('circuitStabilizer', 'visorGraceMult'), ruptureDrainTimeMult: byLevel('autoPopper', 'ruptureDrainTimeMult'),
     laserDrainMult: byLevel('capacitorEfficiency', 'laserDrainMult'), controlsCoolMult: byLevel('gearLubrication', 'controlsCoolMult'),
-    consoleTimeScaleMult: byLevel('focusMode', 'consoleTimeScaleMult'), fallSpeedMult: byLevel('denseGoop', 'fallSpeedMult'),
+    consoleTimeScaleMult: byLevel('focusMode', 'consoleTimeScaleMult') * byLevel('focusMode2', 'consoleTimeScaleMult'), fallSpeedMult: byLevel('denseGoop', 'fallSpeedMult'),
     pressureRiseTimeMult: byLevel('pressureControl', 'pressureRiseTimeMult'),
   }
   // (F43: the two chances are 0 when off, every multiplier 1)
@@ -252,7 +252,7 @@ async function measureShift() {
   }
   const c0 = await atConsole(none.page), c1 = await atConsole(all.page)
   check('nothing owned: the shift runs at consoleTimeScale at the console', near(c0.rate, breakdownsJson.consoleTimeScale, 0.001), String(c0.rate))
-  check('Focus Mode 4: at the console it runs at consoleTimeScale × 0.6', near(c1.rate, breakdownsJson.consoleTimeScale * want.consoleTimeScaleMult, 0.001), `${c0.rate} → ${c1.rate}`)
+  check(`Focus Mode + Focus Mode II: at the console it runs at consoleTimeScale × ${want.consoleTimeScaleMult.toFixed(4)}`, near(c1.rate, breakdownsJson.consoleTimeScale * want.consoleTimeScaleMult, 0.001), `${c0.rate} → ${c1.rate}`)
   check('nothing owned: the repairs take 4 / 3 / 4 steps (laser / visor / controls)', JSON.stringify(c0.steps) === JSON.stringify({ laser: 4, visor: 3, controls: 4 }), JSON.stringify(c0.steps))
   check('every machine fix at max: each repair 1 step shorter', JSON.stringify(c1.steps) === JSON.stringify({ laser: 3, visor: 2, controls: 3 }), JSON.stringify(c1.steps))
   check('measuring: no page errors', !none.errors.length && !all.errors.length, [...none.errors, ...all.errors].join(' | '))
@@ -736,14 +736,14 @@ async function shopCardsAt(width, height) {
   }).map((el) => el.closest('.kit-card').querySelector('.kit-card-title').textContent))
   check(`${tag}: every number line on one line`, wrapped.length === 0, wrapped.join(', '))
   await shot(page, `f43-shop-top-${tag}`)
-  for (const id of ['junkUniformer', 'tougherTank', 'crackMatcher']) {
+  for (const id of ['junkUniformer', 'tougherTank', 'focusMode2', 'crackMatcher']) {
     await card(page, id).evaluate((el) => el.scrollIntoView({ block: 'center' }))
     await shot(page, `f43-shop-${id}-${tag}`)
   }
   await scrollList(page, 'end')
   await shot(page, `f43-shop-end-${tag}`)
   // buy / take back a level of each new upgrade: the card keeps its size
-  for (const id of ['junkUniformer', 'sealingBonus', 'tougherTank', 'slowCracks']) {
+  for (const id of ['junkUniformer', 'sealingBonus', 'tougherTank', 'slowCracks', 'focusMode2']) {
     const before = await size(card(page, id))
     await buy(page, id).click()
     await page.waitForTimeout(120)

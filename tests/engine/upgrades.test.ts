@@ -145,9 +145,9 @@ describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 d
   it('one upgrade for each rank 2–9, then ranks 10–38 (F42 actives + slots, F43 passives, F48 Quick Fix), in that order, with v1’s max levels', () => {
     expect(shop.map((u) => [u.id, u.rank, u.maxLevel])).toEqual([
       ['circuitStabilizer', 2, 4], ['autoPopper', 3, 4], ['capacitorEfficiency', 4, 4], ['cooldownBooster', 5, 3],
-      ['gearLubrication', 6, 4], ['focusMode', 7, 2], ['denseGoop', 8, 4], ['pressureControl', 9, 8],
+      ['gearLubrication', 6, 4], ['focusMode', 7, 1], ['denseGoop', 8, 4], ['pressureControl', 9, 8],
       ['junkUniformer', 10, 4], ['goopSwap', 12, 4], ['goopDump', 15, 3], ['sealingBonus', 18, 4], ['activeSlot', 20, 1],
-      ['tougherTank', 22, 4], ['goopColorizer', 25, 3], ['quickFix', 28, 2], ['slowCracks', 30, 4], ['crackMatcher', 32, 4],
+      ['tougherTank', 22, 4], ['goopColorizer', 25, 3], ['quickFix', 28, 2], ['slowCracks', 30, 4], ['focusMode2', 31, 1], ['crackMatcher', 32, 4],
       ['crackDown', 35, 3], ['activeSlot2', 38, 1],
     ])
   })
@@ -188,6 +188,7 @@ describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 d
     grows('capacitorEfficiency', (r) => r.modifiers.laserDrainMult, -1)
     grows('gearLubrication', (r) => r.modifiers.controlsCoolMult, 1)
     grows('focusMode', (r) => r.modifiers.consoleTimeScaleMult, -1)
+    grows('focusMode2', (r) => r.modifiers.consoleTimeScaleMult, -1)
     grows('denseGoop', (r) => r.modifiers.fallSpeedMult, 1)
     grows('pressureControl', (r) => r.modifiers.pressureRiseTimeMult, 1)
     // F43 / F48

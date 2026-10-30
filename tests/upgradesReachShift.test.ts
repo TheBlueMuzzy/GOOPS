@@ -46,13 +46,15 @@ describe('upgrades reach the shift (F34 task 5)', () => {
     expect(plain.state.pressure / pc.state.pressure).toBeCloseTo(want, 6)
   })
 
-  it('Focus Mode: the console runs at 75%, then 50% / 25% with its 2 levels (Muzzy 2026-10-29)', () => {
+  it('Focus Mode + Focus Mode II: the console runs at 75%, 50% with one, 25% with both — the two multiply (Muzzy 2026-10-30)', () => {
     expect(upgradesForShift(freshProgress()).modifiers.consoleTimeScaleMult).toBe(1)
     expect(breakdowns.consoleTimeScale).toBe(0.75)
-    for (const [level, speed] of [[1, 0.5], [2, 0.25]]) {
-      const m = upgradesForShift(owning({ focusMode: level })).modifiers.consoleTimeScaleMult
-      expect(breakdowns.consoleTimeScale * m).toBeCloseTo(speed, 3)
-    }
+    const mult = (owned: Record<string, number>) => upgradesForShift(owning(owned)).modifiers.consoleTimeScaleMult
+    expect(mult({ focusMode: 1 })).toBeCloseTo(0.6667, 9)
+    expect(mult({ focusMode2: 1 })).toBeCloseTo(0.5, 9)
+    expect(mult({ focusMode: 1, focusMode2: 1 })).toBeCloseTo(0.6667 * 0.5, 9)
+    expect(breakdowns.consoleTimeScale * mult({ focusMode: 1 })).toBeCloseTo(0.5, 3)
+    expect(breakdowns.consoleTimeScale * mult({ focusMode: 1, focusMode2: 1 })).toBeCloseTo(0.25, 3)
   })
 
   it('a machine fix at max level: that repair is one step shorter (and only at max)', () => {
@@ -77,7 +79,7 @@ describe('upgrades reach the shift (F34 task 5)', () => {
   })
 
   it('a lesson’s training shift gets no upgrades, whatever is owned', () => {
-    const up = upgradesForShift(owning({ pressureControl: 8, focusMode: 4, circuitStabilizer: 4, cooldownBooster: 3 }, ['cooldownBooster']), true)
+    const up = upgradesForShift(owning({ pressureControl: 8, focusMode: 1, focusMode2: 1, circuitStabilizer: 4, cooldownBooster: 3 }, ['cooldownBooster']), true)
     expect(up.modifiers).toEqual(NEUTRAL_MODIFIERS)
     expect(up.abilities).toEqual([])
     expect(up.fewerRepairSteps).toEqual({ laser: 0, visor: 0, controls: 0 })

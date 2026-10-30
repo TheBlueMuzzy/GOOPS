@@ -144,7 +144,7 @@ try {
   // ════════════ 2. PICK 7: the start of rank 7, upgrades refunded, ?rank gone ════════════
   {
     const { page, errors, close } = await device(390, 844, {
-      query: '?seed=7&rank=18', progress: { totalXp: xpFor(18) + 2500, scrapsSpent: 9, owned: { focusMode: 2, denseGoop: 1 }, equipped: ['cooldownBooster'] },
+      query: '?seed=7&rank=18', progress: { totalXp: xpFor(18) + 2500, scrapsSpent: 8, owned: { focusMode: 1, denseGoop: 1 }, equipped: ['cooldownBooster'] },
     })
     check('before: the console shows rank 18', (await consoleRank(page)) === 18)
     await rankButton(page).click()

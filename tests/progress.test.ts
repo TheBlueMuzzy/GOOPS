@@ -136,12 +136,16 @@ describe('save', () => {
     expect(r.progress.quotaMet).toBe(false) // rank 8 needs its own
   })
 
-  it('levels past an upgrade\'s maxLevel come off on load, their scraps back (F52 cuts Focus Mode 4 → 2) — golden v4 owning Focus Mode 4', () => {
+  it('levels past an upgrade\'s maxLevel come off on load, their scraps back (F52 cuts Focus Mode 4 → 2 → 1, Focus Mode II split off) — golden v4 owning Focus Mode 4', () => {
     const s = memory()
     s.m.set('goops-progress', JSON.stringify(goldenV4Focus4))
     const max = maxLevelOf(upgradeBook.upgrades.find((u) => u.id === 'focusMode')!)
     const keep = Math.min(4, max)
+    // (Focus Mode II is NOT handed out for the old levels: the scraps come back and the player buys it at rank 31)
     expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 6 - (4 - keep), owned: { focusMode: keep, circuitStabilizer: 2 }, equipped: [], quotaMet: true })
+    // a save from before the split, owning Focus Mode 2: level 1 kept, 1 scrap back
+    const before = { ...freshProgress(), scrapsSpent: 2, owned: { focusMode: 2 } }
+    expect(clampOwned(before, upgradeBook)).toEqual({ ...before, scrapsSpent: 2 - (2 - Math.min(2, max)), owned: { focusMode: Math.min(2, max) } })
     // the rule itself, with a book where Focus Mode stops at 2 (each level costs 1) and Circuit Stabilizer at 4
     const book = { ...upgradeBook, upgrades: upgradeBook.upgrades.map((u) => (u.id === 'focusMode' ? { ...u, maxLevel: 2 } : u)) } as UpgradeBook
     const p = { ...freshProgress(), scrapsSpent: 6, owned: { focusMode: 4, circuitStabilizer: 2, notAnUpgrade: 9 } }

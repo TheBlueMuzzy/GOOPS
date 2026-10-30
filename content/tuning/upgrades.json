@@ -65,12 +65,12 @@
     {
       "id": "focusMode",
       "name": "Focus Mode",
-      "_note": "v1: time × (1 − 0.1 × level) at the console. Here: × breakdowns.json consoleTimeScale while you're at the console mid-shift (the App reads it — F34 task 5). Muzzy 2026-10-29: the console runs at 75%, Focus Mode knocks it to 50% then 25% — 2 levels (\"freeing up scrap is good\").",
+      "_note": "v1: time × (1 − 0.1 × level) at the console. Here: × breakdowns.json consoleTimeScale while you're at the console mid-shift (the App reads it — F34 task 5). Muzzy 2026-10-29: the console runs at 75%, Focus Mode knocks it to 50% then 25% (\"freeing up scrap is good\"). Muzzy 2026-10-30 (F52): split into two 1-level upgrades — this one (75% → 50%) and Focus Mode II at 31 (→ 25%); the two multiply.",
       "type": "passive",
       "rank": 7,
-      "maxLevel": 2,
+      "maxLevel": 1,
       "effects": [
-        { "modifier": "consoleTimeScaleMult", "op": "mul", "byLevel": [0.6667, 0.3333] }
+        { "modifier": "consoleTimeScaleMult", "op": "mul", "byLevel": [0.6667] }
       ]
     },
     {
@@ -205,6 +205,17 @@
       "maxLevel": 4,
       "effects": [
         { "modifier": "crackEveryMult", "op": "mul", "byLevel": [1.15, 1.3, 1.45, 1.6] }
+      ]
+    },
+    {
+      "id": "focusMode2",
+      "name": "Focus Mode II",
+      "_note": "F52 (Muzzy 2026-10-30): Focus Mode's old level 2 as its own upgrade. × Focus Mode's 0.6667 (the two multiply): the console 50% → 25%; the final shift 25% → 16.7% → 8.3% (finalShift.json consoleTimeScale).",
+      "type": "passive",
+      "rank": 31,
+      "maxLevel": 1,
+      "effects": [
+        { "modifier": "consoleTimeScaleMult", "op": "mul", "byLevel": [0.5] }
       ]
     },
     {
