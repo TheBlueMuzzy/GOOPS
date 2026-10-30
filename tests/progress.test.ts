@@ -8,6 +8,7 @@ import goldenV1 from './saves/goops-progress-v1.json'
 import goldenV2 from './saves/goops-progress-v2.json'
 import goldenV3 from './saves/goops-progress-v3.json'
 import goldenV4 from './saves/goops-progress-v4.json'
+import goldenV5 from './saves/goops-progress-v5.json'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
@@ -79,7 +80,7 @@ describe('save', () => {
   const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m } }
 
   // tests/saves/: one golden save per version, kept forever (a new version adds its own)
-  const golden = (v: number) => JSON.stringify(([goldenV1, goldenV2, goldenV3, goldenV4] as object[])[v - 1])
+  const golden = (v: number) => JSON.stringify(([goldenV1, goldenV2, goldenV3, goldenV4, goldenV5] as object[])[v - 1])
 
   it('round-trips (with what the scraps bought, F34)', () => {
     const s = memory()
@@ -89,28 +90,29 @@ describe('save', () => {
     expect(JSON.parse(s.m.get('goops-progress')!).v).toBe(SAVE_VERSION)
   })
 
-  it('golden version-1 save (the alpha) → version 4: XP and scraps spent KEPT, nothing owned yet, no name, no badge, no careers', () => {
+  // (F74: every save from before the rank lock steps up with its rank's quota counted as met — TDD D31)
+  it('golden version-1 save (the alpha) → version 5: XP and scraps spent KEPT, nothing owned yet, no name, no badge, no careers, the rank unlocked', () => {
     const s = memory()
     s.m.set('goops-progress', golden(1))
-    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [] })
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], quotaMet: true })
     expect(loadOperatorName(s)).toBeNull()
     expect(loadCareers(s)).toBe(0)
-    // saving it again writes version 4, and it still loads the same
+    // saving it again writes version 5, and it still loads the same
     saveProgress(loadProgress(s), s)
-    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 4, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], badge: null, name: null, careers: 0 })
+    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 5, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], badge: null, quotaMet: true, xpHeld: false, name: null, careers: 0 })
   })
 
   it('golden version-2 save loads as it was (and steps up to version 3 with no name)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(2))
-    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], quotaMet: true })
     expect(loadOperatorName(s)).toBeNull()
   })
 
   it('golden version-3 save loads as it was, name and all (F66)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(3))
-    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], quotaMet: true })
     expect(loadOperatorName(s)).toBe('Muzzy')
     expect(loadCareers(s)).toBe(0) // (F65: steps up to version 4 — no badge, no careers)
   })
@@ -118,9 +120,27 @@ describe('save', () => {
   it('golden version-4 save loads as it was: the badge (One Of Us) and the careers done (F65)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(4))
-    expect(loadProgress(s)).toEqual({ totalXp: 481250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], badge: 'oneOfUs' })
+    expect(loadProgress(s)).toEqual({ totalXp: 481250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], badge: 'oneOfUs', quotaMet: true })
     expect(loadOperatorName(s)).toBe('Muzzy')
     expect(loadCareers(s)).toBe(1)
+  })
+
+  it('a version-4 save mid-rank steps up unlocked: its next goal ranks it up without a quota (nobody stuck by the update)', () => {
+    const s = memory()
+    s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: cumulative(7) + xpToNext(7) - 100, scrapsSpent: 0, owned: {}, equipped: [], badge: null, name: null, careers: 0 }))
+    const r = rewardShift(loadProgress(s), 900, { quotaMet: false })
+    expect(r.after).toMatchObject({ rank: 8, xpIntoRank: 800, locked: false })
+    expect(r.progress.quotaMet).toBe(false) // rank 8 needs its own
+  })
+
+  it('golden version-5 save loads as it was: the meter held full at rank 9, no quota met (F74)', () => {
+    const s = memory()
+    s.m.set('goops-progress', golden(5))
+    const p = loadProgress(s)
+    expect(p).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], xpHeld: true })
+    expect(rankInfo(p)).toMatchObject({ rank: 9, xpIntoRank: xpToNext(9), locked: true })
+    saveProgress(p, s)
+    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual(goldenV5)
   })
 
   it('a missing, broken, unknown-version or nonsense save starts fresh instead of crashing', () => {
@@ -137,9 +157,9 @@ describe('save', () => {
   it('broken upgrade entries are dropped, not the whole save', () => {
     const s = memory()
     s.m.set('goops-progress', JSON.stringify({ v: 2, totalXp: 9000, scrapsSpent: 1, owned: { a: 2, b: -1, c: 'x', d: 0, e: 2.7 }, equipped: ['a', 'a', 5, null] }))
-    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: { a: 2, e: 2 }, equipped: ['a'] })
+    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: { a: 2, e: 2 }, equipped: ['a'], quotaMet: true })
     s.m.set('goops-progress', JSON.stringify({ v: 2, totalXp: 9000, scrapsSpent: 1, owned: [1, 2], equipped: 'a' }))
-    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: {}, equipped: [] })
+    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: {}, equipped: [], quotaMet: true })
   })
 
   it('never writes over a newer build’s save', () => {
@@ -415,7 +435,7 @@ describe('end titles that stick', () => {
 
   it('a broken badge or careers count = none (the rest of the save stays)', () => {
     const s = memory()
-    s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: 'king', name: null, careers: -3 }))
+    s.m.set('goops-progress', JSON.stringify({ v: 5, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: 'king', name: null, careers: -3 }))
     expect(loadProgress(s)).toEqual({ totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [] })
     expect(loadCareers(s)).toBe(0)
     s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: null, name: null, careers: 'two' }))
