@@ -16,7 +16,7 @@
     "vet.targetBy": "Which cracks he goes for here: outOfReach = only cracks you can't reach (at least reachRows empty rows under them in their column), the hardest first; with none, he waits. (Other choices as whiteGoop.json.)",
     "vet.reachRows": "outOfReach: a crack with at least this many empty rows under it (rows you'd have to build up to cover it) counts as out of your reach.",
     "vet.countsForQuota": "His seals count toward the valve stages here (true, as when F64 was approved) — other shifts' quota leaves them out (whiteGoop.json countsForQuota false, F52).",
-    "vet.wearPerIntegrity": "F75: how much of himself he loses per 1.0 (100%) of integrity the tank LOSES to open cracks (1 = all of him for a whole tank's worth). Seals patching the tank give it back to the tank, not to him; his own seals cost him nothing. Used up: his last line (en.json finalShift.vet.gone), he's gone, the shift goes on without his help — not a loss.",
+    "vet.wearPerIntegrity": "F75: how much of himself he loses per 1.0 (100%) of integrity the tank LOSES to open cracks (1 = all of him for a whole tank's worth). Seals patching the tank give it back to the tank, not to him; his own seals cost him nothing. Used up: his last line (en.json finalShift.vet.gone), he's gone, the shift goes on without his help — not a loss. 3.5 (F75 task 8, Muzzy 2026-10-30: a good player saves him about half the time): the bots with no upgrades save him 42–53% (Focused / Sharp, 100 seeds a block).",
     "goneLineSec": "F75: how long his used-up line ('…sorry, kid. you got this.') stays in its bubble (looks time) — from when it starts: it takes ~3 s to type out (talk.json typeSpeed + its pauses), so leave time to read it.",
     "intro.hiSec": "The drop-in: seconds after the shift opens that he says 'oh! hi!' (he's at the top of the tank, about to fall).",
     "intro.itsMeSec": "…and 'it's me!'",
@@ -65,7 +65,7 @@
     "dropSecPerCell": 0.12,
     "targetBy": "outOfReach",
     "reachRows": 3,
-    "wearPerIntegrity": 3,
+    "wearPerIntegrity": 3.5,
     "countsForQuota": true
   },
   "goneLineSec": 4.5,
