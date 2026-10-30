@@ -1,6 +1,6 @@
 // F39 rank twists in a real shift (Jelly; Particle at 1440). Checks:
 //   rank 20: a two-colour piece falls (glowing) and locks as two clumps, each cell its own colour
-//   rank 31 (grow.fromRank): a crack grows over several cells; covering all but one doesn't plug it (popping there seals nothing);
+//   rank 30 (grow.fromRank): a crack grows over several cells; covering all but one doesn't plug it (popping there seals nothing);
 //            covering every cell plugs it; one pop seals it whole and the quota counts its cell count
 //   rank 40: a wild piece falls and locks in the wild look; wild goop on a crack of another colour plugs + seals it;
 //            a normal piece landing on a wild clump turns the whole clump its colour; faces never doubled

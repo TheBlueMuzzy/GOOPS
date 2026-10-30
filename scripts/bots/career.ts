@@ -91,7 +91,8 @@ export function playShift(input: ShiftInput): ShiftOutcome {
   const bot = new Bot(skill)
   const frameMs = botsJson.frameMs
   const reactionMs = skill.reactionMs ?? 0
-  const consoleScale = breakdownsJson.consoleTimeScale * upgrades.modifiers.consoleTimeScaleMult // (App: × Focus Mode)
+  // (App: × Focus Mode; the final shift has its own console speed — finalShift.json consoleTimeScale)
+  const consoleScale = (s.final ? finalShift.consoleTimeScale : breakdownsJson.consoleTimeScale) * upgrades.modifiers.consoleTimeScaleMult
   const swapMs = swapHoldMs(upgrades.modifiers.swapHoldTimeMult)
   const repairSec = botsJson.consoleRepairSec
   const valveSec = finalShift.bots?.valveSec ?? 6

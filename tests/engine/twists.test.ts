@@ -1,5 +1,5 @@
 // F39 rank twists (src/engine/twists.ts, content/tuning/twists.json): two-colour pieces from rank 20, growing cracks
-// from grow.fromRank (31 since F52; one crack over many cells — Muzzy 2026-10-25), wild goop from 40.
+// from grow.fromRank (30; one crack over many cells — Muzzy 2026-10-25), wild goop from 40.
 import { describe, expect, it } from 'vitest'
 import { createShift, WILD, type Crack, type ShiftEngine, type TwistsConfig, type WhiteGoopConfig } from '../../src/engine'
 import { restoreShift } from '../../src/engine/snapshot'
@@ -13,7 +13,7 @@ import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, straightLineCracks, tank, tickUntil } from './helpers'
 
 const twists = () => structuredClone(twistsJson) as TwistsConfig
-const GROW = twistsJson.grow.fromRank // growing cracks start here (31 since F52 — Balance pass)
+const GROW = twistsJson.grow.fromRank // growing cracks start here (30)
 // no cracks of the shift's own (the tests place theirs), pieces hanging still at the top
 function quietConfig(colours = 4) {
   const config = straightLineCracks(realConfig(), 1e12, 1e12)
@@ -196,7 +196,8 @@ describe('growing cracks (grow.fromRank)', () => {
 
     // in a shift: he sits on one cell of a 2-cell crack and seals it all, counting 2
     const sealing = whiteGoopJson.sealTime * 1000
-    const shift = createShift(quietConfig(), { seed: 6, rank: 31, whiteGoop: structuredClone(whiteGoopJson) as WhiteGoopConfig, startGrid: new Uint8Array(30 * 24) })
+    const white = { ...structuredClone(whiteGoopJson), countsForQuota: true } as WhiteGoopConfig // (counting on, to see the 2)
+    const shift = createShift(quietConfig(), { seed: 6, rank: 31, whiteGoop: white, startGrid: new Uint8Array(30 * 24) })
     tickUntil(shift, () => shift.state.vet!.mode !== 'drop', 10_000, 5)
     const v = shift.state.vet!
     addCrack(shift, crack(500, [[v.x, v.y], [(v.x + 1) % 30, v.y]]))

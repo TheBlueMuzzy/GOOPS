@@ -14,6 +14,7 @@ import type { WhiteGoopConfig } from './whiteGoop'
 
 export interface FinalShiftConfig {
   rank: number
+  consoleTimeScale: number // read by the game (App) and the bots, not the engine: the shift's speed at the console here
   colour: string // a name from shift.json colors
   fallSpeedMult: number
   pressureRiseMult: number

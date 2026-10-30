@@ -3,7 +3,7 @@
 // tuning + same bot = the same shift.
 // The console stand-ins (the bots in runShift never leave the tank):
 //   - a valve stage waiting → the bot goes to the console for finalShift.json bots.valveSec seconds of ITS time; the
-//     shift runs on at breakdowns.json consoleTimeScale meanwhile; then the stage opens (until Muzzy's valve mini-game).
+//     shift runs on at finalShift.json consoleTimeScale meanwhile; then the stage opens (until Muzzy's valve mini-game).
 //   - a broken machine → the same trip, bots.json consoleRepairSec seconds per machine (each repair is ~4 clicks).
 //     A valve trip repairs whatever is broken too.
 import { createShift } from '../../src/engine'
@@ -51,7 +51,7 @@ export function runFinal(input: FinalInput): FinalResult {
   const bot = new Bot(input.skill)
   const r: FinalResult = { bot: input.bot, seed: input.seed, outcome: 'timeout', stage: 0, realMs: 0, rulesMs: 0, playerSeals: 0, vetSeals: 0, vetSize: 1,
     consoleMs: 0, repairs: 0, stageAt: [] }
-  const scale = input.breakdowns.consoleTimeScale ?? 0.25
+  const scale = input.finalShift.consoleTimeScale // (the final shift's own console speed, as the game's App uses)
   let now = 0 // the bot's (real) time
   let trip: { leftMs: number; valve: boolean } | null = null
   let brokenSince: number | null = null

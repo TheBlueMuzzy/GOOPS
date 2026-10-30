@@ -71,6 +71,7 @@ describe('the white goop', () => {
 
   it('goes for the crack hardest for you and seals it after sealTime', () => {
     const cfg = whiteGoop()
+    cfg.countsForQuota = true // (the switch on: his seal counts — the final shift's valve uses it; normal shifts have it off, F52)
     const shift = createShift(quietConfig(), { seed: 5, rank: 31, whiteGoop: cfg, startGrid: tank(['2.']) })
     const s = shift.state
     const easy = { id: 901, x: 1, y: 23, color: 1, plugged: false } // on the floor: nothing to build
@@ -93,7 +94,7 @@ describe('the white goop', () => {
     expect(s.cracks.some((c) => c.id === 902)).toBe(false)
     expect(ofType(events, 'vetSeal').map((e) => e.crackId)).toEqual([902])
     expect(s.sealedCracks!.some((c) => c.id === 902)).toBe(true)
-    expect(s.cracksSealed).toBe(1) // countsForQuota: true (Ask Muzzy)
+    expect(s.cracksSealed).toBe(1) // (countsForQuota on)
     expect(s.vet!.mode).toBe('rest')
     // after his rest he heads for the other one
     shift.tick(cfg.restAfter * 1000 + 50)

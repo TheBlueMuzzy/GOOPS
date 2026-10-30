@@ -555,8 +555,10 @@ export function App() {
   // (F31: the end report isn't a menu that pauses: the shift has ended, so the rules clock running changes nothing in
   // the tank — but a lesson on the report, day one's "back to the console", keeps its own timers)
   const menuOpen = open.some((id) => id !== 'end')
+  // (F52: the final shift has its own console speed, finalShift.json consoleTimeScale — its valve stages are opened there)
+  const consoleScale = hud?.final ? finalShift.consoleTimeScale : breakdowns.consoleTimeScale
   const speed = menuOpen || sideways ? 0 : mode === 'shift' ? 1 : peeking
-    ? (lessonPlay.consoleFrozen() ? 1 : breakdowns.consoleTimeScale * upgrades.modifiers.consoleTimeScaleMult) : 0 // (F34: × Focus Mode)
+    ? (lessonPlay.consoleFrozen() ? 1 : consoleScale * upgrades.modifiers.consoleTimeScaleMult) : 0 // (F34: × Focus Mode)
   // The HUD (F26, Muzzy's mock-up 2026-10-18; F59 his second, 2026-10-19): ONE top row — score · CRACKS x / y (big,
   // shrinking to fit) · Console button — then the tank, then ONE panel under it: at its left the next-piece window (from
   // its rank; tall, big cells), and to its right the unlocked machines' bars in a row with big names above (centred),
