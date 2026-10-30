@@ -34,7 +34,12 @@ const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]] /
 mkdirSync(OUT, { recursive: true })
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const W = en.lessons['first-day']
-const DRAIN_MS = JSON.parse(readFileSync('content/tuning/shift.json', 'utf8')).rupture.drainMs
+const SHIFT = JSON.parse(readFileSync('content/tuning/shift.json', 'utf8'))
+const DRAIN_MS = SHIFT.rupture.drainMs
+// day one's quota (rank 0), worked out as config.ts cracksNeededFor does — D3 + E1 seal 2 of it, F1 the rest
+const COLOURS_AT_0 = SHIFT.colorsByRank.filter((c) => c.rank <= 0).at(-1).count
+const QUOTA = Math.max(1, Math.round(SHIFT.quota.base + SHIFT.quota.perColour * COLOURS_AT_0))
+const LEFT_AT_F1 = QUOTA - 2
 const words = (id, input) => (typeof W[id] === 'string' ? W[id] : W[id][input])
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -330,7 +335,7 @@ try {
     const plugged = (await state(page)).cracks.find((c) => c.plugged)
     const at = await cellPoint(page, plugged.x, plugged.y)
     await page.mouse.click(...at)
-    check('D3: the zap seals it → "Sealed! Seal 4 cracks a day…" on CRACKS', (await messageIs(page, 'sealed')) && (await bubbleSays(page)).includes('Seal 4 cracks') && await ringAround(page, '.kit-hud-text[data-size="l"]'), await bubbleSays(page))
+    check(`D3: the zap seals it → "Sealed! Seal ${QUOTA} cracks a day…" on CRACKS`, (await messageIs(page, 'sealed')) && (await bubbleSays(page)).includes(`Seal ${QUOTA} cracks`) && await ringAround(page, '.kit-hud-text[data-size="l"]'), await bubbleSays(page))
     await gotIt(page)
     // ── E1 · a high crack, the red X first ──
     check('D3 → E1', await stepIs(page, 'E1'))
@@ -377,7 +382,7 @@ try {
     await shot(page, 'F1-1440x900')
     check('F1: the look', (await lookProblems(page)).length === 0, (await lookProblems(page)).join(', '))
     await gotIt(page)
-    check('F1: "Seal 2 more to meet the quota." on CRACKS', (await messageIs(page, 'quota')) && (await bubbleSays(page)) === 'Seal 2 more to meet the quota.', await bubbleSays(page))
+    check(`F1: "Seal ${LEFT_AT_F1} more to meet the quota." on CRACKS`, (await messageIs(page, 'quota')) && (await bubbleSays(page)) === `Seal ${LEFT_AT_F1} more to meet the quota.`, await bubbleSays(page))
     await gotIt(page)
     await stepIs(page, 'F1-work')
     // the rails: pressure stops at 90 %; open cracks can't wear the tank under 20 % or rupture it; a full tank is cleared
@@ -395,8 +400,8 @@ try {
       f.phase === 'playing' && f.status === 'playing' && Math.round(f.integrity * 100) === 20 && railed && !(await page.evaluate(() => window.__events.includes('rupture'))),
       `${flood.ms} ms · phase ${f.phase} · integrity ${Math.round(f.integrity * 100)}% · rail ${railed}`)
     await page.evaluate(() => window.__goops.engine.train({ type: 'pressure', value: 0.3 }))
-    // two seals by real clicks: a crack in view with its own colour's goop placed on it (dev hook), zapped when ready
-    for (let n = 0; n < 2; n++) {
+    // the last seals by real clicks: a crack in view with its own colour's goop placed on it (dev hook), zapped when ready
+    for (let n = 0; n < LEFT_AT_F1; n++) {
       const placed = await page.evaluate(() => {
         const e = window.__goops.engine, s = e.state
         e.train({ type: 'clear' }) // (room to work: the flood above filled the tank)
@@ -411,7 +416,7 @@ try {
       await sleep(250)
     }
     const q = await state(page)
-    check('F1: two more seals meet the quota → F2', q.sealed >= q.needed && (await stepIs(page, 'F2')), `${q.sealed} / ${q.needed}`)
+    check(`F1: ${LEFT_AT_F1} more seals meet the quota → F2`, q.sealed >= q.needed && (await stepIs(page, 'F2')), `${q.sealed} / ${q.needed}`)
     check('F1: the game\'s own "Quota met!" banner shows (not hidden by the lesson)', (await toastTexts(page)).some((t) => t.includes(en.messages.quotaMet)), JSON.stringify(await toastTexts(page)))
     // ── F2 · the rupture ──
     const rup = await tickUntil(page, 's.phase === "rupture"', 900000)
