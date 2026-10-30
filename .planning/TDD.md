@@ -148,7 +148,7 @@ flowchart LR
 | `content/tuning/name.json` | F66: `maxLength` — the most letters the first day's name box takes (12, Muzzy 2026-10-25); the name itself is in the save (D20) | Dev Kit Tuning / Obsidian |
 | `content/tuning/whiteGoop.json` | F63 the white goop (the Veteran, gooped — D21). Rules, read by src/engine/whiteGoop.ts on the rules clock: `fromRank` 31, drop-in (`dropFromCentre`, `dropSecPerCell`), ooze (`secPerCell` 0.7, `oozeSlow` 2.5), `targetBy` hardestForYou (+ `coveredHardness` 4), `sealTime` 6, `sealTimePerExtraCell` 1 (F39: a grown crack takes sealTime × its size), `restAfter` 1, `thinkSec`, `countsForQuota`, `integrityRefund`. Looks, read by src/view/whiteGoopView.ts on the goo's clock: colour, alphas, `squint` 0.25, `eyeSize` 0.18, eye gap/colours, `owTime`, `flinch`, the sealing ring, Particle `dots`, `eyesTurnSec` (the goop's eyes on him as he drops in) | Dev Kit Tuning (live) |
 | `content/tuning/twists.json` | F39 rank twists (D22), read by src/engine/twists.ts + pieces.ts on the rules clock, seeded by the shift's rng: `split` (two-colour pieces: `fromRank` 20, `chance` 0.25), `grow` (growing cracks: `fromRank` 30, a roll every `everyMsMin`–`everyMsMax` 5–10 s per uncovered cell, chance (`baseChance` 0.1 + pressure × `pressureWeight` 1) × `leafMult` 0.5 if nothing grew from it × max(`minFalloff` 0.1, 1 − `hopFalloff` 0.25 × steps from the root), `diagonals` true = 8 directions), `wild` (wild goop: `fromRank` 40, `chance` 0.15). Corrupt pieces are never split or wild; wild is never split | Dev Kit Tuning (live) |
-| `content/tuning/finalShift.json` | F64 the final shift (rank 50, the boss level — D26), read by src/engine/shift.ts + finalShift.ts on the rules clock: `rank` 50, `colour` black (every piece, junk, rain cell and crack), the onslaught (`fallSpeedMult`, `pressureRiseMult`, `crackRateMult`, `rain.everySec` / `rain.cells`), `valve.stages` [6, 8, 10] (seals per release-valve stage; a full stage waits for `openValveStage()` and seals don't count meanwhile), `vet` (whiteGoop.json's numbers laid over his own in this shift: `sealTime`, `secPerCell`, `restAfter`, `dropSecPerCell`, `targetBy` outOfReach + `reachRows`, `shrinkPerSeal`), `intro` (his drop-in lines + when the first piece comes; `lineSec` is the view's), `bots.valveSec` (the bots' stand-in for a valve stage) | Dev Kit Tuning (live) |
+| `content/tuning/finalShift.json` | F64 the final shift (rank 50, the boss level — D26), read by src/engine/shift.ts + finalShift.ts on the rules clock: `rank` 50, `colour` black (every piece, junk, rain cell and crack), the onslaught (`fallSpeedMult`, `pressureRiseMult`, `crackRateMult`, `rain.everySec` / `rain.cells`), `valve.stages` [6, 8, 10] (seals per release-valve stage; a full stage waits for `openValveStage()` and seals don't count meanwhile), `vet` (whiteGoop.json's numbers laid over his own in this shift: `sealTime`, `secPerCell`, `restAfter`, `dropSecPerCell`, `targetBy` outOfReach + `reachRows`, F75 `wearPerIntegrity` — D32), `goneLineSec` (F75 his used-up line's time up), `intro` (his drop-in lines + when the first piece comes; `lineSec` is the view's), `bots.valveSec` (the bots' stand-in for a valve stage) | Dev Kit Tuning (live) |
 | `content/tuning/valve.json` | F64 the release valve's mini-game (Muzzy's design, sketch S11 — D27), read by src/game/valve.ts (pure rules) + src/ui/ValvePanel.tsx each frame: `rule` 1 add · 2 coarse + fine · 3 worst wins, `detents` (clicks a turn), `fine`, `coarseGain`, `green` (share of the dial) × `shrink` per stage, `hold` (seconds in the green), `sway` (the needle's spring), `openSec` ("STAGE n OPEN" before back to the tank), `goSec` (his "go!" bubble) | Dev Kit Tuning (live) |
 | `content/tuning/ending.json` | F65 the ending (D28), read when each step starts by src/game/ending.ts (the step order + which steps time out) and src/game/EndingView.tsx / Console.tsx EndingBadge (the looks): `goopLines` (the goop's lines in order, en.json `ending.goop`), `paidBy` 1,312 + `named` 4 (the last payday, "{more}"), `pour` (shake, rise, hold seconds; lumps, stars, twinkle), `mouths` (`spots` = the faces in the filled view, `size`; colours + the chorus from eyes.json), `console` (quiet after his line, the badge's strike timing, leave, the empty console). Looks clock: the Dev Kit's full pause holds it | Dev Kit Tuning (live) |
 | `scripts/bots/economy.json` | F51 the economy sim's settings (D30; measuring only — the game never reads it): `careerSeeds`, `maxShifts`, `finalTries`, `skills` (bots.json bots), `buyStyles` (spread · rush · activesFirst), `neverBuy` (Dense Goop), `bands`, `activePriority`, `finalLeaveOut` (Goop Dump), effect runs (`effectSeeds`, `effectSkills`, `effectLateRanks` 45 + 50, `slotTestActives`), `feelThreshold` (PLACEHOLDER until Muzzy calibrates it), `feltDirectly`, `finalSeeds`, `quick` (check:full's short run). Rules: scripts/bots/career.ts; run: `npm run sim:economy` → e2e-shots/sim/ | Obsidian |
@@ -199,6 +199,25 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D32 · 2026-10-30 · The cooperative final shift: the Veteran wears by the integrity the tank loses (F75)
+  Proposed by: Muzzy (2026-10-30: "I'd rather be working directly with him, not slightly against him" · "all upgrades
+  should have some sort of an impact on the final level") · Claude (how it's kept)
+  Options: keep him shrinking per seal (F64: leaning on him spends him, so you work against him; integrity barely
+  mattered and Tougher Tank / Slow Cracks did nothing) · wear him by time · wear him by the integrity the tank LOSES
+  Chose: wear by integrity lost. shift.ts drainIntegrity hands what it really drained to wearVet: size −= lost ×
+  finalShift.json vet.wearPerIntegrity. Only drops count — a seal's patch gives the tank back, not him — so a healthy
+  tank keeps him, and every upgrade that protects the tank (Tougher Tank, Slow Cracks, the actives) now protects him.
+  His seals cost nothing. Used up is NOT a loss: a vetGone event carries where he was (his bubble's spot), state.vet
+  goes null (no more seals, no "ow", the shift goes on without him), final.vetAlive turns false; the shift's final state
+  keeps vetAlive, so a snapshot keeps it (older snapshots: alive if he's in the tank). FinalOutcome loses 'vetGone':
+  the final shift is lost only when the tank breaks. The App starts the ending with vetAlive → ending.ts picks the
+  steps: alive = the happy ending (his lines out loud in the tank after the goop's, then the console without the
+  speaker line + quiet); gone = today's. His clump in the ending is CSS like the rest of it (the shift's canvas isn't
+  drawn then), his bubble is his final-shift bubble (same intention, same motion). Same sprint: Goop Dump rains WILD
+  goop (it no longer copies a colour, so it fires with no falling piece too) and in the final shift into the columns
+  of unplugged cracks; Slow Cracks in the final shift stretches only the growth roll, not the new-crack timer.
+  Numbers: vet.wearPerIntegrity (3 to start: the bots save him ~60%, task 8 tunes), goneLineSec 4.5 (his line takes
+  ~3 s to type — tests/finalShiftLines.test.ts checks it from the bubble's own typing), ending.json vetLines + vet.
 D31 · 2026-10-29 · The rank lock: two flags beside the XP, one quota = one rank-up, old saves unlocked (F74)
   Proposed by: Muzzy (the rule, 2026-10-29: "XP goal met = allowed to rank up IF you've met quota during this rank",
   XP past the goal "stops at the goal", "double that shift's XP") · Claude (how it's kept)
@@ -283,7 +302,7 @@ D26 · 2026-10-26 · The final shift is a mode of the normal shift engine, switc
   with finalShift.json `vet` laid over it (fresh each step, so both files edit live). State: state.final (stage,
   seals, need, waiting, outcome) — plain data, in snapshots. The valve panel (task 6, Muzzy's design) only has to
   call engine.openValveStage(); Dev: __goops.openValve().
-  The losses end the shift AT ONCE (status lost, final.outcome vetGone / overflow / integrity; the rupture event still
+  The losses end the shift AT ONCE (status lost, final.outcome overflow / integrity — F75 D32: no vetGone loss; the rupture event still
   fires for the sound/shake) — no rupture drain: it's the boss level, and zapping out a drain can't win it (Ask Muzzy).
   The shift waits for the Veteran's intro (no piece, no pressure, no cracks) until he has landed + intro.playSec.
   "Cracks you can't reach" (whiteGoop.ts targetBy outOfReach) = a crack with at least vet.reachRows empty rows to
