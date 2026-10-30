@@ -9,9 +9,9 @@
 - **A career** = rank 0 to the final shift (rank 50), played shift after shift on the real game rules. XP, ranks and scraps come from the game's own code. A career stops when it wins the final shift (or after 10 tries).
 - **Three bot skills** (the F27 bots): **Casual** drops pieces low and zaps what it sees, ignores cracks · **Focused** steers pieces onto cracks · **Sharp** also vents pressure and keeps the stack low.
 - **New for careers:** the bots go to the **console** to repair broken machines, **swap** with a real hold (1.5 s, shorter with Goop Swap), **fire their actives**, and **shop between shifts**.
-- **Three buy styles** (every scrap spent, every time): **Spread evenly** (one level at a time into whatever has fewest) · **Rush one band** (the newest band of upgrades first) · **Actives first**. No bot buys Dense Goop (it's a challenge, not help).
+- **Three buy styles** (every scrap spent, every time): **Spread evenly** (one level at a time into whatever has fewest) · **Rush one band** (the newest band of upgrades first) · **Actives first**. Since 2026-10-29 (Muzzy: "why not?") the bots buy Dense Goop like any other upgrade — the numbers below are from that run.
 - **Each upgrade on vs off:** the same seeds with and without one upgrade (level 1, and max level), at the rank it opens, at rank 45, and in the final shift.
-- **Run:** 72 careers (3 skills × 3 styles × 8 seeds) + 8,520 on/off shifts + 3,000 final shifts = 15,808 shifts, 776 s on 24 threads.
+- **Run:** 72 careers (3 skills × 3 styles × 8 seeds) + 8,520 on/off shifts + 3,000 final shifts = 15,396 shifts (the careers got shorter), 832 s on 24 threads.
 
 ## Words used below
 - **Quota** = the cracks a shift asks you to seal. A shift is **won** when the quota is met. A lost shift still earns XP (its score).
@@ -26,7 +26,7 @@
 ## Findings (each with ONE suggested knob for F52 — Balance pass)
 
 **1. Ranks fly by — losing doesn't slow you down.**
-- Shifts to reach the final shift: **Sharp 33–42, Focused 44–48, Casual 73–88** (whole career, 50 ranks).
+- Shifts to reach the final shift: **Sharp 31–37, Focused 42–49, Casual 60–83** (whole career, 50 ranks; with Dense Goop bought every style got a little faster — before: Sharp 33–42, Focused 44–48, Casual 73–88).
 - Skilled bots need **under one shift per rank** most of the way (Sharp 0.3–0.8, Focused 0.4–1.4).
 - Why: a shift's score (= XP) is 6,000–20,000 for Focused/Sharp; a rank needs 3,500 → 13,750. One good shift often jumps 2+ ranks.
 - Knob: `content/tuning/progression.json` → `xpPerRank` (250) **up** — later ranks need more XP, so the climb slows where the content is richest.
@@ -71,14 +71,14 @@
 - Knob: `content/tuning/upgrades.json` → `pressureControl` → `byLevel` — **bigger early steps** (e.g. 1.1 at level 1), so one level is felt.
 
 **8. Scraps: 50 earned, 68 levels on offer — every scrap is spent at once.**
-- A career earns 50 scraps; 68 levels are for sale (72 minus Dense Goop's 4). Every bot spends everything every time (0 unspent at every rank).
+- A career earns 50 scraps; 72 levels are for sale (Dense Goop's 4 included since 2026-10-29). Every bot spends everything every time (0 unspent at every rank).
 - At rank 40 every style owns 40 levels spread over all 19 upgrades; at rank 50, 50 levels: Spread ends with 1–5 levels in each; Rush maxes the late bands (Junk Uniformer, Goop Swap, Sealing Bonus, Tougher Tank, Slow Cracks, Crack Matcher at 4) and leaves Pressure Control at 2; Actives first maxes all four actives.
 - Real choices exist (18 levels you never get), but with half the upgrades doing nothing (finding 5) many of the 50 are wasted.
 - Knob: `content/tuning/progression.json` → `scrapsPerRank` (1) — leave it; fix the dead upgrades first.
 
 **9. The final shift with a real career's upgrades.**
-- Focused: **85% / 85% / 95%** won (Spread / Rush / Actives first; no upgrades: 85%). Sharp: **65% / 30% / 40%** (no upgrades: 70%). Casual: 0% always. (Re-run 2026-10-29 after the review: both sides now play the same 20 seeds — the first run compared 10 seeds with 20.)
-- Every Focused/Sharp career reached and won the final shift (median 1–2 tries).
+- Focused: **85% / 100% / 90%** won (Spread / Rush / Actives first; no upgrades: 85%). Sharp: **10% / 35% / 30%** (no upgrades: 70%). Casual: 0% always. **New with Dense Goop bought (2026-10-29 re-run): Sharp's final shift fell hard** — Spread evenly 65% → 10%: pieces falling up to 1.5× faster in the busiest shift cost the bot that plays fastest; a player can take it back (free respec) before the final shift, the bots don't. Before Dense Goop: Focused 85 / 85 / 95%, Sharp 65 / 30 / 40%. (Re-run 2026-10-29 after the review: both sides now play the same 20 seeds — the first run compared 10 seeds with 20.)
+- Every Focused/Sharp career reached and won the final shift (median 1 try).
 - Rush and Actives-first Sharp careers do worse than no upgrades. Rush carries max-level Slow Cracks (finding 7: fewer cracks to seal for the valve); why Actives first loses is not pinned down yet (its loadout: Cooldown Booster, Colorizer, Crack Down at max). Focused with the same loadouts doesn't lose — 8 careers each × 20 seeds, so treat the Sharp gap as a lead, not a fact. The F64 final-shift bot (no swap hold, no actives) gets 75–90% on the same seeds.
 - Knob: `content/tuning/upgrades.json` → `slowCracks` → `byLevel` **smaller steps** (it's the upgrade that costs final-shift wins).
 
