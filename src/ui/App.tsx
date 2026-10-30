@@ -152,7 +152,7 @@ function rankUpLine(r: ShiftReward): string {
 function quotaStat(r: ShiftReward): Stat[] {
   const Q = text.end.quota
   if (r.before.xpToNext === 0 && !r.before.locked) return []
-  const value = r.quotaMet ? fill(Q.met, { mult: progressionTuning.quotaXpMult }) : r.progress.quotaMet ? Q.metEarlier : r.after.locked ? Q.locked : Q.missed
+  const value = r.quotaMet ? fill(Q.met, { mult: progressionTuning.quotaXpMult }) : r.metEarlier ? Q.metEarlier : r.after.locked ? Q.locked : Q.missed
   const tone: Stat['tone'] = r.quotaMet ? 'success' : r.after.locked ? 'danger' : undefined
   return [{ label: Q.label, value, ...(tone ? { tone } : {}) }]
 }

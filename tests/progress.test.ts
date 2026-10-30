@@ -9,6 +9,9 @@ import goldenV2 from './saves/goops-progress-v2.json'
 import goldenV3 from './saves/goops-progress-v3.json'
 import goldenV4 from './saves/goops-progress-v4.json'
 import goldenV5 from './saves/goops-progress-v5.json'
+import goldenV4Focus4 from './saves/goops-progress-v4-focus4.json'
+import { clampOwned, maxLevelOf, upgradeBook } from '../src/progress/upgradeShop'
+import type { UpgradeBook } from '../src/engine/upgrades'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
@@ -131,6 +134,19 @@ describe('save', () => {
     const r = rewardShift(loadProgress(s), 900, { quotaMet: false })
     expect(r.after).toMatchObject({ rank: 8, xpIntoRank: 800, locked: false })
     expect(r.progress.quotaMet).toBe(false) // rank 8 needs its own
+  })
+
+  it('levels past an upgrade\'s maxLevel come off on load, their scraps back (F52 cuts Focus Mode 4 → 2) — golden v4 owning Focus Mode 4', () => {
+    const s = memory()
+    s.m.set('goops-progress', JSON.stringify(goldenV4Focus4))
+    const max = maxLevelOf(upgradeBook.upgrades.find((u) => u.id === 'focusMode')!)
+    const keep = Math.min(4, max)
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 6 - (4 - keep), owned: { focusMode: keep, circuitStabilizer: 2 }, equipped: [], quotaMet: true })
+    // the rule itself, with a book where Focus Mode stops at 2 (each level costs 1) and Circuit Stabilizer at 4
+    const book = { ...upgradeBook, upgrades: upgradeBook.upgrades.map((u) => (u.id === 'focusMode' ? { ...u, maxLevel: 2 } : u)) } as UpgradeBook
+    const p = { ...freshProgress(), scrapsSpent: 6, owned: { focusMode: 4, circuitStabilizer: 2, notAnUpgrade: 9 } }
+    expect(clampOwned(p, book)).toEqual({ ...p, scrapsSpent: 4, owned: { focusMode: 2, circuitStabilizer: 2, notAnUpgrade: 9 } })
+    expect(clampOwned(freshProgress(), book)).toEqual(freshProgress())
   })
 
   it('golden version-5 save loads as it was: the meter held full at rank 9, no quota met (F74)', () => {
@@ -291,6 +307,7 @@ describe('the rank lock (F74)', () => {
     expect(c.rankUps).toBe(1)
     expect(c.after).toMatchObject({ rank: 4, xpIntoRank: 1000 + 1500 + 2000 - goal3 })
     expect(c.progress.quotaMet).toBe(false)
+    expect([a.metEarlier, b.metEarlier, c.metEarlier]).toEqual([false, true, true]) // (the report's "Met earlier")
   })
 
   it('one quota = one rank-up: a huge shift stops full at the next rank goal', () => {

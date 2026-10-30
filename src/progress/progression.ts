@@ -123,6 +123,7 @@ export interface ShiftReward {
   progress: Progress // the new progress to save
   quotaMet: boolean // F74: this shift met its crack quota (the report's quota line)
   lostXp: number // F74: XP that didn't fit — the meter was full and the rank locked
+  metEarlier: boolean // F74: a quota was already met at this rank before this shift (the rank was unlocked going in)
 }
 
 // The rank meter's steps from one progress to another (F21): one per rank the XP passes through, each
@@ -154,7 +155,8 @@ export function rewardShift(p: Progress, finalScore: number, shift?: ShiftDone, 
   const xp = quotaMet ? Math.round(earned * t.quotaXpMult) : earned
   const progress = shift ? addXp(p, xp, quotaMet, t) : { ...p, totalXp: p.totalXp + xp }
   const after = rankInfo(progress, t)
-  return { xp, before, after, rankUps: after.rank - before.rank, progress, quotaMet, lostXp: p.totalXp + xp - progress.totalXp }
+  return { xp, before, after, rankUps: after.rank - before.rank, progress, quotaMet, lostXp: p.totalXp + xp - progress.totalXp,
+    metEarlier: !!p.quotaMet }
 }
 
 // F74: XP into the meter under the rank lock. Each rank's goal is a gate: with a quota met this rank (before or in this
@@ -185,5 +187,5 @@ export function rewardFirstDay(p: Progress, finalScore: number, shift?: ShiftDon
   if (r.after.rank > 0) return r
   const progress = { ...p, totalXp: xpToNext(0, t), quotaMet: false, xpHeld: false } // (all the XP rank 1 needs)
   const after = rankInfo(progress, t)
-  return { xp: progress.totalXp - p.totalXp, before: r.before, after, rankUps: after.rank - r.before.rank, progress, quotaMet: false, lostXp: 0 }
+  return { xp: progress.totalXp - p.totalXp, before: r.before, after, rankUps: after.rank - r.before.rank, progress, quotaMet: false, lostXp: 0, metEarlier: false }
 }

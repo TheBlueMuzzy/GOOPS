@@ -30,6 +30,23 @@ export function levelOf(p: Progress, id: string): number {
   return Number.isFinite(level) && level > 0 ? level : 0
 }
 
+/**
+ * F74 / F52: a level the upgrade can't have any more (its maxLevel cut in upgrades.json — F52 takes Focus Mode from 4
+ * levels to 2) comes off, and what it cost comes back. The save does this on every load (src/progress/save.ts), so an
+ * old save — or one written before a cut — never owns more than the shop sells. Upgrades the book doesn't know stay.
+ */
+export function clampOwned(p: Progress, book: UpgradeBook = upgradeBook): Progress {
+  let refund = 0
+  const owned = { ...p.owned }
+  for (const def of playableUpgrades(book)) {
+    const extra = levelOf(p, def.id) - maxLevelOf(def)
+    if (extra <= 0) continue
+    owned[def.id] = maxLevelOf(def)
+    refund += extra * costOf(def)
+  }
+  return refund ? { ...p, owned, scrapsSpent: Math.max(0, p.scrapsSpent - refund) } : p
+}
+
 // The upgrades the shop may sell (never the test-only ones), by id
 function findUpgrade(id: string, book: UpgradeBook): UpgradeDef | undefined {
   return playableUpgrades(book).find((u) => u.id === id)

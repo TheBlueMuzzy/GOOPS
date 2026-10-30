@@ -11,6 +11,7 @@
 // (Hand-made: the framework's saves module — backups, save codes — isn't installed in Goops yet. Its shape is the same:
 // one upgrade step per version, so moving onto it later keeps these steps.)
 import { freshProgress, type EndBadge, type Progress } from './progression'
+import { clampOwned } from './upgradeShop'
 import nameTuning from '../../content/tuning/name.json'
 
 const KEY = 'goops-progress'
@@ -50,8 +51,9 @@ export function loadProgress(storage: Pick<Storage, 'getItem'> | null = safeStor
   const data = readSave(storage)
   if (!data) return freshProgress()
   const badge = readBadge(data.badge)
-  return { totalXp: Number(data.totalXp), scrapsSpent: Number(data.scrapsSpent), owned: readOwned(data.owned), equipped: readEquipped(data.equipped),
-    ...(badge ? { badge } : {}), ...(data.quotaMet === true ? { quotaMet: true } : {}), ...(data.xpHeld === true ? { xpHeld: true } : {}) }
+  // (F74 / F52: levels past an upgrade's maxLevel come off, their scraps back — upgradeShop.ts clampOwned)
+  return clampOwned({ totalXp: Number(data.totalXp), scrapsSpent: Number(data.scrapsSpent), owned: readOwned(data.owned), equipped: readEquipped(data.equipped),
+    ...(badge ? { badge } : {}), ...(data.quotaMet === true ? { quotaMet: true } : {}), ...(data.xpHeld === true ? { xpHeld: true } : {}) })
 }
 
 // name + careers: the ones in the save now — saving the progress never forgets them (the name is signed on the first

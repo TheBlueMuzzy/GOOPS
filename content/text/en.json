@@ -265,7 +265,7 @@
     "quota": {
       "_about": "F74 — Rank lock: the end report's quota row (not on the first day or the final shift). A rank-up needs the XP goal AND a crack quota met during that rank. met = this shift met it ({mult} = the XP multiplier, content/tuning/progression.json quotaXpMult) · metEarlier = missed, but an earlier shift at this rank met it · locked = missed, and the meter is full: the rank waits · missed = missed, the meter isn't full yet.",
       "label": "Quota",
-      "met": "Quota met — rank unlocked · XP ×{mult}",
+      "met": "Met — rank unlocked · XP ×{mult}",
       "metEarlier": "Met earlier — rank unlocked",
       "locked": "Rank locked: meet a quota",
       "missed": "Missed — the rank-up needs one"
