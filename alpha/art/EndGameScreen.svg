@@ -1,0 +1,265 @@
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 583.67 909.59" width="583.67" height="909.59">
+  <defs>
+    <style>
+      .cls-1 {
+        letter-spacing: .02em;
+      }
+
+      .cls-2 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-3 {
+        letter-spacing: .01em;
+      }
+
+      .cls-4 {
+        letter-spacing: .19em;
+      }
+
+      .cls-5 {
+        letter-spacing: .02em;
+      }
+
+      .cls-6 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-7 {
+        letter-spacing: .03em;
+      }
+
+      .cls-8 {
+        letter-spacing: .2em;
+      }
+
+      .cls-9 {
+        letter-spacing: .02em;
+      }
+
+      .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15 {
+        font-family: AmazonEmber-Regular, 'Amazon Ember';
+      }
+
+      .cls-16 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-10 {
+        letter-spacing: .02em;
+      }
+
+      .cls-17 {
+        fill: #0c0f19;
+      }
+
+      .cls-18, .cls-19, .cls-20 {
+        fill: #fff;
+      }
+
+      .cls-21 {
+        letter-spacing: .03em;
+      }
+
+      .cls-22 {
+        fill: #d36b28;
+      }
+
+      .cls-23 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-24 {
+        font-size: 34.88px;
+      }
+
+      .cls-24, .cls-11, .cls-13 {
+        fill: #6acbda;
+      }
+
+      .cls-24, .cls-25, .cls-19 {
+        font-family: AmazonEmber-Heavy, 'Amazon Ember';
+        font-weight: 800;
+      }
+
+      .cls-26 {
+        letter-spacing: .03em;
+      }
+
+      .cls-27 {
+        letter-spacing: 0em;
+      }
+
+      .cls-28, .cls-29 {
+        fill: #d82727;
+        font-family: FromWhereYouAre, 'From Where You Are';
+      }
+
+      .cls-28, .cls-20 {
+        font-size: 36px;
+      }
+
+      .cls-29 {
+        font-size: 24px;
+      }
+
+      .cls-30 {
+        letter-spacing: -.05em;
+      }
+
+      .cls-11 {
+        font-size: 20.93px;
+      }
+
+      .cls-31 {
+        fill: #1d1d3a;
+      }
+
+      .cls-32 {
+        fill: #1f1f38;
+      }
+
+      .cls-33 {
+        letter-spacing: .1em;
+      }
+
+      .cls-34 {
+        letter-spacing: .03em;
+      }
+
+      .cls-35 {
+        letter-spacing: 0em;
+      }
+
+      .cls-12 {
+        letter-spacing: 0em;
+      }
+
+      .cls-36 {
+        letter-spacing: .02em;
+      }
+
+      .cls-37 {
+        letter-spacing: .04em;
+      }
+
+      .cls-13 {
+        font-size: 18px;
+      }
+
+      .cls-19 {
+        font-size: 60px;
+      }
+
+      .cls-20 {
+        font-family: AmazonEmber-Bold, 'Amazon Ember';
+        font-weight: 700;
+      }
+
+      .cls-38 {
+        letter-spacing: -.01em;
+      }
+
+      .cls-39 {
+        fill: #f2a743;
+      }
+
+      .cls-40 {
+        letter-spacing: .02em;
+      }
+
+      .cls-41 {
+        letter-spacing: 0em;
+      }
+
+      .cls-42 {
+        letter-spacing: .18em;
+      }
+
+      .cls-43 {
+        fill: #5bbc70;
+      }
+
+      .cls-44 {
+        letter-spacing: .05em;
+      }
+
+      .cls-45 {
+        letter-spacing: .2em;
+      }
+
+      .cls-46 {
+        letter-spacing: .03em;
+      }
+
+      .cls-47 {
+        letter-spacing: .02em;
+      }
+
+      .cls-48 {
+        letter-spacing: .16em;
+      }
+
+      .cls-49 {
+        letter-spacing: .02em;
+      }
+
+      .cls-50 {
+        letter-spacing: .02em;
+      }
+
+      .cls-51 {
+        letter-spacing: .2em;
+      }
+
+      .cls-52 {
+        letter-spacing: .02em;
+      }
+
+      .cls-53 {
+        fill: #59acae;
+        font-size: 17.44px;
+      }
+
+      .cls-54 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-55 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-15 {
+        letter-spacing: 0em;
+      }
+
+      .cls-56 {
+        letter-spacing: -.04em;
+      }
+    </style>
+  </defs>
+  <g id="End_Game_Screen" data-name="End Game Screen">
+    <path class="cls-39" d="M16.86,32.56h549.95c9.31,0,16.86,7.55,16.86,16.86v847.89c0,6.78-5.5,12.28-12.28,12.28H12.28c-6.78,0-12.28-5.5-12.28-12.28V49.42c0-9.31,7.55-16.86,16.86-16.86Z"/>
+    <path class="cls-22" d="M574.73,37.21H8.94c-3.39,0-5.14-4.05-2.82-6.52L25.37,10.16C31.46,3.68,39.96,0,48.85,0h485.98c8.89,0,17.39,3.68,23.47,10.16l19.25,20.52c2.32,2.47.57,6.52-2.82,6.52Z"/>
+    <path class="cls-31" d="M520.88,888.84H62.79c-23.18,0-42.03-18.86-42.03-42.03V100c0-23.18,18.86-42.03,42.03-42.03h458.1c23.18,0,42.03,18.86,42.03,42.03v746.81c0,23.18-18.86,42.03-42.03,42.03ZM62.79,62.96c-20.42,0-37.03,16.61-37.03,37.03v746.81c0,20.42,16.61,37.03,37.03,37.03h458.1c20.42,0,37.03-16.61,37.03-37.03V100c0-20.42-16.61-37.03-37.03-37.03H62.79Z"/>
+    <rect class="cls-32" x="23.26" y="60.46" width="537.16" height="825.87" rx="39.53" ry="39.53"/>
+    <path class="cls-43" d="M525.21,243.36H58.95c-5.73,0-10.38-4.66-10.38-10.38s4.66-10.38,10.38-10.38h466.26c5.73,0,10.38,4.66,10.38,10.38s-4.66,10.38-10.38,10.38ZM58.95,223.59c-5.17,0-9.38,4.21-9.38,9.38s4.21,9.38,9.38,9.38h466.26c5.17,0,9.38-4.21,9.38-9.38s-4.21-9.38-9.38-9.38H58.95Z"/>
+    <rect id="Meter_Fill" data-name="Meter Fill" class="cls-43" x="49.07" y="223.09" width="486.02" height="19.77" rx="9.885"/>
+    <g>
+      <rect class="cls-17" x="55.99" y="467.32" width="219.4" height="117.59" rx="13.52" ry="13.52"/>
+      <path class="cls-18" d="M261.87,585.41H69.52c-7.73,0-14.02-6.29-14.02-14.02v-90.54c0-7.73,6.29-14.02,14.02-14.02h192.35c7.73,0,14.02,6.29,14.02,14.02v90.54c0,7.73-6.29,14.02-14.02,14.02ZM69.52,467.82c-7.18,0-13.02,5.84-13.02,13.02v90.54c0,7.18,5.84,13.02,13.02,13.02h192.35c7.18,0,13.02-5.84,13.02-13.02v-90.54c0-7.18-5.84-13.02-13.02-13.02H69.52Z"/>
+    </g>
+    <g>
+      <rect class="cls-17" x="308.38" y="467.32" width="219.4" height="117.59" rx="13.52" ry="13.52"/>
+      <path class="cls-18" d="M514.25,585.41h-192.35c-7.73,0-14.02-6.29-14.02-14.02v-90.54c0-7.73,6.29-14.02,14.02-14.02h192.35c7.73,0,14.02,6.29,14.02,14.02v90.54c0,7.73-6.29,14.02-14.02,14.02ZM321.9,467.82c-7.18,0-13.02,5.84-13.02,13.02v90.54c0,7.18,5.84,13.02,13.02,13.02h192.35c7.18,0,13.02-5.84,13.02-13.02v-90.54c0-7.18-5.84-13.02-13.02-13.02h-192.35Z"/>
+    </g>
+    <g>
+      <rect class="cls-17" x="55.99" y="613.59" width="219.4" height="117.59" rx="13.52" ry="13.52"/>
+      <path class="cls-18" d="M261.87,731.68H69.52c-7.73,0-14.02-6.29-14.02-14.02v-90.54c0-7.73,6.29-14.02,14.02-14.02h192.35c7.73,0,14.02,6.29,14.02,14.02v90.54c0,7.73-6.29,14.02-14.02,14.02ZM69.52,614.09c-7.18,0-13.02,5.84-13.02,13.02v90.54c0,7.18,5.84,13.02,13.02,13.02h192.35c7.18,0,13.02-5.84,13.02-13.02v-90.54c0-7.18-5.84-13.02-13.02-13.02H69.52Z"/>
+    </g>
+    <g>
+      <rect class="cls-17" x="308.38" y="613.59" width="219.4" height="117.59" rx="13.52" ry="13.52"/>
+      <path class="cls-18" d="M514.25,731.68h-192.35c-7.73,0-14.02-6.29-14.02-14.02v-90.54c0-7.73,6.29-14.02,14.02-14.02h192.35c7.73,0,14.02,6.29,14.02,14.02v90.54c0,7.73-6.29,14.02-14.02,14.02ZM321.9,614.09c-7.18,0-13.02,5.84-13.02,13.02v90.54c0,7.18,5.84,13.02,13.02,13.02h192.35c7.18,0,13.02-5.84,13.02-13.02v-90.54c0-7.18-5.84-13.02-13.02-13.02h-192.35Z"/>
+    </g>
+  </g>
+</svg>

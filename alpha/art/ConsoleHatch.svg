@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 56">
+<!-- F45 (ranks 46, 47): the hatch under the console, over the release valve — it rattles now, opens in F64 (The final
+     shift). A placeholder drawn by Claude in the console's colours; Muzzy may redraw it. -->
+<rect x="1.5" y="1.5" width="117" height="53" rx="7" fill="#4c5566" stroke="#2b3140" stroke-width="3"/>
+<rect x="7" y="7" width="106" height="42" rx="4" fill="#5d6779"/>
+<g fill="#2b3140">
+  <circle cx="11" cy="11" r="3"/><circle cx="109" cy="11" r="3"/><circle cx="11" cy="45" r="3"/><circle cx="109" cy="45" r="3"/>
+  <rect x="40" y="24" width="40" height="8" rx="4"/>
+</g>
+<g fill="#e8b84a">
+  <path d="M22 40 l6 -8 h6 l-6 8 z M34 40 l6 -8 h6 l-6 8 z M74 40 l6 -8 h6 l-6 8 z M86 40 l6 -8 h6 l-6 8 z"/>
+</g>
+</svg>
