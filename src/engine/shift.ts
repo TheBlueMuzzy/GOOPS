@@ -797,7 +797,7 @@ class Shift implements ShiftEngine {
     const a = this.abilities.find((x) => x.id === id)
     if (!a || !a.ready) return false
     const fire = ABILITY_EFFECTS[a.effect]
-    const pieceColor = this.piece ? mainColor(this.piece.def) : null // (F42: what Goop Dump / Colorizer copy)
+    const pieceColor = this.piece ? mainColor(this.piece.def) : null // (F42: what Goop Colorizer copies)
     if (!fire || !fire({ phase: this.state.phase, pieceColor, effects: this.effects, machines: this.machines.state }, this.abilitySpecs.get(id)!.params, id)) return false
     a.charge = 0
     a.ready = false
@@ -826,7 +826,7 @@ class Shift implements ShiftEngine {
     if (!d) return
     d.waitMs -= dt
     while (d.waitMs <= 0) {
-      this.dropDumpCell(d.color)
+      this.dropDumpCell(d.color, this.isFinal) // (F75: in the final shift, into the columns with an open crack)
       d.cellsLeft--
       if (d.cellsLeft > 0) {
         d.waitMs += d.cellMs
@@ -846,7 +846,9 @@ class Shift implements ShiftEngine {
   // One dumped cell: into a random column (seeded) whose hidden top rows are clear — so it never rests up there and
   // blocks the next piece — and not into a column the falling piece is in. It comes in at the top (a 'dump'
   // event) and drops onto whatever is below (the 'fall' event right after). No column free: this cell is skipped.
-  private dropDumpCell(color: Color): void {
+  // toCracks (F75, Goop Dump in the final shift): only the free columns with an open crack not yet plugged — none of
+  // those free: any free column, as elsewhere.
+  private dropDumpCell(color: Color, toCracks = false): void {
     const s = this.state
     // (not into any column the falling piece is in, however low it is: the piece isn't in the grid, so the cell would
     // settle straight through it)
@@ -859,7 +861,14 @@ class Shift implements ShiftEngine {
       if (clear) free.push(x)
     }
     if (free.length === 0) return
-    const x = free[this.rng.int(free.length)]
+    let pick = free
+    if (toCracks) {
+      const cracked = new Set<number>()
+      for (const c of s.cracks) if (!c.plugged) for (const [cx] of crackCells(c)) cracked.add(cx)
+      const aimed = free.filter((x) => cracked.has(x))
+      if (aimed.length) pick = aimed
+    }
+    const x = pick[this.rng.int(pick.length)]
     s.grid[x] = color // row 0, the very top
     this.events.push({ type: 'dump', x, color })
     for (const id of regroup(s, this.book)) this.events.push({ type: 'merge', groupId: id })

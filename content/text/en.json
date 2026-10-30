@@ -150,7 +150,7 @@
       },
       "goopDump": {
         "name": "Goop Dump",
-        "desc": "An active: fire it to rain waves of goop in the falling piece's colour. More levels, more waves."
+        "desc": "An active: fire it to rain waves of wild goop — it plugs any crack. In the final shift it falls on the cracks. More levels, more waves."
       },
       "sealingBonus": {
         "name": "Sealing Bonus",

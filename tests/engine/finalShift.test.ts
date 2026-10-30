@@ -2,7 +2,8 @@
 // one colour for everything, the onslaught, the Veteran's drop-in and help, the 3 valve stages and the two losses.
 // F75 (cooperative final shift): his seals are free, the tank's lost integrity wears him down, used up = not a loss.
 import { describe, expect, it } from 'vitest'
-import { createShift, type ShiftEngine, type ShiftEvent, type ShiftOptions, type WhiteGoopConfig } from '../../src/engine'
+import { createShift, resolveUpgrades, WILD, type ShiftEngine, type ShiftEvent, type ShiftOptions, type UpgradeBook, type WhiteGoopConfig } from '../../src/engine'
+import upgradesJson from '../../content/tuning/upgrades.json'
 import type { FinalShiftConfig } from '../../src/engine/finalShift'
 import { restoreShift } from '../../src/engine/snapshot'
 import finalJson from '../../content/tuning/finalShift.json'
@@ -365,5 +366,32 @@ describe('the final shift (rank 50)', () => {
     expect(b.state.final).toEqual(a.state.final)
     expect(Array.from(b.state.grid)).toEqual(Array.from(a.state.grid))
     expect(b.state.vet).toEqual(a.state.vet)
+  })
+})
+
+// F75: the upgrades reach the final shift — Goop Dump rains wild goop into the cracks' columns, Slow Cracks slows only
+// the spreading
+describe('upgrades in the final shift (F75)', () => {
+  const abilities = (id: string, level: number) => resolveUpgrades(upgradesJson as UpgradeBook, { [id]: level }, [id]).abilities
+  // a ready Goop Dump at rank `rank`, two open cracks high up in columns 5 and 17, fired; the columns it rained into
+  function dumpColumns(rank: number, cracks = true): number[] {
+    const shift = createShift(quietConfig(), { seed: 3, rank, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24), abilities: abilities('goopDump', 1) }) // (one wave: too few cells to plug them)
+    const s = shift.state
+    if (cracks) s.cracks.push({ id: 1, x: 5, y: 12, color: BLACK, plugged: false }, { id: 2, x: 17, y: 14, color: BLACK, plugged: false })
+    Object.assign(s.abilities![0], { charge: 1, ready: true })
+    shift.act({ type: 'ability', id: 'goopDump' })
+    const xs: number[] = []
+    for (let t = 0; t < 8000; t += 10) {
+      shift.tick(10)
+      for (const e of shift.takeEvents()) if (e.type === 'dump') { expect(e.color).toBe(WILD); xs.push(e.x) }
+    }
+    expect(xs.length).toBeGreaterThan(5)
+    return xs
+  }
+
+  it('Goop Dump rains wild goop into the columns with an open crack (none: anywhere); at rank 49 anywhere', () => {
+    expect(new Set(dumpColumns(50))).toEqual(new Set([5, 17]))
+    expect(new Set(dumpColumns(50, false)).size).toBeGreaterThan(5)
+    expect(new Set(dumpColumns(49)).size).toBeGreaterThan(5)
   })
 })

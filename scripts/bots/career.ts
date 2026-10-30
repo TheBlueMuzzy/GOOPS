@@ -198,9 +198,11 @@ export function playShift(input: ShiftInput): ShiftOutcome {
 }
 
 // Should the bot fire this ready active now? economy.json fireWhen: 'pieceMatchesCrack' = only while the falling piece's
-// colour is the colour of an open crack (a player using Colorizer / Goop Dump to feed a crack); anything else = at once.
+// colour is the colour of an open crack (a player using Colorizer to feed a crack); 'openCrack' = while any crack is
+// open and unplugged (F75: Goop Dump's wild rain plugs any); anything else = at once.
 function fireNow(s: ShiftEngine['state'], id: string): boolean {
   const rule = (economy.fireWhen as Record<string, string>)[id]
+  if (rule === 'openCrack') return s.cracks.some((c) => !c.plugged)
   if (rule !== 'pieceMatchesCrack') return true
   const colour = s.piece?.colors[0]
   return colour !== undefined && s.cracks.some((c) => !c.plugged && c.color === colour)

@@ -82,9 +82,9 @@ describe('Goop Dump (F42, rank 15)', () => {
     expect(ofType(shift.takeEvents(), 'abilityReady')).toEqual([{ type: 'abilityReady', id: 'goopDump' }])
   })
 
-  it('level 3: its waves of single cells in the falling piece’s colour, cellMs apart, waveMs between waves; then it ends', () => {
+  it('level 3: its waves of single WILD cells (F75), cellMs apart, waveMs between waves; then it ends', () => {
     const { shift, s, a } = withActive('goopDump', 3)
-    const color = mainOfFalling(shift)
+    const color = WILD
     makeReady(shift)
     shift.act({ type: 'ability', id: 'goopDump' })
     expect(shift.takeEvents()).toEqual([{ type: 'ability', id: 'goopDump' }])
@@ -97,7 +97,7 @@ describe('Goop Dump (F42, rank 15)', () => {
     // cell k of wave w comes at w × ((n − 1) × cellMs + waveMs) + k × cellMs after firing (the first on the very first tick)
     const want = dumps.map((_, i) => Math.max(1, Math.floor(i / n) * ((n - 1) * cellMs + waveMs) + (i % n) * cellMs))
     expect(dumps.map((d) => d.t)).toEqual(want)
-    // all of them are goop in the tank, in that colour (nothing else was there), none wild
+    // all of them are wild goop in the tank (nothing else was there)
     expect(goopCells(s)).toBe(dumpTotal(3))
     expect([...s.grid].every((c) => c === 0 || c === color)).toBe(true)
     // the effect ends right after the last cell
@@ -175,7 +175,7 @@ describe('Goop Dump (F42, rank 15)', () => {
     expect(b).toEqual(a)
   })
 
-  it('refused (charge kept) with no falling piece, with a wild one, during a rupture, and while the last dump still rains', () => {
+  it('refused (charge kept) during a rupture and while the last dump still rains — F75: not for want of a colour', () => {
     const refused = (shift: ShiftEngine) => {
       makeReady(shift)
       shift.act({ type: 'ability', id: 'goopDump' })
@@ -183,12 +183,17 @@ describe('Goop Dump (F42, rank 15)', () => {
       expect(shift.state.abilities![0]).toMatchObject({ charge: 1, ready: true })
       expect(shift.state.effects!.dump).toBeUndefined()
     }
-    // no falling piece: a lesson-style shift brings none until told to
-    refused(withActive('goopDump', 1, { training: {} }).shift)
-    // a wild falling piece (rank 40, every piece wild): no colour to copy
+    // (F75: it rains wild goop, so it fires with no falling piece and with a wild one)
+    const fires = (shift: ShiftEngine) => {
+      makeReady(shift)
+      shift.act({ type: 'ability', id: 'goopDump' })
+      expect(ofType(shift.takeEvents(), 'ability')).toEqual([{ type: 'ability', id: 'goopDump' }])
+      expect(shift.state.effects!.dump?.color).toBe(WILD)
+    }
+    fires(withActive('goopDump', 1, { training: {} }).shift) // a lesson-style shift: no piece until told to
     const wild = withActive('goopDump', 1, { rank: 40, twists: twists((t) => { t.wild.chance = 1 }) })
     expect(wild.s.piece!.colors[0]).toBe(WILD)
-    refused(wild.shift)
+    fires(wild.shift)
     // a rupture
     refused(ruptured('goopDump'))
     // still raining from the last fire

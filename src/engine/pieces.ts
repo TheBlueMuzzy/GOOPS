@@ -67,7 +67,7 @@ export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCo
 export const cellColor = (def: PieceDef, k: number): Color => def.colors?.[k] ?? def.color
 
 /**
- * F42: the piece's MAIN colour — what Goop Dump and Goop Colorizer copy. One colour: that colour. A two-colour piece:
+ * F42: the piece's MAIN colour — what Goop Colorizer copies (Goop Dump did until F75: its rain is wild now). One colour: that colour. A two-colour piece:
  * the colour most of its cells have (a tie: its first colour, def.color). A wild piece has none (null): wild is never
  * copied, so those abilities never make wild goop.
  */
