@@ -8,6 +8,10 @@ import goldenV1 from './saves/goops-progress-v1.json'
 import goldenV2 from './saves/goops-progress-v2.json'
 import goldenV3 from './saves/goops-progress-v3.json'
 import goldenV4 from './saves/goops-progress-v4.json'
+import goldenV5 from './saves/goops-progress-v5.json'
+import goldenV4Focus4 from './saves/goops-progress-v4-focus4.json'
+import { clampOwned, maxLevelOf, upgradeBook } from '../src/progress/upgradeShop'
+import type { UpgradeBook } from '../src/engine/upgrades'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
@@ -79,7 +83,7 @@ describe('save', () => {
   const memory = () => { const m = new Map<string, string>(); return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), m } }
 
   // tests/saves/: one golden save per version, kept forever (a new version adds its own)
-  const golden = (v: number) => JSON.stringify(([goldenV1, goldenV2, goldenV3, goldenV4] as object[])[v - 1])
+  const golden = (v: number) => JSON.stringify(([goldenV1, goldenV2, goldenV3, goldenV4, goldenV5] as object[])[v - 1])
 
   it('round-trips (with what the scraps bought, F34)', () => {
     const s = memory()
@@ -89,28 +93,29 @@ describe('save', () => {
     expect(JSON.parse(s.m.get('goops-progress')!).v).toBe(SAVE_VERSION)
   })
 
-  it('golden version-1 save (the alpha) → version 4: XP and scraps spent KEPT, nothing owned yet, no name, no badge, no careers', () => {
+  // (F74: every save from before the rank lock steps up with its rank's quota counted as met — TDD D31)
+  it('golden version-1 save (the alpha) → version 5: XP and scraps spent KEPT, nothing owned yet, no name, no badge, no careers, the rank unlocked', () => {
     const s = memory()
     s.m.set('goops-progress', golden(1))
-    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [] })
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], quotaMet: true })
     expect(loadOperatorName(s)).toBeNull()
     expect(loadCareers(s)).toBe(0)
-    // saving it again writes version 4, and it still loads the same
+    // saving it again writes version 5, and it still loads the same
     saveProgress(loadProgress(s), s)
-    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 4, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], badge: null, name: null, careers: 0 })
+    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual({ v: 5, totalXp: 46250, scrapsSpent: 3, owned: {}, equipped: [], badge: null, quotaMet: true, xpHeld: false, name: null, careers: 0 })
   })
 
   it('golden version-2 save loads as it was (and steps up to version 3 with no name)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(2))
-    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], quotaMet: true })
     expect(loadOperatorName(s)).toBeNull()
   })
 
   it('golden version-3 save loads as it was, name and all (F66)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(3))
-    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'] })
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], quotaMet: true })
     expect(loadOperatorName(s)).toBe('Muzzy')
     expect(loadCareers(s)).toBe(0) // (F65: steps up to version 4 — no badge, no careers)
   })
@@ -118,9 +123,40 @@ describe('save', () => {
   it('golden version-4 save loads as it was: the badge (One Of Us) and the careers done (F65)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(4))
-    expect(loadProgress(s)).toEqual({ totalXp: 481250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], badge: 'oneOfUs' })
+    expect(loadProgress(s)).toEqual({ totalXp: 481250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], badge: 'oneOfUs', quotaMet: true })
     expect(loadOperatorName(s)).toBe('Muzzy')
     expect(loadCareers(s)).toBe(1)
+  })
+
+  it('a version-4 save mid-rank steps up unlocked: its next goal ranks it up without a quota (nobody stuck by the update)', () => {
+    const s = memory()
+    s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: cumulative(7) + xpToNext(7) - 100, scrapsSpent: 0, owned: {}, equipped: [], badge: null, name: null, careers: 0 }))
+    const r = rewardShift(loadProgress(s), 900, { quotaMet: false })
+    expect(r.after).toMatchObject({ rank: 8, xpIntoRank: 800, locked: false })
+    expect(r.progress.quotaMet).toBe(false) // rank 8 needs its own
+  })
+
+  it('levels past an upgrade\'s maxLevel come off on load, their scraps back (F52 cuts Focus Mode 4 → 2) — golden v4 owning Focus Mode 4', () => {
+    const s = memory()
+    s.m.set('goops-progress', JSON.stringify(goldenV4Focus4))
+    const max = maxLevelOf(upgradeBook.upgrades.find((u) => u.id === 'focusMode')!)
+    const keep = Math.min(4, max)
+    expect(loadProgress(s)).toEqual({ totalXp: 46250, scrapsSpent: 6 - (4 - keep), owned: { focusMode: keep, circuitStabilizer: 2 }, equipped: [], quotaMet: true })
+    // the rule itself, with a book where Focus Mode stops at 2 (each level costs 1) and Circuit Stabilizer at 4
+    const book = { ...upgradeBook, upgrades: upgradeBook.upgrades.map((u) => (u.id === 'focusMode' ? { ...u, maxLevel: 2 } : u)) } as UpgradeBook
+    const p = { ...freshProgress(), scrapsSpent: 6, owned: { focusMode: 4, circuitStabilizer: 2, notAnUpgrade: 9 } }
+    expect(clampOwned(p, book)).toEqual({ ...p, scrapsSpent: 4, owned: { focusMode: 2, circuitStabilizer: 2, notAnUpgrade: 9 } })
+    expect(clampOwned(freshProgress(), book)).toEqual(freshProgress())
+  })
+
+  it('golden version-5 save loads as it was: the meter held full at rank 9, no quota met (F74)', () => {
+    const s = memory()
+    s.m.set('goops-progress', golden(5))
+    const p = loadProgress(s)
+    expect(p).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], xpHeld: true })
+    expect(rankInfo(p)).toMatchObject({ rank: 9, xpIntoRank: xpToNext(9), locked: true })
+    saveProgress(p, s)
+    expect(JSON.parse(s.m.get('goops-progress')!)).toEqual(goldenV5)
   })
 
   it('a missing, broken, unknown-version or nonsense save starts fresh instead of crashing', () => {
@@ -137,9 +173,9 @@ describe('save', () => {
   it('broken upgrade entries are dropped, not the whole save', () => {
     const s = memory()
     s.m.set('goops-progress', JSON.stringify({ v: 2, totalXp: 9000, scrapsSpent: 1, owned: { a: 2, b: -1, c: 'x', d: 0, e: 2.7 }, equipped: ['a', 'a', 5, null] }))
-    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: { a: 2, e: 2 }, equipped: ['a'] })
+    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: { a: 2, e: 2 }, equipped: ['a'], quotaMet: true })
     s.m.set('goops-progress', JSON.stringify({ v: 2, totalXp: 9000, scrapsSpent: 1, owned: [1, 2], equipped: 'a' }))
-    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: {}, equipped: [] })
+    expect(loadProgress(s)).toEqual({ totalXp: 9000, scrapsSpent: 1, owned: {}, equipped: [], quotaMet: true })
   })
 
   it('never writes over a newer build’s save', () => {
@@ -224,6 +260,100 @@ describe('rank meter steps (F21: the console meter fills with the XP since it la
     expect(meterSteps(p(500), p(500))).toEqual([])
     const top = 481250
     expect(meterSteps(p(top), p(top + 5000))).toEqual([])
+  })
+})
+
+// F74 THE RANK LOCK (Muzzy 2026-10-29, TDD D31): rank-up = the XP goal + a quota met this rank
+describe('the rank lock (F74)', () => {
+  const missed = { quotaMet: false }, met = { quotaMet: true }
+  const rank3 = (into = 0) => ({ ...freshProgress(), totalXp: cumulative(3) + into })
+  const goal3 = xpToNext(3) // 4250
+
+  it('the bonus comes from content: quotaXpMult 2', () => {
+    expect(tuning.quotaXpMult).toBe(2)
+  })
+
+  it('no quota met this rank: the XP stops at the goal (the meter sits full, the rest is lost, no rank-up)', () => {
+    const r = rewardShift(rank3(4000), 1000, missed)
+    expect(r.xp).toBe(1000)
+    expect(r.rankUps).toBe(0)
+    expect(r.after).toMatchObject({ rank: 3, xpIntoRank: goal3, xpToNext: goal3, locked: true })
+    expect(r.lostXp).toBe(750)
+    expect(r.progress).toMatchObject({ totalXp: cumulative(4), xpHeld: true, quotaMet: false })
+    // another missed shift: still full, all of its XP lost
+    const again = rewardShift(r.progress, 2000, missed)
+    expect(again.after).toMatchObject({ rank: 3, xpIntoRank: goal3, locked: true })
+    expect(again.lostXp).toBe(2000)
+    expect(again.progress.totalXp).toBe(cumulative(4))
+  })
+
+  it('a shift that meets its quota earns double — and, at a full meter, ranks up (the overflow fills the next rank)', () => {
+    const held = rewardShift(rank3(4000), 1000, missed).progress
+    const r = rewardShift(held, 1000, met)
+    expect(r.xp).toBe(2000)
+    expect(r.quotaMet).toBe(true)
+    expect(r.rankUps).toBe(1)
+    expect(r.after).toMatchObject({ rank: 4, xpIntoRank: 2000, locked: false })
+    expect(r.progress).toMatchObject({ quotaMet: false, xpHeld: false }) // the rank-up used the quota up
+  })
+
+  it('a met quota stays met until the rank-up, over later shifts that miss it', () => {
+    const a = rewardShift(rank3(0), 500, met) // met early: 1000 XP, far from the goal
+    expect(a.after).toMatchObject({ rank: 3, xpIntoRank: 1000 })
+    expect(a.progress.quotaMet).toBe(true)
+    const b = rewardShift(a.progress, 1500, missed) // missed — the key is still in hand
+    expect(b.progress.quotaMet).toBe(true)
+    const c = rewardShift(b.progress, 2000, missed) // reaches the goal: ranks up
+    expect(c.rankUps).toBe(1)
+    expect(c.after).toMatchObject({ rank: 4, xpIntoRank: 1000 + 1500 + 2000 - goal3 })
+    expect(c.progress.quotaMet).toBe(false)
+    expect([a.metEarlier, b.metEarlier, c.metEarlier]).toEqual([false, true, true]) // (the report's "Met earlier")
+  })
+
+  it('one quota = one rank-up: a huge shift stops full at the next rank goal', () => {
+    const r = rewardShift(rank3(0), 50_000, met)
+    expect(r.rankUps).toBe(1)
+    expect(r.after).toMatchObject({ rank: 4, xpIntoRank: xpToNext(4), locked: true })
+    expect(r.lostXp).toBe(100_000 - goal3 - xpToNext(4))
+  })
+
+  it('the meter fills to full and says locked; the next shift meets the quota → the rank-up steps', () => {
+    const before = rank3(4000)
+    const held = rewardShift(before, 1000, missed).progress
+    expect(meterSteps(before, held)).toEqual([{ level: 3, from: 4000, to: goal3, max: goal3 }])
+    expect(meterSteps(held, rewardShift(held, 900, missed).progress)).toEqual([]) // nothing moved
+    const up = rewardShift(held, 300, met).progress
+    expect(meterSteps(held, up)).toEqual([{ level: 3, from: goal3, to: goal3, max: goal3 }, { level: 4, from: 0, to: 600, max: xpToNext(4) }])
+  })
+
+  it('a held flag off a rank boundary (an XP table retuned under an old save) is ignored — no rank taken away', () => {
+    expect(rankInfo({ totalXp: cumulative(4) + 7, scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: 4, xpIntoRank: 7, locked: false })
+    expect(rankInfo({ totalXp: cumulative(4), scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: 3, xpIntoRank: goal3, locked: true, scraps: 3 })
+  })
+
+  it('the first day works as before the lock: no quota needed for rank 1, not doubled', () => {
+    const r = rewardFirstDay(freshProgress(), 640, met)
+    expect(r.after).toMatchObject({ rank: 1, xpIntoRank: 0, locked: false })
+    expect(r.xp).toBe(xpToNext(0))
+    const big = rewardFirstDay(freshProgress(), xpToNext(0) + 50, met)
+    expect(big.xp).toBe(xpToNext(0) + 50)
+    expect(big.after).toMatchObject({ rank: 1, xpIntoRank: 50 })
+    expect(big.progress.quotaMet).toBe(false) // rank 1 needs its own quota
+  })
+
+  it('the final shift (the top rank) works as before: nothing to fill, never locked', () => {
+    const top = progressAtRank(tuning.maxRank)
+    const r = rewardShift(top, 900, missed)
+    expect(r.after).toMatchObject({ rank: tuning.maxRank, xpToNext: 0, locked: false })
+    expect(r.rankUps).toBe(0)
+    // and reaching it takes a quota like any rank
+    const at49 = { ...progressAtRank(tuning.maxRank - 1), totalXp: cumulative(tuning.maxRank) - 100 }
+    expect(rewardShift(at49, 500, missed).after).toMatchObject({ rank: tuning.maxRank - 1, locked: true })
+    expect(rewardShift(at49, 500, met).after.rank).toBe(tuning.maxRank)
+  })
+
+  it('left out (the economy sim until F52): the XP-only rule from before the lock', () => {
+    expect(rewardShift(rank3(4000), 1000).after).toMatchObject({ rank: 4, xpIntoRank: 750 })
   })
 })
 
@@ -322,7 +452,7 @@ describe('end titles that stick', () => {
 
   it('a broken badge or careers count = none (the rest of the save stays)', () => {
     const s = memory()
-    s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: 'king', name: null, careers: -3 }))
+    s.m.set('goops-progress', JSON.stringify({ v: 5, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: 'king', name: null, careers: -3 }))
     expect(loadProgress(s)).toEqual({ totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [] })
     expect(loadCareers(s)).toBe(0)
     s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: 5, scrapsSpent: 0, owned: {}, equipped: [], badge: null, name: null, careers: 'two' }))

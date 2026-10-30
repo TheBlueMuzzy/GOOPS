@@ -29,10 +29,14 @@ type Whispers = { coldAt: number; stages: WhisperStage[]; afterSeconds: [number,
   noVoicesFrom: number; noVoicesDelaySeconds: number; noVoicesSeconds: number }
 export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; alarmWords: string; crackleEvery: number; cutSeconds: number
   goopOutline: 'wave' | 'plain'; glitchAfterSeconds: number; glitchSeconds: number; glitchColour: string; rattleSeconds: number; rattleShake: number; rattleTimes: number }
-type MomentsFile = { catchUp: number; moments: Record<string, Moment>; newCareer?: Record<string, Moment>; whispers: Whispers; looks: StoryLooks }
+type MomentsFile = { catchUp: number; moments: Record<string, Moment>; newCareer?: Record<string, Moment>; events?: Record<string, Moment>
+  whispers: Whispers; looks: StoryLooks }
 
 export const storyFile = momentsFile as unknown as MomentsFile
 const seenId = (rank: number) => `story:${rank}`
+// F74: a moment for something that happened, not a rank — moments.json events. rankLock = the first time the rank lock
+// holds (the meter full, no quota met this rank): Management explains it. Seen as "story:rankLock".
+export const RANK_LOCK_SEEN = 'story:rankLock'
 
 /** The ranks whose moments are due at this rank: every unseen one up to it, the newest `catchUp` of them, oldest first. */
 export function dueRanks(rank: number, seen: (rank: number) => boolean, file: MomentsFile = storyFile): number[] {
@@ -74,32 +78,37 @@ export const monitorDeniesVoices = (rank: number, w: Whispers = storyFile.whispe
 export const storyWords = (key: string) => ((text.story.lines as Record<string, string>)[key] ?? key)
   .replace(/\{name\}/g, () => operatorName() ?? text.story.sign.fallback)
 
-export type StoryView = { rank: number; line: StoryLine; look?: string } | null
+// (id = the moment's tips-memory id: "story:<rank>", or an event's — F74 "story:rankLock")
+export type StoryView = { rank: number; id: string; line: StoryLine; look?: string } | null
 
 // Scripted checks (a dev build in an automated browser) start at the console at every rank: there the moments stay
 // quiet unless the page asks for them with ?story (e2e/story.mjs) — never in a player's game.
 export const quietForChecks = () => import.meta.env.DEV && typeof navigator !== 'undefined' && navigator.webdriver
   && !new URLSearchParams(location.search).has('story')
 
-let queue: { rank: number; moment: Moment }[] = []
+let queue: { rank: number; id: string; moment: Moment }[] = []
 let at = 0 // the line on screen in queue[0]
 let view: StoryView = null
 const listeners = new Set<() => void>()
 const show = () => {
   const now = queue[0]
-  view = now ? { rank: now.rank, line: now.moment.lines[at], look: now.moment.look } : null
+  view = now ? { rank: now.rank, id: now.id, line: now.moment.lines[at], look: now.moment.look } : null
   listeners.forEach((l) => l())
 }
 
 export const storyMoments = {
-  /** App: the console is on screen between shifts at this rank. Starts the due moments; true = one is playing. */
-  atConsole(rank: number): boolean {
+  /** App: the console is on screen between shifts at this rank. Starts the due moments; true = one is playing.
+   *  locked (F74) = the rank lock holds now (the meter full, no quota met this rank): its moment plays once, after any
+   *  rank moment that's due. */
+  atConsole(rank: number, locked = false): boolean {
     if (view) return true
     if (quietForChecks()) return false
     const memory = tipsMemory(), careers = loadCareers()
     queue = dueRanks(rank, (r) => memory.seen(seenId(r)))
-      .map((r) => ({ rank: r, moment: momentFor(r, careers) }))
+      .map((r) => ({ rank: r, id: seenId(r), moment: momentFor(r, careers) }))
       .filter((m) => m.moment?.lines.length)
+    const lock = storyFile.events?.rankLock
+    if (locked && lock?.lines.length && !memory.seen(RANK_LOCK_SEEN)) queue.push({ rank, id: RANK_LOCK_SEEN, moment: lock })
     at = 0
     show()
     return !!view
@@ -109,7 +118,7 @@ export const storyMoments = {
     const now = queue[0]
     if (!now) return
     if (at < now.moment.lines.length - 1) { at++; show(); return }
-    tipsMemory().markSeen(seenId(now.rank))
+    tipsMemory().markSeen(now.id)
     queue = queue.slice(1)
     at = 0
     show()

@@ -7,6 +7,8 @@
     "rank": "Operator rank",
     "xp": "DUE",
     "maxRank": "Top rank",
+    "_quotaNeeded": "F74 — Rank lock: what the rank meter says instead of its XP numbers when the XP is full but no crack quota was met this rank (the rank waits for one).",
+    "quotaNeeded": "QUOTA NEEDED",
     "laser": "Laser",
     "controls": "Controls",
     "lights": "Visor",
@@ -259,7 +261,15 @@
     "xp": "XP",
     "xpValue": "+{xp}",
     "xpRankUp": "+{xp} · Rank up! {rank}",
-    "xpRankUpNew": "+{xp} · Rank up! {rank} · New: {what}"
+    "xpRankUpNew": "+{xp} · Rank up! {rank} · New: {what}",
+    "quota": {
+      "_about": "F74 — Rank lock: the end report's quota row (not on the first day or the final shift). A rank-up needs the XP goal AND a crack quota met during that rank. met = this shift met it ({mult} = the XP multiplier, content/tuning/progression.json quotaXpMult) · metEarlier = missed, but an earlier shift at this rank met it · locked = missed, and the meter is full: the rank waits · missed = missed, the meter isn't full yet.",
+      "label": "Quota",
+      "met": "Met — rank unlocked · XP ×{mult}",
+      "metEarlier": "Met earlier — rank unlocked",
+      "locked": "Rank locked: meet a quota",
+      "missed": "Missed — the rank-up needs one"
+    }
   },
   "payslip": {
     "_about": "F41: the end report's payslip (design/story.md 'Fines and payday — the lines'). Numbers: content/tuning/payslip.json. {n} = credits.",
@@ -425,7 +435,10 @@
       "r48b": "…we go… home…",
       "r49": "Last stretch, kid. ── they know you know. ── next shift they come at you with everything.",
       "noVoices": "THERE ARE NO VOICES IN THE TANK. HEARING VOICES IS A FINEABLE OFFENCE.",
-      "r50": "FINAL PERFORMANCE REVIEW IN PROGRESS. PRESSURE INCREASED 400%."
+      "r50": "FINAL PERFORMANCE REVIEW IN PROGRESS. PRESSURE INCREASED 400%.",
+      "rankLockA": "PROMOTION ON HOLD. YOUR CRACK QUOTA HAS NOT BEEN MET AT THIS RANK.",
+      "rankLockB": "MEET ONE (1) QUOTA TO BE PROMOTED. A SHIFT THAT MEETS IT IS PAID DOUBLE.",
+      "rankLockC": "UNTIL THEN, ADDITIONAL EARNINGS ARE RETAINED BY THE COMPANY."
     },
     "titles": {
       "intern": "Probationary Intern (Unpaid)",

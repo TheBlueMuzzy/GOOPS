@@ -42,7 +42,7 @@ export function StoryView() {
   }
   return (
     <>
-      {look && <Spotlight key={`look:${view.rank}`} layout={() => {
+      {look && <Spotlight key={`look:${view.id}`} layout={() => {
         const el = document.querySelector<HTMLElement>(`[data-tag="${look}"]`)
         const focus = el ? boxAround([el]) : null
         return { focus, holes: focus ? [focus] : [], frame: gameColumn() }

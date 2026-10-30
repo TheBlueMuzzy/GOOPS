@@ -6,13 +6,16 @@
 //   version 4 (F65):   + badge (the end title this career's badge carries: 'oneOfUs' after a lost final shift, 'savior'
 //                        after the win; null = the rank's own title) and careers (how many careers ended with the win —
 //                        kept like the name: a new career starts the progress again, not this — TDD D28)
+//   version 5 (F74):   + quotaMet (a crack quota met during this rank: the rank-up is unlocked) and xpHeld (the XP sits
+//                        full at the rank's goal, waiting for a quota) — the rank lock, TDD D31
 // (Hand-made: the framework's saves module — backups, save codes — isn't installed in Goops yet. Its shape is the same:
 // one upgrade step per version, so moving onto it later keeps these steps.)
 import { freshProgress, type EndBadge, type Progress } from './progression'
+import { clampOwned } from './upgradeShop'
 import nameTuning from '../../content/tuning/name.json'
 
 const KEY = 'goops-progress'
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 // One step per older version: the save as it was → the next version's shape. A step only ADDS what the new version
 // has (empty), so everything the player had stays.
@@ -20,6 +23,9 @@ const UPGRADE_STEPS: Record<number, (old: Record<string, unknown>) => Record<str
   1: (v1) => ({ ...v1, v: 2, owned: {}, equipped: [] }), // F34: nothing bought yet (alpha had no shop)
   2: (v2) => ({ ...v2, v: 3, name: null }), // F66: not signed yet (the sign-in came with the beta)
   3: (v3) => ({ ...v3, v: 4, badge: null, careers: 0 }), // F65: nobody had reached the ending yet
+  // F74 (TDD D31): the XP so far was earned when XP alone ranked you up — so the rank you're in counts as unlocked
+  // (its quota met): nobody is stuck by the update; from the next rank on, the lock holds
+  4: (v4) => ({ ...v4, v: 5, quotaMet: true, xpHeld: false }),
 }
 
 // The save as this version's record (older versions stepped up), or null: none, broken, or not one this build can read.
@@ -45,8 +51,9 @@ export function loadProgress(storage: Pick<Storage, 'getItem'> | null = safeStor
   const data = readSave(storage)
   if (!data) return freshProgress()
   const badge = readBadge(data.badge)
-  return { totalXp: Number(data.totalXp), scrapsSpent: Number(data.scrapsSpent), owned: readOwned(data.owned), equipped: readEquipped(data.equipped),
-    ...(badge ? { badge } : {}) }
+  // (F74 / F52: levels past an upgrade's maxLevel come off, their scraps back — upgradeShop.ts clampOwned)
+  return clampOwned({ totalXp: Number(data.totalXp), scrapsSpent: Number(data.scrapsSpent), owned: readOwned(data.owned), equipped: readEquipped(data.equipped),
+    ...(badge ? { badge } : {}), ...(data.quotaMet === true ? { quotaMet: true } : {}), ...(data.xpHeld === true ? { xpHeld: true } : {}) })
 }
 
 // name + careers: the ones in the save now — saving the progress never forgets them (the name is signed on the first
@@ -60,7 +67,7 @@ function writeSave(p: Progress, kept: Kept, storage: Pick<Storage, 'getItem' | '
   try {
     if (newerSaveThere(storage)) return // a newer build's save: leave it alone (this build can't read all of it)
     storage?.setItem(KEY, JSON.stringify({ v: SAVE_VERSION, totalXp: p.totalXp, scrapsSpent: p.scrapsSpent, owned: p.owned, equipped: p.equipped,
-      badge: p.badge ?? null, name: kept.name, careers: kept.careers }))
+      badge: p.badge ?? null, quotaMet: !!p.quotaMet, xpHeld: !!p.xpHeld, name: kept.name, careers: kept.careers }))
   } catch { /* private mode: play on */ }
 }
 
