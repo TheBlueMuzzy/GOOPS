@@ -56,6 +56,7 @@ import hudTuning from '../../content/tuning/hud.json'
 import settingsJson from '../../content/ui/settings.json'
 import text from '../../content/text/en.json'
 import payslipTuning from '../../content/tuning/payslip.json'
+import progressionTuning from '../../content/tuning/progression.json'
 
 const settings = settingsJson as SettingsSchema
 // the machines' bars in the bottom panel, left to right (Muzzy's second mock-up, 2026-10-19: VISOR · LASER · CONTROLS —
@@ -144,6 +145,16 @@ function rankUpLine(r: ShiftReward): string {
   const what = gainedBetween(r.before.rank, r.after.rank)
   return what.length ? fill(text.end.xpRankUpNew, { xp, rank: r.after.rank, what: what.join(', ') })
     : fill(text.end.xpRankUp, { xp, rank: r.after.rank })
+}
+
+// F74 the rank lock: the report's quota row — met (the rank unlocked, the XP doubled), met earlier this rank, missed
+// with the meter full (locked), or just missed. None at the top rank (nothing left to unlock).
+function quotaStat(r: ShiftReward): Stat[] {
+  const Q = text.end.quota
+  if (r.before.xpToNext === 0 && !r.before.locked) return []
+  const value = r.quotaMet ? fill(Q.met, { mult: progressionTuning.quotaXpMult }) : r.progress.quotaMet ? Q.metEarlier : r.after.locked ? Q.locked : Q.missed
+  const tone: Stat['tone'] = r.quotaMet ? 'success' : r.after.locked ? 'danger' : undefined
+  return [{ label: Q.label, value, ...(tone ? { tone } : {}) }]
 }
 
 // F41: the payslip's rows on the report — gross pay, the fines (none on day one: "Day one is on us"), net pay
@@ -396,7 +407,9 @@ export function App() {
       // F41: the payslip — gross, fines, net pay (= what the shift earned, and a rank-up if it crossed one, F59: and
       // what that rank unlocked). Net pay replaces the Score row: they were the same number (bar the minimum XP), and
       // a phone has little room. A long list scrolls inside the report from UI kit 0.31.0 (framework F113).
-      const stats = [{ label: text.end.cracks, value: `${result.sealed} / ${result.needed}` }, ...payslipStats(result.payslip, result.reward)]
+      // (F74: the quota row under the crack count — not on day one, which needs no quota)
+      const stats = [{ label: text.end.cracks, value: `${result.sealed} / ${result.needed}` },
+        ...(result.payslip.firstDay ? [] : quotaStat(result.reward)), ...payslipStats(result.payslip, result.reward)]
       // (F31: a lesson hears the report close — the first day's last step is "back to the console")
       // F41: a rank-up first plays its payday (one screen per rank crossed), then does what the button asked
       // (the report closes as the payday opens: day one's last lesson step ends there, not over the payday)
@@ -498,7 +511,7 @@ export function App() {
     if (mode !== 'console') return
     rulesClock.scale = 1
     if (ending.playing()) return // (F65: the ending plays on the console — no story moment or lesson over it)
-    if (storyMoments.atConsole(rank)) return
+    if (storyMoments.atConsole(rank, rankInfo(progress).locked)) return // (F74: the rank lock's moment, the first time it holds)
     if (dayDue(progress)) firstDay.atConsole()
     else unlockLessons.atConsole(rank)
   }, [mode, rank, progress, tips, storyUp, endingAt])

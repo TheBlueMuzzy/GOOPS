@@ -88,6 +88,17 @@ describe('story moments', () => {
       for (const k of Object.keys(l)) expect(known.has(k), `rank ${r} ${k}`).toBe(true)
     }
   })
+  it('F74: the rank lock\'s moment — Management on the monitor (its caps voice), the meter outlined, every line with words', () => {
+    const lock = storyFile.events?.rankLock
+    expect(lock?.look).toBe('meter')
+    expect(lock?.lines.length).toBeGreaterThan(0)
+    for (const l of lock!.lines) {
+      expect(l.voice).toBe('mon')
+      const words = (en.story.lines as Record<string, string>)[l.words]
+      expect(words, l.words).toBeTruthy()
+      expect(words).toBe(words.toUpperCase())
+    }
+  })
   it('Management 0–4, the Veteran 5–29 (story.md pacing)', () => {
     for (let r = 0; r <= 29; r++) for (const l of storyFile.moments[String(r)].lines) expect(l.voice).toBe(r < 5 ? 'mon' : 'spk')
   })

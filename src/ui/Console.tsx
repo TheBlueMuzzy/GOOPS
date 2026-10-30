@@ -220,8 +220,8 @@ function UpgradesButton({ scraps, open, opensAt, onOpen }: NonNullable<Props['up
 export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSettings, midShift, upgrades, rankSelect, ending, careers = 0 }: Props) {
   const now = rankInfo(progress)
   // (only the XP moves the meter: buying an upgrade changes the progress but must not replay the fill — F34)
-  const totalXp = progress.totalXp
-  const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, { totalXp, scrapsSpent: 0 }) : []), [shownFrom, totalXp])
+  const { totalXp, xpHeld } = progress
+  const steps = useMemo(() => (shownFrom ? meterSteps(shownFrom, { totalXp, scrapsSpent: 0, xpHeld }) : []), [shownFrom, totalXp, xpHeld])
   const short = useShort()
   const leaving = phase === 'leaving'
   const broken = MACHINES.filter((id) => midShift?.machines[id].broken)
@@ -293,10 +293,13 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
       <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end"
         className={gold ? 'career-gold-console' : undefined}>
         <ArtLayer {...a.body} dim={leaving} className={trim('body')} />
-        <ArtLayer {...a.meter} dim={leaving} className={trim('meter')} />
+        {/* (F74: the tag the rank lock's story moment outlines) */}
+        <ArtLayer {...a.meter} dim={leaving} className={trim('meter')}><LessonTag tag="meter" /></ArtLayer>
+        {/* F74 the rank lock: XP full but no quota met this rank → the bar sits full and QUOTA NEEDED shows instead of
+            the numbers (the kit meter's full-bar state, its words.max — the same one the top rank uses) */}
         <ArtLayer at={a.meter.at} text={a.meterText} dim={leaving}>
-          <LevelMeter level={now.rank} xp={now.xpIntoRank} xpToNext={now.xpToNext} format={format}
-            words={{ label: t.rank, unit: t.xp, max: t.maxRank }} art={a.meterFill}
+          <LevelMeter level={now.rank} xp={now.xpIntoRank} xpToNext={now.locked ? 0 : now.xpToNext} format={format}
+            words={{ label: t.rank, unit: t.xp, max: now.locked ? t.quotaNeeded : t.maxRank }} art={a.meterFill}
             steps={steps.length ? steps : undefined} play={phase === 'idle'} />
         </ArtLayer>
         <LaserPanel key={key('laser')} live={live('laser')} onRepair={repair('laser')} fewerSteps={fewer('laser')} showcase={showcase('laser')} outlined={outlined} />

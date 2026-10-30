@@ -84,5 +84,9 @@
     "48": { "lines": [{ "voice": "goop", "words": "r48a" }, { "voice": "goop", "words": "r48b" }] },
     "49": { "lines": [{ "voice": "spk", "words": "r49", "monitor": "flicker", "crackle": true }] },
     "50": { "lines": [{ "voice": "mon", "words": "r50", "monitor": "alarm" }] }
+  },
+  "_events": "F74: moments for something that happened, not a rank — each plays once per device (Settings → Replay lessons plays it again), after any rank moment that's due, with the same line options. rankLock = the first time the rank lock holds at the console (the meter full, no crack quota met this rank): Management explains it, the meter outlined (look 'meter'). Seen as 'story:rankLock'.",
+  "events": {
+    "rankLock": { "look": "meter", "lines": [{ "voice": "mon", "words": "rankLockA" }, { "voice": "mon", "words": "rankLockB" }, { "voice": "mon", "words": "rankLockC" }] }
   }
 }
