@@ -1,4 +1,5 @@
 # Log archive (newest first)
+- 2026-10-23 — Sprint 12 / F34 approved: the console's Upgrades screen at rank 5 — 8 upgrades that change the shift, green cards for what you own, greyed locked ones, red −, Respec flashes your scraps green; Cooldown Booster's lightning-bolt charge button
 - 2026-10-20 — Released v0.1.0, the alpha: a guided first day, shifts up to rank 9 with three machines and sound, installable on phones at thebluemuzzy.github.io/GOOPS/alpha/
 - 2026-10-20 — Sprint 10: phones get finger-by-finger touch (each finger its own gesture, swap ring by the holding finger); a fresh save now plays "your first day" — 15 guided steps from the periscope pull to rank 1
 - 2026-10-19 — Sprint 09: each early promotion brings something (next-piece window at 1, swap with the next piece at 3, Upgrades button at 5); the CRT look is reusable and the window wears it
