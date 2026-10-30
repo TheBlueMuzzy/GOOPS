@@ -115,7 +115,7 @@ describe('Goop Dump (F42, rank 15)', () => {
     const dumps = ofType(events, 'dump')
     expect(dumps).toHaveLength(dumpTotal(1))
     expect(ofType(events, 'fall').length).toBeGreaterThanOrEqual(dumpTotal(1))
-    expect(new Set(dumps.map((d) => d.x)).size).toBeGreaterThan(5)
+    expect(new Set(dumps.map((d) => d.x)).size).toBeGreaterThan(Math.min(5, dumpTotal(1) - 2)) // (spread out, not one column)
     // nothing rests in the hidden rows at the top
     for (let i = 0; i < (s.bufferRows + 1) * s.width; i++) expect(s.grid[i]).toBe(0)
   })
@@ -141,7 +141,7 @@ describe('Goop Dump (F42, rank 15)', () => {
     shift.tick(1)
     expect(ofType(shift.takeEvents(), 'dump')).toHaveLength(1)
     shift.tick(80 * 4)
-    expect(ofType(shift.takeEvents(), 'dump')).toHaveLength(4)
+    expect(ofType(shift.takeEvents(), 'dump')).toHaveLength(Math.min(4, dump(1).cellsPerWave - 1)) // (the rest of the wave, cellMs apart)
   })
 
   it('never rains into a column the falling piece is in, however low the piece is (it would settle through it)', () => {

@@ -120,7 +120,7 @@
     {
       "id": "goopDump",
       "name": "Goop Dump",
-      "_note": "Active (F42, v1). Full in 15 s (0.0667 a second) + 25% per seal. Fire: waves of single WILD goop cells (F75, Muzzy 2026-10-30: they plug any crack; was the falling piece's colour) rain into random columns — in the final shift into the columns with an open crack (none: random) — waves 1 / 2 / 3, cellsPerWave cells a wave (v1 18; F52 balance pass: 8 — 18 added +30–37k score a shift at level 3, 4–5 ranks of XP; 8 adds about one rank's worth), cellMs between cells (v1 80), waveMs between waves (v1 600). Seeded. Refused (charge kept) during a rupture or while a dump is still raining (F75: it copies no colour now, so it fires with no falling piece or a wild one). cardNumber 'count': the shop card shows the first number (waves) as a plain number, not a %.",
+      "_note": "Active (F42, v1). Full in 15 s (0.0667 a second) + 25% per seal. Fire: waves of single WILD goop cells (F75, Muzzy 2026-10-30: they plug any crack; was the falling piece's colour) rain into random columns — in the final shift into the columns with an open crack (none: random) — waves 1 / 2 / 3, cellsPerWave cells a wave (v1 18; F75 task 8: 4 — wild rain at 8 made careers ~57 shifts and ranks 40–49 ~99% met; at 4 ~62 shifts, 80–95% met; F52 balance pass: 8 — 18 added +30–37k score a shift at level 3, 4–5 ranks of XP; 8 adds about one rank's worth), cellMs between cells (v1 80), waveMs between waves (v1 600). Seeded. Refused (charge kept) during a rupture or while a dump is still raining (F75: it copies no colour now, so it fires with no falling piece or a wild one). cardNumber 'count': the shop card shows the first number (waves) as a plain number, not a %.",
       "type": "active",
       "rank": 15,
       "maxLevel": 3,
@@ -130,9 +130,9 @@
         "chargePerSecond": 0.0667,
         "chargePerSeal": 0.25,
         "byLevel": [
-          { "waves": 1, "cellsPerWave": 8, "cellMs": 80, "waveMs": 600 },
-          { "waves": 2, "cellsPerWave": 8, "cellMs": 80, "waveMs": 600 },
-          { "waves": 3, "cellsPerWave": 8, "cellMs": 80, "waveMs": 600 }
+          { "waves": 1, "cellsPerWave": 4, "cellMs": 80, "waveMs": 600 },
+          { "waves": 2, "cellsPerWave": 4, "cellMs": 80, "waveMs": 600 },
+          { "waves": 3, "cellsPerWave": 4, "cellMs": 80, "waveMs": 600 }
         ]
       }
     },

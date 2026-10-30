@@ -385,14 +385,16 @@ describe('upgrades in the final shift (F75)', () => {
       shift.tick(10)
       for (const e of shift.takeEvents()) if (e.type === 'dump') { expect(e.color).toBe(WILD); xs.push(e.x) }
     }
-    expect(xs.length).toBeGreaterThan(5)
+    expect(xs.length).toBeGreaterThanOrEqual(3) // (level 1's one wave — upgrades.json goopDump — enough cells to see where they go)
     return xs
   }
 
   it('Goop Dump rains wild goop into the columns with an open crack (none: anywhere); at rank 49 anywhere', () => {
     expect(new Set(dumpColumns(50))).toEqual(new Set([5, 17]))
-    expect(new Set(dumpColumns(50, false)).size).toBeGreaterThan(5)
-    expect(new Set(dumpColumns(49)).size).toBeGreaterThan(5)
+    // (anywhere = not only the two crack columns — the wave is only a few cells, upgrades.json goopDump)
+    const notAimed = (xs: number[]) => new Set(xs).size > 2 && xs.some((x) => x !== 5 && x !== 17)
+    expect(notAimed(dumpColumns(50, false))).toBe(true)
+    expect(notAimed(dumpColumns(49))).toBe(true)
   })
 
   it('Slow Cracks: in the final shift new cracks come as often as without it, but they spread slower; at rank 49 both slow', () => {
