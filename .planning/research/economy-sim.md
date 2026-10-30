@@ -5,14 +5,14 @@
 **Results page:** `e2e-shots/sim/index.html` (open the file; raw numbers in `results.json` beside it). Made by the run, stays on this machine (e2e-shots is git-ignored). Re-run: `npm run sim:economy` (~13 min on this PC) · `npm run sim:economy -- --quick` (~20 s, a check — it's in check:full).
 **Same seeds = the same numbers** (tested: tests/economySim.test.ts).
 
-## After F52 — Balance pass (full re-run 2026-10-30, 72 careers, 32,951 shifts, 1,322 s)
-**Changed since the findings below:** the rank lock (F74: a rank-up needs a quota met this rank, a met shift's XP ×2) · quota = 1 + colours + rank ÷ 10 (was colours + rank) · console 75%, Focus Mode 2 levels · growing cracks from rank 31 (was 30) · Pressure Control +12% first level · Colorizer 2/3/4 pieces · Goop Dump 8 cells a wave · the bots take Dense Goop back for the final shift. The before/after table is on the planner's "Goops — economy sim" tab (made from `scripts/bots/sim-before.json`).
-- **Pace:** shifts to the final shift — Focused **65–68**, Sharp **60–65** (were 42–49 / 31–37). On the main chat's own check (16 fresh careers a bot to rank 50): Focused 70 (58–85), Sharp 69 (63–88). In the 60–80 target — before Muzzy's calibration shifts (F52 task 3), so it gets re-checked then.
-- **The quota now matters:** met 82–85% of shifts at ranks 1–9 and 72–79% at 10–49 (was 40–49% and 0–2%). Ranks 40–49: ~100% — the white goop seals 10–20 cracks a shift for you, so the lock does nothing there (Ask Muzzy: a quota rule that counts his help is a new rule).
-- **Rank 30** still costs ~4 shifts on average (the capture, white as the 6th colour); worst seen 18.
-- **Casual** (ignores cracks) meets 1% and reaches rank ~10 after 743 shifts — a player who never seals is held near the start (Ask Muzzy).
-- **Final shift with the career's upgrades:** Focused 95–100%, Sharp 40–55% (were 85–100% / 10–35%). With no upgrades: Focused 40%, Sharp 25% — the 75% console makes each valve stage cost more (Ask Muzzy: the final shift's own console speed).
-- **Still no measurable effect:** Auto-Popper, Capacitor Efficiency, Cooldown Booster, Sealing Bonus, Active Expansion Slot 1 + 2 — the next balance pass's list.
+## After F52 — Balance pass (full re-run 2026-10-30 10:27, 72 careers, 33,283 shifts, 1,557 s)
+**Changed since the findings below:** the rank lock (F74: a rank-up needs a quota met this rank, a met shift's XP ×2) · quota = 1 + colours + rank ÷ 10, minus 6 at ranks 30–39 (`shift.json` `quota.addByRank`; was colours + rank) · the white goop's seals no longer count toward the quota (Muzzy 2026-10-30; the final shift's valve still counts them) · console 75%, Focus Mode 2 levels, the final shift's own console 25% · growing cracks at rank 30 (Muzzy: big changes come on the 0s) · Pressure Control +12% first level · Colorizer 2/3/4 pieces · Goop Dump 8 cells a wave · the bots take Dense Goop back for the final shift. The before/after table is on the planner's "Goops — economy sim" tab (made from `scripts/bots/sim-before.json`).
+- **Pace:** shifts to the final shift — Focused **70–76**, Sharp **67–70** (were 42–49 / 31–37). The main chat's own check on fresh seeds (801–806, 12 careers a bot to rank 50): Focused 74 (65–80), Sharp 70 (63–80), longest stall 7. In the 60–80 target — before Muzzy's calibration shifts (F52 task 3), so it gets re-checked then.
+- **The quota now matters at every band:** met 82–85% of shifts at ranks 1–9 and 63–71% at 10–49 (was 40–49% and 0–2%); per band on the check: 74–78% · 65–72% · 56–63% · 77–81% (30–39) · 61–75% (40–49).
+- **Rank 30** (growing cracks start) takes 1.2–1.3 shifts on average — the band's quota is 6 lower because the bots seal ~4 cracks a shift there at first (grown cracks are hard to cover whole).
+- **Casual** (ignores cracks) meets 1% and stays near the start — Muzzy 2026-10-30: fine.
+- **Final shift:** with no upgrades Focused 85%, Sharp 70% (back to F51's numbers with its own 25% console). With the career's upgrades Focused 85–100%, Sharp 25–45% — Sharp still does worse with its upgrades than without (Slow Cracks max in Rush; Actives first 25%) — Slow Cracks waits on Muzzy's pick.
+- **Still no measurable effect:** Auto-Popper, Capacitor Efficiency, Cooldown Booster, Gear Lubrication, Sealing Bonus, Active Expansion Slot 1 + 2 — the next balance pass's list.
 
 ## What it does (plain words)
 - **A career** = rank 0 to the final shift (rank 50), played shift after shift on the real game rules. XP, ranks and scraps come from the game's own code. A career stops when it wins the final shift (or after 10 tries).
