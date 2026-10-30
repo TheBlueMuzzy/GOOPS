@@ -4,7 +4,7 @@
 //   his drop-in ("oh! hi!" — all four lines at 390) · every goop, junk and crack galaxy black · the top bar shows the
 //   valve ("VALVE 1 · 5 / 6", not the crack count) · a stage filling → "GO TO THE CONSOLE!" + his "valve's open on your
 //   console — go!" · W → the console: the hatch is open, the valve panel is up (inside its card with room on every
-//   side, inside the screen, above the hatch), the shift runs at consoleTimeScale · the hatch shuts and opens the panel
+//   side, inside the screen, above the hatch), the shift runs at finalShift.json consoleTimeScale · the hatch shuts and opens the panel
 //   · the wheels solved with REAL keys (A / D, ← / →; at 390 a real drag round a wheel first) → "STAGE 1 OPEN!" → the
 //   stage opens and you're back in the tank · stages 2 and 3 (the green narrower each time) · the win: F65's ending starts (e2e/ending.mjs plays the rest).
 // The three losses, forced through the engine's own paths (he's used up · goop over the top · integrity 0): "Final
@@ -167,7 +167,8 @@ try {
         && (await page.locator('.valve-title').textContent()).trim() === V.title.replace('{n}', stage + 1).replace('{total}', 3))
       if (stage === 0) {
         const rate = await page.evaluate(() => window.__goops.clocks().rate)
-        check(`${size}: at the console the shift runs at consoleTimeScale (${breakdowns.consoleTimeScale})`, Math.abs(rate - breakdowns.consoleTimeScale) < 1e-9, String(rate))
+        // (the final shift's own console speed — finalShift.json consoleTimeScale, not breakdowns.json's: F52)
+        check(`${size}: at the console the shift runs at the final shift's consoleTimeScale (${finalJson.consoleTimeScale}, not ${breakdowns.consoleTimeScale})`, Math.abs(rate - finalJson.consoleTimeScale) < 1e-9, String(rate))
         const room = await panelRoom(page)
         check(`${size}: the panel is on screen, above the hatch, nothing touching its edge`, room.onScreen && room.aboveHatch && room.least >= 6, JSON.stringify(room))
         await page.screenshot({ path: `${SHOTS}/valve-${size}.png` })
