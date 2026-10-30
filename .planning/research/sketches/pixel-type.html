@@ -93,14 +93,15 @@ const $ = id => document.getElementById(id);
 
 // ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
 const GOO = {
-  look: 1,          // 0 Today · 1 A all Nokia · 2 B Nokia + Pixel Operator · 3 B2 Nokia + m6x11plus
-  compare: 1,       // 1 = Today beside the chosen look (when there's room)
+  // defaults = Muzzy's pick 2026-10-29 (B, reading text 16 screen px, tight lines, no shadow / spacing) — picks.json
+  look: 2,          // 0 Today · 1 A all Nokia · 2 B Nokia + Pixel Operator · 3 B2 Nokia + m6x11plus
+  compare: 0,       // 1 = Today beside the chosen look (when there's room)
   textSize: 100,    // the player's Text size setting, %
   snap: 1,          // 1 = every size lands on the font's pixel grid (crisp); 0 = sizes as they come
   bodySize: 16,     // the reading text's target size in px (A, B, B2) — snapped to its font's grid
-  lineHeight: 1.5,  // line height × size (Today keeps its 1.4)
-  shadow: 1,        // hard shadow under titles + headings, in font pixels (0 = none)
-  tracking: 1,      // extra letter spacing on titles + headings, in font pixels
+  lineHeight: 1.2,  // line height × size (Today keeps its 1.4)
+  shadow: 0,        // hard shadow under titles + headings, in font pixels (0 = none)
+  tracking: 0,      // extra letter spacing on titles + headings, in font pixels
 };
 // [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
 const KNOBS = [['Which look'], ['look', 0, 3, 1], ['compare', 0, 1, 1],
@@ -152,10 +153,12 @@ function style(look, role, lines) {
 }
 function screenHtml(look) {
   const st = r => `style="${style(look, r)}"`;
-  const sizes = ['body', 'head', 'title'].map(r => `${r === 'head' ? 'heading' : r} ${+sizeOf(look, r).toFixed(2)}`).join(' · ');
+  // sizes in REAL screen pixels (page px × the screen's pixel ratio — Windows / browser zoom 110% makes 16 screen px = 14.55 page px)
+  const sizes = ['body', 'head', 'title'].map(r => `${r === 'head' ? 'heading' : r} ${+(sizeOf(look, r) * dpr).toFixed(1)}`).join(' · ')
+    + (Math.abs(dpr - 1) > 0.01 ? ` screen px (your zoom ${Math.round(dpr * 100)}%)` : ' screen px');
   const crisp = look.today ? ['body', 'head', 'title'].every(r => onGrid(look, r)) : ['body', 'head', 'title', 'small'].every(r => onGrid(look, r));
   return `<div class="phone"><div class="cap"><span><b>${look.name}</b> — ${look.note}</span></div>
-  <div class="cap"><span>${sizes} px</span><span class="${crisp ? 'ok' : 'bad'}">${crisp ? 'all on grid ✓' : 'off grid — soft'}</span></div>
+  <div class="cap"><span>${sizes}</span><span class="${crisp ? 'ok' : 'bad'}">${crisp ? 'all on grid ✓' : 'off grid — soft'}</span></div>
   <div class="screen">
     <div class="t-title" ${st('title')}>Settings</div>
     <div class="t-head" ${st('head')}>Volume</div>

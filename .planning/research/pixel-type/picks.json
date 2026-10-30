@@ -1,0 +1,12 @@
+{
+  "_about": "Muzzy's pick in sketch S12: Crisp pixel type (2026-10-29). His bodySize 12 snapped to 16 screen px on his 110% screen; he said 18 is acceptable, 16 he'd be happy with → 16.",
+  "look": "B — Nokia for titles, headings and numbers; Pixel Operator 8 (CC0) for reading text",
+  "bodyScreenPx": 16,
+  "headingPx": 24,
+  "titlePx": 32,
+  "lineHeight": 1.2,
+  "shadow": 0,
+  "tracking": 0,
+  "snap": true,
+  "pasted": { "look": 2, "compare": 0, "textSize": 100, "snap": 1, "bodySize": 12, "lineHeight": 1.2, "shadow": 0, "tracking": 0 }
+}
