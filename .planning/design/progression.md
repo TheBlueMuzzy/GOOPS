@@ -25,6 +25,22 @@ cumulativeXpToRankN = N * (3375 + 125 * N)
 
 **Minimum Progress:** Every session grants at least `100 * currentRank` XP (minimum 100).
 
+### The rank lock (F74 — Muzzy, 2026-10-29)
+
+"Quota = key to the rank lock." A rank-up needs **both**:
+- the XP goal for this rank, **and**
+- a crack quota met during this rank.
+
+How it plays:
+- No quota met yet this rank → the XP **stops at the goal**: the meter sits full and says **QUOTA NEEDED**; extra XP is lost.
+- A met quota **stays met** until the rank-up — later shifts that miss it don't undo it.
+- A shift that meets its quota earns **double its XP** (`progression.json` `quotaXpMult`: 2).
+- One quota = one rank-up: a huge shift that unlocks a rank stops full at the next rank's goal.
+- The first day (rank 0 → 1) and the final shift (rank 50) work as before.
+- The end report's quota row: met → "Met — rank unlocked · XP ×2" · met earlier → "Met earlier — rank unlocked" · missed with a full meter → "Rank locked: meet a quota" · missed → "Missed — the rank-up needs one".
+- The first time the lock holds, Management explains it on the monitor (`moments.json` → `events.rankLock`).
+- Saves from before the lock count the rank you're in as unlocked (TDD D31).
+
 ### Scraps (Currency)
 
 - Earn 1 scrap per rank achieved

@@ -142,7 +142,7 @@ flowchart LR
 | `content/tuning/crt.json` | F32 → F60: the CRT look as presets any panel can take (`<CrtLook preset="dos">` / `<CrtLook place="monitor">`, src/game/CrtLook.tsx + crt.ts + crt.css). `use.monitor` = the preset the console monitor wears (a dropdown); `presets.dos` (= the F32 look) · `amber` · `off`, each with layer switches (tint, glow, scanLines, wobble, typing) and knobs: typing speed, cursor blink + width, text + glow colour, glow size/strength, scanGap/scanWidth/scanAlpha/scanSpeed (same names + meaning as cracks-look.json xray.scan*; monitor units = its art units), wobbleSize/wobbleSeconds. Reduce motion = no typing, blink, wobble or roll; Dev Kit full pause holds them | Dev Kit Tuning (live) |
 | `content/lessons/visor.json` · `laser.json` · `controls.json` | F32: each machine's first-breakdown lesson (broke → toConsole → fullyPaused (the very first only) → fix → fixed → back), same shape; words en.json `lessons.<machine>` + `lessons.shared` | Dev Kit Lessons tab / Obsidian |
 | `content/lessons/console-note.json` | F32: the one-line console-visit note (closes on Got it, back in the tank, or after 1.5 lesson-seconds = 6 s at the console's 25%) | Dev Kit Lessons tab / Obsidian |
-| `content/tuning/progression.json` | ranks + XP (v1 numbers), scraps per rank · F59 `unlocks` = the rank each part of the game unlocks at (`nextPiece` 1 · `swap` 3 · `upgrades` 5); `isUnlocked(what, rank)` in src/progress/progression.ts is the ONE rule the HUD, the controls (engine `swap` option) and the console ask — no rank numbers in UI code | Dev Kit Tuning (live) |
+| `content/tuning/progression.json` | ranks + XP (v1 numbers), scraps per rank · F74 `quotaXpMult` (2: a shift that meets its quota earns its XP × this; the rank lock, D31) · F59 `unlocks` = the rank each part of the game unlocks at (`nextPiece` 1 · `swap` 3 · `upgrades` 5); `isUnlocked(what, rank)` in src/progress/progression.ts is the ONE rule the HUD, the controls (engine `swap` option) and the console ask — no rank numbers in UI code | Dev Kit Tuning (live) |
 | `content/tuning/payslip.json` | F41: the end report's payslip — `fineShare` (8% of the shift, theatre: net always = the real XP), `fineLines` 3, `lineMs`, `loiterSeconds`, the silly fines and the rank each starts at, the payday shares (lodging · meals · air · periscope · rotating extra), the passage debt (start, paid share, interest, goes up from rank 30). Rules: src/progress/payslip.ts (`makePayslip`, `debtAt` — worked out from the rank, never saved); words: en.json `payslip` | Dev Kit Tuning (live) / Obsidian |
 | `content/tuning/talk.json` | F35: the Veteran's talking bubble feel (kit TalkingBubble, UI kit 0.31.0) — Muzzy's S9 picks: wave start/end, spike gap + height, roundness, variability, pop size, type speed, rest, squelch. Read every frame | Dev Kit Tuning (live) |
 | `content/tuning/name.json` | F66: `maxLength` — the most letters the first day's name box takes (12, Muzzy 2026-10-25); the name itself is in the save (D20) | Dev Kit Tuning / Obsidian |
@@ -199,6 +199,24 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D31 · 2026-10-29 · The rank lock: two flags beside the XP, one quota = one rank-up, old saves unlocked (F74)
+  Proposed by: Muzzy (the rule, 2026-10-29: "XP goal met = allowed to rank up IF you've met quota during this rank",
+  XP past the goal "stops at the goal", "double that shift's XP") · Claude (how it's kept)
+  Options: save the rank itself (a second source of truth beside the XP) · cap the XP one short of the goal (the meter
+  never quite full) · keep the rank worked out from the XP + two flags
+  Chose: two flags in the save (v5): quotaMet (a quota met this rank — the key in hand) and xpHeld (the meter sits
+  full at the goal). The XP stays the one truth for rank and scraps; xpHeld only says "the boundary the XP sits on
+  isn't crossed yet" (at a boundary the XP alone can't tell a held meter from a fresh rank-up), and is ignored off a
+  boundary, so a retuned XP table can never take a rank away. rewardShift(p, score, { quotaMet }) doubles a quota
+  shift's XP (progression.json quotaXpMult) and adds it through addXp: each goal is a gate a quota opens once — one
+  quota = one rank-up, a huge shift stops full at the next rank's goal (so two paydays in one shift no longer happen).
+  The first day ranks 0 → 1 without a quota and isn't doubled; the top rank has nothing to fill. Left out (the economy
+  sim until F52 task 2), the third argument means the XP-only rule — F52 makes it required. Old saves (v1–v4) step up
+  with quotaMet: true: their XP was earned under the old rule, so the rank they're in counts as unlocked — nobody is
+  stuck by the update; from the next rank on, the lock holds. Every load also clamps owned levels to each upgrade's
+  maxLevel and refunds the scraps (upgradeShop clampOwned — for F52 cutting Focus Mode 4 → 2). Shown: the kit
+  LevelMeter's own full-bar state (xpToNext 0 + words.max = QUOTA NEEDED, as the top rank uses), the report's quota row,
+  and moments.json events.rankLock (Management, once, the meter outlined). Golden saves v5 + v4-focus4.
 D30 · 2026-10-29 · The economy sim plays whole careers through the game's own progress code (F51)
   Proposed by: Claude (auto mode; Muzzy's asks 2026-10-29: a range of skills not one bot, the bot visits the console,
   "how do you measure too weak to feel", real shopping choices, ranks 40–50 winnable)

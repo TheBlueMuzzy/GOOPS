@@ -4,7 +4,7 @@
 //   a normal shift — the report shows Gross pay, the fines (words from en.json), Net pay; gross − fines = net = the XP saved
 //   a payday — a shift that ranks up: the report's button opens Payday (5 items that add up to the payment due, the
 //              passage debt, the rank-up); Pay up → back to the console
-//   two paydays — a shift that crosses two ranks: two Payday screens in a row, the same size
+//   a big shift — XP enough for two ranks: ONE payday (F74 the rank lock: one quota = one rank-up), then Next shift
 //   every card keeps its size while it shows (the kit's fixed-size watch: window.__uiGrowth stays empty)
 // Screenshots: e2e-shots/payslip/
 // Run: node e2e/payslip.mjs  (own dev server on port 5348)
@@ -63,7 +63,6 @@ const rowsOf = async (page, sel) => {
   return raw.map((t) => t.split('\n').map((s) => s.trim()).filter(Boolean)).map((p) => [p[0], p[p.length - 1]])
 }
 const growth = (page) => page.evaluate(() => window.__uiGrowth ?? [])
-const cardSize = (page, sel) => page.locator(sel).first().evaluate((el) => ({ w: Math.round(el.offsetWidth), h: Math.round(el.offsetHeight) }))
 
 try {
   // ---------------- a normal shift: gross − fines = net = the XP ----------------
@@ -111,26 +110,22 @@ try {
     await close()
   }
 
-  // ---------------- two paydays in a row (Next shift after them starts a shift) ----------------
+  // ---------------- a big shift: ONE payday (F74 the rank lock: one quota = one rank-up — the shift's XP stops full at
+  // the next rank's goal, so two paydays in a row can't happen any more), then Next shift starts a shift ----------------
   {
     const { page, errors, close } = await shiftEnded(xpToNext(0) - 50, { score: xpToNext(1) + 4000 })
     await page.getByRole('button', { name: en.end.again }).click()
     await page.getByRole('heading', { name: P.paydayTitle }).waitFor({ timeout: 3000 })
     await page.waitForTimeout(settle())
-    const first = await rowsOf(page, '.kit-modal'), size1 = await cardSize(page, '.kit-modal')
-    await page.screenshot({ path: `${OUT}/payday-double-1-390x844.png` })
+    const first = await rowsOf(page, '.kit-modal')
+    await page.screenshot({ path: `${OUT}/payday-big-390x844.png` })
+    check('a big shift: one payday, to rank 1', first.some(([l, v]) => l === P.rankUp && v.includes('1')), JSON.stringify(first.at(-1)))
     await page.getByRole('button', { name: P.pay }).click()
-    await page.waitForTimeout(settle())
-    const second = await rowsOf(page, '.kit-modal'), size2 = await cardSize(page, '.kit-modal')
-    await page.screenshot({ path: `${OUT}/payday-double-2-390x844.png` })
-    check('two paydays: rank 1, then rank 2', first.some(([l, v]) => l === P.rankUp && v.includes('1')) && second.some(([l, v]) => l === P.rankUp && v.includes('2')), JSON.stringify([first.at(-1), second.at(-1)]))
-    check('two paydays: the same size', Math.abs(size1.w - size2.w) <= 1 && Math.abs(size1.h - size2.h) <= 2, JSON.stringify([size1, size2]))
-    await page.getByRole('button', { name: P.pay }).click()
-    await page.waitForTimeout(1000)
-    await page.screenshot({ path: `${OUT}/payday-double-after-390x844.png` })
+    await page.waitForFunction(() => document.querySelectorAll('.kit-modal, .kit-end').length === 0 && window.__goops?.engine.state.status === 'playing', null, { timeout: 5000 }).catch(() => {})
+    await page.screenshot({ path: `${OUT}/payday-big-after-390x844.png` })
     const after = await page.evaluate(() => ({ status: window.__goops?.engine.state.status, rank: window.__goops?.engine.state.rank, screens: document.querySelectorAll('.kit-modal, .kit-end').length }))
-    check('Next shift → after the paydays, a new shift starts (rank 2, nothing on top)', after.status === 'playing' && after.rank === 2 && after.screens === 0, JSON.stringify(after))
-    check('two paydays: no page errors', errors.length === 0, errors.join(' | '))
+    check('Next shift → after the payday, a new shift starts (rank 1, nothing on top)', after.status === 'playing' && after.rank === 1 && after.screens === 0, JSON.stringify(after))
+    check('a big shift: no page errors', errors.length === 0, errors.join(' | '))
     await close()
   }
 
