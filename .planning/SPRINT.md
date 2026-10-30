@@ -24,3 +24,8 @@ Checked: tests/economySim.test.ts green (same seed → the same career shift for
 - Ask Muzzy: should a bot ever buy Dense Goop (a self-chosen challenge)? Default: no (economy.json `neverBuy`).
 - Ask Muzzy: Goop Dump + Goop Colorizer together wipe the score (finding 4) — intended combo risk, or a fix for F52? Default: a fix for F52 (smaller dump).
 - Muzzy 2026-10-29: F51 — Economy sim "approved" · release the beta with the known issues (no Credits screen, stand-in art + sounds) — "yes" → `--no-release-check-ok` · Goop Dump + Colorizer wiping the score → "fix it in f52" · Dense Goop for the bots → "why not?" (Claude: no good reason — the design says faster pieces = more sealing chances, the sim measured +2–3 s) → neverBuy emptied, full sim re-run · headings → "make it all nokia" (style.json font-heading) + research how an all-pixel title / heading / body type system stays readable → research/pixel-type.md (helper).
+
+Retro: (Claude's draft 2026-10-29 — Muzzy's words win)
+- Went well: the whole sim and the beta prep ran in parallel while Muzzy drove to work, and a fresh-eyes review caught an unfair comparison before anyone acted on it.
+- Went wrong: the sim was briefed before Muzzy's own design answers in STATE were read (sent to the helper mid-build), and "no bot buys Dense Goop" was a call nobody questioned until Muzzy asked "why not?".
+- Change: read the whole ▶ RESUME HERE (every dated line) before briefing a helper, and every "the bots never do X" rule in a sim gets one line of why it helps the measurement.
