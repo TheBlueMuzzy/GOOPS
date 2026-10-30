@@ -60,7 +60,8 @@ export interface ShiftOutcome {
   rank: number
   final: boolean
   won: boolean // quota met (a normal shift) · the third valve stage opened (the final shift)
-  outcome: string // won / lost · the final shift: won / vetGone / overflow / integrity / timeout
+  outcome: string // won / lost · the final shift: won / overflow / integrity / timeout (F75: never because of him)
+  vetAlive?: boolean // F75 the final shift: the Veteran made it to the end
   score: number // the final score (after the leftover penalty) = what becomes XP
   survivedMs: number // the SHIFT's time (rules clock) until the tank ruptured, or the shift ended — console trips count
   // at their slowed speed, so a shorter repair doesn't look like a shorter-lived tank
@@ -190,6 +191,7 @@ export function playShift(input: ShiftInput): ShiftOutcome {
     r.stage = s.final.stage
     r.outcome = s.status === 'playing' ? 'timeout' : s.final.outcome ?? 'timeout'
     r.won = r.outcome === 'won'
+    r.vetAlive = s.final.vetAlive
   } else {
     r.outcome = s.status === 'playing' ? 'timeout' : s.status
     r.won = s.status === 'won'
@@ -275,6 +277,7 @@ export interface CareerShift {
   fired: number // actives fired
   repairs: number
   outcome?: string // the final shift
+  savedVet?: boolean // F75 the final shift: won with the Veteran alive (the happy ending)
 }
 
 export interface CareerResult {
@@ -329,7 +332,7 @@ export function runCareer(input: CareerInput): CareerResult {
     const reward = rewardShift(p, o.score, { quotaMet: o.won }) // F74 — Rank lock: a rank-up needs a quota met this rank
     r.shifts.push({ rank, won: o.won, xp: reward.xp, survivedS: Math.round(o.survivedMs / 100) / 10, quota: Math.round(o.quota * 1000) / 1000,
       scraps: scrapsAt(rank, p), spent: p.scrapsSpent, fired: Object.values(o.fired).reduce((a, b) => a + b, 0), repairs: o.repairs,
-      ...(o.final ? { outcome: o.outcome } : {}) })
+      ...(o.final ? { outcome: o.outcome, savedVet: o.won && !!o.vetAlive } : {}) })
     p = reward.progress
     if (o.final) {
       r.finalTries++

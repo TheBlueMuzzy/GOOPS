@@ -76,6 +76,8 @@ function careerRow(cs, label, upgrades, eco) {
     finalWonShare: cs.some((c) => c.loadout50) ? r3(cs.filter((c) => c.finalWon).length / cs.filter((c) => c.loadout50).length) : null,
     finalTries: r1(median(cs.filter((c) => c.finalWon).map((c) => c.finalTries))),
     finalOutcomes: finals.reduce((a, s) => ({ ...a, [s.outcome]: (a[s.outcome] ?? 0) + 1 }), {}),
+    // F75: of the final shifts won, the share with the Veteran still alive (the happy ending)
+    finalSavedShare: finals.some((s) => s.outcome === 'won') ? r3(finals.filter((s) => s.savedVet).length / finals.filter((s) => s.outcome === 'won').length) : null,
     scraps: {
       earned: r1(mean(cs.map((c) => c.scrapsEarned))), spent: r1(mean(cs.map((c) => c.scrapsSpent))), levelsOffered,
       unspent: Object.fromEntries(CHECKPOINTS.map((r) => [r, r1(mean(cs.map((c) => c.unspentByRank[r]).filter((x) => x !== undefined)))])),

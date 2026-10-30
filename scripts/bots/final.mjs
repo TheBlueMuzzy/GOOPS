@@ -1,9 +1,10 @@
 // F64 balance bots for THE FINAL SHIFT (rank 50): every bot × seed headless on the real engine + the real tuning
 // (shift, breakdowns, whiteGoop, twists, finalShift.json), console stand-ins as runFinal.ts says. Prints win rate,
-// length and how the bots lose; writes e2e-shots/bots/final.json.
+// length and how the bots lose — F75: and how often they save the Veteran (won with him alive = the happy ending);
+// writes e2e-shots/bots/final.json.
 // Run: npm run bots:final                         (50 seeds from 1)
 //      npm run bots:final -- --seeds 200 --from 1001   (fresh seeds)
-//      npm run bots:final -- --set pressureRiseMult=2 --set vet.shrinkPerSeal=0.1   (try numbers without editing the file)
+//      npm run bots:final -- --set pressureRiseMult=2 --set vet.wearPerIntegrity=1.5   (try numbers without editing the file)
 //      npm run bots:final -- --bots focused,sharp
 // Tuning is read from content/tuning at start and never written.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
@@ -93,7 +94,10 @@ async function main() {
     const won = rs.filter((r) => r.outcome === 'won')
     const row = {
       win: pct((r) => r.outcome === 'won'),
-      lose: { vetGone: pct((r) => r.outcome === 'vetGone'), overflow: pct((r) => r.outcome === 'overflow'), integrity: pct((r) => r.outcome === 'integrity'), timeout: pct((r) => r.outcome === 'timeout') },
+      saved: pct((r) => r.outcome === 'won' && r.vetAlive), // F75: won with him alive (the happy ending)
+      vetGone: pct((r) => !r.vetAlive), // F75: worn out at some point (not a loss)
+      vetGoneMs: med(rs.filter((r) => r.vetGoneAt !== null).map((r) => r.vetGoneAt)),
+      lose: { overflow: pct((r) => r.outcome === 'overflow'), integrity: pct((r) => r.outcome === 'integrity'), timeout: pct((r) => r.outcome === 'timeout') },
       stages: [0, 1, 2, 3].map((k) => pct((r) => r.stage === k)),
       medianMs: med(rs.map((r) => r.realMs)),
       medianWinMs: med(won.map((r) => r.realMs)),
@@ -102,7 +106,7 @@ async function main() {
       repairs: med(rs.map((r) => r.repairs)),
     }
     summary[bot] = row
-    console.log(`  ${bot.padEnd(8)} win ${String(row.win).padStart(3)}% · lose: vet ${row.lose.vetGone}% over ${row.lose.overflow}% integ ${row.lose.integrity}% timeout ${row.lose.timeout}%` +
+    console.log(`  ${bot.padEnd(8)} win ${String(row.win).padStart(3)}% · saved him ${String(row.saved).padStart(3)}% (worn out in ${row.vetGone}%, at ${secs(row.vetGoneMs)}) · lose: over ${row.lose.overflow}% integ ${row.lose.integrity}% timeout ${row.lose.timeout}%` +
       ` · stages 0/1/2/3 ${row.stages.join('/')}% · length ${secs(row.medianMs)} (wins ${secs(row.medianWinMs)}) · his seals ${row.vetShare}% · he ends at ${row.vetLeft?.toFixed(2)} · repairs ${row.repairs}`)
   }
   const out = new URL('e2e-shots/bots/', root)

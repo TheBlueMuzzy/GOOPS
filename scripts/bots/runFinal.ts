@@ -29,7 +29,9 @@ export interface FinalInput {
 export interface FinalResult {
   bot: string
   seed: number
-  outcome: 'won' | 'vetGone' | 'overflow' | 'integrity' | 'timeout'
+  outcome: 'won' | 'overflow' | 'integrity' | 'timeout' // (F75: lost only when the tank breaks)
+  vetAlive: boolean // F75: the Veteran made it to the end (won with him alive = "saved him": the happy ending)
+  vetGoneAt: number | null // F75: real ms he was worn out at (null = never)
   stage: number // valve stages opened
   realMs: number // the player's time, console trips included (what the shift "feels" like)
   rulesMs: number // the shift's own clock (slower at the console)
@@ -49,7 +51,7 @@ export function runFinal(input: FinalInput): FinalResult {
   })
   const s = engine.state
   const bot = new Bot(input.skill)
-  const r: FinalResult = { bot: input.bot, seed: input.seed, outcome: 'timeout', stage: 0, realMs: 0, rulesMs: 0, playerSeals: 0, vetSeals: 0, vetSize: 1,
+  const r: FinalResult = { bot: input.bot, seed: input.seed, outcome: 'timeout', vetAlive: true, vetGoneAt: null, stage: 0, realMs: 0, rulesMs: 0, playerSeals: 0, vetSeals: 0, vetSize: 1,
     consoleMs: 0, repairs: 0, stageAt: [] }
   const scale = input.finalShift.consoleTimeScale // (the final shift's own console speed, as the game's App uses)
   let now = 0 // the bot's (real) time
@@ -110,12 +112,16 @@ export function runFinal(input: FinalInput): FinalResult {
         case 'vetSeal':
           r.vetSeals++
           break
+        case 'vetGone':
+          r.vetGoneAt = now
+          break
       }
     }
   }
   r.realMs = now
   r.stage = s.final!.stage
   r.vetSize = s.vet?.size ?? 0
+  r.vetAlive = s.final!.vetAlive
   r.outcome = s.status === 'playing' ? 'timeout' : s.final!.outcome ?? 'timeout'
   return r
 }
