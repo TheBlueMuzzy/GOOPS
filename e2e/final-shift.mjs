@@ -7,14 +7,17 @@
 //   side, inside the screen, above the hatch), the shift runs at finalShift.json consoleTimeScale · the hatch shuts and opens the panel
 //   · the wheels solved with REAL keys (A / D, ← / →; at 390 a real drag round a wheel first) → "STAGE 1 OPEN!" → the
 //   stage opens and you're back in the tank · stages 2 and 3 (the green narrower each time) · the win: F65's ending starts (e2e/ending.mjs plays the rest).
-// The three losses, forced through the engine's own paths (he's used up · goop over the top · integrity 0): "Final
-// shift failed", which one, "You can try the final shift again", Try again.
+// The two losses, forced through the engine's own paths (goop over the top · integrity 0 — F75: him used up is not one):
+// "Final shift failed", which one, "You can try the final shift again", Try again; never "the Veteran is gone".
+// F75 his wear, at every size: an open crack drains the tank and he shrinks with it (seals free) · worn out → his short
+// line in his bubble where he was ("…sorry, kid. you got this.": in the window, nothing clipped), he's gone from the
+// tank, the shift plays on (no report) · then a stage still fills and opens without him.
 // A long run with REAL keys + taps (and the whispers on) that plays rank 50 until a black crack GROWS (the rank-30+
 // twist) — failing on any page error: the bots never draw, so a view crash only shows here (a grown crack's negative key
 // froze the picture once — SPRINT 22 Notes).
 // Waits are on the game's own clock (the engine's played time) or roomy — never a tight wall-clock wait.
 // Shots: e2e-shots/final-shift/ (valve-<size>, valve-open-<size>, bar-<size>, bar-go-<size>, won-<size>, lost-*).
-// Run: node e2e/final-shift.mjs  (own dev server on port 6450; FINAL_PART=sizes|losses|moment|long runs one part)
+// Run: node e2e/final-shift.mjs  (own dev server on port 6450; FINAL_PART=sizes|wear|losses|moment|long runs one part)
 import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
@@ -211,9 +214,55 @@ try {
     await close()
   }
 
-  // ---------------- the three losses, each through the engine's own path ----------------
+  // ---------------- F75 his wear: the tank's damage wears him out; his line; the shift goes on ----------------
+  if (part('wear')) for (const [w, h] of SIZES) {
+    const size = `${w}x${h}`
+    const { page, errors, close } = await open(w, h)
+    await skipIntro(page)
+    await quietMachines(page)
+    // an open crack high in the tank (out of his way: he's told to wait) drains it — he shrinks with what it loses
+    const worn = await page.evaluate(() => {
+      const e = window.__goops.engine, s = e.state
+      s.vet.mode = 'wait'; s.vet.waitMs = 1e12
+      s.cracks.push({ id: 9001, x: (s.vet.x + 15) % s.width, y: s.bufferRows + 4, color: 7, plugged: false })
+      const before = s.integrity
+      for (let i = 0; i < 60; i++) e.tick(50)
+      return { lost: before - s.integrity, size: s.vet.size }
+    })
+    const wear = finalJson.vet.wearPerIntegrity
+    check(`${size}: an open crack drains the tank and wears him by the same share × ${wear}`, worn.lost > 0.001 && Math.abs(worn.size - (1 - wear * worn.lost)) < 1e-6, JSON.stringify(worn))
+    // worn out (the engine's own wear): his line where he was, he's gone, the shift plays on
+    await page.evaluate(() => { const e = window.__goops.engine; e.state.cracks = []; e.wearVet(1e6) })
+    const line = en.finalShift.vet.gone
+    const said = await bubbleSays(page, line, 10000)
+    const room = await page.evaluate(() => {
+      const b = document.querySelector('.kit-talk')?.getBoundingClientRect()
+      return b ? { inWin: b.left >= 0 && b.top >= 0 && b.right <= innerWidth && b.bottom <= innerHeight, w: Math.round(b.width), h: Math.round(b.height) } : null
+    })
+    const gone = await page.evaluate(() => { const s = window.__goops.engine.state; return { vet: s.vet, alive: s.final.vetAlive, status: s.status, white: window.__goops.white?.() ?? null } })
+    check(`${size}: worn out → "${line}" in his bubble, inside the window`, said && !!room && room.inWin, JSON.stringify(room))
+    check(`${size}: he's gone from the tank; the shift plays on (not a loss, no report)`, gone.vet === null && gone.alive === false && gone.status === 'playing'
+      && await page.locator('.kit-end').count() === 0, JSON.stringify(gone))
+    // his whole line typed out while it's still up (goneLineSec is long enough to read it — tests/finalShiftLines.test.ts
+    // works it out from the bubble's own typing); the shots: the rules clock paused (the Dev Kit's ◐) so it stays up
+    const shoot = w === 390 || w === 1440
+    if (shoot) await page.evaluate(async () => (await import('/src/devkit/gameClock.ts')).setClockPause('half'))
+    const typed = await page.waitForFunction(() => document.querySelector('.kit-talk')?.getAttribute('data-phase') === 'wait', null, { timeout: 10000 }).then(() => true, () => false)
+    check(`${size}: his whole line types out before the bubble goes (finalShift.json goneLineSec)`, typed)
+    if (shoot) {
+      await page.screenshot({ path: `${SHOTS}/vet-gone-${size}.png` })
+      await page.evaluate(async () => (await import('/src/devkit/gameClock.ts')).setClockPause(null))
+    }
+    // without him the valve still fills and opens; the shift runs on
+    const stage = await page.evaluate(() => { const e = window.__goops.engine; e.countValve(e.state.final.need); e.tick(16); return e.openValveStage() && e.state.final.stage === 1 })
+    const playing = await until(page, 'S.status === "playing" && S.final.stage === 1', 3000)
+    check(`${size}: without him a valve stage still opens and the shift goes on`, stage && playing)
+    check(`${size} wear: no page errors`, errors.length === 0, errors.slice(0, 3).join(' | '))
+    await close()
+  }
+
+  // ---------------- the two losses, each through the engine's own path (F75: only the tank breaking) ----------------
   const LOSSES = [
-    ['vetGone', [390, 844], () => { const e = window.__goops.engine; e.state.vet.size = 0; e.events.push({ type: 'vetGone' }); e.finalLoss('vetGone') }],
     ['overflow', [1440, 900], () => window.__goops.engine.rupture('overflow')],
     ['integrity', [360, 780], () => { const e = window.__goops.engine; e.state.integrity = 0; e.rupture('integrity') }],
   ]
@@ -226,7 +275,8 @@ try {
     await page.waitForTimeout(1200)
     const report = lost ? await page.locator('.kit-end').innerText() : ''
     const flat = report.replace(/\s+/g, ' ')
-    check(`lose (${outcome}) at ${w}x${h}: "${F.lostTitle}", which loss, try again`, lost && flat.includes(F[outcome].replace(/\s+/g, ' ').slice(0, 30))
+    check(`lose (${outcome}) at ${w}x${h}: "${F.lostTitle}", which loss, try again — never "the Veteran is gone"`, lost && flat.includes(F[outcome].replace(/\s+/g, ' ').slice(0, 30))
+      && !/veteran/i.test(flat)
       && flat.includes(F.tryAgain) && await page.getByRole('button', { name: F.again }).count() === 1
       && await page.evaluate((o) => window.__goops.engine.state.final.outcome === o, outcome), flat.slice(0, 160))
     await page.screenshot({ path: `${SHOTS}/lost-${outcome}-${w}x${h}.png` })

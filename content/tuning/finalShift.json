@@ -17,7 +17,7 @@
     "vet.reachRows": "outOfReach: a crack with at least this many empty rows under it (rows you'd have to build up to cover it) counts as out of your reach.",
     "vet.countsForQuota": "His seals count toward the valve stages here (true, as when F64 was approved) — other shifts' quota leaves them out (whiteGoop.json countsForQuota false, F52).",
     "vet.wearPerIntegrity": "F75: how much of himself he loses per 1.0 (100%) of integrity the tank LOSES to open cracks (1 = all of him for a whole tank's worth). Seals patching the tank give it back to the tank, not to him; his own seals cost him nothing. Used up: his last line (en.json finalShift.vet.gone), he's gone, the shift goes on without his help — not a loss.",
-    "goneLineSec": "F75: how long his used-up line ('…sorry, kid. you got this.') stays in its bubble (looks time).",
+    "goneLineSec": "F75: how long his used-up line ('…sorry, kid. you got this.') stays in its bubble (looks time) — from when it starts: it takes ~3 s to type out (talk.json typeSpeed + its pauses), so leave time to read it.",
     "intro.hiSec": "The drop-in: seconds after the shift opens that he says 'oh! hi!' (he's at the top of the tank, about to fall).",
     "intro.itsMeSec": "…and 'it's me!'",
     "intro.fallSec": "…then he falls (seconds after the shift opens).",
@@ -40,7 +40,7 @@
     "vet.dropSecPerCell": [0.02, 1, 0.01],
     "vet.reachRows": [0, 10, 1],
     "vet.wearPerIntegrity": [0, 5, 0.05],
-    "goneLineSec": [0.5, 6, 0.1],
+    "goneLineSec": [1, 8, 0.1],
     "intro.hiSec": [0, 5, 0.1],
     "intro.itsMeSec": [0, 8, 0.1],
     "intro.fallSec": [0, 10, 0.1],
@@ -68,7 +68,7 @@
     "wearPerIntegrity": 3,
     "countsForQuota": true
   },
-  "goneLineSec": 2.6,
+  "goneLineSec": 4.5,
   "intro": { "hiSec": 0.4, "itsMeSec": 1.6, "fallSec": 2.8, "helpSec": 1.2, "playSec": 4, "lineSec": 1.6 },
   "bots": { "valveSec": 6 }
 }
