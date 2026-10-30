@@ -151,7 +151,7 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 
 ## M6 — 1.0: polished, balanced, replaces v1
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
-- 🔨 F74 🎮 Rank lock — the quota is the key: a rank-up needs the XP goal AND a quota met during that rank; XP stops at the goal while locked; meeting a quota doubles that shift's XP (Muzzy 2026-10-29) — must:1.0
+- ✅ F74 🎮 Rank lock — the quota is the key: a rank-up needs the XP goal AND a quota met during that rank; XP stops at the goal while locked; meeting a quota doubles that shift's XP (Muzzy 2026-10-29) — must:1.0
 - 🔨 F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51, F74
   what: the sim's 9 findings (research/economy-sim.md), each with a knob · Muzzy 2026-10-29: fix Goop Dump + Goop Colorizer wiping the score together (finding 4) · the bots take Dense Goop off before the final shift, as a smart player would (Muzzy: "sure"; finding 9)
 - 🟢 F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
