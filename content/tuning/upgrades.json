@@ -87,12 +87,12 @@
     {
       "id": "pressureControl",
       "name": "Pressure Control",
-      "_note": "F33 decision 2: pressure rises slower (pressureRiseTimeMult > 1 = slower, src/engine/shift.ts), and cracks follow pressure. 8 levels = the scrap sink, so smaller steps: +5% a level (v1: +5 s a level on a 75 s shift ≈ +6.7%).",
+      "_note": "F33 decision 2: pressure rises slower (pressureRiseTimeMult > 1 = slower, src/engine/shift.ts), and cracks follow pressure. 8 levels = the scrap sink. F52 (balance pass): level 1 is +12% so one level is felt (+6–8 s for the Focused/Sharp bots; +5% was +2–3 s), then +4% a level to the same max (+40%).",
       "type": "passive",
       "rank": 9,
       "maxLevel": 8,
       "effects": [
-        { "modifier": "pressureRiseTimeMult", "op": "mul", "byLevel": [1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4] }
+        { "modifier": "pressureRiseTimeMult", "op": "mul", "byLevel": [1.12, 1.16, 1.2, 1.24, 1.28, 1.32, 1.36, 1.4] }
       ]
     },
     {

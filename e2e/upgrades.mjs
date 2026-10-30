@@ -230,7 +230,7 @@ async function measureShift() {
   check('nothing owned: every modifier is neutral (multipliers 1, chances 0)', Object.entries(base.modifiers).every(([k, v]) => v === (CHANCES.includes(k) ? 0 : 1)), JSON.stringify(base.modifiers))
   for (const [name, value] of Object.entries(want)) check(`owned: the running shift's ${name} = ${value}`, Math.abs(m[name] - value) < 1e-9, String(m[name]))
   console.log('     measured (nothing owned → owned):', JSON.stringify({ base: { ...base, modifiers: undefined }, owned: { ...up, modifiers: undefined } }))
-  check('Pressure Control 4: pressure rises 1.2× slower', near(base.pressureRise / up.pressureRise, want.pressureRiseTimeMult), ratioLine(base.pressureRise / up.pressureRise, want.pressureRiseTimeMult))
+  check(`Pressure Control 4: pressure rises ${want.pressureRiseTimeMult}× slower`,near(base.pressureRise / up.pressureRise, want.pressureRiseTimeMult), ratioLine(base.pressureRise / up.pressureRise, want.pressureRiseTimeMult))
   check('Dense Goop 4: pieces fall 1.5× faster', near(base.fall4RowsMs / up.fall4RowsMs, want.fallSpeedMult, 0.02), `${base.fall4RowsMs} → ${up.fall4RowsMs} ms for 4 rows`)
   check('Auto-Popper 4: the rupture drains 1.6× slower', base.ruptured && up.ruptured && near(base.ruptureDrain / up.ruptureDrain, want.ruptureDrainTimeMult), ratioLine(base.ruptureDrain / up.ruptureDrain, want.ruptureDrainTimeMult))
   check('Circuit Stabilizer 4: the visor holds 1.6× longer', near(up.visorGraceMs / base.visorGraceMs, want.visorGraceMult, 0.03), `${base.visorGraceMs} → ${up.visorGraceMs} ms`)

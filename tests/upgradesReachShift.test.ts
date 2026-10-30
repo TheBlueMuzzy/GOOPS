@@ -38,11 +38,12 @@ describe('upgrades reach the shift (F34 task 5)', () => {
     }
   })
 
-  it('Pressure Control level 2: pressure really rises 10% slower in the shift', () => {
+  it('Pressure Control level 2: pressure really rises slower in the shift (upgrades.json byLevel[1])', () => {
     const plain = shiftWith(freshProgress()).shift
     const pc = shiftWith(owning({ pressureControl: 2 })).shift
     plain.tick(4000); pc.tick(4000)
-    expect(plain.state.pressure / pc.state.pressure).toBeCloseTo(1.1, 6)
+    const want = book.upgrades.find((u) => u.id === 'pressureControl')!.effects![0].byLevel[1]
+    expect(plain.state.pressure / pc.state.pressure).toBeCloseTo(want, 6)
   })
 
   it('Focus Mode: the console runs at 75%, then 50% / 25% with its 2 levels (Muzzy 2026-10-29)', () => {
