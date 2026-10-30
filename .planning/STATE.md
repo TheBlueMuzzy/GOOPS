@@ -63,4 +63,3 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 - 2026-10-26 — F42 approved. Three new abilities (Goop Dump, Goop Colorizer, Crack Down) join Cooldown Booster; buy up to two extra slots and bring three at once, each with its own charge button above the machine bars (keys 1 / 2 / 3)
 - 2026-10-24 — F70 approved. The zap is in the game: a white laser angles from the top of the tank to your finger, the goop goes white-hot, swells, gets sucked into the laser point and sprays droplets (Jelly and Particle)
 - 2026-10-24 — F68 approved (first-day touches). Zap look picked: the laser + spray together, the beam now angling down from the top centre of the view
-- 2026-10-24 — F70: the console's bottom row shows the real version and a RANK SELECT (testers jump to any rank, or 0 for a fresh first day); F67 zap-look sketch to play with
