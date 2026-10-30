@@ -1,4 +1,5 @@
 # Log archive (newest first)
+- 2026-10-24 — F68 approved (first-day touches). Zap look picked: the laser + spray together, the beam now angling down from the top centre of the view
 - 2026-10-24 — F70: the console's bottom row shows the real version and a RANK SELECT (testers jump to any rank, or 0 for a fresh first day); F67 zap-look sketch to play with
 - 2026-10-24 — F68 built: in the first day, poking goop you aren't allowed to zap now jiggles and squelches; in shifts a "Wrong colour on a crack — zap it" hint shows when the wrong goop covers a crack
 - 2026-10-23 — Sprint 12 / F34 approved: the console's Upgrades screen at rank 5 — 8 upgrades that change the shift, green cards for what you own, greyed locked ones, red −, Respec flashes your scraps green; Cooldown Booster's lightning-bolt charge button
