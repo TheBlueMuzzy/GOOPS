@@ -18,7 +18,7 @@ Done when: the quota rule lives in shift.json (tunable); the sim plays the rank 
 why: the F51 sim's findings (research/economy-sim.md) + Muzzy's answers 2026-10-29.
 Check: the full sim before/after · check:full · Muzzy's play
 Checked:
-- [ ] 🤖 1. The quota rule (colours + rank) into content/tuning/shift.json — same numbers first (golden shifts unchanged) — src/engine/config.ts
+- [x] 🤖 1. The quota rule (colours + rank) into content/tuning/shift.json — same numbers first (golden shifts unchanged) — src/engine/config.ts
 - [ ] 🤖 2. The sim plays the rank lock; bots take Dense Goop off for the final shift (economy.json) — scripts/bots/career.ts
 - [ ] 🙋 3. Calibrate: 3 shifts at rank 5 + 3 at rank 25 (RANK SELECT) — how long the tank lasted, cracks sealed / needed
 - [ ] 🤖 4. Pace to 60–80 shifts a career: XP per rank, quota per rank (tuning) — content/tuning/progression.json

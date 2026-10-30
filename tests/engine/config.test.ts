@@ -30,6 +30,11 @@ describe('cracks needed = colours + rank (v1)', () => {
     expect(cracksNeededFor(config, 12)).toBe(17)
     expect(createShift(config, { seed: 3, rank: 5 }).state.cracksNeeded).toBe(9)
   })
+  it('follows shift.json quota (F52): base + perColour × colours + perRank × rank, rounded, at least 1', () => {
+    const withQuota = (quota: typeof config.quota) => ({ ...config, quota })
+    expect(cracksNeededFor(withQuota({ base: 2, perColour: 1, perRank: 0.3 }), 10)).toBe(10) // 2 + 5 colours + 3
+    expect(cracksNeededFor(withQuota({ base: 0, perColour: 0, perRank: 0 }), 5)).toBe(1)
+  })
 })
 
 describe('starting junk (v1)', () => {

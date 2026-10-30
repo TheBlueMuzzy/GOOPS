@@ -22,6 +22,7 @@ export interface ShiftConfig {
   colors: string[] // colour names; Color 1 = colors[0]
   colorsByRank: RankStep[] // how many colours are in play from each rank
   junkByRank: RankStep[] // single goop cells on the floor at shift start
+  quota: { base: number; perColour: number; perRank: number } // cracks to seal (cracksNeededFor)
   pressure: { riseMsToFull: number } // pressure goes 0 → 1 in this long (if nothing vents it)
   integrity: {
     drainPerCrackPerSec: number // tank integrity lost per open crack per second (1 = full tank)
@@ -89,9 +90,10 @@ export function junkCount(config: ShiftConfig, rank: number): number {
   return stepFor(config.junkByRank, rank)
 }
 
-// v1: cracks to seal = colours in play + rank
+// cracks to seal = base + perColour × colours in play + perRank × rank (shift.json quota; v1 = colours + rank)
 export function cracksNeededFor(config: ShiftConfig, rank: number): number {
-  return paletteSize(config, rank) + rank
+  const q = config.quota
+  return Math.max(1, Math.round(q.base + q.perColour * paletteSize(config, rank) + q.perRank * rank))
 }
 
 export function shapeSet(config: ShiftConfig, zone: string): ShapeSet {

@@ -1,5 +1,6 @@
 {
-  "_ranges": { "cracks.curve": [0, 10, 0.25], "cracks.topBias": [0, 4, 0.25], "cracks.reach": [0, 1, 0.05], "cracks.spread": [0.05, 1, 0.05], "cracks.neighbourCols": [0, 10, 1], "cracks.highFrom": [0, 1, 0.05], "cracks.highDrainMult": [0, 1, 0.05] },
+  "_ranges": { "cracks.curve": [0, 10, 0.25], "cracks.topBias": [0, 4, 0.25], "cracks.reach": [0, 1, 0.05], "cracks.spread": [0.05, 1, 0.05], "cracks.neighbourCols": [0, 10, 1], "cracks.highFrom": [0, 1, 0.05], "cracks.highDrainMult": [0, 1, 0.05], "quota.base": [0, 20, 1], "quota.perColour": [0, 3, 0.25], "quota.perRank": [0, 2, 0.05] },
+  "quota": { "_help": "Cracks a shift asks you to seal (F52): round(base + perColour × colours in play + perRank × rank), at least 1. v1 = colours + rank (base 0, perColour 1, perRank 1).", "base": 0, "perColour": 1, "perRank": 1 },
   "tank": { "width": 30, "height": 24, "bufferRows": 3, "visibleWidth": 12 },
   "colors": ["red", "blue", "green", "yellow", "purple", "white", "black"],
   "colorsByRank": [
