@@ -1,5 +1,5 @@
 # Goops — Roadmap
-Release target: beta — musts not set (/define) · alpha released 2026-10-20 (v0.1.0)
+Release target: 1.0 — musts set (M6) · beta released 2026-10-29 (v0.2.0) · alpha released 2026-10-20 (v0.1.0)
 
 ## M0 — Design decided  ← current
 Goal: every design question the remake needs is answered, so /define can write the TDD and lay out the build milestones.
@@ -121,7 +121,7 @@ flowchart LR
   F29[F29 Sound basics]
 ```
 
-## M5 — Beta: the whole job, rank 0 to the takeover
+## M5 — Beta: the whole job, rank 0 to the takeover  ✅ released 2026-10-29 (v0.2.0)
 Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every v1 system are in; numbers can still be rough.
 - ✅ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · decided 2026-10-22 (design/upgrades-map.md "F33 decisions": store at 5 shelf-ready, 1 scrap a level + free take-backs, rank 3 slower depressurise, rank 9 pressure slower, tougher tank at 22) · needs: F08
 - ✅ F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
@@ -152,7 +152,7 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 ## M6 — 1.0: polished, balanced, replaces v1
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
 - 🟢 F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
-  what: the sim's 9 findings (research/economy-sim.md), each with a knob · Muzzy 2026-10-29: fix Goop Dump + Goop Colorizer wiping the score together (finding 4)
+  what: the sim's 9 findings (research/economy-sim.md), each with a knob · Muzzy 2026-10-29: fix Goop Dump + Goop Colorizer wiping the score together (finding 4) · the bots take Dense Goop off before the final shift, as a smart player would (Muzzy: "sure"; finding 9)
 - 🟢 F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
   what: step 1 = swap in the sounds Muzzy finds for the 26 placeholder moments (he hunts; Claude trims, matches loudness, credits — Muzzy 2026-10-19: "add a step during polish to update sounds")
 - 🟢 F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
@@ -163,7 +163,7 @@ Goal: Goops 2 goes live at the old address, works offline, sounds finished, and 
   what: beta audit 2026-10-29: same-colour merge + colour-only crack squiggles; red and green goop side by side; lesson words name colours ("Click the yellow goop"). Settings already has a hidden Colour-blind mode row (settings.json colourBlind) — needs a per-colour shape/pattern (goop face, crack glyph, next window) or another palette
 - 🟢 F71 🧱 Real-phone performance pass — a mid + a low Android with ?fps through a busy rank-30+ shift, jelly vs particle, result in TDD Key facts (the beta audit 2026-10-29 couldn't measure the phone GPU; desktop: 8.3 ms a frame); plus a lighter first visit: drop the 6 kit fonts Goops never uses from the offline copy (~146 KB) and shrink the 512 icons — should:1.0
 - 🟢 F72 ❓ Pinch zoom on or off — the page turns pinch-zoom off (normal for a game, flagged by WCAG); OK only once Text size really works everywhere (B005) — decide + note in TDD — should:1.0
-- 🟢 F73 🎮 Crisp pixel type — Muzzy 2026-10-29: "make it all nokia… body font should always be more readable… do some research and see how to make this all work well" (research/pixel-type.md): today's sizes (18 / 22.5 / 28.1 / 35.2 px, line-height 1.4) miss Nokia's 8 px grid, so it blurs. A sketch first (A all Nokia snapped to 16/24/32/48 + caps/shadow for emphasis — Claude's pick · B Nokia display + PixeloidSans 18 body · B2 m6x11plus · today), then the UI kit snaps sizes to the font's grid (framework session) — should:1.0
+- 🟢 F73 🎮 Crisp pixel type — Muzzy 2026-10-29: "make it all nokia… body font should always be more readable… do some research and see how to make this all work well" (research/pixel-type.md): today's sizes (18 / 22.5 / 28.1 / 35.2 px, line-height 1.4) miss Nokia's 8 px grid, so it blurs. A sketch first (A all Nokia snapped to 16/24/32/48 + caps/shadow for emphasis — Claude's pick · B Nokia display + PixeloidSans 18 body · B2 m6x11plus · today), then the UI kit snaps sizes to the font's grid (framework session) — Muzzy 2026-10-29: the sketch after the beta (Claude's pick) — should:1.0
 
 ## Parking lot
 - 💡 2026-10-27 — **Title badge on the console between shifts (Muzzy, F65):** add one during the art redesign — titles show only on paydays, reports and the ending's badge rewrite now.
