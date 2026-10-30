@@ -160,7 +160,7 @@ class Shift implements ShiftEngine {
     }
     if (this.isFinal) {
       const stages = valveStages(options.finalShift!)
-      this.state.final = { intro: false, stage: 0, stages: stages.length, seals: 0, need: stages[0] ?? 0, waiting: false, outcome: null }
+      this.state.final = { intro: false, stage: 0, stages: stages.length, seals: 0, need: stages[0] ?? 0, waiting: false, outcome: null, vetAlive: false }
       this.state.cracksNeeded = stages.reduce((a, b) => a + b, 0) // (the screens' seal count: every stage's seals)
     }
 
@@ -174,6 +174,7 @@ class Shift implements ShiftEngine {
     if (this.isFinal && this.state.vet) {
       this.state.vet.size = 1
       this.state.final!.intro = true
+      this.state.final!.vetAlive = true
     }
     this.nextDef = this.randomDef()
     // (a lesson's shift: no piece until the lesson brings one in — train({ type: 'spawn' }); the final shift: not
@@ -241,6 +242,8 @@ class Shift implements ShiftEngine {
       vet: st.vet ?? null, // F63 the white goop (snapshots from before F63 have none)
       final: st.final ?? null, // F64 the final shift (snapshots from before F64 have none)
     })
+    // (F75: snapshots from before it don't say whether the Veteran is alive — he is if he's in the tank)
+    if (s.final && typeof s.final.vetAlive !== 'boolean') s.final.vetAlive = !!s.vet
     if (st.leftoverPenalty === null) delete s.leftoverPenalty
     else s.leftoverPenalty = st.leftoverPenalty
     this.setPressure(st.pressure)
@@ -387,16 +390,24 @@ class Shift implements ShiftEngine {
         this.events.push({ type: 'quotaMet' })
       }
     }
-    // F64 the final shift: each cell he seals uses a little of him up; the last of him = the shift is lost
-    const shrink = this.isFinal ? finalNum(cfg.shrinkPerSeal, 0) * size : 0
-    if (shrink > 0) {
-      s.vet.size = Math.max(0, (s.vet.size ?? 1) - shrink)
-      if (s.vet.size <= 1e-9) {
-        s.vet.size = 0
-        this.events.push({ type: 'vetGone' })
-        this.finalLoss('vetGone')
-      }
-    }
+    // (F75: in the final shift his seals cost him nothing — the tank's lost integrity wears him down: wearVet)
+  }
+
+  // F75 the final shift: the Veteran wears down by the integrity the tank LOSES (finalShift.json vet.wearPerIntegrity:
+  // how much of him per 1.0 of integrity drained; a seal's patch gives the tank back, not him). Used up → his last line,
+  // he's gone from the tank (no more help), and the shift goes on — it's lost only when the tank breaks.
+  private wearVet(lost: number): void {
+    const s = this.state
+    const v = s.vet
+    if (!this.isFinal || !v || !s.final?.vetAlive || lost <= 0) return
+    const wear = finalNum(this.vetConfig()?.wearPerIntegrity, 0) * lost
+    if (wear <= 0) return
+    v.size = Math.max(0, (v.size ?? 1) - wear)
+    if (v.size > 1e-9) return
+    v.size = 0
+    s.final.vetAlive = false
+    this.events.push({ type: 'vetGone', at: { x: v.px + 0.5, y: v.py } })
+    s.vet = null
   }
 
   // The white goop's tuning: whiteGoop.json — in the final shift with finalShift.json's `vet` laid over it (F64).
@@ -486,7 +497,7 @@ class Shift implements ShiftEngine {
   }
 
   // A final-shift loss ends it at once (no rupture drain — the boss level is a hard stop).
-  private finalLoss(outcome: 'vetGone' | 'overflow' | 'integrity'): void {
+  private finalLoss(outcome: 'overflow' | 'integrity'): void {
     this.state.final!.outcome = outcome
     this.end('lost')
   }
@@ -539,7 +550,9 @@ class Shift implements ShiftEngine {
     // a high hill crack counts for less (cracks.ts); a grown crack drains per cell (F39: it gets more urgent as it grows)
     const open = s.cracks.reduce((sum, c) => sum + (c.drain ?? 1) * crackSize(c), 0)
     const drain = open * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
+    const before = s.integrity
     s.integrity = Math.max(this.training?.integrityFloor ?? 0, s.integrity - drain)
+    this.wearVet(before - s.integrity) // F75: what the tank lost wears the Veteran down (the final shift)
     if (s.integrity <= 0) this.rupture('integrity')
   }
 

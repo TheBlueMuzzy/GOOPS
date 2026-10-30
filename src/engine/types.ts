@@ -95,7 +95,8 @@ export interface ShiftState {
 
 // F64 THE FINAL SHIFT (src/engine/finalShift.ts, content/tuning/finalShift.json): the release valve's stages and how
 // the shift ended. Plain data, so a snapshot keeps it.
-export type FinalOutcome = 'won' | 'vetGone' | 'overflow' | 'integrity'
+// (F75: lost only when the tank breaks — the Veteran used up is not a loss; vetAlive says whether he made it)
+export type FinalOutcome = 'won' | 'overflow' | 'integrity'
 export interface FinalShiftState {
   intro: boolean // the Veteran's drop-in is still playing: no piece yet, the shift's clock waits
   stage: number // valve stages opened so far (0 … stages)
@@ -104,6 +105,7 @@ export interface FinalShiftState {
   need: number // seals the next stage needs
   waiting: boolean // the next stage has its seals and waits at the console (seals don't count meanwhile)
   outcome: FinalOutcome | null // how the shift ended (null while playing)
+  vetAlive: boolean // F75: the Veteran is still in the tank (worn down by the integrity the tank lost — finalShift.json vet.wearPerIntegrity); picks the ending
 }
 
 // F63 THE WHITE GOOP (src/engine/whiteGoop.ts): not a grid cell — his own thing, behind the goop. Plain data, so a
@@ -124,7 +126,7 @@ export interface WhiteGoop {
   seal: number // 0..1: how far through sealing it
   waitMs: number // rest / wait time left
   behind: boolean // goop covers his cell: drawn behind it, with the x-ray outline
-  size?: number // F64 the final shift: how much of him is left (1 = all; each seal takes some; 0 = used up). Unset = 1
+  size?: number // F64 the final shift: how much of him is left (1 = all; F75: the tank's lost integrity wears him; 0 = used up). Unset = 1
 }
 
 // The console's three machines (F23, GDD §5 Breakdowns). Contract shared by the engine (F23) and the console (F24).
@@ -179,7 +181,7 @@ export type ShiftEvent =
   | { type: 'vetSeal'; crackId: number } // F63: the white goop finished sealing this crack (it's gone from cracks)
   | { type: 'vetSay'; line: import('./finalShift').VetLine } // F64: one of the Veteran's intro lines in the final shift (words: en.json finalShift.vet)
   | { type: 'vetLand' } // F64: his drop-in landed ('…oof.')
-  | { type: 'vetGone' } // F64: he sealed his last — used up (the final shift is lost)
+  | { type: 'vetGone'; at: TapPoint } // F75: the final shift wore him out (size 0): his last line, he's gone from the tank (state.vet null), the shift goes on. at = where he was (his top middle, tank cells)
   | { type: 'valveReady'; stage: number } // F64: valve stage `stage` (1-based) has its seals: it waits at the console
   | { type: 'valveOpen'; stage: number } // F64: valve stage `stage` was opened (openValveStage); the last one wins
   | { type: 'overflowRail'; cells: number } // F31: a lesson's overflow rail cleared this many goop cells at the top (no rupture)

@@ -253,9 +253,8 @@
     "lostCracks": "Too many open cracks broke the tank before you met the quota.",
     "lostOverflow": "The tank overfilled and burst before you met the quota.",
     "final": {
-      "_about": "F64 the final shift's report when it's lost: which of the three losses happened (design/story.md 'You lose if'). Its win plays F65's ending instead (en.json ending).",
+      "_about": "F64 the final shift's report when it's lost: which of the two losses happened (design/story.md 'You lose if'; F75: only the tank breaking — the Veteran used up is not a loss). Its win plays F65's ending instead (en.json ending).",
       "lostTitle": "Final shift failed",
-      "vetGone": "The Veteran is used up. He gave the last of himself sealing cracks for you.",
       "overflow": "The goop went over the top of the tank.",
       "integrity": "The tank's integrity hit 0. Management got its explosion.",
       "tryAgain": "You can try the final shift again.",
@@ -480,13 +479,14 @@
     "ow": "ow"
   },
   "finalShift": {
-    "_about": "F64 the final shift (rank 50, design/story.md row 50): the Veteran's lines as he drops in first — the same bubble above him as his 'ow'. When each plays: content/tuning/finalShift.json intro.",
+    "_about": "F64 the final shift (rank 50, design/story.md row 50): the Veteran's lines as he drops in first — the same bubble above him as his 'ow'. gone (F75) = his last line when the tank's damage has worn him out (finalShift.json goneLineSec). When each plays: content/tuning/finalShift.json intro.",
     "vet": {
       "hi": "oh! hi!",
       "itsMe": "it's me!",
       "oof": "…oof.",
       "help": "glad you're not goop yet. I'll help how I can.",
-      "valveGo": "valve's open on your console — go!"
+      "valveGo": "valve's open on your console — go!",
+      "gone": "…sorry, kid. you got this."
     }
   },
   "ending": {

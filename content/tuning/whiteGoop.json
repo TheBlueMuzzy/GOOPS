@@ -30,7 +30,7 @@
     "ringPad": "How far the ring sits outside the crack's cell (cells).",
     "ringColor": "The sealing ring's colour.",
     "dots": "Particle goo style: how many soft dots make up his clump.",
-    "shrinkSec": "The final shift (F64): how long he takes to shrink to his new size after a seal uses some of him up (finalShift.json vet.shrinkPerSeal)."
+    "shrinkSec": "The final shift (F64): how long he takes to shrink to his new size as the tank's lost integrity wears him down (finalShift.json vet.wearPerIntegrity, F75)."
   },
   "_ranges": {
     "fromRank": [1, 50, 1],

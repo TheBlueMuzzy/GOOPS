@@ -27,7 +27,7 @@ export interface WhiteGoopConfig {
   oozeSlow: number // × slower through a cell with goop in it
   targetBy: string // 'hardestForYou' (Muzzy's pick) · 'oldest' · 'closest' · F64 'outOfReach' (the final shift)
   reachRows?: number // F64 outOfReach: only cracks with at least this many rows to build under them (hardness); none → he waits
-  shrinkPerSeal?: number // F64 the final shift: how much of him each sealed crack cell uses up (shift.ts; unset = none)
+  wearPerIntegrity?: number // F75 the final shift: how much of him each 1.0 of integrity the tank loses uses up (shift.ts wearVet; unset = none)
   coveredHardness: number // hardestForYou: a crack covered by the wrong colour counts this many rows harder (you'd dig)
   sealTime: number // seconds sitting on a crack to seal it
   // F39 grown cracks: each cell past the first adds sealTime × this (1 = sealTime × the crack's size). Unset = 1.

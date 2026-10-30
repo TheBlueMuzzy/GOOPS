@@ -157,8 +157,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     const xray = { cells: [] as number[], pad: 0, alpha: 1 } // view.xray, refilled each frame (no garbage per frame)
     // F63: seconds his bubble has been up (goo clock; -1 = none), how long it stays, and which one it is
     let sayT = -1, sayFor = 0, sayN = 0
-    const say = (words: string, seconds: number) => {
-      const [x, y] = vetOnScreen(s, view, 0, visorFx.current?.curve() ?? 0) // (his top middle, where he's seen)
+    const say = (words: string, seconds: number, at: { px: number; py: number } | null | undefined = s.vet) => {
+      if (!at) return
+      const [x, y] = vetOnScreen(s, view, 0, visorFx.current?.curve() ?? 0, at) // (his top middle, where he's seen)
       sayT = 0
       sayFor = seconds
       setVetSays({ x, y, n: ++sayN, words })
@@ -283,6 +284,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       for (const e of events) if (e.type === 'vetSay' && s.vet) say(text.finalShift.vet[e.line], finalShiftTuning.intro.lineSec)
       // …and when a valve stage has its seals: "valve's open on your console — go!" (valve.json goSec)
       for (const e of events) if (e.type === 'valveReady' && s.vet) say(text.finalShift.vet.valveGo, valveTuning.goSec)
+      // F75 worn out by the tank's damage: his last line where he was (he's gone from the tank — the shift goes on)
+      for (const e of events) if (e.type === 'vetGone') say(text.finalShift.vet.gone, finalShiftTuning.goneLineSec, { px: e.at.x - 0.5, py: e.at.y })
       // (F65: the shift over, his bubble goes — the ending's goop talks next, not his last "go!")
       if (sayT >= 0 && (s.status !== 'playing' || (sayT += gooDt) >= sayFor)) { sayT = -1; setVetSays(null) }
       beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
@@ -472,8 +475,7 @@ function placeSwapRing(svg: SVGSVGElement | null, stage: HTMLElement, p: number 
 
 // F63: where the white goop is SEEN on the stage (CSS px, bent by the visor's curved-TV look like everything in the
 // tank): his middle column, `down` cells below his top edge (0 = his top, 0.5 = his centre)
-function vetOnScreen(s: ShiftState, view: GooView, down: number, curve: number): [number, number] {
-  const v = s.vet!
+function vetOnScreen(s: ShiftState, view: GooView, down: number, curve: number, v: { px: number; py: number } = s.vet!): [number, number] {
   const x = view.centreX + screenColumn(v.px, view.camera, s.width) * view.cellPx
   const y = view.topY + (v.py - s.bufferRows + down) * view.cellPx
   return bentPoint(x, y, tankRect(view, s.visibleWidth, s.height - s.bufferRows), curve)

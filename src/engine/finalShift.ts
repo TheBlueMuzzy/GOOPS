@@ -6,10 +6,13 @@
 //   - The onslaught: pieces fall × fallSpeedMult, pressure rises × pressureRiseMult, cracks come × crackRateMult, and
 //     loose cells rain in every rain.everySec.
 //   - The Veteran (the white goop) drops in first — the shift's clock waits for his intro — and seals the cracks you
-//     can't reach (whiteGoop.json with `vet` laid over it), shrinking by vet.shrinkPerSeal a cell. Used up = a loss.
+//     can't reach (whiteGoop.json with `vet` laid over it). F75: his seals are free — he wears down by the integrity the
+//     tank loses (vet.wearPerIntegrity); used up, he says his last line and is gone, and the shift goes on without him.
 //   - Seals (his too) count toward valve.stages; a full stage WAITS for the console (seals don't count meanwhile) until
 //     the engine's openValveStage() is called. The last stage opened = the win.
-//   - Losses end the shift at once (no rupture drain): he's used up · goop over the top · integrity 0.
+//   - Losses end the shift at once (no rupture drain): goop over the top · integrity 0 (F75: only the tank breaking).
+//   - F75 Goop Dump rains into the columns with an open crack here (shift.ts dropDumpCell); Slow Cracks slows only the
+//     spreading here, not how often cracks come (shift.ts growCracks).
 import type { WhiteGoopConfig } from './whiteGoop'
 
 export interface FinalShiftConfig {
@@ -23,6 +26,7 @@ export interface FinalShiftConfig {
   valve: { stages: number[] }
   vet: Partial<WhiteGoopConfig>
   intro: { hiSec: number; itsMeSec: number; fallSec: number; helpSec: number; playSec: number; lineSec?: number }
+  goneLineSec?: number // F75: how long his used-up line stays in its bubble (looks time; the game reads it)
   bots?: { valveSec: number }
 }
 

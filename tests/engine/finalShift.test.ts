@@ -1,6 +1,6 @@
 // F64 THE FINAL SHIFT (rank 50, the boss level — src/engine/finalShift.ts + shift.ts, content/tuning/finalShift.json):
-// one colour for everything, the onslaught, the Veteran's drop-in and help (shrinking per seal), the 3 valve stages
-// and the three losses.
+// one colour for everything, the onslaught, the Veteran's drop-in and help, the 3 valve stages and the two losses.
+// F75 (cooperative final shift): his seals are free, the tank's lost integrity wears him down, used up = not a loss.
 import { describe, expect, it } from 'vitest'
 import { createShift, type ShiftEngine, type ShiftEvent, type ShiftOptions, type WhiteGoopConfig } from '../../src/engine'
 import type { FinalShiftConfig } from '../../src/engine/finalShift'
@@ -65,7 +65,7 @@ describe('the final shift (rank 50)', () => {
     expect(createShift(realConfig(), { seed: 1, rank: 50, finalShift: finalCfg(), training: {} }).state.final ?? null).toBeNull()
     expect(createShift(realConfig(), { seed: 1, rank: 50 }).state.final ?? null).toBeNull()
     const s = createShift(realConfig(), { seed: 1, rank: 50, finalShift: finalCfg() }).state
-    expect(s.final).toMatchObject({ stage: 0, stages: 3, seals: 0, need: 6, waiting: false, outcome: null })
+    expect(s.final).toMatchObject({ stage: 0, stages: 3, seals: 0, need: 6, waiting: false, outcome: null, vetAlive: false }) // (no white goop handed in: he isn't there)
     expect(s.cracksNeeded).toBe(24) // 6 + 8 + 10
   })
 
@@ -233,9 +233,11 @@ describe('the final shift (rank 50)', () => {
     expect(s.pressure).toBeGreaterThan(0)
   })
 
-  it('he goes for the crack you can\'t reach (high above the goop), not the one you can; shrinks per seal; his seals count', () => {
+  it('he goes for the crack you can\'t reach (high above the goop), not the one you can; his seals are free (F75) and count', () => {
     const final = finalCfg()
-    const shift = createShift(quietConfig(), { seed: 5, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: new Uint8Array(30 * 24) })
+    const config = quietConfig()
+    config.integrity.drainPerCrackPerSec = 0 // (the tank loses nothing: whatever he loses would be the seal's)
+    const shift = createShift(config, { seed: 5, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: new Uint8Array(30 * 24) })
     const s = shift.state
     pastIntro(shift)
     const easy = { id: 901, x: 26, y: 23, color: BLACK, plugged: false } // on the floor beside him: you can reach it
@@ -244,7 +246,7 @@ describe('the final shift (rank 50)', () => {
     tickUntil(shift, () => s.vet!.targetId !== null, 2000, 5)
     expect(s.vet!.targetId).toBe(902)
     tickUntil(shift, () => !s.cracks.some((c) => c.id === 902), 60_000, 10)
-    expect(s.vet!.size).toBeCloseTo(1 - final.vet.shrinkPerSeal!, 6)
+    expect(s.vet!.size).toBe(1) // (F75: sealing costs him nothing)
     expect(s.final!.seals).toBe(1)
     // the reachable one is left for you: he waits (resting, then looking)
     shift.tick(5000)
@@ -252,24 +254,103 @@ describe('the final shift (rank 50)', () => {
     expect(s.vet!.mode === 'wait' || s.vet!.mode === 'rest').toBe(true)
   })
 
-  it('used up = the shift is lost', () => {
+  // F75: a shift with a draining tank and him in it, past his intro
+  function wearing(wear: number, drainPerSec = 0.05, stages?: number[]) {
     const final = finalCfg()
-    final.vet.shrinkPerSeal = 0.5 // two seals and he's gone
-    final.vet.reachRows = 0 // (any crack will do)
-    const shift = createShift(quietConfig(), { seed: 6, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: new Uint8Array(30 * 24) })
-    const s = shift.state
+    final.vet.wearPerIntegrity = wear
+    if (stages) final.valve.stages = stages
+    const config = quietConfig()
+    config.integrity.drainPerCrackPerSec = drainPerSec
+    const shift = createShift(config, { seed: 6, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: spacedFloor() })
     pastIntro(shift)
-    const at = [s.vet!.x, s.vet!.y]
-    s.cracks.push({ id: 1, x: at[0], y: at[1], color: BLACK, plugged: false })
-    tickUntil(shift, () => !s.cracks.length, 20_000, 10)
-    expect(s.vet!.size).toBeCloseTo(0.5, 6)
-    s.cracks.push({ id: 2, x: (at[0] + 1) % 30, y: at[1], color: BLACK, plugged: false })
+    return { shift, s: shift.state, final }
+  }
+  // an open crack high up, and him kept busy elsewhere (these tests are about his wear, not his seals)
+  function hurtTank(s: ShiftEngine['state']) {
+    s.cracks.push({ id: 1, x: 10, y: 10, color: BLACK, plugged: false })
+    s.vet!.mode = 'wait'
+    s.vet!.waitMs = 1e12
+  }
+
+  it('F75: he wears down by the integrity the tank LOSES (wearPerIntegrity × lost); a patched-up tank doesn\'t give it back', () => {
+    const { shift, s } = wearing(2)
+    expect(s.final!.vetAlive).toBe(true)
+    hurtTank(s)
+    shift.tick(2000)
+    const lost = 1 - s.integrity
+    expect(lost).toBeGreaterThan(0.05)
+    expect(s.vet!.size).toBeCloseTo(1 - 2 * lost, 6)
+    // the tank patched back up: he stays as worn as he was
+    const worn = s.vet!.size
+    s.cracks = []
+    s.integrity = 1
+    shift.tick(2000)
+    expect(s.vet!.size).toBe(worn)
+  })
+
+  it('F75: used up = NOT a loss — vetGone once (where he was), he leaves the tank, the shift goes on; a win without him says so', () => {
+    const { shift, s } = wearing(4, 0.5, [1, 1, 1]) // (a quarter of a tank lost and he's gone)
+    hurtTank(s)
+    const where = { x: s.vet!.px + 0.5, y: s.vet!.py }
     const events: ShiftEvent[] = []
-    tickUntil(shift, () => { events.push(...shift.takeEvents()); return s.status !== 'playing' }, 20_000, 10)
+    tickUntil(shift, () => { events.push(...shift.takeEvents()); return !s.vet }, 20_000, 10)
+    expect(s.status).toBe('playing')
+    expect(s.final).toMatchObject({ vetAlive: false, outcome: null })
+    expect(s.vet).toBeNull()
+    expect(ofType(events, 'vetGone')).toEqual([{ type: 'vetGone', at: where }])
+    expect(s.integrity).toBeGreaterThan(0.7) // (the tank's still fine: this isn't the integrity loss)
+    shift.tick(1000) // the tank keeps draining: no second goodbye, no loss from him
+    expect(ofType(shift.takeEvents(), 'vetGone')).toHaveLength(0)
+    expect(s.status).toBe('playing')
+    // play on without him: the valve still opens; the win says he didn't make it
+    s.cracks = []
+    s.integrity = 1
+    for (let k = 0; k < 3; k++) {
+      playerSeal(shift, 2 * k, 50 + k)
+      expect(shift.openValveStage()).toBe(true)
+    }
+    expect(s.status).toBe('won')
+    expect(s.final).toMatchObject({ outcome: 'won', vetAlive: false })
+  })
+
+  it('F75: a win with him still in the tank says he made it', () => {
+    const final = finalCfg()
+    final.valve.stages = [1, 1, 1]
+    const config = quietConfig()
+    config.integrity.drainPerCrackPerSec = 0
+    const shift = createShift(config, { seed: 6, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: spacedFloor() })
+    pastIntro(shift)
+    for (let k = 0; k < 3; k++) {
+      playerSeal(shift, 2 * k, 50 + k)
+      expect(shift.openValveStage()).toBe(true)
+    }
+    expect(shift.state.final).toMatchObject({ outcome: 'won', vetAlive: true })
+  })
+
+  it('F75: the only losses are the tank breaking — there is no "vetGone" outcome', () => {
+    const { shift, s } = wearing(4, 2)
+    hurtTank(s)
+    tickUntil(shift, () => s.status !== 'playing', 20_000, 10)
     expect(s.status).toBe('lost')
-    expect(s.final!.outcome).toBe('vetGone')
-    expect(s.vet!.size).toBe(0)
-    expect(ofType(events, 'vetGone')).toHaveLength(1)
+    expect(s.final!.outcome).toBe('integrity')
+    expect(s.final!.vetAlive).toBe(false)
+  })
+
+  it('F75: a snapshot keeps whether he made it (worn, and gone)', () => {
+    const { shift, s } = wearing(4, 0.5)
+    hurtTank(s)
+    shift.tick(200)
+    const worn = restoreShift(quietConfig(), shift.snapshot(), undefined, whiteGoop(), undefined, finalCfg())
+    expect(worn.state.vet!.size).toBe(s.vet!.size)
+    expect(worn.state.final!.vetAlive).toBe(true)
+    tickUntil(shift, () => !s.vet, 20_000, 10)
+    const gone = restoreShift(quietConfig(), shift.snapshot(), undefined, whiteGoop(), undefined, finalCfg())
+    expect(gone.state.vet ?? null).toBeNull()
+    expect(gone.state.final!.vetAlive).toBe(false)
+    // (a snapshot from before F75 has no vetAlive: he's alive if he's in the tank — here he isn't)
+    const old = shift.snapshot()
+    delete (old.state.final as { vetAlive?: boolean }).vetAlive
+    expect(restoreShift(quietConfig(), old, undefined, whiteGoop(), undefined, finalCfg()).state.final!.vetAlive).toBe(false)
   })
 
   it('a snapshot keeps the valve and the intro: a restored shift plays on exactly as the original', () => {
