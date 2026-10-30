@@ -213,7 +213,8 @@ const bandOf = (rank: number) => economy.bands.filter((b) => rank >= b).length -
 
 /** The next level a buy style wants, or null (nothing it can buy). Only upgrades the shop would sell right now. */
 export function nextBuy(p: Progress, rank: number, style: BuyStyle): string | null {
-  const open = shopUpgrades().filter((u) => !economy.neverBuy.includes(u.id) && whyNotBuy(p, u.id, rank) === null)
+  const neverBuy: string[] = economy.neverBuy // (an empty list in the JSON reads as never[])
+  const open = shopUpgrades().filter((u) => !neverBuy.includes(u.id) && whyNotBuy(p, u.id, rank) === null)
   if (!open.length) return null
   // fewest levels (as a share of its max) first, then the older one (lower rank), then file order
   const evenly = (list: UpgradeDef[]) => [...list].sort((a, b) => levelOf(p, a.id) / maxLevelOf(a) - levelOf(p, b.id) / maxLevelOf(b) || a.rank - b.rank)[0]

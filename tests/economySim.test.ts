@@ -21,7 +21,6 @@ describe('the economy sim (F51)', () => {
     const p = shop(progressAtRank(9), 9, 'spread')
     expect(p.scrapsSpent).toBe(9)
     expect(scrapsAt(9, p)).toBe(0)
-    expect(levelOf(p, 'denseGoop')).toBe(0) // economy.json neverBuy
     expect(nextBuy(p, 9, 'spread')).toBeNull()
     expect(shop(progressAtRank(4), 4, 'spread')).toEqual(progressAtRank(4)) // the shop opens at rank 5
   })

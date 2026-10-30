@@ -147,11 +147,12 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - ✅ F48 🎮 Quick Fix upgrade at rank 28 (fewer repair steps) — should:beta · needs: F34
 - 🟢 F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
 - 🟢 F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
-- 🔨 F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
+- ✅ F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
 
 ## M6 — 1.0: polished, balanced, replaces v1
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
-- ⏳ F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
+- 🟢 F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
+  what: the sim's 9 findings (research/economy-sim.md), each with a knob · Muzzy 2026-10-29: fix Goop Dump + Goop Colorizer wiping the score together (finding 4)
 - 🟢 F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
   what: step 1 = swap in the sounds Muzzy finds for the 26 placeholder moments (he hunts; Claude trims, matches loudness, credits — Muzzy 2026-10-19: "add a step during polish to update sounds")
 - 🟢 F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38

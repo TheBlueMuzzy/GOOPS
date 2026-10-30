@@ -14,6 +14,7 @@ Checked: tests/economySim.test.ts green (same seed → the same career shift for
 - [x] 🤖 5. Run it in full, write research/economy-sim.md (findings + a suggested knob each for F52), TDD data/decisions (next free D30), GDD line — .planning/research/economy-sim.md
 - [x] 🤖 6. Beta release prep (/deliver, alongside the sim): review through a1d4ecd + security review (no issues), release-checks/beta.md, v0.2.0 notes draft, beta audits → favicon link fixed, B005–B007 logged, F71 + F72 added — index.html
 - [x] 🤖 7. UI kit 0.33.2 → 0.37.3 before the beta (fixes B006 "Acces/sibilit/y" at 200%) — check:fast green (658 tests), check:full next — src/ui/kit
+- [ ] 🤖 8. Muzzy's answers: bots may buy Dense Goop (neverBuy emptied, full sim re-run, findings updated) · headings in Nokia too (style.json font-heading; Settings shot at 390 looked at) · pixel-type research for title / heading / body (helper, research/pixel-type.md) — scripts/bots/economy.json
 
 ## Notes
 - 2026-10-29, auto mode (Muzzy: "go auto. i'm driving to work"): F51 — Economy sim is the last open beta must; Claude planned this sprint so /deliver beta can go without `--musts-open-ok`. Taste calls → Ask Muzzy lines with a default.
@@ -22,3 +23,4 @@ Checked: tests/economySim.test.ts green (same seed → the same career shift for
 - Ask Muzzy: the "big enough to feel" line — play a few shifts with and without one upgrade (Tougher Tank at 22 is the clearest: +6 s a level), say if you felt it; that size becomes economy.json `feelThreshold`. Default: the placeholder 5 s / 5% wins / 5% quota.
 - Ask Muzzy: should a bot ever buy Dense Goop (a self-chosen challenge)? Default: no (economy.json `neverBuy`).
 - Ask Muzzy: Goop Dump + Goop Colorizer together wipe the score (finding 4) — intended combo risk, or a fix for F52? Default: a fix for F52 (smaller dump).
+- Muzzy 2026-10-29: F51 — Economy sim "approved" · release the beta with the known issues (no Credits screen, stand-in art + sounds) — "yes" → `--no-release-check-ok` · Goop Dump + Colorizer wiping the score → "fix it in f52" · Dense Goop for the bots → "why not?" (Claude: no good reason — the design says faster pieces = more sealing chances, the sim measured +2–3 s) → neverBuy emptied, full sim re-run · headings → "make it all nokia" (style.json font-heading) + research how an all-pixel title / heading / body type system stays readable → research/pixel-type.md (helper).

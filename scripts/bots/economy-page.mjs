@@ -74,7 +74,7 @@ ${s.careerRows.map((r) => `<tr><td>${esc(r.label)}</td>${r.bands.map((b) => `<td
 ${s.careerRows.map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.stallsPerCareer)}</td><td>${esc(r.longestLosingRun)}</td><td style="text-align:left;white-space:normal">${r.stallRanks.map((x) => `${x.rank} (${x.count})`).join(', ') || 'none'}</td></tr>`).join('')}</table>
 
 <h2>4. Scraps: earned vs spent, and what each buy style owns</h2>
-<p>${s.careerRows[0]?.scraps.levelsOffered ?? '–'} upgrade levels are on offer (not counting ${esc(s.settings.neverBuy.join(', '))}, which no bot buys); a whole career earns ${s.careerRows[0]?.scraps.earned ?? '–'} scraps or fewer.</p>
+<p>${s.careerRows[0]?.scraps.levelsOffered ?? '–'} upgrade levels are on offer${s.settings.neverBuy.length ? ` (not counting ${esc(s.settings.neverBuy.join(', '))}, which no bot buys)` : ''}; a whole career earns ${s.careerRows[0]?.scraps.earned ?? '–'} scraps or fewer.</p>
 <table><tr><th>Bot · buy style</th><th>earned</th><th>spent</th>${s.checkpoints.map((c) => `<th>unspent at ${c}</th>`).join('')}</tr>
 ${s.careerRows.map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.scraps.earned)}</td><td>${esc(r.scraps.spent)}</td>${s.checkpoints.map((c) => `<td>${esc(r.scraps.unspent[c])}</td>`).join('')}</tr>`).join('')}</table>
 ${[40, 50].map((at) => {
