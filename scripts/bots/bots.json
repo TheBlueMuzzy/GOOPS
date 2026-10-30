@@ -2,6 +2,8 @@
   "_about": "F27 balance bots (scripts/bots). Measuring tools, not opponents. apm = discrete actions a minute (rotate, hold, zap, start a fast drop); a held spin repeats at tank.json spinRepeatMs like a held key (slower while the controls are broken). reactionMs = how long before the bot notices a new piece, a ready group or a crack. reach = how many columns either way it will turn the tank to place a piece. minZapSize = smallest group it zaps on purpose (sealing a crack always counts). ventAt = above this pressure it zaps anything ready to vent. keepLowRows = above this stack height it zaps the highest ready group. weights = how it scores a landing spot.",
   "frameMs": 20,
   "maxShiftMs": 1200000,
+  "_consoleRepairSec": "F64 the final-shift bots (final.mjs, runFinal.ts) go to the console: each broken machine stands in as this many seconds there (a repair is ~4 clicks). The rank 0–10 bots (run.mjs) never repair.",
+  "consoleRepairSec": 4,
   "bots": {
     "idle": { "label": "Idle", "acts": false },
     "casual": {

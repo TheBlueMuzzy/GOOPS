@@ -4,16 +4,21 @@
 // grid ("stay where the rules say"), with damping (TaminoMartinius home springs + Müller 2005 shape matching).
 // Reads the engine's state + events, never writes back. Simulates in view space around the camera (TDD D03).
 import type { ShiftEvent, ShiftState } from '../../engine/types'
-import type { GooOptions, GooRenderer, GooView } from '../types'
+import { screenColumn, type GooOptions, type GooRenderer, type GooView } from '../types'
 import jellyFile from '../../../content/tuning/goo-jelly.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
-import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
+import { DEFAULT_COLOR_NAMES, WILD_COLOR, gooSlot, paletteTable } from '../shared/palette'
+import { WILD_UNIFORMS, setWild } from '../shared/wildLook'
+import { GALAXY_UNIFORMS, setGalaxy } from '../shared/galaxyLook'
 import { groupFillLines, tankWindow, unwrapAround, unwrapCells, viewOrigin, wrapNear, wrapTurns, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
 import { XRAY_MAX, XRAY_UNIFORMS, setXray } from '../shared/xray'
 import { buildPoints, traceLoops } from './outline'
 import { BLUR_FS, FINAL_FS, MASK_FS, MASK_VS } from './shaders'
+import { sprayDrops, sprayDue, suckIn, zapEnd, zapFade, zapHeat, zapLook, type ZapLook } from '../shared/zap'
+import { FaceBook, spotIn, type Face, type FaceReport } from '../shared/faces'
+import { FaceDrawer } from '../shared/faceDraw'
 
 // The knobs as the file has them right now (with the Dev Kit's latest edit)
 export const jellyDefaults = (): Knobs => parseKnobs(jellyFile)
@@ -62,6 +67,34 @@ interface Body {
   from: Set<number>
   landed: number
   stuck: Set<number> | null
+  zap: Zap | null // a zapped ('dying') body's timeline (F67)
+  ux: number[] // grid bodies: each cell's unwrapped column + row (the rest shape's coordinates)
+  uy: number[]
+  // F62 its face (rank 10+): the face, where its eyes sit in the rest shape (like the highlight), where they are now
+  // (view cells, riding the body's fitted turn + centre) and, once zapped, where they sat at the zap
+  face: Face | null
+  spotX: number
+  spotY: number
+  spotCell: number
+  faceX: number
+  faceY: number
+  faceRX: number
+  faceRY: number
+}
+
+// A zapped jelly (F67, the sketch's startZap): its outline at the moment of the zap (rx, ry), each point's distance
+// from the laser point (0 nearest … 1 farthest), where the laser point is (view cells), and how far it's got.
+interface Zap {
+  lx: number
+  ly: number
+  c0x: number
+  c0y: number
+  rx: Float32Array
+  ry: Float32Array
+  dist: Float32Array
+  sprayed: boolean
+  hot: number // 0 … 1 white-hot
+  sc: number // its size now (swell × what's left after the suck-in), for the highlight
 }
 
 interface Strand {
@@ -85,6 +118,8 @@ interface Drop {
   life: number
   life0: number
   color: number
+  g?: number // its own gravity (cells / s²): the zap's spray droplets (F67); others fall with the goo's gravity
+  bounce?: number // bounces off the tank floor keeping this much of its speed (the spray, as v1); others drip away
 }
 
 interface DrawItem {
@@ -96,11 +131,13 @@ interface DrawItem {
   line: number
   fillOn: number
   ready: number
+  hot: number // F67: 0 … 1 white-hot (a zapped jelly)
 }
 
 const C0: number[][] = [[0, 0, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 const C1: number[][] = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]
 const N4: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+const EXTRA_COLOURS = [1, 2, 3, 4, 5, 6, 7, WILD_COLOR] // the colours strings + drips can be (F39: wild too)
 
 
 export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions = {}): GooRenderer {
@@ -115,7 +152,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   let W = 0
   let H = 0
   let bodies: Body[] = []
-  let pieceBody: Body | null = null
+  let pieceBodies: Body[] = [] // the falling piece: one body per colour (F39: a two-colour piece has two)
   let retired: Body[] = []
   let dying: Body[] = []
   let drops: Drop[] = []
@@ -139,13 +176,16 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   let spin = 0
   let fills = new Map<number, FillInfo>()
   let time = 0
+  let zapWhite = 0 // zap.json whiteHot, as of this frame (the final pass's uWhite)
   let S: ShiftState | null = null
+  const book = new FaceBook() // F62 the goop's faces (rank 10+)
+  let lastView: GooView | null = null // (for __goops.faces(): where the faces are on the stage)
 
   function reset(state: ShiftState) {
     W = state.width
     H = state.height
     bodies = []
-    pieceBody = null
+    pieceBodies = []
     retired = []
     dying = []
     drops = []
@@ -160,6 +200,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     seenGrid = new Uint8Array(W * H)
     seenGroup = new Int32Array(W * H).fill(-1)
     forceRebuild = true
+    book.clear()
     pose.shape = null
     needPiece = !!state.piece
     if (state.piece) pose.spawn(state.piece, W, state.spin, 0)
@@ -174,7 +215,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       hx: new Float32Array(n), hy: new Float32Array(n), x: new Float32Array(n), y: new Float32Array(n),
       vx: new Float32Array(n), vy: new Float32Array(n), t: 0, alpha: 1, fa: 0, fcx: 0, fcy: 0, rcx: 0, rcy: 0,
       hlCell: 0, hlX: 0, hlY: 0, hlW: 0, hlH: 0, hlRX: 0, hlRY: 0, cellIdx: [], centreCol: 0, turns: 0, restMeanY: 0,
-      ring: false, buildCam: 0, from: new Set(), landed: -1, stuck: null,
+      ring: false, buildCam: 0, from: new Set(), landed: -1, stuck: null, zap: null,
+      ux: [], uy: [], face: null, spotX: 0, spotY: 0, spotCell: -1, faceX: 0, faceY: 0, faceRX: 0, faceRY: 0,
     }
     // the one highlight: on the top-left cell, stretched along its row (up to 3 cells)
     let tl = 0
@@ -200,6 +242,8 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     const B = newBody(U.ux.map((x, i) => [x, U.uy[i]]), color, 'grid')
     B.groupId = groupId
     B.cellIdx = cells
+    B.ux = U.ux
+    B.uy = U.uy
     B.ring = U.ring
     B.buildCam = camera
     B.centreCol = U.ux.reduce((s, v) => s + v, 0) / U.ux.length
@@ -234,6 +278,59 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     if (B.kind === 'piece') return pose.shape ? pose.viewRel(B.hlX, B.hlY, spin, W) : [B.hlX, B.hlY]
     if (B.kind === 'grid') return [B.hlX + offX(B), B.hlY + cellOff[B.cellIdx[B.hlCell]]]
     return [B.hlRX, B.hlRY]
+  }
+
+  // ---------------- F62 THE FACES (src/goo/shared/faces.ts has the rules; this places them on the jellies) ----------------
+  // where a body's eyes sit in its rest shape right now (view cells), like highlightRest
+  // (into FR, so a frame makes nothing new)
+  const FR: [number, number] = [0, 0]
+  function faceRest(B: Body): [number, number] {
+    if (B.kind === 'grid') { FR[0] = B.spotX + offX(B); FR[1] = B.spotY + (B.spotCell >= 0 ? cellOff[B.spotCell] : 0) }
+    else { FR[0] = B.faceRX; FR[1] = B.faceRY }
+    return FR
+  }
+
+  // hand each grid body its face (after a rebuild, or when faces switch on)
+  function assignFaces() {
+    book.begin()
+    for (const B of bodies) {
+      const f = book.faceFor(B.cellIdx, B.ux, B.uy)
+      B.face = f
+      ;[B.spotX, B.spotY] = spotIn(f, B.cellIdx, B.ux, B.uy)
+      B.spotCell = f.spotA
+    }
+    book.end()
+  }
+
+  // once a frame after the physics: each face's spot rides its body's fitted turn + centre (the sketch's toWorld)
+  function stepFaces(dt: number) {
+    for (const B of bodies) {
+      if (!B.face) continue
+      const [ax, ay] = faceRest(B)
+      const ca = Math.cos(B.fa)
+      const sa = Math.sin(B.fa)
+      const qx = ax - B.rcx
+      const qy = ay - B.rcy
+      B.faceX = B.fcx + ca * qx - sa * qy
+      B.faceY = B.fcy + sa * qx + ca * qy
+      book.step(B.face, B.faceX, B.faceY, dt)
+    }
+  }
+
+  // a zapped body's face: where its spot is now (shrinking with it round where its middle was, like hlQuad) + its size
+  // (into DF, so a frame makes nothing new)
+  const DF: [number, number, number] = [0, 0, 0]
+  function dyingFace(B: Body): [number, number, number] {
+    const z = B.zap!
+    const k = Math.max(0.05, z.sc)
+    const ca = Math.cos(B.fa)
+    const sa = Math.sin(B.fa)
+    const qx = B.faceRX - z.c0x
+    const qy = B.faceRY - z.c0y
+    DF[0] = B.fcx + (ca * qx - sa * qy) * k
+    DF[1] = B.fcy + (sa * qx + ca * qy) * k
+    DF[2] = k
+    return DF
   }
 
   // start a fresh body from the old bodies' wobble: each new point copies the displacement + velocity of the
@@ -354,9 +451,10 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     return y * W + ((gx(i) + dx + W) % W)
   }
 
-  // ---------------- POP (placeholder until the laser "explode/harden" look is designed) ----------------
-  // Quiet drain: the body's home springs let go, it swells a touch, then shrinks away and fades (popMs). No droplets.
-  function popCells(cells: number[]) {
+  // ---------------- THE ZAP (F67, the approved sketch: src/goo/shared/zap.ts has the timeline) ----------------
+  // The zapped jelly leaves the grid: it heats (white-hot + swell), then every outline point slides into the laser
+  // point, nearest first, fading at the end; the spray rides the drops. `at` = where the zap hit (tank cells).
+  function popCells(cells: number[], at: { x: number; y: number } | undefined, Z: ZapLook) {
     const hit = new Set<number>()
     for (const c of cells) if (cellBody[c] >= 0) hit.add(cellBody[c])
     for (const id of hit) {
@@ -365,11 +463,40 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       bodies = bodies.filter((b) => b !== B)
       strands = strands.filter((s) => s.A !== B && s.B !== B)
       ;[B.hlRX, B.hlRY] = highlightRest(B)
+      if (B.face) [B.faceRX, B.faceRY] = faceRest(B) // (its eyes squeeze shut and shrink away with it)
       B.kind = 'dying'
       B.t = 0
-      kick(B, 'radial', 1.5)
+      // its outline as it sat last frame (the homes, view cells — placed with last frame's camera)
+      const rx = Float32Array.from(B.hx)
+      const ry = Float32Array.from(B.hy)
+      let c0x = 0
+      let c0y = 0
+      for (let i = 0; i < B.n; i++) {
+        c0x += rx[i]
+        c0y += ry[i]
+      }
+      c0x /= B.n
+      c0y /= B.n
+      // the laser point in the same view cells, on the copy of the cylinder nearest this jelly (no tap point: its middle)
+      let lx = c0x
+      let ly = c0y
+      if (at) {
+        const x0 = at.x - 0.5 - lastCamera
+        lx = x0 + Math.round((c0x - x0) / W) * W
+        ly = at.y
+      }
+      const dist = new Float32Array(B.n)
+      let dmax = 1e-3
+      for (let i = 0; i < B.n; i++) {
+        dist[i] = Math.hypot(rx[i] - lx, ry[i] - ly)
+        dmax = Math.max(dmax, dist[i])
+      }
+      for (let i = 0; i < B.n; i++) dist[i] /= dmax
+      B.zap = { lx, ly, c0x, c0y, rx, ry, dist, sprayed: false, hot: 0, sc: 1 }
+      kick(B, 'radial', 1.5 * Math.min(1, Z.swell * 5)) // (reduce motion: no swell, so no puff either)
       dying.push(B)
     }
+    book.shutAround(cells, W, H) // F62: the clumps touching it squeeze their eyes shut
     for (const c of cells) {
       cellOff[c] = 0
       cellVel[c] = 0
@@ -380,8 +507,30 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     }
   }
 
+  // where each point of a zapped jelly is pulled to now (the sketch's stepZap): swollen by the heat, then into the laser
+  // point nearest-first; its look (white-hot, fade, size) follows
+  function zapHomes(B: Body, Z: ZapLook) {
+    const z = B.zap
+    if (!z) return
+    const heat = zapHeat(Z, B.t)
+    const grow = 1 + Z.swell * heat
+    let em = 0
+    for (let i = 0; i < B.n; i++) {
+      const rx = z.c0x + (z.rx[i] - z.c0x) * grow
+      const ry = z.c0y + (z.ry[i] - z.c0y) * grow
+      const e = suckIn(Z, B.t, z.dist[i])
+      B.hx[i] = z.lx + (rx - z.lx) * (1 - e)
+      B.hy[i] = z.ly + (ry - z.ly) * (1 - e)
+      em += e
+    }
+    em /= B.n
+    z.hot = heat
+    z.sc = grow * (1 - em)
+    B.alpha = zapFade(em)
+  }
+
   // ---------------- events ----------------
-  function handle(events: ShiftEvent[], state: ShiftState) {
+  function handle(events: ShiftEvent[], state: ShiftState, Z: ZapLook) {
     // events that read state.piece only make sense if no lock/spawn follows them in this batch (the piece changed)
     let lastSwap = -1
     events.forEach((e, i) => {
@@ -393,14 +542,14 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
         case 'spawn':
           if (i === lastSwap && p) {
             pose.spawn(p, W, state.spin, -1.2)
-            pieceBody = null
+            pieceBodies = []
             needPiece = true
           }
           break
         case 'move':
           if (i > lastSwap && p) {
             pose.reshape(p, W, state.spin, 0)
-            if (pieceBody) kick(pieceBody, 'shear', 2.2 * e.dx)
+            for (const P of pieceBodies) kick(P, 'shear', 2.2 * e.dx)
           }
           break
         case 'rotate': // the drawn piece lags 90° behind and springs over with overshoot; the body twists as it goes
@@ -422,11 +571,11 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
               cellDelay[c] = 0
             } else queueKick(c, 'squash', 2.4)
           }
-          if (pieceBody) {
+          for (const P of pieceBodies) {
             // the piece was placed by the spin, the grid by the animated camera: keep the jelly where it is
             const d = wrapNear(spin - camera, W)
-            for (let k = 0; k < pieceBody.n; k++) pieceBody.hx[k] += d
-            retired.push(pieceBody)
+            for (let k = 0; k < P.n; k++) P.hx[k] += d
+            retired.push(P)
           }
           if (!dropping)
             for (const c of e.cells)
@@ -434,12 +583,12 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
                 const j = neighbour(c, dx, dy)
                 if (j >= 0 && !lockSet.has(j)) queueKick(j, 'squash', 0.9)
               }
-          pieceBody = null
+          pieceBodies = []
           pose.y = 0 // the drop offset belonged to this piece only (several drops in one frame must not add up)
           break
         }
         case 'pop':
-          popCells(e.cells)
+          popCells(e.cells, e.at, Z)
           break
         case 'reject': // a zap on goop that can't pop yet pokes it: the jelly presses in and springs back (Muzzy 2026-10-18)
           if (e.cell !== undefined && K.poke) {
@@ -460,6 +609,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
             cellDelay[t] = 0.04
             fallFrom.set(t, f)
           }
+          book.moveCells(e.moves) // (falling clumps keep their faces)
           break
         }
       }
@@ -533,6 +683,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
         makeStrand(A, Bb)
       }
     bodies = next
+    if (book.on) assignFaces()
     fallFrom = new Map()
     lockSet = new Set()
     seenGrid.set(state.grid)
@@ -542,26 +693,32 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   function buildPiece(state: ShiftState) {
     const p = state.piece
     if (!p || !pose.shape) {
-      pieceBody = null
+      pieceBodies = []
       return
     }
     const s = pose.shape
-    const old = pieceBody
-    const B = newBody(s.ux.map((x, i) => [x, s.uy[i]]), p.colors[0] ?? 1, 'piece')
-    // rest points relative to the piece centre (the pose places and turns them)
-    for (let i = 0; i < B.n; i++) {
-      B.bx[i] -= s.cx
-      B.by[i] -= s.cy
-    }
-    B.hlX -= s.cx
-    B.hlY -= s.cy
-    computeHomes(B)
-    transfer(B, old ? [old] : [])
-    if (old) {
-      kick(B, 'twist', -2.2)
-      strands = strands.filter((st) => st.A !== old && st.B !== old)
-    }
-    pieceBody = B
+    const olds = pieceBodies
+    // one body per colour (F39: a two-colour piece falls as its two halves, each in its own colour)
+    const colours = [...new Set(s.ux.map((_, k) => p.colors[k] ?? p.colors[0] ?? 1))]
+    pieceBodies = colours.map((colour) => {
+      const cells: [number, number][] = []
+      s.ux.forEach((x, k) => {
+        if ((p.colors[k] ?? p.colors[0] ?? 1) === colour) cells.push([x, s.uy[k]])
+      })
+      const B = newBody(cells, colour, 'piece')
+      // rest points relative to the piece centre (the pose places and turns them)
+      for (let i = 0; i < B.n; i++) {
+        B.bx[i] -= s.cx
+        B.by[i] -= s.cy
+      }
+      B.hlX -= s.cx
+      B.hlY -= s.cy
+      computeHomes(B)
+      transfer(B, olds)
+      if (olds.length) kick(B, 'twist', -2.2)
+      return B
+    })
+    if (olds.length) strands = strands.filter((st) => !olds.includes(st.A) && !olds.includes(st.B))
   }
 
   function stepBody(B: Body, h: number, ks: number, kh: number, c: number, scale: number) {
@@ -727,7 +884,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     // magnetism: skin points of DIFFERENT same-colour bodies within reach pull toward each other
     const M = K.magnetism
     if (M <= 0) return
-    const all = pieceBody ? bodies.concat([pieceBody]) : bodies
+    const all = pieceBodies.length ? bodies.concat(pieceBodies) : bodies
     const R = 0.25 + 0.5 * M
     const pull = K.stiffness * 0.1 * M * dt
     const map = new Map<number, (Body | number)[]>()
@@ -772,8 +929,10 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   // Sticky touch: when the falling piece touches a same-colour jelly, they stick, and a string forms as they slide
   // apart. One string per jelly per piece; Tension decides how far it stretches.
   function stickyTouch() {
-    if (K.tension <= 0 || !pieceBody) return
-    const P = pieceBody
+    if (K.tension <= 0) return
+    for (const P of pieceBodies) stickyTouchOne(P)
+  }
+  function stickyTouchOne(P: Body) {
     P.stuck = P.stuck || new Set()
     let x0 = 1e9
     let x1 = -1e9
@@ -803,7 +962,11 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     lastCamera = camera
     camera = view.camera
     spin = state.spin
-    handle(events, state)
+    const Z = zapLook(view.still)
+    zapWhite = Z.whiteHot
+    book.frame(view.story, dt, (x) => screenColumn(x, camera, W))
+    lastView = view
+    handle(events, state, Z)
     landedTick++
     const g = K.gravity * 10 // cells / s²
     for (let i = 0; i < W * H; i++) {
@@ -828,10 +991,11 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       forceRebuild = false
       rebuild(state)
     }
+    if (book.on && !book.built) assignFaces() // (faces just switched on: the rank reached 10)
     if (state.piece && pose.swapped(state.piece, W)) {
       // a different piece without a spawn (hold swap, or we missed the spawn): it appears where it is
       pose.spawn(state.piece, W, spin, 0)
-      pieceBody = null
+      pieceBodies = []
       needPiece = true
     }
     if (state.piece) pose.follow(state.piece, W, spin)
@@ -839,7 +1003,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       needPiece = false
       buildPiece(state)
     }
-    if (!state.piece) pieceBody = null
+    if (!state.piece) pieceBodies = []
     if (kicks.length) {
       // apply each kind once per body (strongest wins)
       const best = new Map<string, [number, KickKind, number]>()
@@ -872,48 +1036,60 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       for (const B of dying) {
         for (let i = 0; i < B.n; i++) B.x[i] -= dc
         B.hlRX -= dc
+        const z = B.zap
+        if (z) {
+          for (let i = 0; i < B.n; i++) z.rx[i] -= dc
+          z.lx -= dc
+          z.c0x -= dc
+        }
       }
       for (const d of drops) d.x -= dc
     }
     for (const B of bodies) computeHomes(B)
-    if (pieceBody) computeHomes(pieceBody)
+    for (const P of pieceBodies) computeHomes(P)
     const ks = K.stiffness
     const kh = K.stiffness * K.home
     const c = K.viscosity
-    const DRAIN = Math.max(0.05, K.popMs / 1000)
+    for (const B of dying) zapHomes(B, Z)
     const steps = Math.max(1, Math.ceil(dt * 120))
     const h = dt / steps
     for (let s = 0; s < steps; s++) {
       pose.integrate(h)
-      if (pieceBody) {
-        computeHomes(pieceBody)
-        stepBody(pieceBody, h, ks, kh, c, 1)
+      for (const P of pieceBodies) {
+        computeHomes(P)
+        stepBody(P, h, ks, kh, c, 1)
       }
       for (const B of bodies) stepBody(B, h, ks, kh, c, 1)
       for (const st of strands) strandPull(st, h)
-      for (const B of dying) {
-        const t = B.t / DRAIN
-        const sc = t < 0.15 ? 1 + (0.05 * t) / 0.15 : Math.max(0.02, 1.05 * (1 - (t - 0.15) / 0.85) ** 1.5)
-        for (let i = 0; i < B.n; i++) B.vy[i] += 4 * h // drains downward a little
-        stepBody(B, h, ks * 0.8, 0, c, sc)
-      }
+      for (const B of dying) stepBody(B, h, ks * 0.5, ks * 0.9, c, 1) // (the sketch's springs for zapped goop)
     }
     cohesion(dt)
     stickyTouch()
     updateStrands(dt)
     for (const B of dying) {
       B.t += dt
-      B.alpha = 1 - Math.max(0, (B.t / DRAIN - 0.35) / 0.65) ** 1.3
+      const z = B.zap!
+      if (!z.sprayed && sprayDue(Z, B.t)) {
+        z.sprayed = true // v1's spray, through the drops (so the droplets are goo, and bend with the visor)
+        for (const d of sprayDrops(Z, B.x, B.y))
+          drops.push({ x: d.x, y: d.y, vx: d.vx, vy: d.vy, r0: d.r, life: d.life, life0: Z.dropLife, color: B.color, g: d.g, bounce: 0.3 })
+      }
     }
-    dying = dying.filter((B) => B.t < DRAIN)
+    const end = zapEnd(Z)
+    dying = dying.filter((B) => B.t < end || !B.zap!.sprayed)
     for (const d of drops) {
-      d.vy += g * dt
+      d.vy += (d.g ?? g) * dt
       d.x += d.vx * dt
       d.y += d.vy * dt
       d.life -= dt
+      if (d.bounce !== undefined && d.y + d.r0 > H) { // the tank floor (v1: bounces back up at 30% speed)
+        d.y = H - d.r0
+        if (d.vy > 0) d.vy *= -d.bounce
+      }
     }
     drops = drops.filter((d) => d.life > 0 && d.y < H + 1)
     fills = groupFillLines(state)
+    if (book.on) stepFaces(dt)
   }
 
   function sameArrays(state: ShiftState): boolean {
@@ -924,13 +1100,14 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   }
 
   // ---------------- WebGL ----------------
-  const PM: Program = makeProgram(gl, MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl', 'uLine', 'uFillOn', 'uReady', 'uAlpha'])
+  const PM: Program = makeProgram(gl, MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uHl', 'uLine', 'uFillOn', 'uReady', 'uAlpha', 'uHot', 'uWild'])
   const PB: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uSize', 'uStep', 'uSigma', 'uR'])
   const PF: Program = makeProgram(gl, FULLSCREEN_VS, FINAL_FS, [
     'uS0', 'uS1', 'uS2', 'uQ0', 'uQ1', 'uQ2', 'uM1', 'uRes', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet',
-    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', ...XRAY_UNIFORMS,
+    'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS, ...WILD_UNIFORMS, ...GALAXY_UNIFORMS,
   ])
   const xrayBuf = new Float32Array(XRAY_MAX * 4)
+  const faceDraw = new FaceDrawer(gl) // F62
   const vaoMask = gl.createVertexArray()!
   const vbo = gl.createBuffer()!
   const vaoFsq = gl.createVertexArray()!
@@ -1025,14 +1202,16 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       pushV(side[i + 1][0], side[i + 1][1], 0, 0)
     }
   }
-  function hlQuad(B: Body, DRAIN: number) {
+  function hlQuad(B: Body) {
     // the highlight rides the body's fitted rotation + centroid, so it jiggles with it
+    // (a zapped jelly's shrinks with it, around where its middle was: the sketch's hlQuad)
     const [ax, ay] = highlightRest(B)
     const ca = Math.cos(B.fa)
     const sa = Math.sin(B.fa)
-    const qx = ax - B.rcx
-    const qy = ay - B.rcy
-    const k = B.kind === 'dying' ? Math.max(0.05, B.t < DRAIN * 0.15 ? 1 : 1 - (B.t / DRAIN - 0.15) / 0.85) : 1
+    const z = B.kind === 'dying' ? B.zap : null
+    const k = z ? Math.max(0.05, z.sc) : 1
+    const qx = ax - (z ? z.c0x : B.rcx)
+    const qy = ay - (z ? z.c0y : B.rcy)
     const cx = B.fcx + (ca * qx - sa * qy) * k
     const cy = B.fcy + (sa * qx + ca * qy) * k
     const rot = B.fa - 0.18
@@ -1063,7 +1242,6 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   function buildGeometry(clipL: number, clipR: number): DrawItem[] {
     vn = 0
     const items: DrawItem[] = []
-    const DRAIN = Math.max(0.05, K.popMs / 1000)
     const onScreen = (B: Body) => {
       let x0 = 1e9
       let x1 = -1e9
@@ -1084,24 +1262,24 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       fanBody(B)
       const fan: [number, number] = [s, mark() - s]
       s = mark()
-      hlQuad(B, DRAIN)
+      hlQuad(B)
       const hl: [number, number] = [s, mark() - s]
       const f = B.kind === 'grid' ? fills.get(B.groupId) : undefined
       const filling = !!f && f.fill < 0.999
       const line = f ? f.line + (B.fcy - B.restMeanY) : 0
-      items.push({ color: B.color, alpha, fan, hl, cover: cover(bb[0], bb[1], bb[2], bb[3]), line, fillOn: filling ? 1 : 0, ready: f && f.ready ? 1 : 0 })
+      items.push({ color: B.color, alpha, fan, hl, cover: cover(bb[0], bb[1], bb[2], bb[3]), line, fillOn: filling ? 1 : 0, ready: f && f.ready ? 1 : 0, hot: B.zap?.hot ?? 0 })
     }
     for (const B of bodies) add(B, 1)
-    if (pieceBody) add(pieceBody, 1)
+    for (const P of pieceBodies) add(P, 1)
     for (const B of dying) add(B, Math.max(0, B.alpha))
-    for (let c = 1; c < 8; c++) {
+    for (const c of EXTRA_COLOURS) {
       // extras of this colour: strings + drips
       const s = mark()
       for (const d of drops) if (d.color === c) fanDrop(d)
       for (const st of strands) if (st.color === c) fanStrand(st)
       if (mark() === s) continue
       const fan: [number, number] = [s, mark() - s]
-      items.push({ color: c, alpha: 1, fan, hl: [0, 0], cover: cover(-W, -10, W, H + 10), line: 0, fillOn: 0, ready: 0 })
+      items.push({ color: c, alpha: 1, fan, hl: [0, 0], cover: cover(-W, -10, W, H + 10), line: 0, fillOn: 0, ready: 0, hot: 0 })
     }
     return items
   }
@@ -1126,12 +1304,14 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     // cover the body's box: writes colour + fill/ready where the stencil is set, and clears the stencil as it goes
     gl.stencilOp(gl.KEEP, gl.KEEP, gl.ZERO)
     gl.uniform1i(PM.u.uMode, 1)
-    gl.uniform4fv(PM.u.uC0, C0[it.color] ?? C0[0])
-    gl.uniform4fv(PM.u.uC1, C1[it.color] ?? C1[0])
+    gl.uniform4fv(PM.u.uC0, C0[gooSlot(it.color)] ?? C0[0]) // (F39: wild has no slot here — its own channel, uWild)
+    gl.uniform4fv(PM.u.uC1, C1[gooSlot(it.color)] ?? C1[0])
+    gl.uniform1f(PM.u.uWild, it.color === WILD_COLOR ? 1 : 0)
     gl.uniform1f(PM.u.uAlpha, it.alpha)
     gl.uniform1f(PM.u.uLine, it.line)
     gl.uniform1f(PM.u.uFillOn, it.fillOn)
     gl.uniform1f(PM.u.uReady, it.ready)
+    gl.uniform1f(PM.u.uHot, it.hot)
     gl.drawArrays(gl.TRIANGLES, it.cover[0], it.cover[1])
   }
 
@@ -1213,9 +1393,46 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
     gl.uniform1f(PF.u.uClipR, clipR)
     gl.uniform1f(PF.u.uClipB, state.height)
     gl.uniform3fv(PF.u.uCols, cols)
+    gl.uniform1f(PF.u.uWhite, zapWhite) // F67: how far toward white a zapped jelly turns
+    setWild(gl, PF.u, cols) // F39: the wild goop's look (twists-look.json, live)
+    setGalaxy(gl, PF.u) // F64: black goop's galaxy look (galaxy-look.json, live)
     setXray(gl, PF.u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)
+    // 5) F62 the faces, over the goo on the same canvas
+    if (book.on) drawFaces(state, view, ox * dpr, oy * dpr, cell, clipL, clipR)
+  }
+
+  function drawFaces(state: ShiftState, view: GooView, ox: number, oy: number, cell: number, clipL: number, clipR: number) {
+    faceDraw.begin()
+    const px = 1 / view.cellPx // one CSS pixel, in cells
+    for (const B of bodies)
+      if (B.face && B.faceX > clipL - 1 && B.faceX < clipR + 1)
+        book.draw(faceDraw, B.face, B.faceX, B.faceY, Math.cos(B.fa), Math.sin(B.fa), 1, 1, false, px)
+    for (const B of dying) {
+      if (!B.face || B.face.eyes.a <= 0) continue
+      const [x, y, k] = dyingFace(B)
+      book.draw(faceDraw, B.face, x, y, Math.cos(B.fa), Math.sin(B.fa), k, Math.max(0, B.alpha), true, px)
+    }
+    const L = book.look
+    faceDraw.flush({ originX: ox, originY: oy, cell, width: canvas.width, height: canvas.height, clipL, clipR, clipB: state.height,
+      eye: L.eyeColor, pupil: L.pupilColor, mouth: L.mouthColor }, (u) => setXray(gl, u, state, view, xrayBuf))
+  }
+
+  // (dev + tests) every face now, with where it is on the stage
+  function faceReports(): FaceReport[] {
+    if (!book.on || !lastView || !S) return []
+    const [ox, oy] = viewOrigin(lastView, S.bufferRows)
+    const cp = lastView.cellPx
+    const toPx = (x: number, y: number): [number, number] => [ox + x * cp, oy + y * cp]
+    const out: FaceReport[] = []
+    for (const B of bodies) if (B.face) out.push(book.report(B.face, B.faceX, B.faceY, toPx, false))
+    for (const B of dying)
+      if (B.face) {
+        const [x, y] = dyingFace(B)
+        out.push(book.report(B.face, x, y, toPx, true))
+      }
+    return out
   }
 
   let disposed = false
@@ -1240,12 +1457,14 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
       for (let i = 0; i < B.n; i++) sum += Math.hypot(B.vx[i], B.vy[i])
       return sum / B.n
     },
+    faces: faceReports,
     dispose() {
       if (disposed) return
       disposed = true
       for (const T of [TM, TA, TS, TB, TQ]) freeTarget(gl, T)
       TM = TA = TS = TB = TQ = null
       for (const P of [PM, PB, PF]) freeProgram(gl, P)
+      faceDraw.dispose()
       gl.deleteBuffer(vbo)
       gl.deleteVertexArray(vaoMask)
       gl.deleteVertexArray(vaoFsq)

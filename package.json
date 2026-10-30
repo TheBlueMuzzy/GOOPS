@@ -21,9 +21,13 @@
     "e2e:fonts": "node e2e/fonts-shots.mjs",
     "e2e:sound": "node e2e/sound.mjs",
     "e2e:update": "node e2e/sw-update.mjs",
+    "e2e:upgrades": "node e2e/upgrades.mjs",
     "check:devkit": "node src/devkit/check-devkit.mjs",
-    "check:framework": "npm run check:ui && npm run check:devkit",
-    "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs"
+    "check:framework": "node src/devkit/check-framework.mjs",
+    "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs",
+    "bots:final": "node --import ./scripts/bots/ts-register.mjs scripts/bots/final.mjs",
+    "sim:economy": "node scripts/bots/economy.mjs",
+    "audio:check": "node src/audio/audio-check.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",

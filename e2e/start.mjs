@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { checkVersion, expectedVersion } from '../src/version/e2e.mjs'
 // Start a shift the way a player does since F21: the game opens on the console; tapping the periscope ("Start shift")
 // pulls it, the console slides away, and the shift is running once the console is gone.
 // F59: from rank 1 a device's first shifts start with an unlock lesson (the next-piece window, then swap) that waits
@@ -28,15 +28,7 @@ export async function skipFirstDay(page) {
   })
 }
 
-// F38: the page is the build we think it is — its <meta name="app-version"> (vite.config.ts) equals version.json
-// (GOOPS_BUILD overrides the build number, as in vite.config.ts). A stale build or a service worker's cached copy fails
-// here, by name, instead of as a strange test failure later. startShift does it; other scripts call it after page.goto.
-export function expectedVersion() {
-  const file = JSON.parse(readFileSync('version.json', 'utf8'))
-  return `v${file.version}.${process.env.GOOPS_BUILD ?? file.build ?? 0}`
-}
-export async function checkVersion(page, want = expectedVersion()) {
-  const shown = await page.locator('meta[name="app-version"]').getAttribute('content', { timeout: 10000 })
-  if (shown !== want) throw new Error(`the page is version ${shown}, but version.json says ${want} — a stale build or a cached service worker?`)
-  return shown
-}
+// The page is the build we think it is — its <meta name="app-version"> equals version.json (VERSION_BUILD overrides
+// the build number). A stale build or a service worker's cached copy fails here, by name, instead of as a strange test
+// failure later. startShift does it; other scripts call it after page.goto. From the framework version module (F70).
+export { checkVersion, expectedVersion }

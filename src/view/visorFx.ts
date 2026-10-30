@@ -53,6 +53,19 @@ export function flatPoint(x: number, y: number, rect: { left: number; top: numbe
   return [rect.left + ((cx * m + 1) / 2) * rect.width, rect.top + ((cy * m + 1) / 2) * rect.height]
 }
 
+// Where a flat tank point shows on screen under the visor's curved-TV look (the other way round from flatPoint: a few
+// steps of "move by how far off it lands" — the bend is gentle, so it settles quickly). (Was the lessons' own; F63's
+// white goop uses it too.)
+export function bentPoint(fx: number, fy: number, rect: { left: number; top: number; width: number; height: number }, curve: number): [number, number] {
+  let x = fx, y = fy
+  for (let i = 0; i < 6; i++) {
+    const [lx, ly] = flatPoint(x, y, rect, curve)
+    x -= lx - fx
+    y -= ly - fy
+  }
+  return [x, y]
+}
+
 // Dev-only URL overrides: ?visor=0.6 locks the glitch amount, ?visor=off forces 0; ?pixel=on|off forces the pixel filter.
 export interface VisorOverride { amount: number | null; pixelate: boolean | null }
 export function parseVisorOverride(search: string): VisorOverride {

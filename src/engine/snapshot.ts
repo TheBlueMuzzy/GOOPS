@@ -8,7 +8,10 @@ import type { Machines } from './machines'
 import type { FallingPiece, PieceDef } from './pieces'
 import type { AbilitySpec, ActiveEffects } from './abilities'
 import type { Modifiers } from './upgrades'
-import type { AbilityState, Crack, Group, SealedSpot, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode } from './types'
+import type { AbilityState, Crack, FinalShiftState, Group, SealedSpot, ShiftEngine, ShiftPhase, ShiftStatus, WallKickMode, WhiteGoop } from './types'
+import type { FinalShiftConfig } from './finalShift'
+import type { WhiteGoopConfig } from './whiteGoop'
+import type { TwistsConfig } from './twists'
 import type { PieceChoice, PieceFallback, TrainingRules } from './training'
 import { createShift } from './shift'
 
@@ -41,6 +44,8 @@ export interface ShiftSnapshot {
     groups: Group[]
     abilities: AbilityState[]
     effects: ActiveEffects
+    vet?: WhiteGoop | null // F63 the white goop (older snapshots have none — still format 1, read as none)
+    final?: FinalShiftState | null // F64 the final shift's valve (older snapshots have none — read as none)
   }
   inner: {
     fillMs: [number, number][]
@@ -57,6 +62,7 @@ export interface ShiftSnapshot {
     playedMs: number
     primed: [number, string][]
     machines: ReturnType<Machines['save']>
+    final?: { introMs: number; landedMs: number | null; said: number; rainMs: number } // F64 the final shift's clocks (older: none)
     // (F30: a lesson's training shift only; F31: its fallback rule — older snapshots have none)
     training?: { rules: TrainingRules; queue: PieceChoice[]; fallback?: { rule: PieceFallback; index: number; nextFromRule: boolean } | null }
   }
@@ -83,10 +89,12 @@ export function readSnapshot(x: unknown): ShiftSnapshot {
   return x as unknown as ShiftSnapshot
 }
 
-/** A new engine that carries on from a snapshot (the game's live tuning + breakdowns, the snapshot's own options). */
-export function restoreShift(config: ShiftConfig, snapshot: unknown, breakdowns?: BreakdownConfig): ShiftEngine {
+/** A new engine that carries on from a snapshot (the game's live tuning + breakdowns + white goop (F63) + rank twists
+ *  (F39) + the final shift (F64), the snapshot's own options). (F39's grown cracks ride in state.cracks — cells / parent / growMs — and its
+ *  two-colour and wild pieces in inner.piece / nextDef, so older snapshots, which have none, still load as they were.) */
+export function restoreShift(config: ShiftConfig, snapshot: unknown, breakdowns?: BreakdownConfig, whiteGoop?: WhiteGoopConfig, twists?: TwistsConfig, finalShift?: FinalShiftConfig): ShiftEngine {
   const snap = readSnapshot(snapshot)
-  const engine = createShift(config, { ...snap.options, breakdowns })
+  const engine = createShift(config, { ...snap.options, breakdowns, whiteGoop, twists, finalShift })
   engine.restore(snap)
   return engine
 }

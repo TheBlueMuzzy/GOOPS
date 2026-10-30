@@ -8,7 +8,7 @@
 //            its ring round the window and its bubble above it, on screen; Got it → never again on this device
 //   rank 3 — one unlock lesson per shift start: the window's first, swap's at the next shift, then none; swap works
 //            (held Right Shift: the falling piece and the next one trade places, with the charging bar)
-//   rank 5 — Upgrades opens (the scraps, "the first upgrades arrive in the next update"); its unlock lesson is the
+//   rank 5 — Upgrades opens (the scraps and the shop, F34); its unlock lesson is the
 //            monitor's line + the button outlined, until Upgrades is opened once; Replay lessons brings it back
 //   the end report — a shift that crosses rank 1 says "Rank up! 1 · New: next piece"
 // Screenshots: e2e-shots/unlocks/ (390x844, 360x780, 1440x900, the short 768x343 window)
@@ -213,8 +213,8 @@ try {
     await btn.click()
     const modal = page.getByRole('dialog', { name: en.upgrades.title })
     await modal.waitFor({ timeout: 3000 })
-    check('rank 5: Upgrades opens: the scraps and the "next update" line',
-      await modal.getByText(en.upgrades.scraps.replace('{n}', '5')).count() === 1 && await modal.getByText(en.upgrades.soon).count() === 1)
+    check('rank 5: Upgrades opens: the scraps and the shop (F34: its first card, Circuit Stabilizer)',
+      await modal.getByText(en.upgrades.scraps.replace('{n}', '5')).count() === 1 && await modal.getByText(en.upgrades.items.circuitStabilizer.name).count() === 1)
     await page.screenshot({ path: `${OUT}/rank5-upgrades-390x844.png` })
     check('rank 5: opening it finishes the lesson (seen)', (await seen(page)).includes('lesson:unlock-upgrades'))
     await page.keyboard.press('Escape')

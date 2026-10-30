@@ -2,8 +2,15 @@
 // ticks the engine and hands its state + events to both. React only renders this once; per-frame work uses refs.
 // It also decides where the tank sits around the HUD (F26, Muzzy's mock-up; F59 his second one): one top row above it,
 // the bottom panel under it (or beside it on a phone on its side), and the pressure readout hanging on the pressure line.
-import { useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react'
-import type { MachineId, ShiftEngine, ShiftEvent, ShiftStatus, ShiftPhase, ShiftState } from '../engine'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { crackCells, whiteGoopAt, type MachineId, type ShiftEngine, type ShiftEvent, type ShiftStatus, type ShiftPhase, type ShiftState, type TapPoint } from '../engine'
+import { createWhiteGoopView } from '../view/whiteGoopView'
+import whiteGoopLook from '../../content/tuning/whiteGoop.json'
+import finalShiftTuning from '../../content/tuning/finalShift.json'
+import valveTuning from '../../content/tuning/valve.json'
+import eyesLook from '../../content/tuning/eyes.json'
+import talk from '../../content/tuning/talk.json'
+import text from '../../content/text/en.json'
 import type { GooRenderer, GooView } from '../goo/types'
 import { colorOf, makeGoo } from './gooFactory'
 import { drawTank } from '../view/tankView'
@@ -16,8 +23,12 @@ import { gooStyle } from './gooStyle'
 import { wallKick } from './wallKick'
 import { readoutSetting, type ReadoutSetting } from './readoutSetting'
 import { createMessages, type Message, type MessageTuning } from './messages'
-import { createVisorFx, curvedY, flatPoint, type VisorFx } from '../view/visorFx'
-import { PinnedBox, reduceMotion } from '../ui/kit'
+import { bentPoint, createVisorFx, curvedY, flatPoint, type VisorFx } from '../view/visorFx'
+import { createZapBeam } from '../view/zapBeam'
+import { zapLook } from '../goo/shared/zap'
+import type { FaceStory } from '../goo/shared/faces'
+import { screenColumn } from '../goo/types'
+import { PinnedBox, TalkingBubble, reduceMotion, tipsMemory } from '../ui/kit'
 import tank from '../../content/tuning/tank.json'
 import hud from '../../content/tuning/hud.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
@@ -27,6 +38,7 @@ import { clockPause, looksClock, rulesClock } from '../devkit/gameClock'
 import { onTuning } from '../devkit/tuning/liveTuning'
 import { session } from './session'
 import { lessonPlay, placeLessonMark, runner as lessonRunner } from './lessons/goopsLessons'
+import { CHORUS_SEEN } from './lessons/storyMoments'
 import { playGameSound, playShiftSounds } from './sound'
 import { SOUNDS } from './shiftSounds'
 import type { NextPiece } from './NextWindow'
@@ -49,6 +61,12 @@ export interface HudSnapshot {
   // breaks = how many times each has broken this shift (a new repair puzzle each time)
   machines: Record<MachineId, { unlocked: boolean; health: number; broken: boolean }>
   breaks: Record<MachineId, number>
+  // F34 / F42: the equipped actives, in equip order (none to three): each one's charge 0..1 and whether it's full — the
+  // HUD's charge buttons, one each
+  abilities: { id: string; charge: number; ready: boolean }[]
+  // F64 the final shift's release valve (null in any other shift): stages opened, seals toward the next, and whether
+  // the next stage waits at the console (the top bar shows it instead of the crack count; the console opens the hatch)
+  final: { stage: number; stages: number; seals: number; need: number; waiting: boolean } | null
 }
 
 interface Props {
@@ -60,6 +78,11 @@ interface Props {
   panel: 'machines' | 'integrity'
   side: boolean // a phone on its side: the panel is a column beside the tank, which keeps the whole height
   nextWindow: boolean // F59: the next-piece window shows in the bottom panel (from its rank) — the panel is at least its height
+  // F42: the charge buttons' row in the bottom panel, above the machine bars: its height in px (0 = no row) — the panel
+  // grows by it (+ the small gap under it) and the tank gets that much shorter. Known when the shift starts.
+  abilityRowPx: number
+  // F43 Goop Swap: × how long a hold takes to swap (the shift's swapHoldTimeMult; 1 = no upgrade) — the input layer reads it
+  swapHoldMult: number
   readout: ReactNode // the pressure readout's words ("10% PSI"), hung on the pressure line by the frame loop
   onHud(h: HudSnapshot): void
   onEnd(status: ShiftStatus): void
@@ -67,18 +90,23 @@ interface Props {
   onConsole(): void
 }
 
-export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, readout, onHud, onEnd, onMessage, onConsole }: Props) {
+export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, abilityRowPx, swapHoldMult, readout, onHud, onEnd, onMessage, onConsole }: Props) {
   const style = useSyncExternalStore(gooStyle.subscribe, gooStyle.get)
   const readoutAt = useSyncExternalStore(readoutSetting.subscribe, readoutSetting.get)
   const host = useRef<HTMLDivElement>(null)
   const tankCanvas = useRef<HTMLCanvasElement>(null)
   const gooCanvas = useRef<HTMLCanvasElement>(null)
   const readoutCanvas = useRef<HTMLCanvasElement>(null)
+  const zapCanvas = useRef<HTMLCanvasElement>(null) // F67 the zap's beam, above the visor
   const readoutEl = useRef<HTMLDivElement>(null)
   const lessonMark = useRef<HTMLDivElement>(null)
   const swapRing = useRef<SVGSVGElement>(null)
-  const live = useRef({ inputOn, readoutAt, onHud, onEnd, onMessage, onConsole })
-  useEffect(() => { live.current = { inputOn, readoutAt, onHud, onEnd, onMessage, onConsole } })
+  // F63: the white goop's "ow" when the laser goes through him — the game's whisper bubble (kit TalkingBubble, plain
+  // outline), above him; n = which one (a new one restarts the bubble). Set only on the event, never per frame.
+  // F64: his lines as he drops into the final shift ("oh! hi!" …) use the same bubble.
+  const [vetSays, setVetSays] = useState<{ x: number; y: number; n: number; words: string } | null>(null)
+  const live = useRef({ inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole })
+  useEffect(() => { live.current = { inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
   // of this (rulesClock.rate = 0); the frame loop ticks the engine by rate.
   useEffect(() => { rulesClock.scale = speed }, [speed])
@@ -89,10 +117,10 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     return wallKick.subscribe(() => engine.setWallKick(wallKick.get()))
   }, [engine])
   const viewRef = useRef<GooView | null>(null)
-  const layoutRef = useRef({ panel, side, nextWindow })
+  const layoutRef = useRef({ panel, side, nextWindow, abilityRowPx })
   const relayout = useRef<() => void>(() => {})
   // (a phone turned on its side, or a new shift's panel: the tank re-fits straight away)
-  useEffect(() => { layoutRef.current = { panel, side, nextWindow }; relayout.current() }, [panel, side, nextWindow])
+  useEffect(() => { layoutRef.current = { panel, side, nextWindow, abilityRowPx }; relayout.current() }, [panel, side, nextWindow, abilityRowPx])
 
   // the goo renderer: rebuilt when the style changes (a fresh canvas each time — see key below)
   const gooRef = useRef<GooRenderer | null>(null)
@@ -115,6 +143,26 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     const el = host.current!, tc = tankCanvas.current!, ctx = tc.getContext('2d')!
     const rc = readoutCanvas.current!, rctx = rc.getContext('2d')!
     const s = engine.state
+    const beam = createZapBeam(zapCanvas.current!) // F67: the zap's beam + laser point (src/view/zapBeam.ts)
+    let lastTap: { x: number; y: number; at: TapPoint } | null = null // the last zap tap: stage px + the tank point it sent
+    // F62 the goop's faces: told the rank, the pressure and what the eyes look at (one object, refilled every frame)
+    // F45 (story 48 "…we go… home…"): the first shift from eyes.json chorusRank, once per device (tips memory, so Replay
+    // lessons plays it again), every mouth in the tank opens at once — the faces say when it starts
+    const chorusSeen = () => tipsMemory().seen(CHORUS_SEEN)
+    const story: FaceStory = { rank: 0, pressure: 0, focus: null, onChorus: () => tipsMemory().markSeen(CHORUS_SEEN) }
+    const pieceAt: TapPoint = { x: 0, y: 0 }
+    let laser: { at: TapPoint; t: number } | null = null // the last zap's tap point while its beam is up (goo clock)
+    const white = createWhiteGoopView() // F63 the white goop's look (on the tank canvas, behind the goop)
+    const vetAt: TapPoint = { x: 0, y: 0 }
+    const xray = { cells: [] as number[], pad: 0, alpha: 1 } // view.xray, refilled each frame (no garbage per frame)
+    // F63: seconds his bubble has been up (goo clock; -1 = none), how long it stays, and which one it is
+    let sayT = -1, sayFor = 0, sayN = 0
+    const say = (words: string, seconds: number) => {
+      const [x, y] = vetOnScreen(s, view, 0, visorFx.current?.curve() ?? 0) // (his top middle, where he's seen)
+      sayT = 0
+      sayFor = seconds
+      setVetSays({ x, y, n: ++sayN, words })
+    }
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
     // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
     let camera = s.spin, last = looksClock.now(), hudAt = 0, raf = 0, ended = false
@@ -139,15 +187,17 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       // the bottom panel: a share of the window's height, but tall enough for its rows at the current text size — and
       // (F59, from rank 1) for the next-piece window at its left: its cells + its frame (padding gap-xs + border) + the
       // panel's own padding (gap-s + border; kit tokens on the root). On a phone on its side a column beside the tank
-      // instead (content/tuning/hud.json → panel, nextWindow)
-      const P = hud.panel, { panel, side, nextWindow } = layoutRef.current
+      // instead (content/tuning/hud.json → panel, nextWindow). F42: the charge buttons' own row (+ the gap under it) goes on
+      // top of the bars' rows (hud.json abilities; the window beside them is often taller already, so it may not grow)
+      const P = hud.panel, { panel, side, nextWindow, abilityRowPx } = layoutRef.current
       const css = getComputedStyle(root), remPx = parseFloat(css.fontSize) || 16
       const token = (name: string) => parseFloat(css.getPropertyValue(`--${name}`)) || 0
       const frame = token('border-width')
       const NW = hud.nextWindow // (its box of cells: rows + the room round them, cellRem each — NextWindow.tsx)
       const windowPx = nextWindow ? (NW.rows + 2 * NW.padCells) * NW.cellRem * remPx + 2 * (token('gap-xs') + frame) + 2 * (token('gap-s') + frame) : 0
+      const buttonsPx = abilityRowPx > 0 ? abilityRowPx + token('gap-s') : 0
       const dock = Math.ceil(side ? P.sideRem * remPx
-        : Math.max(windowPx, panel === 'machines' ? Math.max(P.share * r.height, P.machinesRem * remPx) : Math.max(P.integrityShare * r.height, P.integrityRem * remPx)))
+        : Math.max(windowPx, panel === 'machines' ? Math.max(P.share * r.height, P.machinesRem * remPx + buttonsPx) : Math.max(P.integrityShare * r.height, P.integrityRem * remPx + buttonsPx)))
       const L = layoutTank({ screenW: r.width, screenH: r.height, visibleWidth: s.visibleWidth, visibleRows: s.height - s.bufferRows,
         reserveTop: side ? hud.sideTopPx : hud.topRowPx, reserveBottom: side ? 2 * hud.gutterPx : dock + P.gapPx, gutter: hud.gutterPx })
       Object.assign(view, { cellPx: L.cellPx, centreX: L.centreX, topY: L.topY, width: r.width, height: r.height, dpr })
@@ -182,11 +232,60 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       camera = stepCamera(camera, s.spin, s.width, dt, tank.cameraSpeed)
       view.camera = camera
       bubbles.step(s, dt, still) // (looks clock: keeps rising in the half pause, stops in the full pause)
-      drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still), { bubbles, still })
-      // the x-ray (F36): the goo over a covered crack is drawn see-through, round the box the tank view drew
+      view.still = still // (reduce motion: the zap has no swell and no spray, F67)
+      const gooDt = active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0
+      // F62 the faces look at the laser's tap while its beam is up, else at the falling piece — and (F63, rank 31: "every
+      // eye turns to it") at the white goop while he drops in
+      if (laser && (laser.t += gooDt) >= zapLook().beamTime) laser = null
+      const focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)
+      white.step(s, events, gooDt, focus)
+      story.rank = s.rank
+      if (story.chorus === undefined) story.chorus = s.rank >= eyesLook.chorusRank && !chorusSeen() // (decided once, at the shift's first frame)
+      story.pressure = s.pressure
+      story.still = still
+      story.focus = white.eyesOnHim(s, vetAt) ?? focus
+      view.story = story
+      drawTank(ctx, s, view, colorOf, looksMs / 1000, () => guide.draw(ctx, s, view, active || half ? dt : 0, softHeld, still),
+        { bubbles, still, white: () => white.draw(ctx, s, view, gooStyle.get(), looksMs / 1000, still) })
+      // the x-ray (F36): the goo over a covered crack is drawn see-through, round the box the tank view drew — and over
+      // the white goop while goop covers him (F63)
       const X = cracksLook.xray
-      view.xray = { cells: s.cracks.filter((c) => !crackIsOpen(s, c)).map((c) => c.y * s.width + c.x), pad: X.pad + X.width, alpha: X.gooAlpha }
-      gooRef.current?.frame(s, events, view, active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0)
+      xray.cells.length = 0
+      for (const c of s.cracks) for (const [x, y] of crackCells(c)) if (!crackIsOpen(s, { x, y })) xray.cells.push(y * s.width + x) // (F39: each cell of a grown crack)
+      white.xrayCells(s, xray.cells)
+      xray.pad = X.pad + X.width
+      xray.alpha = X.gooAlpha
+      view.xray = xray
+      gooRef.current?.frame(s, events, view, gooDt)
+      // F67 the zap's beam: from the visible tank's top centre to the tap (the finger: stage px, above the visor), on
+      // the goo's clock. A pop that didn't come from a tap here (a lesson, a test) aims at its `at`, un-bent.
+      for (const e of events) if (e.type === 'pop' && e.at) {
+        const rect = tankRect(view, s.visibleWidth, s.height - s.bufferRows)
+        // (the engine re-wraps x, which can move it by a rounding error: near enough is the same tap)
+        const tap = lastTap && Math.abs(lastTap.at.x - e.at.x) < 1e-6 && Math.abs(lastTap.at.y - e.at.y) < 1e-6 ? lastTap : null
+        const to: [number, number] = tap ? [tap.x, tap.y]
+          : [view.centreX + screenColumn(e.at.x - 0.5, view.camera, s.width) * view.cellPx, view.topY + (e.at.y - s.bufferRows) * view.cellPx]
+        beam.fire([rect.left + rect.width / 2, rect.top], to, colorOf(e.color))
+        laser = { at: e.at, t: 0 }
+      }
+      // F63 the laser through the white goop: the same beam (in his white) to the tap, and his "ow" bubble above him.
+      // (A pop of goop in front of him in the same tap already fired its beam above.)
+      for (const e of events) if (e.type === 'vetOw' && s.vet) {
+        const rect = tankRect(view, s.visibleWidth, s.height - s.bufferRows)
+        const tap = lastTap && Math.abs(lastTap.at.x - e.at.x) < 1e-6 && Math.abs(lastTap.at.y - e.at.y) < 1e-6 ? lastTap : null
+        const to: [number, number] = tap ? [tap.x, tap.y]
+          : [view.centreX + screenColumn(e.at.x - 0.5, view.camera, s.width) * view.cellPx, view.topY + (e.at.y - s.bufferRows) * view.cellPx]
+        if (!events.some((p) => p.type === 'pop')) beam.fire([rect.left + rect.width / 2, rect.top], to, String(whiteGoopLook.color))
+        laser = { at: e.at, t: 0 }
+        say(text.whiteGoop.ow, whiteGoopLook.owTime)
+      }
+      // F64 his lines as he drops into the final shift: the same bubble, finalShift.json intro.lineSec each
+      for (const e of events) if (e.type === 'vetSay' && s.vet) say(text.finalShift.vet[e.line], finalShiftTuning.intro.lineSec)
+      // …and when a valve stage has its seals: "valve's open on your console — go!" (valve.json goSec)
+      for (const e of events) if (e.type === 'valveReady' && s.vet) say(text.finalShift.vet.valveGo, valveTuning.goSec)
+      // (F65: the shift over, his bubble goes — the ending's goop talks next, not his last "go!")
+      if (sayT >= 0 && (s.status !== 'playing' || (sayT += gooDt) >= sayFor)) { sayT = -1; setVetSays(null) }
+      beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
@@ -202,7 +301,9 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
         hudAt = now
         live.current.onHud({ pressure: s.pressure, score: s.score, cracksSealed: s.cracksSealed, cracksNeeded: s.cracksNeeded,
           integrity: s.integrity, phase: s.phase, holdProgress, machines: machinesNow(s.machines), breaks: { ...breaks },
-          next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0] } : null })
+          next: s.next && s.nextCells ? { cells: s.nextCells, color: s.next[0], colors: s.next } : null, // (F39: colors = per cell)
+          abilities: (s.abilities ?? []).map((a) => ({ id: a.id, charge: a.charge, ready: a.ready })),
+          final: s.final ? { stage: s.final.stage, stages: s.final.stages, seals: s.final.seals, need: s.final.need, waiting: s.final.waiting } : null })
         still = reduceMotion()
         const box = readoutEl.current?.querySelector('.kit-pinned')?.getBoundingClientRect()
         if (box?.width) { readoutSize.w = box.width; readoutSize.h = box.height }
@@ -243,6 +344,14 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       const [fx, fy] = flatPoint(px - r.left, py - r.top, tankRect(view, s.visibleWidth, s.height - s.bufferRows), visorFx.current?.curve() ?? 0)
       return screenToVisibleCell(fx, fy, view, s.width, s.bufferRows, s.visibleWidth, s.height - s.bufferRows)
     }
+    // ...and the exact spot inside it, in fractional tank cells (cell x, y covers x … x+1, y … y+1) — the zap's laser
+    // point (F67). Same flat (un-bent) point as cellAt, so it lands inside the cell cellAt picked.
+    const tapPoint = (px: number, py: number): TapPoint => {
+      const r = el.getBoundingClientRect()
+      const [fx, fy] = flatPoint(px - r.left, py - r.top, tankRect(view, s.visibleWidth, s.height - s.bufferRows), visorFx.current?.curve() ?? 0)
+      const x = view.camera + (fx - view.centreX) / view.cellPx + 0.5
+      return { x: ((x % s.width) + s.width) % s.width, y: (fy - view.topY) / view.cellPx + s.bufferRows }
+    }
     // fast drop held (on) / let go: the engine has no event for it (it's the player's hold), so its whoosh plays here
     const softDrop = (on: boolean) => {
       if (on && !softHeld) playGameSound(SOUNDS.fastDrop)
@@ -259,8 +368,13 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
       fastDrop: softDrop,
+      openValve: () => engine.openValveStage(), // F64: as if the valve panel's stage were done (src/ui/ValvePanel.tsx)
       bubbles: { count: () => bubbles.count(), from: (crackId: number) => bubbles.from(crackId) }, // F36 e2e/cracks-look.mjs
+      zapBeam: () => beam.shots(), // F67 e2e/zap.mjs: the beams on screen (from, to: stage px; t: seconds)
       cellAt, curve: () => visorFx.current?.curve() ?? 0, gooMotion: (cell: number) => gooRef.current?.motion?.(cell) ?? 0,
+      faces: () => gooRef.current?.faces?.() ?? [], // F62 e2e/eyes.mjs: the goop's faces (eyes, brows, mouth, gaze, where)
+      // F63 e2e/white-goop.mjs: the white goop (the engine's state.vet + how he looks), and his cell's centre on the stage
+      white: () => s.vet ? { ...s.vet, look: white.report(), screen: vetOnScreen(s, view, 0.5, visorFx.current?.curve() ?? 0) } : null,
       clocks: () => ({ rules: rulesClock.now(), looks: looksClock.now(), rate: rulesClock.rate, pause: clockPause() }),
       // F30 lessons: lesson('sample', 3) plays a lesson from a step (1 = the first, or a step id); lessonView(): where it is
       lesson: (id: string, step: number | string = 1) => session.startLesson?.(id, step) ?? false,
@@ -272,20 +386,27 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       softDrop,
       hold: () => engine.act({ type: 'hold' }),
       console: () => live.current.onConsole(),
+      // F34 / F42: F / Numpad . / 1 fire the first equipped active, 2 / 3 the second / third (refused unless it's full —
+      // the engine says no; a slot with nothing in it: nothing happens); none equipped: no keys
+      ...(s.abilities?.length ? { ability: (slot: number) => { const a = s.abilities![slot]; if (a) engine.act({ type: 'ability', id: a.id }) } } : {}),
       // F28: a held key's swap timer is the HUD's Swap bar; a finger's (or the mouse's) is the ring beside it
       holdProgress: (p, at) => {
         holdProgress = at ? null : p
         placeSwapRing(swapRing.current, el, p, at, layoutRef.current.side ? hud.sideTopPx : hud.topRowPx)
       },
       canSwap: () => engine.allows('hold'), // F59: off before its rank (and in lessons) — no charging ring then
+      swapHoldMult: () => live.current.swapHoldMult, // F43 Goop Swap: a shorter hold (the Swap bar and the ring both follow)
       // broken controls (F23/F24): a held turn repeats slower; single presses and quick swipes stay the same
       spinSlowdown: () => (s.machines?.controls.broken ? breakdowns.controls.heldSpinSlowdown : 1),
       tapCell: (px, py) => {
         const cell = cellAt(px, py)
         if (!cell) return false // beside or above the visible tank: a plain tap (rotate)
         const [x, y] = cell
-        if (y < 0 || y >= s.height || !s.grid[y * s.width + x]) return false
-        engine.act({ type: 'pop', x, y })
+        const at = tapPoint(px, py), r = el.getBoundingClientRect()
+        // (goop to zap — or the white goop, F63: the laser goes through him with an "ow")
+        if (y < 0 || y >= s.height || (!s.grid[y * s.width + x] && !whiteGoopAt(s, at))) return false
+        lastTap = { x: px - r.left, y: py - r.top, at } // (the beam ends on the finger: F67)
+        engine.act({ type: 'pop', x, y, at })
         return true
       },
     }, () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.inputOn() && s.status === 'playing',
@@ -293,7 +414,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
     () => live.current.inputOn && rulesClock.rate > 0 && lessonPlay.consoleOnly() && s.status === 'playing')
 
     return () => {
-      cancelAnimationFrame(raf); ro.disconnect(); detach(); stopHudEdits()
+      cancelAnimationFrame(raf); ro.disconnect(); detach(); stopHudEdits(); beam.dispose()
       for (const v of ['--kit-hud-w', '--kit-hud-dock-size', '--kit-toasts-at', '--kit-toasts-start', '--kit-toasts-end']) root.style.removeProperty(v)
     }
   }, [engine])
@@ -304,7 +425,12 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, re
       <canvas className="stage-layer" ref={gooCanvas} key={style} data-goo={style} />
       {/* the pressure readout, on top of everything in the tank (the goo and the visor glitch): its line on a canvas
           of its own, its words kit text in a kit PinnedBox (never catches taps, so zaps reach the tank under it) */}
+      {/* F67 the zap's beam + laser point: above the visor (a laser from the viewer — it lands exactly on the finger) */}
+      <canvas className="stage-layer stage-zap" ref={zapCanvas} />
       <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
+      {/* (not over the console mid-shift or a menu: the bubble sits above everything — F64 found it over the valve) */}
+      {vetSays && inputOn && <TalkingBubble key={vetSays.n} target={{ x: vetSays.x, y: vetSays.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
+        text={vetSays.words} />}
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>
       </div>
@@ -344,10 +470,40 @@ function placeSwapRing(svg: SVGSVGElement | null, stage: HTMLElement, p: number 
   svg.style.transform = `translate(${cx - half}px, ${cy - half}px)`
 }
 
+// F63: where the white goop is SEEN on the stage (CSS px, bent by the visor's curved-TV look like everything in the
+// tank): his middle column, `down` cells below his top edge (0 = his top, 0.5 = his centre)
+function vetOnScreen(s: ShiftState, view: GooView, down: number, curve: number): [number, number] {
+  const v = s.vet!
+  const x = view.centreX + screenColumn(v.px, view.camera, s.width) * view.cellPx
+  const y = view.topY + (v.py - s.bufferRows + down) * view.cellPx
+  return bentPoint(x, y, tankRect(view, s.visibleWidth, s.height - s.bufferRows), curve)
+}
+
 // The visible tank's left and right edges on screen (CSS px)
 function tankSides(s: ShiftState, view: GooView): [number, number] {
   const left = view.centreX - (pieceScreenColumn(s.visibleWidth) + 0.5) * view.cellPx
   return [left, left + s.visibleWidth * view.cellPx]
+}
+
+// F62: what the goop's eyes look at when no laser is firing — the falling piece's centre (tank cells, like a pop's `at`:
+// a cell's centre is x + 0.5, y + 0.5), gliding down with piece.fall. The drawn piece is placed by the spin while the
+// goop rides the animated camera, so the point is shifted by (camera − spin): the eyes look where the piece IS on
+// screen while the tank slides under it. Written into `out`; null = no piece.
+function pieceFocus(s: ShiftState, camera: number, out: TapPoint): TapPoint | null {
+  const p = s.piece
+  if (!p || !p.cells.length) return null
+  const x0 = p.cells[0][0]
+  let sx = 0
+  let sy = 0
+  for (const [x, y] of p.cells) {
+    sx += x0 + screenColumn(x - x0, 0, s.width) // (unwrapped round the tank: a piece on the seam stays whole)
+    sy += y
+  }
+  const n = p.cells.length
+  const x = sx / n + 0.5 + screenColumn(camera - s.spin, 0, s.width)
+  out.x = ((x % s.width) + s.width) % s.width
+  out.y = sy / n + 0.5 + p.fall
+  return out
 }
 
 // Where the pressure readout goes (CSS px): its line's foot on the pressure line, the line's other end, and the point

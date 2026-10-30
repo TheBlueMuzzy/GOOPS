@@ -17,7 +17,7 @@
 // Accessibility: TypedText keeps the whole text for screen readers (.crt-read); the typed copy is aria-hidden.
 // Every knob is live in the Dev Kit's Tuning tab (crt.json is imported live; the wrapper redraws on an edit).
 // The knobs, the CSS variables and the typing itself: crt.ts. The CSS: crt.css.
-import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useState, type HTMLAttributes, type Ref } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useReducer, useRef, useState, type HTMLAttributes, type Ref } from 'react'
 import { clockPause, onClockPause } from '../devkit/gameClock'
 import { onTuning } from '../devkit/tuning/liveTuning'
 import { crtPreset, crtPresetFor, crtVars, useTyping, type CrtPlace, type CrtPreset, type CrtPresetName } from './crt'
@@ -60,7 +60,9 @@ export function CrtLook({ preset, place, unit, className, style, children, ref, 
 /** Words in a CRT look: typed out letter by letter with a block cursor where the next letter goes (when the look's
  *  typing layer is on), else all there at once. The whole text is laid out from the first frame — the letters not
  *  typed yet are there, unseen — so the box never changes size. Screen readers get the whole text (.crt-read). */
-export function TypedText({ text, className }: { text: string; className?: string }) {
+// onTyped (F45): called once the whole text is out (at once when typing is off); what it returns is called when the
+// text changes or goes (a timer it started is cancelled then)
+export function TypedText({ text, className, onTyped }: { text: string; className?: string; onTyped?(): (() => void) | void }) {
   const look = useContext(Look)
   const typingOn = !!look?.preset.typing
   const typed = useTyping(text, typingOn && look ? look.preset.lettersPerSecond : 0)
@@ -69,6 +71,10 @@ export function TypedText({ text, className }: { text: string; className?: strin
   const setTyping = look?.setTyping
   useLayoutEffect(() => setTyping?.(typing), [setTyping, typing])
   useLayoutEffect(() => () => setTyping?.(false), [setTyping])
+  const typedOut = useRef(onTyped)
+  useEffect(() => { typedOut.current = onTyped })
+  const done = !typing
+  useEffect(() => (done ? typedOut.current?.() ?? undefined : undefined), [done, text])
   return (
     <>
       <span className="crt-read">{text}</span>

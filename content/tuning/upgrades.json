@@ -1,6 +1,247 @@
 {
-  "_about": "Upgrade definitions (F22, TDD 'Upgrades & abilities'). type: passive = modifiers (always on) · active = an ability you equip, charge and fire · feature = a flag the screens read. byLevel[n-1] = the value AT level n (not added up). Passive effects: modifier = a name from src/engine/upgrades.ts Modifiers, op = 'mul' (multiply) or 'add'. Abilities: charge 0..1 (1 = ready), chargePerSecond while the shift is playing, chargePerSeal per crack sealed; byLevel = the effect's numbers. testOnly upgrades are for tests only: nothing in the game lists or grants them. The real 20 (design/upgrades-map.md) get added here when upgrades go into the game.",
+  "_about": "Upgrade definitions (F22, TDD 'Upgrades & abilities'; F34: ranks 2–9 as decided in design/upgrades-map.md 'F33 decisions'). type: passive = modifiers (always on) · active = an ability you equip, charge and fire · feature = a flag the screens read. rank = the rank it can be bought from (the shop itself opens at progression.json unlocks.upgrades). maxLevel = how many levels; cost = scraps a level (missing = 1, v1's price). byLevel[n-1] = the value AT level n (not added up). Passive effects: modifier = a name from src/engine/upgrades.ts Modifiers (or a repair's fewer steps), op = 'mul' (multiply) or 'add'. Abilities: charge 0..1 (1 = ready), chargePerSecond while the shift is playing, chargePerSeal per crack sealed; byLevel = the effect's numbers. cardNumber 'count' = the shop card shows an active's first number as it is (1 → 2 waves), not as a %. Features: feature = the flag the game reads; upgrades on the same flag add up (abilitySlots: each adds an active slot). What players READ (names, descriptions) is in content/text/en.json upgrades.items — 'name' here is only a label for whoever edits this file. Per-level steps start at v1's and get checked by the bots / economy sim (F51). testOnly upgrades are for tests only: nothing in the game lists or grants them.",
   "upgrades": [
+    {
+      "id": "circuitStabilizer",
+      "name": "Circuit Stabilizer",
+      "_note": "v1: +0.75 s of a 5 s grace a level = +15%. Max level: the visor's repair takes 1 step less.",
+      "type": "passive",
+      "rank": 2,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "visorGraceMult", "op": "mul", "byLevel": [1.15, 1.3, 1.45, 1.6] },
+        { "modifier": "visorRepairFewerSteps", "op": "add", "byLevel": [0, 0, 0, 1] }
+      ]
+    },
+    {
+      "id": "autoPopper",
+      "name": "Auto-Popper",
+      "_note": "F33 decision 3 (Muzzy's idea): slower depressurise after a rupture, +15% drain time a level.",
+      "type": "passive",
+      "rank": 3,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "ruptureDrainTimeMult", "op": "mul", "byLevel": [1.15, 1.3, 1.45, 1.6] }
+      ]
+    },
+    {
+      "id": "capacitorEfficiency",
+      "name": "Capacitor Efficiency",
+      "_note": "v1: laser drain × (1 − 0.0625 × level). Max level: the laser's repair takes 1 step less.",
+      "type": "passive",
+      "rank": 4,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "laserDrainMult", "op": "mul", "byLevel": [0.9375, 0.875, 0.8125, 0.75] },
+        { "modifier": "laserRepairFewerSteps", "op": "add", "byLevel": [0, 0, 0, 1] }
+      ]
+    },
+    {
+      "id": "cooldownBooster",
+      "name": "Cooldown Booster",
+      "_note": "Active. v1: full in 20 s (0.05 a second) + 25% per seal. Fire: every running machine's calm time (the cooldown before it can break again) grows by boost × what's left: +25 / 35 / 50%. The fire effect is F34 task 6.",
+      "type": "active",
+      "rank": 5,
+      "maxLevel": 3,
+      "ability": {
+        "effect": "boostCooldowns",
+        "chargePerSecond": 0.05,
+        "chargePerSeal": 0.25,
+        "byLevel": [{ "boost": 0.25 }, { "boost": 0.35 }, { "boost": 0.5 }]
+      }
+    },
+    {
+      "id": "gearLubrication",
+      "name": "Gear Lubrication",
+      "_note": "v1: heat drains × (1 + 0.125 × level). Max level: the controls' repair takes 1 step less.",
+      "type": "passive",
+      "rank": 6,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "controlsCoolMult", "op": "mul", "byLevel": [1.125, 1.25, 1.375, 1.5] },
+        { "modifier": "controlsRepairFewerSteps", "op": "add", "byLevel": [0, 0, 0, 1] }
+      ]
+    },
+    {
+      "id": "focusMode",
+      "name": "Focus Mode",
+      "_note": "v1: time × (1 − 0.1 × level) at the console. Here: × breakdowns.json consoleTimeScale while you're at the console mid-shift (the App reads it — F34 task 5).",
+      "type": "passive",
+      "rank": 7,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "consoleTimeScaleMult", "op": "mul", "byLevel": [0.9, 0.8, 0.7, 0.6] }
+      ]
+    },
+    {
+      "id": "denseGoop",
+      "name": "Dense Goop",
+      "_note": "v1: fall speed × (1 + 0.125 × level). A self-chosen challenge you can take back.",
+      "type": "passive",
+      "rank": 8,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "fallSpeedMult", "op": "mul", "byLevel": [1.125, 1.25, 1.375, 1.5] }
+      ]
+    },
+    {
+      "id": "pressureControl",
+      "name": "Pressure Control",
+      "_note": "F33 decision 2: pressure rises slower (pressureRiseTimeMult > 1 = slower, src/engine/shift.ts), and cracks follow pressure. 8 levels = the scrap sink, so smaller steps: +5% a level (v1: +5 s a level on a 75 s shift ≈ +6.7%).",
+      "type": "passive",
+      "rank": 9,
+      "maxLevel": 8,
+      "effects": [
+        { "modifier": "pressureRiseTimeMult", "op": "mul", "byLevel": [1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4] }
+      ]
+    },
+    {
+      "id": "junkUniformer",
+      "name": "Junk Uniformer",
+      "_note": "F43 (v1): the starting junk. The first junk cell's colour is random; each later one copies it with this chance — v1: 0.10 a level. One extra roll a cell, only when owned (no upgrade = the same junk with the same seed).",
+      "type": "passive",
+      "rank": 10,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "junkSameColorChance", "op": "add", "byLevel": [0.1, 0.2, 0.3, 0.4] }
+      ]
+    },
+    {
+      "id": "goopSwap",
+      "name": "Goop Swap",
+      "_note": "F43 (v1): the hold-to-swap gets shorter. v1: 1.5 s − 0.25 s a level → 1.25 / 1 / 0.75 / 0.5 s = × 0.8333 / 0.6667 / 0.5 / 0.3333 of tank.json holdToSwapMs (1500). Never under tank.json holdToSwapMinMs (500, v1's floor). Read by the input layer (src/input/controls.ts), not the engine: the held key's Swap bar and the finger's ring both follow it.",
+      "type": "passive",
+      "rank": 12,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "swapHoldTimeMult", "op": "mul", "byLevel": [0.8333, 0.6667, 0.5, 0.3333] }
+      ]
+    },
+    {
+      "id": "goopDump",
+      "name": "Goop Dump",
+      "_note": "Active (F42, v1). Full in 15 s (0.0667 a second) + 25% per seal. Fire: waves of single goop cells in the falling piece's colour rain into random columns — waves 1 / 2 / 3, cellsPerWave cells a wave (v1 18), cellMs between cells (v1 80), waveMs between waves (v1 600). Seeded. Refused (charge kept) with no falling piece, a wild one (no colour to copy), during a rupture, or while a dump is still raining. cardNumber 'count': the shop card shows the first number (waves) as a plain number, not a %.",
+      "type": "active",
+      "rank": 15,
+      "maxLevel": 3,
+      "cardNumber": "count",
+      "ability": {
+        "effect": "goopDump",
+        "chargePerSecond": 0.0667,
+        "chargePerSeal": 0.25,
+        "byLevel": [
+          { "waves": 1, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 },
+          { "waves": 2, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 },
+          { "waves": 3, "cellsPerWave": 18, "cellMs": 80, "waveMs": 600 }
+        ]
+      }
+    },
+    {
+      "id": "sealingBonus",
+      "name": "Sealing Bonus",
+      "_note": "F43, Muzzy's pick (2026-10-26): each sealed crack adds EXTRA active charge — × every equipped active's chargePerSeal, +15% a level (0.25 a seal → 0.4 at max). v1's code cut breakdown cooldowns instead, which brought breakdowns back sooner (a bug).",
+      "type": "passive",
+      "rank": 18,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "abilityChargePerSealMult", "op": "mul", "byLevel": [1.15, 1.3, 1.45, 1.6] }
+      ]
+    },
+    {
+      "id": "activeSlot",
+      "name": "Active Expansion Slot",
+      "_note": "Feature (F42, v1). Owning it = one more active slot (2 with this, 3 with Active Expansion Slot 2 too). Every upgrade with feature 'abilitySlots' adds its level to progression.json activeSlots. Taking it back unequips the active equipped longest if they no longer fit.",
+      "type": "feature",
+      "rank": 20,
+      "maxLevel": 1,
+      "feature": "abilitySlots"
+    },
+    {
+      "id": "tougherTank",
+      "name": "Tougher Tank",
+      "_note": "F43 / F33 decision 6 (Muzzy's idea): open cracks wear the tank slower — × integrity.drainPerCrackPerSec, −12.5% a level (half the wear at max). Arrives with split two-colour pieces (20). Not in v1 (rank 22 was Goop Hold Viewer, retired by F59).",
+      "type": "passive",
+      "rank": 22,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "integrityDrainMult", "op": "mul", "byLevel": [0.875, 0.75, 0.625, 0.5] }
+      ]
+    },
+    {
+      "id": "goopColorizer",
+      "name": "Goop Colorizer",
+      "_note": "Active (F42, v1). Full in 25 s (0.04 a second) + 25% per seal. Fire: the next 6 / 7 / 8 pieces (from the one in the next window on) take the falling piece's colour (a two-colour piece: its main colour — the one most of its cells have). Refused (charge kept) with no falling piece or a wild one. Firing again starts the count again in the new colour.",
+      "type": "active",
+      "rank": 25,
+      "maxLevel": 3,
+      "cardNumber": "count",
+      "ability": {
+        "effect": "colorize",
+        "chargePerSecond": 0.04,
+        "chargePerSeal": 0.25,
+        "byLevel": [{ "pieces": 6 }, { "pieces": 7 }, { "pieces": 8 }]
+      }
+    },
+    {
+      "id": "quickFix",
+      "name": "Quick Fix",
+      "_note": "F48 (Muzzy 2026-10-18, rank 28 = the slot Goop Window left): every console repair takes 1 / 2 fewer steps (laser sliders, visor buttons, dial corners). Adds to the max-level machine fixes; never below 1 step (src/game/repairs.ts repairSteps). cardNumber 'count': the card shows the steps as a plain number.",
+      "type": "passive",
+      "rank": 28,
+      "maxLevel": 2,
+      "cardNumber": "count",
+      "effects": [
+        { "modifier": "laserRepairFewerSteps", "op": "add", "byLevel": [1, 2] },
+        { "modifier": "visorRepairFewerSteps", "op": "add", "byLevel": [1, 2] },
+        { "modifier": "controlsRepairFewerSteps", "op": "add", "byLevel": [1, 2] }
+      ]
+    },
+    {
+      "id": "slowCracks",
+      "name": "Slow Cracks",
+      "_note": "F43: new cracks come less often — × the time between cracks, +15% a level — and the same number stretches each crack cell's growth roll (F39, twists.ts), so growing cracks spread slower too. v1 only slowed the growth (−5% spread chance a level).",
+      "type": "passive",
+      "rank": 30,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "crackEveryMult", "op": "mul", "byLevel": [1.15, 1.3, 1.45, 1.6] }
+      ]
+    },
+    {
+      "id": "crackMatcher",
+      "name": "Crack Matcher",
+      "_note": "F43 (v1): each new piece takes the colour of the lowest open crack (not yet plugged) with this chance — v1: 0.25 a level. A two-colour piece: its main colour's cells; a wild piece stays wild. It's the piece made for the next window, so the window shows it. One extra roll, only when owned and a crack is open.",
+      "type": "passive",
+      "rank": 32,
+      "maxLevel": 4,
+      "effects": [
+        { "modifier": "crackColorBias", "op": "add", "byLevel": [0.25, 0.5, 0.75, 1] }
+      ]
+    },
+    {
+      "id": "crackDown",
+      "name": "Crack Down",
+      "_note": "Active (F42, v1). Full in 30 s (0.0333 a second) + 25% per seal. Fire: the next 3 / 5 / 7 cracks form in the bottom `rows` rows (v1 4; no room there → a normal crack, which doesn't count). Refused (charge kept) during a rupture (no new cracks then).",
+      "type": "active",
+      "rank": 35,
+      "maxLevel": 3,
+      "cardNumber": "count",
+      "ability": {
+        "effect": "lowCracks",
+        "chargePerSecond": 0.0333,
+        "chargePerSeal": 0.25,
+        "byLevel": [{ "cracks": 3, "rows": 4 }, { "cracks": 5, "rows": 4 }, { "cracks": 7, "rows": 4 }]
+      }
+    },
+    {
+      "id": "activeSlot2",
+      "name": "Active Expansion Slot 2",
+      "_note": "Feature (F42, v1): one more active slot (3 with both slot upgrades).",
+      "type": "feature",
+      "rank": 38,
+      "maxLevel": 1,
+      "feature": "abilitySlots"
+    },
     {
       "id": "sturdyTankTest",
       "name": "Sturdy tank (test)",
@@ -15,6 +256,7 @@
       "id": "lowCracksTest",
       "name": "Low cracks (test)",
       "desc": "When fired, the next 3 cracks form in the bottom 4 rows.",
+      "_note": "The F22 plumbing proof, kept for tests: the same effect as Crack Down, but charged only by seals (no time), so the tests are exact.",
       "type": "active",
       "rank": 0,
       "maxLevel": 1,

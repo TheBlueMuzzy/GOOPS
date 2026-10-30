@@ -106,7 +106,7 @@ flowchart LR
 - **F32 first-breakdown lessons (runner pieces added):** core — `skipIf` takes a list (any holds), step `reactions` (say something else until `until`, then the step's message comes back: "That's the pause menu…"), an `any` condition (whichever comes first; "Got it" counts when it holds `dismiss`), no breath after the last step, nothing left "running" after a finish (a queued lesson starts at once). Goops side — lessons in a REAL shift (`lessonPlay.watch(engine)`; the engine isn't wrapped), `firstBreakdowns.ts` queues `content/lessons/<machine>.json` on the first `breakdown` of each machine (once per device: kit tips memory `lesson:<machine>`, marked at the repair; leaving before it → plays again), screen events from App (`consoleOpened` / `consoleClosed` / `pauseOpened` / `pauseClosed`), setup `"console": "frozen"` (the lesson holds the tank still at the console while App runs the rules clock at full speed there, so the lesson's own timers keep time), gates `atConsole`, `broken:<machine>`, `breakdownLessonsSeen`, `{consoleSpeed}` in words, `lessons.shared` words. Pointers: HUD bars by name, console parts by `data-tag` (`repair-<machine>` = the part to do next, `panel-<machine>`, `monitor`; `periscope` = the PullHandle grip, `backToTank`, `pauseResume`), the side the message goes from the target's `data-placement` (never over the parts still to use) or the pointer's `placement`, an `or` pointer when the first isn't on screen, else the screen's middle. The console-visit note (`console-note.json`, first `consoleNoteVisits` visits outside a lesson, skipped on the cramped phone-on-its-side console). Settings → Replay lessons (`replayLessons` button row) clears the device's seen marks. Dev: `__goops.breakMachine(id, true)` also announces the break (lessons hear it).
 - **F32 from Muzzy's first try (D10):** runner — a step's `insist` (`when` → the SAME message again with the game paused, the dim on and only `only` controls working — `setSpeed(speed, input, only)`; no Got it; once per step) and pointer-only steps (a pointer, no message: just the spotlight). Look — `Spotlight.tsx` (+ `spotlightMath.ts`: the dim = the screen minus the holes as non-overlapping rectangles, also the tap blocker's clip-path): holes (undimmed, tappable), pass-through (dimmed, tappable: the tank under an insisting go-to-console message, below the HUD row), one outline round all the elements carrying the pointer's tag(s) (`tags: [...]`, or several elements with one tag: the lit lamp + its slider / button / dial), `show` = more holes, the bubble inside `gameColumn()` (console screen's column, else ShiftStage's `--kit-hud-w`), its words and Got it from the first frame (Got it works after dismissArmSeconds). At the console (not a phone on its side) no bubble: `useCrtLesson` → Console.tsx's `Crt` draws the monitor's screen with the line (and Got it) and grows down like a toaster; the monitor + screen are holes. A tagged part's `data-say` swaps in its own words ("Drag the slider toward the light" / "Press the lit button"). A panel a lesson points at by `panel-<machine>` is shown lit (`showcase`). Tank input: `attachControls(…, consoleOnly)` — under an insisting message only W / ↑ / a quick flick up work. Gate `insist:<machine>` = broken for `insistSeconds` (lessons.json, 4 = the visor glitch at full strength); lessons.json `dimAmount`. Repair sliders are a real drag (`useDragOnly` wraps the kit SnapControl: a press that didn't move isn't a move); the visor slider touched at the buttons' turn shakes the panel (the buttons' wrong-press shake).
 
-## 2c. Upgrades & abilities  (F22 — plumbing only; no real upgrade is in the game yet)
+## 2c. Upgrades & abilities  (F22 plumbing; F34 2026-10-22: the 8 ranks 2–9 upgrades are in the game — save + shop D18, Cooldown Booster D19; F42 actives + slots D23; F43 + F48 2026-10-26: ranks 10–38, D24)
 Every v1 upgrade has a home: `design/upgrades-map.md`. Three kinds, three plugs — the engine stays pure and seeded, and with no upgrades it plays **exactly** as before (tested: same events, score and tank on seeded shifts).
 ```mermaid
 flowchart LR
@@ -115,20 +115,22 @@ flowchart LR
   Resolve -- modifiers + abilities --> Engine["createShift(config, { modifiers, abilities })"]
   Resolve -- features --> Screens[HUD / console]
 ```
-- **Passive → modifiers.** `Modifiers` (src/engine/upgrades.ts) is a set of named multipliers, 1 = no change, each read at the exact line that uses its tuning value: `integrityDrainMult` (× integrity drain per crack), `ruptureDrainTimeMult` (× rupture drain time), `pressureRiseTimeMult` (× pressure rise time; vents use the same total, they are "ms of rise"), `crackEveryMult` (× time between cracks), `fallSpeedMult` (× fall speed, fast drop too), `leftoverPenaltyMult` (× leftover penalty); breakdowns (F23): `laserDrainMult` (× laser drain per zapped cell — Capacitor Efficiency), `visorGraceMult` (× visor grace — Circuit Stabilizer), `controlsCoolMult` (× controls cooling — Gear Lubrication), `breakdownCooldownMult` (× the cooldown after a repair). Several upgrades on one modifier combine as (1 + sum of `add` values) × product of `mul` values, so JSON order never matters. `clampModifiers` drops unknown names, turns broken numbers back to 1 and clamps to safety rails (never 0 where the engine divides). New passives that need a new hook (Junk Uniformer, Crack Matcher) add a modifier whose neutral value takes **no extra random rolls**, so seeded shifts stay the same.
+- **Passive → modifiers.** `Modifiers` (src/engine/upgrades.ts) is a set of named multipliers, 1 = no change, each read at the exact line that uses its tuning value: `integrityDrainMult` (× integrity drain per crack), `ruptureDrainTimeMult` (× rupture drain time), `pressureRiseTimeMult` (× pressure rise time; vents use the same total, they are "ms of rise"), `crackEveryMult` (× time between cracks), `fallSpeedMult` (× fall speed, fast drop too), `leftoverPenaltyMult` (× leftover penalty); breakdowns (F23): `laserDrainMult` (× laser drain per zapped cell — Capacitor Efficiency), `visorGraceMult` (× visor grace — Circuit Stabilizer), `controlsCoolMult` (× controls cooling — Gear Lubrication), `breakdownCooldownMult` (× the cooldown after a repair). Several upgrades on one modifier combine as (1 + sum of `add` values) × product of `mul` values, so JSON order never matters. `clampModifiers` drops unknown names, turns broken numbers back to 1 and clamps to safety rails (never 0 where the engine divides). **F43 (2026-10-26, D24):** `abilityChargePerSealMult` (× each active's chargePerSeal — Sealing Bonus) and two **chances** whose neutral value is 0, not 1 — `junkSameColorChance` (placeJunk: each junk cell after the first copies its colour — Junk Uniformer) and `crackColorBias` (randomDef → matchCrack: the new next piece takes the lowest unplugged crack's colour, cracks.ts `lowestOpenCrack`, pieces.ts `withMainColor` — Crack Matcher); they combine as (neutral + sum) × product and roll **only when above 0** (Crack Matcher also only when a crack is open), so seeded shifts without them are unchanged — proven against golden numbers recorded from the pre-F43 engine (tests/engine/f43Upgrades.test.ts). Tougher Tank = `integrityDrainMult`, Slow Cracks = `crackEveryMult` (both were ready). **F48 Quick Fix** = the three `*RepairFewerSteps` (add [1, 2]), summed with the machine fixes' max-level step, `repairSteps` keeps it ≥ 1.
 - **Active → ability hooks.** `createShift({ abilities: AbilitySpec[] })`; `state.abilities = [{ id, effect, charge 0..1, ready }]`. Charge comes from play time (`chargePerSecond`) and seals (`chargePerSeal`), only while the phase is `playing` (not during a rupture). `act({ type: 'ability', id })` fires a ready one: the effect's fire function (src/engine/abilities.ts `ABILITY_EFFECTS`) starts it or says no (→ `reject`, charge kept). Lasting effects live in `state.effects` (e.g. `lowCracks: { id, left, rows }`) and the engine reads them where they bite (crack spawn). Events: `abilityReady`, `ability`, `abilityEnd`.
 - **Feature → flags.** `resolveUpgrades(...).features` = flag → level (e.g. next-piece window, hold viewer, ability slots). Screens read them; the engine already exposes next/held pieces.
-- **Not the engine's:** hold-to-swap time (input), the broken-controls slow held spin (input), the visor glitch (drawn from `machines.visor.health`), console time scale (Focus Mode → the screen's `tick`).
-- **Proof:** two `testOnly` upgrades in upgrades.json — *Sturdy tank (test)* (integrity drain × 0.5) and *Low cracks (test)* (2 seals to charge; the next 3 cracks form in the bottom 4 rows). `playableUpgrades()` never returns test-only ones; nothing in the game reads upgrades.json yet.
+- **Not the engine's:** hold-to-swap time (input — F43 Goop Swap: `swapHoldTimeMult` rides in Modifiers like Focus Mode's; App → ShiftStage → controls.ts `swapHoldMs(mult)` = tank.json holdToSwapMs × it, never under holdToSwapMinMs 500; the Swap bar and the finger's ring both fill in that time), the broken-controls slow held spin (input), the visor glitch (drawn from `machines.visor.health`), console time scale (Focus Mode → the screen's `tick`).
+- **Proof:** two `testOnly` upgrades in upgrades.json — *Sturdy tank (test)* (integrity drain × 0.5) and *Low cracks (test)* (2 seals to charge; the next 3 cracks form in the bottom 4 rows). `playableUpgrades()` never returns test-only ones. **F42 (2026-10-26):** all four actives are real (`ABILITY_EFFECTS`: boostCooldowns, goopDump, colorize, lowCracks; `state.effects` can hold dump + colorize + lowCracks at once; the dump rains on the rules clock in `step`, each cell a `dump` event then a `fall`); features on one flag add up (`abilitySlots` = 1 per owned slot upgrade); `activeSlots(progress)` = progression.json base + owned slots.
 
 ## 3. Data the game reads
 | File | What's in it | Edited with |
 |---|---|---|
 | `content/tuning/shift.json` | tank size, shift length, fall speed, lock delay, fill time, refunds, crack rules | Obsidian (Dev Kit later) |
 | `content/tuning/breakdowns.json` | the three machines' meters (v1 numbers), unlock ranks, repair cooldown, `consoleTimeScale` (F23) | Obsidian |
-| `content/tuning/upgrades.json` | upgrade definitions: type, rank, max level, per-level effects / ability charge + numbers (only the two test-only ones so far) | Obsidian |
+| `content/tuning/upgrades.json` | upgrade definitions: type, rank, max level, per-level effects / ability charge + numbers (the 8 ranks 2–9 upgrades + the two test-only ones; players' words in en.json `upgrades.items`) | Obsidian |
 | `content/tuning/goo-jelly.json` | Jelly's knobs (started as Muzzy's Preset 2; plain-English help for each under `_help`) | Dev Kit Tuning (live) / Obsidian |
 | `content/tuning/goo-particle.json` | Particle's knobs (started as Muzzy's Preset 1; `_help` too) | same |
+| `content/tuning/zap.json` | F67 the zap look, both goo styles + the beam (Muzzy's pick from research/sketches/zap-look.html): `beamTime` (the goop heats for 40% of it), `whiteHot`, `swell`, `suckTime` (sucked into the laser point nearest-first), the spray `droplets` / `dropSpeed` / `dropLife` / `gravity` (v1 px on a 30-px cell) / `sprayAt`. Timeline code: src/goo/shared/zap.ts. Reduce motion: no swell, no spray. Looks only — the rules remove the cells at once | Dev Kit Tuning (live) |
+| `content/tuning/eyes.json` | F62 the goop's faces, both goo styles (Muzzy's picks from research/sketches/goop-eyes.html): eye size / pupil / spacing / count / colours (+ `mouthColor`), which clumps get eyes (`minClump10` / `eyeChance10` for ranks 10–19, `minClump20` / `eyeChance20` from 20), `followSpeed` / `followRange` (20+), `blinkEvery` / `blinkTime` / `worriedAt` / `browTilt` / `pupilShrink` (30+), `zapClose`, mouths `mouthChance` / `mouthSize` / `mouthOpen` / `talkEvery` / `talkTime` (40+), `appearSpread` / `appearFade` (one clump at a time), F45 `chorusRank` / `chorusMouths` / `chorusTime` / `chorusOpen` (story 48: every mouth opens at once, once per device, D25). Rules: src/goo/shared/faces.ts; drawn inside the goo canvas by src/goo/shared/faceDraw.ts. Ranks 0–9: none. Looks only | Dev Kit Tuning (live) |
 | `content/tuning/goo-colors.json` | colour name → hex (red, blue, green, yellow, purple, white, black); `shift.json` `colors` sets their order | same — the goo, cracks and ghost change at once |
 | `content/tuning/cracks-look.json` | F36 readable cracks, looks only: `bubbles` (open cracks leak air — rate, gusts, size, speed, sway, life, alpha, colour, calm for reduce motion, max), `xray` (the dotted box round a covered crack + `gooAlpha`: how solid the goo stays inside it), `sealed` (the mended scar). The rule half (no crack on a sealed spot) is the engine's: `state.sealedCracks`, in snapshots | Dev Kit Tuning (live) |
 | `content/tuning/pause.json` | `halfPauseGooMoves` (off) — does the goo keep moving in the Dev Kit's ◐ half pause | Dev Kit Tuning |
@@ -141,9 +143,22 @@ flowchart LR
 | `content/lessons/visor.json` · `laser.json` · `controls.json` | F32: each machine's first-breakdown lesson (broke → toConsole → fullyPaused (the very first only) → fix → fixed → back), same shape; words en.json `lessons.<machine>` + `lessons.shared` | Dev Kit Lessons tab / Obsidian |
 | `content/lessons/console-note.json` | F32: the one-line console-visit note (closes on Got it, back in the tank, or after 1.5 lesson-seconds = 6 s at the console's 25%) | Dev Kit Lessons tab / Obsidian |
 | `content/tuning/progression.json` | ranks + XP (v1 numbers), scraps per rank · F59 `unlocks` = the rank each part of the game unlocks at (`nextPiece` 1 · `swap` 3 · `upgrades` 5); `isUnlocked(what, rank)` in src/progress/progression.ts is the ONE rule the HUD, the controls (engine `swap` option) and the console ask — no rank numbers in UI code | Dev Kit Tuning (live) |
+| `content/tuning/payslip.json` | F41: the end report's payslip — `fineShare` (8% of the shift, theatre: net always = the real XP), `fineLines` 3, `lineMs`, `loiterSeconds`, the silly fines and the rank each starts at, the payday shares (lodging · meals · air · periscope · rotating extra), the passage debt (start, paid share, interest, goes up from rank 30). Rules: src/progress/payslip.ts (`makePayslip`, `debtAt` — worked out from the rank, never saved); words: en.json `payslip` | Dev Kit Tuning (live) / Obsidian |
+| `content/tuning/talk.json` | F35: the Veteran's talking bubble feel (kit TalkingBubble, UI kit 0.31.0) — Muzzy's S9 picks: wave start/end, spike gap + height, roundness, variability, pop size, type speed, rest, squelch. Read every frame | Dev Kit Tuning (live) |
+| `content/tuning/name.json` | F66: `maxLength` — the most letters the first day's name box takes (12, Muzzy 2026-10-25); the name itself is in the save (D20) | Dev Kit Tuning / Obsidian |
+| `content/tuning/whiteGoop.json` | F63 the white goop (the Veteran, gooped — D21). Rules, read by src/engine/whiteGoop.ts on the rules clock: `fromRank` 31, drop-in (`dropFromCentre`, `dropSecPerCell`), ooze (`secPerCell` 0.7, `oozeSlow` 2.5), `targetBy` hardestForYou (+ `coveredHardness` 4), `sealTime` 6, `sealTimePerExtraCell` 1 (F39: a grown crack takes sealTime × its size), `restAfter` 1, `thinkSec`, `countsForQuota`, `integrityRefund`. Looks, read by src/view/whiteGoopView.ts on the goo's clock: colour, alphas, `squint` 0.25, `eyeSize` 0.18, eye gap/colours, `owTime`, `flinch`, the sealing ring, Particle `dots`, `eyesTurnSec` (the goop's eyes on him as he drops in) | Dev Kit Tuning (live) |
+| `content/tuning/twists.json` | F39 rank twists (D22), read by src/engine/twists.ts + pieces.ts on the rules clock, seeded by the shift's rng: `split` (two-colour pieces: `fromRank` 20, `chance` 0.25), `grow` (growing cracks: `fromRank` 30, a roll every `everyMsMin`–`everyMsMax` 5–10 s per uncovered cell, chance (`baseChance` 0.1 + pressure × `pressureWeight` 1) × `leafMult` 0.5 if nothing grew from it × max(`minFalloff` 0.1, 1 − `hopFalloff` 0.25 × steps from the root), `diagonals` true = 8 directions), `wild` (wild goop: `fromRank` 40, `chance` 0.15). Corrupt pieces are never split or wild; wild is never split | Dev Kit Tuning (live) |
+| `content/tuning/finalShift.json` | F64 the final shift (rank 50, the boss level — D26), read by src/engine/shift.ts + finalShift.ts on the rules clock: `rank` 50, `colour` black (every piece, junk, rain cell and crack), the onslaught (`fallSpeedMult`, `pressureRiseMult`, `crackRateMult`, `rain.everySec` / `rain.cells`), `valve.stages` [6, 8, 10] (seals per release-valve stage; a full stage waits for `openValveStage()` and seals don't count meanwhile), `vet` (whiteGoop.json's numbers laid over his own in this shift: `sealTime`, `secPerCell`, `restAfter`, `dropSecPerCell`, `targetBy` outOfReach + `reachRows`, `shrinkPerSeal`), `intro` (his drop-in lines + when the first piece comes; `lineSec` is the view's), `bots.valveSec` (the bots' stand-in for a valve stage) | Dev Kit Tuning (live) |
+| `content/tuning/valve.json` | F64 the release valve's mini-game (Muzzy's design, sketch S11 — D27), read by src/game/valve.ts (pure rules) + src/ui/ValvePanel.tsx each frame: `rule` 1 add · 2 coarse + fine · 3 worst wins, `detents` (clicks a turn), `fine`, `coarseGain`, `green` (share of the dial) × `shrink` per stage, `hold` (seconds in the green), `sway` (the needle's spring), `openSec` ("STAGE n OPEN" before back to the tank), `goSec` (his "go!" bubble) | Dev Kit Tuning (live) |
+| `content/tuning/ending.json` | F65 the ending (D28), read when each step starts by src/game/ending.ts (the step order + which steps time out) and src/game/EndingView.tsx / Console.tsx EndingBadge (the looks): `goopLines` (the goop's lines in order, en.json `ending.goop`), `paidBy` 1,312 + `named` 4 (the last payday, "{more}"), `pour` (shake, rise, hold seconds; lumps, stars, twinkle), `mouths` (`spots` = the faces in the filled view, `size`; colours + the chorus from eyes.json), `console` (quiet after his line, the badge's strike timing, leave, the empty console). Looks clock: the Dev Kit's full pause holds it | Dev Kit Tuning (live) |
+| `scripts/bots/economy.json` | F51 the economy sim's settings (D30; measuring only — the game never reads it): `careerSeeds`, `maxShifts`, `finalTries`, `skills` (bots.json bots), `buyStyles` (spread · rush · activesFirst), `neverBuy` (Dense Goop), `bands`, `activePriority`, `finalLeaveOut` (Goop Dump), effect runs (`effectSeeds`, `effectSkills`, `effectLateRanks` 45 + 50, `slotTestActives`), `feelThreshold` (PLACEHOLDER until Muzzy calibrates it), `feltDirectly`, `finalSeeds`, `quick` (check:full's short run). Rules: scripts/bots/career.ts; run: `npm run sim:economy` → e2e-shots/sim/ | Obsidian |
+| `content/tuning/galaxy-look.json` | F64 the galaxy-black look (colour slot 7, black, only at rank 50), read by src/goo/shared/galaxyLook.ts (GALAXY_GLSL in both goo renderers' last pass, like the wild look) and the 2D helpers (tankView cracks / ghost / arrows, NextWindow): night `body`, `nebula1` / `nebula2` clouds (`nebula`, `nebulaSize`, `drift`), the `rim` glow colour + `rimGlow` and the outside `halo` (what makes black read on the dark tank — also black's ready glow), `stars` / `starSize` / `starColor` / `twinkle`, black cracks' `crackStars` + `crackCore`. The sky is pinned to the view (the goop moves over a still sky). Looks only | Dev Kit Tuning (live) |
+| `content/tuning/twists-look.json` | F39 how the twists LOOK (looks clock): `wild` = the wild goop's look from the sketch research/sketches/wild-goop.html (`look` oil / rainbow / pearl — paste the sketch's Copy values here, its look 0/1/2 = rainbow/oil/pearl; `speed`, `band`, `saturation`, `tint`, `glow`, `sparkle`), drawn by src/goo/shared/wildLook.ts in both goo renderers (wild = an 8th colour channel of its own: Jelly tex2.a, Particle tex1.a — never black's slot) and as a gradient on the tank canvas (ghost) + next window; `twoColour` = the glow round a falling two-colour piece (`glow`, `size`, `pulseHz`, tank canvas) | Dev Kit Tuning (live) |
+| `content/story/moments.json` | F35: one story moment per rank (0–9 so far): its lines (voice `mon` = the monitor, `spk` = the Veteran's bubble, `head` = the goop in your head 31–39, the whisper's plain bubble, `him` on 35/37, F45 `goop` = the goop through the speaker 41/43/48; line flags monitor flicker/alarm/glitch, crackle, cut (a cut `mon` line has no Got it), rattle (the console hatch); `looks` = their numbers; `{name}` in words = operatorName() or Operator #4471; `words` = a key in en.json story.lines) and `look` (a console part to outline); `catchUp` = most moments in one console visit. Played by src/game/lessons/storyMoments.ts + StoryView.tsx; seen ones in the kit tips memory as `story:<rank>` (Replay lessons replays them). Its own folder: every file in content/lessons/ loads as a lesson | Obsidian |
 | `content/tuning/hud.json` | the shift's HUD sizes (top row room `topRowPx`, panel, bars, readout, chevrons) · F59 `nextWindow` (cols × rows cells, `cellRem`, `padCells`, `cellGap`, `cornerCells`) — the window sits at the left of the bottom panel, which is at least its height (ShiftStage adds the frame's kit gaps + border) · `bars.machineWidth` = the most of the room right of the window a machine bar takes (shared out evenly, never narrower than its name), `bars.integrityWidth` 1 = all of it | Dev Kit Tuning (live) |
 | `content/lessons/unlock-window.json` · `unlock-swap.json` · `unlock-upgrades.json` | F59: the unlock lessons — one step each; the window's and swap's pause the start of the first shift after their rank (one per shift start: src/game/lessons/unlockLessons.ts), upgrading's is the console monitor's line + the Upgrades button outlined until it's opened. Words en.json `lessons.unlock-*` | Dev Kit Lessons tab / Obsidian |
-| `content/ui/art.json` | which of Muzzy's pictures goes where: the console (layers cut from art/Example1.svg, each at its box in the mock-up's units; the views; periscope travel + grip; where the game writes words), end-report frame + its cut lines, buttons | Obsidian |
+| `content/ui/art.json` → `endGame`, `console.career` | F65: the end-game screen — Muzzy's art/EndGameScreen.svg (art-prep strips its mock-up words + swipe arrow and runs the meter full → public/art/EndGameScreen.svg), `words` = where the game writes over it (title, subtitle, the rank row, two big numbers, the four boxes + `boxPad` / `boxLabelShare`), `button` = Begin a new career. `console.career` = the new career's gold trim: `fromCareers` 1, `colour`, `trimRem` (crisp outline), `glowRem`, `layers` (body, meter, monitor, periscope) — Console.tsx puts it on the page root as --kit-career-* | Obsidian |
+| `content/ui/art.json` | which of Muzzy's pictures goes where: the console (layers cut from art/Example1.svg, each at its box in the mock-up's units; the views; periscope travel + grip; where the game writes words; F45 the hatch under the panels + `crt.glitch`, the not-a-face), end-report frame + its cut lines, buttons | Obsidian |
 
 **Goo knobs Muzzy can change live** (Dev Kit → Tuning; the renderer picks up a changed value on the next frame — `followFile` in `src/goo/shared/knobs.ts`). Both files share most names:
 - `stiffness` — how hard the goo springs back to its grid shape (Jelly 700, Particle 189). High = firm, fast jiggle.
@@ -184,6 +199,172 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D30 · 2026-10-29 · The economy sim plays whole careers through the game's own progress code (F51)
+  Proposed by: Claude (auto mode; Muzzy's asks 2026-10-29: a range of skills not one bot, the bot visits the console,
+  "how do you measure too weak to feel", real shopping choices, ranks 40–50 winnable)
+  Options: a separate economy model (numbers only, fast, but it can drift from the game) · the real engine + the real
+  progress/shop code per shift (slower, can't drift)
+  Chose: the real thing. scripts/bots/career.ts calls rewardFirstDay / rewardShift / rankInfo (XP, ranks, scraps),
+  buyLevel / setEquipped (the shop), upgradesForShift → createShift with the same options as App.tsx newEngine,
+  repairSteps (console repairs) and swapHoldMs (the swap hold), so every upgrade — even the ones the game reads outside
+  the engine (Focus Mode, Quick Fix, Goop Swap) — is measured. The F27 bot gained: console trips for repairs (as the
+  F64 final-shift bot), a swap that takes the hold time (no fast drop meanwhile), actives fired after its reaction
+  time. Buy styles (spread / rush / actives first) spend every scrap between shifts. "Feel" = one upgrade on vs off,
+  the same seeds, counted only when the change beats a placeholder line (economy.json feelThreshold, for Muzzy to
+  calibrate) AND twice the seed noise. Worker threads (economy.mjs); a quick mode is in check:full. ts-hooks.mjs loads
+  .json in plain Node (src/progress imports the tuning files). Nothing in src/ changed.
+  Findings: .planning/research/economy-sim.md (knobs for F52 — Balance pass).
+D29 · 2026-10-27 · The new career = a fresh progress + the device's lessons kept, the story forgotten (F65)
+  Proposed by: Claude (Muzzy 2026-10-27: "a look only … same game from rank 0 · skip the first day's tutorial but keep
+  the rank-0 sign-in")
+  Options: reload the page like RANK SELECT · reset in place (the App's state) — and the tips memory: keep it all ·
+  wipe it all (RANK SELECT 0) · keep the lessons, forget the story
+  Chose: in place (src/game/newCareer.ts beginNewCareer + App newCareer): freshProgress saved (save.ts keeps the name
+  and careers), the first day's checkpoint forgotten, then the kit tips memory reset and every lesson + console note
+  marked seen again (careerKeeps = livedThrough(topRank + 1) without the story ids). So the first day and the unlock /
+  machine lessons don't play (you know the job), while every story moment, whisper and look plays again — rank 0's is
+  the sign-in, so the goop learns a new name. A rank's moment can have a new-career version (moments.json newCareer;
+  rank 0: "WELCOME BA—" cut off, the welcome, "YOUR TITLE: FORMER EMPLOYEE", the sign-in). The gold trim is a look
+  only: CSS drop-shadows round the console + periscope pictures (art.json console.career) from careers ≥ fromCareers.
+  RANK SELECT keeps the careers (only 0 wipes them, a brand-new device).
+D28 · 2026-10-27 · The ending is a step list on the looks clock; end titles + careers live in the save (v4) (F65)
+  Proposed by: Claude
+  Options: the ending as story moments (moments.json lines) · its own step runner — and the end titles: worked out from
+  the rank · saved
+  Chose: its own runner, src/game/ending.ts: endingSteps() = pour → one goop step per line → vet → quiet → payday → badge
+  → leave → empty → endScreen (tests/progress/ending.test.ts keeps the order); timed steps (pour, quiet, leave, empty)
+  move on by themselves on the LOOKS clock, the rest on a tap. Story moments are console-only, once per device and
+  between shifts; the ending starts in the tank, moves to the console mid-way (App slides it up when the first
+  'console' step comes) and has looks no line has (the pour, the faces, the badge, the end-game screen). The final
+  shift's win no longer opens a report: onEnd starts the ending instead. Its looks are CSS overlays
+  (src/game/EndingView.tsx + ending.css: galaxy-look + eyes.json colours, the chorus timing) — the shift is over, so
+  the goo renderer can't move. End titles are SAVED: save v4 adds `badge` ('oneOfUs' after a lost final shift,
+  'savior' after the win; part of the career's progress, so a new career or a RANK SELECT pick drops it) and `careers`
+  (wins on this device; kept like the name). progression.ts badgeTitle(rank, badge, careers) is the one rule (Former
+  Employee = careers ≥ 1 at the first band); badgeAfterFinal never takes a win back. A page opened while the badge is
+  'savior' goes straight to the end-game screen (the new career clears it). Golden save tests/saves/goops-progress-v4.json.
+D27 · 2026-10-26 · The release valve panel: drawn wheels over the repair panels, on real time (F64)
+  Proposed by: Muzzy (the mini-game: two wheels steer one needle into the green) · Claude (how it's built)
+  Options: the kit's SnapControl dials · the game's own drawn wheels (sketch S11) — and where it goes: its own console
+  screen · over the repair panels, out of the hatch
+  Chose: the game's own wheels — one SVG in the console's units and the style's colours (src/ui/ValvePanel.tsx), its
+  rules pure in src/game/valve.ts (tests/valve.test.ts). SnapControl's dial only settles on a stop when you let go; the
+  needle has to follow each click live while you drag (the sketch's feel). It rises out of the open hatch OVER the repair
+  panels (art.json console.valve.at, inside a sideways phone's view); the open hatch is a button that shuts / opens it,
+  so a machine can still be repaired mid-stage; each new stage opens it again. Its time is REAL time: the rules clock's
+  time ÷ its rate — the shift around it runs at consoleTimeScale (0.25), the player's hands and the needle don't, and a
+  pause (menu, Dev Kit) still stops the needle and the hold. Each stage is a new valve (the console keys the panel by
+  stage); under scripted checks it's seeded by its stage (window.__goopsValve in dev = where the wheels are and should
+  be). Solved → "STAGE n OPEN" for openSec → engine.openValveStage() and back to the tank.
+  Also: the Veteran's bubble (ShiftStage) now shows only while the tank has the input — it was drawing over the console.
+D26 · 2026-10-26 · The final shift is a mode of the normal shift engine, switched on by rank + finalShift.json (F64)
+  Proposed by: Claude   Options: a separate engine for rank 50 · the normal engine with a final-shift switch
+  Chose: the switch (ShiftOptions.finalShift; on at its rank, never in a lesson). Every rule it changes is one line
+  where that number is used: one colour (randomDef → recolored; junk; each new crack), × fall / pressure rise / crack
+  rate, the goop rain (Goop Dump's drop), the valve count beside cracksSealed, the Veteran's tuning = whiteGoop.json
+  with finalShift.json `vet` laid over it (fresh each step, so both files edit live). State: state.final (stage,
+  seals, need, waiting, outcome) — plain data, in snapshots. The valve panel (task 6, Muzzy's design) only has to
+  call engine.openValveStage(); Dev: __goops.openValve().
+  The losses end the shift AT ONCE (status lost, final.outcome vetGone / overflow / integrity; the rupture event still
+  fires for the sound/shake) — no rupture drain: it's the boss level, and zapping out a drain can't win it (Ask Muzzy).
+  The shift waits for the Veteran's intro (no piece, no pressure, no cracks) until he has landed + intro.playSec.
+  "Cracks you can't reach" (whiteGoop.ts targetBy outOfReach) = a crack with at least vet.reachRows empty rows to
+  build under it in its column (crackHardness; one colour, so "covered by the wrong colour" never happens) — the
+  hardest first; with none he waits, so he never spends himself on a crack you could plug with your next piece.
+  Seals past a stage's number are lost (the stage waits with exactly its number).
+D25 · 2026-10-26 · Story 48's "every mouth opens at once" waits for mouths; the faces say when it played (F45)
+  Proposed by: Claude   Options: at the shift's first frame · after N seconds · once chorusMouths mouths are showing
+  Chose: the last — a shift starts with an empty tank, so "at the start" would open no mouths at all. ShiftStage
+  decides once per shift whether this is a chorus shift (rank ≥ eyes.json chorusRank and tips memory hasn't
+  'look:mouths-open') and hands FaceStory.chorus to the goo; the FaceBook (both styles share it) opens every mouth
+  for chorusTime once chorusMouths are fully shown, and calls FaceStory.onChorus as it starts — ShiftStage marks it
+  seen then (not at shift start), so a shift lost before any mouths appear doesn't use it up. Tips memory = Replay
+  lessons plays it again, like the moments. The open/close curve reuses the eyes' squeeze curve (shutCurve).
+  Also: a cut Management line (45) moves on through the same storyMoments.cutAfterTyped as the Veteran's cut lines;
+  TypedText (CrtLook.tsx) got an onTyped callback for it.
+D24 · 2026-10-26 · Chance modifiers (neutral 0) beside the multipliers; Goop Swap's number rides in Modifiers (F43)
+  Proposed by: Claude   Options (chances): a separate "chances" record · Modifiers with a per-name neutral value
+  Chose: Modifiers keeps one flat record — junkSameColorChance and crackColorBias have neutral 0 in NEUTRAL_MODIFIERS,
+  limits [0, 1], and resolveUpgrades combines every name as (neutral + sum of 'add') × product of 'mul' (the same
+  result as before for the multipliers). Snapshots, the Dev Kit log and clampModifiers needed no change. The engine
+  rolls for them only when above 0, so a shift without them is byte-identical with the same seed (golden test vs the
+  pre-F43 engine). swapHoldTimeMult also lives in Modifiers (like consoleTimeScaleMult): the engine ignores it, the
+  App hands it to the input layer — one place for "what my upgrades do" rather than a second channel.
+  Also: Crack Matcher biases the piece made for the NEXT window (so the window shows it) and only from random pieces
+  (never a lesson's chosen ones); Goop Colorizer, if running, still wins. Quick Fix's card shows "1 → 2" (cardNumber
+  'count' now works for passives: their first effect's number).
+D23 · 2026-10-26 · One charge button per equipped active; where they sit is a content/ value (F42)
+  Proposed by: Claude   Options: A top row · B a column beside the tank · C in the bottom panel · C+ own panel row
+  Chose: hud.json abilities.layout — panelRow (C+, stand-in: fits 3 × 46 px at every portrait size for ~24 px of
+  tank height) or topRow (fits only one; 2–3 go in the panel row anyway); topRowWhenOne keeps a single button up
+  top. Keys 1 / 2 / 3 fire slot 1 / 2 / 3 (v1 had no ability keys); F / Numpad . stay on slot 1. Each active has its
+  own icon (src/ui/abilityIcons.tsx); the ring is sized from the button. Muzzy's sketch pick replaces the stand-in.
+D22 · 2026-10-25 · A grown crack is one Crack with a list of cells; wild goop is a colour value (F39)
+  Proposed by: Claude (Muzzy's rule 2026-10-25: a grown crack is ONE crack, sealed only when every cell is covered,
+  counting its cell count toward the quota)
+  Options (cracks): one Crack per cell, linked by a group id · one Crack with cells[] (root = its old x, y)
+  Chose: one Crack with optional `cells` (root first), `parent` (which cell each grew from — for v1's leaf and
+  hops-from-root odds) and `growMs` (each cell's own roll clock), all in state.cracks — so snapshots keep them with
+  no new fields, and a crack that never grew has none of them (old snapshots load as they were; x, y stay the root, so
+  everything that only knows x, y still finds the crack). Helpers in src/engine/twists.ts: crackCells / crackSize /
+  crackHas / crackPlugged; the views draw per cell through crackSpots (src/view/crackBubbles.ts). One cell = one seal
+  everywhere a seal counts (quota, pressure vent, integrity refund, ability charge); drain is per cell; the white goop
+  seals it whole in sealTime × (1 + extra cells × sealTimePerExtraCell). Growth never goes above the pressure line,
+  into goop, another crack, a sealed spot or the white goop's cell; Slow Cracks (crackEveryMult) stretches its clock.
+  Two cracks growing side by side stay two cracks (v1 merged same-colour ones — not built; Muzzy's rule didn't ask).
+  Options (wild): a flag on each cell · a colour value of its own
+  Chose: WILD = 255 in the grid (types.ts): wild cells clump with wild cells by the normal grouping, pop like any
+  goop, and plugsCrack() lets it plug any colour. The renderers map it to a stand-in (palette.ts gooSlot → slot 7's
+  channel; goo-colors.json "wild" on the tank canvas) until task 6's look. A two-colour piece is PieceDef.colors (one
+  per cell, in cell order — rotation and mirroring keep the order). Twist rolls come after the old ones and only from
+  each twist's rank, so seeds below rank 20 play exactly as before; no twists in a lesson's training shift.
+D21 · 2026-10-25 · The white goop is his own entity in the engine, drawn on the tank canvas (F63)
+  Proposed by: Claude (Muzzy's sketch pick: he oozes BEHIND the goop)
+  Options: a grid cell of a special colour · his own entity in the engine (state.vet) + drawn as a body in each goo
+  renderer · his own entity + drawn on the tank canvas under the goo canvas
+  Chose: his own entity (src/engine/whiteGoop.ts: cell, move, target crack, seal progress, mode — plain data, so
+  snapshots keep him; no randomness, rules clock) drawn on the TANK canvas (src/view/whiteGoopView.ts, drawTank's
+  `white` hook). Why: behind the goop is then simply true in both goo styles (the goo canvas is on top); one drawing for
+  both styles (Particle gets his dots version); his covered look reuses the crack x-ray (view.xray cells + the dotted
+  line). A grid cell would merge, hold goop up and be popped — every rule would need an exception. Trade-off: he isn't
+  a WebGL jelly, so he doesn't blob into the goo's surface the way two goops touching do (he's behind, so it shouldn't).
+  His seals count toward the quota and patch the tank like yours (whiteGoop.json switches; story.md's final shift says
+  his seals count). bentPoint moved from the lessons to src/view/visorFx.ts (his "ow" bubble and tests use it too).
+D20 · 2026-10-25 · Your name lives in Goops' own save, on the device; a framework profile module waits (F66)
+  Proposed by: Claude (story.md "Your name": Muzzy 2026-10-23 "do we have a level 0 sign in?")
+  Options: an account / sign-in · a framework profile module now (name + avatar, shared by every game) · a field in
+  Goops' save
+  Chose: a field in Goops' save — `name` in the "goops-progress" record (save v3; older saves step up with no name),
+  device only, no account, nothing sent anywhere. Signed on the first day's monitor ("PLEASE SIGN HERE", rank 0's
+  story moment; the kit's TextInput), trimmed, 12 letters max (content/tuning/name.json, Muzzy 2026-10-25); empty or
+  skipped = no name, and the game says "Operator #4471" (en.json story.sign.fallback). RANK SELECT 0 wipes it with the
+  rest of the save. F63 reads it with operatorName() (src/progress/save.ts: the name or null). A framework profile
+  module (name + avatar) only when a second game needs a name — then this field moves onto it with one save step.
+D19 · 2026-10-23 · The payslip is theatre worked out from the XP; nothing new is saved (F41)
+  Proposed by: Claude   Options: save credits, fines and debt / work them out from the shift's reward
+  Chose: makePayslip(reward, facts) in src/progress/payslip.ts: net = the XP the shift earned (gross = net + fines,
+  so fines never slow ranking), one payday per rank crossed for exactly that rank's xpToNext; the passage debt is
+  debtAt(rank) (seeded interest per rank), so it can't disagree with the rank and the save stays v2. Fines from the
+  shift's real events (App gathers them from session.listen + the end state) come first, then silly ones by rank.
+  Layout: the report's rows + a Payday Modal per rank crossed (its rows in a ScrollArea — Muzzy: "just obviously
+  hangs off screen", as Glyphtender does); the report's own rows scroll from UI kit 0.31.0 (framework F113, with
+  the row reveal + tones). Font sizes never go under the kit's 18 px body text (Muzzy: a pixel font).
+D18 · 2026-10-22 · Upgrades you own live in the progress save (v2, old saves carried over); the shop rules are pure functions (F34)
+  Proposed by: Claude   Options: a separate upgrades save / extend goops-progress
+  Chose: goops-progress version 2 = { totalXp, scrapsSpent, owned: id → level, equipped: ids }, one upgrade step per
+  version (v1 → v2 keeps XP + scraps, empty owned) — the alpha wiped any save whose version differed, so without the
+  step this release would have wiped every alpha player. A save from a newer build is never overwritten; a broken
+  upgrade entry is dropped alone. Buy / take back / equip = pure functions in src/progress/upgradeShop.ts (1 scrap a
+  level from the data, free take-back, active slots from progression.json); upgradesForShift() feeds createShift.
+  Lesson training shifts get no upgrades (they play the same for everyone). Golden saves: tests/saves/.
+D19 · 2026-10-22 · Cooldown Booster fires on the machines; its button sits in the HUD top row (F34)
+  Proposed by: Claude   Options: button in the bottom panel / top row
+  Chose: ability fire functions also get the machines (changed in place, engine stays pure + seeded); boostCooldowns
+  adds boost × remaining calm time to every running cooldown, refused (charge kept) when not full, nothing running, or
+  in a rupture. The bottom panel lets taps through to the tank and has no width at 360, so the charge button sits in
+  the top row left of the console button; key F / Numpad . (skipped in text boxes). Kit gap: TimerRing has one size
+  and always prints its number — 2 app.css lines shrink it (framework request).
+  Review note (2026-10-22): taking a level back refunds the upgrade's CURRENT price — only a Dev Kit price edit after buying makes that differ from what was paid; accepted (all prices are 1). The shift never gets more actives than slots (newest kept).
 D17 · 2026-10-20 · The alpha's release kit: its own service worker at /GOOPS/alpha/, auto-update, deploy beside v1 (F38)
   Proposed by: Claude (BMUZ GitHub Pages recipe + the Sprint 11 plan call)
   Chose: vite-plugin-pwa (generateSW) — base /GOOPS/alpha/ in production, so its sw.js lives at /GOOPS/alpha/sw.js with

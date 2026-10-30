@@ -6,10 +6,26 @@
   "minXp": 100,
   "minXpPerRank": 100,
   "scrapsPerRank": 1,
+  "_activeSlots": "F34: how many active upgrades (Cooldown Booster…) can be taken into a shift at once. v1: 1, then 2 with Active Expansion Slot (rank 20) and 3 with the second (rank 38).",
+  "activeSlots": 1,
   "_unlocks": "F59 (Muzzy, 2026-10-19): the rank each part of the game unlocks at. nextPiece = the next-piece window at the top of the tank · swap = trading the falling piece with the next one (hold Right Shift / R, or hold still on the tank) · upgrades = the Upgrades button on the console opens (scraps bank from rank 1 either way). The machines unlock in breakdowns.json (unlockRank).",
   "unlocks": {
     "nextPiece": 1,
     "swap": 3,
     "upgrades": 5
+  },
+  "_titles": "F35: the rank each title starts at (design/story.md 'Rank titles'); words: en.json story.titles. The 12th title is the win, not a rank (F65). A new title shows on the payday that reaches it.",
+  "titles": {
+    "intern": 0,
+    "juniorAssociate": 1,
+    "associate": 5,
+    "technician": 10,
+    "seniorTechnician": 15,
+    "specialist": 20,
+    "leadSpecialist": 25,
+    "supervisor": 30,
+    "seniorSupervisor": 35,
+    "assistant": 40,
+    "deputy": 45
   }
 }

@@ -3,42 +3,10 @@
   "samples": { "title": "Shift failed", "heading": "Rupture! · Cracks 3 / 10", "body": "Start shift · Operator rank · Too many open cracks", "numbers": "99999" },
   "fonts": [
     {
-      "name": "After Burner Neue",
-      "file": "after_burner_neue/After Burner Neue.ttf",
-      "licence": "commercial-ok",
-      "licenceNote": "Free for personal + commercial use; don't modify or sell the font; keep its Read Me + PNG with it (they are, in public/fonts/after_burner_neue/)",
-      "note": "Pixel font — crisp at 11 px and multiples (22, 33)",
-      "pixelSize": 11
-    },
-    {
-      "name": "Edit Undo",
-      "file": "edit_undo/editundo.ttf",
-      "licence": "commercial-ok",
-      "licenceNote": "Brian Kent freeware: personal or commercial use; don't sell or alter the font; keep editundo.txt with it",
-      "note": "Pixel font — crisp at about 14 px and multiples (27.8, 41.7)",
-      "pixelSize": 13.89
-    },
-    {
-      "name": "G.B.BOOT",
-      "file": "gb_boot/gbb__.ttf",
-      "licence": "non-commercial",
-      "licenceNote": "Akihiro Oya, 1999: free to use, but commercial use without contacting the author is forbidden — ask before selling the game",
-      "note": "Pixel font — crisp at about 13.7 px and multiples (27.3, 41)",
-      "pixelSize": 13.65
-    },
-    {
       "name": "Nokia Cellphone FC",
       "file": "nokia_cellphone/nokiafc22.ttf",
       "licence": "commercial-ok",
       "licenceNote": "Zeh Fernando: free, OK in a videogame without asking; don't sell the font itself",
-      "note": "Pixel font — crisp at 8 px and multiples (16, 24, 32)",
-      "pixelSize": 8
-    },
-    {
-      "name": "Press Start DX",
-      "file": "press_start_dx/Press Start DX.ttf",
-      "licence": "unknown",
-      "licenceNote": "No licence came with it — find where it's from / ask the author before shipping",
       "note": "Pixel font — crisp at 8 px and multiples (16, 24, 32)",
       "pixelSize": 8
     }

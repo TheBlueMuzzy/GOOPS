@@ -294,6 +294,17 @@ describe('fill and pop', () => {
     expect(shift.state.grid[idx(5, 23)]).toBe(0)
   })
 
+  // F67: the zap's laser point — the exact tap rides on the pop event (x wrapped), or the tapped cell's centre without one
+  it('the pop event carries where the zap hit (at): the exact tap, else the tapped cell centre', () => {
+    const shift = createShift(oneShapeConfig([[0, 0]]), { seed: 1, rank: 0, startGrid: tank(['11.......11'], 3) })
+    shift.tick(2000)
+    shift.takeEvents()
+    shift.act({ type: 'pop', x: 3, y: 23, at: { x: 3.27 + shift.state.width, y: 23.8 } })
+    expect(ofType(shift.takeEvents(), 'pop')[0].at).toEqual({ x: expect.closeTo(3.27, 9), y: 23.8 })
+    shift.act({ type: 'pop', x: 12, y: 23 }) // a bot / test: no tap point
+    expect(ofType(shift.takeEvents(), 'pop')[0].at).toEqual({ x: 12.5, y: 23.5 })
+  })
+
   it('only goop at or below the pressure line can pop', () => {
     // Colour 1 on top of a colour-2 column: its top row (10) is far above the line at the start.
     const rows = ['1', ...Array(13).fill('2')]

@@ -10,10 +10,66 @@ html, body, #root { margin: 0; height: 100%; }
    machine bars over the integrity bar taking the rest of the width; one line, never wrapping */
 .hud-panel { flex-wrap: nowrap; align-items: center; }
 .hud-panel-bars { flex: 1 1 0; min-inline-size: 0; }
-/* the machine bars: one row, the room shared out evenly, each at most its kit share (hud.json bars.machineWidth) and
-   never narrower than its name — instead of exactly its share, so three fit a 360 px phone at the body text size */
+/* the machine bars: one row, never wrapping (each bar's "at most its share" and the dock's tight sides are kit options
+   now — Bar atMost, Hud dockTight, UI kit 0.25.0) */
 .hud-machines { flex-wrap: nowrap; }
-.hud-machines > .kit-bar { flex: 1 1 0; inline-size: auto; max-inline-size: calc(var(--kit-bar-share) * 100%); }
-/* the panel's sides: the kit dock's gap-s instead of gap-m, so the window + three machine names fit a 360 px phone
-   (still clear of the edge) */
-.kit-hud-dock > .kit-panel:has(.hud-panel) { padding-inline: var(--gap-s); }
+
+/* F34 / F42: the HUD's charge buttons, one per equipped active — the kit's TimerRing (3.5rem) inside an icon button,
+   made small enough to sit inside the button (70% of it: 2rem in the top row beside the Console button), without its
+   number (the button's label reads the % out; at this size the number wrapped out of the ring), and with its ring
+   --kit-hud-ability-ring thick (hud.json abilities.ringPx, set on each button; the same two gradients as the kit's ring,
+   only the hole's size changed). KIT GAP (framework request in SPRINT Notes): TimerRing size, ring thickness and "no
+   number" options, or a "charge button" part; then these lines go. (The two game values are named --kit-… because the
+   UI rule checker only lets a game read style names and --kit-… helpers.) */
+.hud-ability { display: inline-grid; place-items: center; }
+.hud-ability .kit-timer { flex: none; inline-size: var(--kit-hud-ability-ring-size, 2rem); block-size: var(--kit-hud-ability-ring-size, 2rem);
+  background: radial-gradient(closest-side, var(--surface) calc(100% - var(--kit-hud-ability-ring, 0.25rem) - 0.03rem), transparent calc(100% - var(--kit-hud-ability-ring, 0.25rem) + 0.03rem)),
+    conic-gradient(var(--kit-ring) calc(var(--kit-fill) * 1turn), var(--border) 0); }
+.hud-ability[data-sized] { --kit-hud-ability-ring-size: calc(var(--kit-button-size) * 0.7); } /* (a panel button, abilities.sizePx big) */
+.hud-ability .kit-timer > * { visibility: hidden; }
+/* its picture (abilityIcons.tsx — a lightning bolt for Cooldown Booster, Muzzy 2026-10-22) in the ring's middle: the
+   button's own ink while charging, the bright colour on the ring's dark middle when ready */
+.hud-ability > * { grid-area: 1 / 1; } /* (ring and picture in the same cell: one on top of the other) */
+.hud-ability-icon { inline-size: 1.1rem; block-size: 1.1rem; pointer-events: none; }
+.hud-ability[data-ready] .hud-ability-icon { color: var(--primary); }
+/* F42: their own row in the bottom panel, above the machine bars, abilities.gapPx apart. The panel lets taps through to
+   the tank (kit Hud dock); the buttons catch theirs, so a tap on one never rotates or pops anything under it. */
+.hud-abilities { flex-wrap: nowrap; gap: var(--kit-hud-abilities-gap, var(--gap-s)); }
+.hud-abilities .hud-ability { pointer-events: auto; }
+
+/* Upgrades: Respec flashes the scraps number green, then it fades to its normal colour (Muzzy, 2026-10-23, instead of a toast) */
+.upgrades-scraps-n[data-gained] { animation: upgrades-scraps-gain calc(var(--motion-normal) * 4) var(--ease); }
+@keyframes upgrades-scraps-gain { 0%, 40% { color: var(--success); } }
+
+/* F64 THE RELEASE VALVE PANEL (src/ui/ValvePanel.tsx): one SVG over the repair panels, in the style's colours. Its
+   backing catches every tap (nothing under it answers); the wheels' grab circles are the controls. */
+.valve { display: block; inline-size: 100%; block-size: 100%; user-select: none; -webkit-user-select: none; }
+.valve-bg { fill: var(--surface); stroke: var(--border); stroke-width: 3; pointer-events: auto; }
+.valve text { font-family: var(--font-body); font-weight: 600; text-transform: var(--text-case); }
+.valve-title { fill: var(--on-surface); }
+.valve[data-opened] .valve-title { fill: var(--success); }
+.valve-name { fill: var(--muted); }
+.valve-red { fill: none; stroke: var(--danger); opacity: 0.55; }
+.valve-green { fill: none; stroke: var(--success); }
+.valve[data-opened] .valve-green { filter: brightness(1.4); }
+.valve-hold { fill: none; stroke: var(--success); stroke-linecap: round; }
+.valve-needle { stroke: var(--on-surface); stroke-linecap: round; }
+.valve-hub { fill: var(--muted); }
+.valve-stage { fill: var(--border); }
+.valve-stage[data-state="now"] { fill: var(--accent); }
+.valve-stage[data-state="open"] { fill: var(--success); }
+.valve-tick { stroke: var(--border); }
+.valve-rim, .valve-spoke { fill: none; stroke: var(--muted); }
+.valve-wheel[data-dragging] :is(.valve-rim, .valve-spoke) { stroke: var(--primary); }
+.valve-boss { fill: var(--border); }
+.valve-handle { fill: var(--accent); }
+.valve-grab { fill: transparent; pointer-events: auto; touch-action: none; cursor: grab; outline: none; }
+.valve-grab:active { cursor: grabbing; }
+
+/* F65 the new career's gold trim (content/ui/art.json console.career, Console.tsx): a crisp outline round each trimmed
+   part's picture (four drop shadows, --kit-career-trim thick) and a soft glow (--kit-career-glow), in --kit-career-gold */
+.career-gold img {
+  filter: drop-shadow(var(--kit-career-trim) 0 0 var(--kit-career-gold)) drop-shadow(calc(var(--kit-career-trim) * -1) 0 0 var(--kit-career-gold))
+    drop-shadow(0 var(--kit-career-trim) 0 var(--kit-career-gold)) drop-shadow(0 calc(var(--kit-career-trim) * -1) 0 var(--kit-career-gold))
+    drop-shadow(0 0 var(--kit-career-glow) var(--kit-career-gold));
+}

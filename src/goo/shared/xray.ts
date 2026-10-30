@@ -4,7 +4,9 @@
 import type { ShiftState } from '../../engine/types'
 import { screenColumn, type GooView } from '../types'
 
-export const XRAY_MAX = 8 // boxes the shader can take at once (more covered cracks than this on screen: the rest stay solid)
+// boxes the shader can take at once (more covered crack cells than this on screen: the rest stay solid). 16 since F39:
+// a grown crack x-rays every covered cell, so one big crack alone can use many.
+export const XRAY_MAX = 16
 
 // The GLSL piece: uXray[i] = (left, top, right, bottom) in view cells (x = 0 at the centre column's centre, y = tank row
 // from the top of the spawn rows, down). Returns how solid the goo stays at p: uXrayA inside a box, 1 outside.

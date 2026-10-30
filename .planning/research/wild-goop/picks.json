@@ -1,0 +1,16 @@
+{
+ "picked": "2026-10-25",
+ "by": "Muzzy",
+ "lookName": "Pearl glow",
+ "values": {
+  "look": 2,
+  "speed": 0.6,
+  "band": 3,
+  "saturation": 0.43,
+  "tint": 0.55,
+  "glow": 0.6,
+  "sparkle": 0.5,
+  "pixelSize": 3
+ },
+ "note": "pixelSize is sketch-only (whole tank in blocks), not in the game"
+}

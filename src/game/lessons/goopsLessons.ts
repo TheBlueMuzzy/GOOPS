@@ -52,7 +52,7 @@ import { liveTuning } from '../../devkit/tuning/liveTuning'
 import { rulesClock } from '../../devkit/gameClock'
 import { fill, tipsMemory } from '../../ui/kit'
 import { cellToScreen, tankRect } from '../../view/geometry'
-import { flatPoint } from '../../view/visorFx'
+import { bentPoint } from '../../view/visorFx'
 import type { GooView } from '../../goo/types'
 import { session } from '../session'
 import { createLessonRunner } from './runner'
@@ -245,6 +245,7 @@ export const lessonPlay = {
       restore: (snap) => e.restore(snap),
       train: (cmd) => e.train(cmd),
       allows: (type) => e.allows(type),
+      openValveStage: () => e.openValveStage(),
     }
   },
   /** App: a REAL shift started — its first breakdowns may start lessons (F32, firstBreakdowns.ts). The engine isn't
@@ -328,7 +329,8 @@ const TAG_TARGETS: Record<string, string> = {
   'bar-visor': barOf(text.hud.visor), 'bar-laser': barOf(text.hud.laser), 'bar-controls': barOf(text.hud.controls),
   'bar-integrity': barOf(text.hud.integrity), // F31: day one's D1 "this bar is its health"
   cracks: '.kit-hud-text[data-size="l"]', // F31: the HUD's CRACKS n / total (its one big line) — day one's D3
-  reportBack: '.kit-end-actions button[data-variant="secondary"]', // F31: the end report's "Back to the console" — F3
+  // F31: the end report's "Back to the console" — F3 (day one's report has only that button: F35)
+  reportBack: '.kit-end-actions button[data-variant="secondary"], .kit-end-actions button:only-of-type',
   pauseResume: '.kit-pause .kit-menu > button:first-child', // the pause menu's "Back to the tank" (the kit's Pause)
   // the console's periscope: the part you grab (the kit's PullHandle) — while it works (a phone on its side switches it
   // off: the "or" pointer, Back to the tank, takes over)
@@ -400,18 +402,6 @@ export function gameColumn(): Box {
   // the tank: the HUD's column (ShiftStage's --kit-hud-w: the tank and a little room each side)
   const col = Math.min(w, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--kit-hud-w')) || w)
   return { left: (w - col) / 2 + rem, top: rem, right: (w + col) / 2 - rem, bottom: h - rem }
-}
-
-// Where a flat tank point shows on screen under the visor's curved-TV look (the other way round from flatPoint: a few
-// steps of "move by how far off it lands" — the bend is gentle, so it settles quickly).
-function bentPoint(fx: number, fy: number, rect: ReturnType<typeof tankRect>, curve: number): [number, number] {
-  let x = fx, y = fy
-  for (let i = 0; i < 6; i++) {
-    const [lx, ly] = flatPoint(x, y, rect, curve)
-    x -= lx - fx
-    y -= ly - fy
-  }
-  return [x, y]
 }
 
 /** Place the mark box over what the pointer points at (or hide it). Called every frame.

@@ -1,4 +1,5 @@
 {
   "preset": "neon",
-  "tweaks": {"font-title": "'Nokia Cellphone FC', system-ui, sans-serif", "font-body": "'Nokia Cellphone FC', system-ui, sans-serif", "font-numbers": "'Nokia Cellphone FC', system-ui, sans-serif"}
+  "orientation": "portrait",
+  "tweaks": {"font-title": "'Nokia Cellphone FC', system-ui, sans-serif", "font-heading": "'Nokia Cellphone FC', system-ui, sans-serif", "font-body": "'Nokia Cellphone FC', system-ui, sans-serif", "font-numbers": "'Nokia Cellphone FC', system-ui, sans-serif"}
 }

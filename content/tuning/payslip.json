@@ -1,0 +1,25 @@
+{
+  "_about": "F41: the end report's payslip (design/story.md \"Credits, payday and fines\"; sketch S8 approved). Fines are theatre: the report shows a gross a bit higher than the shift earned, then fines that bring it back down, so NET always equals the real XP. Payday = each rank-up: the Company takes exactly the payment due (that rank's xpToNext), itemised. Words: content/text/en.json payslip.",
+  "_fineShare": "Fines total = this share of the shift's real XP (0.08 = 8%), rounded. 0 = no fines.",
+  "fineShare": 0.08,
+  "_fineLines": "How many fine lines a shift shows (fewer if the total is tiny). The shift's real events are picked first, then silly ones.",
+  "fineLines": 3,
+  "_lineMs": "How long each payslip line waits before the next one shows (ms).",
+  "lineMs": 450,
+  "_loiterSeconds": "Seconds at the console in one shift before 'Unscheduled console loitering' becomes a real fine.",
+  "loiterSeconds": 20,
+  "_caughtRank": "F40: the rank the Veteran is caught at (design/story.md, moment 30). The first shift report at or after it fines YOU once: 'Association with a retired employee' (always the first fine line). Paydays from this rank on use the after-capture words (en.json payslip.afterCaught): the economy doesn't change, the words do.",
+  "caughtRank": 30,
+  "_pendingRetirementRank": "F63: from the shift that reaches this rank, every end report has a last row 'Pending retirements: Operator #4471 — <your name>' (design/story.md moment 39: '…your name… is on a list…'). Words: en.json payslip.pendingRetirements.",
+  "pendingRetirementRank": 39,
+  "_sillyFines": "Silly fines (words: en.json payslip.silly) and the rank each starts at.",
+  "sillyFines": {
+    "blinking": 0, "nosePicking": 0, "facialExpression": 0, "fingerprints": 0, "humming": 0, "sighing": 0,
+    "whistling": 0, "breathing": 0, "clock": 0, "leaning": 0, "sarcasm": 0, "optimism": 0, "dreams": 0,
+    "gravity": 0, "thinking": 0, "hearingVoices": 12, "talkingToGoop": 15, "talkingBack": 40
+  },
+  "_payday": "Each payday's deductions as shares of the payment due (they add up to 1). 'extra' rotates through en.json payslip.extras, one per rank.",
+  "payday": { "lodging": 0.4, "meals": 0.3, "air": 0.15, "periscope": 0.1, "extra": 0.05 },
+  "_debt": "Passage debt (story only, never touches play). Starts at start; each payday pays paidShare of the payment due off it and adds interest (min..max, the same every time for a rank). From afterRank on, interest is × afterMult and nothing gets paid off, so it goes UP.",
+  "debt": { "start": 48219, "paidShare": 0.02, "interestMin": 20, "interestMax": 110, "afterRank": 30, "afterMult": 4 }
+}

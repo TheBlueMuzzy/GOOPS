@@ -7,12 +7,37 @@ import type { ShiftEvent, ShiftState } from '../../engine/types'
 import { screenColumn, type GooOptions, type GooRenderer, type GooView } from '../types'
 import particleFile from '../../../content/tuning/goo-particle.json' // live: follows the Dev Kit's Tuning sliders (followFile, each frame)
 import { followFile, parseKnobs, mergeKnobs, type Knobs } from '../shared/knobs'
-import { DEFAULT_COLOR_NAMES, paletteTable } from '../shared/palette'
-import { groupFillLines, inWindow, tankWindow, viewOrigin, wrapNear, type FillInfo } from '../shared/tank'
+import { DEFAULT_COLOR_NAMES, gooSlot, paletteTable } from '../shared/palette'
+import { WILD_UNIFORMS, setWild } from '../shared/wildLook'
+import { GALAXY_UNIFORMS, setGalaxy } from '../shared/galaxyLook'
+import { groupFillLines, inWindow, tankWindow, unwrapCells, viewOrigin, wrapNear, type FillInfo } from '../shared/tank'
 import { PiecePose } from '../shared/piecePose'
 import { FULLSCREEN_VS, bindTextures, fitCanvas, freeProgram, freeTarget, gooContext, makeProgram, makeTarget, type Program, type Target } from '../shared/gl'
 import { BLUR_FS, SHADE_FS, SPLAT_FS, SPLAT_VS } from './shaders'
 import { XRAY_MAX, XRAY_UNIFORMS, setXray } from '../shared/xray'
+import { sprayDrops, sprayDue, suckIn, zapEnd, zapFade, zapHeat, zapLook, type ZapLook } from '../shared/zap'
+import { FaceBook, type Face, type FaceReport } from '../shared/faces'
+import { FaceDrawer } from '../shared/faceDraw'
+
+// A zap (F67, the same timeline as Jelly — src/goo/shared/zap.ts): the zapped cells' particles, where the laser point is
+// (view cells), their middle at the moment of the zap, and how far it's got
+interface ZapGroup {
+  id: number
+  t: number
+  lx: number
+  ly: number
+  c0x: number
+  c0y: number
+  color: number
+  members: number[]
+  sprayed: boolean
+  hot: number // 0 … 1 white-hot
+  fade: number // 1 … 0 as it's sucked in
+  suck: number // 0 … 1 how far it's been sucked in, on average
+  face: Face | null // F62 its face (squeezed shut, shrinking into the laser point with it) and where it sat at the zap
+  fx0: number
+  fy0: number
+}
 
 // The knobs as the file has them right now (with the Dev Kit's latest edit)
 export const particleDefaults = (): Knobs => parseKnobs(particleFile)
@@ -29,7 +54,8 @@ const RP = 0.14 // floor radius
 const KREP = 700
 const SEP = 22
 const SIM_DT = 1 / 120
-const INST = 9
+const INST = 10
+const DROP_R = 0.255 // a v1 spray droplet's average radius (cells): a droplet of this size splats like one particle
 
 export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptions = {}): GooRenderer {
   const K: Knobs = particleDefaults()
@@ -58,8 +84,15 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   const HY = new Float32Array(MAXP)
   const UN = new Float32Array(MAXP) // unfilled 0..1
   const RD = new Float32Array(MAXP) // ready 0..1
+  const ZG = new Int32Array(MAXP) // popped: the zap it belongs to (a ZapGroup id), or -1 = a quiet fade (popMs)
+  const DZ = new Float32Array(MAXP) // zapped: distance from the laser point, 0 nearest … 1 farthest (nearest goes first)
+  const EZ = new Float32Array(MAXP) // zapped: how far it's been sucked in (0 … 1) — it gets smaller as it goes
+  const DR = new Float32Array(MAXP) // a spray droplet: its reach, × the splat reach
+  const LF = new Float32Array(MAXP) // a spray droplet: seconds of life left, out of LZ
+  const LZ = new Float32Array(MAXP)
+  const GV = new Float32Array(MAXP) // a spray droplet: its gravity (cells / s²)
   const COL = new Uint8Array(MAXP)
-  const ST = new Uint8Array(MAXP) // 0 dead, 1 bound to a cell, 2 popped (shrinking away)
+  const ST = new Uint8Array(MAXP) // 0 dead, 1 bound to a cell, 2 popped (shrinking away / zapped), 3 a spray droplet (F67)
   const OWN = new Int32Array(MAXP) // >= 0: grid cell index; -1-k: falling-piece cell k
   const BA = new Int32Array(MAXB)
   const BB = new Int32Array(MAXB)
@@ -98,6 +131,17 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   let dropped = false
   let fills = new Map<number, FillInfo>()
   const pose = new PiecePose()
+  let zaps = new Map<number, ZapGroup>()
+  let nextZap = 1
+  let Z: ZapLook = zapLook() // zap.json as of this frame
+  // F62 the goop's faces (rank 10+): one per engine group, riding the mean of its eye cells' particles
+  const book = new FaceBook()
+  let clumpFaces: Face[] = [] // the live clumps' faces
+  let faceXY: number[] = [] // where each one's eyes are now (view cells): x, y pairs
+  let faceGrid = new Uint8Array(0) // the grid + groups when the faces were last handed out
+  let faceGroup = new Int32Array(0)
+  let lastView: GooView | null = null
+  let S: ShiftState | null = null
 
   // spatial hash (counting sort into 0.5-cell buckets), view space
   let HX0 = 0
@@ -117,6 +161,11 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     H = state.height
     cellParts = new Array(W * H).fill(null)
     pieceParts = null
+    zaps = new Map()
+    book.clear()
+    clumpFaces = []
+    faceGrid = new Uint8Array(W * H)
+    faceGroup = new Int32Array(W * H).fill(-1)
     pose.shape = null
     HX0 = -W / 2 - 2
     NBX = Math.ceil((W + 4) / HR)
@@ -144,6 +193,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     RD[i] = 0
     COL[i] = c
     ST[i] = 1
+    ZG[i] = -1
     OWN[i] = owner
     HX[i] = x
     HY[i] = y
@@ -206,12 +256,13 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     SB[sj] = b
   }
 
-  // ---------------- POP (placeholder until the laser "explode/harden" look is designed) ----------------
-  // Quiet: the popped goo lets go of its cells, shrinks toward its middle and fades out over popMs. No burst.
+  // ---------------- goo that leaves without a zap (a swapped-out piece, cells gone without a pop event) ----------------
+  // Quiet: it lets go of its cells, shrinks toward its middle and fades out over popMs. No burst.
   function popList(list: number[]) {
     for (const i of list) {
       if (ST[i] !== 1) continue
       ST[i] = 2
+      ZG[i] = -1
       ZT[i] = 0
       RX[i] = X[i]
       RY[i] = Y[i]
@@ -219,12 +270,185 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     }
   }
   function popStep(i: number, h: number) {
+    const z = ZG[i] >= 0 ? zaps.get(ZG[i]) : undefined
+    if (z) {
+      zapStep(i, z)
+      return
+    }
     ZT[i] += h
     const T = Math.max(0.05, K.popMs / 1000)
     WT[i] = Math.max(0, 1 - ZT[i] / T) ** 1.5
     // drift a touch toward where it was, heavily damped: it sinks into itself rather than flying anywhere
     AX[i] = (RX[i] - X[i]) * 40 - VX[i] * 12
     AY[i] = (RY[i] - Y[i]) * 40 - VY[i] * 12 + 3
+  }
+
+  // ---------------- THE ZAP (F67): the same timeline as Jelly ----------------
+  // The zapped cells' particles heat (white-hot + swell), then each is pulled into the laser point, nearest first,
+  // fading at the end; the spray is a burst of droplet particles in the goop's colour. `at` = where the zap hit.
+  function zapCells(cells: number[], color: number, at: { x: number; y: number } | undefined) {
+    // F62: its face (if its eyes are showing) goes with it, squeezed shut; the clumps touching it squeeze theirs
+    const face = book.on ? book.faceOf(cells[0]) ?? null : null
+    if (face) spotNow(face)
+    const [fx0, fy0] = SPOT
+    book.shutAround(cells, W, H)
+    const members: number[] = []
+    for (const ci of cells) {
+      const l = cellParts[ci]
+      if (l) for (const i of l) if (ST[i] === 1) members.push(i)
+      cellParts[ci] = null
+    }
+    if (!members.length) return
+    let c0x = 0
+    let c0y = 0
+    for (const i of members) {
+      c0x += X[i]
+      c0y += Y[i]
+    }
+    c0x /= members.length
+    c0y /= members.length
+    // the laser point in view cells, on the copy of the cylinder nearest the goop (no tap point: its middle)
+    let lx = c0x
+    let ly = c0y
+    if (at) {
+      const x0 = screenColumn(at.x - 0.5, lastCamera, W) // (the particles sit where last frame's camera put them)
+      lx = x0 + Math.round((c0x - x0) / W) * W
+      ly = at.y
+    }
+    const z: ZapGroup = { id: nextZap++, t: 0, lx, ly, c0x, c0y, color, members, sprayed: false, hot: 0, fade: 1, suck: 0,
+      face: face && face.eyes.a > 0 ? face : null, fx0, fy0 }
+    let dmax = 1e-3
+    for (const i of members) {
+      ST[i] = 2
+      ZG[i] = z.id
+      RX[i] = X[i]
+      RY[i] = Y[i]
+      UN[i] = 0
+      DZ[i] = Math.hypot(X[i] - lx, Y[i] - ly)
+      dmax = Math.max(dmax, DZ[i])
+    }
+    for (const i of members) DZ[i] /= dmax
+    zaps.set(z.id, z)
+  }
+  // pulled toward its spot on the timeline: swollen by the heat, then into the laser point
+  function zapStep(i: number, z: ZapGroup) {
+    const grow = 1 + Z.swell * z.hot
+    const e = suckIn(Z, z.t, DZ[i])
+    EZ[i] = e
+    const tx = z.lx + (z.c0x + (RX[i] - z.c0x) * grow - z.lx) * (1 - e)
+    const ty = z.ly + (z.c0y + (RY[i] - z.c0y) * grow - z.ly) * (1 - e)
+    WT[i] = z.fade
+    AX[i] = (tx - X[i]) * 900 - VX[i] * 40
+    AY[i] = (ty - Y[i]) * 900 - VY[i] * 40
+  }
+  // once a frame: each zap's clock, heat, fade and spray; a finished zap's particles go
+  function stepZaps(dt: number) {
+    const end = zapEnd(Z)
+    for (const z of zaps.values()) {
+      z.t += dt
+      z.hot = zapHeat(Z, z.t)
+      let em = 0
+      let n = 0
+      for (const i of z.members)
+        if (ST[i] === 2 && ZG[i] === z.id) {
+          em += suckIn(Z, z.t, DZ[i])
+          n++
+        }
+      z.suck = n ? em / n : 1
+      z.fade = n ? zapFade(z.suck) : 0
+      if (!z.sprayed && sprayDue(Z, z.t)) {
+        z.sprayed = true
+        const xs: number[] = []
+        const ys: number[] = []
+        for (const i of z.members) if (ST[i] === 2 && ZG[i] === z.id) {
+          xs.push(X[i])
+          ys.push(Y[i])
+        }
+        for (const d of sprayDrops(Z, xs, ys)) {
+          const i = newParticle(z.color, -1, d.x, d.y, 0, 0)
+          if (i < 0) break
+          ST[i] = 3
+          VX[i] = d.vx
+          VY[i] = d.vy
+          DR[i] = (0.7 * d.r) / DROP_R // (a lone particle splats a little bigger than a jelly drop of the same radius)
+          LF[i] = d.life
+          LZ[i] = Z.dropLife
+          GV[i] = d.g
+        }
+      }
+      if (z.t >= end && z.sprayed) {
+        for (const i of z.members) if (ST[i] === 2 && ZG[i] === z.id) killParticle(i)
+        zaps.delete(z.id)
+      }
+    }
+  }
+  // a spray droplet: flies under its own gravity, shrinks and fades over its life (v1), bounces off the floor
+  function dropStep(i: number, h: number) {
+    LF[i] -= h
+    WT[i] = Math.max(0, LF[i] / Math.max(0.05, LZ[i]))
+    AX[i] = 0
+    AY[i] = GV[i]
+    if (LF[i] <= 0) WT[i] = 0
+  }
+
+  // ---------------- F62 THE FACES (src/goo/shared/faces.ts has the rules; this places them on the particles) ----------------
+  // Where a face's eyes are now (view cells): the middle of its eye cells' particles — so they ride the goo as it
+  // wobbles and falls — or, with none there (off screen), the cells' own middle. Into SPOT.
+  const SPOT = [0, 0]
+  function spotNow(f: Face) {
+    let sx = 0
+    let sy = 0
+    let n = 0
+    for (let k = 0; k < 2; k++) { // spotA, then spotB if there is one (no array a frame)
+      const c = k === 0 ? f.spotA : f.spotB
+      const l = c >= 0 ? cellParts[c] : undefined
+      if (l) for (const i of l) if (ST[i] === 1) { sx += X[i]; sy += Y[i]; n++ }
+    }
+    if (n) {
+      SPOT[0] = sx / n
+      SPOT[1] = sy / n
+    } else {
+      SPOT[0] = screenColumn(f.spotA % W, camera, W) + (f.spotB >= 0 ? 0.5 : 0)
+      SPOT[1] = Math.floor(f.spotA / W) + 0.5
+    }
+  }
+
+  // hand each engine group its face (when the grid or the groups change, or faces just switched on)
+  function assignFaces(state: ShiftState) {
+    book.begin()
+    clumpFaces = []
+    for (const g of state.groups.values()) {
+      if (!g.cells.length) continue
+      const U = unwrapCells(g.cells, W)
+      clumpFaces.push(book.faceFor(g.cells, U.ux, U.uy))
+    }
+    book.end()
+    faceXY = new Array(clumpFaces.length * 2).fill(0)
+    faceGrid.set(state.grid)
+    faceGroup.set(state.groupOf)
+  }
+  function facesStale(state: ShiftState): boolean {
+    if (!book.built) return true
+    for (let i = 0; i < state.grid.length; i++) if (state.grid[i] !== faceGrid[i] || state.groupOf[i] !== faceGroup[i]) return true
+    return false
+  }
+
+  function stepFaces(dt: number) {
+    clumpFaces.forEach((f, k) => {
+      spotNow(f)
+      faceXY[k * 2] = SPOT[0]
+      faceXY[k * 2 + 1] = SPOT[1]
+      book.step(f, SPOT[0], SPOT[1], dt)
+    })
+  }
+
+  // a zapped clump's face: its spot pulled into the laser point with the goop (zapStep's own sum) + its size, into SPOT
+  function dyingSpot(z: ZapGroup): number {
+    const grow = 1 + Z.swell * z.hot
+    const keep = 1 - z.suck
+    SPOT[0] = z.lx + (z.c0x + (z.fx0 - z.c0x) * grow - z.lx) * keep
+    SPOT[1] = z.ly + (z.c0y + (z.fy0 - z.c0y) * grow - z.ly) * keep
+    return Math.max(0.05, grow * keep)
   }
 
   // ---------------- the falling piece ----------------
@@ -412,13 +636,10 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
           if (e.cell !== undefined && K.poke) poke(e.cell, state)
           break
         case 'pop':
-          for (const ci of e.cells) {
-            const l = cellParts[ci]
-            if (l) popList(l)
-            cellParts[ci] = null
-          }
+          zapCells(e.cells, e.color, e.at)
           break
         case 'fall': {
+          book.moveCells(e.moves) // (falling clumps keep their faces)
           const moved = e.moves.map(([f, t]) => [f, t, cellParts[f]] as const)
           for (const [f] of moved) cellParts[f] = null
           for (const [, t, list] of moved)
@@ -444,9 +665,11 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     const dy = Y[j] - Y[i]
     const d2 = dx * dx + dy * dy
     if (d2 >= HR * HR || d2 < 1e-10) return
-    const zi = ST[i] === 2
-    const zj = ST[j] === 2
+    const zi = ST[i] >= 2 // (popped goo and spray droplets)
+    const zj = ST[j] >= 2
     if (zi !== zj) return // popped goo slides past live goo
+    // zapped goo is pulled into one point (no push-apart to fight it); spray droplets fly through everything
+    if (zi && (ZG[i] >= 0 || ZG[j] >= 0 || ST[i] === 3 || ST[j] === 3)) return
     const same = COL[i] === COL[j]
     const d = Math.sqrt(d2)
     const nx = dx / d
@@ -563,6 +786,10 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
         popStep(i, h)
         continue
       }
+      if (ST[i] === 3) {
+        dropStep(i, h)
+        continue
+      }
       let ax = 0
       let ay = 0
       const o = OWN[i]
@@ -674,7 +901,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
         if (VY[i] > 0) VY[i] *= -0.4
         VX[i] *= 0.9
       }
-      if (ST[i] === 2 && WT[i] < 0.03) killParticle(i)
+      if ((ST[i] === 2 && ZG[i] < 0 && WT[i] < 0.03) || (ST[i] === 3 && LF[i] <= 0)) killParticle(i) // (a zap's own go in stepZaps)
     }
   }
 
@@ -711,6 +938,10 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     camera = view.camera
     spin = state.spin
     fills = groupFillLines(state)
+    Z = zapLook(view.still)
+    book.frame(view.story, dt, (x) => screenColumn(x, camera, W))
+    lastView = view
+    S = state
     handle(events, state)
     if (!state.piece && pieceParts) {
       for (const l of pieceParts) popList(l)
@@ -727,11 +958,23 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
         if (ST[i] === 2) {
           X[i] -= dcam
           RX[i] -= dcam
-        } else if (ST[i] === 1 && OWN[i] >= 0) X[i] -= dcam * (K.spinCarry ?? 0)
+        } else if (ST[i] === 3) X[i] -= dcam
+        else if (ST[i] === 1 && OWN[i] >= 0) X[i] -= dcam * (K.spinCarry ?? 0)
+    if (dcam)
+      for (const z of zaps.values()) {
+        z.lx -= dcam
+        z.c0x -= dcam
+        z.fx0 -= dcam
+      }
+    stepZaps(dt)
     simAcc = Math.min(simAcc + dt, SIM_DT * 4)
     while (simAcc >= SIM_DT) {
       simStep(SIM_DT, state)
       simAcc -= SIM_DT
+    }
+    if (book.on) {
+      if (facesStale(state)) assignFaces(state)
+      stepFaces(dt)
     }
   }
 
@@ -742,9 +985,10 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   const blurP: Program = makeProgram(gl, FULLSCREEN_VS, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uStep', 'uSigma', 'uOut', 'uTaps'])
   const shadeP: Program = makeProgram(gl, FULLSCREEN_VS, SHADE_FS, [
     'uT0', 'uT1', 'uT2', 'uW0', 'uW1', 'uW2', 'uRes', 'uOrigin', 'uCell', 'uScale', 'uTh', 'uWet', 'uBulge', 'uAbsorb',
-    'uFres', 'uTrans', 'uTime', 'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', ...XRAY_UNIFORMS,
+    'uFres', 'uTrans', 'uTime', 'uUnA', 'uUnDim', 'uGlow', 'uPulse', 'uClipL', 'uClipR', 'uClipB', 'uCols', 'uWhite', ...XRAY_UNIFORMS, ...WILD_UNIFORMS, ...GALAXY_UNIFORMS,
   ])
   const xrayBuf = new Float32Array(XRAY_MAX * 4)
+  const faceDraw = new FaceDrawer(gl) // F62
   const emptyVAO = gl.createVertexArray()!
   const splatVAO = gl.createVertexArray()!
   gl.bindVertexArray(splatVAO)
@@ -764,7 +1008,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   gl.vertexAttribPointer(2, 3, gl.FLOAT, false, INST * 4, 16)
   gl.vertexAttribDivisor(2, 1)
   gl.enableVertexAttribArray(3)
-  gl.vertexAttribPointer(3, 2, gl.FLOAT, false, INST * 4, 28)
+  gl.vertexAttribPointer(3, 3, gl.FLOAT, false, INST * 4, 28)
   gl.vertexAttribDivisor(3, 1)
   gl.bindVertexArray(null)
 
@@ -791,7 +1035,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   function fillInstances(clipL: number, clipR: number): number {
     let n = 0
     const R = K.splat
-    const put = (x0: number, y0: number, x1: number, y1: number, r: number, w: number, c: number, un: number, rd: number) => {
+    const put = (x0: number, y0: number, x1: number, y1: number, r: number, w: number, c: number, un: number, rd: number, hot = 0) => {
       const o = n * INST
       instData[o] = x0
       instData[o + 1] = y0
@@ -802,12 +1046,15 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
       instData[o + 6] = c
       instData[o + 7] = un
       instData[o + 8] = rd
+      instData[o + 9] = hot
       n++
     }
     for (let i = 0; i < hiP; i++) {
       if (!ST[i] || X[i] < clipL - 1 || X[i] > clipR + 1) continue
-      const r = ST[i] === 2 ? R * (0.55 + 0.45 * WT[i]) : R // popped: shrinks as it fades
-      put(X[i], Y[i], X[i], Y[i], r, WT[i], COL[i], UN[i], RD[i])
+      // popped: shrinks as it fades; a spray droplet: its own size, shrinking over its life (v1); zapped: white-hot
+      const z = ST[i] === 2 && ZG[i] >= 0 ? zaps.get(ZG[i]) : undefined
+      const r = ST[i] === 3 ? R * DR[i] * (0.6 + 0.4 * WT[i]) : ST[i] === 2 ? R * (0.55 + 0.45 * WT[i]) * (z ? 1 - 0.6 * EZ[i] : 1) : R
+      put(X[i], Y[i], X[i], Y[i], r, ST[i] === 3 ? Math.min(1, WT[i] * 1.4) : WT[i], gooSlot(COL[i]), UN[i], RD[i], z ? z.hot : 0) // (F39: wild → slot 8, its own channel)
     }
     const L0 = 0.42
     const span = Math.max(0.1, strandSnap() - L0)
@@ -821,7 +1068,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
       const s = Math.min(1, (d - L0) / span)
       const w = Math.min(WT[i], WT[j], 1) * Math.min(1, (d - L0) * 8) * 1.3 * Math.pow(1 - s, 0.6)
       if (w < 0.02) continue
-      put(X[i], Y[i], X[j], Y[j], R * 0.6 * (1 - 0.4 * s), w, COL[i], Math.min(UN[i], UN[j]), Math.min(RD[i], RD[j]))
+      put(X[i], Y[i], X[j], Y[j], R * 0.6 * (1 - 0.4 * s), w, gooSlot(COL[i]), Math.min(UN[i], UN[j]), Math.min(RD[i], RD[j]))
     }
     return n
   }
@@ -910,9 +1157,46 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
     gl.uniform1f(u.uClipR, clipR)
     gl.uniform1f(u.uClipB, state.height)
     gl.uniform3fv(u.uCols, cols)
+    gl.uniform1f(u.uWhite, Z.whiteHot) // F67: how far toward white zapped goo turns
+    setWild(gl, u, cols) // F39: the wild goop's look (twists-look.json, live)
+    setGalaxy(gl, u) // F64: black goop's galaxy look (galaxy-look.json, live)
     setXray(gl, u, state, view, xrayBuf) // F36: covered cracks show through
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     gl.bindVertexArray(null)
+    // 4) F62 the faces, over the goo on the same canvas
+    if (book.on) drawFaces(state, view, ox * dpr, oy * dpr, cell, clipL, clipR)
+  }
+
+  function drawFaces(state: ShiftState, view: GooView, ox: number, oy: number, cell: number, clipL: number, clipR: number) {
+    faceDraw.begin()
+    const px = 1 / view.cellPx // one CSS pixel, in cells
+    clumpFaces.forEach((f, k) => {
+      const x = faceXY[k * 2]
+      if (x > clipL - 1 && x < clipR + 1) book.draw(faceDraw, f, x, faceXY[k * 2 + 1], 1, 0, 1, 1, false, px)
+    })
+    for (const z of zaps.values()) {
+      if (!z.face) continue
+      const k = dyingSpot(z)
+      book.draw(faceDraw, z.face, SPOT[0], SPOT[1], 1, 0, k, z.fade, true, px)
+    }
+    const L = book.look
+    faceDraw.flush({ originX: ox, originY: oy, cell, width: canvas.width, height: canvas.height, clipL, clipR, clipB: state.height,
+      eye: L.eyeColor, pupil: L.pupilColor, mouth: L.mouthColor }, (uu) => setXray(gl, uu, state, view, xrayBuf))
+  }
+
+  // (dev + tests) every face now, with where it is on the stage
+  function faceReports(): FaceReport[] {
+    if (!book.on || !lastView || !S) return []
+    const [ox, oy] = viewOrigin(lastView, S.bufferRows)
+    const cp = lastView.cellPx
+    const toPx = (x: number, y: number): [number, number] => [ox + x * cp, oy + y * cp]
+    const out = clumpFaces.map((f, k) => book.report(f, faceXY[k * 2], faceXY[k * 2 + 1], toPx, false))
+    for (const z of zaps.values())
+      if (z.face) {
+        dyingSpot(z)
+        out.push(book.report(z.face, SPOT[0], SPOT[1], toPx, true))
+      }
+    return out
   }
 
   let disposed = false
@@ -937,12 +1221,14 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
       for (const i of list) sum += Math.hypot(VX[i], VY[i])
       return sum / list.length
     },
+    faces: faceReports,
     dispose() {
       if (disposed) return
       disposed = true
       for (const T of [fA, fB, fC, fQ]) freeTarget(gl, T)
       fA = fB = fC = fQ = null
       for (const P of [splatP, blurP, shadeP]) freeProgram(gl, P)
+      faceDraw.dispose()
       gl.deleteBuffer(quadBuf)
       gl.deleteBuffer(instBuf)
       gl.deleteVertexArray(splatVAO)

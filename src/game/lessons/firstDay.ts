@@ -61,4 +61,6 @@ export const firstDay = {
   running: () => runner.view().lessonId === FIRST_DAY,
   /** Settings → Replay lessons: the day plays again from the start (at the next console), whatever the rank. */
   replay() { save({ at: null, replay: true }) },
+  /** F70 RANK SELECT 0: forget the day's checkpoint and any replay, as on a brand-new device. */
+  forget() { try { localStorage.removeItem(KEY) } catch { /* private mode: nothing was kept */ } },
 }

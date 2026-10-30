@@ -128,7 +128,7 @@ export class FakeEngine implements ShiftEngine {
         const g = S.groups.get(S.groupOf[i])
         if (!g || !g.ready) return
         for (const c of g.cells) S.grid[c] = 0
-        this.events.push({ type: 'pop', cells: g.cells.slice(), color: g.color, sealed: [] })
+        this.events.push({ type: 'pop', cells: g.cells.slice(), color: g.color, sealed: [], at: a.at ?? { x: a.x + 0.5, y: a.y + 0.5 } })
         this.regroup()
         this.gravityT = 160
         break
@@ -289,4 +289,5 @@ export class FakeEngine implements ShiftEngine {
   restore(): void { throw new Error('The goo lab fake engine has no snapshots.') }
   train(): boolean { return false } // (no lessons in the goo lab)
   allows(): boolean { return true }
+  openValveStage(): boolean { return false } // (no final shift in the goo lab)
 }

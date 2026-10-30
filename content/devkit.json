@@ -1,4 +1,7 @@
 {
   "_help": "Dev Kit (the ` panel) in RELEASE builds. true = friends testing the live link can open it (prototype/alpha/beta). /deliver sets this to false at the 1.0 full release — then the live game has no Dev Kit at all. Local dev always has it.",
-  "inReleaseBuilds": true
+  "inReleaseBuilds": true,
+  "knownGaps": [
+    { "check": "every 🟡 credit is shown", "why": "Goops has no Credits screen yet (the 🟡 lines are the kit's OFL fonts)", "roadmap": "F55" }
+  ]
 }

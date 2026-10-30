@@ -179,6 +179,15 @@ describe('placed goop and cracks, pressure, rules', () => {
     expect(shift.state.grid[idx(2, 23)]).toBe(0)
   })
 
+  it('F68: a zap the lesson refuses still says which cell was poked (it jiggles + plays the poke sound)', () => {
+    const { shift } = training({ zapColors: [2] })
+    shift.train({ type: 'goop', cells: [[0, 23, 1], [2, 23, 2]] })
+    shift.takeEvents()
+    shift.act({ type: 'pop', x: 0, y: 23 })
+    expect(ofType(shift.takeEvents(), 'reject')).toEqual([{ type: 'reject', action: 'pop', reason: 'lessonColour', cell: idx(0, 23) }])
+    expect(shift.state.grid[idx(0, 23)]).toBe(1) // still there
+  })
+
   it('a chosen piece can come in turned; random pieces stay 4 cells however long it runs', () => {
     const { shift, config } = training()
     shift.train({ type: 'queue', pieces: [{ shape: 'T_I', color: 1, turns: 1 }] })

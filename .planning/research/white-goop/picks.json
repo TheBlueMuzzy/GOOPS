@@ -1,0 +1,16 @@
+{
+  "_about": "Muzzy's white-goop picks (F63, 2026-10-25, sketch .planning/research/sketches/white-goop.html, Copy values). He tried them at 99% pressure with pieces at 5.7 rows/s. Sketch note: Ooze with a 6 s seal sealed ~26 cracks in 5 min on its own at 50% pressure — keep sealTime + restAfter live-tunable and watch whether he carries the tank in real play.",
+  "moveStyle": "ooze",
+  "_moveStyle": "Ooze behind the goop: clings to the back wall once landed, oozes behind and through goop (slower inside it), dotted x-ray outline while hidden; reaches every crack, even covered ones.",
+  "secPerCell": 0.7,
+  "oozeSlow": 2.5,
+  "targetBy": "hardestForYou",
+  "_targetBy": "Hardest for you: rows you'd have to build up under it, +4 if wrong-colour goop covers it.",
+  "unreachable": "takesNext",
+  "sealTime": 6,
+  "restAfter": 1,
+  "size": 1,
+  "buried": "wriggleOut",
+  "squint": 0.25,
+  "eyeSize": 0.18
+}

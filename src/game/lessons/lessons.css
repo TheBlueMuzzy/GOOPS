@@ -22,8 +22,86 @@
   min-block-size: calc(var(--crt-room) * var(--u)); padding-block: calc(12 * var(--u)); box-sizing: border-box;
   padding-inline: calc(18 * var(--u)); /* breathing room: the words never touch the screen's sides */
   text-align: center; flex: none; }
+/* F66 "PLEASE SIGN HERE" (Console.tsx SignHere): the name box as wide as the words box; more room under its two buttons
+   than under a lone Got it, so the row never meets the screen's rounded bottom corners */
+.crt-sign { inline-size: 100%; padding-block-end: calc(14 * var(--u)); box-sizing: border-box; }
+/* F40: a story line's monitor look (Console.tsx's Crt, data-story-look; numbers in content/story/moments.json looks).
+   flicker = the screen stutters dark a few times, once, as the line comes up ("it heard that") ·
+   alarm = the screen flashes red while the line is up (the Veteran's capture at 30: "UNAUTHORISED BROADCAST LOCATED").
+   Looks clock: the Dev Kit's full pause holds them. Reduce motion: no flicker; the alarm is a steady red. */
+.crt[data-story-look="flicker"] { animation: story-flicker var(--story-flicker) steps(1) 1; }
+@keyframes story-flicker {
+  0% { filter: brightness(0.25); } 12% { filter: none; } 22% { filter: brightness(0.4); } 30% { filter: none; }
+  55% { filter: brightness(0.15); } 63% { filter: brightness(1.4); } 72% { filter: none; }
+}
+.crt[data-story-look="alarm"] { animation: story-alarm var(--story-alarm) ease-in-out infinite alternate; }
+@keyframes story-alarm { from { background-color: var(--crt-screen); } to { background-color: var(--story-alarm-colour); } }
+.crt[data-story-look][data-paused] { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .crt[data-story-look="flicker"] { animation: none; }
+  .crt[data-story-look="alarm"] { animation: none; background-color: var(--story-alarm-colour); }
+}
+:root[data-reduce-motion] .crt[data-story-look="flicker"] { animation: none; }
+:root[data-reduce-motion] .crt[data-story-look="alarm"] { animation: none; background-color: var(--story-alarm-colour); }
+/* F45 glitch (45, Management slips): glitchAfterSeconds after the line comes up, for glitchSeconds the words go and
+   the screen shows something that isn't a face (art.json crt.glitch, painted glitchColour through its shape), jumping
+   about; then the words are back. Reduce motion: it shows, holding still. */
+.crt-glitch {
+  /* (over the words, low on the screen: the screen's top is above the page on every size) */
+  position: absolute; inset: auto 14% calc(var(--u) * 14); block-size: calc(var(--u) * 110); z-index: 2; pointer-events: none; opacity: 0;
+  background-color: var(--story-glitch-colour);
+  -webkit-mask: var(--story-glitch-art) center / contain no-repeat; mask: var(--story-glitch-art) center / contain no-repeat;
+  filter: drop-shadow(0 0 0.4em var(--story-glitch-colour));
+  animation: story-glitch var(--story-glitch) steps(1) var(--story-glitch-after) 1;
+}
+@keyframes story-glitch {
+  0% { opacity: 1; transform: translateX(-6%) skewX(12deg); } 30% { opacity: 1; transform: translate(4%, 2%) scaleY(1.15); }
+  60% { opacity: 1; transform: translateX(-2%) skewX(-8deg) scaleX(1.1); } 100% { opacity: 1; transform: none; }
+}
+.crt[data-story-look="glitch"] .crt-body { animation: story-glitch-words var(--story-glitch) steps(1) var(--story-glitch-after) 1; }
+@keyframes story-glitch-words { from, to { opacity: 0; } }
+.crt[data-paused] .crt-glitch, .crt[data-story-look][data-paused] .crt-body { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .crt-glitch { animation-name: story-glitch-still; } }
+:root[data-reduce-motion] .crt-glitch { animation-name: story-glitch-still; }
+@keyframes story-glitch-still { from, to { opacity: 1; } }
+
+/* F45 the hatch under the console (Console.tsx Hatch): rattle = it knocks in its frame rattleTimes times, each
+   rattleSeconds, shaking rattleShake of its own width (moments.json looks). Reduce motion: it stays still (the moment's
+   outline still points at it). */
+.console-hatch { position: relative; inline-size: 100%; block-size: 100%; }
+.console-hatch img { display: block; inline-size: 100%; block-size: 100%; }
+.console-hatch[data-rattle] { animation: story-rattle var(--rattle) linear var(--rattle-times); }
+.console-hatch[data-paused] { animation-play-state: paused; }
+@keyframes story-rattle {
+  0%, 100% { transform: none; }
+  10% { transform: translate(calc(var(--rattle-shake) * -100%), calc(var(--rattle-shake) * -40%)) rotate(-1.5deg); }
+  20% { transform: translate(calc(var(--rattle-shake) * 100%), 0) rotate(1.5deg); }
+  30% { transform: translate(calc(var(--rattle-shake) * -70%), calc(var(--rattle-shake) * 30%)) rotate(-1deg); }
+  40% { transform: translate(calc(var(--rattle-shake) * 60%), 0) rotate(1deg); }
+  50% { transform: translate(calc(var(--rattle-shake) * -30%), 0); }
+  60% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .console-hatch[data-rattle] { animation: none; } }
+:root[data-reduce-motion] .console-hatch[data-rattle] { animation: none; }
+
 /* slid down past the bezel: the bezel's colour round it (sides and bottom; the top is the monitor's own) */
 .crt[data-grown] {
   box-shadow: 0 0 0 calc(var(--crt-bezel-w) * var(--u)) var(--crt-bezel);
   clip-path: inset(0 calc(var(--crt-bezel-w) * -1 * var(--u)) calc(var(--crt-bezel-w) * -1 * var(--u)));
 }
+
+/* F65 THE BADGE (the ending, Console.tsx EndingBadge): your title crossed out by the goop — a line drawn through it in
+   the goop's colour (--badge-goop, galaxy-look.json rim) over --badge-strike — and The Savior of Goopkind written under
+   it in the same colour, then the acronym. The CRT's own words otherwise (phosphor green, typed). */
+.crt-badge { text-align: center; }
+.crt-badge > * { max-inline-size: 100%; text-wrap: balance; }
+.crt-badge-label { opacity: 0.7; letter-spacing: 0.1em; }
+/* (the line is the words' own background, one per line of a title that wraps — drawn left to right on every line) */
+.crt-badge-strike { background: linear-gradient(var(--badge-goop), var(--badge-goop)) no-repeat left 55% / 0% 0.16em;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.crt-badge-old[data-struck] .crt-badge-strike { animation: badge-strike var(--badge-strike) ease-in forwards; }
+@keyframes badge-strike { to { background-size: 100% 0.16em; } }
+.crt-look .crt-badge-new .crt-words { color: var(--badge-goop); font-size: 1.25em; text-shadow: 0 0 0.5em var(--badge-goop); }
+.crt-badge-acronym { letter-spacing: 0.06em; }
+@media (prefers-reduced-motion: reduce) { .crt-badge-old[data-struck] .crt-badge-strike { animation: none; background-size: 100% 0.16em; } }
+:root[data-reduce-motion] .crt-badge-old[data-struck] .crt-badge-strike { animation: none; background-size: 100% 0.16em; }

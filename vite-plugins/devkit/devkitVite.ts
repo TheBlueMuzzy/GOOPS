@@ -14,7 +14,8 @@
 //      in the file is kept even if the tool didn't send it. A save that changes nothing doesn't touch the file.
 //      The game is not hot-reloaded for a saved file (it already shows the tool's live values) — unless the body
 //      says "reload": true (the Text tab: the game reads its words at load time, so Vite's reload shows them).
-//   4. The Fonts tab's font library, dev server only (fontLibrary.ts): GET /__devkit/font-library (list),
+//   4. The Fonts tab's font library, dev server only (fontLibrary.ts — the designer's font folder + the computer's
+//      installed fonts, 0.27.0): GET /__devkit/font-library (list),
 //      GET /__devkit/font-library/file?path= (one font, for a preview), POST /__devkit/font-library/add (copy one into the game).
 //   5. Live tuning by default (0.18.0): content/tuning/*.json imports come back live (liveTuningName / liveJsonModule).
 //   3. The Sound tab's two endpoints, dev server only (audioSave.ts): POST /__devkit/save-audio (a dropped-in sound →
@@ -24,7 +25,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { dirname, extname, join, resolve, sep } from 'node:path'
 import type { Plugin } from 'vite'
 import { ADD_CREDIT_URL, MAX_UPLOAD_BYTES, SAVE_AUDIO_URL, readAudioTarget, readCreditEntry, saveAudioFile } from './audioSave'
-import { FONT_LIBRARY_URL, FONT_TYPES, addLibraryFont, libraryFile, libraryFolder, listLibrary } from './fontLibrary'
+import { FONT_LIBRARY_URL, FONT_TYPES, addLibraryFont, installedFontsOn, libraryPathFile, libraryRoots, listInstalled, listLibrary } from './fontLibrary'
 import { formatJson } from './formatJson'
 
 // How files are written (one-line short objects and lists, like hand-written files): formatJson.ts
@@ -194,7 +195,8 @@ export function devkit(): Plugin {
       server.middlewares.use(FONT_LIBRARY_URL, (req, res) => {
         const reply = replier(res)
         const url = new URL(req.url ?? '/', 'http://x')
-        const folder = libraryFolder(root)
+        const roots = libraryRoots(root) // the designer's folder + the installed-font folders (each path names one)
+        const folder = roots[0].dir
         if (url.pathname === '/add') {
           const no = refused(req, 'application/json')
           if (no) return reply(no[0], { error: no[1] })
@@ -205,7 +207,7 @@ export function devkit(): Plugin {
               const { path } = JSON.parse(Buffer.concat(chunks).toString('utf8'))
               // Its files land in public/ and content/ — the game already shows the font, so no reload for them
               for (const name of ['content/ui/fonts.json', 'content/credits.json']) justWrote.set(fileKey(resolve(root, name)), Date.now())
-              const added = addLibraryFont(root, folder, path)
+              const added = addLibraryFont(root, roots, path)
               for (const file of added.wrote) justWrote.set(fileKey(resolve(root, file)), Date.now())
               server.config.logger.info(`[devkit] fonts: ${added.already ? 'already had' : 'added'} ${added.font.file}`, { timestamp: true })
               reply(200, { ok: true, ...added })
@@ -218,8 +220,9 @@ export function devkit(): Plugin {
         if (req.method !== 'GET') return reply(405, { error: 'GET only' })
         if (otherSite(req)) return reply(403, { error: 'Only from the game page' })
         if (url.pathname === '/file') {
-          const file = libraryFile(folder, url.searchParams.get('path'))
-          if (typeof file !== 'string') return reply(400, { error: `Not allowed: ${file.refused}` })
+          const found = libraryPathFile(roots, url.searchParams.get('path'))
+          if ('refused' in found) return reply(400, { error: `Not allowed: ${found.refused}` })
+          const { file } = found
           res.statusCode = 200
           res.setHeader('Content-Type', FONT_TYPES[extname(file).toLowerCase()])
           res.setHeader('Cache-Control', 'no-store')
@@ -228,7 +231,9 @@ export function devkit(): Plugin {
         }
         if (url.pathname !== '/' && url.pathname !== '') return reply(404, { error: 'No such font library request' })
         const { fonts, more } = listLibrary(folder)
-        reply(200, { folder, found: existsSync(folder), fonts, more })
+        const installedRoots = roots.filter((r) => r.installed)
+        const installed = { on: installedFontsOn(root), folders: installedRoots.map((r) => r.label), ...listInstalled(installedRoots, url.searchParams.has('refresh')), platform: process.platform }
+        reply(200, { folder, found: existsSync(folder), fonts, more, installed })
       })
 
       server.middlewares.use(SAVE_URL, (req, res) => {

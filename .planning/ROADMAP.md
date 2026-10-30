@@ -1,5 +1,5 @@
 # Goops — Roadmap
-Release target: beta — musts not set (/define) · alpha released 2026-10-20 (v0.1.0)
+Release target: 1.0 — musts set (M6) · beta released 2026-10-29 (v0.2.0) · alpha released 2026-10-20 (v0.1.0)
 
 ## M0 — Design decided  ← current
 Goal: every design question the remake needs is answered, so /define can write the TDD and lay out the build milestones.
@@ -38,7 +38,7 @@ Goal: every design question the remake needs is answered, so /define can write t
 - ✅ F06 Breakdowns: v1 meters, softer effects, the tank slows at the console, simplified repairs (GDD §5, 2026-10-18) — must:alpha · needs: F01
 - ✅ F07 ❓ Releases: what alpha, beta and 1.0 must have — must:alpha · needs: F02, F02b, F03, F04, F05, F06 · decided 2026-10-19: alpha = the playable game (no upgrades, no story) for Muzzy + friends; beta = the whole job (story, upgrades, all three rank twists); 1.0 = polished, replaces v1 (research/release-scope.md, GDD §7)
 - ✅ F08 Progression: v1 numbers to start (XP from score), sim-check later (2026-10-17) — must:alpha · needs: F04, F05
-- 📐 F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
+- ✅ F09 ❓ Story in play: fines, rank titles, ranks 40–50, the takeover, what black goop does — must:beta · needs: F08
   note: Muzzy (2026-10-19, F07): "story is beta. alpha is playable game"
 - ✅ F10 ❓ Phone gestures without conflicts — must:alpha · decided 2026-10-20: every finger is its own gesture (swap timer at the holding finger), taps contextual like a PC click (GDD §4, gestures.md §7)
   note: gesture list + 14-line phone checklist done (research/gestures.md); waits for Muzzy's phone session (2026-10-19: "developing fully on PC for now")
@@ -121,36 +121,54 @@ flowchart LR
   F29[F29 Sound basics]
 ```
 
-## M5 — Beta: the whole job, rank 0 to the takeover
+## M5 — Beta: the whole job, rank 0 to the takeover  ✅ released 2026-10-29 (v0.2.0)
 Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every v1 system are in; numbers can still be rough.
 - ✅ F33 ❓ Early upgrades: which ones for ranks 2–9, their new-loop versions and prices — must:beta · decided 2026-10-22 (design/upgrades-map.md "F33 decisions": store at 5 shelf-ready, 1 scrap a level + free take-backs, rank 3 slower depressurise, rank 9 pressure slower, tougher tank at 22) · needs: F08
-- 🟢 F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
-- ⏳ F35 🎮 Story ranks 0–9: rank titles, Employer beats, the intercom voice — must:beta · needs: F09, F30
-- ⏳ F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
+- ✅ F34 🎮 Upgrade screen at the console + the early upgrades — must:beta · needs: F33, F22, F21
+- ✅ F35 🎮 Story moments + ranks 0–9: the story-moment runner on the lesson runner (MON / SPK / HEAD voices, attention calls, not skippable), Management 0–4, the Veteran 5–9, titles on the report (design/story.md "Story moments, rank by rank") — must:beta · needs: F09, F30, F61
+- ✅ F39 🎮 Rank twists as v1: multi-colour pieces (20), expanding cracks (30), wild goop (40), each with a story reason — must:beta · needs: F09
   note: Muzzy (2026-10-19): keep all three
-- ⏳ F40 🎮 The Veteran: radio hijacks + smuggled upgrades — must:beta · needs: F35
-- ⏳ F41 🎮 Fines on the end report — must:beta · needs: F09, F35
-- ⏳ F42 🎮 Active abilities: equip slots + the charge button in the HUD — must:beta · needs: F34
-- ⏳ F43 🎮 Upgrades ranks 10–38 (Hold Viewer + Goop Window retired by F59 — two slots to fill with new upgrades for the new pacing, Muzzy 2026-10-19) — must:beta · needs: F34, F42
-- ⏳ F45 🎮 Ranks 40–49 + the takeover at rank 50 — must:beta · needs: F40, F39
+- ✅ F40 🎮 The Veteran, ranks 10–29, and his capture at 30 (speaker cut-in, the fine for YOU, white joins as a colour) — must:beta · needs: F35
+- ✅ F41 🎮 Credits, fines and payday on the end report: the rank meter becomes CREDITS / PAYMENT DUE, fines as theatre (net = real XP), payday at each rank-up in 5 lines, passage debt line (sketch S8 approved; design/story.md "Credits, payday and fines" + "Fines and payday — the lines") — must:beta · needs: F09
+- ✅ F42 🎮 Active abilities: equip slots + the charge button in the HUD — must:beta · needs: F34
+- ✅ F43 🎮 Upgrades ranks 10–38 (Hold Viewer + Goop Window retired by F59 — two slots to fill with new upgrades for the new pacing, Muzzy 2026-10-19) — must:beta · needs: F34, F42
+- ✅ F45 🎮 Ranks 40–49: the speaker comes back (him + the goop), Management slips, the valve is named — must:beta · needs: F63, F39
+- ✅ F61 🧱 Talking bubble (shipped in UI kit 0.31.0 as <TalkingBubble>, installed 2026-10-24; Goops wires it in F35 with its S9 feel in content/tuning/talk.json — framework UI kit piece: open / type / talk wave / rests / idle squelch; Goops' spiky-wave style for the Veteran, a blobby one for the goop) — sketch S9 approved 2026-10-23 (research/speaker-bubble/picks.json); requested from the framework session, logged in its ROADMAP Ideas — must:beta
+- ✅ F62 🎮 The goop grows eyes and mouths: eyes at 10, following at 20, worried at 30, mouths at 40 (looks, design/story.md "The Goop changes") — must:beta · needs: F09
+- ✅ F63 🎮 The goop's voice (ranks 31–39) + the white goop = the Veteran in the tank (never merges or pops, drifts to the worst crack and seals it slowly) — must:beta · needs: F40, F62
+- ✅ F64 🎮 The final shift (rank 50): all galaxy black goop and cracks, the onslaught, the Veteran drops in and seals the cracks you can't reach (shrinking), 3 release-valve stages at the console (6 / 8 / 10 seals, his count), three ways to lose — sketch or bot run first — must:beta · needs: F63, F45
+- ✅ F65 🎮 The ending + the new career: the tank opens, the goop speaks, the speaker's last line, the badge (lose the final shift → One Of Us until you win; win → The Savior of Goopkind; the next career's rank 0 → Former Employee) and the real acronym, you leave (Muzzy: B), the end-game screen, a new career with an upgraded console — must:beta · needs: F64
+- ✅ F66 🎮 Your name: sign the contract at rank 0 (type a name, saved on the device) so the goop can say it from 39 — plan whether it's just a name in Goops or a framework profile module (name + avatar) (design/story.md "Your name") — must:beta · needs: F09
+- ✅ F67 🎮 The zap look (approved 2026-10-24): the laser beam from sketch L5 (the zapped goop turns white-hot, swells, and is sucked into the laser point) + v1's spray droplets on each zap (v1 PRD: 30 droplets, 60 px/s, 3 s, 9 px, gravity 180) — Muzzy 2026-10-24: "the first version had little droplets that 'sprayed' when a goop was zapped. I think those need to return. also, the laser from one of the sketches was pretty cool" (F03 note 2026-10-17: the laser should explode / harden the goo) — must:beta · needs: F14
+- ✅ F68 🎮 First-day touches (approved 2026-10-24): poking goop that can't pop jiggles it in the tutorial too (Muzzy: "clicking on the wrong goop should do the jiggle thing" — it works in shifts; a lesson step that refuses the zap may stop it before the jiggle) · a hint that shows when a crack is covered by the wrong colour (it can pop, but won't seal — pop it to make room for the right colour) · audit v1's tutorial for other missing touches (Muzzy: "a lot of the original tutorial touches are missing") — must:beta · needs: F31
+- ✅ F69 ❓ The first day's voice — decided 2026-10-24 (Muzzy: "Management teaches tutorial. Vet comes in at 5. i forgot."): Management teaches the first day (as built), the Veteran first speaks at rank 5 — must:beta · needs: F09
+- ✅ F70 🧱 Rank select (approved 2026-10-24) + the framework version label at the bottom of the console (Muzzy 2026-10-24: "maybe we need the v1's rank selector back again at the bottom between the version (which should be using the frameworks version module so it's up to date when I open it) and \"muzzymade 2026\"" — the ?rank links left him at his own save's rank 18, and a fresh first day had no way in) — must:beta · needs: F38
 - 🟢 F46 🎮 Operator Journal — should:beta · needs: F30
-- ⏳ F47 ✨ The zap look (sketch first) — should:beta
-- ⏳ F48 🎮 Quick Fix upgrade (fewer repair steps) — should:beta · needs: F34
+- ✅ F48 🎮 Quick Fix upgrade at rank 28 (fewer repair steps) — should:beta · needs: F34
 - 🟢 F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
-- ⏳ F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
-- ⏳ F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
+- 🟢 F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
+- ✅ F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
 
 ## M6 — 1.0: polished, balanced, replaces v1
 Goal: Goops 2 goes live at the old address, works offline, sounds finished, and holds up from rank 0 to 50.
-- ⏳ F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
+- 🟢 F52 🧱 Balance pass from beta playtests + the sim — must:1.0 · needs: F51
+  what: the sim's 9 findings (research/economy-sim.md), each with a knob · Muzzy 2026-10-29: fix Goop Dump + Goop Colorizer wiping the score together (finding 4) · the bots take Dense Goop off before the final shift, as a smart player would (Muzzy: "sure"; finding 9)
 - 🟢 F53 🎮 Final sound + music + intercom voice — must:1.0 · needs: F29
   what: step 1 = swap in the sounds Muzzy finds for the 26 placeholder moments (he hunts; Claude trims, matches loudness, credits — Muzzy 2026-10-19: "add a step during polish to update sounds")
 - 🟢 F54 🧱 Offline install + replace v1 at the live address — must:1.0 · needs: F38
+  what: the offline install is already built (F38, works at /GOOPS/alpha/); what is left = move the remake to /GOOPS/ so it replaces v1, retire v1's offline copy, send /alpha/ installs to the new address. Muzzy 2026-10-26: waits for the 1.0 /deliver (once it sits at /GOOPS/, every beta update reaches v1 players before the ending and balance are done).
 - ⏳ F55 🎮 Credits screen — must:1.0
 - ⏳ F56 ✨ Periscope zoom — should:1.0
 - ⏳ F57 🎮 Colour-blind help — should:1.0
+  what: beta audit 2026-10-29: same-colour merge + colour-only crack squiggles; red and green goop side by side; lesson words name colours ("Click the yellow goop"). Settings already has a hidden Colour-blind mode row (settings.json colourBlind) — needs a per-colour shape/pattern (goop face, crack glyph, next window) or another palette
+- 🟢 F71 🧱 Real-phone performance pass — a mid + a low Android with ?fps through a busy rank-30+ shift, jelly vs particle, result in TDD Key facts (the beta audit 2026-10-29 couldn't measure the phone GPU; desktop: 8.3 ms a frame); plus a lighter first visit: drop the 6 kit fonts Goops never uses from the offline copy (~146 KB) and shrink the 512 icons — should:1.0
+- 🟢 F72 ❓ Pinch zoom on or off — the page turns pinch-zoom off (normal for a game, flagged by WCAG); OK only once Text size really works everywhere (B005) — decide + note in TDD — should:1.0
+- 🟢 F73 🎮 Crisp pixel type — Muzzy 2026-10-29: "make it all nokia… body font should always be more readable… do some research and see how to make this all work well" (research/pixel-type.md): today's sizes (18 / 22.5 / 28.1 / 35.2 px, line-height 1.4) miss Nokia's 8 px grid, so it blurs. A sketch first (A all Nokia snapped to 16/24/32/48 + caps/shadow for emphasis — Claude's pick · B Nokia display + PixeloidSans 18 body · B2 m6x11plus · today), then the UI kit snaps sizes to the font's grid (framework session) — Muzzy 2026-10-29: the sketch after the beta (Claude's pick) — should:1.0
 
 ## Parking lot
+- 💡 2026-10-27 — **Title badge on the console between shifts (Muzzy, F65):** add one during the art redesign — titles show only on paydays, reports and the ending's badge rewrite now.
+- 💡 2026-10-24 — **Garbled key words in the lesson lines (F68 audit, research/tutorial.md §11):** v1's every tutorial line was intercom static with the key words coming through in green (`[brackets]` = static). The first day is plain words now (alpha decision); GDD §6 keeps the garbled intercom. Needs a line format in en.json (which words are key) + the bubble / monitor drawing static and green — bigger than a touch; fits with F35's voices.
+- 💡 2026-10-24 — **Plugged vs wrong colour at a glance (F68 audit):** v1 v3 wanted goop on a crack of its own colour to glow "ready to seal". Now the x-ray box looks the same for the right colour and the wrong one until the red X shows. Idea: the box takes the crack's colour (or a steady green) when plugged by the right colour. Taste call for Muzzy — a look change, numbers would go in cracks-look.json.
 - 💡 2026-10-18 — **Cracks you can read (Muzzy):** (1) an open crack lets out a slightly unsteady stream of bubbles into the tank, "as if air is getting in" — also makes it easy to spot · (2) a crack under goop stays visible: a dotted white "x-ray" box round it ("the visor is auto targeting to help") and the goop inside the box goes slightly see-through; pop that cluster → the crack seals and the box goes · (3) a sealed crack turns black/grey so it looks fixed, and no crack can ever form on a sealed spot again · (4) goop covering a crack HALVES its drain (and its bubbles). Claude's notes: (4) changes the loop — covering a crack becomes worth doing before you can pop it (stall vs. seal); the bot runs (F27) should be rerun with it. The x-ray box sits UNDER the visor glitch, so the glitch distorts it too (Muzzy 2026-10-18).
 - 💡 2026-10-19 — Screen-look effects, reusable → now **F60** (sprint 09)
 - 💡 2026-10-20 — **In-line icons in lesson / monitor words (Muzzy):** draw ↓, keys and buttons as small icons in the text instead of relying on the font's glyphs (the ↓ on the first-day monitor is tiny in the pixel font).
@@ -158,6 +176,6 @@ Goal: Goops 2 goes live at the old address, works offline, sounds finished, and 
 - 💡 2026-10-19 — **Look like a device (Muzzy, thoughts only):** the curve alone isn't enough, "everything looks too clean" — one more "looking through a device" element. Ideas: very light scanlines over the whole tank (worry: doubled over the x-ray box's own scan lines — would need the box's to go or line up), or the pixel look below (goop made of hundreds of tiny pixel blobs). Not now; no full scanlines yet.
 - 💡 2026-10-18 — **Periscope zoom (polish):** pulling the periscope down zooms INTO its visor and the shift is playing in there; swiping up zooms back out. At the console the game stays small and visible through the visor (Muzzy: "like you're actually looking directly into the periscope visor… put this for polish later")
 - 💡 2026-10-17 — Free goo (L5) as its own game: "Let's keep the tech, because I really like it for something else" (Muzzy). Tech: research/sketches/lab-L5-free-goo.html
-- 💡 2026-10-17 — Pixel look: the UI drawn as small pixels, and eventually the goop too ("pixellated goop would look cool") (Muzzy)
+- 💡 2026-10-17 — Pixel look: the UI drawn as small pixels, and eventually the goop too ("pixellated goop would look cool") (Muzzy). 2026-10-24 (Muzzy): "create a pixellated render shader that we can apply to things" → ONE pixel pass (a shader over a layer: goop + its eyes/mouths, maybe the UI), not a pixel option per feature; F62's eyes are built smooth and drawn with the goo so that pass will cover them.
 - 💡 2026-10-17 — Repair bots: an upgrade — one or more small bots float around the tank sealing cracks for you (much later) (Muzzy)
 - 💡 2026-10-16 — The goop is semi-sentient: maybe it acts a little on its own (creeps, reaches, hides a crack)? (Claude's suggestion)

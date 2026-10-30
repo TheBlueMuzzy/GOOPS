@@ -11,7 +11,9 @@
 //   · only ONE hold charges a swap at a time (the first finger to hold still, or a held key — never both).
 // F59: swap unlocks by rank — before that (canSwap false) holding does nothing: no charging ring, no swap.
 // Keys (GDD §4, one set, same timing as touch): A D / ← → spin · Q / Right Ctrl ↺, E / Numpad 0 ↻
-// · S / ↓ (hold) fast drop · hold R / Right Shift 1.5 s = swap · W / ↑ console/pause.
+// · S / ↓ (hold) fast drop · hold R / Right Shift 1.5 s = swap · W / ↑ console/pause
+// · F / Numpad . = fire the equipped active (F34, Cooldown Booster; refused unless it's charged)
+// · 1 / 2 / 3 = fire the 1st / 2nd / 3rd equipped active (F42: up to three equipped; F / Numpad . stay on the 1st).
 import tank from '../../content/tuning/tank.json'
 import { rulesClock } from '../devkit/gameClock'
 
@@ -20,6 +22,9 @@ import { rulesClock } from '../devkit/gameClock'
 // that started before a pause doesn't finish the moment it ends.
 const clock = () => rulesClock.now()
 
+// F42: the number keys along the top of the keyboard that fire the 1st / 2nd / 3rd equipped active
+const ABILITY_KEYS = ['Digit1', 'Digit2', 'Digit3']
+
 export interface ControlCallbacks {
   spin(dir: 1 | -1): void
   rotate(dir: 1 | -1): void
@@ -27,6 +32,9 @@ export interface ControlCallbacks {
   tapCell(px: number, py: number): boolean // true if there was goop there (it tried to pop)
   hold(): void
   console(): void
+  // F34: fire an equipped active ability — slot 0 = the first equipped (F / Numpad . / 1), 1 = the second (2), 2 = the
+  // third (3) (F42); the HUD's charge buttons do the same. Left out = the keys are left alone.
+  ability?(slot: number): void
   // 0..1 while a hold-to-swap is charging, null when it ends. at = where the holding finger (or mouse) is, in page px —
   // the swap timer is drawn beside it (F28); no `at` = a held key (the HUD's Swap bar shows it).
   holdProgress?(p: number | null, at?: { x: number; y: number }): void
@@ -36,6 +44,19 @@ export interface ControlCallbacks {
   // F24: how many times slower a HELD spin repeats right now (broken controls: 2; fine: 1). Single presses and quick
   // swipes are never slowed — only the repeats while a key or a sideways drag is held.
   spinSlowdown?(): number
+  // F43 Goop Swap: × how long a hold takes to swap (the upgrade's swapHoldTimeMult; 1 = tank.json holdToSwapMs). Read
+  // at every frame of a hold, so the held key's Swap bar and the finger's ring both fill in the shorter time. Left out = 1.
+  swapHoldMult?(): number
+}
+
+// F43: how long a hold takes to swap — tank.json holdToSwapMs × the Goop Swap upgrade's multiplier, never under
+// holdToSwapMinMs (v1's 0.5 s floor — unless holdToSwapMs itself is shorter: the upgrade never makes it longer) and
+// always longer than holdDelayMs (when the timer starts to show).
+// (read from the live tuning each time — the Dev Kit's sliders reach the next hold)
+export function swapHoldMs(mult = 1): number {
+  const m = Number.isFinite(mult) && mult > 0 ? Math.min(1, mult) : 1
+  const floor = Math.min(tank.holdToSwapMs, tank.holdToSwapMinMs)
+  return Math.max(tank.holdDelayMs + 1, floor, Math.round(tank.holdToSwapMs * m))
 }
 
 // F28: the touch distances live in tank.json in rem (dragLockRem, dragDeadZoneRem, flickRem) so they feel the same on
@@ -106,8 +127,9 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
     if (!isActive()) { stopHold(); return } // paused (a lesson, the Dev Kit, a menu): the charge is dropped, no frozen ring
     const at = f ? { x: f.nowX, y: f.nowY } : undefined
     const held = clock() - holdStart
-    if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (tank.holdToSwapMs - tank.holdDelayMs)), at)
-    if (held >= tank.holdToSwapMs) {
+    const swapMs = swapHoldMs(cb.swapHoldMult?.()) // (F43: Goop Swap makes it shorter)
+    if (held >= tank.holdDelayMs) cb.holdProgress?.(Math.min(1, (held - tank.holdDelayMs) / (swapMs - tank.holdDelayMs)), at)
+    if (held >= swapMs) {
       if (f) f.consumed = true
       holdTimer = 0; stopHold(); cb.holdProgress?.(null)
       if (isActive()) cb.hold()
@@ -208,6 +230,8 @@ export function attachControls(el: HTMLElement, cb: ControlCallbacks, isActive: 
       // (swap still locked, or a finger already charging: the key does nothing)
       if (!holdKey && holdFinger === null && swapOn()) startHold({ key: k })
     } else if (k === 'KeyW' || k === 'ArrowUp') cb.console()
+    else if ((k === 'KeyF' || k === 'NumpadDecimal') && cb.ability) cb.ability(0) // F34: fire the first equipped active
+    else if (ABILITY_KEYS.includes(k) && cb.ability) cb.ability(ABILITY_KEYS.indexOf(k)) // F42: 1 / 2 / 3 = slot 1 / 2 / 3
     else return
     e.preventDefault()
   }

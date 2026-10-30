@@ -1,0 +1,34 @@
+{
+  "_about": "The zap look (F67): what zapping goop looks like, in both goo styles (Jelly and Particle). Muzzy's pick from the sketch, 2026-10-24 (\"great settings. Both.\" — research/zap-look/picks.json, sketch research/sketches/zap-look.html): the L5 laser + v1's spray together. A white beam from the top centre of the visible tank to your tap; the goop turns white-hot and swells for the first 40% of beamTime, then is sucked into the laser point (the side nearest your tap first, so it stretches into a teardrop) over suckTime; a spray of droplets in its colour once, at sprayAt. Looks only: the rules remove the cells at once. Reduce motion: no swell and no spray (the beam and the suck-in stay). Numbers only; keys starting with _ are notes.",
+  "_help": {
+    "beamTime": "Seconds the white beam shows, from the top centre of the tank down to your tap. The goop heats up (white-hot + swell) during the first 40% of it. 0 = no beam, no heat-up wait.",
+    "whiteHot": "How far the zapped goop turns toward white. 0 = keeps its colour, 1 = pure white-hot.",
+    "swell": "How much the zapped goop puffs up while it heats (0.2 = 20% bigger). Off with reduce motion.",
+    "suckTime": "Seconds to be sucked into the laser point; the side nearest your tap goes first, so it stretches into a teardrop. 0 = it just vanishes (v1).",
+    "droplets": "How many droplets spray out of each zap (0 = none). Off with reduce motion.",
+    "dropSpeed": "How fast the droplets fly out (v1 pixels per second on a 30-pixel cell; they scale with the tank).",
+    "dropLife": "Seconds a droplet lives (each one 70–130% of this) before it's gone.",
+    "gravity": "How fast the droplets fall (v1 pixels per second², on a 30-pixel cell).",
+    "sprayAt": "When the spray happens: 0 = the moment the beam hits, out of the whole goop; 1 = at the end, a burst out of the laser point."
+  },
+  "_ranges": {
+    "beamTime": [0, 1, 0.01],
+    "whiteHot": [0, 1, 0.01],
+    "swell": [0, 1, 0.01],
+    "suckTime": [0, 2, 0.01],
+    "droplets": [0, 100, 1],
+    "dropSpeed": [0, 300, 5],
+    "dropLife": [0.2, 6, 0.1],
+    "gravity": [0, 600, 10],
+    "sprayAt": [0, 1, 0.05]
+  },
+  "beamTime": 0.3,
+  "whiteHot": 0.52,
+  "swell": 0.14,
+  "suckTime": 0.27,
+  "droplets": 15,
+  "dropSpeed": 95,
+  "dropLife": 1.4,
+  "gravity": 310,
+  "sprayAt": 0.6
+}

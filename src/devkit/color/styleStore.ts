@@ -21,7 +21,9 @@ export function createStyleStore(
   kit: StyleKit,
   file: StyleFileData,
   save: (path: string, data: object) => Promise<void> = saveContentFile,
-  page: HTMLElement = document.documentElement,
+  // the page is looked up on first restyle, not here: a game's Node test (no document) can import the Dev Kit,
+  // which builds this store as color/uiKit.ts loads (0.20.1)
+  page?: HTMLElement,
 ) {
   const preset = kit.presets[file.preset] ?? kit.presets.clean
   const fromFile = { ...uiColoursFrom(preset, file.tweaks), ...uiShapesFrom(preset, file.tweaks) }
@@ -34,7 +36,8 @@ export function createStyleStore(
     const tweaks = tweaksToSave(preset, state.live, savedTweaks)
     kit.applyStyle({ preset: file.preset, tweaks })
     // applyStyle only sets values: a menu size put back to the kit's default is taken off the page again
-    for (const token of shapesToClear(preset, tweaks)) page.style.removeProperty(`--${token}`)
+    const root = page ?? document.documentElement
+    for (const token of shapesToClear(preset, tweaks)) root.style.removeProperty(`--${token}`)
   }
   function update(next: Partial<StyleState>) {
     state = { ...state, ...next }

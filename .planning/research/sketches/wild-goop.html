@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch (BMUZ). The planner's Sketches tab uses the title as the tab name and the description as its blurb. -->
+<title>Wild goop look</title>
+<meta name="description" content="What should WILD goop (rank 40+, seals any colour of crack) look like? Three looks in the real jelly tank: the old v1 rainbow wave, an oil-slick sheen, and a pearl glow. Watch the wild piece fall and seal the crack, then tap Compare to check it never looks like a real goop colour (or white).">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #fx { pointer-events: none; z-index: 1; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  #bottom button { min-height: 48px; font-size: 15px; }
+  #bottom .lbl { flex: 0 0 auto; font-size: 12px; color: var(--dim); }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  #hint { position: fixed; left: 16px; right: 16px; text-align: center; font-size: 13px; line-height: 1.3; color: var(--dim); z-index: 2; pointer-events: none; }
+  body.side #hint { right: 316px; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 10px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 84px; }
+  #panel input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel select { flex: 1; min-width: 0; height: 30px; padding: 0 4px; font: 600 12px system-ui, sans-serif; color: var(--ink);
+    background: #0b1224; border: 1px solid var(--line); border-radius: 6px; }
+  /* the value box: type any number, even past the slider's ends (the slider then sits at its end, the box turns amber) */
+  #panel input.num { flex: 0 0 52px; width: 52px; box-sizing: border-box; padding: 3px 4px; text-align: right; font: 600 12px ui-monospace, monospace;
+    color: #94a3b8; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; -moz-appearance: textfield; }
+  #panel input.num::-webkit-inner-spin-button, #panel input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #panel input.num:focus { outline: none; border-color: var(--accent); color: var(--ink); }
+  #panel input.num.over { color: #fbbf24; border-color: #fbbf2480; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="fx"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bCompare">Compare</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="hint"></div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <span class="lbl">Look</span>
+  <span style="display:contents" id="looks"><button data-l="0">Rainbow</button><button data-l="1">Oil slick</button><button data-l="2">Pearl</button></span>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+// Sizes in cells (1 = one grid square). The look is drawn in the shader, so every knob changes it live.
+const GOO = {
+  look: 2,          // 0 = rainbow wave (v1), 1 = oil-slick sheen, 2 = pearl glow (Muzzy's pick, 2026-10-25)
+  speed: 0.6,       // how fast the colour moves (1 = rainbow's v1 400 ms per colour)
+  band: 3,          // wave / band / swirl size, in cells
+  saturation: 0.43, // how colourful the sheen is (rainbow: 1 = the real goop colours)
+  tint: 0.55,       // base brightness (oil: gunmetal -> pewter; pearl: dusky lavender -> bright pearl)
+  glow: 0.6,        // soft glow round a wild clump (pulses gently)
+  sparkle: 0.5,     // tiny twinkles on a wild clump
+  pixelSize: 0,     // 0 = smooth; else the whole tank drawn in blocks this many screen px wide
+};
+const LOOK_NAMES = ['Rainbow wave (v1)', 'Oil-slick sheen', 'Pearl glow'];
+// [name, min, max, step] rows, [name, 'choice', [labels]] rows; a one-item row is a group heading.
+const KNOBS = [['Look'], ['look', 'choice', LOOK_NAMES], ['speed', 0, 3, 0.05], ['band', 0.5, 12, 0.25], ['saturation', 0, 1, 0.01],
+  ['tint', 0, 1, 0.01], ['Extras'], ['glow', 0, 1, 0.01], ['sparkle', 0, 1, 0.01], ['pixelSize', 0, 12, 1]];
+const KNOB_LABEL = { look: 'Look', speed: 'Speed', band: 'Band size', saturation: 'Saturation', tint: 'Base tint', glow: 'Glow', sparkle: 'Sparkle', pixelSize: 'Pixel size' };
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it.
+const KNOB_HELP = {
+  look: 'Rainbow = the old v1 look (cycles the real goop colours). Oil slick = Claude\'s pick: a grey-violet body with a slow rainbow film sliding over it. Pearl = a milky lavender body with a soft glow. Also the Look buttons under the tank.',
+  speed: 'How fast the colour moves. Rainbow: 1 = v1\'s 400 ms per colour. Oil: how fast the shiny band slides across. Pearl: how fast the shimmer drifts and the glow pulses. 0 = frozen.',
+  band: 'Rainbow: cells from one colour to the next across the tank (small = stripy, big = the whole tank one colour). Oil: how wide the shiny band is. Pearl: how big the shimmer swirls are.',
+  saturation: 'How colourful the sheen gets. Rainbow at 1 = exactly the real goop colours (the problem). Oil / Pearl top out well below a real goop, so they stay "not a colour".',
+  tint: 'How bright the wild body is underneath the sheen. Oil: dark gunmetal (0) to pewter (1). Pearl: dusky lavender (0) to bright pearl (1, still well short of white goop). Rainbow: dimmer / brighter.',
+  glow: 'A soft halo round each wild clump that gently pulses: "this one is special". Watch the dark tank just outside the clump.',
+  sparkle: 'Tiny twinkles on wild goop only. 0 = none; 1 = lots.',
+  pixelSize: 'If the game goes pixel-art: the whole tank drawn in chunky blocks this many screen pixels wide. 0 = smooth.',
+};
+
+// ===== The sketch itself =====
+// Fixed look: the game's L4 Jelly values (content/tuning/goo-jelly.json, Muzzy's pick 2026-10-17). Not knobs here.
+const JELLY = { stiffness: 700, viscosity: 6.5, wobble: 0.25, translucency: 0.5, wetness: 0.9, home: 0.3, corner: 0.32, magnetism: 1.4, maxDpr: 1.5 };
+// content/tuning/goo-colors.json, in shift.json's order. 8 = WILD (shaded in the shader, not a fixed colour).
+const HEX = ['#000', '#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#f8fafc', '#1a1a2e'];
+const COLOR_NAME = ['', 'red', 'blue', 'green', 'yellow', 'purple', 'white', 'black', 'wild'];
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const COLORS = HEX.map(h => h.length === 7 ? rgb(h) : [0, 0, 0]).concat([[0.5, 0.5, 0.5]]);
+const WILD = 8;
+// The window: 12 columns x 14 rows. R B G Y P = goop colours, * = wild clumps (three shapes).
+const W = 12, H = 14;
+const BOARD = ['............', '............', '............', '............', '............', '............', '............',
+  '............', '..........*.', '.........**.', '**......YY*G', '*RB...PPYGGG', 'RRBB..PP*GRR', 'RBBYYGPP**RB'];
+// The crack the wild piece seals (x, y): at the bottom of the pit. It reopens in the next colour each loop: wild seals ANY colour.
+const CRACK = { x: 4, y: 12 };
+// Compare: each palette colour in a 2x2 clump with a wild 2x2 touching it.
+const CMP_SLOTS = [[1, 2], [7, 2], [1, 5], [7, 5], [1, 8], [7, 8], [1, 11]];
+const hash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); return ((h ^ (h >>> 15)) >>> 0) / 4294967296; };
+
+const grid = new Uint8Array(W * H);
+const idx = (x, y) => y * W + x;
+let compare = false;
+function groupAt(x, y) {
+  const c = grid[idx(x, y)], out = [], seen = new Set([idx(x, y)]), stack = [[x, y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop(); out.push([cx, cy]);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = cx + dx, ny = cy + dy, i = idx(nx, ny);
+      if (nx >= 0 && nx < W && ny >= 0 && ny < H && !seen.has(i) && grid[i] === c) { seen.add(i); stack.push([nx, ny]); }
+    }
+  }
+  return out;
+}
+function fillBoard() {
+  grid.fill(0);
+  if (compare) {
+    CMP_SLOTS.forEach(([x, y], i) => { for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) { grid[idx(x + dx, y + dy)] = i + 1; grid[idx(x + 2 + dx, y + dy)] = WILD; } });
+  } else {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const ch = BOARD[y][x]; const k = ch === '*' ? WILD : ' RBGYP'.indexOf(ch); grid[idx(x, y)] = k > 0 ? k : 0; }
+  }
+  bodies = []; cellBody.fill(-1);
+  const seen = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    if (!grid[i] || seen[i]) continue;
+    const x = i % W, g = groupAt(x, (i - x) / W); for (const [gx, gy] of g) seen[idx(gx, gy)] = 1;
+    const B = makeBody(g, grid[i]); for (let k = 0; k < B.n; k++) { B.x[k] = B.hx[k]; B.y[k] = B.hy[k]; }
+    for (const ci of B.cellIdx) cellBody[ci] = B.id;
+    bodies.push(B);
+  }
+  piece.phase = 'wait'; piece.t = 0; piece.B = null;
+}
+
+// ---- jelly bodies (the game's L4 Jelly, from white-goop.html): outline points springing back to their home shape
+let bodies = [], nextId = 1, simT = 0;
+const cellBody = new Int32Array(W * H).fill(-1);
+function traceLoops(cells) {
+  const key = (x, y) => (x + 64) * 1024 + (y + 64);
+  const has = new Set(cells.map(([x, y]) => key(x, y)));
+  const edges = new Map(), all = [];
+  const add = (x0, y0, dx, dy) => { const e = { x0, y0, dx, dy, used: false }, k = key(x0, y0);
+    if (!edges.has(k)) edges.set(k, []); edges.get(k).push(e); all.push(e); };
+  for (const [x, y] of cells) {
+    if (!has.has(key(x, y - 1))) add(x, y, 1, 0);
+    if (!has.has(key(x + 1, y))) add(x + 1, y, 0, 1);
+    if (!has.has(key(x, y + 1))) add(x + 1, y + 1, -1, 0);
+    if (!has.has(key(x - 1, y))) add(x, y + 1, 0, -1);
+  }
+  const loops = [];
+  for (const e0 of all) {
+    if (e0.used) continue;
+    const loop = []; let cur = e0;
+    while (cur && !cur.used) {
+      cur.used = true; loop.push(cur);
+      const list = edges.get(key(cur.x0 + cur.dx, cur.y0 + cur.dy)) || [];
+      let best = null, bs = -9;
+      for (const c of list) { if (c.used) continue; const s = cur.dx * c.dy - cur.dy * c.dx; if (s > bs) { bs = s; best = c; } }
+      cur = best;
+    }
+    loops.push(loop);
+  }
+  return loops;
+}
+function buildPoints(loops, B) {
+  for (const loop of loops) {
+    const n = loop.length, start = B.n, corners = [];
+    for (let k = 0; k < n; k++) { const a = loop[(k + n - 1) % n], b = loop[k]; if (a.dx !== b.dx || a.dy !== b.dy) corners.push(k); }
+    const rad = k => { const a = loop[(k + n - 1) % n], b = loop[k]; return (a.dx * b.dy - a.dy * b.dx) > 0 ? JELLY.corner : JELLY.corner * 0.5; };
+    for (let j = 0; j < corners.length; j++) {
+      const k = corners[j], kn = corners[(j + 1) % corners.length];
+      const ein = loop[(k + n - 1) % n], eo = loop[k], Vx = eo.x0, Vy = eo.y0, r = rad(k);
+      for (const t of [0, 0.25, 0.5, 0.75]) {
+        const ax = Vx - ein.dx * r, ay = Vy - ein.dy * r, bx = Vx + eo.dx * r, by = Vy + eo.dy * r, u = 1 - t;
+        pushPt(B, u * u * ax + 2 * t * u * Vx + t * t * bx, u * u * ay + 2 * t * u * Vy + t * t * by);
+      }
+      const runLen = ((kn - k + n) % n) || n, r2 = rad(kn), L = runLen - r - r2, m = Math.max(1, Math.round(L / 0.3));
+      for (let i = 0; i < m; i++) { const s = i * L / m; pushPt(B, Vx + eo.dx * (r + s), Vy + eo.dy * (r + s)); }
+    }
+    B.loops.push([start, B.n - start]);
+  }
+}
+function pushPt(B, x, y) { B.bx.push(x); B.by.push(y); B.n++; }
+function makeBody(cells, color) {
+  const B = { id: nextId++, color, cells, n: 0, loops: [], bx: [], by: [], fa: 0, fcx: 0, fcy: 0, rcx: 0, rcy: 0, alpha: 1 };
+  buildPoints(traceLoops(cells), B);
+  B.hx = Float32Array.from(B.bx); B.hy = Float32Array.from(B.by); B.x = new Float32Array(B.n); B.y = new Float32Array(B.n);
+  B.vx = new Float32Array(B.n); B.vy = new Float32Array(B.n);
+  let tl = 0; cells.forEach(([x, y], i) => { if (y < cells[tl][1] || (y === cells[tl][1] && x < cells[tl][0])) tl = i; });
+  const [tx, ty] = cells[tl]; let run = 1; while (run < 3 && cells.some(([x, y]) => x === tx + run && y === ty)) run++;
+  const tall = cells.some(([x, y]) => x === tx && y === ty + 1);
+  B.hlX = tx + 0.42 + 0.36 * (run - 1); B.hlY = ty + 0.3; B.hlW = 0.24 + 0.2 * (run - 1); B.hlH = tall ? 0.12 : 0.1;
+  B.cellIdx = cells.map(([x, y]) => idx(x, y));
+  return B;
+}
+function kick(B, kind, amt) {
+  if (!B || !amt) return;
+  let cx = 0, cy = 0, ymax = -1e9, ymin = 1e9; for (let i = 0; i < B.n; i++) { cx += B.x[i]; cy += B.y[i]; ymax = Math.max(ymax, B.y[i]); ymin = Math.min(ymin, B.y[i]); } cx /= B.n; cy /= B.n;
+  const hgt = Math.max(1, ymax - ymin), s = amt * JELLY.wobble;
+  for (let i = 0; i < B.n; i++) {
+    const dx = B.x[i] - cx, dy = B.y[i] - cy;
+    if (kind === 'squash') { B.vy[i] += s * (ymax - B.y[i]) / Math.sqrt(hgt); B.vx[i] += s * 0.6 * dx / Math.sqrt(hgt); }
+    else { B.vx[i] += s * dx; B.vy[i] += s * dy; }
+  }
+}
+function stepBody(B, h, ks, kh, c) { // Müller shape matching toward the homes + home springs + damping
+  const n = B.n; let cx = 0, cy = 0, rx = 0, ry = 0;
+  for (let i = 0; i < n; i++) { cx += B.x[i]; cy += B.y[i]; rx += B.hx[i]; ry += B.hy[i]; }
+  cx /= n; cy /= n; rx /= n; ry /= n;
+  let a00 = 0, a01 = 0, a10 = 0, a11 = 0;
+  for (let i = 0; i < n; i++) { const px = B.x[i] - cx, py = B.y[i] - cy, qx = B.hx[i] - rx, qy = B.hy[i] - ry;
+    a00 += px * qx; a01 += px * qy; a10 += py * qx; a11 += py * qy; }
+  const ang = Math.atan2(a10 - a01, a00 + a11), cs = Math.cos(ang), sn = Math.sin(ang);
+  B.fa = ang; B.fcx = cx; B.fcy = cy; B.rcx = rx; B.rcy = ry;
+  for (let i = 0; i < n; i++) {
+    const qx = B.hx[i] - rx, qy = B.hy[i] - ry, gx = cx + cs * qx - sn * qy, gy = cy + sn * qx + cs * qy;
+    B.vx[i] += (ks * (gx - B.x[i]) + kh * (B.hx[i] - B.x[i]) - c * B.vx[i]) * h;
+    B.vy[i] += (ks * (gy - B.y[i]) + kh * (B.hy[i] - B.y[i]) - c * B.vy[i]) * h;
+    B.x[i] += B.vx[i] * h; B.y[i] += B.vy[i] * h;
+  }
+}
+
+// ---- the wild piece: an O piece falls at the game's speed into the pit, lands on the crack, seals it, fades, and loops
+const PIECE_CELLS = [[0, 0], [1, 0], [0, 1], [1, 1]], PIECE_X = 4, PIECE_LAND = 11, PIECE_START = -2, FALL_SPEED = 1.3; // rows/s (the game: 780 ms a row)
+const SEAL_TIME = 2.5, SEALED_TIME = 1.5, FADE_TIME = 0.5, WAIT_TIME = 0.8;
+const piece = { phase: 'wait', t: 0, fy: 0, B: null, hx0: null, hy0: null };
+const crack = { color: 1, seal: 0, loops: 0 };
+function placePiece(y) { const B = piece.B; for (let i = 0; i < B.n; i++) { B.hx[i] = piece.hx0[i] + PIECE_X; B.hy[i] = piece.hy0[i] + y; } }
+function stepPiece(dt) {
+  if (compare) return;
+  piece.t += dt;
+  if (piece.phase === 'wait' && piece.t >= WAIT_TIME) {
+    piece.B = makeBody(PIECE_CELLS, WILD); piece.hx0 = Float32Array.from(piece.B.hx); piece.hy0 = Float32Array.from(piece.B.hy);
+    piece.fy = PIECE_START; placePiece(piece.fy); for (let i = 0; i < piece.B.n; i++) { piece.B.x[i] = piece.B.hx[i]; piece.B.y[i] = piece.B.hy[i]; }
+    piece.phase = 'fall'; piece.t = 0;
+  } else if (piece.phase === 'fall') {
+    piece.fy = Math.min(PIECE_LAND, piece.fy + FALL_SPEED * dt); placePiece(piece.fy);
+    if (piece.fy >= PIECE_LAND) { // landed: squash, and the goop round the pit flinches (the game's landing)
+      piece.phase = 'seal'; piece.t = 0; kick(piece.B, 'squash', 2.2);
+      for (const [x, y] of [[3, 12], [6, 12], [4, 13], [5, 13], [3, 11]]) kick(bodies.find(b => b.id === cellBody[idx(x, y)]), 'radial', -0.4);
+    }
+  } else if (piece.phase === 'seal') { crack.seal = Math.min(1, piece.t / SEAL_TIME); if (piece.t >= SEAL_TIME) { piece.phase = 'sealed'; piece.t = 0; } }
+  else if (piece.phase === 'sealed' && piece.t >= SEALED_TIME) { piece.phase = 'fade'; piece.t = 0; }
+  else if (piece.phase === 'fade') {
+    piece.B.alpha = Math.max(0, 1 - piece.t / FADE_TIME);
+    if (piece.t >= FADE_TIME) { piece.phase = 'wait'; piece.t = 0; piece.B = null; crack.seal = 0; crack.loops++; crack.color = 1 + crack.loops % 5; }
+  }
+  if (piece.B) { const ks = JELLY.stiffness; stepBody(piece.B, dt, ks, ks * JELLY.home, JELLY.viscosity); }
+}
+function update(dt) {
+  simT += dt;
+  const ks = JELLY.stiffness, kh = ks * JELLY.home, c = JELLY.viscosity;
+  for (const B of bodies) stepBody(B, dt, ks, kh, c);
+  stepPiece(dt);
+}
+
+// ---- WebGL2 renderer: L4 Jelly's passes (mask -> small blur -> big blur -> glossy jelly), from white-goop.html,
+// widened to three mask targets so all 7 palette colours + WILD fit: T0 = red blue green yellow, T1 = purple, highlight, -, white,
+// T2 = black, WILD. The wild body's colour is worked out per pixel in the final pass (wildBase), so it can move.
+const canvas = $('c'), fxc = $('fx'), fx = fxc.getContext('2d');
+const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, stencil: false });
+if (!gl) document.body.innerHTML = '<p style="padding:16px">WebGL2 is not available on this device.</p>';
+const floatOK = !!gl.getExtension('EXT_color_buffer_float');
+const FSQ = `#version 300 es
+void main(){ vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const MASK_VS = `#version 300 es
+layout(location=0) in vec4 aPos; uniform vec2 uOrigin, uCover; uniform float uCell; out vec2 vUv;
+void main(){ vec2 px = uOrigin + aPos.xy * uCell; vUv = aPos.zw;
+  gl_Position = vec4(px.x / uCover.x * 2.0 - 1.0, 1.0 - px.y / uCover.y * 2.0, 0.0, 1.0); }`;
+const MASK_FS = `#version 300 es
+precision mediump float; in vec2 vUv; uniform int uMode; uniform vec4 uC0, uC1, uC2; uniform float uHl;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1; layout(location=2) out vec4 o2;
+void main(){
+  if (uMode == 2) { float r = length(vUv); float e = (1.0 - smoothstep(0.35, 1.0, r)); o0 = vec4(0.0); o1 = vec4(0.0, e * e * uHl, 0.0, 0.0); o2 = vec4(0.0); }
+  else { o0 = uC0; o1 = uC1; o2 = uC2; }
+}`;
+const BLUR_FS = `#version 300 es
+precision highp float; uniform sampler2D uT0, uT1, uT2; uniform vec2 uSize, uStep; uniform float uSigma; uniform int uR;
+layout(location=0) out vec4 o0; layout(location=1) out vec4 o1; layout(location=2) out vec4 o2;
+void main(){
+  vec2 uv = gl_FragCoord.xy / uSize; vec4 a = vec4(0.0), b = vec4(0.0), d = vec4(0.0); float ws = 0.0;
+  for (int i = -40; i <= 40; i++) { if (i < -uR || i > uR) continue;
+    float w = exp(-0.5 * float(i * i) / (uSigma * uSigma)); vec2 u = uv + uStep * float(i);
+    a += w * texture(uT0, u); b += w * texture(uT1, u); d += w * texture(uT2, u); ws += w; }
+  o0 = a / ws; o1 = b / ws; o2 = d / ws;
+}`;
+const FINAL_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uS0, uS1, uS2, uQ0, uQ1, uQ2, uM1;
+uniform vec2 uRes, uCover, uOrigin, uQTex; uniform float uCell, uTime, uTrans, uWet; uniform ivec2 uGrid; uniform vec3 uCols[9];
+uniform int uLook; uniform float uSpeed, uBand, uSat, uTint, uGlow, uSpark, uPix; uniform vec3 uRain[5];
+out vec4 outColor;
+float pick(vec4 t0, vec4 t1, vec4 t2, vec4 s0, vec4 s1, vec4 s2){ return dot(t0, s0) + dot(t1, s1) + dot(t2, s2); }
+vec3 hsv(float h, float s, float v){ vec3 k = clamp(abs(mod(h * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0); return v * mix(vec3(1.0), k, s); }
+vec3 desat(vec3 c, float s){ float l = dot(c, vec3(0.299, 0.587, 0.114)); return mix(vec3(l), c, s); }
+uint ihash(uvec2 v){ uint h = v.x * 1664525u + v.y * 1013904223u; h ^= h >> 16; h *= 0x7feb352du; h ^= h >> 15; h *= 0x846ca68bu; h ^= h >> 16; return h; }
+float h01(ivec2 g, uint s){ return float(ihash(uvec2(g) + uvec2(s * 7919u, s * 104729u)) & 0xffffffu) / 16777216.0; }
+// THE WILD LOOK: the body colour at cell point p (n = surface normal, th = thickness). glow = the halo / rim colour.
+vec3 wildBase(vec2 p, vec3 n, float th, out vec3 glow){
+  float band = max(uBand, 0.05);
+  if (uLook == 0) { // v1: every goop colour in turn, 400 ms each, offset by x so it reads as a wave sliding sideways
+    float t = uTime * 2.5 * uSpeed - p.x / band;
+    float i = floor(t), u = fract(t);
+    vec3 c = mix(uRain[int(mod(i, 5.0))], uRain[int(mod(i + 1.0, 5.0))], u);
+    c = desat(c, uSat) * (0.5 + uTint);
+    glow = c; return c;
+  }
+  if (uLook == 1) { // oil slick: a grey-violet body (no palette colour has it) with a thin-film rainbow band sliding across
+    vec3 base = mix(vec3(0.27, 0.26, 0.33), vec3(0.58, 0.57, 0.65), uTint);
+    float sweep = (p.x * 0.85 + p.y * 0.45) / band - uTime * uSpeed * 0.35;
+    float bandOn = pow(0.5 + 0.5 * sin(sweep * 6.2832), 2.5);
+    float hue = fract(sweep * 0.5 + n.x * 0.7 + n.y * 0.45 + th * 0.35);
+    vec3 film = desat(hsv(hue, 1.0, 1.0), uSat * 0.8);
+    vec3 c = mix(base, base * 0.7 + film * 0.55, 0.22 + 0.78 * bandOn);
+    glow = mix(vec3(0.75, 0.72, 0.85), film, 0.6); return c;
+  }
+  // pearl: a milky lavender body (tinted, well short of white goop) with a slow pastel shimmer
+  vec3 base = mix(vec3(0.55, 0.51, 0.68), vec3(0.74, 0.69, 0.87), uTint);
+  float sw = (p.x * 0.7 - p.y * 0.55) / band;
+  float hue = fract(0.35 * sin(sw * 3.0 + uTime * uSpeed * 0.8) + n.x * 0.6 + n.y * 0.5 + uTime * uSpeed * 0.04);
+  vec3 film = desat(hsv(hue, 1.0, 1.0), uSat * 0.7);
+  vec3 c = mix(base, base * 0.65 + film * 0.42, 0.65);
+  glow = mix(vec3(0.86, 0.80, 1.0), film, 0.35); return c;
+}
+void main(){
+  vec2 fc = gl_FragCoord.xy;
+  bool pix = uPix > 0.5;
+  if (pix) fc = (floor(fc / uPix) + 0.5) * uPix;
+  vec2 uv = fc / uCover;
+  vec2 p = (vec2(fc.x, uRes.y - fc.y) - uOrigin) / uCell;
+  vec2 gs = vec2(uGrid); float px = 1.0 / uCell;
+  vec3 bg = vec3(0.008, 0.016, 0.04);
+  if (p.x >= 0.0 && p.x <= gs.x && p.y >= 0.0 && p.y <= gs.y) { vec2 f = abs(fract(p) - 0.5);
+    bg = vec3(0.02, 0.035, 0.08) + 0.025 * smoothstep(0.5 - px * 1.5, 0.5, max(f.x, f.y)); }
+  float edge = (p.y <= gs.y && p.y >= -0.6) ? min(abs(p.x), abs(p.x - gs.x)) : 1e3;
+  if (p.x >= 0.0 && p.x <= gs.x) edge = min(edge, abs(p.y - gs.y));
+  bg += vec3(0.08, 0.16, 0.3) * smoothstep(px * 3.0, 0.0, edge);
+  vec2 so = vec2(0.6, -0.9) * uQTex; vec4 sh0 = texture(uQ0, uv + so), sh1 = texture(uQ1, uv + so), sh2 = texture(uQ2, uv + so);
+  bg *= 1.0 - 0.45 * clamp(sh0.r + sh0.g + sh0.b + sh0.a + sh1.r + sh1.a + sh2.r + sh2.g, 0.0, 1.0);
+  // the wild halo: from the big blur of the wild mask, pulsing gently
+  float pulse = 0.75 + 0.25 * sin(uTime * (1.2 + 1.6 * uSpeed));
+  vec3 gcol; wildBase(p, vec3(0.0, 0.0, 1.0), 0.0, gcol);
+  float halo = smoothstep(0.0, 0.5, texture(uQ2, uv).g);
+  bg += gcol * uGlow * halo * pulse * 0.55;
+  vec4 s0 = texture(uS0, uv), s1 = texture(uS1, uv), s2 = texture(uS2, uv);
+  float f = s0.r, f2 = 0.0; int c = 1; vec4 sel0 = vec4(1, 0, 0, 0), sel1 = vec4(0.0), sel2 = vec4(0.0);
+  if (s0.g > f) { f2 = f; f = s0.g; c = 2; sel0 = vec4(0, 1, 0, 0); } else f2 = max(f2, s0.g);
+  if (s0.b > f) { f2 = f; f = s0.b; c = 3; sel0 = vec4(0, 0, 1, 0); } else f2 = max(f2, s0.b);
+  if (s0.a > f) { f2 = f; f = s0.a; c = 4; sel0 = vec4(0, 0, 0, 1); } else f2 = max(f2, s0.a);
+  if (s1.r > f) { f2 = f; f = s1.r; c = 5; sel0 = vec4(0); sel1 = vec4(1, 0, 0, 0); } else f2 = max(f2, s1.r);
+  if (s1.a > f) { f2 = f; f = s1.a; c = 6; sel0 = vec4(0); sel1 = vec4(0, 0, 0, 1); } else f2 = max(f2, s1.a);
+  if (s2.r > f) { f2 = f; f = s2.r; c = 7; sel0 = vec4(0); sel1 = vec4(0); sel2 = vec4(1, 0, 0, 0); } else f2 = max(f2, s2.r);
+  if (s2.g > f) { f2 = f; f = s2.g; c = 8; sel0 = vec4(0); sel1 = vec4(0); sel2 = vec4(0, 1, 0, 0); } else f2 = max(f2, s2.g);
+  float aa = max(fwidth(f), 1e-4);
+  float a = smoothstep(0.5 - aa, 0.5 + aa, f);
+  a *= smoothstep(0.0, max(fwidth(f - f2) * 1.5, 0.03), f - f2);
+  if (a <= 0.0) { outColor = vec4(bg, 1.0); return; }
+  float th = pick(texture(uQ0, uv), texture(uQ1, uv), texture(uQ2, uv), sel0, sel1, sel2);
+  vec2 ex = vec2(uQTex.x, 0.0), ey = vec2(0.0, uQTex.y);
+  vec2 gq = vec2(pick(texture(uQ0, uv + ex), texture(uQ1, uv + ex), texture(uQ2, uv + ex), sel0, sel1, sel2) - pick(texture(uQ0, uv - ex), texture(uQ1, uv - ex), texture(uQ2, uv - ex), sel0, sel1, sel2),
+                 pick(texture(uQ0, uv + ey), texture(uQ1, uv + ey), texture(uQ2, uv + ey), sel0, sel1, sel2) - pick(texture(uQ0, uv - ey), texture(uQ1, uv - ey), texture(uQ2, uv - ey), sel0, sel1, sel2)) * 0.5;
+  vec2 ge = pix ? vec2(0.0) : vec2(dFdx(f), dFdy(f)) * uCell; // in blocks the screen-space slope is meaningless
+  float bev = 1.0 - smoothstep(0.5, 0.95, f);
+  vec3 n = normalize(vec3(-(gq * 7.0 + ge * 0.9 * bev), 1.0));
+  vec3 L = normalize(vec3(-0.45, 0.65, 0.62)), Hh = normalize(L + vec3(0.0, 0.0, 1.0));
+  vec3 wg = vec3(0.0);
+  vec3 base = c == 8 ? wildBase(p, n, th, wg) : uCols[c];
+  float t = smoothstep(0.45, 1.0, th);
+  float diff = max(dot(n, L), 0.0);
+  vec3 body = base * (0.5 + 0.55 * diff);
+  body = mix(body * 1.15 + base * 0.12, body * 0.85, t);
+  body += base * 0.45 * smoothstep(0.35, 1.0, t) * (0.85 + 0.15 * sin(uTime * 1.3));
+  float rim = 1.0 - smoothstep(0.5, 0.7, f);
+  body = mix(body, base * 0.3, rim * 0.55);
+  float fres = pow(1.0 - n.z, 1.6);
+  body += (base * 0.6 + 0.4) * fres * uWet * 0.55;
+  float spec = pow(max(dot(n, Hh), 0.0), 18.0) * uWet * 0.16;
+  float hl = texture(uM1, uv).g * uWet;
+  float op = mix(1.0, 0.5 + 0.45 * t, uTrans);
+  vec3 col = mix(bg + base * 0.12, body, op) + vec3(spec + hl);
+  if (c == 8) {
+    col += wg * uGlow * rim * pulse * 0.6; // the glow rim
+    // sparkles: a grid of half cells in cell space; a cell twinkles if its integer hash is under the sparkle chance
+    vec2 sp = p * 2.0; ivec2 g = ivec2(floor(sp));
+    if (h01(g, 1u) < uSpark * 0.5) {
+      vec2 d = (fract(sp) - (0.3 + 0.4 * vec2(h01(g, 2u), h01(g, 3u)))) * 2.0;
+      float tw = pow(max(0.0, sin(uTime * (1.2 + 2.0 * h01(g, 4u)) + 6.2832 * h01(g, 5u))), 4.0);
+      float star = pow(max(0.0, 1.0 - length(d) * 2.8), 2.0) * 1.6 + max(0.0, 1.0 - abs(d.x) * 9.0) * max(0.0, 1.0 - abs(d.y) * 1.1)
+                 + max(0.0, 1.0 - abs(d.y) * 9.0) * max(0.0, 1.0 - abs(d.x) * 1.1);
+      col += mix(vec3(1.0), wg, 0.3) * min(star, 1.5) * tw * (1.0 - rim);
+    }
+  }
+  outColor = vec4(mix(bg, col, a), 1.0);
+}`;
+function compile(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+function program(vs, fs, names) {
+  const p = gl.createProgram(); gl.attachShader(p, compile(gl.VERTEX_SHADER, vs)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {}; for (const n of names) u[n] = gl.getUniformLocation(p, n); return { p, u };
+}
+const PM = program(MASK_VS, MASK_FS, ['uOrigin', 'uCover', 'uCell', 'uMode', 'uC0', 'uC1', 'uC2', 'uHl']);
+const PB = program(FSQ, BLUR_FS, ['uT0', 'uT1', 'uT2', 'uSize', 'uStep', 'uSigma', 'uR']);
+const PF = program(FSQ, FINAL_FS, ['uS0', 'uS1', 'uS2', 'uQ0', 'uQ1', 'uQ2', 'uM1', 'uRes', 'uCover', 'uOrigin', 'uQTex', 'uCell', 'uTime', 'uTrans', 'uWet',
+  'uGrid', 'uCols', 'uLook', 'uSpeed', 'uBand', 'uSat', 'uTint', 'uGlow', 'uSpark', 'uPix', 'uRain']);
+const vaoMask = gl.createVertexArray(), vbo = gl.createBuffer(), vaoFsq = gl.createVertexArray();
+gl.bindVertexArray(vaoMask); gl.bindBuffer(gl.ARRAY_BUFFER, vbo); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 4, gl.FLOAT, false, 16, 0);
+function makeTex(w, h, float) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, float ? gl.RGBA16F : gl.RGBA8, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+function makeTarget(w, h, float, stencil) {
+  const T = { w, h, t0: makeTex(w, h, float), t1: makeTex(w, h, float), t2: makeTex(w, h, float), fb: gl.createFramebuffer() };
+  gl.bindFramebuffer(gl.FRAMEBUFFER, T.fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, T.t0, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT1, gl.TEXTURE_2D, T.t1, 0);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT2, gl.TEXTURE_2D, T.t2, 0);
+  if (stencil) { T.rb = gl.createRenderbuffer(); gl.bindRenderbuffer(gl.RENDERBUFFER, T.rb);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH24_STENCIL8, w, h); gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.RENDERBUFFER, T.rb); }
+  gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1, gl.COLOR_ATTACHMENT2]);
+  return T;
+}
+function freeTarget(T) { if (!T) return; gl.deleteTexture(T.t0); gl.deleteTexture(T.t1); gl.deleteTexture(T.t2); gl.deleteFramebuffer(T.fb); if (T.rb) gl.deleteRenderbuffer(T.rb); }
+let TM, TA, TS, TB, TQ, dpr = 1, cell = 30, ox = 0, oy = 0, Wm = 1, Hm = 1, viewW = 0;
+let vbuf = new Float32Array(1 << 15), vn = 0;
+const pushV = (x, y, u, v) => { if (vn + 4 > vbuf.length) { const nb = new Float32Array(vbuf.length * 2); nb.set(vbuf); vbuf = nb; } vbuf[vn++] = x; vbuf[vn++] = y; vbuf[vn++] = u; vbuf[vn++] = v; };
+function fanBody(B) { for (const [s, cnt] of B.loops) for (let i = 1; i < cnt - 1; i++) {
+  pushV(B.x[s], B.y[s], 0, 0); pushV(B.x[s + i], B.y[s + i], 0, 0); pushV(B.x[s + i + 1], B.y[s + i + 1], 0, 0); } }
+function hlQuad(B) { // the one highlight rides the body's fitted rotation + centre
+  const ca = Math.cos(B.fa), sa = Math.sin(B.fa), qx = B.hlX - B.rcx, qy = B.hlY - B.rcy;
+  const cx = B.fcx + ca * qx - sa * qy, cy = B.fcy + sa * qx + ca * qy, rot = B.fa - 0.18;
+  const ux = Math.cos(rot) * B.hlW, uy = Math.sin(rot) * B.hlW, vx = -Math.sin(rot) * B.hlH, vy = Math.cos(rot) * B.hlH;
+  const P = (s, t) => pushV(cx + ux * s + vx * t, cy + uy * s + vy * t, s, t);
+  P(-1, -1); P(1, -1); P(1, 1); P(-1, -1); P(1, 1); P(-1, 1);
+}
+function buildGeometry() {
+  vn = 0; const R = { fan: [], hl: [] };
+  for (let c = 1; c <= WILD; c++) {
+    let s = vn / 4; for (const B of bodies) if (B.color === c) fanBody(B); R.fan[c] = [s, vn / 4 - s];
+    s = vn / 4; for (const B of bodies) if (B.color === c) hlQuad(B); R.hl[c] = [s, vn / 4 - s];
+  }
+  if (piece.B) { let s = vn / 4; fanBody(piece.B); R.pf = [s, vn / 4 - s]; s = vn / 4; hlQuad(piece.B); R.ph = [s, vn / 4 - s]; }
+  R.cover = vn / 4; pushV(-40, -60, 0, 0); pushV(W + 40, -60, 0, 0); pushV(W + 40, H + 40, 0, 0); pushV(-40, -60, 0, 0); pushV(W + 40, H + 40, 0, 0); pushV(-40, H + 40, 0, 0);
+  return R;
+}
+// which channel each colour writes: [T0 rgba, T1 rgba, T2 rgba]
+function chan(color, a) {
+  const c0 = [0, 0, 0, 0], c1 = [0, 0, 0, 0], c2 = [0, 0, 0, 0];
+  if (color <= 4) c0[color - 1] = a; else if (color === 5) c1[0] = a; else if (color === 6) c1[3] = a; else if (color === 7) c2[0] = a; else c2[1] = a;
+  return [c0, c1, c2];
+}
+let glR = null;
+function maskShape(color, fan, hl, alpha) {
+  if (!fan || !fan[1]) return;
+  gl.colorMask(false, false, false, false); gl.stencilFunc(gl.ALWAYS, 0, 0xff);
+  gl.stencilOpSeparate(gl.FRONT, gl.KEEP, gl.KEEP, gl.INCR_WRAP); gl.stencilOpSeparate(gl.BACK, gl.KEEP, gl.KEEP, gl.DECR_WRAP);
+  gl.uniform1i(PM.u.uMode, 0); gl.drawArrays(gl.TRIANGLES, fan[0], fan[1]);
+  gl.colorMask(true, true, true, true); gl.stencilFunc(gl.NOTEQUAL, 0, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+  const [c0, c1, c2] = chan(color, alpha);
+  gl.uniform4fv(PM.u.uC0, c0); gl.uniform4fv(PM.u.uC1, c1); gl.uniform4fv(PM.u.uC2, c2);
+  gl.uniform1i(PM.u.uMode, 1); gl.drawArrays(gl.TRIANGLES, glR.cover, 6);
+  if (hl && hl[1]) { gl.uniform1i(PM.u.uMode, 2); gl.uniform1f(PM.u.uHl, alpha); gl.drawArrays(gl.TRIANGLES, hl[0], hl[1]); }
+  gl.clear(gl.STENCIL_BUFFER_BIT);
+}
+function blur(src, dst, dx, dy, sigma) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, dst.fb); gl.viewport(0, 0, dst.w, dst.h);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t0); gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, src.t1);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, src.t2);
+  gl.uniform2f(PB.u.uSize, dst.w, dst.h); gl.uniform2f(PB.u.uStep, dx / dst.w, dy / dst.h);
+  gl.uniform1f(PB.u.uSigma, sigma); gl.uniform1i(PB.u.uR, Math.min(40, Math.ceil(sigma * 2.5)));
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+const RAIN = [1, 2, 3, 4, 5].flatMap(c => COLORS[c]); // the v1 rainbow cycles the five goop colours (never white / black)
+function drawGoo(time) {
+  glR = buildGeometry();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, TM.fb); gl.viewport(0, 0, Wm, Hm);
+  gl.clearColor(0, 0, 0, 0); gl.clearStencil(0); gl.clear(gl.COLOR_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+  gl.useProgram(PM.p); gl.bindVertexArray(vaoMask); gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, vbuf.subarray(0, vn), gl.STREAM_DRAW);
+  const hs = Wm / canvas.width;
+  gl.uniform2f(PM.u.uOrigin, ox * dpr, oy * dpr); gl.uniform1f(PM.u.uCell, cell * dpr); gl.uniform2f(PM.u.uCover, canvas.width, canvas.height);
+  gl.enable(gl.BLEND); gl.blendEquation(gl.MAX); gl.enable(gl.STENCIL_TEST);
+  for (let c = 1; c <= WILD; c++) maskShape(c, glR.fan[c], glR.hl[c], 1);
+  if (piece.B) maskShape(WILD, glR.pf, glR.ph, piece.B.alpha);
+  gl.disable(gl.BLEND); gl.disable(gl.STENCIL_TEST); gl.colorMask(true, true, true, true);
+  gl.useProgram(PB.p); gl.bindVertexArray(vaoFsq); gl.uniform1i(PB.u.uT0, 0); gl.uniform1i(PB.u.uT1, 1); gl.uniform1i(PB.u.uT2, 2);
+  const cHalf = cell * dpr * hs, sg = cHalf * (0.06 + 0.03 * JELLY.magnetism);
+  blur(TM, TA, 1, 0, sg); blur(TA, TS, 0, 1, sg);
+  blur(TM, TB, 1, 0, cHalf * 0.5 * 0.42); blur(TB, TQ, 0, 1, cHalf * 0.5 * 0.42);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(PF.p);
+  [[TS.t0, 'uS0'], [TS.t1, 'uS1'], [TS.t2, 'uS2'], [TQ.t0, 'uQ0'], [TQ.t1, 'uQ1'], [TQ.t2, 'uQ2'], [TM.t1, 'uM1']].forEach(([t, n], i) => {
+    gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t); gl.uniform1i(PF.u[n], i); });
+  gl.uniform2f(PF.u.uRes, canvas.width, canvas.height); gl.uniform2f(PF.u.uCover, Wm / hs, Hm / hs);
+  gl.uniform2f(PF.u.uOrigin, ox * dpr, oy * dpr); gl.uniform2f(PF.u.uQTex, 2 / Wm, 2 / Hm);
+  gl.uniform1f(PF.u.uCell, cell * dpr); gl.uniform1f(PF.u.uTime, time); gl.uniform2i(PF.u.uGrid, W, H);
+  gl.uniform1f(PF.u.uTrans, JELLY.translucency); gl.uniform1f(PF.u.uWet, JELLY.wetness);
+  gl.uniform3fv(PF.u.uCols, COLORS.flat()); gl.uniform3fv(PF.u.uRain, RAIN);
+  gl.uniform1i(PF.u.uLook, Math.round(GOO.look)); gl.uniform1f(PF.u.uSpeed, GOO.speed); gl.uniform1f(PF.u.uBand, GOO.band);
+  gl.uniform1f(PF.u.uSat, GOO.saturation); gl.uniform1f(PF.u.uTint, GOO.tint); gl.uniform1f(PF.u.uGlow, GOO.glow);
+  gl.uniform1f(PF.u.uSpark, GOO.sparkle); gl.uniform1f(PF.u.uPix, Math.max(0, Math.round(GOO.pixelSize)) * dpr);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+// 2D overlay: the crack (the game's jagged line, x-ray box while goop covers it, stitches + a ring as it seals), compare labels
+const sx = x => ox + x * cell, sy = y => oy + y * cell;
+function crackPts() { const pts = []; for (let k = 0; k <= 5; k++) { const t = k / 5, j = (hash('wild:' + k) - 0.5) * 0.3;
+  pts.push([CRACK.x + 0.2 + 0.6 * t + j, CRACK.y + 0.15 + 0.7 * t - j]); } return pts; }
+function strokePts(pts) { fx.beginPath(); pts.forEach(([x, y], i) => i ? fx.lineTo(sx(x), sy(y)) : fx.moveTo(sx(x), sy(y))); fx.stroke(); }
+function stitches(n, color) {
+  const pts = crackPts(); fx.strokeStyle = color; fx.lineWidth = Math.max(1, cell * 0.04);
+  for (let k = 0; k < n; k++) { const t = (k + 0.5) / 4, i = Math.min(4, Math.floor(t * 5)), u = t * 5 - i, a = pts[i], b = pts[i + 1];
+    const x = a[0] + (b[0] - a[0]) * u, y = a[1] + (b[1] - a[1]) * u;
+    fx.beginPath(); fx.moveTo(sx(x - 0.1), sy(y - 0.1)); fx.lineTo(sx(x + 0.1), sy(y + 0.1)); fx.stroke(); }
+}
+function drawCrack() {
+  if (compare) return;
+  fx.lineJoin = 'round'; fx.lineCap = 'round';
+  const covered = piece.B && (piece.phase === 'seal' || piece.phase === 'sealed' || piece.phase === 'fade');
+  const sealed = crack.seal >= 1;
+  if (sealed) { fx.globalAlpha = covered ? 0.45 : 0.6; fx.strokeStyle = '#475569'; fx.lineWidth = Math.max(1, cell * 0.05); strokePts(crackPts()); stitches(4, '#94a3b8'); }
+  else {
+    fx.globalAlpha = covered ? 0.55 : 1; fx.strokeStyle = HEX[crack.color]; fx.shadowColor = HEX[crack.color]; fx.shadowBlur = 8;
+    fx.lineWidth = Math.max(1.2, cell * 0.1); strokePts(crackPts()); fx.shadowBlur = 0;
+    if (crack.seal > 0) { fx.globalAlpha = 1; stitches(Math.floor(crack.seal * 4.999), '#f8fafc'); }
+  }
+  if (covered && piece.phase !== 'fade') { // the game's x-ray box over a covered crack
+    fx.globalAlpha = 0.8; fx.strokeStyle = '#f8fafc'; fx.lineWidth = 1.2; fx.setLineDash([3, 3]);
+    fx.strokeRect(sx(CRACK.x + 0.06), sy(CRACK.y + 0.06), cell * 0.88, cell * 0.88); fx.setLineDash([]);
+  }
+  if (piece.phase === 'seal') { // the sealing ring fills (the same ring the white goop uses)
+    const cx = sx(CRACK.x + 0.5), cy = sy(CRACK.y + 0.5), r = cell * 0.62;
+    fx.globalAlpha = 0.9; fx.strokeStyle = '#f8fafc'; fx.lineWidth = 1.5;
+    fx.beginPath(); fx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * crack.seal); fx.stroke();
+  }
+  fx.globalAlpha = 1;
+}
+function drawLabels() {
+  if (!compare) return;
+  fx.fillStyle = '#94a3b8'; fx.font = `600 ${Math.max(10, Math.round(cell * 0.32))}px system-ui, sans-serif`; fx.textAlign = 'center'; fx.textBaseline = 'middle';
+  CMP_SLOTS.forEach(([x, y], i) => { fx.fillText(COLOR_NAME[i + 1], sx(x + 1), sy(y + 2.45)); fx.fillText('wild', sx(x + 3), sy(y + 2.45)); });
+}
+function drawFx() { fx.clearRect(0, 0, innerWidth, innerHeight); drawCrack(); drawLabels(); }
+function draw() { drawGoo(simT); drawFx(); }
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, JELLY.maxDpr);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  const fd = devicePixelRatio || 1; fxc.width = Math.round(innerWidth * fd); fxc.height = Math.round(innerHeight * fd); fx.setTransform(fd, 0, 0, fd, 0, 0);
+  viewW = playW();
+  const hintH = $('hint').offsetHeight || 40;
+  const top = $('top').getBoundingClientRect().bottom + hintH + 14, bot = $('bottom').getBoundingClientRect().top - 8;
+  cell = Math.min((viewW - 32) / W, (bot - top) / (H + 0.5));
+  ox = (viewW - W * cell) / 2; oy = bot - H * cell;
+  $('hint').style.top = Math.max($('top').getBoundingClientRect().bottom + 2, oy - 0.5 * cell - hintH) + 'px';
+  Wm = Math.ceil(canvas.width / 4) * 2; Hm = Math.ceil(canvas.height / 4) * 2;
+  [TM, TA, TS, TB, TQ].forEach(freeTarget);
+  TM = makeTarget(Wm, Hm, false, true); TA = makeTarget(Wm, Hm, floatOK); TS = makeTarget(Wm, Hm, floatOK);
+  TB = makeTarget(Wm / 2, Hm / 2, floatOK); TQ = makeTarget(Wm / 2, Hm / 2, floatOK);
+}
+const LOOK_HINT = [
+  'Rainbow (v1): cycles the real goop colours, 400 ms each, as a wave sliding sideways. For a moment it IS red, blue...',
+  'Oil slick: a grey-violet body no goop has, with a soft rainbow film sliding over it. Never a full goop colour.',
+  'Pearl: milky lavender (not white) with a pastel shimmer, a pulsing glow and sparkles.'];
+let shownLook = -1;
+function showLook() {
+  const L = Math.round(GOO.look); if (shownLook === L) return; shownLook = L;
+  for (const b of document.querySelectorAll('#looks button')) b.classList.toggle('on', +b.dataset.l === L);
+  $('hint').textContent = (compare ? 'Compare: every goop colour next to a wild clump. ' : '') + (LOOK_HINT[L] || '');
+  layout();
+}
+$('looks').onclick = e => { if (e.target.dataset.l !== undefined) { GOO.look = +e.target.dataset.l; showKnob('look'); } };
+function setCompare(on) { compare = on; $('bCompare').classList.toggle('on', on); fillBoard(); shownLook = -1; showLook(); }
+$('bCompare').onclick = () => setCompare(!compare);
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+const isChoice = row => row[1] === 'choice';
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(row => { const [k, lo, hi, st] = row; return lo === undefined ? `<h4>${k}</h4>` :
+  (isChoice(row) ? `<label><span>${KNOB_LABEL[k] || k}</span><select id="k_${k}">${hi.map((n, i) => `<option value="${i}">${n}</option>`).join('')}</select></label>`
+  : `<label><span>${KNOB_LABEL[k] || k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><input class="num" type="number" inputmode="decimal" id="v_${k}" step="${st}" value="${GOO[k]}" title="Type any value, even past the slider's ends"></label>`)
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : ''); }).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+// show a value in both the slider (pinned at its end when past it) and the box (amber when past the slider's ends)
+function showKnob(k) {
+  const row = KNOBS.find(r => r[0] === k), v = GOO[k];
+  if (isChoice(row)) { $('k_' + k).value = v; if (k === 'look') showLook(); return; }
+  const box = $('v_' + k);
+  $('k_' + k).value = v; if (document.activeElement !== box) box.value = v;
+  box.classList.toggle('over', v < row[1] || v > row[2]);
+}
+// typing in the box updates the sketch live; Enter or leaving the box applies, Escape puts back what was there
+for (const row of KNOBS) {
+  const [k, lo] = row; if (lo === undefined) continue;
+  if (isChoice(row)) { $('k_' + k).onchange = e => { GOO[k] = +e.target.value; showKnob(k); }; continue; }
+  const box = $('v_' + k); let before = GOO[k];
+  $('k_' + k).oninput = e => { GOO[k] = +e.target.value; showKnob(k); };
+  box.onfocus = () => { before = GOO[k]; };
+  box.oninput = () => { const v = parseFloat(box.value); if (Number.isFinite(v)) { GOO[k] = v; showKnob(k); } };
+  box.onkeydown = e => {
+    if (e.key === 'Enter') box.blur();
+    if (e.key === 'Escape') { GOO[k] = before; box.value = before; showKnob(k); box.blur(); }
+  };
+  box.onblur = () => { box.value = GOO[k]; showKnob(k); };
+}
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
+const DEFAULTS = readKnobs();
+// The three starting presets (until you save your own over them): one per look.
+const STARTERS = [
+  { name: 'Rainbow (v1)', values: { ...DEFAULTS, look: 0, speed: 1, band: 4, saturation: 1, tint: 0.5, glow: 0, sparkle: 0, pixelSize: 0 } },
+  { name: 'Oil slick', values: { ...DEFAULTS } },
+  { name: 'Pearl', values: { ...DEFAULTS, look: 2, speed: 0.6, band: 3, saturation: 0.4, tint: 0.55, glow: 0.6, sparkle: 0.5, pixelSize: 0 } }];
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || STARTERS; } catch (e) { presets = STARTERS; }
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ now: readKnobs(), lookName: LOOK_NAMES[Math.round(GOO.look)], presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+fillBoard(); showLook(); showKnob('look');
+layout();
+// fixed-step loop + fps (one-second average)
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0, paused = false;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (!paused) { acc += dt; while (acc >= STEP) { update(STEP); acc -= STEP; } }
+  draw();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// for Playwright checks: pause the clock, step it by hand, flip compare, read the piece / crack
+window.sketch = { GOO, readKnobs, setKnobs, setCompare,
+  pause: on => { paused = on; acc = 0; },
+  advance: sec => { for (let n = Math.round(sec / STEP); n > 0; n--) update(STEP); draw(); },
+  setTime: t => { simT = t; draw(); },
+  state: () => ({ simT, cell, ox, oy, compare, phase: piece.phase, fy: piece.fy, crack: { ...crack } }) };
+</script>
+</body>
+</html>

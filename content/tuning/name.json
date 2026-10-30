@@ -1,0 +1,5 @@
+{
+  "_about": "F66 YOUR NAME: the first day's monitor says PLEASE SIGN HERE and you type a name (or skip it and stay Operator #4471). The name is kept in the save on this device only (TDD D20). Words: content/text/en.json story.sign.",
+  "_maxLength": "The most letters the name box takes (Muzzy 2026-10-25: 12). Spaces at either end are trimmed; an empty name = skip.",
+  "maxLength": 12
+}

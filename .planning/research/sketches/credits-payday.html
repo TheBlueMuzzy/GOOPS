@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch (BMUZ) — Goops story F09: how credits, fines and payday would read on the end-of-shift report. Throwaway. -->
+<title>S8: Credits &amp; payday</title>
+<meta name="description" content="Play shifts and watch the end-of-shift report: made-up gross pay, petty fines, net = the real XP, the CREDITS meter filling, then PAYDAY takes it all and you rank up. Look for: does the meter going up and down feel like a rigged job, while you still always rank up?">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7;
+    --crt: #7dffb0; --crt-dim: #3f8f63; --bad: #ff6b81; --gold: #ffd36b; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  button:disabled { opacity: .45; cursor: default; }
+  #bottom button { min-height: 56px; font-size: 18px; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 6px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 84px; }
+  #panel label b { flex: 0 0 44px; text-align: right; font: 600 12px ui-monospace, monospace; color: #94a3b8; }
+  #panel input { flex: 1; min-width: 0; accent-color: var(--accent); }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+
+  /* ===== The report (the console's top monitor) ===== */
+  #view { position: fixed; z-index: 1; left: 0; right: 0; top: calc(max(10px, env(safe-area-inset-top)) + 52px);
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 86px); display: flex; flex-direction: column; gap: 10px;
+    padding: 0 16px; box-sizing: border-box; max-width: 560px; margin: 0 auto; }
+  body.side #view { right: 300px; }
+  body.sheet #view { bottom: calc(var(--sheet, 0px) + 80px); }
+  #monitor { flex: 1; min-height: 0; overflow-y: auto; border: 2px solid #1d3b2c; border-radius: 14px; padding: 12px 14px;
+    background: radial-gradient(ellipse at center, #07160f 0%, #030806 100%); box-shadow: inset 0 0 30px #00ff8822;
+    font: 15px/1.45 ui-monospace, 'Cascadia Mono', Consolas, monospace; color: var(--crt); text-shadow: 0 0 6px #7dffb066; }
+  .ln { display: flex; gap: 8px; align-items: baseline; animation: type .18s steps(6) both; }
+  @keyframes type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  .ln .l { flex: 1; min-width: 0; }
+  .ln .r { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+  .ln.h { color: #c8ffe0; font-weight: 700; margin-top: 6px; }
+  .ln.fine { color: var(--crt-dim); }
+  .ln.fine .r, .ln.pay .r { color: var(--bad); }
+  .ln.net { color: #c8ffe0; font-weight: 700; border-top: 1px dashed #2c6b4a; padding-top: 2px; }
+  .ln.payday { color: var(--gold); font-weight: 700; margin-top: 8px; letter-spacing: .1em; }
+  .ln.pay { color: #d6c27a; }
+  .ln.rank { color: var(--gold); font-weight: 700; margin-top: 4px; }
+  .ln.debt { color: var(--crt-dim); font-size: 13px; }
+  .note { display: block; font: italic 12px/1.3 system-ui, sans-serif; color: #c4a5ff; text-shadow: none; margin: -1px 0 4px 2px; }
+  body.nonotes .note { display: none; }
+  /* the CREDITS meter (the rank meter, renamed) */
+  #meterBox { flex: 0 0 auto; font: 700 13px ui-monospace, monospace; color: var(--crt); }
+  #meterRow { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  #meter { height: 18px; border-radius: 9px; border: 1px solid #2c6b4a; background: #03100a; overflow: hidden; }
+  #fill { height: 100%; width: 0; background: linear-gradient(90deg, #2fd27a, #7dffb0); box-shadow: 0 0 12px #7dffb088; }
+  #fill.pay { background: linear-gradient(90deg, #d6a43a, #ffd36b); }
+  #chartLbl { font: 11px system-ui, sans-serif; color: var(--dim); margin-top: 6px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bReset">Reset</button><button id="bNotes" class="on">Notes</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="view">
+  <div id="monitor" aria-live="polite"></div>
+  <div id="meterBox">
+    <div id="meterRow"><span>CREDITS</span><span id="meterTxt">0 / 0 PAYMENT DUE</span></div>
+    <div id="meter"><div id="fill"></div></div>
+    <div id="chartLbl">Credits over time: climbs each shift, crashes on payday, climbs again.</div>
+    <div id="chart" style="height: 64px; border-bottom: 1px solid #1e293b;"></div>
+  </div>
+</div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <button id="bShift">Play a shift</button>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. =====
+// Ranks + XP come from Goops' content/tuning/progression.json: payment due at rank r = 3,500 + 250 × r; a shift earns at least max(100, 100 × r).
+const GOO = {
+  startRank: 3,     // which rank the walkthrough starts at
+  shiftScore: 2200, // a typical shift's score (= the real XP it gives); each shift varies ±30%
+  fineShare: 0.08,  // fines as a share of the shift's real earnings (the made-up gross is that much higher)
+  fineLines: 3,     // how many fine lines a shift shows
+  payLines: 5,      // how many lines the payday bill is split into
+  lineMs: 450,      // how fast the report types, ms per line
+};
+// [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
+const KNOBS = [['Walkthrough'], ['startRank', 0, 49, 1], ['shiftScore', 300, 8000, 100],
+  ['Fines'], ['fineShare', 0, 0.3, 0.01], ['fineLines', 1, 5, 1],
+  ['Payday'], ['payLines', 2, 7, 1], ['lineMs', 80, 1500, 10]];
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it.
+const KNOB_HELP = {
+  startRank: 'Rank to start from (press Reset after moving it). Payment due grows by 250 a rank.',
+  shiftScore: 'A typical shift score. High = you rank up almost every shift (payday every report); low = several shifts per payday.',
+  fineShare: 'How big the fines look. The gross grows with it, so the NET never changes: fines never slow you down.',
+  fineLines: 'How many petty fines each report lists.',
+  payLines: 'How many items the payday bill is split into (lodging, meals, air…).',
+  lineMs: 'How fast the monitor types each line. The real game: short, not skippable.',
+};
+
+// ===== The sketch: the end-of-shift report =====
+const xpToNext = r => 3500 + 250 * r;
+const minXp = r => Math.max(100, 100 * r);
+const fmt = n => Math.round(n).toLocaleString('en');
+const TITLES = [[0, 'PROBATIONARY INTERN (UNPAID)'], [1, 'JUNIOR TANK ASSOCIATE'], [5, 'TANK ASSOCIATE'], [10, 'GOOP TECHNICIAN'],
+  [15, 'SENIOR GOOP TECHNICIAN'], [20, 'PRESSURE SPECIALIST'], [25, 'LEAD PRESSURE SPECIALIST'], [30, 'CONTAINMENT SUPERVISOR'],
+  [35, 'SENIOR CONTAINMENT SUPERVISOR'], [40, 'ASSISTANT TO THE DEPARTMENT HEAD'], [45, 'ACTING DEPUTY DEPARTMENT HEAD (INTERIM)'],
+  [50, 'DEPARTMENT HEAD, G.O.O.P.S.']];
+const titleOf = r => TITLES.filter(([at]) => r >= at).pop()[1];
+const FINES_REAL = ['UNSCHEDULED PRESSURE EVENT', 'UNAUTHORISED WEAR ON COMPANY LASER', 'PERISCOPE LEFT DIRTY', 'TANK TURNED TOO ENTHUSIASTICALLY', 'CRACK OBSERVED, NOT SEALED'];
+const FINES_SILLY = ['EXCESSIVE BLINKING', 'PICKING NOSE ON CAMERA', 'UNAPPROVED FACIAL EXPRESSION', 'PERISCOPE FINGERPRINTS',
+  'SIGHING (AUDIBLE)', 'USE OF THE WORD "HELP" NEAR A MICROPHONE', 'HUMMING', 'LATE (TIME DILATION IS NOT AN EXCUSE)', 'BREATHING ABOVE ALLOCATION'];
+const BILL = [['LODGING (BUNK 0.8 m)', 30], ['MEALS (NUTRIENT PASTE)', 22], ['AIR (PREMIUM)', 14], ['BUNK RENTAL', 10],
+  ['PERISCOPE RENTAL', 9], ['UNIFORM LAUNDERING (YOU HAVE NO UNIFORM)', 8], ['MANDATORY OPTIMISM SEMINAR', 7]];
+const NOTES = {
+  gross: 'Made up: real earnings + the fines, so the net comes out right.',
+  fine: 'Theatre: fines are already inside the gross.',
+  net: 'NET = the real XP this shift gives. Fines never change it.',
+  credits: 'CREDITS = the rank meter, renamed. PAYMENT DUE = XP to the next rank.',
+  payday: 'Payday = the rank-up. The Company takes exactly the payment due.',
+  left: 'Anything over the payment due carries into the next rank.',
+  debt: 'Story only: never touches play. Always creeps up.',
+};
+
+const S = { rank: 0, credits: 0, debt: 48219, shiftNo: 0, queue: [], busy: false, wait: 0,
+  meterShown: 0, meterTarget: 0, cap: 0, paying: false, history: [] };
+const shuffle = a => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+// split a total into n whole parts by weights (each at least 1; the last takes the rounding)
+function split(total, weights) {
+  const sum = weights.reduce((a, b) => a + b, 0); let left = total;
+  return weights.map((w, i) => { if (i === weights.length - 1) return left; const v = Math.max(1, Math.round(total * w / sum)); left -= v; return v; });
+}
+function reset() {
+  Object.assign(S, { rank: GOO.startRank, credits: 0, debt: 48219, shiftNo: 0, queue: [], busy: false, wait: 0, paying: false, history: [] });
+  S.cap = xpToNext(S.rank); S.meterShown = S.meterTarget = 0; S.history.push(0);
+  $('monitor').innerHTML = ''; $('fill').classList.remove('pay');
+  line({ cls: 'h', l: `G.O.O.P.S. PAYROLL TERMINAL` });
+  line({ cls: '', l: `OPERATOR · RANK ${S.rank} · ${titleOf(S.rank)}` });
+  line({ cls: 'debt', l: `PASSAGE DEBT: ${fmt(S.debt)} cr`, note: 'Press "Play a shift".' });
+  $('bShift').disabled = false;
+}
+function line({ cls = '', l = '', r = '', note = '' }) {
+  const d = document.createElement('div');
+  d.innerHTML = `<div class="ln ${cls}"><span class="l"></span><span class="r"></span></div>` + (note ? `<span class="note"></span>` : '');
+  d.querySelector('.l').textContent = l; d.querySelector('.r').textContent = r;
+  if (note) d.querySelector('.note').textContent = note;
+  $('monitor').append(d); $('monitor').scrollTop = $('monitor').scrollHeight;
+}
+function playShift() {
+  if (S.busy || S.rank >= 50) return;
+  S.busy = true; $('bShift').disabled = true; S.shiftNo++;
+  const q = S.queue, rank0 = S.rank;
+  const net = Math.max(minXp(rank0), Math.round(GOO.shiftScore * (0.7 + Math.random() * 0.6)));
+  const finesTotal = Math.round(net * GOO.fineShare);
+  q.push({ cls: 'h', l: `SHIFT ${S.shiftNo} COMPLETE · RANK ${rank0}` });
+  q.push({ cls: '', l: 'GROSS PAY', r: '+' + fmt(net + finesTotal), note: NOTES.gross });
+  if (finesTotal > 0) {
+    const names = [shuffle(FINES_REAL)[0], ...shuffle(FINES_SILLY)].slice(0, Math.min(GOO.fineLines, finesTotal));
+    const parts = split(finesTotal, names.map(() => 0.5 + Math.random()));
+    names.forEach((n, i) => q.push({ cls: 'fine', l: 'FINE: ' + n, r: '−' + fmt(parts[i]), note: i === 0 ? NOTES.fine : '' }));
+  }
+  q.push({ cls: 'net', l: 'NET PAY', r: '+' + fmt(net), note: NOTES.net });
+  S.credits += net;
+  q.push({ cls: '', l: 'CREDITS', r: `${fmt(S.credits)} / ${fmt(xpToNext(S.rank))}`, note: S.shiftNo === 1 ? NOTES.credits : '', meter: S.credits, hist: true });
+  // payday, once per rank reached (two rank-ups in one shift = two paydays)
+  while (S.credits >= xpToNext(S.rank) && S.rank < 50) {
+    const due = xpToNext(S.rank);
+    q.push({ cls: 'payday', l: '*** PAYDAY ***', note: NOTES.payday, pay: true });
+    const items = BILL.slice(0, GOO.payLines), parts = split(due, items.map(([, w]) => w));
+    let c = S.credits;
+    items.forEach(([n], i) => { c -= parts[i]; q.push({ cls: 'pay', l: n, r: '−' + fmt(parts[i]), meter: c }); });
+    S.credits -= due; S.rank++;
+    const interest = 20 + Math.floor(Math.random() * 90); S.debt += interest;
+    q.push({ cls: 'debt', l: `PASSAGE DEBT: ${fmt(S.debt)} cr (INTEREST +${interest})`, note: NOTES.debt });
+    q.push({ cls: 'rank', l: `RANK UP → ${S.rank} · ${titleOf(S.rank)}`, rescale: xpToNext(S.rank), meter: S.credits, hist: true });
+    q.push({ cls: '', l: 'CREDITS', r: `${fmt(S.credits)} / ${fmt(xpToNext(S.rank))}`, note: S.credits > 0 ? NOTES.left : '' });
+  }
+  q.push({ end: true });
+}
+function step() {
+  const it = S.queue.shift(); if (!it) return;
+  if (it.end) { S.busy = false; S.paying = false; $('fill').classList.remove('pay'); $('bShift').disabled = S.rank >= 50; if (S.rank >= 50) line({ cls: 'rank', l: 'RANK 50 — YOU BEAT THE GAME (the ending plays here)' }); return; }
+  if (it.pay) { S.paying = true; $('fill').classList.add('pay'); }
+  if (it.rescale) { S.cap = it.rescale; S.meterShown = 0; S.paying = false; $('fill').classList.remove('pay'); }
+  if (it.meter !== undefined) S.meterTarget = it.meter;
+  if (it.hist) S.history.push(it.meter);
+  line(it);
+}
+function update(dt) {
+  if (S.queue.length) { S.wait -= dt * 1000; if (S.wait <= 0) { step(); S.wait = GOO.lineMs; } } else S.wait = 0;
+  S.meterShown += (S.meterTarget - S.meterShown) * Math.min(1, dt * 6);
+}
+function draw() {
+  $('fill').style.width = Math.max(0, Math.min(100, S.meterShown / S.cap * 100)) + '%';
+  $('meterTxt').textContent = `${fmt(Math.max(0, S.meterShown))} / ${fmt(S.cap)} PAYMENT DUE`;
+  // the credits line over time, drawn under the buttons' row (behind the view)
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#05070d'; ctx.fillRect(0, 0, innerWidth, innerHeight);
+  const h = S.history; if (h.length < 2) return;
+  const box = $('chart').getBoundingClientRect(), x0 = box.left + 4, x1 = box.right - 4, top = box.top + 4, bottom = box.bottom - 2;
+  const max = Math.max(...h, 1), n = Math.max(h.length - 1, 1);
+  ctx.strokeStyle = '#7dffb0'; ctx.lineWidth = 2; ctx.beginPath();
+  h.forEach((v, i) => { const x = x0 + (x1 - x0) * i / n, y = bottom - (bottom - top) * v / max; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.stroke();
+}
+let dpr = 1;
+const canvas = $('c'), ctx = canvas.getContext('2d');
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+}
+$('bReset').onclick = reset; $('bShift').onclick = playShift;
+$('bNotes').onclick = () => { document.body.classList.toggle('nonotes'); $('bNotes').classList.toggle('on'); };
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) => lo === undefined ? `<h4>${k}</h4>` :
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><b id="v_${k}">${GOO[k]}</b></label>`
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : '')).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+for (const [k, lo] of KNOBS) if (lo !== undefined) $('k_' + k).oninput = e => { GOO[k] = +e.target.value; $('v_' + k).textContent = GOO[k]; };
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; $('k_' + k).value = v[k]; $('v_' + k).textContent = v[k]; } }
+const DEFAULTS = readKnobs();
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ now: readKnobs(), presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+layout();
+reset();
+// fixed-step loop + fps (one-second average)
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  acc += dt; while (acc >= STEP) { update(STEP); acc -= STEP; }
+  draw();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.sketch = { GOO, readKnobs, setKnobs, S, playShift, reset }; // for Playwright checks
+</script>
+</body>
+</html>

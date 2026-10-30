@@ -126,5 +126,8 @@ export function onClockPause(listener: (mode: PauseMode) => void): () => void {
   return () => { listeners.delete(listener) }
 }
 
+/** Both clocks' time right now, WITHOUT counting as the game reading rulesClock — for checks (check-framework). */
+export const clockTimes = () => ({ rules: rules.now(), looks: looks.now() })
+
 /** Has the game read the rules clock (so ◐ Half pause can work)? */
 export const rulesClockInUse = () => rulesUsedAt > -Infinity

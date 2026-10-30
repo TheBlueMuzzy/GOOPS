@@ -31,7 +31,7 @@ const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} 
 /** A release build (the same vite build `npm run build` makes, without the type check) into the scratch site. */
 function build(buildNumber) {
   execFileSync(process.execPath, ['node_modules/vite/bin/vite.js', 'build', '--outDir', `${SITE}/GOOPS/alpha`, '--emptyOutDir', '--logLevel', 'warn'],
-    { stdio: 'pipe', env: { ...process.env, NODE_ENV: 'production', ...(buildNumber === undefined ? {} : { GOOPS_BUILD: String(buildNumber) }) } })
+    { stdio: 'pipe', env: { ...process.env, NODE_ENV: 'production', ...(buildNumber === undefined ? {} : { VERSION_BUILD: String(buildNumber) }) } })
 }
 
 // A stand-in for v1 at /GOOPS/: like the live one, it registers ./sw.js (scope /GOOPS/), which answers every

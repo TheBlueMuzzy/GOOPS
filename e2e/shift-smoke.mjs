@@ -15,7 +15,7 @@ await new Promise((ok, fail) => {
   server.stdout.on('data', (d) => { if (String(d).includes('Local')) { clearTimeout(t); ok() } })
 })
 
-const sizes = [['phone', 390, 844], ['desktop', 1280, 800], ['landscape', 844, 390]]
+const sizes = [['phone', 390, 844], ['desktop', 1280, 800]] // portrait only (D11): no sideways phone
 const browser = await chromium.launch({ args: ['--use-angle=d3d11', '--enable-gpu'] })
 let failed = 0
 try {
@@ -65,7 +65,7 @@ try {
     await page.goto(`http://localhost:${PORT}/?seed=7&rank=12`)
     await startShift(page)
     const reloaded = await page.evaluate(() => ({ save: JSON.parse(localStorage.getItem('goops-progress') || 'null'), rank: window.__goops.engine.state.rank }))
-    const xpOk = saved?.v === 1 && saved.totalXp >= 100 && reloaded.save?.totalXp === saved.totalXp && reloaded.rank === 12
+    const xpOk = Number.isInteger(saved?.v) && saved.totalXp >= 100 && reloaded.save?.totalXp === saved.totalXp && reloaded.rank === 12
     console.log(name, 'xp saved:', JSON.stringify(saved), 'after reload:', JSON.stringify(reloaded), xpOk ? 'ok' : 'XP PROBLEM')
     if (!xpOk) failed++
     if (!endShown || errors.length) failed++

@@ -27,6 +27,20 @@
     "machineWidth": 0.31,
     "integrityWidth": 1
   },
+  "_abilities": "F42: the charge buttons, one per equipped active (1 to 3, in equip order; each with its own picture). layout = where they go: panelRow = a row of their own in the bottom panel, above the machine bars, centred over the bars (the panel gets that much taller and the tank that much shorter — Claude's pick C+ in the sketch .planning/research/sketches/ability-buttons.html); topRow = the top row beside the Console button (where the one button was in F34) — it only fits ONE, so with 2 or 3 equipped they go in the panel row anyway. topRowWhenOne = with exactly one equipped it stays in the top row even when layout is panelRow (the sketch's variant). sizePx = each panel button's width and height (the top-row one matches the Console button); gapPx = between the panel buttons (their row sits the style's small gap above the machine bars); ringPx = how thick each button's charge ring is.",
+  "abilities": {
+    "layout": "panelRow",
+    "topRowWhenOne": false,
+    "sizePx": 46,
+    "gapPx": 8,
+    "ringPx": 3.5
+  },
+  "_choices": {
+    "abilities.layout": {
+      "panelRow": "panelRow · own row in the bottom panel",
+      "topRow": "topRow · top row (1 button only)"
+    }
+  },
   "_readout": "The pressure readout: a thin line from the pressure line up to the right, then '10% PRESS' at its top end (or mirrored: the text, then the line down to the pressure line — Settings → Pressure readout direction). run / rise = how far the line goes across / up, in cells (in a tank too narrow for the words and the whole line, the line gets shorter). gapPx = between the line's end and the text; edgePx = kept clear of the tank's walls, top and floor (the readout stays inside the tank at every size); lineWidthPx, color = the line; footPx = radius of the dot where it meets the pressure line (0 = none).",
   "readout": {
     "run": 1.06,

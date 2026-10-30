@@ -16,6 +16,20 @@ export const art = {
     again: button(end.again as ButtonArt),
     quit: button(end.quit as ButtonArt),
   },
+  // F65 the end-game screen: Muzzy's EndGameScreen.svg (words out, art-prep) with the game's words where his were
+  endGame: {
+    src: url(artJson.endGame.file),
+    size: artJson.endGame.size as [number, number],
+    words: Object.fromEntries(Object.entries(artJson.endGame.words).filter(([, v]) => typeof v === 'object' && !Array.isArray(v))
+      .map(([k, v]) => [k, words(v as { at: number[]; text: number })])) as Record<'title' | 'subtitle' | 'rankLabel' | 'rankValue' | 'topRank'
+      | 'freedLabel' | 'freedValue' | 'careersLabel' | 'careersValue', ReturnType<typeof words>>,
+    boxes: artJson.endGame.words.boxes.map(rect),
+    boxLabel: artJson.endGame.words.boxLabel,
+    boxValue: artJson.endGame.words.boxValue,
+    boxPad: artJson.endGame.words.boxPad,
+    boxLabelShare: artJson.endGame.words.boxLabelShare,
+    button: rect(artJson.endGame.button),
+  },
   // the console (main menu): layers cut from the mock-up, placed in its own units (kit ArtStage)
   console: {
     size: scene.size as [number, number],
@@ -30,7 +44,12 @@ export const art = {
     controls: layer(scene.layers.controls),
     lights: layer(scene.layers.lights),
     monitor: layer(scene.layers.monitor),
-    crt: scene.crt, // F32: the monitor's screen as the lesson message (its colours and edges)
+    // F32: the monitor's screen as the lesson message (its colours and edges) · F45 glitch: the not-a-face (rank 45)
+    crt: { ...scene.crt, glitch: url(scene.crt.glitch) },
+    hatch: { src: url(scene.hatch.file), at: rect(scene.hatch.at), fromRank: scene.hatch.fromRank }, // F45: rattles at 46, 47
+    valve: { at: rect(scene.valve.at), hatchOpen: url(scene.valve.openFile) }, // F64: the release valve panel + the open hatch
+    career: scene.career, // F65: the new career's gold trim (Console.tsx)
+    monitorDrop: scene.monitorDrop, // F35: how much lower the monitor hangs at rest (0 while a lesson shows the periscope)
     periscope: { ...layer(scene.layers.periscope), travel: scene.layers.periscope.travel, grip: scene.layers.periscope.grip },
     // the meter's words + bar sit over its art; the bar picture's shape = width / height
     meterText: scene.meterText,
@@ -38,6 +57,7 @@ export const art = {
     words: {
       hint: words(scene.words.hint), laser: words(scene.words.laser), controls: words(scene.words.controls),
       lights: words(scene.words.lights), version: words(scene.words.version), credit: words(scene.words.credit),
+      rankSelect: words(scene.words.rankSelect), creditBeside: words(scene.words.creditBeside), // F70
     },
   },
   // the repair panels' moving parts (F24), drawn over the panels: lamps, slider knobs, the dial, the visor's buttons

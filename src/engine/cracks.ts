@@ -2,6 +2,7 @@
 import type { Color, Crack, ShiftEvent, ShiftState } from './types'
 import type { ShiftConfig } from './config'
 import type { Rng } from './rng'
+import { crackCells, crackPlugged } from './twists'
 
 // v1's pop line: goop whose TOP row is at or below this (fractional) row can pop.
 // Pressure 0 → the floor row; pressure 1 → the top visible row.
@@ -78,7 +79,10 @@ export function spawnCrack(state: ShiftState, rng: Rng, config: ShiftConfig, col
   if (colors.length === 0) return null
 
   // taken: open cracks, and every spot sealed before (F36, Muzzy: "no crack can ever form on a sealed spot again")
-  const cracked = new Set([...state.cracks, ...(state.sealedCracks ?? [])].map((c) => c.y * state.width + c.x))
+  // (F63: and the white goop's cell — a crack forming under him would be sealed for free; the sketch's spawnCrack)
+  // (F39: every cell of a grown crack)
+  const cracked = new Set([...state.cracks.flatMap((c) => crackCells(c).map(([x, y]) => ({ x, y }))), ...(state.sealedCracks ?? []),
+    ...(state.vet ? [state.vet] : [])].map((c) => c.y * state.width + c.x))
   const spots: number[] = []
   const lowTop = lowRows ? Math.max(state.bufferRows, state.height - lowRows) : 0
   const firstRow = lowRows ? Array<number>(state.width).fill(lowTop) : firstCrackRows(state, config)
@@ -179,12 +183,25 @@ function columnHasGoop(state: ShiftState, x: number): boolean {
 }
 
 // A crack is plugged while goop of its own colour sits on it. Wrong-colour goop just covers it.
+// F39: wild goop plugs any colour; a grown crack is plugged only while EVERY cell of it is (twists.ts crackPlugged).
 export function updatePlugs(state: ShiftState, events: ShiftEvent[]): void {
   for (const crack of state.cracks) {
-    const plugged = state.grid[crack.y * state.width + crack.x] === crack.color
+    const plugged = crackPlugged(state, crack)
     if (plugged !== crack.plugged) {
       crack.plugged = plugged
       events.push({ type: 'plug', crackId: crack.id, plugged })
     }
   }
+}
+
+// F43 Crack Matcher: the LOWEST open crack not already plugged with its own colour (a grown crack: its lowest cell
+// counts). Same height → the older one (first in the list). None → null.
+export function lowestOpenCrack(cracks: Crack[]): Crack | null {
+  let best: Crack | null = null, bestY = -Infinity
+  for (const c of cracks) {
+    if (c.plugged) continue
+    const y = Math.max(...crackCells(c).map(([, cy]) => cy))
+    if (y > bestY) { best = c; bestY = y }
+  }
+  return best
 }

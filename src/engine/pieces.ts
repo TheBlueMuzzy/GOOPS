@@ -1,6 +1,7 @@
 // Piece shapes: picking one, mirroring, rotating, and testing where it fits.
-import type { Color } from './types'
+import { type Color, WILD } from './types'
 import type { ShiftConfig } from './config'
+import { type TwistsConfig, bestSplit, splitChance, splitOn, wildChance, wildOn } from './twists'
 import { shapeSet } from './config'
 import type { Rng } from './rng'
 import { wrapX } from './tank'
@@ -11,9 +12,10 @@ export type Cell = [x: number, y: number]
 export interface PieceDef {
   name: string
   cells: Cell[]
-  color: Color
+  color: Color // WILD for a wild piece (F39); a two-colour piece's first colour
   corrupted: boolean
   noRotate: boolean
+  colors?: Color[] // F39 two-colour pieces: one per cell, in `cells` order (rotating and mirroring keep the order); unset = all `color`
 }
 
 // The falling piece. It lives in SCREEN columns: column `offset` from the centre (0 = straight down the
@@ -35,13 +37,53 @@ export function mirror(cells: Cell[]): Cell[] {
 }
 
 // Pick a random piece from a size zone ('tetra' | 'penta' | 'hexa'), as v1 does.
-export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCount: number): PieceDef {
+// F39 rank twists (twists.ts), in v1's order: corrupt first (a corrupt piece is never wild or two-colour), then wild
+// (from its rank), then two-colour (from its rank, if not wild). Their rolls come AFTER the old ones and only from each
+// twist's rank, so pieces below rank 20 come out exactly as before. Leave `twists` out = no twists.
+export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCount: number, twists?: { config: TwistsConfig; rank: number }): PieceDef {
   const corrupted = rng.chance(config.pieces.corruptChance)
   const set = shapeSet(config, zone)
   const shape = rng.pick(corrupted ? set.corrupted : set.normal)
   let cells = shape.cells.map(([x, y]) => [x, y] as Cell)
   if (rng.chance(config.pieces.mirrorChance)) cells = mirror(cells)
-  return { name: shape.name, cells, color: 1 + rng.int(colorCount), corrupted, noRotate: !!shape.noRotate }
+  const def: PieceDef = { name: shape.name, cells, color: 1 + rng.int(colorCount), corrupted, noRotate: !!shape.noRotate }
+  const t = twists?.config
+  if (!t || corrupted) return def
+  if (wildOn(t, twists.rank) && rng.chance(wildChance(t))) {
+    def.color = WILD
+    return def
+  }
+  if (splitOn(t, twists.rank) && colorCount >= 2 && rng.chance(splitChance(t))) {
+    const inA = bestSplit(cells)
+    if (inA) {
+      const other: Color = 1 + ((def.color - 1 + 1 + rng.int(colorCount - 1)) % colorCount) // any colour but the first
+      def.colors = inA.map((a) => (a ? def.color : other))
+    }
+  }
+  return def
+}
+
+/** The colour of a piece's k-th cell (two-colour pieces have one per cell; the rest are all def.color). */
+export const cellColor = (def: PieceDef, k: number): Color => def.colors?.[k] ?? def.color
+
+/**
+ * F42: the piece's MAIN colour — what Goop Dump and Goop Colorizer copy. One colour: that colour. A two-colour piece:
+ * the colour most of its cells have (a tie: its first colour, def.color). A wild piece has none (null): wild is never
+ * copied, so those abilities never make wild goop.
+ */
+export function mainColor(def: PieceDef): Color | null {
+  if (def.color === WILD) return null
+  if (!def.colors) return def.color
+  const first = def.colors.filter((c) => c === def.color).length
+  const other = def.colors.find((c) => c !== def.color)
+  return other !== undefined && def.colors.length - first > first ? other : def.color
+}
+
+/** F42 Goop Colorizer: the same piece (shape, corruption) all in one colour — a copy; the original is left alone. */
+export function recolored(def: PieceDef, color: Color): PieceDef {
+  const out: PieceDef = { ...def, cells: def.cells.map(([x, y]) => [x, y] as Cell), color }
+  delete out.colors
+  return out
 }
 
 export function rotationCenter(cells: Cell[]): Cell {
@@ -84,4 +126,18 @@ export function landingRow(grid: Uint8Array, cells: Cell[], originX: number, y: 
   let row = y
   while (!collides(grid, placeCells(cells, originX, row + 1, width), width, height)) row++
   return row
+}
+
+/**
+ * F43 Crack Matcher: the same piece with its MAIN colour (mainColor) changed to `color` — a one-colour piece all of it;
+ * a two-colour piece only its main colour's cells (if that leaves one colour, it becomes a plain one-colour piece).
+ * A copy; the original is left alone. A wild piece has no main colour: it comes back as it was.
+ */
+export function withMainColor(def: PieceDef, color: Color): PieceDef {
+  const main = mainColor(def)
+  if (main === null) return def
+  if (!def.colors) return recolored(def, color)
+  const colors = def.colors.map((c) => (c === main ? color : c))
+  if (colors.every((c) => c === color)) return recolored(def, color)
+  return { ...def, cells: def.cells.map(([x, y]) => [x, y] as Cell), color: def.color === main ? color : def.color, colors }
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_COLOR_NAMES, PALETTE, colorHex, colorRgb, hexToRgb, paletteTable } from '../../src/goo/shared/palette'
+import { DEFAULT_COLOR_NAMES, PALETTE, WILD_COLOR, colorHex, colorRgb, gooSlot, hexToRgb, paletteTable } from '../../src/goo/shared/palette'
+import { WILD_GLSL, WILD_UNIFORMS, wildBaseRgb, wildStops } from '../../src/goo/shared/wildLook'
 import { parseKnobs, mergeKnobs } from '../../src/goo/shared/knobs'
 import { jellyDefaults } from '../../src/goo/jelly'
 import { particleDefaults } from '../../src/goo/particle'
@@ -25,6 +26,27 @@ describe('palette', () => {
   it('builds the shader table with slot c = Color c', () => {
     const t = paletteTable(DEFAULT_COLOR_NAMES)
     expect(Array.from(t.slice(3, 6))).toEqual(hexToRgb(PALETTE.red).map((v) => Math.fround(v)))
+  })
+})
+
+describe('wild goop look (F39)', () => {
+  const dist = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+  it('is never a palette colour, black goop or white', () => {
+    const wild = colorRgb(DEFAULT_COLOR_NAMES, WILD_COLOR)
+    for (const n of DEFAULT_COLOR_NAMES) expect(dist(wild, hexToRgb(PALETTE[n]))).toBeGreaterThan(0.2)
+  })
+  it('has its own slot (8) in the shader table, and the renderers map wild there', () => {
+    const t = paletteTable(DEFAULT_COLOR_NAMES)
+    expect(t.length).toBe(27)
+    expect(Array.from(t.slice(24, 27))).toEqual(wildBaseRgb().map((v) => Math.fround(v)))
+    expect(gooSlot(WILD_COLOR)).toBe(8)
+    expect(gooSlot(3)).toBe(3)
+  })
+  it('gives 2D drawings a sheen (stops that differ), and the shader piece has every uniform it sets', () => {
+    const stops = wildStops()
+    expect(stops.length).toBeGreaterThanOrEqual(3)
+    expect(new Set(stops.map(([, h]) => h)).size).toBeGreaterThan(1)
+    for (const u of WILD_UNIFORMS) expect(WILD_GLSL).toContain(u)
   })
 })
 

@@ -4,19 +4,35 @@ import type { ShiftState } from '../engine/types'
 import type { GooView } from '../goo/types'
 import { screenColumn } from '../goo/types'
 import { pieceScreenColumn } from './geometry'
-import { crackIsOpen, type CrackBubbles } from './crackBubbles'
+import { crackIsOpen, crackSpots, type CrackBubbles } from './crackBubbles'
 import look from '../../content/tuning/cracks-look.json'
 import tank from '../../content/tuning/tank.json'
+import { WILD_COLOR } from '../goo/shared/palette'
+import { twoColourGlow, wildStops } from '../goo/shared/wildLook'
+import { GALAXY_SLOT, galaxyColours, galaxyCrackStars } from '../goo/shared/galaxyLook'
 
 export type ColorOf = (c: number) => string
+
+// F64: the colour a line or mark of goop colour c is drawn in on the dark tank — black's would vanish, so black (the
+// galaxy, rank 50) is drawn in its rim glow (galaxy-look.json rim); every other colour as it is
+const paintOf = (c: number, colorOf: ColorOf) => (c === GALAXY_SLOT ? galaxyColours().rim : colorOf(c))
+
+/** F39: a wild cell's paint on a 2D canvas — the wild look's body with its sheen band across (x0, y0) → (x1, y1). */
+export function wildPaint(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, colorOf: ColorOf, timeSec: number): CanvasGradient {
+  const g = ctx.createLinearGradient(x0, y0, x1, y1)
+  for (const [at, hex] of wildStops([1, 2, 3, 4, 5].map(colorOf), timeSec)) g.addColorStop(at, hex)
+  return g
+}
 
 // guide: drawn in the tank right after the landing shadow, under everything else that's in the tank (the drop guide's
 // chevrons, src/view/dropGuide.ts)
 // F36 cracks you can read: bubbles = the open cracks' air bubbles (src/view/crackBubbles.ts), drawn right over the
 // cracks; still = the reduce-motion setting (the x-ray box's dots stop marching)
+// F63 white = draws the white goop (src/view/whiteGoopView.ts) right over the cracks and bubbles, inside the tank's clip:
+// under the goo canvas, so he's behind the goop
 export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, colorOf: ColorOf, timeSec: number, guide?: () => void,
-  cracksLook: { bubbles?: CrackBubbles; still?: boolean } = {}) {
-  const { bubbles, still = false } = cracksLook
+  cracksLook: { bubbles?: CrackBubbles; still?: boolean; white?: () => void } = {}) {
+  const { bubbles, still = false, white } = cracksLook
   const { cellPx: cp, centreX, topY, width: W, height: H, dpr } = view
   const visRows = s.height - s.bufferRows
   const left = centreX - (pieceScreenColumn(s.visibleWidth) + 0.5) * cp
@@ -61,26 +77,72 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     drawSealed(ctx, sx, topY + (c.y - s.bufferRows + 0.5) * cp, cp, c.id)
   }
 
-  // cracks in the tank wall
-  for (const c of s.cracks) {
+  // cracks in the tank wall (F39: every cell of a grown crack; key = its id for the root, so old cracks look the same)
+  const spots = crackSpots(s)
+  for (const c of spots) {
     const sx = centreX + screenColumn(c.x, view.camera, s.width) * cp
     const sy = topY + (c.y - s.bufferRows + 0.5) * cp
     if (sx < left - cp || sx > right + cp) continue
-    drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.id, timeSec)
+    if (c.color === GALAXY_SLOT) drawGalaxyCrack(ctx, sx, sy, cp, c.key, timeSec, still) // F64: a black crack, with stars
+    else drawCrack(ctx, sx, sy, cp, colorOf(c.color), c.key, timeSec)
+  }
+  // F39 a grown crack reads as ONE crack: a thin seam in its colour from each grown cell back to the cell it grew from
+  for (const c of s.cracks) {
+    if (!c.cells || c.cells.length < 2) continue
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = paintOf(c.color, colorOf) // (F64: a black crack's seam glows in the galaxy's rim colour)
+    ctx.lineWidth = Math.max(1, cp * tank.crackWidth * 0.6)
+    ctx.shadowColor = ctx.strokeStyle
+    ctx.shadowBlur = cp * tank.crackGlow * 0.5
+    ctx.beginPath()
+    c.cells.forEach(([x, y], k) => {
+      const from = c.cells![c.parent?.[k] ?? -1]
+      if (!from) return
+      const ax = centreX + screenColumn(x, view.camera, s.width) * cp, bx = centreX + screenColumn(from[0], view.camera, s.width) * cp
+      if (Math.abs(ax - bx) > cp * 1.5) return // (across the tank's seam: the cells are next to each other the other way round)
+      ctx.moveTo(ax, topY + (y - s.bufferRows + 0.5) * cp)
+      ctx.lineTo(bx, topY + (from[1] - s.bufferRows + 0.5) * cp)
+    })
+    ctx.stroke()
+    ctx.restore()
   }
   bubbles?.draw(ctx, s, view, left, right)
+  white?.()
+
+  // F39 a two-colour piece glows as it falls (story.md rank 20): a soft glow round each cell in its own colour, under
+  // the goo (the jelly is see-through, so it shows round and through the piece). Placed like the ghost, by the spin.
+  const two = twoColourGlow()
+  if (s.piece && two.glow > 0 && new Set(s.piece.colors).size > 1) {
+    const pulse = two.pulseHz > 0 ? 0.7 + 0.3 * Math.sin(timeSec * Math.PI * 2 * two.pulseHz) : 1
+    const r = cp * (0.5 + two.size)
+    ctx.globalCompositeOperation = 'lighter'
+    for (const [k, [x, y]] of s.piece.cells.entries()) {
+      const sx = centreX + screenColumn(x, s.spin, s.width) * cp
+      const sy = topY + (y + s.piece.fall - s.bufferRows + 0.5) * cp
+      const g = ctx.createRadialGradient(sx, sy, cp * 0.4, sx, sy, r) // (full colour up to the cell's edge, under the jelly)
+      g.addColorStop(0, colorOf(s.piece.colors[k] ?? s.piece.colors[0]))
+      g.addColorStop(1, 'rgba(0,0,0,0)')
+      ctx.globalAlpha = Math.min(1, two.glow * pulse)
+      ctx.fillStyle = g
+      ctx.fillRect(sx - r, sy - r, r * 2, r * 2)
+    }
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
+  }
 
   // ghost: where the piece will land. Placed by the spin, not the gliding camera, like the piece itself: the piece
   // stays still on screen while the tank slides under it.
   if (s.piece && s.ghost.length) {
     ctx.globalAlpha = tank.ghostAlpha
-    ctx.strokeStyle = colorOf(s.piece.colors[0])
     ctx.lineWidth = Math.max(1.5, cp * 0.06)
     ctx.setLineDash([cp * 0.18, cp * 0.12])
-    for (const [x, y] of s.ghost) {
+    for (const [k, [x, y]] of s.ghost.entries()) {
+      const c = s.piece.colors[k] ?? s.piece.colors[0] // (F39: a two-colour piece's ghost in both colours)
       const sx = centreX + screenColumn(x, s.spin, s.width) * cp
       const sy = topY + (y - s.bufferRows + 0.5) * cp
       const h = cp * 0.42
+      ctx.strokeStyle = c === WILD_COLOR ? wildPaint(ctx, sx - h, sy - h, sx + h, sy + h, colorOf, timeSec) : paintOf(c, colorOf)
       ctx.strokeRect(sx - h, sy - h, h * 2, h * 2)
     }
     ctx.setLineDash([])
@@ -116,14 +178,15 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
   // F36 the x-ray: a crack with goop on it gets a dotted box round it ("the visor is auto targeting to help", Muzzy) —
   // the goo over it is drawn see-through (coveredCracks → view.xray → the goo renderers). Here on the tank canvas, so
   // the visor glitch distorts it too. It breathes with the crack's own glow (drawCrack) and its dots march.
+  // (F39: per cell of a grown crack — the red X marks each cell the wrong colour sits on)
   const X = look.xray
-  for (const c of s.cracks) {
+  for (const c of spots) {
     if (crackIsOpen(s, c)) continue
     const sx = centreX + screenColumn(c.x, view.camera, s.width) * cp
     if (sx < left - cp || sx > right + cp) continue
     const top = topY + (c.y - s.bufferRows) * cp
     const pad = X.pad * cp
-    ctx.globalAlpha = X.alpha * (1 - X.pulse * (0.5 - 0.5 * Math.sin(timeSec * 3 + c.id)))
+    ctx.globalAlpha = X.alpha * (1 - X.pulse * (0.5 - 0.5 * Math.sin(timeSec * 3 + c.key)))
     ctx.strokeStyle = X.color
     ctx.lineWidth = Math.max(1, X.width * cp)
     ctx.setLineDash([X.dash * cp, X.gap * cp])
@@ -173,7 +236,7 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
     const toRight = sx > right
     const tip = toRight ? right - 3 : left + 3
     const base = toRight ? tip - arrow : tip + arrow
-    ctx.fillStyle = colorOf(c.color)
+    ctx.fillStyle = paintOf(c.color, colorOf)
     ctx.beginPath(); ctx.moveTo(base, sy - arrow); ctx.lineTo(tip, sy); ctx.lineTo(base, sy + arrow); ctx.closePath()
     ctx.fill(); ctx.stroke()
   }
@@ -220,6 +283,48 @@ function drawCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp: numb
   ctx.lineWidth = cp * tank.crackWidth
   traceCrack(ctx, crackShape(x, y, cp, id))
   ctx.stroke()
+  ctx.restore()
+}
+
+/** Which of a crack's points the k-th star sits on: an inner point (not the ends), spread out by the crack's key. A grown
+ *  crack's cells have NEGATIVE keys (crackBubbles.ts crackSpots) — JS's % keeps the sign, so it's wrapped to 0..n-1
+ *  (Muzzy 2026-10-26: a grown black crack threw on every frame and froze the picture of the final shift). */
+export function crackStarPoint(points: number, k: number, key: number): number {
+  const inner = points - 2
+  return 1 + ((((k * 2 + key) % inner) + inner) % inner)
+}
+
+// F64 a black crack (the final shift): the same jagged crack, a glow in the galaxy's rim colour round a dark core, and a
+// few stars twinkling along it (galaxy-look.json crackStars; still = reduce motion: they hold steady)
+function drawGalaxyCrack(ctx: CanvasRenderingContext2D, x: number, y: number, cp: number, id: number, t: number, still: boolean) {
+  const g = galaxyColours()
+  const shape = crackShape(x, y, cp, id)
+  ctx.save()
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.shadowColor = g.rim
+  ctx.shadowBlur = cp * tank.crackGlow * (0.7 + 0.3 * Math.sin(t * 3 + id))
+  ctx.strokeStyle = g.rim
+  ctx.lineWidth = cp * tank.crackWidth * 1.6
+  traceCrack(ctx, shape)
+  ctx.stroke()
+  ctx.shadowBlur = 0
+  ctx.strokeStyle = g.core
+  ctx.lineWidth = cp * tank.crackWidth * 0.9
+  traceCrack(ctx, shape)
+  ctx.stroke()
+  const stars = galaxyCrackStars()
+  ctx.fillStyle = g.star
+  for (let k = 0; k < stars.count; k++) {
+    const [px, py] = shape.pts[crackStarPoint(shape.pts.length, k, id)]
+    const a = t * stars.twinkle * (1 + 0.37 * k) + id * 1.7 + k * 2.1 // (the goo's star twinkle: two uneven waves, galaxyLook.ts)
+    const tw = still ? 0.8 : 1 - stars.depth * (1 - (0.5 + 0.5 * (0.6 * Math.sin(a) + 0.4 * Math.sin(a * 2.37 + 1.9))) ** 2)
+    const r = Math.max(0.6, cp * 0.05 * stars.size) * (0.6 + 0.6 * tw)
+    ctx.globalAlpha = tw
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill()
+    ctx.fillRect(px - r * 2.4, py - r * 0.2, r * 4.8, r * 0.4) // a little cross glint
+    ctx.fillRect(px - r * 0.2, py - r * 2.4, r * 0.4, r * 4.8)
+  }
   ctx.restore()
 }
 

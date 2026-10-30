@@ -8,13 +8,16 @@
 //     goo's jiggle keep going (content/tuning/pause.json halfPauseGooMoves turns the goo off too).
 import type { DevKitGame } from '../devkit/devkitGame'
 import type { ShiftEvent, ShiftState } from '../engine'
+import type { RejectReason } from '../engine/types'
 import { readSnapshot, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
 import { versionLabel } from '../version'
+import en from '../../content/text/en.json'
 
 type GoopsMoment = { shift: ShiftSnapshot | null }
 
 const pct = (n: number) => `${Math.round(n * 100)}%`
+const REJECT_WORDS: Record<RejectReason, string> = { aboveLine: 'above the pressure line', filling: 'still filling', lessonColour: 'the lesson wants another colour' }
 
 /** One short line per engine event worth reading in a bug capture (the frame-by-frame ones are left out). */
 export function eventLine(e: ShiftEvent): string | null {
@@ -32,7 +35,7 @@ export function eventLine(e: ShiftEvent): string | null {
     case 'prime': return `broken laser: group ${e.groupId} primed (zap again)`
     case 'ability': return `ability fired: ${e.id}`
     case 'abilityReady': return `ability ready: ${e.id}`
-    case 'reject': return e.action === 'pop' && e.reason ? `zap refused (${e.reason === 'aboveLine' ? 'above the pressure line' : 'still filling'})` : null
+    case 'reject': return e.action === 'pop' && e.reason ? `zap refused (${REJECT_WORDS[e.reason] ?? e.reason})` : null
     default: return null // spawn, step, spin, rotate, fall, merge, ready… (many a second)
   }
 }
@@ -47,7 +50,7 @@ export function describeShift(s: Pick<ShiftState, 'rank' | 'score' | 'cracksSeal
 
 export const goopsAdapter: DevKitGame = {
   name: 'Goops',
-  version: versionLabel, // "vX.Y.Z.B" — the same words as the console footer (src/version.ts)
+  version: versionLabel, // "vX.Y.Z.B" — the same words as the console footer (the version module, src/version)
   getState: (): GoopsMoment => ({ shift: session.inShift && session.engine ? session.engine.snapshot() : null }),
   setState(state) {
     const moment = state as Partial<GoopsMoment> | null
@@ -70,4 +73,29 @@ export const goopsAdapter: DevKitGame = {
     return describeShift({ ...st, rank: shift.options.rank })
   },
   pauseModes: ['full', 'half'], // (the clocks do the work — see the top)
+  // check:framework's play checks (Dev Kit 0.19+): from the console to a running shift, as e2e/start.mjs does it —
+  // rank 6 (all three machines), lessons already seen on this device, tap the periscope, wait for the console to slide away
+  conformance: {
+    query: '?rank=6&seed=7',
+    async startPlay() {
+      const w = window as unknown as { __goopsSeen?: (ids: string[]) => void }
+      const until = async (ok: () => boolean, what: string, ms = 25000) => {
+        const end = Date.now() + ms
+        while (!ok()) {
+          if (Date.now() > end) throw new Error(`Goops startPlay: ${what} didn't happen in ${ms / 1000} s`)
+          await new Promise((r) => requestAnimationFrame(r))
+        }
+      }
+      await until(() => !!startButton(), 'the console with its Start shift button')
+      w.__goopsSeen?.( // (dev builds only — the checks run on the dev server)
+['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:first-day'])
+      startButton()?.click()
+      await until(() => session.inShift && session.engine?.state.status === 'playing' && !document.querySelector('.kit-art-stage'), 'a running shift')
+    },
+  },
+}
+
+/** The console's periscope ("Start shift") — the same button a player taps. */
+function startButton(): HTMLButtonElement | null {
+  return [...document.querySelectorAll('button')].find((b) => !b.disabled && b.getAttribute('aria-label') === en.console.periscope) ?? null
 }

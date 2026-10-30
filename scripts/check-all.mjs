@@ -26,10 +26,13 @@ const FAST = [
 // (red on a short desktop window: the kit's swipe rule — SPRINT 08 Notes; add it back once that's fixed).
 const E2E = [
   ['first-day', 'e2e/first-day.mjs', ''],      // 5347
+  ['eyes', 'e2e/eyes.mjs', ''],                // 6262 (F62: the goop's faces by rank 9/10/20/30/40 — fade-in one clump at a time, gaze, zap squeeze, brows, mouths; Jelly + Particle; shots at every portrait size)
   ['sw-update', 'e2e/sw-update.mjs', ''],      // 5462 (two release builds, served like GitHub Pages; + the Dev Kit in it)
+  ['economy-sim', 'scripts/bots/economy.mjs', '--quick'], // no port (F51: bots play short careers headless — they run, gain ranks and repeat; ~20 s)
   ['perf', 'e2e/perf.mjs', ''],                // 5464 (pass line: content/tuning/perf.json — same result 3 runs + beside sw-update)
   ['lessons', 'e2e/lessons.mjs', ''],          // 5341
   ['unlocks', 'e2e/unlocks.mjs', ''],          // 5344
+  ['upgrades', 'e2e/upgrades.mjs', ''],        // 5345 (F34: the Upgrades screen — buy, reload, take back, equip; shots at 3 sizes)
   ['devkit-live', 'e2e/devkit-live.mjs', ''],  // 5282
   ['day', 'e2e/day.mjs', ''],                  // 5263
   ['repairs', 'e2e/repairs.mjs', ''],          // 5267
@@ -43,6 +46,15 @@ const E2E = [
   ['controls', 'e2e/controls.mjs', ''],        // 5251
   ['shift-smoke', 'e2e/shift-smoke.mjs', ''],  // 5250
   ['portrait', 'e2e/portrait.mjs', ''],        // 5343
+  ['payslip', 'e2e/payslip.mjs', ''],          // 5348 (F41: the report's payslip + paydays, every portrait size)
+  ['story', 'e2e/story.mjs', ''],              // 5349 (F35/F40: story moments 0–30, whispers by stage, titles, the capture's fines; ?story turns them on)
+  ['rank-select', 'e2e/rank-select.mjs', ''],  // 5351 (F70: version · RANK SELECT · credit; pick 0 / pick 7; every portrait size)
+  ['your-name', 'e2e/your-name.mjs', ''],      // 6366 (F66: PLEASE SIGN HERE on rank 0's monitor — sign, reload, the 12 limit, skip, RANK SELECT 0 wipes it; every portrait size)
+  ['zap', 'e2e/zap.mjs', ''],                  // 5355 (F67: the pop's tap point · beam top centre → tap · white-hot · spray · Particle · reduce motion; every portrait size)
+  ['twists', 'e2e/twists.mjs', ''],            // 6420 (F39: two-colour pieces at 20, a crack growing + sealed whole at 30, wild goop at 40 + the white goop's ring round a grown crack; every portrait size + Particle)
+  ['white-goop', 'e2e/white-goop.mjs', ''],    // 6400 (F63: the white goop — not at 30, drops in at 31, laser "ow", oozes + seals a crack, behind goop, Dev Kit pause; every portrait size + Particle)
+  ['ending', 'e2e/ending.mjs', ''],            // 6480 (F65: win → every ending step in order → the end-game screen → the new career (rank 0, Former Employee, gold trim, no first day, the sign-in); lose → One Of Us then a win; resume; RANK SELECT; every portrait size)
+  ['final-shift', 'e2e/final-shift.mjs', ''],  // 6450 (F64: the final shift — black, his drop-in, the valve panel's 3 stages by real keys + a drag, the win, the 3 losses, rank 50's moment; every portrait size; a real keys + taps run until a black crack grows, failing on any page error)
 ]
 
 const args = process.argv.slice(2)
@@ -57,6 +69,31 @@ if (unknown.length) {
   process.exit(1)
 }
 mkdirSync('e2e-shots/logs', { recursive: true })
+
+// Port pre-flight (F118, from the BMUZ template): every port this run's e2e scripts use must be free before anything
+// starts — a busy one fails at once, naming who holds it, instead of a vague timeout deep in the run. Ports come from
+// each script's PORT constants, a `// ports: …` header line and its args. Needs scripts/ports.mjs (the template's).
+if (tier === 'full') {
+  const users = new Map() // port → the e2e names that use it
+  for (const [name, script, a] of e2e) {
+    const text = existsSync(script) ? readFileSync(script, 'utf8') : ''
+    const declared = [...text.matchAll(/^\s*\/\/\s*ports:(.*)$/gim)].map((m) => m[1]).join(' ')
+    const constants = [...text.matchAll(/\b(?![A-Z0-9_]*DEFAULT)(?:[A-Z0-9]+_)*PORT(?:_[A-Z0-9]+)*\s*=\s*(\d+)\b/g)].map((m) => m[1]).join(' ')
+    for (const port of `${a} ${declared} ${constants}`.match(/\b\d+\b/g) ?? []) {
+      if (Number(port) < 1024 || Number(port) > 65535) continue
+      users.set(Number(port), [...new Set([...(users.get(Number(port)) ?? []), name])])
+    }
+  }
+  const { heldPorts } = await import('./ports.mjs')
+  const held = heldPorts([...users.keys()])
+  for (const { port, cmd, folder } of held) {
+    console.log(`Port ${port} (${users.get(port).join(', ')}) is held by \`${cmd}\`${folder ? ` in ${folder}` : ''} — free it: node ~/.claude/config/bmuz/scripts/stop-servers.mjs ${port}`)
+  }
+  if (held.length) {
+    console.log(`\nNOT STARTED — ${held.length} port${held.length > 1 ? 's' : ''} already in use (the scripts would fail on ${held.length > 1 ? 'them' : 'it'} later as a vague timeout).`)
+    process.exit(1)
+  }
+}
 
 // One e2e run at a time: the Dev Kit scripts save + restore content files, which reloads every running dev server
 // mid-test (Glyphtender sprint 23: a false "navigation destroyed"). A second full/area run waits for the first.
