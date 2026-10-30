@@ -1,0 +1,23 @@
+# Sprint 26 — the final shift becomes teamwork with the Veteran
+Started 2026-10-30 · Milestone M6 1.0 · Features: F75
+What changes for Muzzy: in the final shift you lose only when the tank breaks; the Veteran's seals are free but he wears down while the tank is hurt, so keeping the tank healthy keeps him alive; if he makes it, a new happy ending (he decides to try to get back to Earth and see his family); if he's used up, a short line and he fades — the shift goes on and today's ending plays; Goop Dump rains wild goop in every shift. Stays the same: ranks 0–49, the valve stages (6 / 8 / 10 seals), the ending's goop faces and names, the new career.
+
+## F75 🎮 Cooperative final shift — the Veteran holds the tank with you; his survival picks the ending
+Done when: the final shift is lost only when the tank breaks (integrity / overflow) — never because the Veteran is used up · his seals cost him nothing; he wears down by the integrity the tank loses (finalShift.json, a number) · used up mid-shift → his short line through the speaker ("…sorry, kid. you got this."), he fades, the shift goes on without his help · win with him alive → the happy ending (his clump rises with the goop and he says he'll try to get back to Earth and see his family) · win with him gone → today's ending · the lost report no longer names "the Veteran is gone" · Goop Dump rains wild goop in every shift, in the final shift into the columns with open cracks · Slow Cracks in the final shift slows only the spreading · bots: a good player (Focused/Sharp) saves him about half the time · every word in en.json, every number in content/ · every portrait size (390x844, 360x780, ~1100 wide, 1440x900, 1920x1080).
+why: Muzzy 2026-10-30: "I'd rather be working directly with him, not slightly against him" · "all upgrades should have some sort of an impact on the final level" — with the Veteran as the clock (F64), integrity didn't matter and Tougher Tank / Slow Cracks did nothing or hurt.
+Check: unit tests (no loss when he's used up, wear by integrity lost, free seals, wild dump + its columns, Slow Cracks spread-only in the final shift, which ending plays) · bots:final (saved-him rate, win rate, how the shift is lost) · e2e/final-shift.mjs + e2e/ending.mjs (both endings, his used-up line, every portrait size, page errors watched) with shots looked at · check:full · Muzzy's play
+Checked:
+- [ ] 🤖 1. The rule: the final shift is lost only when the tank breaks; his seals are free; he wears by the integrity lost (finalShift.json vet.wearPerIntegrity); used up → he's gone, the shift goes on; the outcome says whether he made it — src/engine/shift.ts
+- [ ] 🤖 2. Goop Dump rains wild goop (every shift); in the final shift into the columns with open cracks — src/engine/abilities.ts
+- [ ] 🤖 3. Slow Cracks in the final shift slows only the spreading (new cracks come as often as without it) — src/engine/twists.ts
+- [ ] 🤖 4. The endings: he made it → the happy ending (his clump rises with the goop; his Earth-and-family line); gone → today's; his used-up line + fade mid-shift; the lost report drops "the Veteran is gone" — src/game/ending.ts
+- [ ] 🤖 5. The bots + the economy sim play the new rules and count "saved him" — scripts/bots/runFinal.ts
+- [ ] 🤖 6. Tests + e2e/final-shift.mjs + e2e/ending.mjs at every portrait size, shots looked at; GDD (the final shift + the ending) + a TDD decision — e2e/final-shift.mjs
+- [ ] 🙋 7. Calibrate (moved from F52 — Balance pass): 3 shifts at rank 5 + 3 at rank 25 (RANK SELECT) — how long the tank lasted, cracks sealed / needed
+- [ ] 🤖 8. (tuning) His wear, the wild rain's size, the final shift's pace on the bots (a good player saves him about half the time); the full sim re-run — content/tuning/finalShift.json
+
+## Notes
+- Muzzy 2026-10-30 (planning): the happy ending — "He decides that he should try to get back to Earth and see his family." · a good player saves him about half the time — "half sure" · used up mid-shift → a short line through the speaker and he fades — "yes".
+- Ask Muzzy (built with defaults): his happy-ending words (default: "you did it, kid. … I think I'll try for Earth. Haven't seen my family in a long time.") and his used-up line ("…sorry, kid. you got this.") — en.json, edit any time.
+- From F52 — Balance pass (sprint 25): the white goop's seals already don't count toward the quota in normal shifts (whiteGoop.json countsForQuota false); the final shift's valve still counts them (finalShift.json vet.countsForQuota true) — keep that.
+- No open P0/P1. B004 (P3, zap + twists under load) may show up in check:full.
