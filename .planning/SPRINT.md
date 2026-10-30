@@ -24,7 +24,7 @@ Checked:
 - [x] 🤖 4. Pace to 60–80 shifts a career: XP per rank, quota per rank (tuning) — content/tuning/progression.json
 - [x] 🤖 5. Console time 75%; Focus Mode 2 levels → 50% / 25% (tuning) — content/tuning/breakdowns.json
 - [x] 🤖 6. Upgrades: Goop Dump smaller, Colorizer shorter, Pressure Control level 1 felt, Slow Cracks' final-shift cost (tuning) — content/tuning/upgrades.json (Slow Cracks: no knob fixes it → Ask Muzzy in Notes)
-- [ ] 🤖 7. Sim re-run, before/after table on the planner tab, findings + GDD numbers updated — .planning/research/economy-sim.md
+- [x] 🤖 7. Sim re-run, before/after table on the planner tab, findings + GDD numbers updated — .planning/research/economy-sim.md
 - [ ] 🙋 8. Play the tuned game: the climb, a mid-rank shift, the final shift — how does it feel?
 
 ## Notes

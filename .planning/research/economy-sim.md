@@ -5,6 +5,15 @@
 **Results page:** `e2e-shots/sim/index.html` (open the file; raw numbers in `results.json` beside it). Made by the run, stays on this machine (e2e-shots is git-ignored). Re-run: `npm run sim:economy` (~13 min on this PC) · `npm run sim:economy -- --quick` (~20 s, a check — it's in check:full).
 **Same seeds = the same numbers** (tested: tests/economySim.test.ts).
 
+## After F52 — Balance pass (full re-run 2026-10-30, 72 careers, 32,951 shifts, 1,322 s)
+**Changed since the findings below:** the rank lock (F74: a rank-up needs a quota met this rank, a met shift's XP ×2) · quota = 1 + colours + rank ÷ 10 (was colours + rank) · console 75%, Focus Mode 2 levels · growing cracks from rank 31 (was 30) · Pressure Control +12% first level · Colorizer 2/3/4 pieces · Goop Dump 8 cells a wave · the bots take Dense Goop back for the final shift. The before/after table is on the planner's "Goops — economy sim" tab (made from `scripts/bots/sim-before.json`).
+- **Pace:** shifts to the final shift — Focused **65–68**, Sharp **60–65** (were 42–49 / 31–37). On the main chat's own check (16 fresh careers a bot to rank 50): Focused 70 (58–85), Sharp 69 (63–88). In the 60–80 target — before Muzzy's calibration shifts (F52 task 3), so it gets re-checked then.
+- **The quota now matters:** met 82–85% of shifts at ranks 1–9 and 72–79% at 10–49 (was 40–49% and 0–2%). Ranks 40–49: ~100% — the white goop seals 10–20 cracks a shift for you, so the lock does nothing there (Ask Muzzy: a quota rule that counts his help is a new rule).
+- **Rank 30** still costs ~4 shifts on average (the capture, white as the 6th colour); worst seen 18.
+- **Casual** (ignores cracks) meets 1% and reaches rank ~10 after 743 shifts — a player who never seals is held near the start (Ask Muzzy).
+- **Final shift with the career's upgrades:** Focused 95–100%, Sharp 40–55% (were 85–100% / 10–35%). With no upgrades: Focused 40%, Sharp 25% — the 75% console makes each valve stage cost more (Ask Muzzy: the final shift's own console speed).
+- **Still no measurable effect:** Auto-Popper, Capacitor Efficiency, Cooldown Booster, Sealing Bonus, Active Expansion Slot 1 + 2 — the next balance pass's list.
+
 ## What it does (plain words)
 - **A career** = rank 0 to the final shift (rank 50), played shift after shift on the real game rules. XP, ranks and scraps come from the game's own code. A career stops when it wins the final shift (or after 10 tries).
 - **Three bot skills** (the F27 bots): **Casual** drops pieces low and zaps what it sees, ignores cracks · **Focused** steers pieces onto cracks · **Sharp** also vents pressure and keeps the stack low.

@@ -1,6 +1,6 @@
 // F51 the economy sim's results page (e2e-shots/sim/index.html): one self-contained file, plain-word headings,
 // tables with shaded cells and simple bars. Hover a cell or a bar for its exact number.
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 
 const esc = (t) => String(t ?? '–').replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const pct = (x) => (x === null || x === undefined ? '–' : `${Math.round(x * 100)}%`)
@@ -33,6 +33,42 @@ const VERDICT = {
   notRun: 'not measured',
 }
 
+// F52 — Balance pass: the numbers before it (sim-before.json, a record) beside this run's, one row a bot skill
+// (this run's ranges are over the three buy styles, as the record's are)
+function beforeAfter(s) {
+  const before = JSON.parse(readFileSync(new URL('./sim-before.json', import.meta.url), 'utf8'))
+  const range = (xs, fmt) => {
+    const v = xs.filter((x) => x !== null && x !== undefined)
+    if (!v.length) return '–'
+    const lo = fmt(Math.min(...v)), hi = fmt(Math.max(...v))
+    return lo === hi ? lo : `${lo.replace(/%$/, '')}–${hi}` // (72–75%, as the record writes it)
+  }
+  const whole = (x) => String(Math.round(x))
+  const wonBands = (r, from, to) => {
+    const bands = r.bands.slice(from, to).filter((b) => b.shifts)
+    const shifts = bands.reduce((a, b) => a + b.shifts, 0)
+    return shifts ? bands.reduce((a, b) => a + b.winRate * b.shifts, 0) / shifts : null
+  }
+  const rows = ['casual', 'focused', 'sharp'].map((bot) => {
+    const mine = s.careerRows.filter((r) => r.bot === bot)
+    const finals = s.finalRows.filter((r) => r.bot === bot && r.upgrades === 'career' && r.n)
+    const b = before.careers[bot]
+    const cell = (was, now) => `<td>${esc(was)}</td><td><b>${esc(now)}</b></td>`
+    return `<tr><td>${bot[0].toUpperCase() + bot.slice(1)}</td>${cell(b.shiftsToFinal, range(mine.map((r) => r.shiftsToFinal), whole))}`
+      + `${cell(b.won1to9, range(mine.map((r) => wonBands(r, 0, 1)), pct))}${cell(b.won10to49, range(mine.map((r) => wonBands(r, 1, 5)), pct))}`
+      + `${cell(b.finalWon, range(finals.map((r) => r.winRate), pct))}</tr>`
+  })
+  return `<h2>Before / after — F52 — Balance pass</h2>
+<p>Before = ${esc(before.label)}; after = this run. Since then: the rank lock (F74 — a rank-up needs a met quota), a smaller quota (shift.json), console 75%, growing cracks from rank 31, and the upgrade changes below.</p>
+<div class="scroll"><table><tr><th>Bot</th><th colspan="2">shifts to the final</th><th colspan="2">quota met, ranks 1–9</th><th colspan="2">quota met, ranks 10–49</th><th colspan="2">final shift won (career upgrades)</th></tr>
+<tr><th></th>${'<th>before</th><th>after</th>'.repeat(4)}</tr>
+${rows.join('\n')}</table></div>
+<div class="scroll"><table><tr><th>Upgrade</th><th>before</th><th>after</th></tr>
+${before.upgrades.map((u) => `<tr><td>${esc(u.what)}</td><td>${esc(u.before)}</td><td><b>${esc(u.after)}</b></td></tr>`).join('\n')}</table></div>
+<p class="note">${esc(before._upgrades)}</p>
+`
+}
+
 export function writeSimPage(s, url) {
   const t = s.settings.feelThreshold
   const legend = `<p class="legend">${['casual', 'focused', 'sharp'].map((b) => `<span><i style="background:${SKILL_COLOUR[b]}"></i>${b[0].toUpperCase() + b.slice(1)}</span>`).join('')}</p>`
@@ -52,7 +88,7 @@ i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px
 <p>Bots play whole careers — rank 0 to the final shift — on the real game and the real tuning files, earning XP and scraps and buying upgrades three different ways. ${s.careerCount} careers (${s.careerSeeds} per bot × buy style), ${s.shiftsPlayed} shifts in all, ${s.seconds} s. Made ${esc(s.made)}. Same seeds = the same numbers.</p>
 <p class="note">A <b>shift is won</b> when its crack quota (the cracks you must seal) is met; a lost shift still earns XP. A <b>stall</b> = the same rank lost 3 or more shifts in a row. <b>Scraps</b> = 1 per rank, spent on upgrade levels. Bots: Casual ignores cracks, Focused chases them, Sharp also vents pressure and keeps the stack low. They go to the console to repair, swap with a hold, fire their actives, and shop between shifts.</p>
 ${legend}
-
+${beforeAfter(s)}
 <h2>1. How many shifts each rank takes</h2>
 <p>Shifts played to first reach each rank (median career). The first day counts as one.</p>
 <div class="scroll"><table><tr><th>Bot · buy style</th>${s.checkpoints.map((r) => `<th>rank ${r}</th>`).join('')}</tr>

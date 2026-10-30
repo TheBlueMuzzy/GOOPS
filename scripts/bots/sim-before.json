@@ -1,0 +1,17 @@
+{
+  "_about": "F52 — Balance pass: the economy sim's numbers BEFORE the balance pass (the F51 full run, 2026-10-29: XP alone ranked you up, v1's quota of colours + rank, console 25%, the upgrades' v1 steps — .planning/research/economy-sim.md). A record, not tuning: the results page (economy-page.mjs) shows it beside the run it just made, as the before/after table. Ranges are over the three buy styles.",
+  "label": "Before F52 (F51 run, 2026-10-29)",
+  "careers": {
+    "casual": { "shiftsToFinal": "60–83", "won1to9": "0%", "won10to49": "0–2%", "finalWon": "0%" },
+    "focused": { "shiftsToFinal": "42–49", "won1to9": "40–49%", "won10to49": "0–2%", "finalWon": "85–100%" },
+    "sharp": { "shiftsToFinal": "31–37", "won1to9": "40–49%", "won10to49": "0–2%", "finalWon": "10–35%" }
+  },
+  "_upgrades": "Measured in F52 task 6 (40 seeds a bot, on fresh seeds; SPRINT 25 Notes) — the upgrade side of the table, before → after.",
+  "upgrades": [
+    { "what": "Pressure Control level 1 (tank lasts, Focused / Sharp)", "before": "+2–3.5 s", "after": "+5.7–8.5 s" },
+    { "what": "Goop Colorizer level 3 at rank 25 (quota sealed)", "before": "−5 to −9%", "after": "−2 to +4%" },
+    { "what": "Goop Dump level 3, ranks 15–27 (score a shift)", "before": "+28–37k (4–5 ranks of XP)", "after": "+7–12k (about 1 rank)" },
+    { "what": "Goop Dump + Colorizer together, rank 27 (shifts scoring 0)", "before": "75–98%", "after": "0–5%" },
+    { "what": "Slow Cracks level 4 in the final shift (wins, Focused / Sharp)", "before": "−28% / −32% (console 25%)", "after": "−23% / −5% — not changed, Ask Muzzy" }
+  ]
+}
