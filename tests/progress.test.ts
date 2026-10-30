@@ -227,6 +227,99 @@ describe('rank meter steps (F21: the console meter fills with the XP since it la
   })
 })
 
+// F74 THE RANK LOCK (Muzzy 2026-10-29, TDD D31): rank-up = the XP goal + a quota met this rank
+describe('the rank lock (F74)', () => {
+  const missed = { quotaMet: false }, met = { quotaMet: true }
+  const rank3 = (into = 0) => ({ ...freshProgress(), totalXp: cumulative(3) + into })
+  const goal3 = xpToNext(3) // 4250
+
+  it('the bonus comes from content: quotaXpMult 2', () => {
+    expect(tuning.quotaXpMult).toBe(2)
+  })
+
+  it('no quota met this rank: the XP stops at the goal (the meter sits full, the rest is lost, no rank-up)', () => {
+    const r = rewardShift(rank3(4000), 1000, missed)
+    expect(r.xp).toBe(1000)
+    expect(r.rankUps).toBe(0)
+    expect(r.after).toMatchObject({ rank: 3, xpIntoRank: goal3, xpToNext: goal3, locked: true })
+    expect(r.lostXp).toBe(750)
+    expect(r.progress).toMatchObject({ totalXp: cumulative(4), xpHeld: true, quotaMet: false })
+    // another missed shift: still full, all of its XP lost
+    const again = rewardShift(r.progress, 2000, missed)
+    expect(again.after).toMatchObject({ rank: 3, xpIntoRank: goal3, locked: true })
+    expect(again.lostXp).toBe(2000)
+    expect(again.progress.totalXp).toBe(cumulative(4))
+  })
+
+  it('a shift that meets its quota earns double — and, at a full meter, ranks up (the overflow fills the next rank)', () => {
+    const held = rewardShift(rank3(4000), 1000, missed).progress
+    const r = rewardShift(held, 1000, met)
+    expect(r.xp).toBe(2000)
+    expect(r.quotaMet).toBe(true)
+    expect(r.rankUps).toBe(1)
+    expect(r.after).toMatchObject({ rank: 4, xpIntoRank: 2000, locked: false })
+    expect(r.progress).toMatchObject({ quotaMet: false, xpHeld: false }) // the rank-up used the quota up
+  })
+
+  it('a met quota stays met until the rank-up, over later shifts that miss it', () => {
+    const a = rewardShift(rank3(0), 500, met) // met early: 1000 XP, far from the goal
+    expect(a.after).toMatchObject({ rank: 3, xpIntoRank: 1000 })
+    expect(a.progress.quotaMet).toBe(true)
+    const b = rewardShift(a.progress, 1500, missed) // missed — the key is still in hand
+    expect(b.progress.quotaMet).toBe(true)
+    const c = rewardShift(b.progress, 2000, missed) // reaches the goal: ranks up
+    expect(c.rankUps).toBe(1)
+    expect(c.after).toMatchObject({ rank: 4, xpIntoRank: 1000 + 1500 + 2000 - goal3 })
+    expect(c.progress.quotaMet).toBe(false)
+  })
+
+  it('one quota = one rank-up: a huge shift stops full at the next rank goal', () => {
+    const r = rewardShift(rank3(0), 50_000, met)
+    expect(r.rankUps).toBe(1)
+    expect(r.after).toMatchObject({ rank: 4, xpIntoRank: xpToNext(4), locked: true })
+    expect(r.lostXp).toBe(100_000 - goal3 - xpToNext(4))
+  })
+
+  it('the meter fills to full and says locked; the next shift meets the quota → the rank-up steps', () => {
+    const before = rank3(4000)
+    const held = rewardShift(before, 1000, missed).progress
+    expect(meterSteps(before, held)).toEqual([{ level: 3, from: 4000, to: goal3, max: goal3 }])
+    expect(meterSteps(held, rewardShift(held, 900, missed).progress)).toEqual([]) // nothing moved
+    const up = rewardShift(held, 300, met).progress
+    expect(meterSteps(held, up)).toEqual([{ level: 3, from: goal3, to: goal3, max: goal3 }, { level: 4, from: 0, to: 600, max: xpToNext(4) }])
+  })
+
+  it('a held flag off a rank boundary (an XP table retuned under an old save) is ignored — no rank taken away', () => {
+    expect(rankInfo({ totalXp: cumulative(4) + 7, scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: 4, xpIntoRank: 7, locked: false })
+    expect(rankInfo({ totalXp: cumulative(4), scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: 3, xpIntoRank: goal3, locked: true, scraps: 3 })
+  })
+
+  it('the first day works as before the lock: no quota needed for rank 1, not doubled', () => {
+    const r = rewardFirstDay(freshProgress(), 640, met)
+    expect(r.after).toMatchObject({ rank: 1, xpIntoRank: 0, locked: false })
+    expect(r.xp).toBe(xpToNext(0))
+    const big = rewardFirstDay(freshProgress(), xpToNext(0) + 50, met)
+    expect(big.xp).toBe(xpToNext(0) + 50)
+    expect(big.after).toMatchObject({ rank: 1, xpIntoRank: 50 })
+    expect(big.progress.quotaMet).toBe(false) // rank 1 needs its own quota
+  })
+
+  it('the final shift (the top rank) works as before: nothing to fill, never locked', () => {
+    const top = progressAtRank(tuning.maxRank)
+    const r = rewardShift(top, 900, missed)
+    expect(r.after).toMatchObject({ rank: tuning.maxRank, xpToNext: 0, locked: false })
+    expect(r.rankUps).toBe(0)
+    // and reaching it takes a quota like any rank
+    const at49 = { ...progressAtRank(tuning.maxRank - 1), totalXp: cumulative(tuning.maxRank) - 100 }
+    expect(rewardShift(at49, 500, missed).after).toMatchObject({ rank: tuning.maxRank - 1, locked: true })
+    expect(rewardShift(at49, 500, met).after.rank).toBe(tuning.maxRank)
+  })
+
+  it('left out (the economy sim until F52): the XP-only rule from before the lock', () => {
+    expect(rewardShift(rank3(4000), 1000).after).toMatchObject({ rank: 4, xpIntoRank: 750 })
+  })
+})
+
 // F59: what each rank unlocks (content/tuning/progression.json → unlocks)
 describe('unlocks', () => {
   it('next piece at 1, swap at 3, upgrades at 5 — from that rank on', () => {

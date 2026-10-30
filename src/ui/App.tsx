@@ -353,7 +353,8 @@ export function App() {
     // the final score (after the leftover penalty) becomes XP — saved right away
     // (F31: the first day's shift tops it up to rank 1 when it started at rank 0 — the report says the rank-up)
     const dayOne = firstDay.running()
-    const reward = (dayOne ? rewardFirstDay : rewardShift)(progressRef.current, e.state.score)
+    // (F74: and goes in under the rank lock — the quota this shift met unlocks the rank and doubles its XP)
+    const reward = (dayOne ? rewardFirstDay : rewardShift)(progressRef.current, e.state.score, { quotaMet: e.state.quotaMet })
     // F65 the final shift's end titles: lost → One Of Us until a win; won → The Savior of Goopkind, and one more career done
     const fin = e.state.final, before = reward.progress.badge
     const oldTitle = badgeTitle(reward.before.rank, before, loadCareers()) // (the one the goop crosses out in the ending)
