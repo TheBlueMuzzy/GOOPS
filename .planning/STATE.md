@@ -5,7 +5,7 @@
 
 
 ## Where we are
-Stage: develop · Milestone: M6 1.0 (M5 Beta ✅ released 2026-10-29) · Sprint: 25 (F74, F52) · Doing: F74 — Rank lock · Branch: master · Version: 0.2.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M6 1.0 (M5 Beta ✅ released 2026-10-29) · Sprint: 25 (F74, F52) · Doing: F74 — Rank lock — building · Branch: dev/m6-1-0 · Version: 0.2.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's beta, v0.2.0 — the alpha address kept, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
