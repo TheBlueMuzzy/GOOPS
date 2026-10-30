@@ -9,7 +9,7 @@ Check: unit tests (no loss when he's used up, wear by integrity lost, free seals
 Checked:
 - [x] 🤖 1. The rule: the final shift is lost only when the tank breaks; his seals are free; he wears by the integrity lost (finalShift.json vet.wearPerIntegrity); used up → he's gone, the shift goes on; the outcome says whether he made it — src/engine/shift.ts
 - [x] 🤖 2. Goop Dump rains wild goop (every shift); in the final shift into the columns with open cracks — src/engine/abilities.ts
-- [ ] 🤖 3. Slow Cracks in the final shift slows only the spreading (new cracks come as often as without it) — src/engine/twists.ts
+- [x] 🤖 3. Slow Cracks in the final shift slows only the spreading (new cracks come as often as without it) — src/engine/twists.ts
 - [ ] 🤖 4. The endings: he made it → the happy ending (his clump rises with the goop; his Earth-and-family line); gone → today's; his used-up line + fade mid-shift; the lost report drops "the Veteran is gone" — src/game/ending.ts
 - [ ] 🤖 5. The bots + the economy sim play the new rules and count "saved him" — scripts/bots/runFinal.ts
 - [ ] 🤖 6. Tests + e2e/final-shift.mjs + e2e/ending.mjs at every portrait size, shots looked at; GDD (the final shift + the ending) + a TDD decision — e2e/final-shift.mjs

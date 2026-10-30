@@ -394,4 +394,28 @@ describe('upgrades in the final shift (F75)', () => {
     expect(new Set(dumpColumns(50, false)).size).toBeGreaterThan(5)
     expect(new Set(dumpColumns(49)).size).toBeGreaterThan(5)
   })
+
+  it('Slow Cracks: in the final shift new cracks come as often as without it, but they spread slower; at rank 49 both slow', () => {
+    const slow = { crackEveryMult: 1.6 }
+    // new cracks in 20 s (cracks every 2 s at any pressure; empty tank, none of them growing: no twists)
+    const cracks = (rank: number, modifiers = {}) => {
+      const sh = createShift(straightLineCracks(realConfig(), 2000, 2000), { seed: 5, rank, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24), modifiers })
+      let n = 0
+      for (let t = 0; t < 20_000; t += 50) { sh.tick(50); n += ofType(sh.takeEvents(), 'crack').length }
+      return n
+    }
+    expect(cracks(50, slow)).toBe(cracks(50))
+    expect(cracks(49, slow)).toBeLessThan(cracks(49) * 0.75)
+    // spreading: cells one crack grows in 30 s (no new cracks; every growth roll a hit)
+    const grown = (rank: number, modifiers = {}) => {
+      const t = structuredClone(twistsJson)
+      t.grow.baseChance = 1
+      const sh = createShift(quietConfig(), { seed: 5, rank, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24), modifiers, twists: t })
+      sh.state.cracks.push({ id: 1, x: 10, y: 20, color: BLACK, plugged: false })
+      sh.tick(30_000)
+      return sh.state.cracks[0].cells?.length ?? 1
+    }
+    expect(grown(50, slow)).toBeLessThan(grown(50))
+    expect(grown(49, slow)).toBeLessThan(grown(49))
+  })
 })

@@ -525,7 +525,9 @@ class Shift implements ShiftEngine {
     const s = this.state
     this.crackTimerMs += dt
     const often = this.isFinal ? Math.max(0.1, finalNum(this.options.finalShift!.crackRateMult, 1)) : 1 // (F64)
-    if (this.crackTimerMs < (crackEveryMs(this.config, s.pressure) * this.mods.crackEveryMult) / often) return
+    // (F75: in the final shift Slow Cracks slows only the spreading — twists.ts growCracks — not how often cracks come)
+    const slow = this.isFinal ? 1 : this.mods.crackEveryMult
+    if (this.crackTimerMs < (crackEveryMs(this.config, s.pressure) * slow) / often) return
     // The low-cracks ability: this crack goes in the bottom rows (if there's no room there, a normal crack instead).
     const low = this.effects.lowCracks
     let crack = low ? spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId, low.rows) : null

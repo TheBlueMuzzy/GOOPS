@@ -174,7 +174,7 @@
       },
       "slowCracks": {
         "name": "Slow Cracks",
-        "desc": "New cracks come less often, and growing cracks spread slower."
+        "desc": "New cracks come less often, and growing cracks spread slower. In the final shift: only the spreading slows."
       },
       "focusMode2": {
         "name": "Focus Mode II",

@@ -199,7 +199,7 @@
     {
       "id": "slowCracks",
       "name": "Slow Cracks",
-      "_note": "F43: new cracks come less often — × the time between cracks, +15% a level — and the same number stretches each crack cell's growth roll (F39, twists.ts), so growing cracks spread slower too. v1 only slowed the growth (−5% spread chance a level).",
+      "_note": "F43: new cracks come less often — × the time between cracks, +15% a level — and the same number stretches each crack cell's growth roll (F39, twists.ts), so growing cracks spread slower too. v1 only slowed the growth (−5% spread chance a level). F75 (Muzzy 2026-10-30): in the final shift only the spreading slows — new cracks come as often as without it (the boss level's onslaught stays).",
       "type": "passive",
       "rank": 30,
       "maxLevel": 4,
