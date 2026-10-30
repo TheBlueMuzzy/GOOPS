@@ -130,6 +130,12 @@ try {
     const said = []
     for (const l of lines) said.push(await bubbleSays(page, en.finalShift.vet[l], 60000))
     check(`${size}: he drops in saying ${lines.join(', ')}`, said.every(Boolean), JSON.stringify(said))
+    // B009: his last intro line (the long one at 390) types out in full before its bubble goes — the bubble waits for
+    // its own typing (talk.json readSec), not only intro.lineSec
+    if (w === 390) {
+      const typed = await page.waitForFunction(() => document.querySelector('.kit-talk')?.getAttribute('data-phase') === 'wait', null, { timeout: 10000 }).then(() => true, () => false)
+      check(`${size}: his last intro line types out before the bubble goes (B009)`, typed)
+    }
     await skipIntro(page)
     await quietMachines(page)
     check(`${size}: the intro is over — a piece is falling`, await until(page, '!S.final.intro && !!S.piece', 10000))

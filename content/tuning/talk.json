@@ -2,6 +2,8 @@
   "_about": "F35: the Veteran's talking bubble (kit TalkingBubble, UI kit 0.31.0) — Muzzy's approved sketch S9 values (research/speaker-bubble/picks.json, 2026-10-23). Read every frame: Dev Kit edits show live.",
   "_waveStart": "Where the speech wave starts along the outline (0 = top-left corner, clockwise).",
   "waveStart": 0,
+  "_readSec": "F75: in a shift, his bubble never goes before its line has typed out and this many seconds more have passed (to read it) — so a slow frame can't cut him off mid-word (B009). Its own time (finalShift.json intro.lineSec, goneLineSec…) still counts from when it opens.",
+  "readSec": 1,
   "_waveEnd": "Where it ends (0.34 = the first third). Start = end = all the way round.",
   "waveEnd": 0.34,
   "_spikeGap": "px between spikes.",

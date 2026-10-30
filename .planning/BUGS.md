@@ -1,9 +1,6 @@
 # Goops — Bugs
-Open: 8 (P0 0 · P1 0 · P2 1 · P3 7)
+Open: 7 (P0 0 · P1 0 · P2 1 · P3 6)
 ## Open
-### B009 · P3 · open · found 2026-10-30 in F75 · v0.2.0.6 · headless (e2e/final-shift)
-The Veteran's intro lines can vanish before they finish typing
-Steps: 1. play the final shift (rank 50) 2. watch his drop-in lines · Expected: each line types out in full and stays a moment · Actual: finalShift.json intro.lineSec 1.6 s cuts "glad you're not goop yet. I'll help how I can." (~3.4 s to type) mid-word · How often: always on the long line. Found by the F75 helper: his new used-up line had the same cut (2.6 s) and now works its time out from the bubble's typing (tests/finalShiftLines.test.ts); the intro's old e2e read the bubble's hidden full text, so it never saw it. Look at: the intro's line timing (shift.ts / finalShift.ts intro + lineSec) — use the same typing-time rule as goneLineSec.
 ### B008 · P3 · open · found 2026-10-30 in F74 · v0.2.0.0 · headless 1440x900
 The report's red ▼ touches a long value's first word
 Steps: 1. a shift that leaves the rank locked 2. the end report's Quota row · Expected: a gap between the ▼ and "Rank locked: meet a quota", like the fines' "▼ −5" · Actual: the ▼ sits right against "Rank" (e2e-shots/rank-lock/report-locked-1440x900.png) · How often: always on a long text value. Look at: the UI kit's stat row (src/ui/kit/blocks/flow.tsx kit-stat-row, a framework copy) — the tone mark's gap for a value that wraps → framework session
@@ -26,6 +23,10 @@ Steps: 1. 390x844 phone size 2. a lesson that outlines the next-piece window · 
 Swap unlock lesson lines run long
 Steps: 1. reach rank 3 2. the swap unlock lesson · Expected: about 15 words like the other lines · Actual: keys 15, phone 18, mouse 22 words · How often: always — a wording call for Muzzy (he'll rewrite the script later)
 ## Fixed (newest first)
+### B009 · P3 · fixed 2026-10-30 in F75 · found 2026-10-30 in F75 · v0.2.0.6 · headless (e2e/final-shift)
+The Veteran's intro lines can vanish before they finish typing
+Steps: 1. play the final shift (rank 50) 2. watch his drop-in lines · Expected: each line types out in full and stays a moment · Actual: finalShift.json intro.lineSec 1.6 s cuts "glad you're not goop yet. I'll help how I can." (~3.4 s to type) mid-word · How often: always on the long line. Found by the F75 helper: his new used-up line had the same cut (2.6 s) and now works its time out from the bubble's typing (tests/finalShiftLines.test.ts); the intro's old e2e read the bubble's hidden full text, so it never saw it. Look at: the intro's line timing (shift.ts / finalShift.ts intro + lineSec) — use the same typing-time rule as goneLineSec.
+Fixed: his bubble (ShiftStage say) never closes before its line has typed out (the kit bubble's onTyped) and talk.json readSec more — the typing runs on its own clock, so a slow frame or a short time can't cut it; the same cut was hitting his used-up line under check:full load at 1100 wide. Guarded by: e2e/final-shift.mjs "his last intro line types out before the bubble goes (B009)" (red on the old code) + "his whole line types out before the bubble goes" at every size.
 ### B006 · P3 · fixed 2026-10-29 (UI kit 0.35.4, installed as 0.37.3 in v0.2.0) · found 2026-10-29 in the beta audit · v0.1.0.36 · headless 390x844, Text size 200%
 Settings tab picker breaks words mid-word at 200%
 Steps: 1. Text size 200% 2. open Settings · Expected: tab names whole · Actual: "Acces/sibilit/y" · How often: always at 200%. Look at: the kit's selector status text (overflow-wrap) — a framework kit piece → report to the framework session

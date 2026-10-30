@@ -105,6 +105,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
   // outline), above him; n = which one (a new one restarts the bubble). Set only on the event, never per frame.
   // F64: his lines as he drops into the final shift ("oh! hi!" …) use the same bubble.
   const [vetSays, setVetSays] = useState<{ x: number; y: number; n: number; words: string } | null>(null)
+  const vetTyped = useRef(false) // F75: his bubble's whole line is showing (TalkingBubble onTyped)
   const live = useRef({ inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole })
   useEffect(() => { live.current = { inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
@@ -156,12 +157,16 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     const vetAt: TapPoint = { x: 0, y: 0 }
     const xray = { cells: [] as number[], pad: 0, alpha: 1 } // view.xray, refilled each frame (no garbage per frame)
     // F63: seconds his bubble has been up (goo clock; -1 = none), how long it stays, and which one it is
-    let sayT = -1, sayFor = 0, sayN = 0
+    // F75: it never goes before its line has typed out (the bubble's onTyped → vetTyped) and talk.json readSec more
+    // have passed — the typing runs on its own clock, so a slow frame (a busy phone) can't cut a line mid-word
+    let sayT = -1, sayFor = 0, sayN = 0, readT = 0
     const say = (words: string, seconds: number, at: { px: number; py: number } | null | undefined = s.vet) => {
       if (!at) return
       const [x, y] = vetOnScreen(s, view, 0, visorFx.current?.curve() ?? 0, at) // (his top middle, where he's seen)
       sayT = 0
       sayFor = seconds
+      readT = 0
+      vetTyped.current = false
       setVetSays({ x, y, n: ++sayN, words })
     }
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
@@ -287,7 +292,12 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       // F75 worn out by the tank's damage: his last line where he was (he's gone from the tank — the shift goes on)
       for (const e of events) if (e.type === 'vetGone') say(text.finalShift.vet.gone, finalShiftTuning.goneLineSec, { px: e.at.x - 0.5, py: e.at.y })
       // (F65: the shift over, his bubble goes — the ending's goop talks next, not his last "go!")
-      if (sayT >= 0 && (s.status !== 'playing' || (sayT += gooDt) >= sayFor)) { sayT = -1; setVetSays(null) }
+      if (sayT >= 0) {
+        sayT += gooDt
+        if (vetTyped.current) readT += gooDt
+        const read = vetTyped.current && readT >= (talk.readSec ?? 0)
+        if (s.status !== 'playing' || (sayT >= sayFor && read)) { sayT = -1; setVetSays(null) }
+      }
       beam.frame(gooDt, view.cellPx, view.width, view.height, view.dpr)
       // the spawn rows above the tank stay hidden (v1): pieces slide in from the tank's top edge, never over the HUD
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
@@ -433,7 +443,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
       {/* (not over the console mid-shift or a menu: the bubble sits above everything — F64 found it over the valve) */}
       {vetSays && inputOn && <TalkingBubble key={vetSays.n} target={{ x: vetSays.x, y: vetSays.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
-        text={vetSays.words} />}
+        text={vetSays.words} onTyped={() => { vetTyped.current = true }} />}
       <div className="stage-pin" data-tag="readout" ref={readoutEl}>
         <PinnedBox pixelsPerUnit={1} rem={16} anchor={readoutAt.direction === 'lineFirst' ? 'left' : 'right'} name="readout">{readout}</PinnedBox>
       </div>
