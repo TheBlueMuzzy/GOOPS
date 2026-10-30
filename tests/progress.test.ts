@@ -34,23 +34,23 @@ describe('ranks', () => {
 
 describe('rewardShift', () => {
   it('the final score becomes XP', () => {
-    const r = rewardShift(freshProgress(), 1241)
+    const r = rewardShift(freshProgress(), 1241, { quotaMet: false })
     expect(r.xp).toBe(1241)
     expect(r.progress.totalXp).toBe(1241)
     expect(r.rankUps).toBe(0)
   })
 
   it('never less than the floor: max(100, 100 × rank)', () => {
-    expect(rewardShift(freshProgress(), 0).xp).toBe(100)
+    expect(rewardShift(freshProgress(), 0, { quotaMet: false }).xp).toBe(100)
     const rank10 = { ...freshProgress(), totalXp: cumulative(10) }
-    expect(rewardShift(rank10, 50).xp).toBe(1000)
+    expect(rewardShift(rank10, 50, { quotaMet: false }).xp).toBe(1000)
   })
 
-  it('a big shift can jump several ranks and earns a scrap per rank', () => {
-    const r = rewardShift(freshProgress(), cumulative(3) + 10)
-    expect(r.before.rank).toBe(0)
-    expect(r.after).toMatchObject({ rank: 3, xpIntoRank: 10, scraps: 3 })
-    expect(r.rankUps).toBe(3)
+  it('a rank-up earns a scrap per rank', () => {
+    const r = rewardShift({ ...freshProgress(), totalXp: cumulative(2) }, xpToNext(2) + 10, { quotaMet: true })
+    expect(r.before.rank).toBe(2)
+    expect(r.after).toMatchObject({ rank: 3, scraps: 3 })
+    expect(r.rankUps).toBe(1)
   })
 
   it('spent scraps stay spent', () => {
@@ -60,7 +60,7 @@ describe('rewardShift', () => {
 
 describe('rewardFirstDay (F31)', () => {
   it('a fresh player always ends day one at rank 1: the XP is topped up to the first rank-up', () => {
-    const r = rewardFirstDay(freshProgress(), 640)
+    const r = rewardFirstDay(freshProgress(), 640, { quotaMet: false })
     expect(r.progress.totalXp).toBe(xpToNext(0))
     expect(r.xp).toBe(xpToNext(0))
     expect(r.after).toMatchObject({ rank: 1, xpIntoRank: 0 })
@@ -68,14 +68,14 @@ describe('rewardFirstDay (F31)', () => {
   })
 
   it('a day that earned enough on its own keeps its own XP', () => {
-    const r = rewardFirstDay(freshProgress(), xpToNext(0) + 50)
+    const r = rewardFirstDay(freshProgress(), xpToNext(0) + 50, { quotaMet: false })
     expect(r.xp).toBe(xpToNext(0) + 50)
     expect(r.after).toMatchObject({ rank: 1, xpIntoRank: 50 })
   })
 
   it('a replay at a higher rank earns what any shift earns (no top-up)', () => {
     const rank3 = { ...freshProgress(), totalXp: cumulative(3) + 5 }
-    expect(rewardFirstDay(rank3, 200)).toEqual(rewardShift(rank3, 200))
+    expect(rewardFirstDay(rank3, 200, { quotaMet: false })).toEqual(rewardShift(rank3, 200, { quotaMet: false }))
   })
 })
 
@@ -357,10 +357,6 @@ describe('the rank lock (F74)', () => {
     const at49 = { ...progressAtRank(tuning.maxRank - 1), totalXp: cumulative(tuning.maxRank) - 100 }
     expect(rewardShift(at49, 500, missed).after).toMatchObject({ rank: tuning.maxRank - 1, locked: true })
     expect(rewardShift(at49, 500, met).after.rank).toBe(tuning.maxRank)
-  })
-
-  it('left out (the economy sim until F52): the XP-only rule from before the lock', () => {
-    expect(rewardShift(rank3(4000), 1000).after).toMatchObject({ rank: 4, xpIntoRank: 750 })
   })
 })
 

@@ -142,20 +142,19 @@ export function meterSteps(before: XpProgress, after: XpProgress, t: Progression
   return steps
 }
 
-// What the game knows about the finished shift for the rank lock (F74). Left out (the economy sim until F52 task 2):
-// the XP-only rule from before the lock.
+// What the game knows about the finished shift for the rank lock (F74).
 export type ShiftDone = { quotaMet: boolean }
 
 // A finished shift's final score (after the leftover penalty) becomes XP, never less than the floor — doubled
 // (quotaXpMult) when the shift met its crack quota. F74: the XP goes in under the rank lock (addXp).
-export function rewardShift(p: Progress, finalScore: number, shift?: ShiftDone, t: ProgressionTuning = tuning): ShiftReward {
+export function rewardShift(p: Progress, finalScore: number, shift: ShiftDone, t: ProgressionTuning = tuning): ShiftReward {
   const before = rankInfo(p, t)
   const earned = Math.max(Math.max(0, Math.round(finalScore)), t.minXp, t.minXpPerRank * before.rank)
   // (only below the top rank: the final shift's win sets quotaMet when the valve opens, but it has no rank to unlock —
   // review 2026-10-29: winning it paid double)
-  const quotaMet = !!shift?.quotaMet && before.rank < t.maxRank
+  const quotaMet = shift.quotaMet && before.rank < t.maxRank
   const xp = quotaMet ? Math.round(earned * t.quotaXpMult) : earned
-  const progress = shift ? addXp(p, xp, quotaMet, t) : { ...p, totalXp: p.totalXp + xp }
+  const progress = addXp(p, xp, quotaMet, t)
   const after = rankInfo(progress, t)
   return { xp, before, after, rankUps: after.rank - before.rank, progress, quotaMet, lostXp: p.totalXp + xp - progress.totalXp,
     metEarlier: !!p.quotaMet }
@@ -183,9 +182,9 @@ function addXp(p: Progress, xp: number, metNow: boolean, t: ProgressionTuning): 
 // fell short — so day one always ends at rank 1. Only from rank 0: a replay (Settings → Replay lessons) at a higher
 // rank earns what any shift earns, nothing more. F74: day one needs no quota for its rank-up and isn't doubled (it
 // works as before the lock); from rank 1 the lock holds like any rank.
-export function rewardFirstDay(p: Progress, finalScore: number, shift?: ShiftDone, t: ProgressionTuning = tuning): ShiftReward {
+export function rewardFirstDay(p: Progress, finalScore: number, shift: ShiftDone, t: ProgressionTuning = tuning): ShiftReward {
   if (rankInfo(p, t).rank !== 0) return rewardShift(p, finalScore, shift, t)
-  const r = shift ? rewardShift({ ...p, quotaMet: true }, finalScore, { quotaMet: false }, t) : rewardShift(p, finalScore, undefined, t)
+  const r = rewardShift({ ...p, quotaMet: true }, finalScore, { quotaMet: false }, t)
   if (r.after.rank > 0) return r
   const progress = { ...p, totalXp: xpToNext(0, t), quotaMet: false, xpHeld: false } // (all the XP rank 1 needs)
   const after = rankInfo(progress, t)

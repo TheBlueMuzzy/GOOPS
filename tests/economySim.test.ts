@@ -8,12 +8,13 @@ import { effectBaseline, effectProgress, nextBuy, playShift, runCareer, shiftEng
 
 describe('the economy sim (F51)', () => {
   it('the same career seed plays the same career, shift for shift', () => {
-    const a = runCareer({ bot: 'focused', style: 'activesFirst', seed: 3, toRank: 7 })
-    const b = runCareer({ bot: 'focused', style: 'activesFirst', seed: 3, toRank: 7 })
+    // (to rank 5, past the shop opening — under the rank lock (F74) these 3 careers to rank 7 took 29 shifts, 60 s+)
+    const a = runCareer({ bot: 'focused', style: 'activesFirst', seed: 3, toRank: 5 })
+    const b = runCareer({ bot: 'focused', style: 'activesFirst', seed: 3, toRank: 5 })
     expect(a).toEqual(b)
-    expect(a.reachedRank).toBeGreaterThanOrEqual(7) // ranks gained by real XP
+    expect(a.reachedRank).toBeGreaterThanOrEqual(5) // ranks gained by real XP + met quotas
     expect(a.shifts[0]).toMatchObject({ rank: 0, won: true }) // the first day ends at rank 1
-    const c = runCareer({ bot: 'focused', style: 'activesFirst', seed: 4, toRank: 7 })
+    const c = runCareer({ bot: 'focused', style: 'activesFirst', seed: 4, toRank: 5 })
     expect(c.shifts.map((s) => s.xp)).not.toEqual(a.shifts.map((s) => s.xp)) // another seed, another career
   }, 60_000)
 
