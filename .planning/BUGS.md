@@ -1,12 +1,9 @@
 # Goops — Bugs
-Open: 7 (P0 0 · P1 0 · P2 1 · P3 6)
+Open: 6 (P0 0 · P1 0 · P2 1 · P3 5)
 ## Open
 ### B005 · P2 · open · found 2026-10-29 in the beta audit · v0.1.0.36 · headless 390x844 + 360x780, Settings → Text size
 Text size 125% and up breaks the console
 Steps: 1. Settings → Accessibility → Text size 125 / 150 / 200% 2. back to the console · Expected: the console's words stay inside their spots · Actual: the footer words run together ("V0.1.0.3RANK SELECMUZZYMADE"), "Operator rank / 0 / 3,500 DUE" runs past the right edge at 200%, the monitor text spills out at 200%, the UPGRADES button covers the middle of the Settings gear (tapping its centre hits the badge; its edges still work) · How often: always at 125%+. Look at: src/ui/Console.tsx:308-310 (ArtLayer words grow with the root font size — words drawn on the art should use the art's own size, art.json words.*.text) and the bottom row (Upgrades + gear)
-### B006 · P3 · open · found 2026-10-29 in the beta audit · v0.1.0.36 · headless 390x844, Text size 200%
-Settings tab picker breaks words mid-word at 200%
-Steps: 1. Text size 200% 2. open Settings · Expected: tab names whole · Actual: "Acces/sibilit/y" · How often: always at 200%. Look at: the kit's selector status text (overflow-wrap) — a framework kit piece → report to the framework session
 ### B007 · P3 · open · found 2026-10-29 in the beta audit · v0.1.0.36 · headless 390x844
 Gameplay tab's Goo style row squeezes its description into a thin strip
 Steps: 1. Settings → Gameplay · Expected: like Wall kick, the picker under the words · Actual: Goo style's description wraps into a 6-line strip beside its picker · How often: always. Look at: the kit Settings row layout (rows with long descriptions should stack) — framework kit piece
@@ -23,3 +20,6 @@ Steps: 1. 390x844 phone size 2. a lesson that outlines the next-piece window · 
 Swap unlock lesson lines run long
 Steps: 1. reach rank 3 2. the swap unlock lesson · Expected: about 15 words like the other lines · Actual: keys 15, phone 18, mouse 22 words · How often: always — a wording call for Muzzy (he'll rewrite the script later)
 ## Fixed (newest first)
+### B006 · P3 · fixed 2026-10-29 (UI kit 0.35.4, installed as 0.37.3 in v0.2.0) · found 2026-10-29 in the beta audit · v0.1.0.36 · headless 390x844, Text size 200%
+Settings tab picker breaks words mid-word at 200%
+Steps: 1. Text size 200% 2. open Settings · Expected: tab names whole · Actual: "Acces/sibilit/y" · How often: always at 200%. Look at: the kit's selector status text (overflow-wrap) — a framework kit piece → report to the framework session
