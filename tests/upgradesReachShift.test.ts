@@ -45,11 +45,12 @@ describe('upgrades reach the shift (F34 task 5)', () => {
     expect(plain.state.pressure / pc.state.pressure).toBeCloseTo(1.1, 6)
   })
 
-  it('Focus Mode: the console time scale the App uses = breakdowns.consoleTimeScale × 0.9 / 0.8 / 0.7 / 0.6', () => {
+  it('Focus Mode: the console runs at 75%, then 50% / 25% with its 2 levels (Muzzy 2026-10-29)', () => {
     expect(upgradesForShift(freshProgress()).modifiers.consoleTimeScaleMult).toBe(1)
-    for (const [level, mult] of [[1, 0.9], [2, 0.8], [3, 0.7], [4, 0.6]]) {
+    expect(breakdowns.consoleTimeScale).toBe(0.75)
+    for (const [level, speed] of [[1, 0.5], [2, 0.25]]) {
       const m = upgradesForShift(owning({ focusMode: level })).modifiers.consoleTimeScaleMult
-      expect(breakdowns.consoleTimeScale * m).toBeCloseTo(breakdowns.consoleTimeScale * mult, 9)
+      expect(breakdowns.consoleTimeScale * m).toBeCloseTo(speed, 3)
     }
   })
 

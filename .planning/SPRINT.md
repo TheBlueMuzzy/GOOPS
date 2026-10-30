@@ -22,7 +22,7 @@ Checked:
 - [ ] 🤖 2. The sim plays the rank lock; bots take Dense Goop off for the final shift (economy.json) — scripts/bots/career.ts
 - [ ] 🙋 3. Calibrate: 3 shifts at rank 5 + 3 at rank 25 (RANK SELECT) — how long the tank lasted, cracks sealed / needed
 - [ ] 🤖 4. Pace to 60–80 shifts a career: XP per rank, quota per rank (tuning) — content/tuning/progression.json
-- [ ] 🤖 5. Console time 75%; Focus Mode 2 levels → 50% / 25% (tuning) — content/tuning/breakdowns.json
+- [x] 🤖 5. Console time 75%; Focus Mode 2 levels → 50% / 25% (tuning) — content/tuning/breakdowns.json
 - [ ] 🤖 6. Upgrades: Goop Dump smaller, Colorizer shorter, Pressure Control level 1 felt, Slow Cracks' final-shift cost (tuning) — content/tuning/upgrades.json
 - [ ] 🤖 7. Sim re-run, before/after table on the planner tab, findings + GDD numbers updated — .planning/research/economy-sim.md
 - [ ] 🙋 8. Play the tuned game: the climb, a mid-rank shift, the final shift — how does it feel?
@@ -31,3 +31,5 @@ Checked:
 - Muzzy 2026-10-29 (planning): the rank lock is the quota's real job (new rule → F74 — Rank lock, built before the tuning) · XP past the goal while locked: "stops at the goal" · quota bonus: "double that shift's XP sounds interesting" · console time: "keep it as it is. we CAN make the game run at 75% while at the console, and have upgrades knock 25% off that" → Focus Mode 2 levels ("freeing up scrap is good") · a career for a human: 60–80 shifts.
 - No open P0/P1. B005 (P2, the console at big Text size) waits on the UI kit change (framework session).
 - F73 — Crisp pixel type waits on the UI kit's size rounding (Muzzy: "after").
+- Tuning (F52 task 5, Muzzy's numbers): breakdowns.json consoleTimeScale 0.25 → 0.75 · upgrades.json focusMode maxLevel 4 → 2, byLevel [0.9, 0.8, 0.7, 0.6] → [0.6667, 0.3333] (= 50% / 25% console speed) — why: a repair cost ~1 s of shift time, so 10 upgrades did nothing (F51 finding 5) — result: tests 659 ✓, e2e/upgrades 332 ✓ (its save now owns Focus Mode 2); old saves owning levels 3–4 get clamped + refunded in F74 — Rank lock's save upgrade (asked of its helper). The sim measures it in task 7.
+- F52 task 1: shift.json quota { base 0, perColour 1, perRank 1 } = v1's colours + rank (golden shifts unchanged; 2 new tests).

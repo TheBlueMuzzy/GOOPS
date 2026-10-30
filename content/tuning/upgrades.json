@@ -65,12 +65,12 @@
     {
       "id": "focusMode",
       "name": "Focus Mode",
-      "_note": "v1: time × (1 − 0.1 × level) at the console. Here: × breakdowns.json consoleTimeScale while you're at the console mid-shift (the App reads it — F34 task 5).",
+      "_note": "v1: time × (1 − 0.1 × level) at the console. Here: × breakdowns.json consoleTimeScale while you're at the console mid-shift (the App reads it — F34 task 5). Muzzy 2026-10-29: the console runs at 75%, Focus Mode knocks it to 50% then 25% — 2 levels (\"freeing up scrap is good\").",
       "type": "passive",
       "rank": 7,
-      "maxLevel": 4,
+      "maxLevel": 2,
       "effects": [
-        { "modifier": "consoleTimeScaleMult", "op": "mul", "byLevel": [0.9, 0.8, 0.7, 0.6] }
+        { "modifier": "consoleTimeScaleMult", "op": "mul", "byLevel": [0.6667, 0.3333] }
       ]
     },
     {

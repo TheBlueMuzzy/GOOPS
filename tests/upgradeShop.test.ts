@@ -139,7 +139,7 @@ describe('the card number line (levelPercent): read from the real upgrades.json'
     expect(levelPercent(def('capacitorEfficiency'), 4)).toBe(-25)
     expect(levelPercent(def('gearLubrication'), 1)).toBe(13) // 12.5, in whole percents
     expect(levelPercent(def('capacitorEfficiency'), 1)).toBe(-6)
-    expect(levelPercent(def('focusMode'), 4)).toBe(-40)
+    expect(levelPercent(def('focusMode'), 2)).toBe(-67)
     expect(levelPercent(def('pressureControl'), 8)).toBe(40)
     expect(levelPercent(def('pressureControl'), 99)).toBe(40)
   })

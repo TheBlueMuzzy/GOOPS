@@ -141,14 +141,14 @@ const RANK9 = JSON.stringify({ v: 2, totalXp: xpFor(9), scrapsSpent: 8,
 //   pressure rise (2 s) · a piece's fall (3 rows) · the rupture drain (pressure lost in 1 s) · the visor's grace (ms until
 //   its signal starts to fade) · the laser's drain per zapped cell · the controls' cooling (health back in 0.4 s after
 //   10 turns) — each ratio = the upgrade's number · Focus Mode: the rules clock's rate at the console mid-shift
-//   (consoleTimeScale × 0.6) · the repair panels at the console: each machine's puzzle 1 step shorter
+//   (consoleTimeScale × Focus Mode's max level) · the repair panels at the console: each machine's puzzle 1 step shorter
 //   Cooldown Booster: the HUD's charge button (empty → charging → ready), F refused while not full, then a real tap with
 //   the visor's calm time running → it grows by 50%
 // The measuring runs with the shift held under the pause menu (the frame loop doesn't tick it) and moves the engine
 // by hand (window.__goops.engine.tick): pure and seeded, so both saves see the same shift.
 const XP40 = xpFor(40)
 const NONE = JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: 0, owned: {}, equipped: [] })
-const ALL_OWNED = { circuitStabilizer: 4, autoPopper: 4, capacitorEfficiency: 4, cooldownBooster: 3, gearLubrication: 4, focusMode: 4, denseGoop: 4, pressureControl: 4 }
+const ALL_OWNED = { circuitStabilizer: 4, autoPopper: 4, capacitorEfficiency: 4, cooldownBooster: 3, gearLubrication: 4, focusMode: 2, denseGoop: 4, pressureControl: 4 }
 const ALL = JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: Object.values(ALL_OWNED).reduce((a, b) => a + b, 0), owned: ALL_OWNED, equipped: ['cooldownBooster'] })
 const LESSONS_SEEN = ['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:laser', 'lesson:visor', 'lesson:controls',
   ...Array.from({ length: 9 }, (_, i) => `consoleNote:${i + 1}`)]
