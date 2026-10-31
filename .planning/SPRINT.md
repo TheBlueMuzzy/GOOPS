@@ -16,6 +16,11 @@ Checked: unit tests 682 ✓ (no loss when he's used up, wear by integrity lost, 
 - [x] 🙋 7. (not done yet — carried to STATE as a Muzzy to-do: the pace gets re-checked when he has them) Calibrate (moved from F52 — Balance pass): 3 shifts at rank 5 + 3 at rank 25 (RANK SELECT) — how long the tank lasted, cracks sealed / needed
 - [x] 🤖 8. (tuning) His wear, the wild rain's size, the final shift's pace on the bots (a good player saves him about half the time); the full sim re-run — content/tuning/finalShift.json
 
+Retro: (Muzzy 2026-10-31: "sure" — Claude's draft)
+- Went well: Muzzy's story call (work with him; he heads home to his family) fixed the final shift's rules and made every upgrade count; one helper built it in about an hour.
+- Went wrong: wild Goop Dump made careers too fast until the full sim caught it, and the cut-line test didn't stop the same cut showing up under load.
+- Change: after a rule change, run the full sim before calling the tuning done; fix timing at the clock, not with longer times.
+
 ## Notes
 - Muzzy 2026-10-30 (planning): the happy ending — "He decides that he should try to get back to Earth and see his family." · a good player saves him about half the time — "half sure" · used up mid-shift → a short line through the speaker and he fades — "yes".
 - Ask Muzzy (built with defaults): his happy-ending words (default: "you did it, kid. … I think I'll try for Earth. Haven't seen my family in a long time.") and his used-up line ("…sorry, kid. you got this.") — en.json, edit any time.
