@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- THE BETA'S OLD ADDRESS (F54, TDD D33): Goops 2 moved from /GOOPS/alpha/ to /GOOPS/. This page sends anyone who
+     opens the old link there — after letting go of the beta's worker and caches, if this browser still has them (the
+     beta's worker normally does that itself: ./sw.js). Same site, so the player's save and rank come along. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#05070d" />
+    <meta name="robots" content="noindex" />
+    <title>Goops</title>
+    <!-- without JavaScript: go anyway, a little later -->
+    <noscript><meta http-equiv="refresh" content="0; url=../" /></noscript>
+    <style>
+      html, body { margin: 0; height: 100%; background: #05070d; color: #c8d3e0; font: 18px/1.4 sans-serif; }
+      body { display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; text-align: center; }
+      a { color: #7fd1ff; }
+    </style>
+    <script>
+      (async () => {
+        const here = new URL('./', location.href).href
+        const letGo = (async () => {
+          const regs = (await navigator.serviceWorker?.getRegistrations?.()) ?? []
+          await Promise.all(regs.filter((reg) => reg.scope === here).map((reg) => reg.unregister()))
+          const keys = 'caches' in self ? await caches.keys() : []
+          await Promise.all(keys.filter((key) => key.includes(here)).map((key) => caches.delete(key)))
+        })().catch(() => {})
+        // never wait long: the move matters more than the tidy-up
+        await Promise.race([letGo, new Promise((done) => setTimeout(done, 1500))])
+        location.replace('../')
+      })()
+    </script>
+  </head>
+  <body>
+    <p>Goops has moved. <a href="../">Open Goops</a></p>
+  </body>
+</html>
