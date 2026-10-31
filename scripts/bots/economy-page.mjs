@@ -59,7 +59,7 @@ function beforeAfter(s) {
       + `${cell(b.finalWon, range(finals.map((r) => r.winRate), pct))}</tr>`
   })
   return `<h2>Before / after — F52 — Balance pass</h2>
-<p>Before = ${esc(before.label)}; after = this run. Since then: the rank lock (F74 — a rank-up needs a met quota), a smaller quota with 6 fewer at ranks 30–39 (shift.json), the white goop's seals left out of the quota, console 75% (the final shift 25%), and the upgrade changes below.</p>
+<p>Before = ${esc(before.label)}; after = this run. Since then: the rank lock (F74 — a rank-up needs a met quota), a smaller quota with 6 fewer at ranks 30–39 (shift.json), the white goop's seals left out of the quota, console 75% (the final shift 25%), the cooperative final shift (F75: lost only when the tank breaks; the Veteran wears with the tank), Goop Dump's wild rain, and the upgrade changes below.</p>
 <div class="scroll"><table><tr><th>Bot</th><th colspan="2">shifts to the final</th><th colspan="2">quota met, ranks 1–9</th><th colspan="2">quota met, ranks 10–49</th><th colspan="2">final shift won (career upgrades)</th></tr>
 <tr><th></th>${'<th>before</th><th>after</th>'.repeat(4)}</tr>
 ${rows.join('\n')}</table></div>

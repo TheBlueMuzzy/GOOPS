@@ -5,6 +5,13 @@
 **Results page:** `e2e-shots/sim/index.html` (open the file; raw numbers in `results.json` beside it). Made by the run, stays on this machine (e2e-shots is git-ignored). Re-run: `npm run sim:economy` (~13 min on this PC) · `npm run sim:economy -- --quick` (~20 s, a check — it's in check:full).
 **Same seeds = the same numbers** (tested: tests/economySim.test.ts).
 
+## After F75 — Cooperative final shift (full re-run 2026-10-30 20:05, 72 careers, 32,852 shifts, 1,365 s)
+**Changed since F52:** the final shift is lost only when the tank breaks; the Veteran's seals are free and he wears by the integrity lost (finalShift.json vet.wearPerIntegrity 3.5) · Goop Dump rains WILD goop, 4 cells a wave (in the final shift into the crack columns) · Slow Cracks slows only spreading in the final shift.
+- **Pace:** Focused **61–65**, Sharp **60–62** shifts to the final shift (target 60–80; at 8 wild cells a wave it was 56–60).
+- **Final shift with the career's upgrades:** Focused 100%, Sharp 70–80% (no upgrades 85% / 70–75%) — upgrades now help or hold there. With Goop Dump still on: 97% / 55% (was 0–7%).
+- **Saved him** (bots:final, no upgrades, seeds 7001–7100): Focused 58%, Sharp 47% — about half, as Muzzy asked. Every loss is the tank (integrity).
+- **Still no measurable effect:** Auto-Popper, Capacitor Efficiency, Cooldown Booster, Gear Lubrication, Junk Uniformer, Sealing Bonus, Active Expansion Slot 1 + 2.
+
 ## After F52 — Balance pass (full re-run 2026-10-30 10:27, 72 careers, 33,283 shifts, 1,557 s)
 **Changed since the findings below:** the rank lock (F74: a rank-up needs a quota met this rank, a met shift's XP ×2) · quota = 1 + colours + rank ÷ 10, minus 6 at ranks 30–39 (`shift.json` `quota.addByRank`; was colours + rank) · the white goop's seals no longer count toward the quota (Muzzy 2026-10-30; the final shift's valve still counts them) · console 75%, Focus Mode 2 levels, the final shift's own console 25% · growing cracks at rank 30 (Muzzy: big changes come on the 0s) · Pressure Control +12% first level · Colorizer 2/3/4 pieces · Goop Dump 8 cells a wave · the bots take Dense Goop back for the final shift. The before/after table is on the planner's "Goops — economy sim" tab (made from `scripts/bots/sim-before.json`).
 - **Pace:** shifts to the final shift — Focused **70–76**, Sharp **67–70** (were 42–49 / 31–37). The main chat's own check on fresh seeds (801–806, 12 careers a bot to rank 50): Focused 74 (65–80), Sharp 70 (63–80), longest stall 7. In the 60–80 target — before Muzzy's calibration shifts (F52 task 3), so it gets re-checked then.

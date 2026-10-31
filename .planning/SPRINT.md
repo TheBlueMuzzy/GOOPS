@@ -14,7 +14,7 @@ Checked: unit tests 682 ✓ (no loss when he's used up, wear by integrity lost, 
 - [x] 🤖 5. The bots + the economy sim play the new rules and count "saved him" — scripts/bots/runFinal.ts
 - [x] 🤖 6. Tests + e2e/final-shift.mjs + e2e/ending.mjs at every portrait size, shots looked at; GDD (the final shift + the ending) + a TDD decision — e2e/final-shift.mjs
 - [ ] 🙋 7. Calibrate (moved from F52 — Balance pass): 3 shifts at rank 5 + 3 at rank 25 (RANK SELECT) — how long the tank lasted, cracks sealed / needed
-- [ ] 🤖 8. (tuning) His wear, the wild rain's size, the final shift's pace on the bots (a good player saves him about half the time); the full sim re-run — content/tuning/finalShift.json
+- [x] 🤖 8. (tuning) His wear, the wild rain's size, the final shift's pace on the bots (a good player saves him about half the time); the full sim re-run — content/tuning/finalShift.json
 
 ## Notes
 - Muzzy 2026-10-30 (planning): the happy ending — "He decides that he should try to get back to Earth and see his family." · a good player saves him about half the time — "half sure" · used up mid-shift → a short line through the speaker and he fades — "yes".
