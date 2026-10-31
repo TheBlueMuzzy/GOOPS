@@ -199,6 +199,35 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D33 · 2026-10-31 · Goops 2 takes over /GOOPS/: its worker under a new name replaces v1's, /GOOPS/alpha/ forwards, one deploy = the whole site (F54)
+  Proposed by: Claude (the F54 spike) · Muzzy: v1 retired fully, no /GOOPS/v1/ copy; v1 players start fresh
+  Chose: base /GOOPS/, manifest id /GOOPS/ (v1's manifest had no id, so its id was its start_url /GOOPS/ — an
+  installed v1 app is the same app and becomes Goops 2). The worker is /GOOPS/goops-sw.js, NOT sw.js: v1's is
+  /GOOPS/sw.js, and main.tsx's "reload only a page that already ran under our worker" rule (D17) tells workers apart
+  by address — the same name would reload every v1 player once on their first visit. Registering goops-sw.js for the
+  same /GOOPS/ scope replaces v1's registration; /GOOPS/sw.js goes away (404). v1's cache (`goops-<timestamp>`) is
+  deleted by name in our activate (public/retire-v1.js, workbox importScripts) — Goops 2's workbox caches untouched.
+  v1's saves (`gooptris_save_v3` / `_v2`) share no key with Goops 2's, so they are simply never read (left alone).
+  The beta's save is the same site's (localStorage is per origin; the kit's keys use only the first folder,
+  `kit-settings:GOOPS`), so rank, settings, tips and the first day carry over untouched.
+  /GOOPS/alpha/ = public/alpha/: index.html (lets go of the beta's worker + caches if still there, then
+  location.replace('../'); a plain link without JS) + sw.js, the beta's LAST worker: an installed beta's phone checks
+  /GOOPS/alpha/sw.js when it opens the old beta, gets this one (skipWaiting) → deletes the caches named for its
+  scope, claims the open pages, sends them to /GOOPS/, unregisters. The root worker never answers /GOOPS/alpha/
+  (navigateFallbackDenylist) and never precaches it. Two real paths, both tested (e2e/sw-update.mjs): new worker
+  slower than the cache (a phone) → the old beta shows a moment, the worker moves it on; faster → the forwarder.
+  Deploy: `gh-pages -d dist` with no --add/--dest — the branch becomes exactly the build (v1's root files and the
+  old beta build removed in the same commit; gh-pages never removes dotfiles, so v1's .gitignore stays, harmless).
+  --dry-run lists added / changed / removed (v1 vs old beta) / kept; refuses a build not for /GOOPS/ or without the
+  forwarder. e2e/sw-update.mjs's "before" is the real gh-pages commit c5a3187 unpacked from git, not a stand-in.
+  Not chosen: keeping the name sw.js (one reload for every v1 player, or a cache-name check that races the
+  controllerchange); a kill-switch worker at /GOOPS/sw.js (the new registration already replaces v1's — one more
+  file to keep); copying v1 to /GOOPS/v1/ (Muzzy: no); a manifest at the forwarder that moves the installed beta
+  app's scope to /GOOPS/ (browsers update scope on their own schedule, two installed apps would claim /GOOPS/ —
+  players re-add the icon instead); migrating v1's saves (Muzzy: fresh start); deploying with --add (old files pile
+  up, v1's index.html would stay reachable at its asset paths).
+  Can't control: an installed beta keeps its old icon (app id /GOOPS/alpha/); on Android its window may show a thin
+  address bar on /GOOPS/ (outside that app's scope) until the player adds Goops again from /GOOPS/.
 D32 · 2026-10-30 · The cooperative final shift: the Veteran wears by the integrity the tank loses (F75)
   Proposed by: Muzzy (2026-10-30: "I'd rather be working directly with him, not slightly against him" · "all upgrades
   should have some sort of an impact on the final level") · Claude (how it's kept)
@@ -403,6 +432,7 @@ D19 · 2026-10-22 · Cooldown Booster fires on the machines; its button sits in 
   and always prints its number — 2 app.css lines shrink it (framework request).
   Review note (2026-10-22): taking a level back refunds the upgrade's CURRENT price — only a Dev Kit price edit after buying makes that differ from what was paid; accepted (all prices are 1). The shift never gets more actives than slots (newest kept).
 D17 · 2026-10-20 · The alpha's release kit: its own service worker at /GOOPS/alpha/, auto-update, deploy beside v1 (F38)
+  (After the 1.0 switch — D33: Goops 2 at /GOOPS/ with goops-sw.js, /GOOPS/alpha/ a forwarder, deploy = the whole site.)
   Proposed by: Claude (BMUZ GitHub Pages recipe + the Sprint 11 plan call)
   Chose: vite-plugin-pwa (generateSW) — base /GOOPS/alpha/ in production, so its sw.js lives at /GOOPS/alpha/sw.js with
   scope /GOOPS/alpha/: narrower than v1's /GOOPS/ worker, so it runs the alpha. Precaches the whole build (js, css, html,
@@ -580,5 +610,5 @@ D01 · 2026-10-17 · Plain WebGL2 + React, no R3F / no game engine
 - Goo across the wrap seam (a group spanning column 29 → 0): handled — groups are unwrapped into one piece (`unwrapCells`, tested in `tests/goo/tank.test.ts`); a ring all the way round is cut on the far side.
 - Particle goo on a full tank: already simulates only near the screen (`margin`) with caps (9,000 particles); past the cap, new cells quietly get fewer particles.
 - Jelly simulates every body all the way round the tank, even off-screen ones; a very full tank on a slow phone is the case to watch (`node e2e/perf.mjs`, pass line in content/tuning/perf.json since F38 — headless is capped at 60 fps, so real phones decide).
-- v1's service worker (gh-pages root `sw.js`) deletes every cache but its own when it activates — caches are per site, so a player who installed the alpha and then opens v1 at /GOOPS/ for the first time loses the alpha's offline copy (online still works; the next alpha deploy re-caches). Rare; gone when the remake replaces v1 (F54). Found in the F38 review.
+- v1's service worker (gh-pages root `sw.js`) deletes every cache but its own when it activates — caches are per site, so a player who installed the alpha and then opens v1 at /GOOPS/ for the first time loses the alpha's offline copy (online still works; the next alpha deploy re-caches). Rare; gone when the remake replaces v1 (F54). Found in the F38 review. F54 (D33): after the 1.0 switch nothing serves v1's sw.js any more, and Goops 2's worker deletes v1's cache.
 - The pop look is a placeholder in both styles until the laser "explode/harden" look is designed.

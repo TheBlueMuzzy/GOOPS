@@ -12,7 +12,7 @@ Checked:
 - [x] 🤖 3. /GOOPS/alpha/ becomes a forwarding page + a worker that hands installed beta players to /GOOPS/ (their save is the same site's, so their rank stays) — public/manifest.json
 - [x] 🤖 4. deploy.js: publish to the root, retire v1's files and alpha/'s old build (keep only the forwarder there), --dry-run lists every change — scripts/deploy.js
 - [x] 🤖 5. e2e/sw-update.mjs: the v1 player, the installed beta player and offline on a copy laid out like gh-pages; no reload loop; page errors watched — e2e/sw-update.mjs
-- [ ] 🤖 6. TDD decision (next free D number) + the live address in docs (README, STATE Key facts after the switch, GDD if it names /alpha/) — .planning/TDD.md
+- [x] 🤖 6. TDD decision (next free D number) + the live address in docs (README, STATE Key facts after the switch, GDD if it names /alpha/) — .planning/TDD.md
 
 ## Notes
 - Muzzy 2026-10-31 (planning): v1 at /GOOPS/v1/? — "no" (retire it fully) · v1 players start Goops 2 fresh — "yes".
@@ -39,3 +39,4 @@ Checked:
 - Task 5: e2e/sw-update.mjs rewritten (same port 5462, already in check:full). The "before" site is the REAL gh-pages at commit c5a3187 (v1's own files + the beta v0.2.0.0), unpacked from git — not a stand-in — and "after" is this build copied over it, as deploy.js publishes it. 31 checks: v1 player (v1's worker + cache + a v1 save → Goops 2 under goops-sw.js, v1's cache gone, ONE page load, rank 0, v1 save untouched, no errors) · manifest · offline · update on the first visit · the Dev Kit · the old link from a Goops 2 phone · installed beta TWICE · a newcomer on the old link. Screens: e2e-shots/sw-update-*.png (looked at: v1 player = rank 0 + the first day's welcome; beta = rank 7, 7 scraps).
   - Surprise: the installed beta has TWO real paths. With the new beta worker answering fast (localhost), the browser installs it before the old one answers the page, so the FORWARDER page opens (and lets go of the worker itself). With a phone-like 1.5 s for the worker, the OLD beta opens from the cache first and the new worker moves it on. Both land on /GOOPS/ with rank 7 and no loop; the test runs both (the slow one must open the old beta first).
   - B003 didn't show: the first-visit update took 1.1 s in every run (no fix made; the cause wasn't seen).
+- Task 6: TDD D33 (+ a pointer on D17 and the v1-cache risk line); GDD's alpha line says the link was /GOOPS/alpha/ → /GOOPS/ after the 1.0 switch. README.md is still v1's "AI Studio app" boilerplate and names no address — left alone (a 1.0 README is worth a line in /deliver). STATE.md Key facts ("Live: …/GOOPS/alpha/") not touched (the main chat's) — it becomes https://thebluemuzzy.github.io/GOOPS/ at the switch.
