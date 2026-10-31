@@ -15,10 +15,11 @@ import './ui/app.css'
 // The browser itself checks for a new worker when the page opens; when that one takes over before registerSW is
 // listening (e2e/sw-update.mjs caught it: the new worker ran, the page stayed old), the plain controllerchange
 // still swaps the page. Only for a page that already ran under OUR worker — a first visit never reloads (not even
-// under v1's /GOOPS/ worker, which runs a v1 player's first alpha visit until ours takes over — registerSW's own
-// reload fired there now and then, so it asks the same question through onNeedReload).
+// under v1's worker, /GOOPS/sw.js, which runs a v1 player's first Goops 2 visit until ours takes over — registerSW's
+// own reload fired there now and then, so it asks the same question through onNeedReload). Ours is goops-sw.js
+// (vite.config.ts filename), a different address from v1's, which is how the two are told apart (TDD D33).
 if (import.meta.env.PROD) {
-  const ourWorker = new URL(`${import.meta.env.BASE_URL}sw.js`, location.origin).href
+  const ourWorker = new URL(`${import.meta.env.BASE_URL}goops-sw.js`, location.origin).href
   const hadWorker = navigator.serviceWorker?.controller?.scriptURL === ourWorker
   let swapped = false
   const swap = () => { if (hadWorker && !swapped) { swapped = true; location.reload() } }

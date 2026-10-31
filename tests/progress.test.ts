@@ -93,6 +93,20 @@ describe('save', () => {
     expect(JSON.parse(s.m.get('goops-progress')!).v).toBe(SAVE_VERSION)
   })
 
+  // F54 (TDD D33): Goops 2 takes over v1's address, so a v1 player's browser still holds v1's save under its own keys —
+  // a fresh start, the v1 save left as it is (never read, never written)
+  it('a v1 player (Goops 1\'s save, gooptris_save_v3 / _v2) starts fresh; v1\'s save is left alone', () => {
+    const s = memory()
+    const v1Save = JSON.stringify({ careerRank: 12, careerScore: 90210, scraps: 4, powerUps: { CIRCUIT_STABILIZER: 2 }, equippedActives: [], firstRunComplete: true,
+      settings: { masterVolume: 50, musicVolume: 80, sfxVolume: 100, invertRotation: false } })
+    s.m.set('gooptris_save_v3', v1Save)
+    s.m.set('gooptris_save_v2', JSON.stringify({ operatorRank: 3, operatorXP: 500 }))
+    expect(loadProgress(s)).toEqual(freshProgress())
+    expect(loadOperatorName(s)).toBeNull()
+    saveProgress(loadProgress(s), s)
+    expect(s.m.get('gooptris_save_v3')).toBe(v1Save)
+  })
+
   // (F74: every save from before the rank lock steps up with its rank's quota counted as met — TDD D31)
   it('golden version-1 save (the alpha) → version 5: XP and scraps spent KEPT, nothing owned yet, no name, no badge, no careers, the rank unlocked', () => {
     const s = memory()
