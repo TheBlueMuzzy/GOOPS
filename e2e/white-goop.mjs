@@ -112,7 +112,9 @@ try {
     }
     await page.waitForTimeout(150)
     await page.screenshot({ path: `${SHOTS}/ow-${tag}.png` })
-    check(`${tag}: the bubble goes again by itself`, await page.locator('.kit-talk-layer').waitFor({ state: 'detached', timeout: 5000 }).then(() => true, () => false))
+    // (15 s: the bubble now waits for its own typing before it goes (F75, ShiftStage onTyped), and the kit counts at most
+    // 0.1 s a frame — headless Chromium draws the 1920 tank under 10 fps under check:full load, so the typing is slower there)
+    check(`${tag}: the bubble goes again by itself`, await page.locator('.kit-talk-layer').waitFor({ state: 'detached', timeout: 15000 }).then(() => true, () => false))
 
     // he oozes to a crack and seals it (the real 6 s at 1440; quicker elsewhere, sent the way the Dev Kit sends an edit)
     if (!main) await sendWhite(page, { ...FILE, sealTime: 1.5 })

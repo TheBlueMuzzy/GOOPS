@@ -253,8 +253,12 @@ try {
     // works it out from the bubble's own typing); the shots: the rules clock paused (the Dev Kit's ◐) so it stays up
     const shoot = w === 390 || w === 1440
     if (shoot) await page.evaluate(async () => (await import('/src/devkit/gameClock.ts')).setClockPause('half'))
-    const typed = await page.waitForFunction(() => document.querySelector('.kit-talk')?.getAttribute('data-phase') === 'wait', null, { timeout: 10000 }).then(() => true, () => false)
-    check(`${size}: his whole line types out before the bubble goes (finalShift.json goneLineSec)`, typed)
+    // (30 s, not 10: the kit bubble counts at most 0.1 s a frame (talkingBubble.tsx MAX_FRAME_S), and headless Chromium
+    // draws the 1920 tank under 10 fps, so its typing there runs several times slower than real time — measured
+    // 2026-10-31: still typing at 10 s. The bubble waits for its typing (ShiftStage onTyped), so it never cuts.)
+    const typed = await page.waitForFunction(() => document.querySelector('.kit-talk')?.getAttribute('data-phase') === 'wait', null, { timeout: 30000 }).then(() => true, () => false)
+    const bubbleNow = await page.evaluate(() => { const b = document.querySelector('.kit-talk'); return b ? { phase: b.getAttribute('data-phase'), text: b.textContent?.slice(0, 40), n: document.querySelectorAll('.kit-talk').length } : 'gone' })
+    check(`${size}: his whole line types out before the bubble goes (finalShift.json goneLineSec)`, typed, JSON.stringify(bubbleNow))
     if (shoot) {
       await page.screenshot({ path: `${SHOTS}/vet-gone-${size}.png` })
       await page.evaluate(async () => (await import('/src/devkit/gameClock.ts')).setClockPause(null))
