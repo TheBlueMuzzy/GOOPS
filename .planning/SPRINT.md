@@ -53,3 +53,4 @@ Check: build + the precache list read (before/after sizes) · e2e/sw-update · i
 - F76 task 4 — B005 → Fixed in BUGS.md (Guarded by: e2e/text-size.mjs); the kit-side causes → STATE ▶ RESUME HERE note for the framework session.
 - Muzzy 2026-11-01: (F76) the gear beside the GOOPS logo at every Text size — "yes" · (F72) pinch zoom — "keep it off" → TDD D34; index.html already has it off (no change).
 - F76 task 5 (monitor lift): text-size 1540 ✓ (shots: 390x844 100% + 200% — the periscope goggles fully in view under the hint; a lesson line still hangs low for room), first-day 143/143, lessons + ending PASS, check:fast exit 0.
+- Muzzy 2026-11-01: "all approved. working well." — Sprint 27 retro confirmed; F71's phone numbers still to come (his 🙋 task 4).
