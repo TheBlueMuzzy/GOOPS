@@ -8,8 +8,8 @@ Done when: B005 fixed — at Text size 125 / 150 / 200% the console's words stay
 Check: an e2e run of the console at Text size 100 / 125 / 150 / 200% at every portrait size (words inside their art spots, nothing covering the gear's centre); screenshots looked at by Claude · check:fast
 - [x] 🤖 1. Measure B005 on today's code (UI kit 0.37.3): screenshots at 125 / 150 / 200% at every portrait size; list what really breaks now and what's the kit's vs Goops' — src/ui/Console.tsx
 - [x] 🤖 2. Fix the console: words drawn on the art take the art's own size (art.json words.*.text), not the root font size; the bottom row (Upgrades + gear) keeps apart — src/ui/Console.tsx
-- [ ] 🤖 3. e2e check at every Text size + portrait size (fails on the old code) — e2e/console-shots.mjs
-- [ ] 🤖 4. Anything that's the UI kit's own bug → a note for the framework session in STATE (no edits in the kit copy); B005 → Fixed in BUGS.md — .planning/BUGS.md
+- [x] 🤖 3. e2e check at every Text size + portrait size (fails on the old code) — e2e/console-shots.mjs
+- [x] 🤖 4. Anything that's the UI kit's own bug → a note for the framework session in STATE (no edits in the kit copy); B005 → Fixed in BUGS.md — .planning/BUGS.md
 
 ## F72 ❓ Pinch zoom on or off
 Done when: Muzzy picks (Ask Muzzy in Notes), written as a TDD decision; index.html's viewport matches.
@@ -44,3 +44,5 @@ Check: build + the precache list read (before/after sizes) · e2e/sw-update · i
   - Rank meter: art-sized like the rest of the art words (its numbers are also on the report); not grown.
   - B007 (Gameplay tab's Goo style row) is in the kit's Settings row layout, not Console.tsx — left for the framework.
   - After: e2e/text-size.mjs ALL PASS (1540 checks: 5 sizes × 4 Text sizes × rank 0 / rank 12 / a lesson line). check:fast green (2 new check:ui warnings: "restyles kit part .kit-art-layer / .kit-screen" — the kit gap, in the STATE note).
+- F76 task 3 — the guard is a new script, e2e/text-size.mjs (port 5376, in check:full, `npm run e2e:text-size`, ~6 min), not console-shots.mjs (that one isn't in check:full). Proven red: committed the fix (70ed5aa), then put the kit's 0.625rem floor back and took the gear's align-self out of app.css → 155 of 1540 red (every phone size from 125%, desktops from 125–200%, 360 at 100%); the break dropped with `git stash push` (app.css back to the commit). Note: the throwaway stash entry "f76-deliberate-break-proof-red" is still in the stash list (dropping it was refused by the permission check) — safe to drop.
+- F76 task 4 — B005 → Fixed in BUGS.md (Guarded by: e2e/text-size.mjs); the kit-side causes → STATE ▶ RESUME HERE note for the framework session.
