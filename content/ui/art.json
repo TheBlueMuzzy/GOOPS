@@ -75,7 +75,9 @@
       "screenBottom": 886.33,
       "radius": 39.53,
       "_glitch": "F45 (rank 45, Management slips): the shape the screen shows for a beat — 'something that isn't a face'. One colour: the game paints it in moments.json looks.glitchColour through this picture's shape (a placeholder by Claude — redraw it any time).",
-      "glitch": "art/NotAFace.svg"
+      "glitch": "art/NotAFace.svg",
+      "_wordsMinRem": "F76 (B005, Text size): the monitor's words are reading text, so they grow with Settings → Text size: never smaller than this many rem (1rem = 16 px at 100%, 32 px at 200%) — at 100% the art's own size wins (about 11–19 px by screen), from 125% this does. Longer lines slide the screen down (the toaster).",
+      "wordsMinRem": 0.7
     },
     "repairs": {
       "_about": "F24: the repair panels' moving parts, drawn by the game over the panels (art-prep strips the same parts out of them: stripClasses = the knobs, the dial face and the lamps; strip = the three arcade buttons). Boxes are [x, y, width, height] in the mock-up's units, read off Example1.svg. viewShort = what a phone on its side shows mid-shift: just the three panels (the way back is then the Back to the tank button). knob = the slider knob's share of its track (50.23 / 175.86). Laser: sliders in the order row 1 left, row 1 right, row 2 left, row 2 right, each with its two lamps [left end, right end]. Controls: the dial, its four corner lamps (top-left, top-right, bottom-right, bottom-left) and the angle (degrees clockwise from up) the dial's arrow points at each. Visor (RESET LIGHTS): the up/down slider, its top lamp and its bottom lamp, and the three buttons top to bottom with their lamps. F32 (Muzzy: the slider sat too low and the bottom lamp overlapped it): the track is cut out of the panel into its own file (track: its shapes by colour class, from = where the mock-up had it) and drawn at `slider` — 92% of its size and higher, so both lamps fit above and below it.",
@@ -112,6 +114,10 @@
     },
     "backdrop": "art/Background.svg",
     "title": "art/Title.svg",
-    "settings": { "up": "art/Btn_Settings.svg", "label": "hidden", "size": "s" }
-  }
+    "settings": { "up": "art/Btn_Settings.svg", "label": "hidden", "size": "s" },
+    "_bottomRow": "F76 (B005, Text size): the GOOPS title and the gear under the console are pictures, not words — they keep their size at every Text size (px; the kit's own sizes at 100%: title s = 3.5rem = 56, gear s = 3rem = 48), so the Upgrades button's words can grow above them. Between shifts the gear sits beside the title (the Upgrades row has no room for it on a phone).",
+    "bottomRow": { "titlePx": 56, "gearPx": 48 }
+  },
+  "_wordsMinPx": "F76 (B005, Text size): words drawn on the art (the console's labels, version, credit, RANK SELECT, the rank meter; the end-game screen's) keep the art's own size at every Text size — they belong to the picture, and their spot doesn't grow. A phone still never shows them smaller than this (px). The kit's floor is 0.625rem, which grows with Text size (20 px at 200%) and pushed them out of their spots.",
+  "wordsMinPx": 10
 }

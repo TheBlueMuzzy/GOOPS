@@ -16,6 +16,9 @@
   block-size: var(--crt-h, auto);
   background: var(--crt-screen); border-radius: calc(var(--crt-radius) * var(--u));
   transition: block-size var(--motion-normal, 0.2s) ease-out;
+  /* F76: its words are reading text — the art's size (1em, the words layer's), or bigger with Settings → Text size
+     (--crt-words-min: art.json console.crt.wordsMinRem); a longer line slides the screen down */
+  font-size: max(var(--crt-words-min, 1em), 1em);
 }
 /* the words box: the words (and Got it) in its middle; taller when they need it */
 .crt-body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(10 * var(--u));

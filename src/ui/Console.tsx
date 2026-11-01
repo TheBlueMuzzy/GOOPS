@@ -164,7 +164,7 @@ function Crt({ hint, lesson, drop, look, badge }: { hint: string; lesson: CrtLin
       <CrtLook place="monitor" unit={unit} ref={box} className="crt" data-tag="crt" data-grown={fit?.grown || undefined} data-story-look={look}
         style={{ '--story-flicker': `${looks.flickerSeconds}s`, '--story-alarm': `${looks.alarmSeconds}s`, '--story-alarm-colour': looks.alarmColour,
           '--story-glitch': `${looks.glitchSeconds}s`, '--story-glitch-after': `${looks.glitchAfterSeconds}s`, '--story-glitch-colour': looks.glitchColour, '--story-glitch-art': `url("${a.crt.glitch}")`, ...(look === 'alarm' && { '--crt-ink': looks.alarmWords, '--crt-glow': looks.alarmWords }), '--crt-inset': x - c.screenLeft, '--crt-top': artY - c.screenTop, '--crt-room': h, '--crt-w': c.screenWidth, '--crt-screen': c.screen, '--crt-bezel': c.bezel,
-          '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit } as CSSProperties}>
+          '--crt-bezel-w': c.bezelWidth, '--crt-radius': c.radius, '--crt-h': height, '--u': unit, '--crt-words-min': `${c.wordsMinRem}rem` } as CSSProperties}>
         <div ref={body} className="crt-body">
           {badge ?? <>
             <TypedText text={words} className="lesson-words" onTyped={lesson?.onTyped} />
@@ -286,10 +286,13 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
     <Screen label={t.label} column backdrop={a.backdrop}
       slide={phase === 'idle' ? undefined : phase === 'leaving' ? 'out' : 'in'} slideEdge="bottom" onSlideEnd={onSlideEnd}
       // (F59: between shifts the Upgrades button sits over the title — the corners beside it are too narrow on a phone)
-      bottom={upgrades ? <Stack gap="s"><UpgradesButton {...upgrades} /><TitleArt src={a.title} alt={t.title} size="s" /></Stack>
-        : <TitleArt src={a.title} alt={t.title} size="s" />}
+      // (F76: the title and the gear are pictures — they keep their size at every Text size, art.json bottomRow; only
+      // the Upgrades button's words grow, and the gear moves beside the title then: app.css)
+      bottom={<Stack gap="s" style={{ '--kit-title-art-h-s': `${a.bottomRow.titlePx}px` } as CSSProperties}>
+        {upgrades && <UpgradesButton {...upgrades} />}<TitleArt src={a.title} alt={t.title} size="s" /></Stack>}
       bottomLeft={midShift && short ? <Button variant="secondary" onClick={onPull} disabled={phase !== 'idle'}>{t.backToTank}</Button> : undefined}
-      bottomRight={ending ? undefined : <Button art={a.settings} onClick={onSettings}>{t.settings}</Button>}>
+      bottomRight={ending ? undefined : <Button art={a.settings} onClick={onSettings}
+        style={{ '--kit-art-size': `${a.bottomRow.gearPx}px` } as CSSProperties}>{t.settings}</Button>}>
       <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end"
         className={gold ? 'career-gold-console' : undefined}>
         <ArtLayer {...a.body} dim={leaving} className={trim('body')} />
