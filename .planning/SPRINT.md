@@ -22,10 +22,11 @@ why: players who need bigger words get them from Text size instead of pinch zoom
 Done when: the offline copy skips the kit fonts Goops never uses (Goops uses only Nokia Cellphone FC — measure the bytes saved) and the icons are lighter (same look) · offline still works (e2e/sw-update) · a mid + a low Android measured with ?fps through a busy rank-30+ shift, jelly vs particle, result in TDD Key facts.
 why: a phone on a slow connection gets into the game sooner, and we know it runs smoothly on real phones before 1.0.
 Check: build + the precache list read (before/after sizes) · e2e/sw-update · icons looked at side by side · Muzzy's phone numbers in TDD Key facts
+Checked: precache 2038.96 → 1595.11 KiB (build, read by Claude) · tests/offlineFonts.test.ts · icons looked at side by side + 2× by Claude · e2e/sw-update PASS 37 ok · check:full ALL PASS 36/36 at 8de2889 · Muzzy on his phones 2026-11-01: "runs smoothly. check complete. approved" (no fps numbers taken — TDD §5 notes it)
 - [x] 🤖 1. Drop the kit fonts Goops never uses from the offline copy (globIgnores in the PWA settings; nothing loads them) — before/after precache size — vite.config.ts
 - [x] 🤖 2. Shrink the icons (lossless / palette PNG, same pixels look) — before/after sizes — public/icons/icon-512.png
 - [x] 🤖 3. Offline still works: e2e/sw-update + the precache list — e2e/sw-update.mjs
-- [ ] 🙋 4. Muzzy: a mid + a low Android, ?fps through a busy rank-30+ shift, jelly and particle — tell Claude the numbers (Claude writes them into TDD Key facts) — .planning/TDD.md
+- [x] 🙋 4. Muzzy: a mid + a low Android, ?fps through a busy rank-30+ shift, jelly and particle — tell Claude the numbers (Claude writes them into TDD Key facts) — .planning/TDD.md
 
 ## Notes
 - Open bugs: no P0/P1. B005 (P2) = F76. B007 (P3, 390x844) — check if it's in Console.tsx while there.

@@ -185,7 +185,7 @@ flowchart LR
 ## 5. Budgets
 | | Target | How it's checked |
 |---|---|---|
-| Frame rate | 60 fps on a mid-range phone, full tank, either goo style | `?fps` / Dev Kit Perf readout on real phones (playtest log) + e2e/perf.mjs pass line (content/tuning/perf.json; headless Chromium is vsync-capped at 60, so it catches big drops, not phone speed) |
+| Frame rate | 60 fps on a mid-range phone, full tank, either goo style | `?fps` / Dev Kit Perf readout on real phones (playtest log) + e2e/perf.mjs pass line (content/tuning/perf.json; headless Chromium is vsync-capped at 60, so it catches big drops, not phone speed) · F71 (2026-11-01): Muzzy on his own phones — "runs smoothly" (no numbers taken); first visit 2039 → 1595 KiB offline copy (kit fonts out, palette icons) |
 | First load | < 3 s on 4G | /deliver quick check |
 
 ## 6. Security & fairness
