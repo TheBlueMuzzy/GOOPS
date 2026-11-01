@@ -75,18 +75,19 @@ const GOO = {
   backMs: 600,      // the switch back to the console: zoom out (A/B) or slide up (C)
   ease: 3,          // ease-in-out power: 1 = constant speed, 5 = slow start and end, fast middle
   glassFade: 0.4,   // A/B: share of the zoom by which the painted glass has turned into the tank
-  lensTank: 1.6,    // B: how big the tank looks in the goggles at the console (1 = the true size for this zoom)
+  lensCols: 3.5,    // A/B: how many of the vat's columns span the glass's full width at the console (fewer = zoomed in closer)
 };
-const GLASS_TINT = 0.35;   // B: how much of the painted glass stays over the tank in the goggles at the console
+const GLASS_TINT = 0.15;   // B: how much of the dark painted glass stays over the tank in the goggles at the console
+const FLOOR_LIFT = 8;      // A/B: the vat's floor sits this many mock-up units above the glass's bottom edge at the console
 // [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
-const KNOBS = [['Look'], ['style', 0, 2, 1], ['zoom', 0.6, 4, 0.1], ['glassFade', 0.05, 1, 0.05], ['lensTank', 0.5, 4, 0.1],
+const KNOBS = [['Look'], ['style', 0, 2, 1], ['zoom', 0.6, 4, 0.1], ['glassFade', 0.05, 1, 0.05], ['lensCols', 1.5, 8, 0.5],
   ['Timing'], ['pullMs', 100, 1500, 25], ['zoomMs', 150, 2000, 25], ['backMs', 150, 2000, 25], ['ease', 1, 5, 0.1]];
 // One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
 const KNOB_HELP = {
-  style: '0 = A: zoom into the goggles. 1 = B: A + the tank plays small in the goggles at the console. 2 = C: today\'s slide down.',
+  style: '0 = A: zoom into the goggles. 1 = B: A + the bottom of the vat plays in the goggles at the console. 2 = C: today\'s slide down.',
   zoom: 'A/B: how far it zooms in. Low = the frame is still on screen at the end and it fades away; high = it dives deep into the lens.',
   glassFade: 'A/B: how soon the dark painted glass turns see-through during the zoom. Low = you see the tank at once; 1 = only at the end.',
-  lensTank: 'B: how big the tank looks inside the goggles at the console. Watch the goggles before you pull.',
+  lensCols: 'A/B: how close the goggles look into the bottom of the vat — how many goo columns fill the glass edge to edge. 2 = close up, 8 = the whole floor. Watch the goggles before you pull (B) or at the start of the zoom (A).',
   pullMs: 'How long the periscope takes to glide down (and back up). Watch the periscope.',
   zoomMs: 'How long the zoom in (A/B) or the slide away (C) takes after the periscope lands.',
   backMs: 'How long the way back (zoom out / slide up) takes.',
@@ -117,6 +118,7 @@ const INNER_D = 'M392.02,1054.51c-14.46,0-27.83-5.85-37.66-16.46-8.25-8.91-19.96
 // The zoom aims at the window above the nose (x 322.3, halfway between the lens top 931.9 and the notch 1044 → y 988),
 // not the box centre: there the tank isn't cut by the nose, and at zoom ≥ ~1.5 the lens covers the whole screen.
 const LENS = { cx: 322.3, cy: 988, w: 282.1, h: 142.6 };
+const LENS_BOTTOM = 1074.5;   // the glass's bottom edge (the lobes; the nose notch rises to 1044 in the middle)
 const LENS_PATH = new Path2D(LENS_D), INNER_PATH = new Path2D(INNER_D);
 
 // ===== The sketch itself =====
@@ -168,6 +170,7 @@ const tank = {
     g.fillStyle = '#071214'; g.fillRect(0, 0, w, h);
     const availH = h - top - bottom - 16, cell = Math.min((w - 32) / this.cols, availH / this.rows);
     const gw = cell * this.cols, gh = cell * this.rows, x0 = (w - gw) / 2, y0 = top + 8 + (availH - gh) / 2;
+    this.geo = { cell, floorX: x0 + gw / 2, floorY: y0 + gh };   // where the vat's floor centre is in this picture (px)
     g.fillStyle = '#0f2a2f'; g.strokeStyle = '#2f7f86'; g.lineWidth = 3;
     g.beginPath(); g.roundRect(x0 - 6, y0 - 6, gw + 12, gh + 12, 14); g.fill(); g.stroke();
     g.strokeStyle = '#17363b'; g.lineWidth = 1;
@@ -215,9 +218,17 @@ function draw() {
     ox = px - s * Lx; oy = py - s * Ly;
   }
   if (style === 2) slide = sw * viewH;
-  // the tank's place, in mock-up units round the lens: at the end of the zoom it is exactly the full-screen tank
-  const k = style === 1 ? GOO.lensTank + (1 - GOO.lensTank) * sw : 1;
-  const tw = viewW / s1 * k, th = viewH / s1 * k, tx = Lx - tw / 2, ty = Ly - th / 2;
+  // the tank's place, in mock-up units (m = units per picture px). Muzzy 2026-11-01: the goggles' glass is FILLED with
+  // the game, looking close at the bottom of the vat — lensCols columns span the glass edge to edge, the vat's floor just
+  // above the glass's bottom edge (the rest of the tank is above, out of view). At the end of the zoom it is exactly the
+  // full-screen tank. In between, the size changes steadily (log) and the floor point glides from one place to the other,
+  // so on screen the goo stays about the same size while the window opens round it.
+  const G = tank.geo, m0 = LENS.w / (GOO.lensCols * G.cell), m1 = 1 / s1;
+  const m = m0 * Math.pow(m1 / m0, sw);
+  const floor0 = { x: Lx, y: LENS_BOTTOM + pullY - FLOOR_LIFT };                    // at the console
+  const floor1 = { x: Lx - viewW * m1 / 2 + G.floorX * m1, y: Ly - viewH * m1 / 2 + G.floorY * m1 };   // the full-screen tank
+  const fx = floor0.x + (floor1.x - floor0.x) * sw, fy = floor0.y + (floor1.y - floor0.y) * sw;
+  const tw = viewW * m, th = viewH * m, tx = fx - G.floorX * m, ty = fy - G.floorY * m;
   const consoleA = style < 2 ? clamp01((1 - sw) / 0.2) : 1;   // A/B: the frame fades in the last fifth (no jump at a low zoom)
   const glassA = style === 2 ? 1 : (style === 1 ? GLASS_TINT : 1) * (1 - clamp01(sw / GOO.glassFade));
   const tankShows = style === 1 || (style === 0 && sw > 0);
@@ -308,7 +319,7 @@ $('bKnobs').onclick = () => {
   try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
 };
 // Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
-const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+const PKEY = 'sketch-presets-v2:' + location.pathname.split('/').pop();   // v2: lensCols replaced lensTank (Muzzy, 2026-11-01)
 function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
 function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
 const DEFAULTS = readKnobs();
