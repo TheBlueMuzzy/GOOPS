@@ -55,3 +55,8 @@ Checked: precache 2038.96 → 1595.11 KiB (build, read by Claude) · tests/offli
 - Muzzy 2026-11-01: (F76) the gear beside the GOOPS logo at every Text size — "yes" · (F72) pinch zoom — "keep it off" → TDD D34; index.html already has it off (no change).
 - F76 task 5 (monitor lift): text-size 1540 ✓ (shots: 390x844 100% + 200% — the periscope goggles fully in view under the hint; a lesson line still hangs low for room), first-day 143/143, lessons + ending PASS, check:fast exit 0.
 - Muzzy 2026-11-01: "all approved. working well." — Sprint 27 retro confirmed; F71's phone numbers still to come (his 🙋 task 4).
+
+Retro: (Claude's draft, Muzzy: "yes", 2026-11-01)
+- went well: the auto-mode run carried the sprint while Muzzy was out; his periscope note was fixed before F76 closed
+- went wrong: the helper's "after" screenshots were really from its break-on-purpose run — caught only by re-running the check
+- change: proof shots come from a fresh run on the merged code, never a helper's saved copy
