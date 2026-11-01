@@ -34,9 +34,12 @@ export default defineConfig({
       manifest: false, // public/manifest.json is the manifest (index.html links it)
       filename: 'goops-sw.js',
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,mp3,ttf,woff2,json}'], // (woff2: the kit's own fonts — offline missed them)
+        globPatterns: ['**/*.{js,css,html,png,svg,mp3,ttf,woff2,json}'], // (woff2: a game font in public/fonts may be one)
         // a font's read-me page, the alpha forwarder, and the v1 clean-up (the worker loads that itself)
-        globIgnores: ['fonts/**/*.html', 'alpha/**', 'retire-v1.js'],
+        // The kit's own fonts (assets/*.woff2) stay out too: every text role in content/ui/style.json uses the
+        // game's Nokia font (public/fonts), so a player never loads them — ~227 KB off the first visit (F71).
+        // tests/offlineFonts.test.ts goes red if a role ever names a kit font; drop the ignore then.
+        globIgnores: ['fonts/**/*.html', 'alpha/**', 'retire-v1.js', 'assets/*.woff2'],
         importScripts: ['retire-v1.js'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/\/alpha\//],

@@ -20,7 +20,7 @@ why: players who need bigger words get them from Text size instead of pinch zoom
 Done when: the offline copy skips the kit fonts Goops never uses (Goops uses only Nokia Cellphone FC — measure the bytes saved) and the icons are lighter (same look) · offline still works (e2e/sw-update) · a mid + a low Android measured with ?fps through a busy rank-30+ shift, jelly vs particle, result in TDD Key facts.
 why: a phone on a slow connection gets into the game sooner, and we know it runs smoothly on real phones before 1.0.
 Check: build + the precache list read (before/after sizes) · e2e/sw-update · icons looked at side by side · Muzzy's phone numbers in TDD Key facts
-- [ ] 🤖 1. Drop the kit fonts Goops never uses from the offline copy (globIgnores in the PWA settings; nothing loads them) — before/after precache size — vite.config.ts
+- [x] 🤖 1. Drop the kit fonts Goops never uses from the offline copy (globIgnores in the PWA settings; nothing loads them) — before/after precache size — vite.config.ts
 - [ ] 🤖 2. Shrink the icons (lossless / palette PNG, same pixels look) — before/after sizes — public/icons/icon-512.png
 - [ ] 🤖 3. Offline still works: e2e/sw-update + the precache list — e2e/sw-update.mjs
 - [ ] 🙋 4. Muzzy: a mid + a low Android, ?fps through a busy rank-30+ shift, jelly and particle — tell Claude the numbers (Claude writes them into TDD Key facts) — .planning/TDD.md
@@ -29,3 +29,4 @@ Check: build + the precache list read (before/after sizes) · e2e/sw-update · i
 - Open bugs: no P0/P1. B005 (P2) = F76. B007 (P3, 390x844) — check if it's in Console.tsx while there.
 - Ask Muzzy: (F72) pinch zoom — 1. keep it OFF (Claude's pick: the tank uses drags and swipes, a pinch would fight them; Text size covers bigger words) · 2. turn it ON (WCAG's default; may zoom the page mid-shift).
 - NEVER deploy in this sprint (deploy.js publishes the whole site now — the switch is the 1.0 /deliver, with Muzzy).
+- F71 task 1: a probe on the built game (console + Settings + Upgrades, 390 and 1440 wide) loaded only `Nokia Cellphone FC` (nokiafc22.ttf) — none of the 9 kit woff2 files, not 6 as the roadmap guessed (every role in style.json is Nokia). → globIgnores `assets/*.woff2`: precache 83 entries 2038.96 KiB → 74 entries 1817.21 KiB (−222 KiB). The files stay in the build (fetched online if ever used). Guard: tests/offlineFonts.test.ts — red if a style.json font role names anything but a fonts.json font.
