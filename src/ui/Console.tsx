@@ -249,7 +249,10 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   const spotlit = useSpotlitTags()
   // F35: between shifts the monitor hangs lower (more room for its words) — not while a lesson shows the periscope, and
   // not mid-shift, where the periscope is the way back to the tank (it would hide the top of its grip)
-  const drop = midShift || spotlit.includes('periscope') ? 0 : a.monitorDrop
+  // (F76, Muzzy 2026-11-01: "it covers the periscope… mainly when it's telling you to drag the periscope down" — so it
+  // hangs lower only for a line that needs the room: a lesson's, Management's, the ending's badge — not the hint)
+  const longLine = !!(lessonLine || storyLine || ending)
+  const drop = midShift || spotlit.includes('periscope') || !longLine ? 0 : a.monitorDrop
   const showcase = (id: MachineId) => !!midShift && spotlit.includes(`panel-${id}`)
   // (and while a lesson step outlines a part, only that part answers — the other controls shake: RepairPanels.tsx)
   const outlined = midShift ? spotlit : NOTHING

@@ -11,6 +11,7 @@ Checked: e2e/text-size.mjs ALL PASS 1540 checks on the merged code (5 portrait s
 - [x] 🤖 2. Fix the console: words drawn on the art take the art's own size (art.json words.*.text), not the root font size; the bottom row (Upgrades + gear) keeps apart — src/ui/Console.tsx
 - [x] 🤖 3. e2e check at every Text size + portrait size (fails on the old code) — e2e/console-shots.mjs
 - [x] 🤖 4. Anything that's the UI kit's own bug → a note for the framework session in STATE (no edits in the kit copy); B005 → Fixed in BUGS.md — .planning/BUGS.md
+- [x] 🤖 5. Muzzy 2026-11-01 (approving): "the console window is pretty low - it covers the periscope… mainly when it's telling you to drag the periscope down" → the monitor hangs low only for a line that needs the room (a lesson, Management, the ending's badge); the "Pull down the periscope" hint sits up — src/ui/Console.tsx
 
 ## F72 ❓ Pinch zoom on or off
 Done when: Muzzy picks (Ask Muzzy in Notes), written as a TDD decision; index.html's viewport matches.
@@ -51,3 +52,4 @@ Check: build + the precache list read (before/after sizes) · e2e/sw-update · i
 - F76 task 3 — the guard is a new script, e2e/text-size.mjs (port 5376, in check:full, `npm run e2e:text-size`, ~6 min), not console-shots.mjs (that one isn't in check:full). Proven red: committed the fix (70ed5aa), then put the kit's 0.625rem floor back and took the gear's align-self out of app.css → 155 of 1540 red (every phone size from 125%, desktops from 125–200%, 360 at 100%); the break dropped with `git stash push` (app.css back to the commit). Note: the throwaway stash entry "f76-deliberate-break-proof-red" is still in the stash list (dropping it was refused by the permission check) — safe to drop.
 - F76 task 4 — B005 → Fixed in BUGS.md (Guarded by: e2e/text-size.mjs); the kit-side causes → STATE ▶ RESUME HERE note for the framework session.
 - Muzzy 2026-11-01: (F76) the gear beside the GOOPS logo at every Text size — "yes" · (F72) pinch zoom — "keep it off" → TDD D34; index.html already has it off (no change).
+- F76 task 5 (monitor lift): text-size 1540 ✓ (shots: 390x844 100% + 200% — the periscope goggles fully in view under the hint; a lesson line still hangs low for room), first-day 143/143, lessons + ending PASS, check:fast exit 0.
