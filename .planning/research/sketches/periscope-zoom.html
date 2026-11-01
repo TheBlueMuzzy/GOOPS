@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- /sketch starter (BMUZ). The planner's Sketches tab uses the title as the tab name and the description as its blurb. -->
+<title>S13: Periscope zoom</title>
+<meta name="description" content="F56 (2026-11-01): pulling the periscope down — A zooms into its goggles until the lens is the tank, B does the same and shows the tank live and small in the goggles at the console, C is today's slide. Pull it down and back up (buttons, arrow keys or a swipe) and ask: does it feel like looking into the periscope?">
+<style>
+  :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
+    font-family: system-ui, -apple-system, Segoe UI, sans-serif; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  .bar { position: fixed; left: 0; right: 0; margin: 0 auto; max-width: 560px; box-sizing: border-box;
+    display: flex; gap: 8px; align-items: center; padding: 10px 16px; z-index: 2; }
+  #top { top: 0; padding-top: max(10px, env(safe-area-inset-top)); }
+  #bottom { bottom: 0; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  button { flex: 1; min-height: 40px; padding: 0 6px; border-radius: 12px; border: 1px solid var(--line);
+    background: #0b1224d9; color: var(--ink); font: 600 14px system-ui, sans-serif; touch-action: manipulation; cursor: pointer; }
+  button:active { background: var(--line); }
+  button.on { border-color: var(--accent); color: #e9d5ff; }
+  button:disabled { opacity: .4; cursor: default; }
+  #bottom button { min-height: 56px; font-size: 17px; }
+  #fps { flex: 0 0 64px; font: 700 13px ui-monospace, monospace; color: #4ade80; }
+  /* Knobs: beside the view on a wide screen (Muzzy tunes on the PC), a bottom sheet on a phone. Never over the view. */
+  #panel { position: fixed; z-index: 3; display: none; box-sizing: border-box; background: var(--panel); overflow-y: auto; }
+  #panel.open { display: block; }
+  body.side #panel { top: 0; bottom: 0; right: 0; width: 300px; border-left: 1px solid var(--line); padding: max(16px, env(safe-area-inset-top)) 16px 16px; }
+  body.side .bar { right: 300px; }
+  body.sheet #panel { left: 0; right: 0; bottom: 0; max-height: 40vh; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  body.sheet #bottom { bottom: var(--sheet, 0px); padding-bottom: 8px; }
+  #panel h4 { margin: 6px 0 2px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+  #panel label { display: flex; align-items: center; gap: 10px; font-size: 13px; margin: 6px 0; }
+  #panel label span { flex: 0 0 84px; }
+  #panel input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+  /* the value box: type any number, even past the slider's ends (the slider then sits at its end, the box turns amber) */
+  #panel input.num { flex: 0 0 52px; width: 52px; box-sizing: border-box; padding: 3px 4px; text-align: right; font: 600 12px ui-monospace, monospace;
+    color: #94a3b8; background: #0b1224; border: 1px solid var(--line); border-radius: 6px; -moz-appearance: textfield; }
+  #panel input.num::-webkit-inner-spin-button, #panel input.num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  #panel input.num:focus { outline: none; border-color: var(--accent); color: var(--ink); }
+  #panel input.num.over { color: #fbbf24; border-color: #fbbf2480; }
+  #panel .help { margin: -4px 0 8px; font-size: 11px; line-height: 1.35; color: var(--dim); }
+  #presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 10px; }
+  #presets button, #bCopy { flex: 0 0 auto; min-height: 32px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
+  #presets .pw { display: inline-flex; }
+  #presets .pw button { border-radius: 10px 0 0 10px; }
+  #presets .pw i { display: flex; align-items: center; padding: 0 8px; border: 1px solid var(--line); border-left: 0;
+    border-radius: 0 10px 10px 0; color: var(--dim); font-style: normal; cursor: pointer; }
+  #presets .pw i:hover { color: #fca5a5; }
+  #presets .add { border-style: dashed; color: #94a3b8; }
+  #bCopy { display: block; margin-top: 10px; width: 100%; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="bar" id="top">
+  <div id="fps">-- fps</div>
+  <button id="bReset">Reset</button><button id="bKnobs">Knobs</button>
+</div>
+<div id="panel"></div>
+<div class="bar" id="bottom">
+  <button id="bPull">Pull the periscope ↓</button><button id="bBack">Back to the console ↑</button>
+</div>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. Default = look B. =====
+const GOO = {
+  style: 1,         // 0 = A zoom into the goggles · 1 = B A + the tank live in the goggles · 2 = C today's slide
+  pullMs: 450,      // the periscope's glide down (and back up)
+  zoom: 1.8,        // A/B: how big the lens ends up, in screen heights (≥ ~1.5 = the lens covers the whole screen)
+  zoomMs: 750,      // the switch to the tank: the zoom in (A/B) or the slide away (C)
+  backMs: 600,      // the switch back to the console: zoom out (A/B) or slide up (C)
+  ease: 3,          // ease-in-out power: 1 = constant speed, 5 = slow start and end, fast middle
+  glassFade: 0.4,   // A/B: share of the zoom by which the painted glass has turned into the tank
+  lensTank: 1.6,    // B: how big the tank looks in the goggles at the console (1 = the true size for this zoom)
+};
+const GLASS_TINT = 0.35;   // B: how much of the painted glass stays over the tank in the goggles at the console
+// [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
+const KNOBS = [['Look'], ['style', 0, 2, 1], ['zoom', 0.6, 4, 0.1], ['glassFade', 0.05, 1, 0.05], ['lensTank', 0.5, 4, 0.1],
+  ['Timing'], ['pullMs', 100, 1500, 25], ['zoomMs', 150, 2000, 25], ['backMs', 150, 2000, 25], ['ease', 1, 5, 0.1]];
+// One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
+const KNOB_HELP = {
+  style: '0 = A: zoom into the goggles. 1 = B: A + the tank plays small in the goggles at the console. 2 = C: today\'s slide down.',
+  zoom: 'A/B: how far it zooms in. Low = the frame is still on screen at the end and it fades away; high = it dives deep into the lens.',
+  glassFade: 'A/B: how soon the dark painted glass turns see-through during the zoom. Low = you see the tank at once; 1 = only at the end.',
+  lensTank: 'B: how big the tank looks inside the goggles at the console. Watch the goggles before you pull.',
+  pullMs: 'How long the periscope takes to glide down (and back up). Watch the periscope.',
+  zoomMs: 'How long the zoom in (A/B) or the slide away (C) takes after the periscope lands.',
+  backMs: 'How long the way back (zoom out / slide up) takes.',
+  ease: 'How the zoom and slides speed up and slow down. 1 = mechanical, steady; 3–5 = a soft start and a soft landing.',
+};
+
+// ===== The art: Muzzy's console, inlined (public/art/*.svg, made by art-prep from Example1.svg). Rebuilt by the
+// scratch script ~/Documents/dev/.scratch/goops-s13/inline-art.mjs — the periscope comes without its two glass shapes
+// (cls-61, cls-70): the sketch paints them itself so it can fade them and put the tank behind them. =====
+/*ART:start*/const ART = {"body":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"16.69 1057.15 614.13 808.21\" width=\"614.13\" height=\"808.21\"> <defs> <style> .cls-1 { fill: #f6f081; } .cls-2 { fill: #35385b; } .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 { fill-rule: evenodd; } .cls-17 { fill: #2a2d47; } .cls-18 { letter-spacing: -.05em; } .cls-19 { letter-spacing: .01em; } .cls-20 { letter-spacing: .02em; } .cls-21 { fill: #cb8abc; } .cls-22 { fill: #fff; } .cls-23 { letter-spacing: .02em; } .cls-24 { letter-spacing: 0em; } .cls-25 { fill: #d36b28; } .cls-3 { fill: #4c833c; } .cls-26 { fill: #eebfc5; } .cls-27, .cls-28 { fill: #6acbda; } .cls-27, .cls-29 { font-family: AmazonEmber-Heavy, 'Amazon Ember'; font-weight: 800; } .cls-27, .cls-30 { font-size: 34.88px; } .cls-31 { letter-spacing: -.06em; } .cls-32, .cls-4, .cls-33 { fill: #59acae; } .cls-34 { letter-spacing: .04em; } .cls-35 { letter-spacing: -.02em; } .cls-36 { letter-spacing: .02em; } .cls-37, .cls-13 { fill: none; } .cls-38 { letter-spacing: .02em; } .cls-39, .cls-30 { fill: #ffd92b; } .cls-40 { letter-spacing: .03em; } .cls-41 { letter-spacing: 0em; } .cls-5, .cls-42 { fill: #45486c; } .cls-43 { letter-spacing: -.05em; } .cls-44 { letter-spacing: -.06em; } .cls-45 { letter-spacing: .03em; } .cls-6 { fill: #474871; } .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 { font-family: AmazonEmber-Regular, 'Amazon Ember'; } .cls-28, .cls-42 { font-size: 20.93px; } .cls-49 { letter-spacing: 0em; } .cls-50 { letter-spacing: .02em; } .cls-51 { fill: #1f1f38; } .cls-52 { letter-spacing: -.04em; } .cls-7 { fill: #616a79; } .cls-53 { letter-spacing: -.02em; } .cls-8 { fill: #803d83; } .cls-54 { fill: #0d1a19; } .cls-9, .cls-47, .cls-48 { fill: #aad9d9; } .cls-55 { letter-spacing: .02em; } .cls-56 { fill: #f2a743; } .cls-10, .cls-15 { fill: #d8672b; } .cls-11 { fill: #231f20; } .cls-47 { font-size: 19.19px; } .cls-57 { letter-spacing: -.02em; } .cls-12 { fill: #0f1829; } .cls-58 { font-size: 62.79px; } .cls-58, .cls-59 { fill: #5bbc70; } .cls-58, .cls-60 { font-family: FromWhereYouAre, 'From Where You Are'; } .cls-13 { stroke: #1d1d3a; stroke-miterlimit: 10; stroke-width: 5px; } .cls-61 { fill: #0b1c3f; } .cls-62 { letter-spacing: -.04em; } .cls-63 { letter-spacing: .01em; } .cls-64 { letter-spacing: .01em; } .cls-65 { letter-spacing: .05em; } .cls-14 { fill: #3d8380; } .cls-66 { letter-spacing: .02em; } .cls-15 { opacity: .25; } .cls-33 { font-size: 17.44px; } .cls-67 { fill: #087962; } .cls-68 { letter-spacing: -.03em; } .cls-30 { font-family: AmazonEmber-Bold, 'Amazon Ember'; font-weight: 700; } .cls-60 { fill: #f1a941; font-size: 29.65px; } .cls-69 { letter-spacing: .03em; } .cls-70 { fill: #373a60; } .cls-16 { fill: #f8aaa1; } .cls-48 { font-size: 15.7px; } .cls-71 { fill: #96d7dd; } .cls-72 { letter-spacing: .02em; } .cls-73 { letter-spacing: -.05em; } </style> </defs> <g id=\"Console_Base\" data-name=\"Console Base\"> <polygon class=\"cls-12\" points=\"42.37 1807.1 54.73 1865.36 592.78 1865.36 605.14 1807.1 42.37 1807.1\"/> <path class=\"cls-7\" d=\"M615.77,1807.1l14.87-84.85c.65-3.69-2.19-7.08-5.94-7.08H22.81c-3.75,0-6.59,3.38-5.94,7.08l14.87,84.85h584.04Z\"/> <path class=\"cls-4\" d=\"M583.65,1441.46H63.86l-47.08,283.09c-.6,3.61,2,6.92,5.44,6.92h603.07c3.44,0,6.04-3.31,5.44-6.92l-47.08-283.09Z\"/> </g> <g id=\"Console_Back\" data-name=\"Console Back\"> <path class=\"cls-7\" d=\"M614.41,1089.7H33.1c-9.26,0-16.32,7.55-15.79,16.86l18.54,321.98c.39,6.78,5.81,12.28,12.11,12.28h551.59c6.3,0,11.72-5.5,12.11-12.28l18.54-321.98c.54-9.31-6.53-16.86-15.79-16.86Z\"/> <path class=\"cls-9\" d=\"M622.02,1094.35H25.49c-3.37,0-5.34-4.05-3.17-6.52l18.06-20.52c5.74-6.49,14.04-10.16,22.94-10.16h520.89c8.89,0,17.2,3.68,22.94,10.16l18.06,20.52c2.17,2.47.19,6.52-3.17,6.52Z\"/> <path class=\"cls-13\" d=\"M592.7,1378.03c-1.16,21.83-18.62,39.53-38.99,39.53H93.79c-20.37,0-37.82-17.7-38.99-39.53l-11.76-220.89c-1.16-21.83,15.4-39.53,36.98-39.53h487.46c21.59,0,38.15,17.7,36.98,39.53l-11.76,220.89Z\"/> <path class=\"cls-2\" d=\"M567.48,1117.6H80.03c-21.59,0-38.15,17.7-36.98,39.53l11.76,220.89c1.16,21.83,18.62,39.53,38.99,39.53h459.93c20.37,0,37.82-17.7,38.99-39.53l11.76-220.89c1.16-21.83-15.4-39.53-36.98-39.53Z\"/> <path class=\"cls-6\" d=\"M566.84,1131.56H80.67c-21.53,0-38.04,17.7-36.88,39.53l11.02,206.94c1.16,21.83,18.62,39.53,38.99,39.53h459.93c20.37,0,37.82-17.7,38.99-39.53l11.02-206.94c1.16-21.83-15.35-39.53-36.88-39.53Z\"/> </g> </svg> ","meter":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"81.41 1138.58 487.02 66.4\" width=\"487.02\" height=\"66.4\"> <defs> <style> .cls-1 { fill: #f6f081; } .cls-2 { fill: #35385b; } .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 { fill-rule: evenodd; } .cls-17 { fill: #2a2d47; } .cls-18 { letter-spacing: -.05em; } .cls-19 { letter-spacing: .01em; } .cls-20 { letter-spacing: .02em; } .cls-21 { fill: #cb8abc; } .cls-22 { fill: #fff; } .cls-23 { letter-spacing: .02em; } .cls-24 { letter-spacing: 0em; } .cls-25 { fill: #d36b28; } .cls-3 { fill: #4c833c; } .cls-26 { fill: #eebfc5; } .cls-27, .cls-28 { fill: #6acbda; } .cls-27, .cls-29 { font-family: AmazonEmber-Heavy, 'Amazon Ember'; font-weight: 800; } .cls-27, .cls-30 { font-size: 34.88px; } .cls-31 { letter-spacing: -.06em; } .cls-32, .cls-4, .cls-33 { fill: #59acae; } .cls-34 { letter-spacing: .04em; } .cls-35 { letter-spacing: -.02em; } .cls-36 { letter-spacing: .02em; } .cls-37, .cls-13 { fill: none; } .cls-38 { letter-spacing: .02em; } .cls-39, .cls-30 { fill: #ffd92b; } .cls-40 { letter-spacing: .03em; } .cls-41 { letter-spacing: 0em; } .cls-5, .cls-42 { fill: #45486c; } .cls-43 { letter-spacing: -.05em; } .cls-44 { letter-spacing: -.06em; } .cls-45 { letter-spacing: .03em; } .cls-6 { fill: #474871; } .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 { font-family: AmazonEmber-Regular, 'Amazon Ember'; } .cls-28, .cls-42 { font-size: 20.93px; } .cls-49 { letter-spacing: 0em; } .cls-50 { letter-spacing: .02em; } .cls-51 { fill: #1f1f38; } .cls-52 { letter-spacing: -.04em; } .cls-7 { fill: #616a79; } .cls-53 { letter-spacing: -.02em; } .cls-8 { fill: #803d83; } .cls-54 { fill: #0d1a19; } .cls-9, .cls-47, .cls-48 { fill: #aad9d9; } .cls-55 { letter-spacing: .02em; } .cls-56 { fill: #f2a743; } .cls-10, .cls-15 { fill: #d8672b; } .cls-11 { fill: #231f20; } .cls-47 { font-size: 19.19px; } .cls-57 { letter-spacing: -.02em; } .cls-12 { fill: #0f1829; } .cls-58 { font-size: 62.79px; } .cls-58, .cls-59 { fill: #5bbc70; } .cls-58, .cls-60 { font-family: FromWhereYouAre, 'From Where You Are'; } .cls-13 { stroke: #1d1d3a; stroke-miterlimit: 10; stroke-width: 5px; } .cls-61 { fill: #0b1c3f; } .cls-62 { letter-spacing: -.04em; } .cls-63 { letter-spacing: .01em; } .cls-64 { letter-spacing: .01em; } .cls-65 { letter-spacing: .05em; } .cls-14 { fill: #3d8380; } .cls-66 { letter-spacing: .02em; } .cls-15 { opacity: .25; } .cls-33 { font-size: 17.44px; } .cls-67 { fill: #087962; } .cls-68 { letter-spacing: -.03em; } .cls-30 { font-family: AmazonEmber-Bold, 'Amazon Ember'; font-weight: 700; } .cls-60 { fill: #f1a941; font-size: 29.65px; } .cls-69 { letter-spacing: .03em; } .cls-70 { fill: #373a60; } .cls-16 { fill: #f8aaa1; } .cls-48 { font-size: 15.7px; } .cls-71 { fill: #96d7dd; } .cls-72 { letter-spacing: .02em; } .cls-73 { letter-spacing: -.05em; } </style> </defs> <g id=\"Operator_Rank_-_meter\" data-name=\"Operator Rank - meter\"> <path class=\"cls-59\" d=\"M558.05,1204.98H91.79c-5.73,0-10.38-4.66-10.38-10.38s4.66-10.38,10.38-10.38h466.26c5.73,0,10.38,4.66,10.38,10.38s-4.66,10.38-10.38,10.38ZM91.79,1185.21c-5.17,0-9.38,4.21-9.38,9.38s4.21,9.38,9.38,9.38h466.26c5.17,0,9.38-4.21,9.38-9.38s-4.21-9.38-9.38-9.38H91.79Z\"/> </g> </svg> ","laser":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"67.86 1239.78 516.75 141.42\" width=\"516.75\" height=\"141.42\"> <defs> <style> .cls-1 { fill: #f6f081; } .cls-2 { fill: #35385b; } .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 { fill-rule: evenodd; } .cls-17 { fill: #2a2d47; } .cls-18 { letter-spacing: -.05em; } .cls-19 { letter-spacing: .01em; } .cls-20 { letter-spacing: .02em; } .cls-21 { fill: #cb8abc; } .cls-22 { fill: #fff; } .cls-23 { letter-spacing: .02em; } .cls-24 { letter-spacing: 0em; } .cls-25 { fill: #d36b28; } .cls-3 { fill: #4c833c; } .cls-26 { fill: #eebfc5; } .cls-27, .cls-28 { fill: #6acbda; } .cls-27, .cls-29 { font-family: AmazonEmber-Heavy, 'Amazon Ember'; font-weight: 800; } .cls-27, .cls-30 { font-size: 34.88px; } .cls-31 { letter-spacing: -.06em; } .cls-32, .cls-4, .cls-33 { fill: #59acae; } .cls-34 { letter-spacing: .04em; } .cls-35 { letter-spacing: -.02em; } .cls-36 { letter-spacing: .02em; } .cls-37, .cls-13 { fill: none; } .cls-38 { letter-spacing: .02em; } .cls-39, .cls-30 { fill: #ffd92b; } .cls-40 { letter-spacing: .03em; } .cls-41 { letter-spacing: 0em; } .cls-5, .cls-42 { fill: #45486c; } .cls-43 { letter-spacing: -.05em; } .cls-44 { letter-spacing: -.06em; } .cls-45 { letter-spacing: .03em; } .cls-6 { fill: #474871; } .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 { font-family: AmazonEmber-Regular, 'Amazon Ember'; } .cls-28, .cls-42 { font-size: 20.93px; } .cls-49 { letter-spacing: 0em; } .cls-50 { letter-spacing: .02em; } .cls-51 { fill: #1f1f38; } .cls-52 { letter-spacing: -.04em; } .cls-7 { fill: #616a79; } .cls-53 { letter-spacing: -.02em; } .cls-8 { fill: #803d83; } .cls-54 { fill: #0d1a19; } .cls-9, .cls-47, .cls-48 { fill: #aad9d9; } .cls-55 { letter-spacing: .02em; } .cls-56 { fill: #f2a743; } .cls-10, .cls-15 { fill: #d8672b; } .cls-11 { fill: #231f20; } .cls-47 { font-size: 19.19px; } .cls-57 { letter-spacing: -.02em; } .cls-12 { fill: #0f1829; } .cls-58 { font-size: 62.79px; } .cls-58, .cls-59 { fill: #5bbc70; } .cls-58, .cls-60 { font-family: FromWhereYouAre, 'From Where You Are'; } .cls-13 { stroke: #1d1d3a; stroke-miterlimit: 10; stroke-width: 5px; } .cls-61 { fill: #0b1c3f; } .cls-62 { letter-spacing: -.04em; } .cls-63 { letter-spacing: .01em; } .cls-64 { letter-spacing: .01em; } .cls-65 { letter-spacing: .05em; } .cls-14 { fill: #3d8380; } .cls-66 { letter-spacing: .02em; } .cls-15 { opacity: .25; } .cls-33 { font-size: 17.44px; } .cls-67 { fill: #087962; } .cls-68 { letter-spacing: -.03em; } .cls-30 { font-family: AmazonEmber-Bold, 'Amazon Ember'; font-weight: 700; } .cls-60 { fill: #f1a941; font-size: 29.65px; } .cls-69 { letter-spacing: .03em; } .cls-70 { fill: #373a60; } .cls-16 { fill: #f8aaa1; } .cls-48 { font-size: 15.7px; } .cls-71 { fill: #96d7dd; } .cls-72 { letter-spacing: .02em; } .cls-73 { letter-spacing: -.05em; } </style> </defs> <g id=\"Reset_Laser\" data-name=\"Reset Laser\"> <rect class=\"cls-26\" x=\"164.67\" y=\"1177.11\" width=\"50.51\" height=\"175.86\" rx=\"6.92\" ry=\"6.92\" transform=\"translate(1454.97 1075.12) rotate(90)\"/> <path class=\"cls-16\" d=\"M175.19,1290.3h-4.24l-18.69-18.69c-3.62-3.62-3.62-9.52,0-13.14l18.69-18.69h4.24l-20.81,20.81c-2.45,2.45-2.45,6.44,0,8.89l20.81,20.81ZM128.79,1269.49c-2.45-2.45-2.45-6.44,0-8.89l20.81-20.81h-4.24l-18.69,18.69c-1.75,1.75-2.72,4.09-2.72,6.57s.97,4.81,2.72,6.57l18.69,18.69h4.24l-20.81-20.81ZM124.92,1239.79h-4.24l-18.68,18.68v13.15l18.68,18.68h4.24l-20.81-20.81c-2.45-2.45-2.45-6.44,0-8.89l20.81-20.81ZM252.69,1271.61c3.62-3.62,3.62-9.52,0-13.14l-18.69-18.69h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.69-18.69ZM204.16,1290.3h4.24l18.69-18.69c1.75-1.75,2.72-4.09,2.72-6.57s-.97-4.81-2.72-6.57l-18.69-18.69h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81ZM277.36,1271.61c.17-.17.33-.36.49-.54v-12.05c-.16-.19-.32-.37-.49-.54l-18.69-18.69h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.69-18.69Z\"/> <rect class=\"cls-26\" x=\"164.67\" y=\"1267.99\" width=\"50.51\" height=\"175.86\" rx=\"6.92\" ry=\"6.92\" transform=\"translate(1545.85 1166) rotate(90)\"/> <path class=\"cls-16\" d=\"M149.6,1381.18h-4.24l-18.69-18.69c-1.75-1.75-2.72-4.09-2.72-6.57s.97-4.81,2.72-6.57l18.69-18.69h4.24l-20.81,20.81c-2.45,2.45-2.45,6.44,0,8.89l20.81,20.81ZM154.38,1360.37c-2.45-2.45-2.45-6.44,0-8.89l20.81-20.81h-4.24l-18.69,18.69c-3.62,3.62-3.62,9.52,0,13.14l18.69,18.69h4.24l-20.81-20.81ZM124.92,1330.67h-4.24l-18.68,18.68v13.15l18.68,18.68h4.24l-20.81-20.81c-2.45-2.45-2.45-6.44,0-8.89l20.81-20.81ZM277.36,1362.49c.18-.18.34-.36.49-.55v-12.04c-.16-.19-.32-.37-.49-.55l-18.69-18.69h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.69-18.69ZM204.16,1381.18h4.24l18.69-18.69c3.62-3.62,3.62-9.52,0-13.14l-18.69-18.69h-4.24l20.81,20.81c1.19,1.19,1.84,2.77,1.84,4.45s-.65,3.26-1.84,4.45l-20.81,20.81ZM252.69,1362.49c3.62-3.62,3.62-9.52,0-13.14l-18.69-18.69h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.69-18.69Z\"/> <rect class=\"cls-26\" x=\"437.27\" y=\"1177.11\" width=\"50.51\" height=\"175.86\" rx=\"6.92\" ry=\"6.92\" transform=\"translate(1727.57 802.52) rotate(90)\"/> <path class=\"cls-16\" d=\"M448.28,1290.3h-4.24l-18.69-18.69c-3.62-3.62-3.62-9.52,0-13.14l18.69-18.69h4.24l-20.81,20.81c-1.19,1.19-1.84,2.77-1.84,4.45s.65,3.26,1.84,4.45l20.81,20.81ZM401.89,1269.49c-2.45-2.45-2.45-6.44,0-8.89l20.81-20.81h-4.24l-18.69,18.69c-1.75,1.75-2.72,4.09-2.72,6.57s.97,4.81,2.72,6.57l18.69,18.69h4.24l-20.81-20.81ZM398.02,1239.79h-4.24l-18.69,18.69c-.18.18-.33.36-.49.55v12.05c.16.19.32.37.49.55l18.69,18.69h4.24l-20.81-20.81c-2.45-2.45-2.45-6.44,0-8.89l20.81-20.81ZM477.26,1290.3h4.24l18.69-18.69c3.62-3.62,3.62-9.52,0-13.14l-18.69-18.69h-4.24l20.81,20.81c1.19,1.19,1.84,2.77,1.84,4.45s-.65,3.26-1.84,4.45l-20.81,20.81ZM525.78,1271.61c3.62-3.62,3.62-9.51,0-13.14l-18.69-18.69h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.69-18.69ZM550.45,1271.62v-13.15l-18.68-18.68h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.68-18.68Z\"/> <rect class=\"cls-26\" x=\"437.27\" y=\"1267.99\" width=\"50.51\" height=\"175.86\" rx=\"6.92\" ry=\"6.92\" transform=\"translate(1818.45 893.4) rotate(90)\"/> <path class=\"cls-16\" d=\"M422.69,1381.18h-4.24l-18.69-18.69c-1.75-1.75-2.72-4.09-2.72-6.57s.97-4.81,2.72-6.57l18.69-18.69h4.24l-20.81,20.81c-2.45,2.45-2.45,6.44,0,8.89l20.81,20.81ZM427.48,1360.37c-1.19-1.19-1.84-2.77-1.84-4.45s.65-3.26,1.84-4.45l20.81-20.81h-4.24l-18.69,18.69c-3.62,3.62-3.62,9.52,0,13.14l18.69,18.69h4.24l-20.81-20.81ZM398.02,1330.67h-4.24l-18.69,18.69c-.18.18-.33.36-.49.55v12.05c.16.19.32.37.49.55l18.69,18.69h4.24l-20.81-20.81c-2.45-2.45-2.45-6.44,0-8.89l20.81-20.81ZM550.45,1362.5v-13.15l-18.68-18.68h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.68-18.68ZM525.78,1362.49c3.62-3.62,3.62-9.51,0-13.14l-18.69-18.69h-4.24l20.81,20.81c2.45,2.45,2.45,6.44,0,8.89l-20.81,20.81h4.24l18.69-18.69ZM477.26,1381.18h4.24l18.69-18.69c3.62-3.62,3.62-9.52,0-13.14l-18.69-18.69h-4.24l20.81,20.81c1.19,1.19,1.84,2.77,1.84,4.45s-.65,3.26-1.84,4.45l-20.81,20.81Z\"/> </g> </svg> ","controls":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"74.36 1450.93 243.08 273.92\" width=\"243.08\" height=\"273.92\"> <defs> <style> .cls-1 { fill: #f6f081; } .cls-2 { fill: #35385b; } .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 { fill-rule: evenodd; } .cls-17 { fill: #2a2d47; } .cls-18 { letter-spacing: -.05em; } .cls-19 { letter-spacing: .01em; } .cls-20 { letter-spacing: .02em; } .cls-21 { fill: #cb8abc; } .cls-22 { fill: #fff; } .cls-23 { letter-spacing: .02em; } .cls-24 { letter-spacing: 0em; } .cls-25 { fill: #d36b28; } .cls-3 { fill: #4c833c; } .cls-26 { fill: #eebfc5; } .cls-27, .cls-28 { fill: #6acbda; } .cls-27, .cls-29 { font-family: AmazonEmber-Heavy, 'Amazon Ember'; font-weight: 800; } .cls-27, .cls-30 { font-size: 34.88px; } .cls-31 { letter-spacing: -.06em; } .cls-32, .cls-4, .cls-33 { fill: #59acae; } .cls-34 { letter-spacing: .04em; } .cls-35 { letter-spacing: -.02em; } .cls-36 { letter-spacing: .02em; } .cls-37, .cls-13 { fill: none; } .cls-38 { letter-spacing: .02em; } .cls-39, .cls-30 { fill: #ffd92b; } .cls-40 { letter-spacing: .03em; } .cls-41 { letter-spacing: 0em; } .cls-5, .cls-42 { fill: #45486c; } .cls-43 { letter-spacing: -.05em; } .cls-44 { letter-spacing: -.06em; } .cls-45 { letter-spacing: .03em; } .cls-6 { fill: #474871; } .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 { font-family: AmazonEmber-Regular, 'Amazon Ember'; } .cls-28, .cls-42 { font-size: 20.93px; } .cls-49 { letter-spacing: 0em; } .cls-50 { letter-spacing: .02em; } .cls-51 { fill: #1f1f38; } .cls-52 { letter-spacing: -.04em; } .cls-7 { fill: #616a79; } .cls-53 { letter-spacing: -.02em; } .cls-8 { fill: #803d83; } .cls-54 { fill: #0d1a19; } .cls-9, .cls-47, .cls-48 { fill: #aad9d9; } .cls-55 { letter-spacing: .02em; } .cls-56 { fill: #f2a743; } .cls-10, .cls-15 { fill: #d8672b; } .cls-11 { fill: #231f20; } .cls-47 { font-size: 19.19px; } .cls-57 { letter-spacing: -.02em; } .cls-12 { fill: #0f1829; } .cls-58 { font-size: 62.79px; } .cls-58, .cls-59 { fill: #5bbc70; } .cls-58, .cls-60 { font-family: FromWhereYouAre, 'From Where You Are'; } .cls-13 { stroke: #1d1d3a; stroke-miterlimit: 10; stroke-width: 5px; } .cls-61 { fill: #0b1c3f; } .cls-62 { letter-spacing: -.04em; } .cls-63 { letter-spacing: .01em; } .cls-64 { letter-spacing: .01em; } .cls-65 { letter-spacing: .05em; } .cls-14 { fill: #3d8380; } .cls-66 { letter-spacing: .02em; } .cls-15 { opacity: .25; } .cls-33 { font-size: 17.44px; } .cls-67 { fill: #087962; } .cls-68 { letter-spacing: -.03em; } .cls-30 { font-family: AmazonEmber-Bold, 'Amazon Ember'; font-weight: 700; } .cls-60 { fill: #f1a941; font-size: 29.65px; } .cls-69 { letter-spacing: .03em; } .cls-70 { fill: #373a60; } .cls-16 { fill: #f8aaa1; } .cls-48 { font-size: 15.7px; } .cls-71 { fill: #96d7dd; } .cls-72 { letter-spacing: .02em; } .cls-73 { letter-spacing: -.05em; } </style> </defs> <g id=\"Reset_Controls\" data-name=\"Reset Controls\"> <path class=\"cls-5\" d=\"M290.21,1663.73c10.78-17.3,17.01-37.73,17.01-59.61,0-23.97-7.48-46.2-20.22-64.48,7.77-.06,15.53-3.05,21.46-8.98,11.98-11.98,11.98-31.4,0-43.37-1.9-1.9-3.99-3.5-6.21-4.8-.5-17.51-14.85-31.56-32.48-31.56H121.34c-17.78,0-32.22,14.28-32.49,32-1.95,1.22-3.81,2.66-5.5,4.36-11.98,11.98-11.98,31.4,0,43.37,5.16,5.16,11.69,8.09,18.42,8.8-12.82,18.31-20.34,40.6-20.34,64.65,0,22.08,6.34,42.67,17.3,60.07-5.63,1.18-11,3.95-15.38,8.32-11.98,11.98-11.98,31.4,0,43.37,11.98,11.98,31.4,11.98,43.37,0,4.44-4.44,7.23-9.91,8.38-15.64,17.22,10.63,37.5,16.77,59.22,16.77,22.93,0,44.26-6.84,62.07-18.59.88,6.39,3.78,12.55,8.69,17.46,11.98,11.98,31.4,11.98,43.37,0,11.98-11.98,11.98-31.4,0-43.37-5.11-5.11-11.58-8.03-18.24-8.78Z\"/> <circle class=\"cls-54\" cx=\"194.32\" cy=\"1604.12\" r=\"97.6\"/> <g> </g> </g> </svg> ","lights":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"341.17 1452.22 267.53 267.9\" width=\"267.53\" height=\"267.9\"> <defs> <style> .cls-1 { fill: #f6f081; } .cls-2 { fill: #35385b; } .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 { fill-rule: evenodd; } .cls-17 { fill: #2a2d47; } .cls-18 { letter-spacing: -.05em; } .cls-19 { letter-spacing: .01em; } .cls-20 { letter-spacing: .02em; } .cls-21 { fill: #cb8abc; } .cls-22 { fill: #fff; } .cls-23 { letter-spacing: .02em; } .cls-24 { letter-spacing: 0em; } .cls-25 { fill: #d36b28; } .cls-3 { fill: #4c833c; } .cls-26 { fill: #eebfc5; } .cls-27, .cls-28 { fill: #6acbda; } .cls-27, .cls-29 { font-family: AmazonEmber-Heavy, 'Amazon Ember'; font-weight: 800; } .cls-27, .cls-30 { font-size: 34.88px; } .cls-31 { letter-spacing: -.06em; } .cls-32, .cls-4, .cls-33 { fill: #59acae; } .cls-34 { letter-spacing: .04em; } .cls-35 { letter-spacing: -.02em; } .cls-36 { letter-spacing: .02em; } .cls-37, .cls-13 { fill: none; } .cls-38 { letter-spacing: .02em; } .cls-39, .cls-30 { fill: #ffd92b; } .cls-40 { letter-spacing: .03em; } .cls-41 { letter-spacing: 0em; } .cls-5, .cls-42 { fill: #45486c; } .cls-43 { letter-spacing: -.05em; } .cls-44 { letter-spacing: -.06em; } .cls-45 { letter-spacing: .03em; } .cls-6 { fill: #474871; } .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 { font-family: AmazonEmber-Regular, 'Amazon Ember'; } .cls-28, .cls-42 { font-size: 20.93px; } .cls-49 { letter-spacing: 0em; } .cls-50 { letter-spacing: .02em; } .cls-51 { fill: #1f1f38; } .cls-52 { letter-spacing: -.04em; } .cls-7 { fill: #616a79; } .cls-53 { letter-spacing: -.02em; } .cls-8 { fill: #803d83; } .cls-54 { fill: #0d1a19; } .cls-9, .cls-47, .cls-48 { fill: #aad9d9; } .cls-55 { letter-spacing: .02em; } .cls-56 { fill: #f2a743; } .cls-10, .cls-15 { fill: #d8672b; } .cls-11 { fill: #231f20; } .cls-47 { font-size: 19.19px; } .cls-57 { letter-spacing: -.02em; } .cls-12 { fill: #0f1829; } .cls-58 { font-size: 62.79px; } .cls-58, .cls-59 { fill: #5bbc70; } .cls-58, .cls-60 { font-family: FromWhereYouAre, 'From Where You Are'; } .cls-13 { stroke: #1d1d3a; stroke-miterlimit: 10; stroke-width: 5px; } .cls-61 { fill: #0b1c3f; } .cls-62 { letter-spacing: -.04em; } .cls-63 { letter-spacing: .01em; } .cls-64 { letter-spacing: .01em; } .cls-65 { letter-spacing: .05em; } .cls-14 { fill: #3d8380; } .cls-66 { letter-spacing: .02em; } .cls-15 { opacity: .25; } .cls-33 { font-size: 17.44px; } .cls-67 { fill: #087962; } .cls-68 { letter-spacing: -.03em; } .cls-30 { font-family: AmazonEmber-Bold, 'Amazon Ember'; font-weight: 700; } .cls-60 { fill: #f1a941; font-size: 29.65px; } .cls-69 { letter-spacing: .03em; } .cls-70 { fill: #373a60; } .cls-16 { fill: #f8aaa1; } .cls-48 { font-size: 15.7px; } .cls-71 { fill: #96d7dd; } .cls-72 { letter-spacing: .02em; } .cls-73 { letter-spacing: -.05em; } </style> </defs> <g id=\"Reset_Lights\" data-name=\"Reset Lights\"> <polygon class=\"cls-5\" points=\"608.7 1720.12 341.17 1720.12 341.17 1452.22 564.14 1452.22 608.7 1720.12\"/> <g> </g> </g> </svg> ","periscope":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"22.36 496.8 603.66 640.08\" width=\"603.66\" height=\"640.08\"> <defs> <style> .cls-1 { fill: #f6f081; } .cls-2 { fill: #35385b; } .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 { fill-rule: evenodd; } .cls-17 { fill: #2a2d47; } .cls-18 { letter-spacing: -.05em; } .cls-19 { letter-spacing: .01em; } .cls-20 { letter-spacing: .02em; } .cls-21 { fill: #cb8abc; } .cls-22 { fill: #fff; } .cls-23 { letter-spacing: .02em; } .cls-24 { letter-spacing: 0em; } .cls-25 { fill: #d36b28; } .cls-3 { fill: #4c833c; } .cls-26 { fill: #eebfc5; } .cls-27, .cls-28 { fill: #6acbda; } .cls-27, .cls-29 { font-family: AmazonEmber-Heavy, 'Amazon Ember'; font-weight: 800; } .cls-27, .cls-30 { font-size: 34.88px; } .cls-31 { letter-spacing: -.06em; } .cls-32, .cls-4, .cls-33 { fill: #59acae; } .cls-34 { letter-spacing: .04em; } .cls-35 { letter-spacing: -.02em; } .cls-36 { letter-spacing: .02em; } .cls-37, .cls-13 { fill: none; } .cls-38 { letter-spacing: .02em; } .cls-39, .cls-30 { fill: #ffd92b; } .cls-40 { letter-spacing: .03em; } .cls-41 { letter-spacing: 0em; } .cls-5, .cls-42 { fill: #45486c; } .cls-43 { letter-spacing: -.05em; } .cls-44 { letter-spacing: -.06em; } .cls-45 { letter-spacing: .03em; } .cls-6 { fill: #474871; } .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 { font-family: AmazonEmber-Regular, 'Amazon Ember'; } .cls-28, .cls-42 { font-size: 20.93px; } .cls-49 { letter-spacing: 0em; } .cls-50 { letter-spacing: .02em; } .cls-51 { fill: #1f1f38; } .cls-52 { letter-spacing: -.04em; } .cls-7 { fill: #616a79; } .cls-53 { letter-spacing: -.02em; } .cls-8 { fill: #803d83; } .cls-54 { fill: #0d1a19; } .cls-9, .cls-47, .cls-48 { fill: #aad9d9; } .cls-55 { letter-spacing: .02em; } .cls-56 { fill: #f2a743; } .cls-10, .cls-15 { fill: #d8672b; } .cls-11 { fill: #231f20; } .cls-47 { font-size: 19.19px; } .cls-57 { letter-spacing: -.02em; } .cls-12 { fill: #0f1829; } .cls-58 { font-size: 62.79px; } .cls-58, .cls-59 { fill: #5bbc70; } .cls-58, .cls-60 { font-family: FromWhereYouAre, 'From Where You Are'; } .cls-13 { stroke: #1d1d3a; stroke-miterlimit: 10; stroke-width: 5px; } .cls-61 { fill: #0b1c3f; } .cls-62 { letter-spacing: -.04em; } .cls-63 { letter-spacing: .01em; } .cls-64 { letter-spacing: .01em; } .cls-65 { letter-spacing: .05em; } .cls-14 { fill: #3d8380; } .cls-66 { letter-spacing: .02em; } .cls-15 { opacity: .25; } .cls-33 { font-size: 17.44px; } .cls-67 { fill: #087962; } .cls-68 { letter-spacing: -.03em; } .cls-30 { font-family: AmazonEmber-Bold, 'Amazon Ember'; font-weight: 700; } .cls-60 { fill: #f1a941; font-size: 29.65px; } .cls-69 { letter-spacing: .03em; } .cls-70 { fill: #373a60; } .cls-16 { fill: #f8aaa1; } .cls-48 { font-size: 15.7px; } .cls-71 { fill: #96d7dd; } .cls-72 { letter-spacing: .02em; } .cls-73 { letter-spacing: -.05em; } </style> </defs> <g id=\"Periscope\"> <rect class=\"cls-67\" x=\"22.36\" y=\"978.45\" width=\"603.66\" height=\"51.13\" rx=\"11.03\" ry=\"11.03\"/> <path class=\"cls-67\" d=\"M251.82,496.8h138.35v615.18c0,13.74-11.16,24.9-24.9,24.9h-88.54c-13.74,0-24.9-11.16-24.9-24.9V496.8h0Z\"/> <path class=\"cls-59\" d=\"M252.54,1089.77c-23.25,0-45.07-9.09-61.45-25.59-16.38-16.5-25.3-38.39-25.13-61.64.35-47.38,39.59-85.92,87.47-85.92h138.58c23.99,0,46.29,9.59,62.81,26.99,16.51,17.4,24.9,40.21,23.64,64.23-2.4,45.72-40.19,81.7-86.02,81.93h-.44c-24.04,0-47.19-10.12-63.53-27.77-2.19-2.36-4.86-2.71-6.27-2.71s-3.96.34-6.05,2.61c-16.35,17.72-39.54,27.87-63.63,27.87Z\"/>   <path class=\"cls-22\" d=\"M340.39,1093.84v.79l-.25.79c-4.83,6.32-10.14,12.3-15.13,18.51-1.28,1.63-3.38,1.87-4.88.36l-15.52-17.83c-.48-.54-.78-1.12-.93-1.83.02-.25-.03-.54,0-.79.16-1.32,1.37-2.52,2.69-2.65h31.12c1.43.04,2.72,1.25,2.9,2.65ZM337.81,1104.84c-1.21,1.46-2.42,2.91-3.61,4.34-1.99,2.38-4.05,4.84-6.02,7.29-1.42,1.82-3.54,2.89-5.77,2.89-1.91,0-3.75-.78-5.16-2.21l-.09-.09-10.66-12.24h-.12c-1.32.13-2.53,1.34-2.69,2.65-.03.25.02.54,0,.79.16.71.45,1.28.93,1.83l15.52,17.83c1.5,1.51,3.6,1.28,4.88-.36,4.99-6.21,10.3-12.19,15.13-18.51l.25-.79v-.79c-.16-1.3-1.28-2.42-2.58-2.62Z\"/> </g> </svg> ","monitor":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"31.92 0 583.67 909.59\" width=\"583.67\" height=\"909.59\"> <defs> <style> .cls-1 { fill: #f6f081; } .cls-2 { fill: #35385b; } .cls-2, .cls-3, .cls-4, .cls-5, .cls-6, .cls-7, .cls-8, .cls-9, .cls-10, .cls-11, .cls-12, .cls-13, .cls-14, .cls-15, .cls-16 { fill-rule: evenodd; } .cls-17 { fill: #2a2d47; } .cls-18 { letter-spacing: -.05em; } .cls-19 { letter-spacing: .01em; } .cls-20 { letter-spacing: .02em; } .cls-21 { fill: #cb8abc; } .cls-22 { fill: #fff; } .cls-23 { letter-spacing: .02em; } .cls-24 { letter-spacing: 0em; } .cls-25 { fill: #d36b28; } .cls-3 { fill: #4c833c; } .cls-26 { fill: #eebfc5; } .cls-27, .cls-28 { fill: #6acbda; } .cls-27, .cls-29 { font-family: AmazonEmber-Heavy, 'Amazon Ember'; font-weight: 800; } .cls-27, .cls-30 { font-size: 34.88px; } .cls-31 { letter-spacing: -.06em; } .cls-32, .cls-4, .cls-33 { fill: #59acae; } .cls-34 { letter-spacing: .04em; } .cls-35 { letter-spacing: -.02em; } .cls-36 { letter-spacing: .02em; } .cls-37, .cls-13 { fill: none; } .cls-38 { letter-spacing: .02em; } .cls-39, .cls-30 { fill: #ffd92b; } .cls-40 { letter-spacing: .03em; } .cls-41 { letter-spacing: 0em; } .cls-5, .cls-42 { fill: #45486c; } .cls-43 { letter-spacing: -.05em; } .cls-44 { letter-spacing: -.06em; } .cls-45 { letter-spacing: .03em; } .cls-6 { fill: #474871; } .cls-28, .cls-46, .cls-47, .cls-42, .cls-48 { font-family: AmazonEmber-Regular, 'Amazon Ember'; } .cls-28, .cls-42 { font-size: 20.93px; } .cls-49 { letter-spacing: 0em; } .cls-50 { letter-spacing: .02em; } .cls-51 { fill: #1f1f38; } .cls-52 { letter-spacing: -.04em; } .cls-7 { fill: #616a79; } .cls-53 { letter-spacing: -.02em; } .cls-8 { fill: #803d83; } .cls-54 { fill: #0d1a19; } .cls-9, .cls-47, .cls-48 { fill: #aad9d9; } .cls-55 { letter-spacing: .02em; } .cls-56 { fill: #f2a743; } .cls-10, .cls-15 { fill: #d8672b; } .cls-11 { fill: #231f20; } .cls-47 { font-size: 19.19px; } .cls-57 { letter-spacing: -.02em; } .cls-12 { fill: #0f1829; } .cls-58 { font-size: 62.79px; } .cls-58, .cls-59 { fill: #5bbc70; } .cls-58, .cls-60 { font-family: FromWhereYouAre, 'From Where You Are'; } .cls-13 { stroke: #1d1d3a; stroke-miterlimit: 10; stroke-width: 5px; } .cls-61 { fill: #0b1c3f; } .cls-62 { letter-spacing: -.04em; } .cls-63 { letter-spacing: .01em; } .cls-64 { letter-spacing: .01em; } .cls-65 { letter-spacing: .05em; } .cls-14 { fill: #3d8380; } .cls-66 { letter-spacing: .02em; } .cls-15 { opacity: .25; } .cls-33 { font-size: 17.44px; } .cls-67 { fill: #087962; } .cls-68 { letter-spacing: -.03em; } .cls-30 { font-family: AmazonEmber-Bold, 'Amazon Ember'; font-weight: 700; } .cls-60 { fill: #f1a941; font-size: 29.65px; } .cls-69 { letter-spacing: .03em; } .cls-70 { fill: #373a60; } .cls-16 { fill: #f8aaa1; } .cls-48 { font-size: 15.7px; } .cls-71 { fill: #96d7dd; } .cls-72 { letter-spacing: .02em; } .cls-73 { letter-spacing: -.05em; } </style> </defs> <g id=\"Monitor\"> <path class=\"cls-56\" d=\"M48.78,32.56h549.95c9.31,0,16.86,7.55,16.86,16.86v847.89c0,6.78-5.5,12.28-12.28,12.28H44.2c-6.78,0-12.28-5.5-12.28-12.28V49.42c0-9.31,7.55-16.86,16.86-16.86Z\"/> <path class=\"cls-25\" d=\"M606.65,37.21H40.86c-3.39,0-5.14-4.05-2.82-6.52l19.25-20.52C63.38,3.68,71.87,0,80.77,0h485.98c8.89,0,17.39,3.68,23.47,10.16l19.25,20.52c2.32,2.47.57,6.52-2.82,6.52Z\"/> <rect class=\"cls-51\" x=\"55.17\" y=\"60.46\" width=\"537.16\" height=\"825.87\" rx=\"39.53\" ry=\"39.53\"/> <path class=\"cls-37\" d=\"M94.71,74.42h458.1c21.82,0,39.53,17.71,39.53,39.53v732.85c0,21.82-17.71,39.53-39.53,39.53H94.71c-21.82,0-39.53-17.71-39.53-39.53V113.95c0-21.82,17.71-39.53,39.53-39.53Z\"/> </g> </svg> "};/*ART:end*/
+
+// content/ui/art.json console — every number in the mock-up's units (Example1.svg, 648 wide)
+const VIEW = [0, 831, 648, 1046];   // the part of the mock-up that shows (monitor's bottom edge → footer)
+const LAYERS = [                     // in the game's order (src/ui/Console.tsx): panels, periscope, then the monitor over its stem
+  ['body', 16.69, 1057.15, 614.13, 808.21], ['meter', 81.41, 1138.58, 487.02, 66.4], ['laser', 67.86, 1239.78, 516.75, 141.42],
+  ['controls', 74.36, 1450.93, 243.08, 273.92], ['lights', 341.17, 1452.22, 267.53, 267.9]];
+const PERI = [22.36, 496.8, 603.66, 640.08], TRAVEL = 0.566 * 640.08;  // periscope box; it pulls down 56.6% of its height
+const MONITOR = [31.92, 0, 583.67, 909.59];
+const HINT = [72, 806, 504, 62], HINT_TEXT = 22;
+const BACKDROP = '#2a2d47';
+// The goggles' lens, from ConsolePeriscope.svg (its own units = the mock-up's: the file's viewBox starts at 22.36, 496.8).
+// Measured with getBBox (Chromium): outer glass (cls-61, #0b1c3f): x 181.25…463.30, y 931.91…1074.50 → centre (322.3, 1003.2),
+// 282.1 × 142.6 (two lobes; the nose notch rises from the bottom to y 1044 on the centre line). Inner glass (cls-70, #373a60):
+// x 201.23…443.33, y 951.89…1054.52 → 242.1 × 102.6, same centre. The green rim (cls-59): x 165.96…478.58, y 916.62…1089.77.
+// Pulled down (travel 362.3), the lens centre is at y 1365.5.
+const LENS_D = 'M392.01,931.91h-138.58c-39.31,0-71.89,31.44-72.18,70.75-.29,39.62,31.74,71.83,71.29,71.83,20.72,0,39.37-8.84,52.39-22.95,9.32-10.1,25.43-10,34.77.09,13.09,14.14,31.85,22.97,52.67,22.87,37.55-.18,68.86-29.95,70.83-67.44,2.16-41.12-30.54-75.13-71.19-75.13Z';
+const INNER_D = 'M392.02,1054.51c-14.46,0-27.83-5.85-37.66-16.46-8.25-8.91-19.96-14.02-32.14-14.02s-23.79,5.09-31.97,13.96c-9.83,10.66-23.23,16.53-37.71,16.53s-26.71-5.39-36.42-15.17c-9.71-9.78-15-22.76-14.89-36.54.21-28.08,23.63-50.92,52.21-50.92h138.58c14.22,0,27.44,5.68,37.23,16,9.78,10.31,14.76,23.84,14.01,38.11-1.42,27.07-23.82,48.38-50.98,48.52h-.26Z';
+// The zoom aims at the window above the nose (x 322.3, halfway between the lens top 931.9 and the notch 1044 → y 988),
+// not the box centre: there the tank isn't cut by the nose, and at zoom ≥ ~1.5 the lens covers the whole screen.
+const LENS = { cx: 322.3, cy: 988, w: 282.1, h: 142.6 };
+const LENS_PATH = new Path2D(LENS_D), INNER_PATH = new Path2D(INNER_D);
+
+// ===== The sketch itself =====
+const canvas = $('c'), ctx = canvas.getContext('2d');
+let dpr = 1, viewW = 0, viewH = 0;
+const imgs = {};
+let ready = 0;
+for (const k of Object.keys(ART)) {
+  const im = new Image(); im.onload = () => ready++;
+  im.src = URL.createObjectURL(new Blob([ART[k]], { type: 'image/svg+xml' })); imgs[k] = im;
+}
+
+// phases: console → pull (periscope glides down) → in (zoom / slide) → tank → out (zoom out / slide up) → lift (periscope up) → console
+const S = { phase: 'console', t: 0, hold: false };
+const DUR = { pull: () => GOO.pullMs, in: () => GOO.zoomMs, out: () => GOO.backMs, lift: () => GOO.pullMs };
+const NEXT = { pull: 'in', in: 'tank', out: 'lift', lift: 'console' };
+function pull() { if (S.phase === 'console') { S.phase = 'pull'; S.t = 0; } }
+function back() { if (S.phase === 'tank') { S.phase = 'out'; S.t = 0; } }
+function reset() { S.phase = 'console'; S.t = 0; S.hold = false; tank.reset(); }
+function easeIO(t) { const k = GOO.ease; return t < 0.5 ? 0.5 * Math.pow(2 * t, k) : 1 - 0.5 * Math.pow(2 - 2 * t, k); }
+const clamp01 = v => Math.max(0, Math.min(1, v));
+// where we are: pullAmt (0 up … 1 down) and sw (the switch: 0 = console … 1 = tank), both eased
+function progress() {
+  const e = easeIO(clamp01(S.t)), p = S.phase;
+  return { pullAmt: p === 'pull' ? e : p === 'lift' ? 1 - e : p === 'console' ? 0 : 1,
+           sw: p === 'in' ? e : p === 'out' ? 1 - e : p === 'tank' ? 1 : 0 };
+}
+
+// --- the stand-in tank: goo blobs falling into an 8 × 14 grid, settling, clearing when it fills
+const tank = {
+  cols: 8, rows: 14, cells: [], falling: [], timer: 0, clear: 0,
+  COLOURS: ['#ef4444', '#3b82f6', '#22c55e', '#facc15', '#a855f7'],
+  reset() { this.cells = Array.from({ length: this.cols }, () => []); this.falling = []; this.timer = 0; this.clear = 0;
+    for (let c = 0; c < this.cols; c++) for (let r = 0; r < (c * 5) % 4 + 1; r++) this.cells[c].push(this.COLOURS[(c + r * 2) % 5]); },
+  update(dt) {
+    if (this.clear > 0) { this.clear -= dt; if (this.clear <= 0) this.reset(); return; }
+    this.timer -= dt;
+    if (this.timer <= 0) { this.timer = 0.35; const c = Math.floor(Math.random() * this.cols);
+      this.falling.push({ c, y: -1, v: 0, col: this.COLOURS[Math.floor(Math.random() * 5)] }); }
+    for (const b of this.falling) { b.v = Math.min(b.v + 30 * dt, 14); b.y += b.v * dt; }
+    this.falling = this.falling.filter(b => {
+      const floor = this.rows - 1 - this.cells[b.c].length;
+      if (b.y < floor) return true;
+      this.cells[b.c].push(b.col); if (this.cells[b.c].length >= this.rows - 2) this.clear = 0.6; return false;
+    });
+  },
+  // the tank as it shows full screen: the play area (left of the docked knobs), its grid between the two bars
+  draw(g, w, h, top, bottom) {
+    g.fillStyle = '#071214'; g.fillRect(0, 0, w, h);
+    const availH = h - top - bottom - 16, cell = Math.min((w - 32) / this.cols, availH / this.rows);
+    const gw = cell * this.cols, gh = cell * this.rows, x0 = (w - gw) / 2, y0 = top + 8 + (availH - gh) / 2;
+    g.fillStyle = '#0f2a2f'; g.strokeStyle = '#2f7f86'; g.lineWidth = 3;
+    g.beginPath(); g.roundRect(x0 - 6, y0 - 6, gw + 12, gh + 12, 14); g.fill(); g.stroke();
+    g.strokeStyle = '#17363b'; g.lineWidth = 1;
+    for (let c = 1; c < this.cols; c++) { g.beginPath(); g.moveTo(x0 + c * cell, y0); g.lineTo(x0 + c * cell, y0 + gh); g.stroke(); }
+    const blob = (c, y, col, a) => { const cx = x0 + (c + 0.5) * cell, cy = y0 + (y + 0.5) * cell, r = cell * 0.44;
+      g.globalAlpha = a; g.fillStyle = col; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#ffffff55'; g.beginPath(); g.arc(cx - r * 0.35, cy - r * 0.35, r * 0.28, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; };
+    const a = this.clear > 0 ? this.clear / 0.6 : 1;
+    for (let c = 0; c < this.cols; c++) this.cells[c].forEach((col, i) => blob(c, this.rows - 1 - i, col, a));
+    for (const b of this.falling) blob(b.c, b.y, b.col, 1);
+  },
+};
+tank.reset();
+const tankCanvas = document.createElement('canvas'), tctx = tankCanvas.getContext('2d');
+
+function update(dt) {
+  tank.update(dt);
+  if (S.hold || !DUR[S.phase]) return;
+  S.t += dt * 1000 / Math.max(1, DUR[S.phase]());
+  if (S.t >= 1) { S.phase = NEXT[S.phase]; S.t = 0; }
+}
+
+// the console's place on screen: the view fitted between the bars, at the bottom (the game's ArtStage: bleed, align end)
+let barTop = 60, barBottom = 84;
+function baseFit() {
+  const availH = viewH - barTop - barBottom, s = Math.min(viewW / VIEW[2], availH / VIEW[3]);
+  return { s, ox: (viewW - VIEW[2] * s) / 2 - VIEW[0] * s, oy: barTop + availH - VIEW[3] * s - VIEW[1] * s };
+}
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#05070d'; ctx.fillRect(0, 0, innerWidth, innerHeight);
+  // the tank, drawn once a frame at its full-screen size (the zoom then places this picture)
+  tctx.setTransform(dpr, 0, 0, dpr, 0, 0); tank.draw(tctx, viewW, viewH, barTop, barBottom);
+  if (ready < Object.keys(ART).length) return;
+  const { pullAmt, sw } = progress(), style = Math.round(GOO.style), base = baseFit();
+  const pullY = pullAmt * TRAVEL, Lx = LENS.cx, Ly = LENS.cy + pullY;
+  const C = { x: viewW / 2, y: viewH / 2 };
+  // the zoom: the scale grows steadily (log), and the lens moves to the screen's centre as it grows — like zooming at a point
+  const s1 = GOO.zoom * viewH / LENS.h;
+  let s = base.s, ox = base.ox, oy = base.oy, slide = 0;
+  if (style < 2 && sw > 0) {
+    s = base.s * Math.pow(s1 / base.s, sw);
+    const w = (s - base.s) / (s1 - base.s || 1);
+    const px = (base.s * Lx + base.ox) * (1 - w) + C.x * w, py = (base.s * Ly + base.oy) * (1 - w) + C.y * w;
+    ox = px - s * Lx; oy = py - s * Ly;
+  }
+  if (style === 2) slide = sw * viewH;
+  // the tank's place, in mock-up units round the lens: at the end of the zoom it is exactly the full-screen tank
+  const k = style === 1 ? GOO.lensTank + (1 - GOO.lensTank) * sw : 1;
+  const tw = viewW / s1 * k, th = viewH / s1 * k, tx = Lx - tw / 2, ty = Ly - th / 2;
+  const consoleA = style < 2 ? clamp01((1 - sw) / 0.2) : 1;   // A/B: the frame fades in the last fifth (no jump at a low zoom)
+  const glassA = style === 2 ? 1 : (style === 1 ? GLASS_TINT : 1) * (1 - clamp01(sw / GOO.glassFade));
+  const tankShows = style === 1 || (style === 0 && sw > 0);
+
+  if (S.phase === 'tank') { ctx.drawImage(tankCanvas, 0, 0, viewW, viewH); return; }
+  const U = () => ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * ox, dpr * (oy + slide));   // mock-up units → screen
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 0, viewW, viewH); ctx.clip();   // only the play area (left of the docked knobs)
+  // under everything: C slides the console off the tank; A/B show the tank where the lens takes it as the frame fades
+  if (style === 2 && sw > 0) ctx.drawImage(tankCanvas, 0, 0, viewW, viewH);
+  else if (style < 2 && sw > 0) { U(); ctx.fillStyle = '#071214'; ctx.fillRect(-5000, -5000, 12000, 12000); ctx.drawImage(tankCanvas, tx, ty, tw, th); }
+  // C: the console is a screen that slides away as one piece — nothing of it shows above its top edge (the game's Screen)
+  if (style === 2) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.beginPath(); ctx.rect(0, slide, viewW, viewH); ctx.clip(); }
+  ctx.globalAlpha = consoleA;
+  // backdrop: the whole screen behind the console (it slides with it in C)
+  U(); ctx.fillStyle = BACKDROP; ctx.fillRect(-5000, VIEW[1] - 5000, 12000, 12000 + VIEW[3]);
+  for (const [k2, x, y, w, h] of LAYERS) ctx.drawImage(imgs[k2], x, y, w, h);
+  ctx.translate(0, pullY);
+  ctx.drawImage(imgs.periscope, PERI[0], PERI[1], PERI[2], PERI[3]);
+  ctx.globalAlpha = 1;
+  // the goggles' lens: the tank behind the glass (B always, A once the zoom starts), then the painted glass over it
+  ctx.save(); ctx.clip(LENS_PATH);
+  if (tankShows) { ctx.fillStyle = '#071214'; ctx.fill(LENS_PATH); ctx.drawImage(tankCanvas, tx, ty - pullY, tw, th); }
+  ctx.globalAlpha = glassA; ctx.fillStyle = '#0b1c3f'; ctx.fill(LENS_PATH); ctx.fillStyle = '#373a60'; ctx.fill(INNER_PATH);
+  ctx.restore(); ctx.globalAlpha = consoleA;
+  ctx.translate(0, -pullY);
+  ctx.drawImage(imgs.monitor, MONITOR[0], MONITOR[1], MONITOR[2], MONITOR[3]);
+  // the monitor's words (the game's CRT hint: phosphor green, glowing)
+  ctx.font = `700 ${HINT_TEXT}px ui-monospace, Consolas, monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#5bf08a'; ctx.shadowBlur = 8 * s * dpr; ctx.fillStyle = '#7dffa1';
+  ctx.fillText('PULL DOWN THE PERISCOPE', HINT[0] + HINT[2] / 2, HINT[1] + HINT[3] / 2, HINT[2]);
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  if (style === 2 && sw > 0) { ctx.globalAlpha = sw * 0.4; ctx.fillStyle = '#000'; ctx.fillRect(-5000, VIEW[1] - 5000, 12000, 12000 + VIEW[3]); ctx.globalAlpha = 1; }
+  ctx.restore();
+}
+function layout() {
+  dockKnobs();
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
+  viewW = playW(); viewH = innerHeight; // the view lives left of the docked knobs, at full size
+  tankCanvas.width = Math.round(viewW * dpr); tankCanvas.height = Math.round(viewH * dpr);
+  barTop = $('top').offsetHeight; barBottom = $('bottom').offsetHeight + parseFloat(getComputedStyle(document.body).getPropertyValue('--sheet') || 0);
+}
+function showButtons() { $('bPull').disabled = S.phase !== 'console'; $('bBack').disabled = S.phase !== 'tank'; }
+$('bReset').onclick = reset; $('bPull').onclick = pull; $('bBack').onclick = back;
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input')) return;
+  if (e.key === 'ArrowDown') { pull(); e.preventDefault(); } if (e.key === 'ArrowUp') { back(); e.preventDefault(); }
+});
+// swipe: down on the console pulls the periscope, up in the tank goes back
+let swipeY = null;
+canvas.addEventListener('pointerdown', e => { swipeY = e.clientY; });
+canvas.addEventListener('pointerup', e => { if (swipeY === null) return; const dy = e.clientY - swipeY; swipeY = null;
+  if (dy > 40) pull(); else if (dy < -40) back(); });
+
+// ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
+const SIDE = 300;
+function dockKnobs() {
+  const p = $('panel'), open = p.classList.contains('open'), wide = innerWidth >= 700;
+  document.body.classList.toggle('side', open && wide);
+  document.body.classList.toggle('sheet', open && !wide);
+  document.body.style.setProperty('--sheet', open && !wide ? p.offsetHeight + 'px' : '0px');
+}
+function playW() { return document.body.classList.contains('side') ? innerWidth - SIDE : innerWidth; }
+$('panel').innerHTML = '<div id="presets"></div>' + KNOBS.map(([k, lo, hi, st]) => lo === undefined ? `<h4>${k}</h4>` :
+  `<label><span>${k}</span><input type="range" id="k_${k}" min="${lo}" max="${hi}" step="${st}" value="${GOO[k]}"><input class="num" type="number" inputmode="decimal" id="v_${k}" step="${st}" value="${GOO[k]}" title="Type any value, even past the slider's ends"></label>`
+  + (KNOB_HELP[k] ? `<div class="help">${KNOB_HELP[k]}</div>` : '')).join('')
+  + '<button id="bCopy">Copy values for Claude</button>';
+// show a value in both the slider (pinned at its end when past it) and the box (amber when past the slider's ends)
+function showKnob(k) {
+  const row = KNOBS.find(r => r[0] === k), v = GOO[k], box = $('v_' + k);
+  $('k_' + k).value = v; if (document.activeElement !== box) box.value = v;
+  box.classList.toggle('over', v < row[1] || v > row[2]);
+}
+// typing in the box updates the sketch live; Enter or leaving the box applies, Escape puts back what was there
+for (const [k, lo] of KNOBS) if (lo !== undefined) {
+  const box = $('v_' + k); let before = GOO[k];
+  $('k_' + k).oninput = e => { GOO[k] = +e.target.value; showKnob(k); };
+  box.onfocus = () => { before = GOO[k]; };
+  box.oninput = () => { const v = parseFloat(box.value); if (Number.isFinite(v)) { GOO[k] = v; showKnob(k); } };
+  box.onkeydown = e => {
+    if (e.key === 'Enter') box.blur();
+    if (e.key === 'Escape') { GOO[k] = before; box.value = before; showKnob(k); box.blur(); }
+  };
+  box.onblur = () => { box.value = GOO[k]; showKnob(k); };
+}
+$('bKnobs').onclick = () => {
+  $('panel').classList.toggle('open'); $('bKnobs').classList.toggle('on'); layout();
+  try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
+};
+// Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
+const PKEY = 'sketch-presets:' + location.pathname.split('/').pop();
+function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
+function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
+const DEFAULTS = readKnobs();
+let presets = [], activePreset = 'd';
+try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
+// (this sketch starts with its three looks as the presets — delete one with × to save your own)
+try { if (localStorage.getItem(PKEY) === null) presets = [
+  { name: 'A zoom', values: { ...DEFAULTS, style: 0, zoom: 1.8, glassFade: 0.6, zoomMs: 800, backMs: 600, ease: 3 } },
+  { name: 'B lens', values: { ...DEFAULTS } },
+  { name: 'C slide', values: { ...DEFAULTS, style: 2, zoomMs: 600, backMs: 600, ease: 2.5 } }]; } catch (e) {}
+function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
+function drawPresets() {
+  $('presets').innerHTML = `<button data-i="d" class="${activePreset === 'd' ? 'on' : ''}">Default</button>`
+    + presets.map((p, i) => `<span class="pw"><button data-i="${i}" class="${activePreset === i ? 'on' : ''}">${p.name}</button><i data-x="${i}" title="Delete">&times;</i></span>`).join('')
+    + (presets.length < 3 ? '<button data-i="+" class="add">+ Preset</button>' : '');
+}
+$('presets').onclick = e => {
+  const x = e.target.dataset.x, i = e.target.dataset.i;
+  if (x !== undefined) { presets.splice(+x, 1); activePreset = null; savePresets(); }
+  else if (i === 'd') { setKnobs(DEFAULTS); activePreset = 'd'; }
+  else if (i === '+') {
+    let n = 1; while (presets.some(p => p.name === 'Preset ' + n)) n++;
+    presets.push({ name: 'Preset ' + n, values: readKnobs() }); activePreset = presets.length - 1; savePresets();
+  }
+  else if (i !== undefined) { setKnobs(presets[+i].values); activePreset = +i; }
+  drawPresets();
+};
+drawPresets();
+$('bCopy').onclick = () => {
+  const text = document.title + String.fromCharCode(10) + JSON.stringify({ now: readKnobs(), presets }, null, 1);
+  const done = ok => { $('bCopy').textContent = ok ? 'Copied! Paste it in the chat' : 'Copy blocked: open full screen and try again';
+    setTimeout(() => $('bCopy').textContent = 'Copy values for Claude', 2500); };
+  (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => done(true), () => done(false));
+};
+try { if (innerWidth >= 700 && localStorage.getItem('sketch-knobs-open') !== '0') { $('panel').classList.add('open'); $('bKnobs').classList.add('on'); } } catch (e) {}
+addEventListener('resize', layout);
+layout();
+// fixed-step loop + fps (one-second average)
+let last = performance.now(), acc = 0, frames = 0, fpsT = 0;
+const STEP = 1 / 120;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  acc += dt; while (acc >= STEP) { update(STEP); acc -= STEP; }
+  draw(); showButtons();
+  frames++; fpsT += dt; if (fpsT >= 1) { $('fps').textContent = Math.round(frames / fpsT) + ' fps'; frames = 0; fpsT = 0; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.sketch = { GOO, readKnobs, setKnobs, S, tank }; // for Playwright checks
+</script>
+</body>
+</html>
