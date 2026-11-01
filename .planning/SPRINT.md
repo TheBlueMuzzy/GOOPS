@@ -6,7 +6,7 @@ Planned unattended (Muzzy: "go auto mode. i'm going to a halloween party", 2026-
 ## F76 🐞 Text size breaks the console
 Done when: B005 fixed — at Text size 125 / 150 / 200% the console's words stay inside their spots (footer, rank meter + DUE, monitor text) and Upgrades no longer covers the gear, at every portrait size (390x844, 360x780, ~1100 wide, 1440x900, 1920x1080) · a check guards it (red on the old code) · B005 moved to Fixed with Guarded by.
 Check: an e2e run of the console at Text size 100 / 125 / 150 / 200% at every portrait size (words inside their art spots, nothing covering the gear's centre); screenshots looked at by Claude · check:fast
-- [ ] 🤖 1. Measure B005 on today's code (UI kit 0.37.3): screenshots at 125 / 150 / 200% at every portrait size; list what really breaks now and what's the kit's vs Goops' — src/ui/Console.tsx
+- [x] 🤖 1. Measure B005 on today's code (UI kit 0.37.3): screenshots at 125 / 150 / 200% at every portrait size; list what really breaks now and what's the kit's vs Goops' — src/ui/Console.tsx
 - [ ] 🤖 2. Fix the console: words drawn on the art take the art's own size (art.json words.*.text), not the root font size; the bottom row (Upgrades + gear) keeps apart — src/ui/Console.tsx
 - [ ] 🤖 3. e2e check at every Text size + portrait size (fails on the old code) — e2e/console-shots.mjs
 - [ ] 🤖 4. Anything that's the UI kit's own bug → a note for the framework session in STATE (no edits in the kit copy); B005 → Fixed in BUGS.md — .planning/BUGS.md
@@ -29,3 +29,11 @@ Check: build + the precache list read (before/after sizes) · e2e/sw-update · i
 - Open bugs: no P0/P1. B005 (P2) = F76. B007 (P3, 390x844) — check if it's in Console.tsx while there.
 - Ask Muzzy: (F72) pinch zoom — 1. keep it OFF (Claude's pick: the tank uses drags and swipes, a pinch would fight them; Text size covers bigger words) · 2. turn it ON (WCAG's default; may zoom the page mid-shift).
 - NEVER deploy in this sprint (deploy.js publishes the whole site now — the switch is the 1.0 /deliver, with Muzzy).
+- F76 task 1 — B005 measured on today's code (2026-10-31, UI kit 0.37.3, `node e2e/text-size.mjs`: 5 portrait sizes × Text size 100/125/150/200% × a rank-0 and a rank-12 save; shots e2e-shots/text-size/, copy in ~/Documents/dev/.scratch/goops-f76/before-shots). 166 of 1400 checks red. What breaks (failures per size, r0 save):
+  - 390x844: 100% ok · 125% 5 · 150% 8 · 200% 11 — 360x780: 100% 1 (the gear 1 px from Upgrades — already touching at 100%) · 125% 6 · 150% 9 · 200% 12 — 1100x800: ok · 2 · 6 · 7 — 1440x900: ok · ok · 3 · 6 — 1920x1080: ok · ok · ok · 6
+  - Footer (version · RANK SELECT · MuzzyMade): spills its spots from 125% on phones, the three run together at 150%+ (all sizes at 200%).
+  - Rank meter: "Operator rank 0 · 0 / 3,500 DUE" past its spot from 150% on phones; at 200% on 390 it ends at 444 px (window 390).
+  - Panel labels (Laser / Controls / Visor): Controls spills its spot at 200%.
+  - Bottom row: Upgrades and the gear overlap from 125% on phones (390 at 200%: the gear's centre hits Upgrades' badge); the GOOPS title runs under the gear too (it grows with Text size: TitleArt is rem-sized); at 360 they touch even at 100%.
+  - Monitor: the hint ("Pull down the periscope") stays on its screen at every size — the toaster grows; the bug's "monitor text spills" didn't reproduce on the hint.
+  - Why (the kit's, not Goops'): every art word sits on the kit's floor `max(0.625rem, art size)` (art.css `.kit-art-layer[data-text]`) — 0.625rem is 10 px at 100% but 20 px at 200%, while the spot keeps the art's size; the font px table shows every art word = exactly the floor from 125% on (12.5 / 15 / 20 px) on every size. The meter's words are em of the same layer. RANK SELECT (a kit Button) the same. The gear (`size: s` = 3rem) and title (3.5rem) are rem-sized pictures, so they grow with Text size too, and the kit Screen's bottom row (1fr auto 1fr) lets the gear slide under a centre that's too wide. Goops' part: the console's bottom row puts Upgrades + the gear side by side on a phone with no room for either to grow.
