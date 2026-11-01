@@ -8,6 +8,7 @@ import settings from '../content/ui/settings.json'
 import { startSound } from './game/sound'
 import { fpsMeter } from './game/fpsMeter'
 import { registerSW } from 'virtual:pwa-register'
+import { art } from './ui/art'
 import './ui/app.css'
 
 // The offline cache (release builds only — vite.config.ts, TDD D17). "immediate": a returning player's page swaps to
@@ -32,6 +33,9 @@ loadGameFonts(fonts, import.meta.env.BASE_URL)
 applyStyle(style)
 const saved = loadSettings(settings as SettingsSchema)
 applyAccessibility(saved)
+// F76 (B005): words drawn on the art keep the art's size at every Text size — their floor in px, not the kit's
+// 0.625rem (which doubles at 200%); the rule that reads it is in app.css
+document.documentElement.style.setProperty('--kit-art-words-min', `${art.wordsMinPx}px`)
 startSound(saved) // the audio engine (src/game/sound.ts); it unlocks itself on the first tap
 fpsMeter.startIfAsked() // the frame-rate readout: ?fps, or switched on in the Dev Kit's Perf tab
 

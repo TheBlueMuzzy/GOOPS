@@ -66,6 +66,17 @@ html, body, #root { margin: 0; height: 100%; }
 .valve-grab { fill: transparent; pointer-events: auto; touch-action: none; cursor: grab; outline: none; }
 .valve-grab:active { cursor: grabbing; }
 
+/* F76 TEXT SIZE (B005): words drawn on the art are part of the picture — they keep the art's size at every Text size,
+   because their spot on the art doesn't grow. The kit's own rule (art.css .kit-art-layer[data-text]) is the same but
+   for its floor, max(0.625rem, …): 0.625rem doubles at 200%, which pushed the console's footer, rank meter and labels
+   out of their spots. Here the floor is --kit-art-words-min (content/ui/art.json wordsMinPx, set in main.tsx).
+   KIT GAP (framework note in STATE): a px floor (or a floor option) in the kit; then this rule goes. */
+.kit-art-layer[data-text] { font-size: max(var(--kit-art-words-min, 0.625rem), calc(var(--kit-art-text) * 100cqw / var(--kit-scene-w))); }
+/* …and between shifts the gear sits beside the GOOPS title, not beside Upgrades — on a phone the Upgrades row has no
+   room left for it, and the button's words grow with Text size (Console.tsx; the title and gear keep their size) */
+/* (flex: the gear sits on the row's bottom edge, not on a line of text with room under it for letters' tails) */
+.kit-screen:has([data-tag="upgrades"]) > [data-slot="bottom-right"] { align-self: end; display: flex; }
+
 /* F65 the new career's gold trim (content/ui/art.json console.career, Console.tsx): a crisp outline round each trimmed
    part's picture (four drop shadows, --kit-career-trim thick) and a soft glow (--kit-career-glow), in --kit-career-gold */
 .career-gold img {

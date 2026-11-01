@@ -11,6 +11,7 @@ const words = (w: { at: number[]; text: number }) => ({ at: rect(w.at), text: w.
 const end = artJson.end, scene = artJson.console, fix = scene.repairs
 const layer = (l: { file: string; at: number[] }) => ({ src: url(l.file), at: rect(l.at) })
 export const art = {
+  wordsMinPx: artJson.wordsMinPx, // F76: words on the art never smaller than this (px), whatever the Text size
   end: {
     frame: { ...end.frame, src: url(end.frame.src) } as PanelFrame,
     again: button(end.again as ButtonArt),
@@ -38,6 +39,7 @@ export const art = {
     backdrop: url(scene.backdrop),
     title: url(scene.title),
     settings: button(scene.settings as ButtonArt),
+    bottomRow: scene.bottomRow, // F76: the title's and the gear's size at every Text size (px)
     body: layer(scene.layers.body),
     meter: layer(scene.layers.meter),
     laser: layer(scene.layers.laser),

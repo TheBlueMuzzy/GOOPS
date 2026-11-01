@@ -10,6 +10,8 @@
 //   the Settings gear's centre is the gear (el.contains(elementFromPoint(centre))) — Upgrades never covers it — and the
 //     Upgrades button's centre is Upgrades
 //   the page is no wider than the window
+// And a lesson's line on the monitor (the Upgrades unlock): on the screen, the screen in the window, its words
+// growing with Text size (reading text: at least art.json console.crt.wordsMinRem).
 // It also prints each one's font size, so a run shows what grew with Text size (reading text) and what kept the art's size.
 // Screenshots: e2e-shots/text-size/<size>-<text>-r<rank>.png
 // Run: node e2e/text-size.mjs  (own dev server on port 5376; E2E_PORT=… runs it on another)
@@ -24,6 +26,8 @@ const settings = JSON.parse(readFileSync('content/ui/settings.json', 'utf8'))
 const TEXT_SIZES = settings.tabs.flatMap((tab) => tab.rows).find((row) => row.id === 'textSize').options // 100% … 200%
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
+const MONITOR_MIN_REM = JSON.parse(readFileSync('content/ui/art.json', 'utf8')).console.crt.wordsMinRem ?? 1 // F76: the monitor's words at least this
+const HINT = JSON.parse(readFileSync('content/text/en.json', 'utf8')).console.hint // the monitor's words with no lesson up
 const SAVES = [{ rank: 0, totalXp: 0 }, { rank: 12, totalXp: xpFor(12) + 1000 }]
 const HAD = ['lesson:first-day', 'lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades']
 mkdirSync(OUT, { recursive: true })
@@ -66,7 +70,7 @@ function measure() {
   const hit = (el) => { if (!el) return null; const b = r(el); const at = document.elementFromPoint((b.left + b.right) / 2, (b.top + b.bottom) / 2); return { box: b, ok: !!at && el.contains(at), at: at ? `${at.tagName.toLowerCase()}.${at.className}` : 'nothing' } }
   return { w: innerWidth, h: innerHeight, scrollW: document.documentElement.scrollWidth, root: size(document.documentElement), plain, meter, monitor,
     gear: hit(document.querySelector('[data-slot="bottom-right"] button')), upgrades: hit(document.querySelector('[data-tag="upgrades"]')),
-    title: r(document.querySelector('.kit-title-art')) }
+    title: r(document.querySelector('.kit-title-art')), gearArt: r(document.querySelector('[data-slot="bottom-right"] button img')) }
 }
 
 // words inside a spot: across, all of them (±1 px); down, their middle (one line of letters may stand a px or two
@@ -116,10 +120,14 @@ try {
         if (m.monitor) check(`${name}: the monitor's words on its screen`, insideAll(m.monitor.words, m.monitor.screen), JSON.stringify({ words: m.monitor.words, screen: m.monitor.screen }))
         else check(`${name}: the monitor's words are there`, false)
         check(`${name}: the gear's centre is the gear`, !!m.gear?.ok, m.gear?.at)
-        // breathing room on the bottom row: the gear 4 px+ from Upgrades and from the title, all inside the window
+        // breathing room on the bottom row: the gear's picture 4 px+ from Upgrades and from the title (measured to the
+        // drawn edges), their tap areas never overlapping, all inside the window
         const room = (a, b) => apart({ left: a.left - 4, right: a.right + 4, top: a.top - 4, bottom: a.bottom + 4 }, b)
-        if (m.gear && m.upgrades) check(`${name}: the gear and Upgrades 4 px+ apart`, room(m.gear.box, m.upgrades.box), JSON.stringify({ gear: m.gear.box, upgrades: m.upgrades.box }))
-        if (m.gear) check(`${name}: the gear and the title 4 px+ apart`, room(m.gear.box, m.title), JSON.stringify({ gear: m.gear.box, title: m.title }))
+        if (m.gear && m.upgrades) {
+          check(`${name}: the gear and Upgrades 4 px+ apart`, room(m.gearArt, m.upgrades.box), JSON.stringify({ gear: m.gearArt, upgrades: m.upgrades.box }))
+          check(`${name}: the gear's and Upgrades' tap areas don't overlap`, apart(m.gear.box, m.upgrades.box), JSON.stringify({ gear: m.gear.box, upgrades: m.upgrades.box }))
+        }
+        if (m.gear) check(`${name}: the gear and the title 4 px+ apart`, room(m.gearArt, m.title), JSON.stringify({ gear: m.gearArt, title: m.title }))
         for (const [part, b] of [['gear', m.gear?.box], ['Upgrades', m.upgrades?.box], ['title', m.title]])
           if (b) check(`${name}: the ${part} inside the window`, b.left >= 4 && b.right <= m.w - 4 && b.bottom <= m.h - 4, JSON.stringify(b))
         check(`${name}: the Upgrades button's centre is Upgrades`, !!m.upgrades?.ok, m.upgrades?.at)
@@ -129,6 +137,42 @@ try {
         fonts[key][textSize] = [...m.plain.map((p) => px(p.size)), px(m.meter?.size ?? 0), px(m.monitor?.size ?? 0)].join('/')
         await context.close()
       }
+    }
+    // a lesson's line on the monitor (the Upgrades unlock, rank 12 not seen yet — it outlines the button): a long line;
+    // the reading text grows with Text size, the screen slides down to hold it; its words (and a Got it, if one shows)
+    // stay on the screen
+    for (const textSize of TEXT_SIZES) {
+      const name = `${width}x${height} ${textSize} lesson`
+      const context = await browser.newContext({ viewport: { width, height } })
+      const page = await context.newPage()
+      const errors = []
+      page.on('pageerror', (e) => errors.push(e.message))
+      await page.addInitScript(([textSize, totalXp, seen]) => {
+        const folder = location.pathname.split('/').slice(1, -1)[0] ?? ''
+        localStorage.setItem(`kit-settings:${folder}`, JSON.stringify({ textSize }))
+        localStorage.setItem('goops-progress', JSON.stringify({ v: 2, totalXp, scrapsSpent: 0, owned: {}, equipped: [] }))
+        localStorage.setItem(`kit-tips:${folder}`, JSON.stringify({ on: true, seen }))
+      }, [textSize, SAVES[1].totalXp, HAD.filter((id) => id !== 'lesson:unlock-upgrades')])
+      await page.goto(`http://localhost:${PORT}/?seed=7`)
+      await page.locator('.crt .lesson-words').waitFor({ timeout: 15000 }).catch(() => {})
+      await sleep(4000) // the line types out
+      const l = await page.evaluate((hint) => {
+        const r = (el) => { const b = el.getBoundingClientRect(); return { left: b.left, right: b.right, top: b.top, bottom: b.bottom } }
+        const crt = document.querySelector('.crt'), words = crt?.querySelector('.lesson-words'), gotIt = crt?.querySelector('.kit-button')
+        if (!crt || !words || words.textContent.trim() === hint) return null // (the hint = the lesson isn't up)
+        const range = document.createRange(); range.selectNodeContents(words)
+        return { screen: r(crt), words: r(range), gotIt: gotIt ? r(gotIt) : null, size: parseFloat(getComputedStyle(words).fontSize), w: innerWidth, h: innerHeight, scrollW: document.documentElement.scrollWidth }
+      }, HINT)
+      await page.screenshot({ path: `${OUT}/${width}x${height}-${textSize.replace('%', '')}-lesson.png` })
+      check(`${name}: the lesson's line is on the monitor`, !!l)
+      if (l) {
+        check(`${name}: the lesson's words on the screen`, insideAll(l.words, l.screen), JSON.stringify({ words: l.words, screen: l.screen }))
+        if (l.gotIt) check(`${name}: Got it on the screen`, insideAll(l.gotIt, l.screen), JSON.stringify({ gotIt: l.gotIt, screen: l.screen }))
+        check(`${name}: the screen inside the window`, l.screen.bottom <= l.h - 4 && l.scrollW <= l.w, JSON.stringify({ bottom: l.screen.bottom, h: l.h }))
+        check(`${name}: the lesson's words grow with Text size (${l.size}px)`, l.size >= MONITOR_MIN_REM * 16 * parseFloat(textSize) / 100 - 0.1, String(l.size))
+      }
+      check(`${name}: no page errors`, !errors.length, errors.join(' | '))
+      await context.close()
     }
   }
 } finally {
