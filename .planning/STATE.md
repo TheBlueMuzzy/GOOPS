@@ -1,4 +1,5 @@
 ## ▶ RESUME HERE
+2026-11-01 12:00 — **Sprint 28 ✅ archived** (F76, F72, F71 approved; retro Muzzy "yes"). **Sprint 29 — Look into the periscope: F56 — Periscope zoom** (Muzzy OK'd the plan). **Next: F56 task 1 — sketch S13 .planning/research/sketches/periscope-zoom.html (A zoom into the goggles · B A + the tank small in the goggles at the console · C today's slide) → Muzzy picks.** NEVER deploy (the 1.0 /deliver).
 2026-11-01 11:45 — **F71 — Real-phone performance pass ✅ approved by Muzzy** ("runs smoothly. check complete. approved" — no fps numbers; TDD §5 notes it). Sprint 28's features are all done (F76, F72, F71). **Next: Sprint 28 retro (Claude drafts → Muzzy) → archive-sprint.mjs → /sprint (left in M6 1.0: F53 — Final sound + music + intercom voice waits on Muzzy's sounds; F55 Credits screen; F56, F57, F73 waits on the UI kit).** NEVER deploy (the 1.0 /deliver).
 2026-11-01 11:30 — **F76 — Text size breaks the console ✅ approved by Muzzy** (+ his note done: the monitor sits up while it only says "Pull down the periscope", hangs low only for a longer line) · **F72 — Pinch zoom on or off ✅** (off, TDD D34). Sprint 28 left: **F71 — Real-phone performance pass** — Claude's tasks done (offline copy −22%); 🙋 Muzzy: a mid + a low Android with ?fps through a busy rank-30+ shift, jelly and particle → Claude writes the numbers into TDD Key facts → F71 checked → approve → Sprint 28 retro. NEVER deploy (the 1.0 /deliver). Play: http://localhost:5173 · phone http://192.168.1.152:5173.
 2026-11-01 — **Muzzy answered:** the gear beside the GOOPS logo at every Text size — "yes"; pinch zoom — "keep it off" (TDD D34, index.html unchanged; F72's only task ticked). **Next: Muzzy says "approved" for F76 — Text size breaks the console → F76: done, then F72: done (it needs F76) → F71 — Real-phone performance pass waits on Muzzy's phone numbers.** NEVER deploy (the 1.0 /deliver).
@@ -15,7 +16,7 @@
 
 
 ## Where we are
-Stage: develop · Milestone: M6 1.0 (M5 Beta ✅ released 2026-10-29) · Sprint: 28 (F76, F72, F71) · Doing: Sprint 28 retro · Branch: dev/m6-1-0 · Version: 0.2.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
+Stage: develop · Milestone: M6 1.0 (M5 Beta ✅ released 2026-10-29) · Sprint: 29 (F56) · Doing: F56 — building · Branch: dev/m6-1-0 · Version: 0.2.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
 Live: https://thebluemuzzy.github.io/GOOPS/alpha/ (the remake's beta, v0.2.0 — the alpha address kept, `npm run deploy` → gh-pages alpha/) · v1 still at https://thebluemuzzy.github.io/GOOPS/ until the remake replaces it (F54)
 
 ## Earlier notes (moved out of RESUME HERE 2026-10-23, newest first)
