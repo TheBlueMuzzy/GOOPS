@@ -15,7 +15,7 @@ Checked: e2e/text-size.mjs ALL PASS 1540 checks on the merged code (5 portrait s
 ## F72 ❓ Pinch zoom on or off
 Done when: Muzzy picks (Ask Muzzy in Notes), written as a TDD decision; index.html's viewport matches.
 why: players who need bigger words get them from Text size instead of pinch zoom — so Text size has to really work first (F76).
-- [ ] 🙋 1. Muzzy decides pinch zoom (Ask Muzzy below) → Claude writes the TDD decision (next free D number) and sets index.html — .planning/TDD.md
+- [x] 🙋 1. Muzzy decides pinch zoom (Ask Muzzy below) → Claude writes the TDD decision (next free D number) and sets index.html — .planning/TDD.md
 
 ## F71 🧱 Real-phone performance pass
 Done when: the offline copy skips the kit fonts Goops never uses (Goops uses only Nokia Cellphone FC — measure the bytes saved) and the icons are lighter (same look) · offline still works (e2e/sw-update) · a mid + a low Android measured with ?fps through a busy rank-30+ shift, jelly vs particle, result in TDD Key facts.
@@ -50,3 +50,4 @@ Check: build + the precache list read (before/after sizes) · e2e/sw-update · i
   - After: e2e/text-size.mjs ALL PASS (1540 checks: 5 sizes × 4 Text sizes × rank 0 / rank 12 / a lesson line). check:fast green (2 new check:ui warnings: "restyles kit part .kit-art-layer / .kit-screen" — the kit gap, in the STATE note).
 - F76 task 3 — the guard is a new script, e2e/text-size.mjs (port 5376, in check:full, `npm run e2e:text-size`, ~6 min), not console-shots.mjs (that one isn't in check:full). Proven red: committed the fix (70ed5aa), then put the kit's 0.625rem floor back and took the gear's align-self out of app.css → 155 of 1540 red (every phone size from 125%, desktops from 125–200%, 360 at 100%); the break dropped with `git stash push` (app.css back to the commit). Note: the throwaway stash entry "f76-deliberate-break-proof-red" is still in the stash list (dropping it was refused by the permission check) — safe to drop.
 - F76 task 4 — B005 → Fixed in BUGS.md (Guarded by: e2e/text-size.mjs); the kit-side causes → STATE ▶ RESUME HERE note for the framework session.
+- Muzzy 2026-11-01: (F76) the gear beside the GOOPS logo at every Text size — "yes" · (F72) pinch zoom — "keep it off" → TDD D34; index.html already has it off (no change).

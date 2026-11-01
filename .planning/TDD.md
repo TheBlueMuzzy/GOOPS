@@ -199,6 +199,12 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D34 · 2026-11-01 · Pinch zoom stays OFF; Settings → Text size is the way to bigger words (F72)
+  Proposed by: Claude · Muzzy: "keep it off" (2026-11-01)
+  Chose: index.html keeps maximum-scale=1, user-scalable=no — the tank is played with drags and swipes, and a pinch would
+  fight them (or zoom the page mid-shift). WCAG 1.4.4 (resize text) is met by Text size 100–200%, which works on the
+  console since F76 (e2e/text-size.mjs guards it at every portrait size).
+  Not chosen: pinch zoom on (WCAG's usual way, but accidental zooms during play).
 D33 · 2026-10-31 · Goops 2 takes over /GOOPS/: its worker under a new name replaces v1's, /GOOPS/alpha/ forwards, one deploy = the whole site (F54)
   Proposed by: Claude (the F54 spike) · Muzzy: v1 retired fully, no /GOOPS/v1/ copy; v1 players start fresh
   Chose: base /GOOPS/, manifest id /GOOPS/ (v1's manifest had no id, so its id was its start_url /GOOPS/ — an
