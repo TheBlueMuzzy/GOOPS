@@ -18,11 +18,12 @@ Checked: e2e/periscope-zoom.mjs ALL PASS 97 on the merged code (Claude re-ran it
 - [x] 🤖 8. (tuning) feel pass with Muzzy — content/tuning/shift.json
 
 ## F77 🐞 Goggles cut the screen's frame
-Done when: B010 fixed — the monitor group (screen + orange frame) is always above the goggles, at any screen growth, at every portrait size · the crossbar ends beside a lowered monitor as Muzzy picks · a check guards it (red on today's code) · B010 → Fixed with Guarded by.
-Check: e2e/periscope-zoom.mjs + a grown lesson line over the goggles at every portrait size (no goggle pixels over the orange frame); screenshots looked at by Claude · check:fast
-- [ ] 🙋 1. Muzzy picks the fix (Claude's: the screen group its own top layer above the hole) and hide/leave for the crossbar ends — .planning/BUGS.md
-- [ ] 🤖 2. The fix — src/game/PeriscopeZoom.tsx
+Done when: B010 fixed — the monitor group (screen + orange frame) is always above the goggles, at any screen growth, at every portrait size · ONE orange frame when the screen grows (it lines up with the art's frame; the art's lower frame doesn't show beside it) · the crossbar ends left as they are · a check guards it (red on today's code) · B010 → Fixed with Guarded by.
+Check: e2e/periscope-zoom.mjs + a grown lesson line over the goggles at every portrait size (no goggle pixels over the orange frame; the grown frame's edges on the art's within 1 px); screenshots looked at by Claude · check:fast
+- [x] 🙋 1. Muzzy picks (2026-11-02): one frame that grows · the screen group its own top layer above the hole · crossbar: "leave them. the idea is that the screen comes down and interrupts your flow. when the screen wants you to interact with the periscope, the screen 'shrinks out of the way' so that you can get back to the periscope" — .planning/BUGS.md
+- [ ] 🤖 2. Top layer: the hole cuts only the backdrop (its own layer under the console) and the art layers up to the periscope (one group); the monitor + its screen come after, never cut; no more measured "keep" boxes — src/game/PeriscopeZoom.tsx
 - [ ] 🤖 3. The check: a grown screen over the goggles, every portrait size, red on today's code — e2e/periscope-zoom.mjs
+- [ ] 🤖 4. One frame: the screen starts exactly at the art's screen (it was centred in its words box — 5.6 px left at 1440x900), bezel 23 → the art's 23.25, and while grown the art's lower frame is clipped away (the grown frame is the only one below the screen's top corners) — src/game/lessons/lessons.css
 
 ## Notes
 - Open bugs: no P0/P1.
