@@ -1,5 +1,5 @@
 ## ▶ RESUME HERE
-2026-11-02 01:30 — **Sprint 30 — Goops sounds finished and shows who made it (F53 — Final sound, F55 — Credits screen)**, planned with Muzzy: no music and a silent intercom for 1.0, Credits from Settings only. **Next: /develop F53 task 1 — the audio module 0.4.0 → 0.5.0, then task 2 the sound shopping list for Muzzy.** NEVER deploy (the 1.0 /deliver).
+2026-11-02 02:20 — **F53 — Final sound: tasks 1–2 done** (audio module 0.5.0; Muzzy's shopping list .planning/research/sound-list.md — 26 to replace/keep + 14 silent moments). **Muzzy hunts sounds into audio-incoming/ (+ sources.txt).** Meanwhile Claude can build F53 task 5 (the 14 new moments call their sounds) and F55 — Credits screen tasks 1 + 3. NEVER deploy (the 1.0 /deliver).
 
 ## Where we are
 Stage: develop · Milestone: M6 1.0 (M5 Beta ✅ released 2026-10-29) · Sprint: 30 (F53, F55) · Doing: F53 — building · Branch: dev/m6-1-0 · Version: 0.2.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
