@@ -49,3 +49,8 @@ Checked: e2e/periscope-zoom.mjs ALL PASS 132 (red on the old code first: 15 ✗)
 - After done: GitHub Checks red on d2fa011 — check:framework "nothing touches the edge of its box": the stage's <canvas> (mounted under the console now) fills its .stage edge to edge → data-ui-bleed on the 4 stage layers (they ARE the full picture). check:framework locally: PASS (32 kept; the ?pseudo overlap warning was there before). Lesson → /develop skill (a first-screen change runs check:framework + the release-build e2e in its Area check).
 - F77 built 2026-11-02: check written first — red on the old code at every size (15 ✗: the frame 4–7 px off the art's, 100% bezel colour beside it, 64% of its bottom band cut by the goggles); after the fix e2e/periscope-zoom.mjs ALL PASS 132 · check:fast exit 0 · check:framework PASS · rank-lock PASS (its quota-line shot zoomed 3× by Claude: one whole frame, no lens bumps) · shots looked at: 390x844 + 1440x900 grown screen.
 - F77 — Goggles cut the screen's frame ✅ approved by Muzzy 2026-11-02 ("approved"). B011 left open (P3) for a bug sweep.
+
+Retro: (Claude's draft, Muzzy: "1a", 2026-11-02)
+- went well: the periscope zoom went from sketch to game smoothly ("felt great"); F77's check was written first and was red on the old code at every size
+- went wrong: B010 (the goggles cutting the screen's frame) slipped past F56's checks — nothing tested a grown screen; Muzzy found it by eye
+- change: a change that cuts or layers the screen gets a check covering every state it can be in (a grown monitor, a lesson line)
