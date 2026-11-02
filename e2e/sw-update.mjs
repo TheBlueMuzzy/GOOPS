@@ -242,9 +242,11 @@ try {
 
   // ---- the Dev Kit in the release build (no dev server) ----
   const before = { requests: w.failedRequests.length, errors: w.errors.length }
-  await page.waitForTimeout(1500) // the Dev Kit loads once the page is idle (main.tsx)
-  await page.keyboard.press('Backquote')
+  // the Dev Kit loads once the page is idle (main.tsx, at most 3 s) — wait for it to be there, then press its key (F56:
+  // the console now makes the next shift's tank at start-up, so it mounts ~2.1 s in; a fixed 1.5 s wait pressed too soon)
   const kit = page.locator('aside.devkit')
+  await kit.waitFor({ state: 'attached', timeout: 10000 }).catch(() => {})
+  await page.keyboard.press('Backquote')
   await kit.waitFor({ timeout: 10000 }).catch(() => {})
   check('` opens the Dev Kit in the release build', await kit.isVisible())
   const tabs = kit.locator('[role="tab"]')
