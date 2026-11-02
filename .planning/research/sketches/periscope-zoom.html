@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <!-- /sketch starter (BMUZ). The planner's Sketches tab uses the title as the tab name and the description as its blurb. -->
 <title>S13: Periscope zoom</title>
-<meta name="description" content="F56 (2026-11-01): pulling the periscope down — A zooms into its goggles until the lens is the tank, B does the same and shows the tank live and small in the goggles at the console, C is today's slide. Pull it down and back up (buttons, arrow keys or a swipe) and ask: does it feel like looking into the periscope?">
+<meta name="description" content="F56 (2026-11-01, rework): drag the periscope's goggles down like in the game; let go at the bottom and the view zooms into the dark blue glass, where the whole tank's width is pinned and grows with it until it IS the tank. B shows the tank in the glass at the console, A only once the zoom starts, C is today's slide. Ask: does it feel like looking into the periscope?">
 <style>
   :root { --bg: #05070d; --panel: #0b1224f0; --line: #1e293b; --ink: #e2e8f0; --dim: #64748b; --accent: #a855f7; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: #cbd5e1;
@@ -67,28 +67,31 @@
 const $ = id => document.getElementById(id);
 
 // ===== Tweakable values (the sketch's "content/*.json"). Every knob lives here. Default = look B. =====
+// Muzzy 2026-11-01 (rework): the periscope follows the finger like the game's (PullHandle); the zoom starts once it's let
+// go at the bottom; the tank's whole width (all 8 columns) is the dark blue glass's width and scales WITH the periscope
+// (the zoom ends where the glass is exactly the full-screen tank's width — no zoom knob); only the dark blue inner glass
+// shows the tank, the black ring round it stays black.
 const GOO = {
   style: 1,         // 0 = A zoom into the goggles · 1 = B A + the tank live in the goggles · 2 = C today's slide
-  pullMs: 450,      // the periscope's glide down (and back up)
-  zoom: 1.8,        // A/B: how big the lens ends up, in screen heights (≥ ~1.5 = the lens covers the whole screen)
-  zoomMs: 750,      // the switch to the tank: the zoom in (A/B) or the slide away (C)
-  backMs: 600,      // the switch back to the console: zoom out (A/B) or slide up (C)
-  ease: 3,          // ease-in-out power: 1 = constant speed, 5 = slow start and end, fast middle
-  glassFade: 0.4,   // A/B: share of the zoom by which the painted glass has turned into the tank
-  lensCols: 3.5,    // A/B: how many of the vat's columns span the glass's full width at the console (fewer = zoomed in closer)
+  frameFade: 0.3,   // A/B: share at the end of the zoom over which the console fades away to show the rest of the tank
+  tint: 0.15,       // B: how much of the dark blue glass colour stays over the tank in the goggles at the console
+  pullMs: 300,      // the periscope's glide to the end once let go (only the distance left), and its spring back
+  zoomMs: 350,      // the switch to the tank: the zoom in (A/B) or the slide away (C)
+  backMs: 350,      // the switch back to the console: zoom out (A/B) or slide up (C)
+  ease: 2.9,        // ease-in-out power: 1 = constant speed, 5 = slow start and end, fast middle
 };
-const GLASS_TINT = 0.15;   // B: how much of the dark painted glass stays over the tank in the goggles at the console
-const FLOOR_LIFT = 8;      // A/B: the vat's floor sits this many mock-up units above the glass's bottom edge at the console
+const LET_GO = 0.6;        // the game's PullHandle threshold: let go past 60% of the travel and it finishes the pull
+const GRIP = 0.345;        // the game's periscope grip: the bottom 34.5% of the periscope (its goggles) is what you grab
+const FLOOR_LIFT = 4;      // the vat's floor sits this many mock-up units above the dark blue glass's bottom edge
 // [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
-const KNOBS = [['Look'], ['style', 0, 2, 1], ['zoom', 0.6, 4, 0.1], ['glassFade', 0.05, 1, 0.05], ['lensCols', 1.5, 8, 0.5],
-  ['Timing'], ['pullMs', 100, 1500, 25], ['zoomMs', 150, 2000, 25], ['backMs', 150, 2000, 25], ['ease', 1, 5, 0.1]];
+const KNOBS = [['Look'], ['style', 0, 2, 1], ['frameFade', 0.05, 1, 0.05], ['tint', 0, 0.8, 0.05],
+  ['Timing'], ['pullMs', 0, 1500, 25], ['zoomMs', 150, 2000, 25], ['backMs', 150, 2000, 25], ['ease', 1, 5, 0.1]];
 // One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
 const KNOB_HELP = {
-  style: '0 = A: zoom into the goggles. 1 = B: A + the bottom of the vat plays in the goggles at the console. 2 = C: today\'s slide down.',
-  zoom: 'A/B: how far it zooms in. Low = the frame is still on screen at the end and it fades away; high = it dives deep into the lens.',
-  glassFade: 'A/B: how soon the dark painted glass turns see-through during the zoom. Low = you see the tank at once; 1 = only at the end.',
-  lensCols: 'A/B: how close the goggles look into the bottom of the vat — how many goo columns fill the glass edge to edge. 2 = close up, 8 = the whole floor. Watch the goggles before you pull (B) or at the start of the zoom (A).',
-  pullMs: 'How long the periscope takes to glide down (and back up). Watch the periscope.',
+  style: '0 = A: the goggles show their painted glass until the zoom starts. 1 = B: the tank plays in the goggles\' dark blue glass at the console. 2 = C: today\'s slide down.',
+  frameFade: 'A/B: when the console (and the goggles\' black ring) fade away to show the rest of the tank. 0.1 = only at the very end; 1 = fading the whole zoom.',
+  tint: 'B: how much of the dark blue glass colour lies over the tank in the goggles at the console. 0 = clear glass. Watch the goggles before you pull.',
+  pullMs: 'How long the periscope takes to glide the rest of the way once you let go past 60% (or spring back short of it), and to go back up at the end.',
   zoomMs: 'How long the zoom in (A/B) or the slide away (C) takes after the periscope lands.',
   backMs: 'How long the way back (zoom out / slide up) takes.',
   ease: 'How the zoom and slides speed up and slow down. 1 = mechanical, steady; 3–5 = a soft start and a soft landing.',
@@ -115,10 +118,8 @@ const BACKDROP = '#2a2d47';
 // Pulled down (travel 362.3), the lens centre is at y 1365.5.
 const LENS_D = 'M392.01,931.91h-138.58c-39.31,0-71.89,31.44-72.18,70.75-.29,39.62,31.74,71.83,71.29,71.83,20.72,0,39.37-8.84,52.39-22.95,9.32-10.1,25.43-10,34.77.09,13.09,14.14,31.85,22.97,52.67,22.87,37.55-.18,68.86-29.95,70.83-67.44,2.16-41.12-30.54-75.13-71.19-75.13Z';
 const INNER_D = 'M392.02,1054.51c-14.46,0-27.83-5.85-37.66-16.46-8.25-8.91-19.96-14.02-32.14-14.02s-23.79,5.09-31.97,13.96c-9.83,10.66-23.23,16.53-37.71,16.53s-26.71-5.39-36.42-15.17c-9.71-9.78-15-22.76-14.89-36.54.21-28.08,23.63-50.92,52.21-50.92h138.58c14.22,0,27.44,5.68,37.23,16,9.78,10.31,14.76,23.84,14.01,38.11-1.42,27.07-23.82,48.38-50.98,48.52h-.26Z';
-// The zoom aims at the window above the nose (x 322.3, halfway between the lens top 931.9 and the notch 1044 → y 988),
-// not the box centre: there the tank isn't cut by the nose, and at zoom ≥ ~1.5 the lens covers the whole screen.
-const LENS = { cx: 322.3, cy: 988, w: 282.1, h: 142.6 };
-const LENS_BOTTOM = 1074.5;   // the glass's bottom edge (the lobes; the nose notch rises to 1044 in the middle)
+// The dark blue inner glass (the only part that shows the tank): x 201.23…443.33, its lobes' bottom edge y 1054.52.
+const GLASS = { x0: 201.23, x1: 443.33, bottom: 1054.52, cx: 322.28, cy: 1003.2 };
 const LENS_PATH = new Path2D(LENS_D), INNER_PATH = new Path2D(INNER_D);
 
 // ===== The sketch itself =====
@@ -131,19 +132,24 @@ for (const k of Object.keys(ART)) {
   im.src = URL.createObjectURL(new Blob([ART[k]], { type: 'image/svg+xml' })); imgs[k] = im;
 }
 
-// phases: console → pull (periscope glides down) → in (zoom / slide) → tank → out (zoom out / slide up) → lift (periscope up) → console
-const S = { phase: 'console', t: 0, hold: false };
-const DUR = { pull: () => GOO.pullMs, in: () => GOO.zoomMs, out: () => GOO.backMs, lift: () => GOO.pullMs };
-const NEXT = { pull: 'in', in: 'tank', out: 'lift', lift: 'console' };
-function pull() { if (S.phase === 'console') { S.phase = 'pull'; S.t = 0; } }
-function back() { if (S.phase === 'tank') { S.phase = 'out'; S.t = 0; } }
-function reset() { S.phase = 'console'; S.t = 0; S.hold = false; tank.reset(); }
+// phases (like the game's PullHandle): console (a finger drags the periscope: S.drag 0…1) → let go past LET_GO: glide
+// (the rest of the way) → in (zoom / slide) → tank → out (zoom out / slide up) → lift (periscope springs up) → console.
+// Let go short of LET_GO: spring (back up). A tap on the goggles, the button or ↓ = a glide from the top.
+const S = { phase: 'console', t: 0, hold: false, drag: null, from: 0 };
+const DUR = { glide: () => GOO.pullMs * (1 - S.from), spring: () => GOO.pullMs * S.from, in: () => GOO.zoomMs, out: () => GOO.backMs, lift: () => GOO.pullMs };
+const NEXT = { glide: 'in', spring: 'console', in: 'tank', out: 'lift', lift: 'console' };
+function go(phase, from = 0) { S.phase = phase; S.t = 0; S.from = from; S.drag = null; }
+function pull() { if (S.phase === 'console') go('glide', S.drag ?? 0); }
+function back() { if (S.phase === 'tank') go('out'); }
+function reset() { go('console'); S.hold = false; tank.reset(); }
 function easeIO(t) { const k = GOO.ease; return t < 0.5 ? 0.5 * Math.pow(2 * t, k) : 1 - 0.5 * Math.pow(2 - 2 * t, k); }
+const easeOut = t => 1 - Math.pow(1 - t, 3);   // the periscope's glide / spring: quick off the finger, soft at the end
 const clamp01 = v => Math.max(0, Math.min(1, v));
-// where we are: pullAmt (0 up … 1 down) and sw (the switch: 0 = console … 1 = tank), both eased
+// where we are: pullAmt (0 up … 1 down) and sw (the switch: 0 = console … 1 = tank)
 function progress() {
-  const e = easeIO(clamp01(S.t)), p = S.phase;
-  return { pullAmt: p === 'pull' ? e : p === 'lift' ? 1 - e : p === 'console' ? 0 : 1,
+  const t = clamp01(S.t), e = easeIO(t), o = easeOut(t), p = S.phase;
+  return { pullAmt: p === 'console' ? S.drag ?? 0 : p === 'glide' ? S.from + (1 - S.from) * o : p === 'spring' ? S.from * (1 - o)
+             : p === 'lift' ? 1 - o : 1,
            sw: p === 'in' ? e : p === 'out' ? 1 - e : p === 'tank' ? 1 : 0 };
 }
 
@@ -170,7 +176,7 @@ const tank = {
     g.fillStyle = '#071214'; g.fillRect(0, 0, w, h);
     const availH = h - top - bottom - 16, cell = Math.min((w - 32) / this.cols, availH / this.rows);
     const gw = cell * this.cols, gh = cell * this.rows, x0 = (w - gw) / 2, y0 = top + 8 + (availH - gh) / 2;
-    this.geo = { cell, floorX: x0 + gw / 2, floorY: y0 + gh };   // where the vat's floor centre is in this picture (px)
+    this.geo = { gx: x0, gw, floorY: y0 + gh };   // the vat in this picture (px): its left edge, width and floor
     g.fillStyle = '#0f2a2f'; g.strokeStyle = '#2f7f86'; g.lineWidth = 3;
     g.beginPath(); g.roundRect(x0 - 6, y0 - 6, gw + 12, gh + 12, 14); g.fill(); g.stroke();
     g.strokeStyle = '#17363b'; g.lineWidth = 1;
@@ -189,7 +195,8 @@ const tankCanvas = document.createElement('canvas'), tctx = tankCanvas.getContex
 function update(dt) {
   tank.update(dt);
   if (S.hold || !DUR[S.phase]) return;
-  S.t += dt * 1000 / Math.max(1, DUR[S.phase]());
+  const ms = DUR[S.phase]();
+  S.t = ms <= 0 ? 1 : S.t + dt * 1000 / ms;   // (let go AT the end = no glide: the zoom starts at once, as in the game)
   if (S.t >= 1) { S.phase = NEXT[S.phase]; S.t = 0; }
 }
 
@@ -206,31 +213,27 @@ function draw() {
   tctx.setTransform(dpr, 0, 0, dpr, 0, 0); tank.draw(tctx, viewW, viewH, barTop, barBottom);
   if (ready < Object.keys(ART).length) return;
   const { pullAmt, sw } = progress(), style = Math.round(GOO.style), base = baseFit();
-  const pullY = pullAmt * TRAVEL, Lx = LENS.cx, Ly = LENS.cy + pullY;
-  const C = { x: viewW / 2, y: viewH / 2 };
-  // the zoom: the scale grows steadily (log), and the lens moves to the screen's centre as it grows — like zooming at a point
-  const s1 = GOO.zoom * viewH / LENS.h;
+  const pullY = pullAmt * TRAVEL;
+  // the tank, pinned to the periscope (mock-up units; m = units per tank-picture px): its whole width — all 8 columns — is
+  // the dark blue glass's width, its floor just above the glass's bottom edge. It moves with the periscope and scales with
+  // it: nothing about it changes during the zoom but the zoom itself.
+  const G = tank.geo, m = (GLASS.x1 - GLASS.x0) / G.gw;
+  const tw = viewW * m, th = viewH * m, tx = GLASS.x0 - G.gx * m, ty = GLASS.bottom - FLOOR_LIFT + pullY - G.floorY * m;
+  // the zoom ends where that pinned tank IS the full-screen tank (s = 1 / m, the tank picture's corner at the screen's):
+  // the switch to the real tank at the end is then exact. The scale grows steadily (log); a point on the glass glides
+  // from where it is on the console to where it lands.
+  const s1 = 1 / m, ox1 = -s1 * tx, oy1 = -s1 * ty;
   let s = base.s, ox = base.ox, oy = base.oy, slide = 0;
   if (style < 2 && sw > 0) {
     s = base.s * Math.pow(s1 / base.s, sw);
-    const w = (s - base.s) / (s1 - base.s || 1);
-    const px = (base.s * Lx + base.ox) * (1 - w) + C.x * w, py = (base.s * Ly + base.oy) * (1 - w) + C.y * w;
-    ox = px - s * Lx; oy = py - s * Ly;
+    const w = (s - base.s) / (s1 - base.s || 1), Px = GLASS.cx, Py = GLASS.cy + pullY;
+    const px = (base.s * Px + base.ox) * (1 - w) + (s1 * Px + ox1) * w, py = (base.s * Py + base.oy) * (1 - w) + (s1 * Py + oy1) * w;
+    ox = px - s * Px; oy = py - s * Py;
   }
   if (style === 2) slide = sw * viewH;
-  // the tank's place, in mock-up units (m = units per picture px). Muzzy 2026-11-01: the goggles' glass is FILLED with
-  // the game, looking close at the bottom of the vat — lensCols columns span the glass edge to edge, the vat's floor just
-  // above the glass's bottom edge (the rest of the tank is above, out of view). At the end of the zoom it is exactly the
-  // full-screen tank. In between, the size changes steadily (log) and the floor point glides from one place to the other,
-  // so on screen the goo stays about the same size while the window opens round it.
-  const G = tank.geo, m0 = LENS.w / (GOO.lensCols * G.cell), m1 = 1 / s1;
-  const m = m0 * Math.pow(m1 / m0, sw);
-  const floor0 = { x: Lx, y: LENS_BOTTOM + pullY - FLOOR_LIFT };                    // at the console
-  const floor1 = { x: Lx - viewW * m1 / 2 + G.floorX * m1, y: Ly - viewH * m1 / 2 + G.floorY * m1 };   // the full-screen tank
-  const fx = floor0.x + (floor1.x - floor0.x) * sw, fy = floor0.y + (floor1.y - floor0.y) * sw;
-  const tw = viewW * m, th = viewH * m, tx = fx - G.floorX * m, ty = fy - G.floorY * m;
-  const consoleA = style < 2 ? clamp01((1 - sw) / 0.2) : 1;   // A/B: the frame fades in the last fifth (no jump at a low zoom)
-  const glassA = style === 2 ? 1 : (style === 1 ? GLASS_TINT : 1) * (1 - clamp01(sw / GOO.glassFade));
+  const consoleA = style < 2 ? clamp01((1 - sw) / Math.max(0.01, GOO.frameFade)) : 1;   // A/B: the console fades away at the end
+  // what lies over the tank in the dark blue glass: A = the painted glass until the zoom is a third in; B = a tint
+  const glassA = style === 0 ? 1 - clamp01(sw / 0.33) : style === 1 ? GOO.tint * (1 - sw) : 1;
   const tankShows = style === 1 || (style === 0 && sw > 0);
 
   if (S.phase === 'tank') { ctx.drawImage(tankCanvas, 0, 0, viewW, viewH); return; }
@@ -247,11 +250,13 @@ function draw() {
   for (const [k2, x, y, w, h] of LAYERS) ctx.drawImage(imgs[k2], x, y, w, h);
   ctx.translate(0, pullY);
   ctx.drawImage(imgs.periscope, PERI[0], PERI[1], PERI[2], PERI[3]);
+  // the goggles: the black ring stays black (part of the console, it fades with it); only the dark blue inner glass
+  // shows the tank (B always, A once the zoom starts), with the glass colour over it (glassA)
+  ctx.fillStyle = '#0b1c3f'; ctx.fill(LENS_PATH);
   ctx.globalAlpha = 1;
-  // the goggles' lens: the tank behind the glass (B always, A once the zoom starts), then the painted glass over it
-  ctx.save(); ctx.clip(LENS_PATH);
-  if (tankShows) { ctx.fillStyle = '#071214'; ctx.fill(LENS_PATH); ctx.drawImage(tankCanvas, tx, ty - pullY, tw, th); }
-  ctx.globalAlpha = glassA; ctx.fillStyle = '#0b1c3f'; ctx.fill(LENS_PATH); ctx.fillStyle = '#373a60'; ctx.fill(INNER_PATH);
+  ctx.save(); ctx.clip(INNER_PATH);
+  if (tankShows) { ctx.fillStyle = '#071214'; ctx.fill(INNER_PATH); ctx.drawImage(tankCanvas, tx, ty - pullY, tw, th); }
+  ctx.globalAlpha = tankShows ? glassA : consoleA; ctx.fillStyle = '#373a60'; ctx.fill(INNER_PATH);
   ctx.restore(); ctx.globalAlpha = consoleA;
   ctx.translate(0, -pullY);
   ctx.drawImage(imgs.monitor, MONITOR[0], MONITOR[1], MONITOR[2], MONITOR[3]);
@@ -277,11 +282,40 @@ addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input')) return;
   if (e.key === 'ArrowDown') { pull(); e.preventDefault(); } if (e.key === 'ArrowUp') { back(); e.preventDefault(); }
 });
-// swipe: down on the console pulls the periscope, up in the tank goes back
-let swipeY = null;
-canvas.addEventListener('pointerdown', e => { swipeY = e.clientY; });
-canvas.addEventListener('pointerup', e => { if (swipeY === null) return; const dy = e.clientY - swipeY; swipeY = null;
-  if (dy > 40) pull(); else if (dy < -40) back(); });
+// the periscope follows the finger like the game's PullHandle: grab its goggles (the bottom GRIP of it), drag down —
+// it moves with you, up to its travel; let go past LET_GO and it glides the rest of the way (then the zoom), short of it
+// and it springs back. A press that doesn't move = a tap = the whole pull. In the tank, a swipe up goes back.
+let press = null;
+function gripHit(x, y) {
+  const b = baseFit(), pullY = (S.drag ?? 0) * TRAVEL;
+  const left = b.s * PERI[0] + b.ox, right = b.s * (PERI[0] + PERI[2]) + b.ox;
+  const bottom = b.s * (PERI[1] + PERI[3] + pullY) + b.oy, top = bottom - b.s * PERI[3] * GRIP;
+  return x >= left && x <= right && y >= top && y <= bottom;
+}
+canvas.addEventListener('pointerdown', e => {
+  if (S.phase === 'console' && !gripHit(e.offsetX, e.offsetY)) return;
+  if (S.phase !== 'console' && S.phase !== 'tank') return;
+  press = { id: e.pointerId, y: e.clientY, moved: false, grab: S.phase === 'console' };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove', e => {
+  if (!press || press.id !== e.pointerId) return;
+  const dy = e.clientY - press.y;
+  if (!press.moved && Math.abs(dy) < 8) return;
+  press.moved = true;
+  if (press.grab && S.phase === 'console') S.drag = clamp01(dy / (TRAVEL * baseFit().s));
+});
+function letGo(e) {
+  if (!press || press.id !== e.pointerId) return;
+  const p = press; press = null;
+  if (p.grab && S.phase === 'console') {
+    if (!p.moved) { pull(); return; }                        // a tap: the whole pull
+    const share = S.drag ?? 0;
+    if (share >= LET_GO) go('glide', share); else go('spring', share);
+  } else if (!p.grab && S.phase === 'tank' && e.clientY - p.y < -40) back();
+}
+canvas.addEventListener('pointerup', letGo);
+canvas.addEventListener('pointercancel', e => { if (press && press.grab && S.phase === 'console') go('spring', S.drag ?? 0); press = null; });
 
 // ===== Sketch kit (keep as is): docked knobs, presets, copy values, help lines, fps =====
 const SIDE = 300;
@@ -319,7 +353,7 @@ $('bKnobs').onclick = () => {
   try { localStorage.setItem('sketch-knobs-open', $('panel').classList.contains('open') ? '1' : '0'); } catch (e) {}
 };
 // Presets: + Preset saves the current knobs (up to 3); tap one to load it; × deletes. Stored in this browser only.
-const PKEY = 'sketch-presets-v2:' + location.pathname.split('/').pop();   // v2: lensCols replaced lensTank (Muzzy, 2026-11-01)
+const PKEY = 'sketch-presets-v3:' + location.pathname.split('/').pop();   // v3: the rework's knobs (Muzzy, 2026-11-01)
 function readKnobs() { const v = {}; for (const [k, lo] of KNOBS) if (lo !== undefined) v[k] = GOO[k]; return v; }
 function setKnobs(v) { for (const [k, lo] of KNOBS) if (lo !== undefined && k in v) { GOO[k] = v[k]; showKnob(k); } }
 const DEFAULTS = readKnobs();
@@ -327,7 +361,7 @@ let presets = [], activePreset = 'd';
 try { presets = JSON.parse(localStorage.getItem(PKEY)) || []; } catch (e) {}
 // (this sketch starts with its three looks as the presets — delete one with × to save your own)
 try { if (localStorage.getItem(PKEY) === null) presets = [
-  { name: 'A zoom', values: { ...DEFAULTS, style: 0, zoom: 1.8, glassFade: 0.6, zoomMs: 800, backMs: 600, ease: 3 } },
+  { name: 'A zoom', values: { ...DEFAULTS, style: 0 } },
   { name: 'B lens', values: { ...DEFAULTS } },
   { name: 'C slide', values: { ...DEFAULTS, style: 2, zoomMs: 600, backMs: 600, ease: 2.5 } }]; } catch (e) {}
 function savePresets() { try { localStorage.setItem(PKEY, JSON.stringify(presets)); } catch (e) {} }
