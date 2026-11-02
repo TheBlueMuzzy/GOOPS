@@ -37,6 +37,7 @@ import pauseTuning from '../../content/tuning/pause.json'
 import { clockPause, looksClock, rulesClock } from '../devkit/gameClock'
 import { onTuning } from '../devkit/tuning/liveTuning'
 import { session } from './session'
+import { tankWindow } from './periscopeView'
 import { lessonPlay, placeLessonMark, runner as lessonRunner } from './lessons/goopsLessons'
 import { CHORUS_SEEN } from './lessons/storyMoments'
 import { playGameSound, playShiftSounds } from './sound'
@@ -47,6 +48,9 @@ import './game.css'
 const HUD_SIDE_ROOM = 16 // CSS px the HUD may reach past each side of the tank (the kit's screen edge gap)
 const HUD_MIN_WIDTH = 360 // the HUD needs a narrow phone's width even when the tank is smaller (a phone on its side)
 const PIN_GAP = 8 // CSS px kept between the messages and the HUD's top row
+// F56: frames a still tank (the next shift's, in the goggles) is drawn after a change, so the goo renderer and the
+// visor layer have their first pictures — then it's left alone
+const STILL_FRAMES = 30 // tuning-ok: a render detail (enough frames for every layer's first picture), not a look or feel
 
 export interface HudSnapshot {
   pressure: number
@@ -88,9 +92,12 @@ interface Props {
   onEnd(status: ShiftStatus): void
   onMessage(m: Message): void // a short in-shift message to show (src/game/messages.ts decides which)
   onConsole(): void
+  // F56: the next shift's tank in the periscope's goggles between shifts (src/game/PeriscopeZoom.tsx) — drawn, never
+  // played: no ticks, no events, no HUD, and the rules clock is left to the console (its lessons' timers use it)
+  still?: boolean
 }
 
-export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, abilityRowPx, swapHoldMult, readout, onHud, onEnd, onMessage, onConsole }: Props) {
+export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, abilityRowPx, swapHoldMult, readout, onHud, onEnd, onMessage, onConsole, still = false }: Props) {
   const style = useSyncExternalStore(gooStyle.subscribe, gooStyle.get)
   const readoutAt = useSyncExternalStore(readoutSetting.subscribe, readoutSetting.get)
   const host = useRef<HTMLDivElement>(null)
@@ -105,12 +112,22 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
   // outline), above him; n = which one (a new one restarts the bubble). Set only on the event, never per frame.
   // F64: his lines as he drops into the final shift ("oh! hi!" …) use the same bubble.
   const [vetSays, setVetSays] = useState<{ x: number; y: number; n: number; words: string } | null>(null)
+  // F56: frames left to draw while still (the next shift's tank in the goggles) — refilled by a re-fit or a new goo style
+  const stillFrames = useRef(STILL_FRAMES)
+  const devHook = useRef<unknown>(null) // (dev + tests: what window.__goops gets — set by the frame loop's effect)
   const vetTyped = useRef(false) // F75: his bubble's whole line is showing (TalkingBubble onTyped)
-  const live = useRef({ inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole })
-  useEffect(() => { live.current = { inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole } })
+  const live = useRef({ inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole, still })
+  useEffect(() => { live.current = { inputOn, readoutAt, swapHoldMult, onHud, onEnd, onMessage, onConsole, still } })
   // THE RULES CLOCK (src/devkit/gameClock.ts): how fast the shift runs. The Dev Kit's ⏸ / ◐ pauses stop it on top
   // of this (rulesClock.rate = 0); the frame loop ticks the engine by rate.
-  useEffect(() => { rulesClock.scale = speed }, [speed])
+  // (F56: not for the still tank in the goggles between shifts — the console runs the rules clock then)
+  useEffect(() => { if (!still) rulesClock.scale = speed }, [speed, still])
+  // F56: the periscope's goggles look at this stage (src/game/periscopeView.ts) while it's mounted
+  useEffect(() => {
+    const el = host.current
+    tankWindow.stage = el
+    return () => { if (tankWindow.stage === el) { tankWindow.stage = null; tankWindow.box = null } }
+  }, [])
 
   // the Settings "Wall kick" row: applied now and whenever it changes
   useEffect(() => {
@@ -128,6 +145,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
   useEffect(() => {
     const g = makeGoo[style](gooCanvas.current!)
     gooRef.current = g
+    stillFrames.current = STILL_FRAMES // (F56: a still tank draws its new goo too)
     return () => { g.dispose(); if (gooRef.current === g) gooRef.current = null }
   }, [style])
 
@@ -172,6 +190,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     // Two clocks (gameClock.ts): the frame's time comes from the LOOKS clock (stops only on the Dev Kit's full pause,
     // so nothing jumps on resume); the engine moves by that time × rulesClock.rate (0 under any pause or menu).
     let camera = s.spin, last = looksClock.now(), hudAt = 0, raf = 0, ended = false
+    stillFrames.current = STILL_FRAMES
     let toastsAt = 0, toastsAtPx = '', toastsStart = '', toastsEnd = '' // the messages' point + sides, as last set
     const messages = createMessages(messageTuning as MessageTuning) // (reads the live tuning each time it decides)
     const guide = createDropGuide()
@@ -188,7 +207,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     let readoutDrawn = '' // the leader line as last drawn (only redrawn when it moves)
 
     const resize = () => {
-      const r = el.getBoundingClientRect()
+      // (its layout size, not its box on screen: at the console the periscope's zoom scales the whole stage — F56)
+      const r = { width: el.clientWidth, height: el.clientHeight }
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
       // the bottom panel: a share of the window's height, but tall enough for its rows at the current text size — and
       // (F59, from rank 1) for the next-piece window at its left: its cells + its frame (padding gap-xs + border) + the
@@ -207,6 +227,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       const L = layoutTank({ screenW: r.width, screenH: r.height, visibleWidth: s.visibleWidth, visibleRows: s.height - s.bufferRows,
         reserveTop: side ? hud.sideTopPx : hud.topRowPx, reserveBottom: side ? 2 * hud.gutterPx : dock + P.gapPx, gutter: hud.gutterPx })
       Object.assign(view, { cellPx: L.cellPx, centreX: L.centreX, topY: L.topY, width: r.width, height: r.height, dpr })
+      tankWindow.box = { left: L.left, width: L.widthPx, floor: L.topY + L.heightPx } // (F56: where the goggles pin it)
+      stillFrames.current = STILL_FRAMES
       // the HUD's corners sit over the tank, not at the far window edges (kit --kit-hud-w; menus keep the whole window);
       // beside a tank on a phone on its side it reaches past it far enough for the panel column
       const sideRoom = side ? dock + 2 * HUD_SIDE_ROOM : HUD_SIDE_ROOM
@@ -224,16 +246,21 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
 
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame)
+      // F56: the still tank in the goggles between shifts is drawn for a few frames after anything changes (so every
+      // layer has its first picture), then left alone — no second loop, no work while it sits there
+      const quiet = live.current.still
+      if (quiet && stillFrames.current <= 0) return
+      if (quiet) stillFrames.current--
       const looksMs = looksClock.now()
       const dt = Math.min((looksMs - last) / 1000, 0.1)
       last = looksMs
       // (× a lesson's speed: 0 while a lesson message pauses the shift, src/game/lessons/goopsLessons.ts)
-      const rate = rulesClock.rate * lessonPlay.speed()
+      const rate = quiet ? 0 : rulesClock.rate * lessonPlay.speed()
       const active = rate > 0 && s.status === 'playing'
       // ◐ the Dev Kit's half pause: the rules stand still, the looks (wave, pulses, glide, goo) keep moving
       const half = clockPause() === 'half' && s.status === 'playing'
       if (active) engine.tick(dt * 1000 * rate)
-      const events: ShiftEvent[] = engine.takeEvents()
+      const events: ShiftEvent[] = quiet ? [] : engine.takeEvents() // (F56: a still tank keeps its events for when it plays)
       if (events.length) { session.emit(events); playShiftSounds(events) } // (sounds: only while the rules clock runs)
       camera = stepCamera(camera, s.spin, s.width, dt, tank.cameraSpeed)
       view.camera = camera
@@ -303,8 +330,11 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       const gc = gooCanvas.current, clip = `inset(${view.topY}px 0 0 0)`
       if (gc && gc.style.clipPath !== clip) gc.style.clipPath = clip
       visorFx.current?.frame(s, view, looksMs / 1000)
-      placeLessonMark(lessonMark.current, s, view, visorFx.current?.curve() ?? 0) // what a lesson message points at (F30)
+      if (!quiet) placeLessonMark(lessonMark.current, s, view, visorFx.current?.curve() ?? 0) // what a lesson message points at (F30)
       readoutDrawn = placeReadout(readoutEl.current, rctx, s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0, readoutDrawn)
+      // (F56: a still tank in the goggles stops here — the rest is the playing shift's: the HUD, the messages and their
+      // place, the end)
+      if (quiet) return
       // count new breakdowns BEFORE the HUD snapshot: the console keys each repair panel by its break count, so a
       // snapshot saying "broken" with the old count would re-light an already-solved panel (a free repair)
       for (const e of events) if (e.type === 'breakdown') breaks[e.machine]++
@@ -376,7 +406,8 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     // (say: show an in-shift message now, e.g. say('brokeLaser') — e2e/hud-shots.mjs checks where it sits;
     // readout(): where the pressure readout's line and words are; setReadout({ readoutPosition, readoutDirection }): as if
     // the Settings rows changed; fastDrop(on): as if fast drop were held; clocks(): the rules + looks clocks, ms)
-    if (import.meta.env.DEV) (window as unknown as { __goops?: unknown }).__goops = { engine, view, gooStyle, breakMachine: devBreakMachine(engine, breaks),
+    // (F56: handed to the page only once this tank plays — the still one in the goggles between shifts isn't the shift)
+    if (import.meta.env.DEV) devHook.current = { engine, view, gooStyle, breakMachine: devBreakMachine(engine, breaks),
       say: (key: Message['key'], seconds = 30) => live.current.onMessage({ key, danger: false, seconds }),
       readout: () => readoutGeometry(s, view, live.current.readoutAt, readoutSize, topRow, visorFx.current?.curve() ?? 0),
       setReadout: (values: Record<string, unknown>) => readoutSetting.setFromSettings({ ...readoutSettingValues(readoutSetting.get()), ...values }),
@@ -431,6 +462,10 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       for (const v of ['--kit-hud-w', '--kit-hud-dock-size', '--kit-toasts-at', '--kit-toasts-start', '--kit-toasts-end']) root.style.removeProperty(v)
     }
   }, [engine])
+  // (dev + tests: window.__goops, from the frame loop above — once this tank is the shift, not the still one, F56)
+  useEffect(() => {
+    if (import.meta.env.DEV && !still && devHook.current) (window as unknown as { __goops?: unknown }).__goops = devHook.current
+  }, [engine, still])
 
   return (
     <div className="stage" ref={host} data-testid="stage">

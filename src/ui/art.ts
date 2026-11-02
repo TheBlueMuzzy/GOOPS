@@ -53,6 +53,8 @@ export const art = {
     career: scene.career, // F65: the new career's gold trim (Console.tsx)
     monitorDrop: scene.monitorDrop, // F35: how much lower the monitor hangs at rest (0 while a lesson shows the periscope)
     periscope: { ...layer(scene.layers.periscope), travel: scene.layers.periscope.travel, grip: scene.layers.periscope.grip },
+    // F56: the goggles' two glass shapes (the black ring, the dark blue inner glass) — the tank shows through them
+    periscopeGlass: { ring: { ...scene.periscopeGlass.ring, box: rect(scene.periscopeGlass.ring.box) }, inner: { ...scene.periscopeGlass.inner, box: rect(scene.periscopeGlass.inner.box) } },
     // the meter's words + bar sit over its art; the bar picture's shape = width / height
     meterText: scene.meterText,
     meterFill: { fill: url(scene.meterFill.file), ratio: scene.meterFill.at[2] / scene.meterFill.at[3] },

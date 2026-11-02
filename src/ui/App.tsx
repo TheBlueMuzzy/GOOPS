@@ -90,6 +90,7 @@ function newEngine(progress: Progress, training = false): { engine: ShiftEngine;
   return { engine, upgrades }
 }
 const NO_UPGRADES = upgradesForShift(freshProgress(), true)
+type NextShift = { engine: ShiftEngine; upgrades: ResolvedUpgrades; training: boolean } // F56: the shift the goggles show at the console
 type LessonStart = { id: string; step: number | string }
 
 // (Replay lessons, F32: the device forgets which lessons it has seen — each machine's plays again at its next break;
@@ -234,9 +235,11 @@ export function App() {
   const pendingLesson = useRef<LessonStart | null>(null)
   const urlLesson = useRef<LessonStart | null>(lessonFromUrl())
   const freshShift = useRef(false) // F59: a real shift just started — its unlock lesson (if any) plays once the tank shows
-  const start = useCallback((lesson?: LessonStart) => {
+  // (F56: `ahead` = the engine the console's goggles were already showing — the next shift, made ahead; else a new one)
+  const nextShiftRef = useRef<NextShift | null>(null)
+  const start = useCallback((lesson?: LessonStart, ahead?: { engine: ShiftEngine; upgrades: ResolvedUpgrades }) => {
     lessonPlay.stop()
-    const made = newEngine(progressRef.current, !!lesson)
+    const made = ahead ?? newEngine(progressRef.current, !!lesson)
     const e = lesson ? lessonPlay.attach(made.engine) : made.engine
     setUpgrades(made.upgrades)
     // a real shift: its machines' first breakdowns may start their lessons (F32)
@@ -253,7 +256,9 @@ export function App() {
     if (storyMoments.playing() || ending.playing()) return // (F35: the periscope waits for a story moment — Console disables it too; F65: the ending)
     const lesson = urlLesson.current ?? (dayDue(progressRef.current) ? { id: FIRST_DAY, step: firstDay.startStep() } : null)
     urlLesson.current = null
-    start(lesson ?? undefined); setMeterFrom(null); setMode('leaving')
+    // (F56: the shift the goggles showed is the one that starts — when it's the right kind: a lesson's or a real one)
+    const ahead = nextShiftRef.current
+    start(lesson ?? undefined, ahead && ahead.training === !!lesson ? ahead : undefined); setMeterFrom(null); setMode('leaving')
   }, [start])
   // the tank is on screen: a lesson waiting for it starts now — or, at the start of a real shift, what this rank
   // unlocked that the device hasn't been shown yet (F59, one per shift start: unlockLessons.ts)
@@ -299,6 +304,16 @@ export function App() {
   const endingView = useSyncExternalStore(ending.subscribe, ending.view)
   const endingAt = endingView?.step.at ?? null
   useEffect(() => { if (mode === 'shift' && endingAt === 'console') toConsole() }, [mode, endingAt, toConsole])
+  // F56: between shifts the periscope's goggles show the NEXT shift's tank, still (nothing falls until you're in) — made
+  // ahead on each visit to the console (and again when what it's made from changes: an upgrade bought, a rank picked);
+  // the pull starts that same engine (leaveConsole). A lesson's training shift when the first day is due. None during
+  // the ending (no next shift for this operator): the goggles keep their painted glass.
+  const nextShift = useMemo<NextShift | null>(() => {
+    if (mode !== 'console' || endingAt) return null
+    const training = dayDue(progress)
+    return { ...newEngine(progress, training), training }
+  }, [mode, progress, endingAt])
+  useEffect(() => { nextShiftRef.current = nextShift }, [nextShift])
   // F65 the end-game screen's button: the new career — rank 0 again on the console (src/game/newCareer.ts)
   const newCareer = useCallback(() => {
     const p = beginNewCareer()
@@ -572,7 +587,9 @@ export function App() {
   // The pressure readout hangs on the pressure line (ShiftStage); messages show just above the goop.
   // (Which bars the panel holds, and the window, are known when the shift starts — they unlock between shifts — so its
   // height never changes mid-shift.)
-  const unlocked = engine ? MACHINES.filter((id) => engine.state.machines?.[id].unlocked) : []
+  // (F56: the tank on screen — at the console between shifts, the next shift's, in the periscope's goggles)
+  const shown = mode === 'console' ? nextShift?.engine ?? null : engine
+  const unlocked = shown ? MACHINES.filter((id) => shown.state.machines?.[id].unlocked) : []
   const low = hudTuning.bars.lowAt
   const machineBars = hud && unlocked.map((id) => {
     const m = hud.machines[id], alert = m.broken ? 'flash' : m.health < low ? 'pulse' : undefined
@@ -599,7 +616,7 @@ export function App() {
   // button (F34's spot), which only has room for ONE — with 2 or 3 they go in the panel row anyway. topRowWhenOne: with
   // exactly one equipped it stays in the top row whatever the layout. Known when the shift starts (what's equipped).
   const A = hudTuning.abilities
-  const equipped = engine?.state.abilities?.length ?? 0
+  const equipped = shown?.state.abilities?.length ?? 0
   const abilitiesOnTop = equipped === 1 && (A.layout === 'topRow' || A.topRowWhenOne)
   const abilityRow = equipped > 0 && !abilitiesOnTop
   // F34: with an active in the top row its charge button takes ~50 px of it, and the widest count a real game shows
@@ -633,7 +650,7 @@ export function App() {
     ? <Row gap="s" justify="center" className="hud-abilities" style={{ '--kit-hud-abilities-gap': `${A.gapPx}px` } as CSSProperties}>{abilityButtons}</Row>
     : undefined
   // F59: the next-piece window, from its rank (known when the shift starts, like the machines)
-  const showNext = !!engine && isUnlocked('nextPiece', engine.state.rank)
+  const showNext = !!shown && isUnlocked('nextPiece', shown.state.rank)
   const nextWindow = hud && showNext ? <NextWindow piece={hud.next} label={text.hud.next} /> : undefined
   // The panel: the window at the left, the bars to its right — the machines in a row (each at most bars.machineWidth of
   // that room, never narrower than its name: the kit Bar's atMost) over the integrity bar; F42: the charge buttons' row
@@ -646,8 +663,9 @@ export function App() {
   const readout = hud && <HudText size="s" live numbers>{fill(text.hud.pressureReadout, { n: Math.round(hud.pressure * 100) })}</HudText>
   return (
     <>
-      {engine && mode !== 'console' && (
-        <ShiftStage engine={engine} speed={speed} inputOn={mode === 'shift' && !open.length && !sideways}
+      {/* (F56: mounted at the console too — the next shift's tank, still, seen through the periscope's goggles) */}
+      {shown && (
+        <ShiftStage engine={shown} still={mode === 'console'} speed={speed} inputOn={mode === 'shift' && !open.length && !sideways}
           panel={unlocked.length ? 'machines' : 'integrity'} side={short} nextWindow={showNext && !short}
           abilityRowPx={abilityRow && !short ? A.sizePx : 0} swapHoldMult={upgrades.modifiers.swapHoldTimeMult}
           readout={readout}

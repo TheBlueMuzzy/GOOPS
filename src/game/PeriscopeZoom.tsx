@@ -1,0 +1,227 @@
+// F56 — PERISCOPE ZOOM (Muzzy's sketch S13 v4, look B: .planning/research/sketches/periscope-zoom.html, picks.json).
+// The console wears this. At the console the periscope's goggles show the tank: the shift's stage (ShiftStage — the
+// SAME render as in the shift, so whatever is drawn over the tank later shows here too) stays full-screen UNDER the
+// console, the console has a hole where the goggles' glass is (a CSS mask), and the stage is moved + scaled so the
+// tank's whole width is the dark blue inner glass's width, its floor just above the glass's bottom edge. The black
+// ring round the inner glass shows the same tank blurred, with some of its black over it (a backdrop blur shaped like
+// the ring — it sits between the stage and the console, outside the console: a mask or a fade on the console would cut
+// a blur inside it off from the stage). The inner glass has a light tint of its colour.
+// The zoom (the sketch's draw(), style B): once the periscope has landed (phase 'leaving') the console scales up — the
+// size growing steadily (log), the glass's centre gliding to where it lands — until the inner glass IS the full-screen
+// tank: the stage is then exactly where the shift draws it, so the switch is exact (no jump). The console and the
+// ring fade out over the last frameFade of it. The way back ('arriving') is the mirror; then the periscope lifts as
+// its glide played backwards (Goops' CSS, periscope.css). Numbers: content/tuning/periscope.json, read every frame;
+// the zoom runs on the looks clock (the Dev Kit's full pause holds it). Reduce motion: no zoom, the switch is instant.
+// Its frame loop only moves and fades three elements (no drawing): the tank itself draws in ShiftStage's loop.
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import periscope from '../../content/tuning/periscope.json'
+import { art } from '../ui/art'
+import { motionTime, reduceMotion } from '../ui/kit'
+import { looksClock } from '../devkit/gameClock'
+import { tankWindow } from './periscopeView'
+import './periscope.css'
+
+type Phase = 'idle' | 'leaving' | 'arriving'
+type Props = {
+  phase: Phase // idle = the console · leaving = the periscope landed: zoom in · arriving = zoom out (then it lifts)
+  onDone(): void // the zoom (in or out) finished — or, with nothing to zoom, at once
+  children: ReactNode // the console's Screen
+}
+
+const P = art.console.periscope, G = art.console.periscopeGlass
+const [RX, RY, RW, RH] = G.ring.box
+// A glass path, moved so the ring's box corner is 0,0 (the overlay's own units). The art's paths start with one
+// absolute M and are relative after it (tests/periscopeGlass.test.ts checks), so only that M moves.
+const local = (d: string) => d.replace(/^M\s*([-\d.]+)[,\s]+([-\d.]+)/, (_, x, y) => `M${+(x - RX).toFixed(3)},${+(y - RY).toFixed(3)}`)
+const RING_CLIP = `path(evenodd, "${local(G.ring.d)} ${local(G.inner.d)}")` // the ring = the outer glass minus the inner
+const INNER_CLIP = `path("${local(G.inner.d)}")`
+// the hole in the console: the outer glass's shape, as a picture the mask places over the goggles
+const LENS_MASK = `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${RX} ${RY} ${RW} ${RH}" preserveAspectRatio="none"><path d="${G.ring.d}"/></svg>`)}")`
+const SOLID = 'linear-gradient(#000 0 0)'
+
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
+// ease-in-out power k: 1 = steady; higher = a softer start and landing, a quicker middle (the sketch's easeIO)
+const easeIO = (t: number, k: number) => (t < 0.5 ? 0.5 * Math.pow(2 * t, k) : 1 - 0.5 * Math.pow(2 - 2 * t, k))
+// the periscope's lift = its glide down played backwards: the style's --ease curve mirrored (a cubic-bezier's reverse
+// is (1-x2, 1-y2, 1-x1, 1-y1)); a curve that isn't a cubic-bezier → ease-in
+function reversedEase(): string {
+  const m = getComputedStyle(document.documentElement).getPropertyValue('--ease').match(/cubic-bezier\(([^)]+)\)/)
+  const v = m?.[1].split(',').map(Number)
+  if (!v || v.length !== 4 || v.some(Number.isNaN)) return 'ease-in'
+  return `cubic-bezier(${1 - v[2]}, ${1 - v[3]}, ${1 - v[0]}, ${1 - v[1]})`
+}
+
+type Box = { x: number; y: number; w: number; h: number }
+// Where things are with the console at rest (no zoom on it), in screen px
+type Geo = {
+  u: number; ox: number; oy: number // px per mock-up unit, and the screen px of the mock-up's 0,0 — for the periscope (with its pull)
+  front: Box[] // what lies over the goggles (the monitor and its screen): the hole never cuts them
+  stage: HTMLElement; k0: number; sx: number; sy: number // the stage pinned to the inner glass: x → k0·x + sx
+}
+
+// Measure the console at rest (its zoom off): the periscope picture's box gives the mock-up's scale and the pull
+function measure(wrap: HTMLElement): Geo | null {
+  const stage = tankWindow.stage, tank = tankWindow.box
+  const img = wrap.querySelector('.kit-pull img')
+  if (!stage || !tank || !img || tank.width <= 0) return null
+  const r = img.getBoundingClientRect()
+  if (r.width <= 0) return null
+  const u = r.width / P.at[2], ox = r.left - P.at[0] * u, oy = r.top - P.at[1] * u
+  const front = [wrap.querySelector('.console-monitor'), wrap.querySelector('.crt')].map((el) => {
+    const b = el?.getBoundingClientRect()
+    return b ? { x: b.left, y: b.top, w: b.width, h: b.height } : { x: 0, y: 0, w: 0, h: 0 }
+  })
+  const [ix, iy, iw, ih] = G.inner.box
+  const k0 = (iw * u) / tank.width
+  return { u, ox, oy, front, stage, k0, sx: ox + ix * u - k0 * tank.left, sy: oy + (iy + ih - periscope.floorLift) * u - k0 * tank.floor }
+}
+
+const matrix = (s: number, x: number, y: number) => `matrix(${s}, 0, 0, ${s}, ${x}, ${y})`
+// the stage back where the shift draws it (no zoom on it)
+const release = (stage: HTMLElement) => { stage.style.transform = ''; stage.style.transformOrigin = '' }
+
+export function PeriscopeZoom({ phase, onDone, children }: Props) {
+  const wrap = useRef<HTMLDivElement>(null)
+  const glass = useRef<HTMLDivElement>(null)
+  const ring = useRef<HTMLDivElement>(null)
+  const inner = useRef<HTMLDivElement>(null)
+  const done = useRef(onDone)
+  useEffect(() => { done.current = onDone })
+  // the zoom now: its direction (null = none), when it started (looks ms), the console measured at its start,
+  // and `held` (the 'in' zoom finished: its last frame stays until the console goes)
+  const zoom = useRef<{ dir: 'in' | 'out' | null; t0: number; geo: Geo | null; held: boolean; hold: number | null }>({ dir: null, t0: 0, geo: null, held: false, hold: null })
+  const written = useRef(new Map<string, string>()) // what each style was last set to (only changes are written)
+  const lastStage = useRef<HTMLElement | null>(null)
+
+  // Put everything where `geo` and the zoom share sw (0 = the console … 1 = the tank) say
+  const apply = useRef((geo: Geo | null, sw: number) => {
+    const w = wrap.current, g = glass.current, rg = ring.current, ig = inner.current
+    if (!w || !g || !rg || !ig) return
+    const set = (el: HTMLElement, key: string, prop: string, value: string) => {
+      const id = `${key}:${prop}`
+      if (written.current.get(id) === value) return
+      written.current.set(id, value)
+      el.style.setProperty(prop, value)
+    }
+    // (a new stage under the console: let go of the old one)
+    if (lastStage.current && lastStage.current !== geo?.stage) {
+      release(lastStage.current)
+      written.current.delete('stage:transform'); written.current.delete('stage:transform-origin')
+    }
+    lastStage.current = geo?.stage ?? null
+    if (!geo) { // nothing to look at (no tank, or the ending): the goggles' painted glass, as drawn
+      for (const prop of ['transform', 'opacity', 'mask-image']) set(w, 'wrap', prop, '')
+      set(g, 'glass', 'display', 'none')
+      return
+    }
+    const { u, ox, oy, k0, sx, sy } = geo
+    // the zoom: the console's scale z grows steadily from 1 to z1 (where the pinned tank IS the full-screen tank),
+    // and the glass's centre glides from where it is to where it lands (the sketch's draw(), style B)
+    const z1 = 1 / k0, z = Math.pow(z1, sw)
+    const cx = ox + (RX + RW / 2) * u, cy = oy + (RY + RH / 2) * u
+    const lerp = z1 === 1 ? 1 : (z - 1) / (z1 - 1)
+    const px = cx + (z1 * cx - sx / k0 - cx) * lerp, py = cy + (z1 * cy - sy / k0 - cy) * lerp
+    const zx = px - z * cx, zy = py - z * cy
+    const fade = clamp01((1 - sw) / Math.max(0.01, periscope.frameFade))
+    set(w, 'wrap', 'transform', sw > 0 ? matrix(z, zx, zy) : '')
+    set(w, 'wrap', 'opacity', fade < 1 ? String(fade) : '')
+    // the hole: the outer glass's shape, minus the monitor and its screen (they're in front of the periscope)
+    const [mon, crt] = geo.front, hole = { x: ox + RX * u, y: oy + RY * u, w: RW * u, h: RH * u }
+    const px2 = (b: Box) => `${b.x}px ${b.y}px`, size = (b: Box) => `${b.w}px ${b.h}px`
+    set(w, 'wrap', 'mask-image', `${SOLID}, ${SOLID}, ${LENS_MASK}, ${SOLID}`)
+    set(w, 'wrap', 'mask-size', `${size(mon)}, ${size(crt)}, ${size(hole)}, 100% 100%`)
+    set(w, 'wrap', 'mask-position', `${px2(mon)}, ${px2(crt)}, ${px2(hole)}, 0 0`)
+    set(w, 'wrap', 'mask-repeat', 'no-repeat')
+    set(w, 'wrap', 'mask-composite', 'add, add, exclude, add')
+    // the stage: pinned to the glass, then zoomed with the console (at sw 1: no transform at all — the shift's own place)
+    const k = z * k0, tx = z * sx + zx, ty = z * sy + zy
+    set(geo.stage, 'stage', 'transform-origin', '0 0')
+    set(geo.stage, 'stage', 'transform', sw >= 1 ? '' : matrix(k, tx, ty))
+    // the glass over the stage, in the ring's box (mock-up units → screen): the blurry ring, the inner glass's tint
+    set(g, 'glass', 'display', 'block')
+    set(g, 'glass', 'transform', matrix(z * u, z * hole.x + zx, z * hole.y + zy))
+    set(rg, 'ring', 'opacity', String(fade))
+    set(rg, 'ring', 'backdrop-filter', periscope.ringBlur > 0 ? `blur(${periscope.ringBlur}px)` : 'none') // (in the ring's units: it scales with it)
+    set(rg, 'ring', 'background-color', `color-mix(in srgb, ${G.ring.colour} ${clamp01(periscope.ringDark) * 100}%, transparent)`)
+    set(ig, 'inner', 'opacity', String(clamp01(periscope.tint) * (1 - sw)))
+  })
+
+  // A zoom starts: measure the console at rest (no zoom on it yet), then run it — or, with nothing to show or reduce
+  // motion on, finish at once
+  const begin = useRef((dir: 'in' | 'out') => {
+    const z = zoom.current, w = wrap.current
+    if (!w) return
+    w.style.transform = ''; written.current.delete('wrap:transform') // (at rest, for the measuring)
+    const geo = measure(w)
+    z.geo = geo
+    const ms = dir === 'in' ? periscope.zoomMs : periscope.backMs
+    if (!geo || reduceMotion() || ms <= 0) {
+      apply.current(dir === 'in' ? null : geo, 0)
+      z.dir = null; z.held = dir === 'in'
+      w.toggleAttribute('data-zoom', false)
+      done.current()
+      return
+    }
+    z.dir = dir; z.t0 = looksClock.now(); z.held = false
+    w.setAttribute('data-zoom', dir) // (tests wait for it to go: e2e/periscope-zoom.mjs and the console's other scripts)
+    apply.current(geo, dir === 'in' ? 0 : 1)
+  })
+
+  // each phase: leaving zooms in, arriving zooms out (a fresh console: before its first paint, so it opens zoomed in)
+  useLayoutEffect(() => {
+    if (phase === 'leaving') begin.current('in')
+    else if (phase === 'arriving') begin.current('out')
+  }, [phase])
+
+  useLayoutEffect(() => {
+    const w = wrap.current!
+    w.style.setProperty('--periscope-lift-ease', reversedEase())
+    let raf = 0, liftOff: (() => void) | null = null
+    const frame = () => {
+      raf = requestAnimationFrame(frame)
+      const z = zoom.current
+      if (z.dir) {
+        const ms = z.dir === 'in' ? periscope.zoomMs : periscope.backMs
+        const t = ms > 0 ? clamp01((looksClock.now() - z.t0) / ms) : 1
+        const e = easeIO(t, periscope.ease)
+        apply.current(z.geo, z.hold ?? (z.dir === 'in' ? e : 1 - e))
+        if (t < 1 || z.hold !== null) return
+        const dir = z.dir
+        z.dir = null; z.held = dir === 'in'
+        w.removeAttribute('data-zoom')
+        if (dir === 'out') {
+          // the periscope lifts next (the console's phase goes idle): its glide played backwards — periscope.css,
+          // for one glide's time
+          w.setAttribute('data-lift', '')
+          liftOff?.()
+          liftOff = looksClock.after(Math.max(1, motionTime('motion-normal')), () => w.removeAttribute('data-lift'))
+        }
+        done.current()
+      } else if (!z.held) apply.current(measure(w), 0) // at the console: follow the periscope (a drag, its glide, the lift)
+    }
+    raf = requestAnimationFrame(frame)
+    // (dev + tests: hold the zoom at a share — e2e/periscope-zoom.mjs shoots mid-zoom and the last frame; null = let go)
+    if (import.meta.env.DEV) (window as unknown as { __periscopeZoom?: unknown }).__periscopeZoom = {
+      hold: (sw: number | null) => { zoom.current.hold = sw },
+      state: () => ({ dir: zoom.current.dir, held: zoom.current.held }),
+    }
+    return () => {
+      cancelAnimationFrame(raf)
+      liftOff?.()
+      // the console goes: the stage is the shift's again, where it draws itself
+      if (lastStage.current) release(lastStage.current)
+      lastStage.current = null
+    }
+  }, [])
+
+  return (
+    <>
+      {/* the goggles' glass over the stage (under the console, which has a hole there): the blurry ring + the tint */}
+      <div className="periscope-glass" ref={glass} aria-hidden style={{ '--glass-w': `${RW}px`, '--glass-h': `${RH}px` } as CSSProperties}>
+        <div className="periscope-ring" ref={ring} style={{ clipPath: RING_CLIP }} />
+        <div className="periscope-inner" ref={inner} style={{ clipPath: INNER_CLIP, backgroundColor: G.inner.colour }} />
+      </div>
+      <div className="periscope-zoom" ref={wrap}>{children}</div>
+    </>
+  )
+}

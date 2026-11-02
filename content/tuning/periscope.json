@@ -1,0 +1,41 @@
+{
+  "_help": {
+    "_file": "F56 — Periscope zoom (Muzzy's pick B from sketch S13, .planning/research/periscope-zoom/picks.json): at the console the periscope's goggles show the tank — sharp in the dark blue inner glass, blurred in the black ring round it. Let go of the periscope at the bottom and the console zooms into the goggles until the glass IS the tank; going back zooms out the same way, then the periscope lifts. Read every frame (src/game/PeriscopeZoom.tsx): Dev Kit edits show at once, even mid-zoom. Reduce motion: no zoom, the switch is instant.",
+    "zoomMs": "ms the zoom INTO the goggles takes, once the periscope has landed (between shifts, and back to the tank mid-shift).",
+    "backMs": "ms the zoom OUT of the goggles takes (the end of a shift, a flick up mid-shift); then the periscope lifts back up.",
+    "ease": "How the zoom speeds up and slows down (ease-in-out power): 1 = steady, mechanical · 3–5 = a soft start, quick middle, soft landing.",
+    "frameFade": "Share of the zoom (at its end) over which the console and the goggles' blurry ring fade away to show the rest of the tank. 0.1 = only at the very end · 1 = fading the whole zoom.",
+    "tint": "How much of the dark blue glass colour lies over the tank in the goggles at the console (0 = clear glass). It fades as the zoom goes.",
+    "ringBlur": "The black ring inside the goggles shows the tank blurred: how much, in the mock-up's units (Example1.svg, 648 wide). 0 = no blur.",
+    "ringDark": "How much of the ring's black lies over that blurred tank (0 = none, 1 = solid black ring).",
+    "floorLift": "Where the tank's floor sits in the goggles: this many mock-up units above the inner glass's bottom edge."
+  },
+  "_labels": {
+    "zoomMs": "Zoom in (ms)",
+    "backMs": "Zoom out (ms)",
+    "ease": "Zoom ease",
+    "frameFade": "Console fade share",
+    "tint": "Glass tint",
+    "ringBlur": "Ring blur",
+    "ringDark": "Ring darkness",
+    "floorLift": "Tank floor lift"
+  },
+  "_ranges": {
+    "zoomMs": [0, 2000, 25],
+    "backMs": [0, 2000, 25],
+    "ease": [1, 5, 0.1],
+    "frameFade": [0.05, 1, 0.05],
+    "tint": [0, 0.8, 0.05],
+    "ringBlur": [0, 20, 1],
+    "ringDark": [0, 1, 0.05],
+    "floorLift": [0, 40, 1]
+  },
+  "zoomMs": 350,
+  "backMs": 350,
+  "ease": 2.9,
+  "frameFade": 0.3,
+  "tint": 0.15,
+  "ringBlur": 6,
+  "ringDark": 0.45,
+  "floorLift": 4
+}

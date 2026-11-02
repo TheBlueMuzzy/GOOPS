@@ -1,8 +1,9 @@
 // THE CONSOLE — the game's main menu (F21), drawn from Muzzy's mock-up (art/Example1.svg) with the kit's ArtStage.
-// Pull the periscope down (drag it, tap it, or ↓ / Enter) → the console dims and slides away to show the tank (the App
-// starts the shift under it). Coming back after shifts it slides up again and the Operator Rank meter fills with the
+// Pull the periscope down (drag it, tap it, or ↓ / Enter) → the console zooms into the periscope's goggles, where the
+// tank already shows, until it IS the tank (F56, src/game/PeriscopeZoom.tsx; the App starts the shift under it). Coming
+// back after shifts it zooms back out, the periscope lifts, and the Operator Rank meter fills with the
 // XP earned since it last showed, with a rank-up moment at the rank bar (the rank number pops).
-// MID-SHIFT (F23/F24): swipe up in a shift → this same console slides over the tank while the shift runs on slowly;
+// MID-SHIFT (F23/F24): swipe up in a shift → this same console zooms out over the tank while the shift runs on slowly;
 // a broken machine's repair panel comes alive (RepairPanels.tsx), the gear opens the pause menu, and pulling the
 // periscope goes back to the same shift. On a phone on its side only the panels show, with a Back to the tank button.
 // Off the shift (and for working machines) the panels are drawn switched off. Words come from content/text/en.json.
@@ -27,6 +28,7 @@ import { clockPause, looksClock, onClockPause } from '../devkit/gameClock'
 import text from '../../content/text/en.json'
 import { versionLabel } from '../version'
 import { RankSelectButton } from './RankSelect'
+import { PeriscopeZoom } from '../game/PeriscopeZoom'
 
 export type ConsolePhase = 'idle' | 'leaving' | 'arriving'
 export type ConsoleMachines = Record<MachineId, { broken: boolean }>
@@ -184,18 +186,18 @@ function Crt({ hint, lesson, drop, look, badge }: { hint: string; lesson: CrtLin
 // key restarts it for each line. Looks clock: the Dev Kit's full pause holds it.
 // F64 (the final shift): while a valve stage waits it's OPEN (art.json console.valve.openFile) and a button that shuts
 // and opens the valve panel over the repair panels (shut it to repair a machine, tap it again for the valve).
-function Hatch({ rattle, dim, valve }: { rattle: string | null; dim: boolean; valve?: { up: boolean; onToggle(): void } }) {
+function Hatch({ rattle, valve }: { rattle: string | null; valve?: { up: boolean; onToggle(): void } }) {
   const [paused, setPaused] = useState(() => clockPause() === 'full')
   useEffect(() => onClockPause((mode) => setPaused(mode === 'full')), [])
   const looks = storyFile.looks
   if (valve) return (
-    <ArtLayer at={a.hatch.at} dim={dim}>
+    <ArtLayer at={a.hatch.at}>
       <Button art={{ up: a.valve.hatchOpen, down: a.valve.hatchOpen, label: 'hidden', size: 'fill' }} onClick={valve.onToggle}
         data-tag="hatch" aria-pressed={valve.up}>{valve.up ? t.valve.hatchClose : t.valve.hatchOpen}</Button>
     </ArtLayer>
   )
   return (
-    <ArtLayer at={a.hatch.at} dim={dim}>
+    <ArtLayer at={a.hatch.at}>
       <div key={rattle ?? 'still'} className="console-hatch" data-tag="hatch" data-knobs="hatch" data-rattle={rattle ? '' : undefined}
         data-paused={paused || undefined}
         style={{ '--rattle': `${looks.rattleSeconds}s`, '--rattle-times': looks.rattleTimes, '--rattle-shake': looks.rattleShake } as CSSProperties}>
@@ -285,9 +287,12 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
     root.setProperty('--kit-career-trim', `${G.trimRem}rem`)
     root.setProperty('--kit-career-glow', `${G.glowRem}rem`)
   }, [G.colour, G.trimRem, G.glowRem])
+  // F56 (Muzzy's sketch S13): no slide any more — the periscope's goggles show the tank, and once it's pulled the console
+  // zooms into them to the tank (leaving); coming back it zooms out of them (arriving), then the periscope lifts.
+  // PeriscopeZoom (src/game) runs it and says when it's done (onSlideEnd); the periscope stays down through both.
   return (
+    <PeriscopeZoom phase={phase} onDone={onSlideEnd}>
     <Screen label={t.label} column backdrop={a.backdrop}
-      slide={phase === 'idle' ? undefined : phase === 'leaving' ? 'out' : 'in'} slideEdge="bottom" onSlideEnd={onSlideEnd}
       // (F59: between shifts the Upgrades button sits over the title — the corners beside it are too narrow on a phone)
       // (F76: the title and the gear are pictures — they keep their size at every Text size, art.json bottomRow; only
       // the Upgrades button's words grow, and the gear moves beside the title then: app.css)
@@ -298,12 +303,12 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         style={{ '--kit-art-size': `${a.bottomRow.gearPx}px` } as CSSProperties}>{t.settings}</Button>}>
       <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end"
         className={gold ? 'career-gold-console' : undefined}>
-        <ArtLayer {...a.body} dim={leaving} className={trim('body')} />
+        <ArtLayer {...a.body} className={trim('body')} />
         {/* (F74: the tag the rank lock's story moment outlines) */}
-        <ArtLayer {...a.meter} dim={leaving} className={trim('meter')}><LessonTag tag="meter" /></ArtLayer>
+        <ArtLayer {...a.meter} className={trim('meter')}><LessonTag tag="meter" /></ArtLayer>
         {/* F74 the rank lock: XP full but no quota met this rank → the bar sits full and QUOTA NEEDED shows instead of
             the numbers (the kit meter's full-bar state, its words.max — the same one the top rank uses) */}
-        <ArtLayer at={a.meter.at} text={a.meterText} dim={leaving}>
+        <ArtLayer at={a.meter.at} text={a.meterText}>
           <LevelMeter level={now.rank} xp={now.xpIntoRank} xpToNext={now.locked ? 0 : now.xpToNext} format={format}
             words={{ label: t.rank, unit: t.xp, max: now.locked ? t.quotaNeeded : t.maxRank }} art={a.meterFill}
             steps={steps.length ? steps : undefined} play={phase === 'idle'} />
@@ -312,15 +317,15 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
         <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
         {valveUp && <ValvePanel key={valve.stage} stage={valve.stage} stages={valve.stages} live={!leaving} onOpen={valve.onOpen} />}
-        {(now.rank >= a.hatch.fromRank || valve) && <Hatch dim={leaving} rattle={story?.line.rattle ? `${story.rank}:${story.line.words}` : null}
+        {(now.rank >= a.hatch.fromRank || valve) && <Hatch rattle={story?.line.rattle ? `${story.rank}:${story.line.words}` : null}
           valve={valve && { up: valveUp, onToggle: () => setShutAt(valveUp ? valve.stage : null) }} />}
-        <ArtLayer data-version-spot="main-menu" {...a.words.version} tone="muted" align="start" dim={leaving}>{versionLabel}</ArtLayer>
-        {rankSelect && <ArtLayer {...a.words.rankSelect} align="center" dim={leaving}><RankSelectButton /></ArtLayer>}
-        <ArtLayer {...(rankSelect ? a.words.creditBeside : a.words.credit)} tone="muted" align="end" dim={leaving}>{rankSelect ? t.creditShort : t.credit}</ArtLayer>
+        <ArtLayer data-version-spot="main-menu" {...a.words.version} tone="muted" align="start">{versionLabel}</ArtLayer>
+        {rankSelect && <ArtLayer {...a.words.rankSelect} align="center"><RankSelectButton /></ArtLayer>}
+        <ArtLayer {...(rankSelect ? a.words.creditBeside : a.words.credit)} tone="muted" align="end">{rankSelect ? t.creditShort : t.credit}</ArtLayer>
         {/* (with RANK SELECT — Dev Kit builds only — the short credit: on a phone the words can't shrink below 10 px,
             and the whole credit leaves the row no room inside the console's dark strip) */}
         <ArtLayer at={a.periscope.at} className={trim('periscope')}>
-          <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={leaving}
+          <PullHandle label={midShift ? t.backToTank : t.periscope} travel={a.periscope.travel} grip={a.periscope.grip} pulled={phase !== 'idle' /* (F56: down through the zoom in and out) */}
             onPull={() => { playUiSound(SOUNDS.periscope); onPull() } /* the clunk as it reaches the end */}
             disabled={phase === 'arriving' || (!!midShift && short) /* a phone on its side: Back to the tank does it (the periscope is mostly off screen) */
               || (!midShift && !!story) /* F35: a story moment is short and not skippable — the shift waits for it */
@@ -328,10 +333,12 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
-        <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]} className={trim('monitor')}><LessonTag tag="monitor" /></ArtLayer>
+        {/* (console-monitor: F56's hole in the console for the goggles never cuts the monitor, which hangs in front) */}
+        <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]} className={`console-monitor ${trim('monitor') ?? ''}`}><LessonTag tag="monitor" /></ArtLayer>
         <Crt hint={hint} lesson={ending ? null : storyLine ?? lessonLine} drop={drop} look={ending?.step === 'badge' ? 'glitch' : story?.line.monitor}
           badge={ending?.step === 'badge' ? <EndingBadge oldTitle={ending.oldTitle} /> : undefined} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}
       </ArtStage>
     </Screen>
+    </PeriscopeZoom>
   )
 }

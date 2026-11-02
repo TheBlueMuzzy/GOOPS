@@ -1,0 +1,13 @@
+/* F56 the periscope zoom (src/game/PeriscopeZoom.tsx). The console's wrapper fills the window like the console's
+   Screen did; the zoom scales it from its top-left corner (the frame loop sets transform, opacity and the mask with
+   the hole where the goggles' glass is). */
+.periscope-zoom { position: absolute; inset: 0; transform-origin: 0 0; }
+/* the goggles' glass over the stage, under the console: sized in mock-up units, scaled to the screen by the loop */
+.periscope-glass { display: none; position: fixed; left: 0; top: 0; width: var(--glass-w); height: var(--glass-h);
+  transform-origin: 0 0; pointer-events: none; }
+.periscope-ring, .periscope-inner { position: absolute; inset: 0; }
+/* The periscope's lift after the zoom out = its glide down (the kit PullHandle's --ease over --motion-normal) played
+   backwards: the same time, the curve mirrored (--periscope-lift-ease, set by PeriscopeZoom from --ease) — a soft
+   start, then quick (Muzzy 2026-11-01: the old quick lift after the zoom's soft landing felt lopsided). Only while
+   data-lift is on (one glide's time), and never for a pull or a drag. Goops' own rule over the kit's transition. */
+.periscope-zoom[data-lift] .kit-pull:not([data-pulled]):not([data-dragging]) { transition-timing-function: var(--periscope-lift-ease, ease-in); }
