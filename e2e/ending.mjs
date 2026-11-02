@@ -297,7 +297,8 @@ try {
     await page.evaluate(() => {
       window.__crtLines = []
       const note = () => { const t = document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim(); if (t && window.__crtLines.at(-1) !== t) window.__crtLines.push(t) }
-      new MutationObserver(note).observe(document.body, { subtree: true, childList: true, characterData: true })    })
+      new MutationObserver(note).observe(document.body, { subtree: true, childList: true, characterData: true })
+    })
     await page.getByRole('button', { name: E.endScreen.newCareer }).click()
     await page.locator('[data-tag="end-title"]').waitFor({ state: 'detached', timeout: 8000 })
     const fresh = await save(page)
@@ -308,7 +309,8 @@ try {
     check(`${size}: the console + periscope are gold-trimmed (${art.console.career.layers.join(', ')})`, gold.stage && gold.parts === art.console.career.layers.length && gold.filter.includes('drop-shadow'), JSON.stringify(gold))
     // the rank-0 moment: the slip, the welcome, your title, the sign-in (a new name), the last line — and no first day
     const welcome = await page.waitForFunction((t) => document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim() === t, en.story.lines.r0a, roomy).then(() => true, () => false)
-    const lines = await page.evaluate(() => window.__crtLines)    const slip = lines.indexOf(en.story.lines.r0back), hello = lines.indexOf(en.story.lines.r0a)
+    const lines = await page.evaluate(() => window.__crtLines)
+    const slip = lines.indexOf(en.story.lines.r0back), hello = lines.indexOf(en.story.lines.r0a)
     check(`${size}: the monitor slips — "${en.story.lines.r0back}" — then the usual welcome`, welcome && slip >= 0 && hello > slip, JSON.stringify(lines.slice(0, 4)))
     await page.getByRole('button', { name: en.lessons.gotIt }).click()
     const former = await page.waitForFunction((t) => document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim() === t, en.story.lines.r0former, roomy).then(() => true, () => false)
