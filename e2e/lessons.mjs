@@ -43,7 +43,7 @@ const spyEngine = (page) => page.evaluate(() => {
 })
 const gameMs = (page, ms) => page.evaluate(async (ms) => { const t0 = window.__ticked; await new Promise((r) => setTimeout(r, ms)); return window.__ticked - t0 }, ms)
 // the console has slid in over the tank
-const consoleStill = (page) => page.waitForFunction(() => { const s = document.querySelector('.kit-screen[aria-label="Console"]'); return s && !s.hasAttribute('data-slide') }, null, { timeout: 5000 })
+const consoleStill = (page) => page.waitForFunction(() => { const s = document.querySelector('.kit-screen[aria-label="Console"]'); return s && !s.closest('[data-zoom], [data-lift]') } /* F56: the zoom out (and the periscope's lift) done */, null, { timeout: 5000 })
 // the message's pulse ring (the Callout's hole) is round the element the selector finds
 const pointsAt = (page, selector) => page.evaluate((selector) => {
   const layer = document.querySelector('.kit-callout-layer'), el = document.querySelector(selector)

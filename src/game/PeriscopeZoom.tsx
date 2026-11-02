@@ -76,6 +76,9 @@ function measure(wrap: HTMLElement): Geo | null {
   return { u, ox, oy, front, stage, k0, sx: ox + ix * u - k0 * tank.left, sy: oy + (iy + ih - periscope.floorLift) * u - k0 * tank.floor }
 }
 
+// (dev + tests: window.__periscopeZoom.hold(sw) keeps every zoom at that share until hold(null) — kept here, not in a
+// console, because the console coming back is a new one)
+let testHold: number | null = null
 const matrix = (s: number, x: number, y: number) => `matrix(${s}, 0, 0, ${s}, ${x}, ${y})`
 // the stage back where the shift draws it (no zoom on it)
 const release = (stage: HTMLElement) => { stage.style.transform = ''; stage.style.transformOrigin = '' }
@@ -89,7 +92,7 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
   useEffect(() => { done.current = onDone })
   // the zoom now: its direction (null = none), when it started (looks ms), the console measured at its start,
   // and `held` (the 'in' zoom finished: its last frame stays until the console goes)
-  const zoom = useRef<{ dir: 'in' | 'out' | null; t0: number; geo: Geo | null; held: boolean; hold: number | null }>({ dir: null, t0: 0, geo: null, held: false, hold: null })
+  const zoom = useRef<{ dir: 'in' | 'out' | null; t0: number; geo: Geo | null; held: boolean }>({ dir: null, t0: 0, geo: null, held: false })
   const written = useRef(new Map<string, string>()) // what each style was last set to (only changes are written)
   const lastStage = useRef<HTMLElement | null>(null)
 
@@ -184,8 +187,8 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
         const ms = z.dir === 'in' ? periscope.zoomMs : periscope.backMs
         const t = ms > 0 ? clamp01((looksClock.now() - z.t0) / ms) : 1
         const e = easeIO(t, periscope.ease)
-        apply.current(z.geo, z.hold ?? (z.dir === 'in' ? e : 1 - e))
-        if (t < 1 || z.hold !== null) return
+        apply.current(z.geo, testHold ?? (z.dir === 'in' ? e : 1 - e))
+        if (t < 1 || testHold !== null) return
         const dir = z.dir
         z.dir = null; z.held = dir === 'in'
         w.removeAttribute('data-zoom')
@@ -202,7 +205,7 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
     raf = requestAnimationFrame(frame)
     // (dev + tests: hold the zoom at a share — e2e/periscope-zoom.mjs shoots mid-zoom and the last frame; null = let go)
     if (import.meta.env.DEV) (window as unknown as { __periscopeZoom?: unknown }).__periscopeZoom = {
-      hold: (sw: number | null) => { zoom.current.hold = sw },
+      hold: (sw: number | null) => { testHold = sw },
       state: () => ({ dir: zoom.current.dir, held: zoom.current.held }),
     }
     return () => {
@@ -211,6 +214,7 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
       // the console goes: the stage is the shift's again, where it draws itself
       if (lastStage.current) release(lastStage.current)
       lastStage.current = null
+      written.current.clear() // (all of it is written again if this comes back — React's dev double start does that)
     }
   }, [])
 

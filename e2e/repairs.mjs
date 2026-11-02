@@ -145,7 +145,7 @@ try {
         const path = line(x, y, x, y - Math.min(200, h * 0.3), 3) // quick: a swipe is under 300 ms
         await (how === 'finger' ? finger(path, 10) : mouse(path))
       }
-      await page.waitForFunction(() => { const s = document.querySelector('.kit-screen[aria-label="Console"]'); return s && !s.hasAttribute('data-slide') }, null, { timeout: 5000 })
+      await page.waitForFunction(() => { const s = document.querySelector('.kit-screen[aria-label="Console"]'); return s && !s.closest('[data-zoom], [data-lift]') } /* F56: the zoom out (and the periscope's lift) done */, null, { timeout: 5000 })
       await page.waitForTimeout(200)
     }
     const how = index === 1 ? 'finger' : index % 2 ? 'key' : 'mouse'

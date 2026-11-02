@@ -23,6 +23,7 @@
     "e2e:update": "node e2e/sw-update.mjs",
     "e2e:upgrades": "node e2e/upgrades.mjs",
     "e2e:text-size": "node e2e/text-size.mjs",
+    "e2e:periscope-zoom": "node e2e/periscope-zoom.mjs",
     "check:devkit": "node src/devkit/check-devkit.mjs",
     "check:framework": "node src/devkit/check-framework.mjs",
     "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs",

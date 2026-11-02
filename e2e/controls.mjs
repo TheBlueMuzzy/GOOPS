@@ -72,7 +72,7 @@ try {
   // W / ↑ = the real console slides over the tank mid-shift (F23/F24); the periscope (tapped) goes back to the shift
   const toConsole = async (key) => {
     await page.keyboard.press(key)
-    return page.waitForFunction(() => { const c = document.querySelector('.kit-screen[aria-label="Console"]'); return c && !c.hasAttribute('data-slide') }, null, { timeout: 3000 }).then(() => true, () => false)
+    return page.waitForFunction(() => { const c = document.querySelector('.kit-screen[aria-label="Console"]'); return c && !c.closest('[data-zoom], [data-lift]') } /* F56: the zoom out (and the periscope's lift) done */, null, { timeout: 3000 }).then(() => true, () => false)
   }
   const backToTank = async () => {
     await page.getByRole('button', { name: 'Back to the tank' }).click()

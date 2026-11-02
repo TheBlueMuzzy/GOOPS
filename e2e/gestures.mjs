@@ -79,7 +79,7 @@ try {
   const tap = async (x, y) => { await fingerDown(x, y); await sleep(40); await fingerUp() }
   const line = (x0, y0, x1, y1, n) => Array.from({ length: n + 1 }, (_, i) => [x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n])
 
-  const consoleOpen = () => page.waitForFunction(() => { const c = document.querySelector('.kit-screen[aria-label="Console"]'); return c && !c.hasAttribute('data-slide') }, null, { timeout: 3000 }).then(() => true, () => false)
+  const consoleOpen = () => page.waitForFunction(() => { const c = document.querySelector('.kit-screen[aria-label="Console"]'); return c && !c.closest('[data-zoom], [data-lift]') } /* F56: the zoom out (and the periscope's lift) done */, null, { timeout: 3000 }).then(() => true, () => false)
   const consoleThere = () => get(() => !!document.querySelector('.kit-screen[aria-label="Console"]'))
   const backToTank = async () => {
     await page.getByRole('button', { name: 'Back to the tank' }).click()
