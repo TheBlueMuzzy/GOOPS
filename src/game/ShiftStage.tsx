@@ -468,14 +468,16 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
   }, [engine, still])
 
   return (
+    // (the stage's layers are the tank's picture, edge to edge by design: data-ui-bleed tells the kit's breathing-room
+    // check — F56 mounts the stage under the console too, where check:framework looks at it on the first screen)
     <div className="stage" ref={host} data-testid="stage">
-      <canvas className="stage-layer" ref={tankCanvas} />
-      <canvas className="stage-layer" ref={gooCanvas} key={style} data-goo={style} />
+      <canvas className="stage-layer" ref={tankCanvas} data-ui-bleed />
+      <canvas className="stage-layer" ref={gooCanvas} key={style} data-goo={style} data-ui-bleed />
       {/* the pressure readout, on top of everything in the tank (the goo and the visor glitch): its line on a canvas
           of its own, its words kit text in a kit PinnedBox (never catches taps, so zaps reach the tank under it) */}
       {/* F67 the zap's beam + laser point: above the visor (a laser from the viewer — it lands exactly on the finger) */}
-      <canvas className="stage-layer stage-zap" ref={zapCanvas} />
-      <canvas className="stage-layer stage-readout" ref={readoutCanvas} />
+      <canvas className="stage-layer stage-zap" ref={zapCanvas} data-ui-bleed />
+      <canvas className="stage-layer stage-readout" ref={readoutCanvas} data-ui-bleed />
       {/* (not over the console mid-shift or a menu: the bubble sits above everything — F64 found it over the valve) */}
       {vetSays && inputOn && <TalkingBubble key={vetSays.n} target={{ x: vetSays.x, y: vetSays.y }} outline="plain" placement="top" feel={talk} colours={talk.colours}
         text={vetSays.words} onTyped={() => { vetTyped.current = true }} />}
