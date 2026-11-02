@@ -19,6 +19,8 @@ import { art } from '../ui/art'
 import { motionTime, reduceMotion } from '../ui/kit'
 import { clockPause, looksClock } from '../devkit/gameClock'
 import { tankWindow } from './periscopeView'
+import { SOUNDS } from './shiftSounds'
+import { playUiSound } from './sound'
 import './periscope.css'
 
 type Phase = 'idle' | 'leaving' | 'arriving'
@@ -190,6 +192,7 @@ export function PeriscopeZoom({ phase, onDone, see = true, live = false, backdro
     }
     z.dir = dir; z.t0 = looksClock.now(); z.held = false
     w.setAttribute('data-zoom', dir) // (tests wait for it to go: e2e/periscope-zoom.mjs and the console's other scripts)
+    playUiSound(dir === 'in' ? SOUNDS.zoomIn : SOUNDS.zoomOut) // (only a zoom that runs: none with reduce motion)
     apply.current(geo, dir === 'in' ? 0 : 1)
   })
 
@@ -232,6 +235,7 @@ export function PeriscopeZoom({ phase, onDone, see = true, live = false, backdro
           power.current = on ? 'on' : 'off'
           const g = glass.current
           if (g) g.setAttribute('data-power', on ? 'flicker' : 'off')
+          if (on) playUiSound(SOUNDS.gogglesOn)
         }
         apply.current(seeing.current ? measure(w) : null, 0) // at the console: follow the periscope (a drag, its glide, the lift)
       }

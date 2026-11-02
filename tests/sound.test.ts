@@ -93,6 +93,17 @@ describe('shiftSounds: engine events → sounds', () => {
     expect(cues([{ type: 'end', status: 'won' }])).toEqual([SOUNDS.won])
     expect(cues([{ type: 'end', status: 'lost' }])).toEqual([SOUNDS.lost])
   })
+  it('F53: the moments built after F29 — cracks growing, wild goop, Goop Dump, abilities, the Veteran, the valve', () => {
+    expect(cues([{ type: 'crackGrow', crackId: 1, x: 3, y: 20 }, { type: 'crackGrow', crackId: 2, x: 4, y: 20 }])).toEqual([SOUNDS.crackGrow])
+    expect(cues([{ type: 'wildTurn', cells: [1, 2], color: 1 }])).toEqual([SOUNDS.wild])
+    expect(cues([{ type: 'dump', x: 1, color: 1 }, { type: 'dump', x: 2, color: 1 }, { type: 'dump', x: 3, color: 1 }])).toEqual([SOUNDS.dump])
+    expect(cues([{ type: 'abilityReady', id: 'goopDump' }])).toEqual([SOUNDS.abilityReady])
+    expect(cues([{ type: 'ability', id: 'goopDump' }])).toEqual([SOUNDS.ability])
+    expect(cues([{ type: 'vetLand' }])).toEqual([SOUNDS.vetLand])
+    expect(cues([{ type: 'vetOw', at: { x: 1, y: 2 } }])).toEqual([SOUNDS.vetOw])
+    expect(cues([{ type: 'vetSeal', crackId: 1 }])).toEqual([SOUNDS.vetSeal])
+    expect(cues([{ type: 'valveReady', stage: 1 }])).toEqual([SOUNDS.valveReady])
+  })
   it('quiet events stay quiet (a step down, a spawn, goop falling, a plug)', () => {
     expect(cues([{ type: 'step' }, { type: 'spawn' }, { type: 'fall', moves: [[1, 31]] }, { type: 'plug', crackId: 1, plugged: true }])).toEqual([])
   })

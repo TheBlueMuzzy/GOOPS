@@ -29,6 +29,21 @@ export const SOUNDS = {
   periscope: 'ui.periscope',
   repairStep: 'ui.repair',
   wrong: 'ui.wrong',
+  // F53: the moments built after F29 (stand-in files until Muzzy's own — .planning/research/sound-list.md)
+  crackGrow: 'crack.grow',
+  wild: 'goop.wild',
+  dump: 'goop.dump',
+  abilityReady: 'ability.ready',
+  ability: 'ability.fire',
+  vetLand: 'vet.land',
+  vetOw: 'vet.ow',
+  vetSeal: 'vet.seal',
+  valveReady: 'valve.ready',
+  ending: 'ending.open',
+  rankUp: 'shift.rankUp',
+  zoomIn: 'ui.zoom.in',
+  zoomOut: 'ui.zoom.out',
+  gogglesOn: 'ui.goggles.on',
   // the UI kit's control sounds (setControlSound → `ui.${kind}`)
   tap: 'ui.tap',
   back: 'ui.back',
@@ -78,6 +93,15 @@ export function shiftSounds(events: readonly ShiftEvent[], t: PopTuning = soundT
       case 'repaired': add({ id: SOUNDS.fixed }); break
       case 'rupture': add({ id: SOUNDS.rupture }); break
       case 'quotaMet': add({ id: SOUNDS.quota }); break
+      case 'crackGrow': add({ id: SOUNDS.crackGrow }); break
+      case 'wildTurn': add({ id: SOUNDS.wild }); break
+      case 'dump': add({ id: SOUNDS.dump }); break // one per frame, however many cells came in
+      case 'abilityReady': add({ id: SOUNDS.abilityReady }); break
+      case 'ability': add({ id: SOUNDS.ability }); break
+      case 'vetLand': add({ id: SOUNDS.vetLand }); break
+      case 'vetOw': add({ id: SOUNDS.vetOw }); break
+      case 'vetSeal': add({ id: SOUNDS.vetSeal }); break
+      case 'valveReady': add({ id: SOUNDS.valveReady }); break
       case 'end': add({ id: e.status === 'won' ? SOUNDS.won : SOUNDS.lost }); break
     }
   }

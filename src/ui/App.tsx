@@ -30,7 +30,8 @@ import { unlockLessons } from '../game/lessons/unlockLessons'
 import { FIRST_DAY, firstDay } from '../game/lessons/firstDay'
 import { gooStyle } from '../game/gooStyle'
 import { wallKick } from '../game/wallKick'
-import { soundSettingsChanged } from '../game/sound'
+import { playUiSound, soundSettingsChanged } from '../game/sound'
+import { SOUNDS } from '../game/shiftSounds'
 import { getAudio, useAudioSnapshot } from '../audio'
 import { badgeAfterFinal, badgeTitle, freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, unlockRank, unlocksBetween, type BadgeTitle, type Progress, type ShiftReward } from '../progress/progression'
 import { loadCareers, loadProgress, operatorName, saveCareers, saveProgress } from '../progress/save'
@@ -437,6 +438,7 @@ export function App() {
         afterPay.current = go
         setPayIndex(0)
         screens.replace('payday')
+        playUiSound(SOUNDS.rankUp) // F53: each payday is a rank crossed
       }
       const again = thenPay(() => { while (screens.current.length) screens.pop(); start() })
       const back = thenPay(toConsole)
@@ -481,7 +483,7 @@ export function App() {
       const last = payIndex >= result.payslip.paydays.length - 1
       // (the last Pay up runs the report's choice once, even on a quick double tap)
       const pay = () => {
-        if (!last) return setPayIndex((i) => i + 1)
+        if (!last) { playUiSound(SOUNDS.rankUp); return setPayIndex((i) => i + 1) }
         const go = afterPay.current
         afterPay.current = null
         go?.()

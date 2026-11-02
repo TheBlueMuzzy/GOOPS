@@ -441,6 +441,135 @@
       "maxVoices": 1,
       "cooldownMs": 30,
       "priority": 2
+    },
+    "crack.grow": {
+      "files": ["sfx/sfx_crack_form_02.mp3"],
+      "bus": "sfx",
+      "volumeDb": -10,
+      "pitch": -3,
+      "randomPitch": 0.5,
+      "maxVoices": 2,
+      "cooldownMs": 120,
+      "priority": 2
+    },
+    "goop.wild": {
+      "files": ["sfx/sfx_goop_merge_02.mp3"],
+      "bus": "sfx",
+      "volumeDb": -10,
+      "pitch": 4,
+      "maxVoices": 1,
+      "cooldownMs": 80,
+      "priority": 2
+    },
+    "goop.dump": {
+      "files": ["sfx/sfx_goop_land_01.mp3", "sfx/sfx_goop_land_02.mp3", "sfx/sfx_goop_land_03.mp3"],
+      "bus": "sfx",
+      "volumeDb": -6,
+      "pitch": -3,
+      "maxVoices": 1,
+      "cooldownMs": 300,
+      "priority": 3
+    },
+    "ability.ready": {
+      "files": ["sfx/sfx_goop_ready_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -10,
+      "pitch": 5,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 3
+    },
+    "ability.fire": {
+      "files": ["sfx/sfx_piece_swap_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -6,
+      "pitch": -2,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 4
+    },
+    "vet.land": {
+      "files": ["sfx/sfx_goop_land_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -4,
+      "pitch": -6,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 4
+    },
+    "vet.ow": {
+      "files": ["sfx/sfx_goop_poke_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -8,
+      "pitch": -4,
+      "maxVoices": 1,
+      "cooldownMs": 150,
+      "priority": 3
+    },
+    "vet.seal": {
+      "files": ["sfx/sfx_crack_seal_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -6,
+      "pitch": -3,
+      "maxVoices": 1,
+      "cooldownMs": 100,
+      "priority": 4
+    },
+    "valve.ready": {
+      "files": ["sfx/sfx_shift_quota_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -8,
+      "pitch": -2,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 4
+    },
+    "ending.open": {
+      "files": ["sfx/sfx_tank_rupture_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -2,
+      "pitch": -5,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 5,
+      "duck": true
+    },
+    "shift.rankUp": {
+      "files": ["sfx/sfx_shift_won_01.mp3"],
+      "bus": "sfx",
+      "volumeDb": -4,
+      "pitch": 3,
+      "maxVoices": 1,
+      "cooldownMs": 500,
+      "priority": 5,
+      "duck": true
+    },
+    "ui.zoom.in": {
+      "files": ["ui/ui_periscope_pull_01.mp3"],
+      "bus": "ui",
+      "volumeDb": -6,
+      "pitch": 3,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 3
+    },
+    "ui.zoom.out": {
+      "files": ["ui/ui_periscope_pull_01.mp3"],
+      "bus": "ui",
+      "volumeDb": -6,
+      "pitch": -3,
+      "maxVoices": 1,
+      "cooldownMs": 200,
+      "priority": 3
+    },
+    "ui.goggles.on": {
+      "files": ["ui/ui_toggle_on_01.mp3"],
+      "bus": "ui",
+      "volumeDb": -8,
+      "pitch": -5,
+      "maxVoices": 1,
+      "cooldownMs": 300,
+      "priority": 2
     }
   },
   "music": {

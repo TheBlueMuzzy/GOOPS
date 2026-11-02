@@ -18,6 +18,8 @@ import { Button, Modal, ScrollArea, StatList, Text, TalkingBubble } from '../ui/
 import { clockPause, looksClock, onClockPause } from '../devkit/gameClock'
 import { ending, goopLine, vetSavedLine } from './ending'
 import { hash01 } from '../goo/shared/faces'
+import { SOUNDS } from './shiftSounds'
+import { playUiSound } from './sound'
 import endingTuning from '../../content/tuning/ending.json'
 import galaxy from '../../content/tuning/galaxy-look.json'
 import eyes from '../../content/tuning/eyes.json'
@@ -58,6 +60,9 @@ function GoopFlood({ kind, withVet = false }: { kind: 'pour' | 'carry'; withVet?
     const stop = looksClock.after(P.shakeSeconds * 1000, still)
     return () => { stop(); still() }
   }, [kind, P.shake, P.shakeSeconds])
+  // F53: the tank opening's sound, once (not again when a Dev Kit edit re-runs the shake). The shift's rules clock has
+  // stopped by now, so it plays as a console sound (only a Dev Kit pause holds it)
+  useEffect(() => { if (kind === 'pour') playUiSound(SOUNDS.ending) }, [kind])
   const style = {
     '--ending-body': galaxy.body, '--ending-nebula1': galaxy.nebula1, '--ending-nebula2': galaxy.nebula2, '--ending-rim': galaxy.rim,
     '--ending-star': galaxy.starColor, '--ending-lump': `${P.lumpSize * 100}vw`, '--ending-rise-s': `${kind === 'pour' ? P.seconds : endingTuning.console.leaveSeconds}s`,
