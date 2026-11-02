@@ -1,5 +1,5 @@
 # Sprint 29 — Look into the periscope
-Started 2026-11-01 · Milestone M6 1.0 · Features: F56
+Started 2026-11-01 · Milestone M6 1.0 · Features: F56, F77
 What changes for Muzzy: pulling the periscope down zooms the view into the periscope's goggles and the shift is playing in there; going back zooms out to the console. Stays the same: the rules, the controls, reduce motion (no zoom — the switch is instant, as today), the live site (nothing deploys before the 1.0 /deliver).
 
 ## F56 ✨ Periscope zoom
@@ -16,6 +16,13 @@ Checked: e2e/periscope-zoom.mjs ALL PASS 97 on the merged code (Claude re-ran it
 - [x] 🤖 7. e2e: both ways, the peek both ways, every portrait size, a control right after, reduce motion; add to check:full — e2e/periscope-zoom.mjs
 - [x] 🤖 9. Muzzy 2026-11-01 (approving): "When there is no game going, it should not be on. the moment you drag down to start a new shift, it should flicker on like an old CRT" → between shifts the goggles are off (their painted glass, a cover over the tank); the moment the periscope starts down they flicker on in the monitor's CRT stutter steps (periscope.json flickerMs 600, live; the Dev Kit pause holds it; reduce motion = straight on); a short drag springing back / the lift after a shift → off again; mid-shift (a shift going) they stay on — src/game/PeriscopeZoom.tsx
 - [x] 🤖 8. (tuning) feel pass with Muzzy — content/tuning/shift.json
+
+## F77 🐞 Goggles cut the screen's frame
+Done when: B010 fixed — the monitor group (screen + orange frame) is always above the goggles, at any screen growth, at every portrait size · the crossbar ends beside a lowered monitor as Muzzy picks · a check guards it (red on today's code) · B010 → Fixed with Guarded by.
+Check: e2e/periscope-zoom.mjs + a grown lesson line over the goggles at every portrait size (no goggle pixels over the orange frame); screenshots looked at by Claude · check:fast
+- [ ] 🙋 1. Muzzy picks the fix (Claude's: the screen group its own top layer above the hole) and hide/leave for the crossbar ends — .planning/BUGS.md
+- [ ] 🤖 2. The fix — src/game/PeriscopeZoom.tsx
+- [ ] 🤖 3. The check: a grown screen over the goggles, every portrait size, red on today's code — e2e/periscope-zoom.mjs
 
 ## Notes
 - Open bugs: no P0/P1.

@@ -1,6 +1,9 @@
 # Goops — Bugs
-Open: 6 (P0 0 · P1 0 · P2 0 · P3 6)
+Open: 7 (P0 0 · P1 0 · P2 1 · P3 6)
 ## Open
+### B010 · P2 · open · found 2026-11-01 by Muzzy (after F56) · v0.2.0.20 · his game + headless 1440x900 (e2e-shots/rank-lock/moment-1440x900.png)
+The goggles' dark lenses cut through the bottom of the monitor's orange frame
+Steps: 1. a lesson line long enough to grow the screen a little (rank-lock's "MEET ONE (1) QUOTA TO BE PROMOTED…") 2. look at the monitor's bottom edge over the goggles · Expected: the monitor group (screen + orange frame) is the top layer — nothing of the goggles over it · Actual: two dark lens bumps cross the orange frame's bottom · How often: whenever the grown screen's frame overlaps the goggles. Cause (Claude, read in code): F56's goggle-shaped hole in the console keeps the monitor by its measured BOX (PeriscopeZoom.tsx measure() front boxes), but the grown screen draws its orange frame as a box-shadow OUTSIDE its box (lessons.css .crt box-shadow) → the hole cuts the frame. Also seen (not this bug, older than F56): the periscope's green crossbar ends peek out beside a lowered monitor — Muzzy read it as "another screen". Fix waits on Muzzy's pick (Claude's: the screen group as its own top layer above the hole).
 ### B008 · P3 · open · found 2026-10-30 in F74 · v0.2.0.0 · headless 1440x900
 The report's red ▼ touches a long value's first word
 Steps: 1. a shift that leaves the rank locked 2. the end report's Quota row · Expected: a gap between the ▼ and "Rank locked: meet a quota", like the fines' "▼ −5" · Actual: the ▼ sits right against "Rank" (e2e-shots/rank-lock/report-locked-1440x900.png) · How often: always on a long text value. Look at: the UI kit's stat row (src/ui/kit/blocks/flow.tsx kit-stat-row, a framework copy) — the tone mark's gap for a value that wraps → framework session
