@@ -23,6 +23,7 @@ Checked: e2e/credits.mjs 79/79 at 390x844, 360x780, 1100x800, 1440x900, 1920x108
 - [x] 🤖 1. Turn the Credits row on and open the kit's Credits from it — content/ui/settings.json
 - [x] 🙋 2. Muzzy writes his lines (2026-11-02: "MuzzyMade" — Made by MuzzyMade) (name, role, thanks) — content/text/en.json
 - [x] 🤖 3. e2e: open, back, every portrait size, every entry listed; add to check:full — e2e/credits.mjs
+- [x] 🤖 4. © line + repo LICENSE (Muzzy 2026-11-02: "yes" to both): "© 2026 MuzzyMade. All rights reserved." under MADE BY (the kit's Credits has no footer slot) · LICENSE at the repo root (all rights reserved; others' pieces keep their own licences) — content/text/en.json
 
 ## Notes
 - Measured 2026-11-02 before planning: content/audio.json has 26 sounds and `music.tracks` is empty; settings.json already has About → Credits (`"on": false`) and the kit has a `Credits` block (src/ui/kit/blocks/frontend.tsx) — F55 is wiring, not building.
@@ -37,3 +38,4 @@ Checked: e2e/credits.mjs 79/79 at 390x844, 360x780, 1100x800, 1440x900, 1920x108
 - Muzzy 2026-11-02 (after the auto run): "i don't care enough to fix it now. it's good as is" — the stand-in sounds are fine for now · B011 → fix now (done: art.json version spot 110 → 130; text-size, repairs, rank-select ALL PASS at 360).
 - F53 — Final sound closed by Muzzy 2026-11-02 ("close it") with the stand-in sounds: today's 26 + 14 pitched stand-ins for the new moments. Real sounds later = .planning/research/sound-list.md (still valid) → ROADMAP Ideas. The 4 quiet placeholders (audio:check) stay as they are.
 - F55 — Credits screen task 2 (2026-11-02): en.json credits.people = Made by MuzzyMade; e2e/credits.mjs 79/79 again, shot looked at (390x844: MADE BY · MuzzyMade).
+- F55 — Credits screen ✅ approved by Muzzy 2026-11-02 ("approved"), with the © line (e2e/credits.mjs 79/79 again; 360x780 shot looked at: the © line wraps inside the card) + LICENSE.
