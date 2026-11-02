@@ -41,7 +41,7 @@ export async function check(t) {
       else if (off.length) {
         const problems = off.slice(0, 16).map((r) => `public/audio/${r.rel} — ${r.verdict.problems.join(', ')}`)
         if (off.length > 16) problems.push(`…and ${off.length - 16} more`)
-        const fix = `npm run audio:check -- --fix   (brings them within ${settings.toleranceDb} dB of the target, trims late starts, keeps the originals in audio-originals/; the targets: content/audio.json "loudness")`
+        const fix = `npm run audio:check -- --fix   (brings them within ${settings.toleranceDb} dB of the target, trims late starts, keeps the originals in audio-originals/, and a sound with its own volumeDb keeps how loud it sounds in the game — the difference moves into that volumeDb; the targets: content/audio.json "loudness")`
         const warn = t.warn ?? t.fail // t.warn: check:framework 0.21.0+; an older runner fails instead
         warn(name, problems, fix)
       } else {
