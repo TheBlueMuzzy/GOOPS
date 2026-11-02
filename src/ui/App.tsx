@@ -588,8 +588,10 @@ export function App() {
   // The pressure readout hangs on the pressure line (ShiftStage); messages show just above the goop.
   // (Which bars the panel holds, and the window, are known when the shift starts — they unlock between shifts — so its
   // height never changes mid-shift.)
-  // (F56: the tank on screen — at the console between shifts, the next shift's, in the periscope's goggles)
-  const shown = mode === 'console' ? nextShift?.engine ?? null : engine
+  // (F56: the tank on screen — at the console between shifts, the next shift's, in the periscope's goggles. With no
+  // next shift (the ending) the last one stays mounted, still and unseen — the goggles keep their painted glass — so
+  // the stage (its goo renderer) isn't built all over again just as a new career's first monitor line plays)
+  const shown = mode === 'console' ? nextShift?.engine ?? engine : engine
   const unlocked = shown ? MACHINES.filter((id) => shown.state.machines?.[id].unlocked) : []
   const low = hudTuning.bars.lowAt
   const machineBars = hud && unlocked.map((id) => {

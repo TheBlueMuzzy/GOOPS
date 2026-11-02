@@ -25,6 +25,7 @@ type Phase = 'idle' | 'leaving' | 'arriving'
 type Props = {
   phase: Phase // idle = the console · leaving = the periscope landed: zoom in · arriving = zoom out (then it lifts)
   onDone(): void // the zoom (in or out) finished — or, with nothing to zoom, at once
+  see?: boolean // false = the goggles look at nothing (the ending): their painted glass, and no zoom
   children: ReactNode // the console's Screen
 }
 
@@ -83,8 +84,10 @@ const matrix = (s: number, x: number, y: number) => `matrix(${s}, 0, 0, ${s}, ${
 // the stage back where the shift draws it (no zoom on it)
 const release = (stage: HTMLElement) => { stage.style.transform = ''; stage.style.transformOrigin = '' }
 
-export function PeriscopeZoom({ phase, onDone, children }: Props) {
+export function PeriscopeZoom({ phase, onDone, see = true, children }: Props) {
   const wrap = useRef<HTMLDivElement>(null)
+  const seeing = useRef(see)
+  useLayoutEffect(() => { seeing.current = see })
   const glass = useRef<HTMLDivElement>(null)
   const ring = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
@@ -155,7 +158,7 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
     const z = zoom.current, w = wrap.current
     if (!w) return
     w.style.transform = ''; written.current.delete('wrap:transform') // (at rest, for the measuring)
-    const geo = measure(w)
+    const geo = seeing.current ? measure(w) : null
     z.geo = geo
     const ms = dir === 'in' ? periscope.zoomMs : periscope.backMs
     if (!geo || reduceMotion() || ms <= 0) {
@@ -177,7 +180,7 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
   }, [phase])
 
   useLayoutEffect(() => {
-    const w = wrap.current!
+    const w = wrap.current!, styles = written.current
     w.style.setProperty('--periscope-lift-ease', reversedEase())
     let raf = 0, liftOff: (() => void) | null = null
     const frame = () => {
@@ -200,7 +203,7 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
           liftOff = looksClock.after(Math.max(1, motionTime('motion-normal')), () => w.removeAttribute('data-lift'))
         }
         done.current()
-      } else if (!z.held) apply.current(measure(w), 0) // at the console: follow the periscope (a drag, its glide, the lift)
+      } else if (!z.held) apply.current(seeing.current ? measure(w) : null, 0) // at the console: follow the periscope (a drag, its glide, the lift)
     }
     raf = requestAnimationFrame(frame)
     // (dev + tests: hold the zoom at a share — e2e/periscope-zoom.mjs shoots mid-zoom and the last frame; null = let go)
@@ -214,7 +217,7 @@ export function PeriscopeZoom({ phase, onDone, children }: Props) {
       // the console goes: the stage is the shift's again, where it draws itself
       if (lastStage.current) release(lastStage.current)
       lastStage.current = null
-      written.current.clear() // (all of it is written again if this comes back — React's dev double start does that)
+      styles.clear() // (all of it is written again if this comes back — React's dev double start does that)
     }
   }, [])
 
