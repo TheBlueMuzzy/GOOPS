@@ -134,6 +134,7 @@ flowchart LR
 | `content/tuning/goo-colors.json` | colour name → hex (red, blue, green, yellow, purple, white, black); `shift.json` `colors` sets their order | same — the goo, cracks and ghost change at once |
 | `content/tuning/cracks-look.json` | F36 readable cracks, looks only: `bubbles` (open cracks leak air — rate, gusts, size, speed, sway, life, alpha, colour, calm for reduce motion, max), `xray` (the dotted box round a covered crack + `gooAlpha`: how solid the goo stays inside it), `sealed` (the mended scar). The rule half (no crack on a sealed spot) is the engine's: `state.sealedCracks`, in snapshots | Dev Kit Tuning (live) |
 | `content/tuning/pause.json` | `halfPauseGooMoves` (off) — does the goo keep moving in the Dev Kit's ◐ half pause | Dev Kit Tuning |
+| `content/tuning/periscope.json` | F56 the periscope zoom (Muzzy's sketch S13, look B — D35), read every frame by src/game/PeriscopeZoom.tsx: `zoomMs` / `backMs` (350 / 350), `ease` (ease-in-out power 2.9), `frameFade` (0.3: the console + the ring fade over the zoom's last 30%), `tint` (0.15 of the dark blue glass over the tank in the goggles), `ringBlur` (6 mock-up units) + `ringDark` (0.45 black over the blurred ring), `floorLift` (4 units: the tank's floor above the inner glass's bottom edge). The glass shapes themselves: `content/ui/art.json` `console.periscopeGlass` (copies of the picture's, tests/periscopeGlass.test.ts) | Dev Kit Tuning (live, even mid-zoom) |
 | `content/text/en.json` | player-facing words · F38: a message whose words depend on the input (`messages.brokeLaser` / `brokeVisor` / `brokeControls`) is a `{ keys, mouse, phone }` entry like the lessons' lines — `messageWords(key, input)` in src/game/messages.ts picks one by the input used last (`lessonPlay.inputKind()`) · `console.version` "v{v}" = how the version reads everywhere | Obsidian / Dev Kit Text |
 | `content/tuning/perf.json` | F38: the frame-rate readout's update rate (`meterEveryMs`) and the speed test's pass line (`targetFps` 60, `passMedianFps` 55, `passWorstFrameMs` 50, `sampleMs`) — e2e/perf.mjs judges a full tank in both goo styles at 390x844@3x by it | Dev Kit Tuning (live) |
 | `version.json` (repo root) | F38: the version, BMUZ shape `{ name, version: "X.Y.Z", build, history }` — /save bumps `build`, /deliver bumps `version`. vite.config.ts bakes "X.Y.Z.B" into the code + `<meta name="app-version" content="vX.Y.Z.B">`; src/version.ts `versionLabel` is what the console footer, Settings → About → Version and the Dev Kit's snapshots / bug files show. e2e/start.mjs `checkVersion` fails a test on a page whose meta isn't version.json's | /save, /deliver |
@@ -199,6 +200,26 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D35 · 2026-11-01 · The periscope zoom: ONE tank render, seen through a hole in the console (F56)
+  Proposed by: Claude (building Muzzy's approved sketch S13 v4, look B) · Muzzy: "the pixellated render shader… will
+  have to be applied to the tank view through the visor" — so the goggles must show the same render, not a copy.
+  Chose: the shift's stage (ShiftStage: its canvases, full-screen) stays mounted UNDER the console; the console's
+  wrapper (src/game/PeriscopeZoom.tsx) has a CSS mask with a hole the shape of the goggles' outer glass (art.json
+  periscopeGlass.ring), minus the monitor and its screen (they hang in front of the periscope); the stage gets a CSS
+  transform that pins the tank's whole width (12 visible columns) to the inner glass, floor floorLift above its bottom.
+  Between them, a fixed element shaped like the ring (clip-path path) with a backdrop-filter blur + the ring's black at
+  ringDark, and the inner glass's tint — outside the console, because a mask or fade on the console would make it a
+  backdrop root and cut the blur off from the stage. The zoom = a transform on the console's wrapper (log-steady scale,
+  the glass centre gliding) composed onto the stage's, ending where the stage transform is none: the switch is exact.
+  A rAF loop moves three elements (no drawing); at rest it follows the periscope's drag/glide/lift by measuring the
+  periscope picture's box. The Screen's slide is no longer used (the kit's slide prop left unset); the zoom calls
+  onSlideEnd. Between shifts the goggles show the NEXT shift's engine (made ahead in App, still — ShiftStage `still`:
+  drawn ~30 frames then idle, no ticks/events/HUD, rules clock left alone); the pull starts that same engine.
+  The lift after the zoom out = the kit PullHandle's glide played backwards: Goops' periscope.css swaps the transition's
+  timing function for the mirrored --ease while [data-lift] is on (the duration stays the kit's --motion-normal).
+  Not chosen: drawing the tank again into the goggles (a second render: the shader wouldn't come with it, and double
+  the cost) · cutting the glass out of the art with art-prep (the mask does it, and the painted glass stays for when no
+  tank is behind it — the ending) · a backdrop blur inside the console (dead under the console's own mask/fade).
 D34 · 2026-11-01 · Pinch zoom stays OFF; Settings → Text size is the way to bigger words (F72)
   Proposed by: Claude · Muzzy: "keep it off" (2026-11-01)
   Chose: index.html keeps maximum-scale=1, user-scalable=no — the tank is played with drags and swipes, and a pinch would

@@ -188,8 +188,9 @@ const paydayWords = (from: number) => (afterCaught(from) ? { ...P, ...P.afterCau
 // A random pick of fines each shift; fixed under scripted checks so e2e is the same every run
 const payslipSeed = () => (import.meta.env.DEV && navigator.webdriver ? 1 : Math.floor(Math.random() * 1e9))
 
-// console = on the console · leaving = sliding away to the tank · shift = in the tank (report included) · arriving = sliding back
-// peekIn / peek / peekOut = mid-shift: the console sliding over the running tank / on it / sliding away back to the shift
+// console = on the console · leaving = zooming into the periscope's goggles to the tank (F56) · shift = in the tank
+// (report included) · arriving = zooming back out to the console
+// peekIn / peek / peekOut = mid-shift: the console zooming out over the running tank / on it / zooming back in to the shift
 type Mode = 'console' | 'leaving' | 'shift' | 'arriving' | 'peekIn' | 'peek' | 'peekOut'
 const PEEK: Mode[] = ['peekIn', 'peek', 'peekOut']
 
