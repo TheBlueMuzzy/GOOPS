@@ -6,14 +6,14 @@ What changes for Muzzy: the placeholder beeps become the sounds he picks (plus s
 Done when: every sound moment plays a sound Muzzy picked (or kept) · the moments built since F29 that have none get one (periscope zoom, the valve, the zap beam, the ending — the list in task 2 is the full set) · every file evened out (audio:check green) and credited in content/credits.json · no music and no intercom voice in 1.0 (Muzzy 2026-11-02) — GDD §6 says so
 why: Muzzy 2026-10-19: "add a step during polish to update sounds" — 1.0 shouldn't sound like a placeholder.
 Check: npm run audio:check · check:framework (audio + credits) · every sound key in content/audio.json has a file (test) · Claude plays a shift and the moments in the list, console clean · check:full
-Checked (so far, stand-in sounds — tasks 3, 4, 7 wait on Muzzy's files): tests/sound.test.ts 17 ✓ · e2e/sound ALL PASS (goggles on + zoom in heard; the Dev Kit's Sound tab 40 of 40) · e2e/payslip ALL PASS (shift.rankUp 1×) · e2e/ending PASS (ending.open 1× at every size, lose→win, gone) · check:fast exit 0 · check:full at b5c1ecc 34/39 (39.8 min): repairs, rank-select, text-size red only on B011 ("v0.2.0.26" 58 > 56 px at 360); zap + twists (B004) → twists ALL PASS alone, zap 1 ✗ alone then ALL PASS · audio:check: 4 placeholders too quiet — evened in task 4
+Checked: (closed with the stand-in sounds — tasks 3, 4, 7 dropped by Muzzy) tests/sound.test.ts 17 ✓ · e2e/sound ALL PASS (goggles on + zoom in heard; the Dev Kit's Sound tab 40 of 40) · e2e/payslip ALL PASS (shift.rankUp 1×) · e2e/ending PASS (ending.open 1× at every size, lose→win, gone) · check:fast exit 0 · check:full at b5c1ecc 34/39 (39.8 min): repairs, rank-select, text-size red only on B011 ("v0.2.0.26" 58 > 56 px at 360); zap + twists (B004) → twists ALL PASS alone, zap 1 ✗ alone then ALL PASS · audio:check: 4 placeholders too quiet — evened in task 4
 - [x] 🤖 1. Update the audio module 0.4.0 → 0.5.0 (install-module.mjs audio .) and run its checks — src/audio/
 - [x] 🤖 2. The sound shopping list: the 26 sounds today (what plays each, the file now) + the moments with no sound (periscope zoom in/out, the valve, the zap beam, the ending, the white goop, rank-up…) — .planning/research/sound-list.md
-- [ ] 🙋 3. Muzzy hunts the sounds and drops them in one folder (names from the list) — .planning/research/sound-list.md
-- [ ] 🤖 4. Trim, even out loudness, wire into the sound moments, credit each — content/audio.json
+- [x] 🙋 3. (dropped — Muzzy 2026-11-02: "close it", the stand-ins stay) Muzzy hunts the sounds and drops them in one folder (names from the list) — .planning/research/sound-list.md
+- [x] 🤖 4. (dropped with 3) Trim, even out loudness, wire into the sound moments, credit each — content/audio.json
 - [x] 🤖 5. The new moments call their sounds (zoom, valve, zap beam, ending…) — src/audio/
 - [x] 🤖 6. A test: every sound in content/audio.json has its file; GDD §6: no music, silent intercom for 1.0 — .planning/GDD.md
-- [ ] 🤖 7. (tuning) Muzzy listens; volumes one at a time in the Dev Kit's Sound tab — content/audio.json
+- [x] 🤖 7. (dropped with 3) (tuning) Muzzy listens; volumes one at a time in the Dev Kit's Sound tab — content/audio.json
 - [x] 🤖 8. B011 fix (Muzzy 2026-11-02: "yes"): the version words fit their spot at 360 — content/ui/art.json
 
 ## F55 🎮 Credits screen
@@ -21,7 +21,7 @@ Done when: Settings → About → Credits opens the UI kit's Credits screen: Muz
 Check: e2e/credits.mjs (opens from Settings, back, every portrait size, every credits.json entry listed, no console errors) · screenshots looked at by Claude · check:framework
 Checked: e2e/credits.mjs 79/79 at 390x844, 360x780, 1100x800, 1440x900, 1920x1080 (people first, all 20 credits.json entries, fits + scrolls in its card, ‹ back to Settings, mid-shift too) · shots looked at by Claude (credits-390x844: room on every side, lines wrap; credits-end-1440x900: last entries + Open-source code, nothing clipped) · check:framework PASS ("every 🟡 credit is shown — 9", F55's knownGap removed) · check:full at b5c1ecc: credits PASS
 - [x] 🤖 1. Turn the Credits row on and open the kit's Credits from it — content/ui/settings.json
-- [ ] 🙋 2. Muzzy writes his lines (name, role, thanks) — content/text/en.json
+- [x] 🙋 2. Muzzy writes his lines (2026-11-02: "MuzzyMade" — Made by MuzzyMade) (name, role, thanks) — content/text/en.json
 - [x] 🤖 3. e2e: open, back, every portrait size, every entry listed; add to check:full — e2e/credits.mjs
 
 ## Notes
@@ -35,3 +35,5 @@ Checked: e2e/credits.mjs 79/79 at 390x844, 360x780, 1100x800, 1440x900, 1920x108
 - F55 task 3 (2026-11-02): e2e/credits.mjs (port 5385, `npm run e2e:credits`, in check:full) — 79/79: people first, all 20 entries in order, no blank line, card inside the window, every line ≥ 4 px from the card's sides and none cut off, the list scrolls in its card on every size (phones 1534/610 and 1660/610 px; desktop 1106/642–738) and its end scrolls into view, ‹ back to Settings on About, mid-shift (pause → Settings → Credits) too, no page errors. check:framework: "every 🟡 credit is shown — 9 on the Credits screen" passes now → its knownGaps line taken off content/devkit.json. Screens looked at (390x844, 1440x900): room on every side, the fade at the list's foot, the kit's "Open-source licences" button at the end (public/third-party-notices.txt is there). The framework's PAUSED-pill check was skipped ("nokit" — the Dev Kit not up in time) in 3 runs, with or without this change: timing, not F55.
 - F53 task 6 (2026-11-02): already there — tests/sound.test.ts "names only files that exist, and every sound has at least one" (and no file unused); GDD §1.0 line says no music + a silent intercom (done in the sprint's plan commit). Nothing new built.
 - Muzzy 2026-11-02 (after the auto run): "i don't care enough to fix it now. it's good as is" — the stand-in sounds are fine for now · B011 → fix now (done: art.json version spot 110 → 130; text-size, repairs, rank-select ALL PASS at 360).
+- F53 — Final sound closed by Muzzy 2026-11-02 ("close it") with the stand-in sounds: today's 26 + 14 pitched stand-ins for the new moments. Real sounds later = .planning/research/sound-list.md (still valid) → ROADMAP Ideas. The 4 quiet placeholders (audio:check) stay as they are.
+- F55 — Credits screen task 2 (2026-11-02): en.json credits.people = Made by MuzzyMade; e2e/credits.mjs 79/79 again, shot looked at (390x844: MADE BY · MuzzyMade).

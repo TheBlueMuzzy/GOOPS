@@ -702,9 +702,9 @@
   },
   "credits": {
     "_about": "F55: Settings → About → Credits (the UI kit's Credits screen). people = the lines at the top, one group per role, names under it — then every entry in content/credits.json. asset = the line for an entry with no credit line of its own ({source} = its source up to the first bracket). words = the screen's own words.",
-    "_help": "PLACEHOLDER — Muzzy replaces these people lines with his own (name, role, thanks) in F55 task 2.",
+    "_help": "Muzzy 2026-11-02: Made by MuzzyMade. Add a group for anyone else who helps (role + names).",
     "people": [
-      { "role": "Made by", "names": ["Muzzy"] }
+      { "role": "Made by", "names": ["MuzzyMade"] }
     ],
     "asset": "{source} ({author}, {licence})",
     "words": {
