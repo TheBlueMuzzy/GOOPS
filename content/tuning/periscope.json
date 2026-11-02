@@ -8,7 +8,8 @@
     "tint": "How much of the dark blue glass colour lies over the tank in the goggles at the console (0 = clear glass). It fades as the zoom goes.",
     "ringBlur": "The black ring inside the goggles shows the tank blurred: how much, in the mock-up's units (Example1.svg, 648 wide). 0 = no blur.",
     "ringDark": "How much of the ring's black lies over that blurred tank (0 = none, 1 = solid black ring).",
-    "floorLift": "Where the tank's floor sits in the goggles: this many mock-up units above the inner glass's bottom edge."
+    "floorLift": "Where the tank's floor sits in the goggles: this many mock-up units above the inner glass's bottom edge.",
+    "flickerMs": "Between shifts the goggles are off (their painted glass); the moment the periscope starts down they flicker on like an old CRT (Muzzy 2026-11-01) — ms the flicker takes (the monitor's stutter steps). 0 = straight on."
   },
   "_labels": {
     "zoomMs": "Zoom in (ms)",
@@ -18,7 +19,8 @@
     "tint": "Glass tint",
     "ringBlur": "Ring blur",
     "ringDark": "Ring darkness",
-    "floorLift": "Tank floor lift"
+    "floorLift": "Tank floor lift",
+    "flickerMs": "Goggles flicker on (ms)"
   },
   "_ranges": {
     "zoomMs": [0, 2000, 25],
@@ -28,7 +30,8 @@
     "tint": [0, 0.8, 0.05],
     "ringBlur": [0, 20, 1],
     "ringDark": [0, 1, 0.05],
-    "floorLift": [0, 40, 1]
+    "floorLift": [0, 40, 1],
+    "flickerMs": [0, 1500, 25]
   },
   "zoomMs": 350,
   "backMs": 350,
@@ -37,5 +40,6 @@
   "tint": 0.15,
   "ringBlur": 6,
   "ringDark": 0.45,
-  "floorLift": 4
+  "floorLift": 4,
+  "flickerMs": 600
 }

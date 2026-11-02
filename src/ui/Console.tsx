@@ -291,7 +291,8 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
   // zooms into them to the tank (leaving); coming back it zooms out of them (arriving), then the periscope lifts.
   // PeriscopeZoom (src/game) runs it and says when it's done (onSlideEnd); the periscope stays down through both.
   return (
-    <PeriscopeZoom phase={phase} onDone={onSlideEnd} see={!ending /* (the ending: no next shift to look at) */}>
+    <PeriscopeZoom phase={phase} onDone={onSlideEnd} see={!ending /* (the ending: no next shift to look at) */}
+      live={!!midShift /* a shift going: the goggles stay on (between shifts they flicker on as the periscope starts down) */}>
     <Screen label={t.label} column backdrop={a.backdrop}
       // (F59: between shifts the Upgrades button sits over the title — the corners beside it are too narrow on a phone)
       // (F76: the title and the gear are pictures — they keep their size at every Text size, art.json bottomRow; only

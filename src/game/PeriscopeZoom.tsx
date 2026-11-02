@@ -17,7 +17,7 @@ import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode 
 import periscope from '../../content/tuning/periscope.json'
 import { art } from '../ui/art'
 import { motionTime, reduceMotion } from '../ui/kit'
-import { looksClock } from '../devkit/gameClock'
+import { clockPause, looksClock } from '../devkit/gameClock'
 import { tankWindow } from './periscopeView'
 import './periscope.css'
 
@@ -26,6 +26,8 @@ type Props = {
   phase: Phase // idle = the console · leaving = the periscope landed: zoom in · arriving = zoom out (then it lifts)
   onDone(): void // the zoom (in or out) finished — or, with nothing to zoom, at once
   see?: boolean // false = the goggles look at nothing (the ending): their painted glass, and no zoom
+  live?: boolean // a shift is going (mid-shift at the console): the goggles stay on. Between shifts they're off (their
+  // painted glass) until the periscope starts down — then they flicker on like an old CRT (Muzzy 2026-11-01)
   children: ReactNode // the console's Screen
 }
 
@@ -84,10 +86,21 @@ const matrix = (s: number, x: number, y: number) => `matrix(${s}, 0, 0, ${s}, ${
 // the stage back where the shift draws it (no zoom on it)
 const release = (stage: HTMLElement) => { stage.style.transform = ''; stage.style.transformOrigin = '' }
 
-export function PeriscopeZoom({ phase, onDone, see = true, children }: Props) {
+// Is the periscope on its way down? (a finger on it, its glide, or held down) — the kit PullHandle's own marks
+const pulling = (w: HTMLElement) => {
+  const pull = w.querySelector<HTMLElement>('.kit-pull')
+  return !!pull && (pull.hasAttribute('data-dragging') || pull.hasAttribute('data-pulled') || parseFloat(pull.style.getPropertyValue('--kit-pull')) > 0)
+}
+
+export function PeriscopeZoom({ phase, onDone, see = true, live = false, children }: Props) {
   const wrap = useRef<HTMLDivElement>(null)
   const seeing = useRef(see)
   useLayoutEffect(() => { seeing.current = see })
+  const isLive = useRef(live)
+  useLayoutEffect(() => { isLive.current = live })
+  // the goggles' power: off = their painted glass over the tank (a cover, periscope.css); on = the tank. A console
+  // that opens mid-zoom (a shift going, or just ended) opens on.
+  const power = useRef<'off' | 'on'>(live || phase !== 'idle' ? 'on' : 'off')
   const glass = useRef<HTMLDivElement>(null)
   const ring = useRef<HTMLDivElement>(null)
   const inner = useRef<HTMLDivElement>(null)
@@ -181,6 +194,7 @@ export function PeriscopeZoom({ phase, onDone, see = true, children }: Props) {
 
   useLayoutEffect(() => {
     const w = wrap.current!, styles = written.current
+    glass.current?.setAttribute('data-power', power.current) // (the power it opens with: no flicker for that)
     w.style.setProperty('--periscope-lift-ease', reversedEase())
     let raf = 0, liftOff: (() => void) | null = null
     const frame = () => {
@@ -203,7 +217,23 @@ export function PeriscopeZoom({ phase, onDone, see = true, children }: Props) {
           liftOff = looksClock.after(Math.max(1, motionTime('motion-normal')), () => w.removeAttribute('data-lift'))
         }
         done.current()
-      } else if (!z.held) apply.current(seeing.current ? measure(w) : null, 0) // at the console: follow the periscope (a drag, its glide, the lift)
+      } else if (!z.held) {
+        // between shifts the goggles are off until the periscope starts down, then flicker on; back up (a short drag
+        // springing back, the lift after a shift) with no shift going → off again, at once
+        const on = isLive.current || pulling(w)
+        if (on !== (power.current === 'on')) {
+          power.current = on ? 'on' : 'off'
+          const g = glass.current
+          if (g) g.setAttribute('data-power', on ? 'flicker' : 'off')
+        }
+        apply.current(seeing.current ? measure(w) : null, 0) // at the console: follow the periscope (a drag, its glide, the lift)
+      }
+      // (the flicker's length, live from periscope.json; the Dev Kit's full pause holds it, like the monitor's)
+      const g = glass.current
+      if (g) {
+        g.style.setProperty('--periscope-flicker', `${Math.max(0, periscope.flickerMs)}ms`)
+        g.toggleAttribute('data-paused', clockPause() === 'full')
+      }
     }
     raf = requestAnimationFrame(frame)
     // (dev + tests: hold the zoom at a share — e2e/periscope-zoom.mjs shoots mid-zoom and the last frame; null = let go)
@@ -224,9 +254,16 @@ export function PeriscopeZoom({ phase, onDone, see = true, children }: Props) {
   return (
     <>
       {/* the goggles' glass over the stage (under the console, which has a hole there): the blurry ring + the tint */}
-      <div className="periscope-glass" ref={glass} aria-hidden style={{ '--glass-w': `${RW}px`, '--glass-h': `${RH}px` } as CSSProperties}>
+      <div className="periscope-glass" ref={glass} aria-hidden /* data-power: set by the effects, never by a render */
+        onAnimationEnd={(e) => { if (e.animationName === 'periscope-power-on') e.currentTarget.setAttribute('data-power', 'on') }}
+        style={{ '--glass-w': `${RW}px`, '--glass-h': `${RH}px` } as CSSProperties}>
         <div className="periscope-ring" ref={ring} style={{ clipPath: RING_CLIP }} />
         <div className="periscope-inner" ref={inner} style={{ clipPath: INNER_CLIP, backgroundColor: G.inner.colour }} />
+        {/* the power: the goggles' painted glass, over the tank while they're off (and stuttering away as they come on) */}
+        <div className="periscope-power">
+          <div style={{ clipPath: `path("${local(G.ring.d)}")`, backgroundColor: G.ring.colour }} />
+          <div style={{ clipPath: INNER_CLIP, backgroundColor: G.inner.colour }} />
+        </div>
       </div>
       <div className="periscope-zoom" ref={wrap}>{children}</div>
     </>

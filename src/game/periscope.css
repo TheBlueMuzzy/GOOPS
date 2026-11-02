@@ -6,6 +6,22 @@
 .periscope-glass { display: none; position: fixed; left: 0; top: 0; width: var(--glass-w); height: var(--glass-h);
   transform-origin: 0 0; pointer-events: none; }
 .periscope-ring, .periscope-inner { position: absolute; inset: 0; }
+/* The goggles' power (Muzzy 2026-11-01: "When there is no game going, it should not be on. the moment you drag down to
+   start a new shift, it should flicker on like an old CRT"): off = the goggles' painted glass over the tank; coming on,
+   it stutters away in the monitor's CRT steps (lessons.css story-flicker: dark, light, dark… then on), over
+   --periscope-flicker (content/tuning/periscope.json flickerMs). Looks clock: the Dev Kit's full pause holds it. Reduce
+   motion: no flicker, just on. */
+.periscope-power, .periscope-power > * { position: absolute; inset: 0; }
+.periscope-power { opacity: 0; }
+.periscope-glass[data-power="off"] .periscope-power { opacity: 1; }
+.periscope-glass[data-power="flicker"] .periscope-power { animation: periscope-power-on var(--periscope-flicker, 600ms) steps(1) 1 both; }
+.periscope-glass[data-paused] .periscope-power { animation-play-state: paused; }
+@keyframes periscope-power-on {
+  0% { opacity: 1; } 12% { opacity: 0.25; } 22% { opacity: 0.85; } 30% { opacity: 0.1; }
+  55% { opacity: 0.9; } 63% { opacity: 0; } 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .periscope-glass[data-power="flicker"] .periscope-power { animation: none; opacity: 0; } }
+:root[data-reduce-motion] .periscope-glass[data-power="flicker"] .periscope-power { animation: none; opacity: 0; }
 /* The periscope's lift after the zoom out = its glide down (the kit PullHandle's --ease over --motion-normal) played
    backwards: the same time, the curve mirrored (--periscope-lift-ease, set by PeriscopeZoom from --ease) — a soft
    start, then quick (Muzzy 2026-11-01: the old quick lift after the zoom's soft landing felt lopsided). Only while

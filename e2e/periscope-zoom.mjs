@@ -1,14 +1,15 @@
 // F56 — PERISCOPE ZOOM (Muzzy's sketch S13, look B): in Playwright's own Chromium (never the user's Chrome), with the
 // real dev server, at every portrait size (390x844, 360x780, 1100x800, 1440x900, 1920x1080 — never sideways).
 // Each size, a fresh device that has had its first day (and the rank's unlock lessons), a seeded rank-3 shift:
-//   1. at the console between shifts the goggles show the tank: inside the dark blue inner glass the pixels are NOT the
-//      painted glass colour (art.json periscopeGlass.inner) — the old console painted it solid
+//   1. at the console between shifts the goggles are OFF: their painted glass colour (art.json periscopeGlass.inner);
+//      a short drag down → they flicker on (data-power="flicker" → "on") and show the next shift's tank (the pixels are
+//      NOT the painted colour); let go short → the periscope springs back and they're off again
 //   2. the pull: the zoom runs (data-zoom="in"), a mid-zoom shot; its last frame (held at 1) has the stage exactly where
 //      the shift draws it (no transform) and the console faded out — and the tank there = the tank once the shift
 //      shows (pixels compared); a control answers right after the switch (← spins the tank)
 //   3. mid-shift W: the zoom out (data-zoom="out", a mid shot), the console still, the goggles showing the live tank;
 //      the periscope pulled again: the zoom in, back in the tank, a control answers
-//   4. the end of the shift (Esc on the report): the zoom out, then the next shift's tank in the goggles
+//   4. the end of the shift (Esc on the report): the zoom out, then the goggles off again (no shift going)
 //   and no console errors in the whole run (the Dev Kit never opened).
 // Then reduce motion (the device's setting): no zoom at all — the switch is instant both ways.
 // Screenshots: e2e-shots/periscope-zoom/<size>-*.png
@@ -70,6 +71,13 @@ async function showsTank(page, box) {
   const off = offShare(p, hex(GLASS.inner.colour)), sd = spread(p)
   return { ok: off > 0.6 && sd > 4, detail: `${(off * 100).toFixed(0)}% off ${GLASS.inner.colour}, brightness spread ${sd.toFixed(1)}` }
 }
+// the goggles are off: nearly every pixel is the painted inner glass colour
+async function showsPainted(page, box) {
+  const p = await pixels(page, box)
+  const off = offShare(p, hex(GLASS.inner.colour))
+  return { ok: off < 0.1, detail: `${(off * 100).toFixed(0)}% off ${GLASS.inner.colour}` }
+}
+const FLICKER_MS = JSON.parse(readFileSync('content/tuning/periscope.json', 'utf8')).flickerMs
 const meanDiff = (a, b) => {
   let d = 0
   for (let i = 0; i < a.data.length; i += 4) for (let k = 0; k < 3; k++) d += Math.abs(a.data[i + k] - b.data[i + k])
@@ -126,16 +134,34 @@ try {
     await page.locator('.kit-art-stage').waitFor()
     await page.waitForTimeout(800)
 
-    // 1. the goggles show the tank between shifts
+    // 1. between shifts the goggles are OFF — their painted glass (Muzzy 2026-11-01: "When there is no game going, it
+    // should not be on. the moment you drag down to start a new shift, it should flicker on like an old CRT")
     const glassBox = await innerGlass(page)
     check(`${size}: at the console the goggles' glass layer is up`, !!glassBox)
     if (glassBox) {
-      const t = await showsTank(page, glassBox)
-      check(`${size}: between shifts the inner glass shows the tank, not its painted colour`, t.ok, t.detail)
+      const t = await showsPainted(page, glassBox)
+      check(`${size}: between shifts the goggles are off (their painted glass)`, t.ok, t.detail)
     }
     await page.screenshot({ path: `${OUT}/${size}-1-console.png` })
     const g = await page.locator('.periscope-glass').boundingBox()
-    if (g) await page.screenshot({ path: `${OUT}/${size}-1-goggles.png`, clip: { x: g.x - 8, y: g.y - 8, width: g.width + 16, height: g.height + 16 } })
+    if (g) await page.screenshot({ path: `${OUT}/${size}-1-goggles-off.png`, clip: { x: g.x - 8, y: g.y - 8, width: g.width + 16, height: g.height + 16 } })
+    // a short drag down: they flicker on, then show the tank; let go short → it springs back and they're off again
+    const grip = await page.locator('.kit-pull-grip').boundingBox()
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2)
+    await page.mouse.down()
+    for (let i = 1; i <= 6; i++) await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 + 6 * i)
+    const flickering = await page.waitForFunction(() => document.querySelector('.periscope-glass')?.getAttribute('data-power') === 'flicker', null, { timeout: 1500 }).then(() => true, () => false)
+    check(`${size}: the moment the periscope starts down the goggles flicker on`, flickering)
+    const on = await page.waitForFunction(() => document.querySelector('.periscope-glass')?.getAttribute('data-power') === 'on', null, { timeout: FLICKER_MS + 1500 }).then(() => true, () => false)
+    const dragGlass = await innerGlass(page)
+    const tDrag = dragGlass && await showsTank(page, dragGlass)
+    check(`${size}: once on, the goggles show the next shift's tank`, on && !!tDrag?.ok, tDrag?.detail)
+    const g2 = await page.locator('.periscope-glass').boundingBox()
+    if (g2) await page.screenshot({ path: `${OUT}/${size}-1-goggles.png`, clip: { x: g2.x - 8, y: g2.y - 8, width: g2.width + 16, height: g2.height + 16 } })
+    await page.mouse.up()
+    const offAgain = await page.waitForFunction(() => document.querySelector('.periscope-glass')?.getAttribute('data-power') === 'off', null, { timeout: 2000 }).then(() => true, () => false)
+    check(`${size}: a short drag springs back and the goggles go off again`, offAgain)
+    await page.mouse.click(5, 5) // (a neutral spot: the drag's own click is spent)
 
     // 2. the pull → the zoom in
     await hold(page, 0.5)
@@ -195,8 +221,8 @@ try {
     check(`${size}: back on the console`, await consoleStill(page))
     await page.waitForTimeout(300)
     const nextGlass = await innerGlass(page)
-    const tNext = nextGlass && await showsTank(page, nextGlass)
-    check(`${size}: the goggles show the next shift's tank`, !!tNext?.ok, tNext?.detail)
+    const tNext = nextGlass && await showsPainted(page, nextGlass)
+    check(`${size}: the shift over, the goggles are off again`, !!tNext?.ok, tNext?.detail)
     await page.screenshot({ path: `${OUT}/${size}-4-back.png` })
     } catch (e) { check(`${size}: the steps ran to the end`, false, String(e.message ?? e).split('\n')[0]) }
     check(`${size}: no console errors`, !errors.length, errors.join(' | '))
