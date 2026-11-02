@@ -6,6 +6,7 @@ What changes for Muzzy: the placeholder beeps become the sounds he picks (plus s
 Done when: every sound moment plays a sound Muzzy picked (or kept) · the moments built since F29 that have none get one (periscope zoom, the valve, the zap beam, the ending — the list in task 2 is the full set) · every file evened out (audio:check green) and credited in content/credits.json · no music and no intercom voice in 1.0 (Muzzy 2026-11-02) — GDD §6 says so
 why: Muzzy 2026-10-19: "add a step during polish to update sounds" — 1.0 shouldn't sound like a placeholder.
 Check: npm run audio:check · check:framework (audio + credits) · every sound key in content/audio.json has a file (test) · Claude plays a shift and the moments in the list, console clean · check:full
+Checked (so far, stand-in sounds — tasks 3, 4, 7 wait on Muzzy's files): tests/sound.test.ts 17 ✓ · e2e/sound ALL PASS (goggles on + zoom in heard; the Dev Kit's Sound tab 40 of 40) · e2e/payslip ALL PASS (shift.rankUp 1×) · e2e/ending PASS (ending.open 1× at every size, lose→win, gone) · check:fast exit 0 · check:full at b5c1ecc 34/39 (39.8 min): repairs, rank-select, text-size red only on B011 ("v0.2.0.26" 58 > 56 px at 360); zap + twists (B004) → twists ALL PASS alone, zap 1 ✗ alone then ALL PASS · audio:check: 4 placeholders too quiet — evened in task 4
 - [x] 🤖 1. Update the audio module 0.4.0 → 0.5.0 (install-module.mjs audio .) and run its checks — src/audio/
 - [x] 🤖 2. The sound shopping list: the 26 sounds today (what plays each, the file now) + the moments with no sound (periscope zoom in/out, the valve, the zap beam, the ending, the white goop, rank-up…) — .planning/research/sound-list.md
 - [ ] 🙋 3. Muzzy hunts the sounds and drops them in one folder (names from the list) — .planning/research/sound-list.md
@@ -17,6 +18,7 @@ Check: npm run audio:check · check:framework (audio + credits) · every sound k
 ## F55 🎮 Credits screen
 Done when: Settings → About → Credits opens the UI kit's Credits screen: Muzzy's lines first, then every entry in content/credits.json · ‹ goes back to Settings · fits at every portrait size (390x844, 360x780, ~1100 wide, 1440x900, 1920x1080), the list scrolls inside its card · Settings only (Muzzy 2026-11-02, not after the ending)
 Check: e2e/credits.mjs (opens from Settings, back, every portrait size, every credits.json entry listed, no console errors) · screenshots looked at by Claude · check:framework
+Checked: e2e/credits.mjs 79/79 at 390x844, 360x780, 1100x800, 1440x900, 1920x1080 (people first, all 20 credits.json entries, fits + scrolls in its card, ‹ back to Settings, mid-shift too) · shots looked at by Claude (credits-390x844: room on every side, lines wrap; credits-end-1440x900: last entries + Open-source code, nothing clipped) · check:framework PASS ("every 🟡 credit is shown — 9", F55's knownGap removed) · check:full at b5c1ecc: credits PASS
 - [x] 🤖 1. Turn the Credits row on and open the kit's Credits from it — content/ui/settings.json
 - [ ] 🙋 2. Muzzy writes his lines (name, role, thanks) — content/text/en.json
 - [x] 🤖 3. e2e: open, back, every portrait size, every entry listed; add to check:full — e2e/credits.mjs
