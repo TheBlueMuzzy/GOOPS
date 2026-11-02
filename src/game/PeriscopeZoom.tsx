@@ -28,6 +28,8 @@ type Props = {
   see?: boolean // false = the goggles look at nothing (the ending): their painted glass, and no zoom
   live?: boolean // a shift is going (mid-shift at the console): the goggles stay on. Between shifts they're off (their
   // painted glass) until the periscope starts down — then they flicker on like an old CRT (Muzzy 2026-11-01)
+  backdrop?: string // F77: the console's backdrop picture — drawn here, under the console's Screen, so the hole is cut in it
+  // alone (the Screen's own backdrop would take the hole into everything inside it, the monitor too)
   children: ReactNode // the console's Screen
 }
 
@@ -58,7 +60,9 @@ type Box = { x: number; y: number; w: number; h: number }
 // Where things are with the console at rest (no zoom on it), in screen px
 type Geo = {
   u: number; ox: number; oy: number // px per mock-up unit, and the screen px of the mock-up's 0,0 — for the periscope (with its pull)
-  front: Box[] // what lies over the goggles (the monitor and its screen): the hole never cuts them
+  // F77: what the hole is cut in — the backdrop and the console's layers up to the periscope (.console-under): their
+  // boxes at rest, so the hole sits in each one's own place. The monitor and its screen come after, never cut.
+  cut: { el: HTMLElement; box: Box }[]
   stage: HTMLElement; k0: number; sx: number; sy: number // the stage pinned to the inner glass: x → k0·x + sx
 }
 
@@ -70,13 +74,13 @@ function measure(wrap: HTMLElement): Geo | null {
   const r = img.getBoundingClientRect()
   if (r.width <= 0) return null
   const u = r.width / P.at[2], ox = r.left - P.at[0] * u, oy = r.top - P.at[1] * u
-  const front = [wrap.querySelector('.console-monitor'), wrap.querySelector('.crt')].map((el) => {
-    const b = el?.getBoundingClientRect()
-    return b ? { x: b.left, y: b.top, w: b.width, h: b.height } : { x: 0, y: 0, w: 0, h: 0 }
+  const cut = [...wrap.querySelectorAll<HTMLElement>('.periscope-backdrop, .console-under')].map((el) => {
+    const b = el.getBoundingClientRect()
+    return { el, box: { x: b.left, y: b.top, w: b.width, h: b.height } }
   })
   const [ix, iy, iw, ih] = G.inner.box
   const k0 = (iw * u) / tank.width
-  return { u, ox, oy, front, stage, k0, sx: ox + ix * u - k0 * tank.left, sy: oy + (iy + ih - periscope.floorLift) * u - k0 * tank.floor }
+  return { u, ox, oy, cut, stage, k0, sx: ox + ix * u - k0 * tank.left, sy: oy + (iy + ih - periscope.floorLift) * u - k0 * tank.floor }
 }
 
 // (dev + tests: window.__periscopeZoom.hold(sw) keeps every zoom at that share until hold(null) — kept here, not in a
@@ -92,7 +96,7 @@ const pulling = (w: HTMLElement) => {
   return !!pull && (pull.hasAttribute('data-dragging') || pull.hasAttribute('data-pulled') || parseFloat(pull.style.getPropertyValue('--kit-pull')) > 0)
 }
 
-export function PeriscopeZoom({ phase, onDone, see = true, live = false, children }: Props) {
+export function PeriscopeZoom({ phase, onDone, see = true, live = false, backdrop, children }: Props) {
   const wrap = useRef<HTMLDivElement>(null)
   const seeing = useRef(see)
   useLayoutEffect(() => { seeing.current = see })
@@ -129,7 +133,8 @@ export function PeriscopeZoom({ phase, onDone, see = true, live = false, childre
     }
     lastStage.current = geo?.stage ?? null
     if (!geo) { // nothing to look at (no tank, or the ending): the goggles' painted glass, as drawn
-      for (const prop of ['transform', 'opacity', 'mask-image']) set(w, 'wrap', prop, '')
+      for (const prop of ['transform', 'opacity']) set(w, 'wrap', prop, '')
+      w.querySelectorAll<HTMLElement>('.periscope-backdrop, .console-under').forEach((el, i) => set(el, `cut${i}`, 'mask-image', ''))
       set(g, 'glass', 'display', 'none')
       return
     }
@@ -144,14 +149,16 @@ export function PeriscopeZoom({ phase, onDone, see = true, live = false, childre
     const fade = clamp01((1 - sw) / Math.max(0.01, periscope.frameFade))
     set(w, 'wrap', 'transform', sw > 0 ? matrix(z, zx, zy) : '')
     set(w, 'wrap', 'opacity', fade < 1 ? String(fade) : '')
-    // the hole: the outer glass's shape, minus the monitor and its screen (they're in front of the periscope)
-    const [mon, crt] = geo.front, hole = { x: ox + RX * u, y: oy + RY * u, w: RW * u, h: RH * u }
-    const px2 = (b: Box) => `${b.x}px ${b.y}px`, size = (b: Box) => `${b.w}px ${b.h}px`
-    set(w, 'wrap', 'mask-image', `${SOLID}, ${SOLID}, ${LENS_MASK}, ${SOLID}`)
-    set(w, 'wrap', 'mask-size', `${size(mon)}, ${size(crt)}, ${size(hole)}, 100% 100%`)
-    set(w, 'wrap', 'mask-position', `${px2(mon)}, ${px2(crt)}, ${px2(hole)}, 0 0`)
-    set(w, 'wrap', 'mask-repeat', 'no-repeat')
-    set(w, 'wrap', 'mask-composite', 'add, add, exclude, add')
+    // the hole: the outer glass's shape, cut in the backdrop and the console's layers up to the periscope — each at the
+    // goggles' place in its own box (F77: the monitor and its screen are after them, so nothing here can cut them)
+    const hole = { x: ox + RX * u, y: oy + RY * u, w: RW * u, h: RH * u }
+    geo.cut.forEach(({ el, box }, i) => {
+      set(el, `cut${i}`, 'mask-image', `${LENS_MASK}, ${SOLID}`)
+      set(el, `cut${i}`, 'mask-size', `${hole.w}px ${hole.h}px, 100% 100%`)
+      set(el, `cut${i}`, 'mask-position', `${hole.x - box.x}px ${hole.y - box.y}px, 0 0`)
+      set(el, `cut${i}`, 'mask-repeat', 'no-repeat')
+      set(el, `cut${i}`, 'mask-composite', 'exclude')
+    })
     // the stage: pinned to the glass, then zoomed with the console (at sw 1: no transform at all — the shift's own place)
     const k = z * k0, tx = z * sx + zx, ty = z * sy + zy
     set(geo.stage, 'stage', 'transform-origin', '0 0')
@@ -265,7 +272,11 @@ export function PeriscopeZoom({ phase, onDone, see = true, live = false, childre
           <div style={{ clipPath: INNER_CLIP, backgroundColor: G.inner.colour }} />
         </div>
       </div>
-      <div className="periscope-zoom" ref={wrap}>{children}</div>
+      <div className="periscope-zoom" ref={wrap}>
+        {/* (F77: the console's backdrop, here instead of on its Screen — the hole is cut in it, not in the Screen) */}
+        {backdrop && <div className="periscope-backdrop" style={{ '--periscope-backdrop': `url("${encodeURI(backdrop)}")` } as CSSProperties} />}
+        {children}
+      </div>
     </>
   )
 }

@@ -2,6 +2,13 @@
    Screen did; the zoom scales it from its top-left corner (the frame loop sets transform, opacity and the mask with
    the hole where the goggles' glass is). */
 .periscope-zoom { position: absolute; inset: 0; transform-origin: 0 0; }
+/* F77 (Muzzy: "the screen should be the top most layer group"): the goggles' hole is cut in two things only — the
+   backdrop (here, the kit Screen's backdrop look: the picture covering the window over the page colour) and the console's
+   layers up to the periscope (.console-under, Console.tsx: one cell of the art scene, like each layer). The monitor and
+   its screen come after them, so no hole reaches them. */
+.periscope-backdrop { position: absolute; inset: 0; background: var(--periscope-backdrop) center / cover no-repeat, var(--bg); }
+.console-under { grid-area: 1 / 1; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); min-inline-size: 0; min-block-size: 0; }
+.console-under > .kit-art-layer { grid-area: 1 / 1; }
 /* the goggles' glass over the stage, under the console: sized in mock-up units, scaled to the screen by the loop */
 .periscope-glass { display: none; position: fixed; left: 0; top: 0; width: var(--glass-w); height: var(--glass-h);
   transform-origin: 0 0; pointer-events: none; }

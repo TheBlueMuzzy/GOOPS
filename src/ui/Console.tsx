@@ -287,13 +287,20 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
     root.setProperty('--kit-career-trim', `${G.trimRem}rem`)
     root.setProperty('--kit-career-glow', `${G.glowRem}rem`)
   }, [G.colour, G.trimRem, G.glowRem])
+  // F77 one frame: while the screen is grown, the monitor art shows only down to the screen's top corners (lessons.css)
+  // — the share of the art cut from its bottom, from the art's own numbers
+  const crt = a.crt, monH = a.monitor.at[3]
+  useEffect(() => {
+    document.documentElement.style.setProperty('--monitor-grown-cut', `${((monH - (crt.screenTop + crt.radius)) / monH) * 100}%`)
+  }, [monH, crt.screenTop, crt.radius])
   // F56 (Muzzy's sketch S13): no slide any more — the periscope's goggles show the tank, and once it's pulled the console
   // zooms into them to the tank (leaving); coming back it zooms out of them (arriving), then the periscope lifts.
   // PeriscopeZoom (src/game) runs it and says when it's done (onSlideEnd); the periscope stays down through both.
   return (
     <PeriscopeZoom phase={phase} onDone={onSlideEnd} see={!ending /* (the ending: no next shift to look at) */}
-      live={!!midShift /* a shift going: the goggles stay on (between shifts they flicker on as the periscope starts down) */}>
-    <Screen label={t.label} column backdrop={a.backdrop}
+      live={!!midShift /* a shift going: the goggles stay on (between shifts they flicker on as the periscope starts down) */}
+      backdrop={a.backdrop /* (F77: drawn by PeriscopeZoom under the Screen, so the goggles' hole can be cut in it alone) */}>
+    <Screen label={t.label} column
       // (F59: between shifts the Upgrades button sits over the title — the corners beside it are too narrow on a phone)
       // (F76: the title and the gear are pictures — they keep their size at every Text size, art.json bottomRow; only
       // the Upgrades button's words grow, and the gear moves beside the title then: app.css)
@@ -304,6 +311,10 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         style={{ '--kit-art-size': `${a.bottomRow.gearPx}px` } as CSSProperties}>{t.settings}</Button>}>
       <ArtStage size={a.size} view={a.view} viewShort={midShift ? art.repairs.viewShort : a.viewShort} label={t.label} bleed align="end"
         className={gold ? 'career-gold-console' : undefined}>
+        {/* F77 (Muzzy 2026-11-02: "the screen should be the top most layer group"): everything up to the periscope is one
+            group — the goggles' hole (F56, PeriscopeZoom) is cut in it and in the backdrop only; the monitor and its
+            screen come after it, on top, where no hole can reach them (periscope.css .console-under) */}
+        <div className="console-under">
         <ArtLayer {...a.body} className={trim('body')} />
         {/* (F74: the tag the rank lock's story moment outlines) */}
         <ArtLayer {...a.meter} className={trim('meter')}><LessonTag tag="meter" /></ArtLayer>
@@ -334,7 +345,8 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
             <img src={a.periscope.src} alt="" draggable={false} />
           </PullHandle>
         </ArtLayer>
-        {/* (console-monitor: F56's hole in the console for the goggles never cuts the monitor, which hangs in front) */}
+        </div>
+        {/* (console-monitor: the monitor art — F77 trims its lower frame while the screen is grown, lessons.css) */}
         <ArtLayer {...a.monitor} at={[a.monitor.at[0], a.monitor.at[1] + drop, a.monitor.at[2], a.monitor.at[3]]} className={`console-monitor ${trim('monitor') ?? ''}`}><LessonTag tag="monitor" /></ArtLayer>
         <Crt hint={hint} lesson={ending ? null : storyLine ?? lessonLine} drop={drop} look={ending?.step === 'badge' ? 'glitch' : story?.line.monitor}
           badge={ending?.step === 'badge' ? <EndingBadge oldTitle={ending.oldTitle} /> : undefined} />{/* (F59: between shifts too — the Upgrades unlock lesson) */}

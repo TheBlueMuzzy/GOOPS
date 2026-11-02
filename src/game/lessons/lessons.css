@@ -9,7 +9,9 @@
    when the words + Got it need more room, the screen grows downward past the bezel like a toaster, the bezel's colour
    round the part that slid out. Sizes are in the console art's units (--u = one unit in px, measured by Console.tsx). */
 .crt {
-  align-self: start; position: relative; box-sizing: border-box; display: flex; flex-direction: column;
+  /* (justify-self: start — F77: the screen is wider than its words box; the box centred it, so it sat half the overflow
+     left of the art's screen — 5.6 px at 1440 wide — and a grown screen's frame showed beside the art's) */
+  align-self: start; justify-self: start; position: relative; box-sizing: border-box; display: flex; flex-direction: column;
   margin-block-start: calc(var(--crt-top) * -1 * var(--u)); padding-block-start: calc(var(--crt-top) * var(--u));
   margin-inline-start: calc(var(--crt-inset) * -1 * var(--u)); inline-size: calc(var(--crt-w) * var(--u));
   padding-inline: calc(var(--crt-inset) * var(--u));
@@ -92,6 +94,11 @@
   box-shadow: 0 0 0 calc(var(--crt-bezel-w) * var(--u)) var(--crt-bezel);
   clip-path: inset(0 calc(var(--crt-bezel-w) * -1 * var(--u)) calc(var(--crt-bezel-w) * -1 * var(--u)));
 }
+/* F77 ONE FRAME (Muzzy 2026-11-02: "there should only be one screen"): while the screen is grown, the monitor art's own
+   frame shows only down to where the grown frame's sides are straight (the screen's top corners) — below that the grown
+   frame is the only one, so the art's lower frame and its corners never peek out beside it. --monitor-grown-cut =
+   the share of the art cut from its bottom (Console.tsx, from art.json console.crt screenTop + radius). */
+.kit-art-stage:has(.crt[data-grown]) .console-monitor { clip-path: inset(0 0 var(--monitor-grown-cut, 0%) 0); }
 
 /* F65 THE BADGE (the ending, Console.tsx EndingBadge): your title crossed out by the goop — a line drawn through it in
    the goop's colour (--badge-goop, galaxy-look.json rim) over --badge-strike — and The Savior of Goopkind written under
