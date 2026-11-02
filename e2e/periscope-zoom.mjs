@@ -87,6 +87,7 @@ async function innerGlass(page) {
 // The tank pinned in the inner glass (mid-zoom too): its width on screen = the glass's, its floor floorLift above the
 // glass's bottom edge (the stage's transform × where the shift lays the tank out, vs the glass layer's box)
 const pinned = (page) => page.evaluate(([ring, inner, lift]) => {
+  if (!window.__goops || !document.querySelector('.periscope-glass') || !document.querySelector('[data-testid="stage"]')) return null
   const v = window.__goops.view, s = window.__goops.engine.state
   // (the stage's box on screen, zoom included — whatever its transform and origin): screen = r + stage px × k
   const st = document.querySelector('[data-testid="stage"]'), r = st.getBoundingClientRect(), k = r.width / st.offsetWidth
@@ -95,7 +96,7 @@ const pinned = (page) => page.evaluate(([ring, inner, lift]) => {
   return { tankLeft: r.left + left * k, tankW: s.visibleWidth * v.cellPx * k, floor: r.top + floor * k,
     glassLeft: g.left + (inner[0] - ring[0]) * u, glassW: inner[2] * u, glassFloor: g.top + (inner[1] + inner[3] - ring[1] - lift) * u }
 }, [GLASS.ring.box, GLASS.inner.box, JSON.parse(readFileSync('content/tuning/periscope.json', 'utf8')).floorLift])
-const pinnedOk = (p) => Math.abs(p.tankLeft - p.glassLeft) < 1.5 && Math.abs(p.tankW - p.glassW) < 1.5 && Math.abs(p.floor - p.glassFloor) < 1.5
+const pinnedOk = (p) => !!p && Math.abs(p.tankLeft - p.glassLeft) < 1.5 && Math.abs(p.tankW - p.glassW) < 1.5 && Math.abs(p.floor - p.glassFloor) < 1.5
 const zoomAttr =(page) => page.evaluate(() => document.querySelector('.periscope-zoom')?.getAttribute('data-zoom') ?? null)
 const consoleStill = (page) => page.waitForFunction(() => { const c = document.querySelector('.kit-screen[aria-label="Console"]'); return c && !c.closest('[data-zoom], [data-lift]') }, null, { timeout: 5000 }).then(() => true, () => false)
 const inTank = (page) => page.locator('.kit-art-stage').waitFor({ state: 'detached', timeout: 5000 }).then(() => true, () => false)
@@ -116,6 +117,7 @@ try {
     const errors = []
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
     page.on('pageerror', (e) => errors.push(String(e)))
+    try { // (a step that can't run — e.g. no zoom at all — fails its size and the run goes on)
     await skipFirstDay(page)
     await page.goto(URL_)
     await checkVersion(page)
@@ -196,6 +198,7 @@ try {
     const tNext = nextGlass && await showsTank(page, nextGlass)
     check(`${size}: the goggles show the next shift's tank`, !!tNext?.ok, tNext?.detail)
     await page.screenshot({ path: `${OUT}/${size}-4-back.png` })
+    } catch (e) { check(`${size}: the steps ran to the end`, false, String(e.message ?? e).split('\n')[0]) }
     check(`${size}: no console errors`, !errors.length, errors.join(' | '))
     await context.close()
   }
