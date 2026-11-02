@@ -47,6 +47,7 @@ import { art } from './art'
 import { useShort } from './useShort'
 import { usePortraitLock, useSideways } from './portrait'
 import { UprightScreen } from './Upright'
+import { CreditsScreen } from './CreditsScreen'
 import shiftConfig from '../../content/tuning/shift.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import whiteGoop from '../../content/tuning/whiteGoop.json'
@@ -95,7 +96,9 @@ type LessonStart = { id: string; step: number | string }
 
 // (Replay lessons, F32: the device forgets which lessons it has seen — each machine's plays again at its next break;
 // F31: and the first day plays again from the start at the next pull of the periscope, whatever the rank)
+// (F55: About → Credits opens the kit's Credits over Settings; its ‹ comes back to Settings)
 const onSettingsAction = (id: string) => {
+  if (id === 'credits') return screens.push('credits')
   if (id !== 'replayLessons') return
   firstDay.replay()
   tipsMemory().resetTips()
@@ -110,7 +113,7 @@ const SettingsScreen = () => (
 )
 // the console between shifts: Settings and the Upgrades shop (one fixed map, so a screen stays mounted while it's used)
 // (+ F70 RANK SELECT's list, in a Dev Kit build)
-const IDLE_SCREENS = { settings: SettingsScreen, upgrades: UpgradesScreen, ...(rankSelectOn ? { rankSelect: RankSelectScreen } : {}) }
+const IDLE_SCREENS = { settings: SettingsScreen, credits: CreditsScreen, upgrades: UpgradesScreen, ...(rankSelectOn ? { rankSelect: RankSelectScreen } : {}) }
 // in-shift messages (F26, src/game/messages.ts decides which): kit toasts just above the goop. How long one stays is
 // LOOKS time (src/devkit/gameClock.ts): the Dev Kit's full pause holds it on screen, so the frozen picture stays whole.
 const ONE_DAY_S = 86_400 // (the kit's own timer, never reached: the looks clock takes it away)
@@ -416,7 +419,7 @@ export function App() {
   }, [showEnd])
 
   const screenMap = useMemo(() => ({
-    settings: SettingsScreen,
+    settings: SettingsScreen, credits: CreditsScreen,
     pause: () => (
       <Pause words={text.pause} onSettings={() => screens.push('settings')} onQuit={toConsole} />
     ),
@@ -538,7 +541,7 @@ export function App() {
 
   // the console mid-shift: Settings and the pause menu (End shift throws the run away)
   const consoleScreens = useMemo(() => ({
-    settings: SettingsScreen,
+    settings: SettingsScreen, credits: CreditsScreen,
     pause: () => <Pause words={text.pause} onSettings={() => screens.push('settings')} onQuit={endAtConsole} />,
   }), [endAtConsole])
 

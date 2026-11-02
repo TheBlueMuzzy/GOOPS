@@ -381,7 +381,7 @@
           "id": "credits",
           "type": "button",
           "label": "Credits",
-          "on": false
+          "on": true
         },
         {
           "id": "feedback",
