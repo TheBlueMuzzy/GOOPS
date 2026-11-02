@@ -7,7 +7,7 @@ Done when: every sound moment plays a sound Muzzy picked (or kept) · the moment
 why: Muzzy 2026-10-19: "add a step during polish to update sounds" — 1.0 shouldn't sound like a placeholder.
 Check: npm run audio:check · check:framework (audio + credits) · every sound key in content/audio.json has a file (test) · Claude plays a shift and the moments in the list, console clean · check:full
 - [x] 🤖 1. Update the audio module 0.4.0 → 0.5.0 (install-module.mjs audio .) and run its checks — src/audio/
-- [ ] 🤖 2. The sound shopping list: the 26 sounds today (what plays each, the file now) + the moments with no sound (periscope zoom in/out, the valve, the zap beam, the ending, the white goop, rank-up…) — .planning/research/sound-list.md
+- [x] 🤖 2. The sound shopping list: the 26 sounds today (what plays each, the file now) + the moments with no sound (periscope zoom in/out, the valve, the zap beam, the ending, the white goop, rank-up…) — .planning/research/sound-list.md
 - [ ] 🙋 3. Muzzy hunts the sounds and drops them in one folder (names from the list) — .planning/research/sound-list.md
 - [ ] 🤖 4. Trim, even out loudness, wire into the sound moments, credit each — content/audio.json
 - [ ] 🤖 5. The new moments call their sounds (zoom, valve, zap beam, ending…) — src/audio/
@@ -26,3 +26,4 @@ Check: e2e/credits.mjs (opens from Settings, back, every portrait size, every cr
 - Muzzy 2026-11-02 (Sprint 30 plan): music — none for 1.0 · intercom voice — silent · Credits — from Settings only.
 - Left out: F73 — Crisp pixel type (waits on the UI kit's font-grid rounding, not in kit 0.39.0) · F57 — Colour-blind help (a should; the musts first).
 - F53 task 1 (2026-11-02): audio 0.4.0 → 0.5.0 installed (audio-check, conformance, engine changed; src/audio added to eslint's ignores). Its hand step is only for a game that ran `audio:check --fix` on 0.4.x — Goops never did (no audio-originals/), so nothing to do. audio:check today: 34 sounds, 4 placeholders too quiet (tank spin ×2, button tap, +1) — evened in task 4 on Muzzy's files, not now. check:fast exit 0.
+- F53 task 2 (2026-11-02): .planning/research/sound-list.md — 26 sounds to replace or keep + 14 moments with no sound (crack grow, wild turn, Goop Dump, ability ready/fire, zoom in/out, goggles on, the Veteran's land/ow/seal, valve ready, the ending, rank-up). Muzzy's files go in audio-incoming/ (outside public/, so raw files never ship) with sources.txt. Checked against the code: the valve opening plays machine.fixed (ValvePanel); a rank-up plays nothing today (first draft wrongly said shift.won did).
