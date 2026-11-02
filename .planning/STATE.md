@@ -69,6 +69,7 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 **Remote:** github.com/TheBlueMuzzy/GOOPS
 
 ## Log
+- 2026-11-02 — The monitor's orange frame now stays whole on top of the periscope's goggles when a long line grows the screen (F77 — Goggles cut the screen's frame, approved). Sprint 29 is done; its retro is next.
 - 2026-10-31 — Text size up to 200% no longer breaks the console (words stay in their spots, the gear sits beside the logo), and a phone's first visit downloads 22% less (unused fonts out, lighter icons).
 - 2026-10-31 — Goops 2 is ready to take over the main address: one deploy at the 1.0 release puts it at /GOOPS/, retires v1, and sends beta players there with their rank. Nothing is live yet.
 - 2026-10-30 — The final shift is teamwork now: you only lose if the tank breaks; keep it healthy and the Veteran makes it — then he heads for Earth to see his family. Goop Dump rains wild goop.
@@ -78,4 +79,3 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 - 2026-10-30 — The climb is re-balanced for the rank lock: the quota is smaller and creeps up slowly, so bots meet it about 3 shifts in 4 and a career takes ~65–70 shifts; Pressure Control's first level is felt, Colorizer is a short burst, Goop Dump no longer wipes the score; cracks start growing at rank 31. Waiting on Muzzy's play.
 - 2026-10-29 — Released the beta (v0.2.0): the whole career from rank 0 to the ending — the story, upgrades and abilities, the final shift, and a new career after it.
 - 2026-10-29 — Beta ready to release, waiting on Muzzy. A sim now plays whole careers with bots (rank 0 to the ending) and shows where the ladder is too fast, where the quota is out of reach, and which upgrades do nothing; the console has its tab icon; the settings picker keeps "Accessibility" whole at 200% text.
-- 2026-10-27 — F64 approved. Rank 50 is the boss shift: all galaxy-black goop, the Veteran drops in and gives himself up sealing the cracks you can't reach, and you open the release valve three times at the console by turning two wheels until the needle sits in the green
