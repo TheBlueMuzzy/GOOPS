@@ -39,3 +39,8 @@ Checked: e2e/credits.mjs 79/79 at 390x844, 360x780, 1100x800, 1440x900, 1920x108
 - F53 — Final sound closed by Muzzy 2026-11-02 ("close it") with the stand-in sounds: today's 26 + 14 pitched stand-ins for the new moments. Real sounds later = .planning/research/sound-list.md (still valid) → ROADMAP Ideas. The 4 quiet placeholders (audio:check) stay as they are.
 - F55 — Credits screen task 2 (2026-11-02): en.json credits.people = Made by MuzzyMade; e2e/credits.mjs 79/79 again, shot looked at (390x844: MADE BY · MuzzyMade).
 - F55 — Credits screen ✅ approved by Muzzy 2026-11-02 ("approved"), with the © line (e2e/credits.mjs 79/79 again; 360x780 shot looked at: the © line wraps inside the card) + LICENSE.
+
+Retro: (Claude's draft, Muzzy: "yes", 2026-11-02)
+- went well: auto mode ran both features in parallel (a helper on Credits, Claude on sounds), merged cleanly; the kit already had a Credits screen, so F55 — Credits screen was mostly wiring
+- went wrong: Muzzy was asked to hunt 40 sounds before anyone checked whether the stand-ins were good enough — he closed F53 — Final sound with them, so the shopping list was effort not needed yet
+- change: for polish features, play the cheap stand-in version first and ask "good enough?" before planning work that needs Muzzy's time
