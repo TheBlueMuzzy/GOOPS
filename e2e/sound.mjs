@@ -13,6 +13,7 @@
 import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 
 const PORT = 5321
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
@@ -61,6 +62,11 @@ try {
     // (the very first tap of a visit unlocks the audio and starts loading the files, so its own click is still loading:
     // logged 'not-loaded' — every later one plays; the pause menu's button below checks that)
     check('the kit\'s tap is asked for too (setControlSound)', entries.some((e) => e.id === 'ui.tap' && (e.result === 'played' || e.reason === 'not-loaded')))
+    // F53: the goggles flicker on as the periscope starts down, then the view zooms into them (asked for: their own
+    // files may still be loading on the visit's first pull, like the tap above)
+    const asked = (id) => entries.some((e) => e.id === id && (e.result === 'played' || e.reason === 'not-loaded'))
+    check('F53: the goggles coming on plays ui.goggles.on', asked('ui.goggles.on'))
+    check('F53: the zoom into the goggles plays ui.zoom.in', asked('ui.zoom.in'))
   }
 
   // ---- 2. a shift played by the Sharp bot ----
@@ -172,7 +178,8 @@ try {
     await page.locator('aside.devkit .devkit-tab', { hasText: 'Sound' }).click()
     await page.waitForTimeout(400)
     const names = await page.locator('aside.devkit .sb-sound-name').allTextContents()
-    check('Dev Kit Sound tab lists every sound', names.length === 26 && names.includes('goop.pop'), `${names.length} sounds`)
+    const all = Object.keys(JSON.parse(readFileSync('content/audio.json', 'utf8')).sounds)
+    check('Dev Kit Sound tab lists every sound', names.length === all.length && names.includes('goop.pop'), `${names.length} of ${all.length} sounds`)
     const t0 = await pageNow(page)
     await page.getByRole('button', { name: 'Play crack.seal', exact: true }).click()
     await page.waitForTimeout(300)
