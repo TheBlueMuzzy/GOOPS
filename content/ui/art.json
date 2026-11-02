@@ -63,7 +63,7 @@
       "controls": { "at": [88, 1460, 212, 24], "text": 17 },
       "lights": { "at": [363, 1458, 180, 24], "text": 17 },
       "_bottomRow": "F70 (Muzzy 2026-10-24): the bottom row reads version · RANK SELECT · MuzzyMade © 2026. rankSelect = the Dev Kit's rank tool (a button; its box is centred on the row and taller, so the button's 44 px tap target sits on the row). Muzzy 2026-10-24 ('too wide'): the row stays inside the dark strip, which narrows toward the bottom (its edges ~48 and ~598 on this row) — 64…584, words 14. A phone never shows words under 10 px (the kit), so there the row fits only with the short credit (en.json console.creditShort, used while RANK SELECT shows).",
-      "version": { "at": [64, 1841, 110, 20], "text": 14 },
+      "version": { "at": [64, 1841, 130, 20], "text": 14 },
       "rankSelect": { "at": [214, 1831, 200, 40], "text": 14 },
       "credit": { "at": [356, 1841, 228, 20], "text": 14 },
       "_creditBeside": "The short credit's box while RANK SELECT shows: starts right of the button's tap area (~417 on a 390 phone), so the two boxes never overlap (check:framework 'nothing overlaps').",

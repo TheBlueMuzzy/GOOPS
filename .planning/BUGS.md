@@ -1,9 +1,10 @@
 # Goops — Bugs
 Open: 7 (P0 0 · P1 0 · P2 0 · P3 7)
 ## Open
-### B011 · P3 · open · found 2026-11-02 in F77's check:full · v0.2.0.22 · headless 360x780
+### B011 · P3 · fixed 2026-11-02 in Sprint 30 · found 2026-11-02 in F77's check:full · v0.2.0.22 · headless 360x780
 The version words spill their spot on a 360 phone when the number has wide digits
 Steps: 1. 360x780 2. the console's footer · Expected: "v0.2.0.22" inside its art spot (art.json console.words.version) · Actual: 57.5 px of words in a 55.7 px spot (1.8 px over) — measured by Claude on the same page: "v0.2.0.17" 55.0 px fits, "v0.2.0.20" / ".22" 57.5 px spill (in the Nokia font a 1 is much narrower than a 2 or 0) · How often: whenever the version has wide digits; every /save bumps it. Red in check:full: text-size, repairs, rank-select at 360 only (passed at v0.2.0.17). Not F77's (its layer change doesn't touch the words). Look at: the version's spot width in art.json words.version, or the footer's three spots at 360.
+Fixed (Muzzy 2026-11-02: "yes" — fix it now): the version's spot in art.json console.words.version 110 → 130 art px wide (55.7 → 65.8 px at 360; room for a 10-character version like v0.2.0.199) — still clear of RANK SELECT (it starts at 214). Guarded by: e2e/text-size.mjs ("inside its art spot"), e2e/repairs.mjs ("words spill"), e2e/rank-select.mjs (row order + gaps) — all red at 360 before, ALL PASS after (rank-select 92/92).
 ### B008 · P3 · open · found 2026-10-30 in F74 · v0.2.0.0 · headless 1440x900
 The report's red ▼ touches a long value's first word
 Steps: 1. a shift that leaves the rank locked 2. the end report's Quota row · Expected: a gap between the ▼ and "Rank locked: meet a quota", like the fines' "▼ −5" · Actual: the ▼ sits right against "Rank" (e2e-shots/rank-lock/report-locked-1440x900.png) · How often: always on a long text value. Look at: the UI kit's stat row (src/ui/kit/blocks/flow.tsx kit-stat-row, a framework copy) — the tone mark's gap for a value that wraps → framework session
