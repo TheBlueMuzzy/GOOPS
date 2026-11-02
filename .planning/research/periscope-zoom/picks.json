@@ -1,0 +1,10 @@
+{
+  "_about": "F56 — Periscope zoom: Muzzy's pick from sketch S13 (.planning/research/sketches/periscope-zoom.html), 2026-11-01: \"B lens settings as is.\"",
+  "style": "B — the tank plays in the goggles' dark blue glass at the console",
+  "values": { "frameFade": 0.3, "tint": 0.15, "pullMs": 300, "zoomMs": 350, "backMs": 350, "ease": 2.9 },
+  "notes": [
+    "The periscope drags like the game's PullHandle; the zoom starts on let-go at the bottom.",
+    "The tank's full width (8 columns) is pinned to the dark blue inner glass and scales with the periscope; the zoom ends where the glass IS the full-screen tank.",
+    "Later: the pixelated render shader over the tank must also apply to the tank view through the visor (same render)."
+  ]
+}

@@ -79,18 +79,21 @@ const GOO = {
   zoomMs: 350,      // the switch to the tank: the zoom in (A/B) or the slide away (C)
   backMs: 350,      // the switch back to the console: zoom out (A/B) or slide up (C)
   ease: 2.9,        // ease-in-out power: 1 = constant speed, 5 = slow start and end, fast middle
+  ringBlur: 6,      // B: the goggles' black ring shows the tank blurred (mock-up units of blur; 0 = solid black, as before)
 };
+const RING_DARK = 0.45;    // how much of the ring's black lies over the blurred tank (a dark, soft border round the sharp glass)
 const LET_GO = 0.6;        // the game's PullHandle threshold: let go past 60% of the travel and it finishes the pull
 const GRIP = 0.345;        // the game's periscope grip: the bottom 34.5% of the periscope (its goggles) is what you grab
 const FLOOR_LIFT = 4;      // the vat's floor sits this many mock-up units above the dark blue glass's bottom edge
 // [name, min, max, step] rows; a one-item row is a group heading. 5–8 sliders max.
-const KNOBS = [['Look'], ['style', 0, 2, 1], ['frameFade', 0.05, 1, 0.05], ['tint', 0, 0.8, 0.05],
+const KNOBS = [['Look'], ['style', 0, 2, 1], ['frameFade', 0.05, 1, 0.05], ['tint', 0, 0.8, 0.05], ['ringBlur', 0, 20, 1],
   ['Timing'], ['pullMs', 0, 1500, 25], ['zoomMs', 150, 2000, 25], ['backMs', 150, 2000, 25], ['ease', 1, 5, 0.1]];
 // One line per knob: what it does IN THIS SKETCH, and when you'd notice it. A knob Muzzy can't see working gets fixed or cut.
 const KNOB_HELP = {
   style: '0 = A: the goggles show their painted glass until the zoom starts. 1 = B: the tank plays in the goggles\' dark blue glass at the console. 2 = C: today\'s slide down.',
   frameFade: 'A/B: when the console (and the goggles\' black ring) fade away to show the rest of the tank. 0.1 = only at the very end; 1 = fading the whole zoom.',
   tint: 'B: how much of the dark blue glass colour lies over the tank in the goggles at the console. 0 = clear glass. Watch the goggles before you pull.',
+  ringBlur: 'B: the black ring inside the goggles shows the tank behind it, blurred and darkened — a soft border round the sharp dark blue glass. 0 = solid black; higher = blurrier. Watch the goggles\' edges.',
   pullMs: 'How long the periscope takes to glide the rest of the way once you let go past 60% (or spring back short of it), and to go back up at the end.',
   zoomMs: 'How long the zoom in (A/B) or the slide away (C) takes after the periscope lands.',
   backMs: 'How long the way back (zoom out / slide up) takes.',
@@ -144,12 +147,15 @@ function back() { if (S.phase === 'tank') go('out'); }
 function reset() { go('console'); S.hold = false; tank.reset(); }
 function easeIO(t) { const k = GOO.ease; return t < 0.5 ? 0.5 * Math.pow(2 * t, k) : 1 - 0.5 * Math.pow(2 - 2 * t, k); }
 const easeOut = t => 1 - Math.pow(1 - t, 3);   // the periscope's glide / spring: quick off the finger, soft at the end
+// the lift back up is the glide down played backwards (Muzzy 2026-11-01: "zooming out… doesn't feel symmetrical" —
+// measured: the zoom was a mirror, but the lift shot up at once after the zoom's soft landing): a soft start, then quick
+const easeIn = t => Math.pow(t, 3);
 const clamp01 = v => Math.max(0, Math.min(1, v));
 // where we are: pullAmt (0 up … 1 down) and sw (the switch: 0 = console … 1 = tank)
 function progress() {
   const t = clamp01(S.t), e = easeIO(t), o = easeOut(t), p = S.phase;
   return { pullAmt: p === 'console' ? S.drag ?? 0 : p === 'glide' ? S.from + (1 - S.from) * o : p === 'spring' ? S.from * (1 - o)
-             : p === 'lift' ? 1 - o : 1,
+             : p === 'lift' ? 1 - easeIn(t) : 1,
            sw: p === 'in' ? e : p === 'out' ? 1 - e : p === 'tank' ? 1 : 0 };
 }
 
@@ -253,6 +259,16 @@ function draw() {
   // the goggles: the black ring stays black (part of the console, it fades with it); only the dark blue inner glass
   // shows the tank (B always, A once the zoom starts), with the glass colour over it (glassA)
   ctx.fillStyle = '#0b1c3f'; ctx.fill(LENS_PATH);
+  // Muzzy 2026-11-01: the black ring is a blurry filter over the tank where it is — the same pinned tank, blurred, with
+  // some of the black over it (it fades with the console, so at the end only the sharp tank is left)
+  if (tankShows && GOO.ringBlur > 0) {
+    ctx.save(); ctx.clip(LENS_PATH);
+    ctx.filter = `blur(${GOO.ringBlur * s * dpr}px)`;   // (canvas filter lengths ignore the transform: scale by hand)
+    ctx.drawImage(tankCanvas, tx, ty - pullY, tw, th);
+    ctx.filter = 'none';
+    ctx.globalAlpha = consoleA * RING_DARK; ctx.fillStyle = '#0b1c3f'; ctx.fill(LENS_PATH);
+    ctx.restore();
+  }
   ctx.globalAlpha = 1;
   ctx.save(); ctx.clip(INNER_PATH);
   if (tankShows) { ctx.fillStyle = '#071214'; ctx.fill(INNER_PATH); ctx.drawImage(tankCanvas, tx, ty - pullY, tw, th); }
