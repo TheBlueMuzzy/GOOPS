@@ -71,6 +71,29 @@ async function showsTank(page, box) {
   const off = offShare(p, hex(GLASS.inner.colour)), sd = spread(p)
   return { ok: off > 0.6 && sd > 4, detail: `${(off * 100).toFixed(0)}% off ${GLASS.inner.colour}, brightness spread ${sd.toFixed(1)}` }
 }
+// F77 (B010): a grown screen (a long line slides it down like a toaster) over the goggles. ONE orange frame: the grown
+// frame's sides on the monitor art's frame (within 1 px) and no art frame showing just outside it; and nothing of the
+// goggles over the frame — its bottom band is all bezel colour. (The line is put on the screen by hand: the screen grows
+// the same way for any long line.)
+async function grownScreen(page) {
+  const geo = await page.evaluate(async () => {
+    const words = document.querySelector('.crt .lesson-words')
+    words.textContent = 'A LONG LINE THAT SLIDES THE SCREEN DOWN OVER THE PERISCOPE. '.repeat(2)
+    await new Promise((ok) => setTimeout(ok, 900))
+    const crt = document.querySelector('.crt'), c = crt.getBoundingClientRect(), mon = document.querySelector('.console-monitor').getBoundingClientRect()
+    const u = parseFloat(crt.style.getPropertyValue('--u')), b = parseFloat(crt.style.getPropertyValue('--crt-bezel-w')) * u
+    return { grown: crt.hasAttribute('data-grown'), frameL: c.left - b, frameR: c.right + b, artL: mon.left, artR: mon.right,
+      top: c.top, artBottom: mon.bottom, bottom: c.bottom, b }
+  })
+  const bez = hex(art.console.crt.bezel)
+  // just outside the grown frame's right side, from the screen's top to the art's bottom: no orange there
+  const out = await pixels(page, { x: Math.round(geo.frameR + 2), y: Math.round(geo.top + geo.b * 3), width: 3, height: Math.max(4, Math.round(geo.artBottom - geo.top - geo.b * 4)) })
+  const outside = 1 - offShare(out, bez, 30)
+  // the frame's bottom band across its middle (over the goggles): bezel colour, not glass
+  const band = await pixels(page, { x: Math.round(geo.frameL + geo.b * 4), y: Math.round(geo.bottom + geo.b * 0.3), width: Math.round(geo.frameR - geo.frameL - geo.b * 8), height: Math.max(2, Math.round(geo.b * 0.4)) })
+  const bandOff = offShare(band, bez, 30)
+  return { geo, outside, bandOff }
+}
 // the goggles are off: nearly every pixel is the painted inner glass colour
 async function showsPainted(page, box) {
   const p = await pixels(page, box)
@@ -162,6 +185,17 @@ try {
     const offAgain = await page.waitForFunction(() => document.querySelector('.periscope-glass')?.getAttribute('data-power') === 'off', null, { timeout: 2000 }).then(() => true, () => false)
     check(`${size}: a short drag springs back and the goggles go off again`, offAgain)
     await page.mouse.click(5, 5) // (a neutral spot: the drag's own click is spent)
+    // 1b. F77 (B010): a grown screen over the goggles — one frame, never cut by the goggles' hole
+    const gs = await grownScreen(page)
+    check(`${size}: a long line grows the screen`, gs.geo.grown)
+    check(`${size}: the grown frame lines up with the monitor art's frame (within 1 px)`, Math.abs(gs.geo.frameL - gs.geo.artL) <= 1 && Math.abs(gs.geo.frameR - gs.geo.artR) <= 1,
+      `left ${gs.geo.frameL.toFixed(1)} vs ${gs.geo.artL.toFixed(1)} · right ${gs.geo.frameR.toFixed(1)} vs ${gs.geo.artR.toFixed(1)}`)
+    check(`${size}: no second frame shows beside the grown one`, gs.outside < 0.05, `${(gs.outside * 100).toFixed(0)}% bezel colour just outside`)
+    check(`${size}: the goggles never cut the grown frame (its bottom band is all bezel)`, gs.bandOff < 0.05, `${(gs.bandOff * 100).toFixed(0)}% of the band isn't bezel`)
+    await page.screenshot({ path: `${OUT}/${size}-1-grown.png` })
+    await page.reload()
+    await page.locator('.kit-art-stage').waitFor()
+    await page.waitForTimeout(800)
 
     // 2. the pull → the zoom in
     await hold(page, 0.5)
