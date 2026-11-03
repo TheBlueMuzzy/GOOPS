@@ -143,9 +143,8 @@ Goal: every rank 0–50 plays, the story reaches its ending, upgrades and every 
 - ✅ F68 🎮 First-day touches (approved 2026-10-24): poking goop that can't pop jiggles it in the tutorial too (Muzzy: "clicking on the wrong goop should do the jiggle thing" — it works in shifts; a lesson step that refuses the zap may stop it before the jiggle) · a hint that shows when a crack is covered by the wrong colour (it can pop, but won't seal — pop it to make room for the right colour) · audit v1's tutorial for other missing touches (Muzzy: "a lot of the original tutorial touches are missing") — must:beta · needs: F31
 - ✅ F69 ❓ The first day's voice — decided 2026-10-24 (Muzzy: "Management teaches tutorial. Vet comes in at 5. i forgot."): Management teaches the first day (as built), the Veteran first speaks at rank 5 — must:beta · needs: F09
 - ✅ F70 🧱 Rank select (approved 2026-10-24) + the framework version label at the bottom of the console (Muzzy 2026-10-24: "maybe we need the v1's rank selector back again at the bottom between the version (which should be using the frameworks version module so it's up to date when I open it) and \"muzzymade 2026\"" — the ?rank links left him at his own save's rank 18, and a fresh first day had no way in) — must:beta · needs: F38
-- 🟢 F46 🎮 Operator Journal — should:beta · needs: F30
 - ✅ F48 🎮 Quick Fix upgrade at rank 28 (fewer repair steps) — should:beta · needs: F34
-- 🟢 F49 ❓ Covered cracks drain half? (bot rerun) — could:beta · needs: F36
+- 🟢 F49 🎮 Covered cracks drain half? (bot rerun) — could:beta · needs: F36 · **Muzzy 2026-11-02: yes — a crack covered by goop wears the tank at half speed, and its bubbles come at half the rate too;** a bot rerun checks the balance after
 - 🟢 F50 🎮 Repair bots (maybe the rank-40s upgrade band) — could:beta · needs: F43
 - ✅ F51 🧱 Economy sim: ranks 0–50, every upgrade — must:beta · needs: F43, F39
 
