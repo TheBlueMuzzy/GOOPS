@@ -82,14 +82,19 @@ export function createLadder(source: LadderFile | (() => LadderFile), fileName =
       return out
     },
     group: (g) => Object.entries(groupOf(g)).map(([name, rank]) => ({ name, rank })),
+    // (the highest rank reached wins, not the file's order — so moving one name past another never needs a re-sort;
+    // a tie goes to the one later in the file)
     lastAt(g, rank) {
-      let last: string | undefined
-      for (const [name, r] of Object.entries(groupOf(g))) if (rank >= r) last = name
+      let last: string | undefined, best = -Infinity
+      for (const [name, r] of Object.entries(groupOf(g))) if (rank >= r && r >= best) { last = name; best = r }
       return last
     },
     stepAt(steps, rank) {
-      let value = 0
-      for (const s of steps) if (rank >= ladder.rankOf(s.beat)) value = s.count
+      let value = 0, best = -Infinity
+      for (const s of steps) {
+        const r = ladder.rankOf(s.beat)
+        if (rank >= r && r >= best) { value = s.count; best = r }
+      }
       return value
     },
     grantAt(kind, rank) {

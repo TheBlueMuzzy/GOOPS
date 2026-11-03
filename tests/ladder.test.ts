@@ -46,6 +46,14 @@ describe('the ladder module', () => {
     const steps = [{ beat: 'start', count: 4 }, { beat: 'wild', count: 5 }, { beat: 'final', count: 7 }]
     expect([0, 3, 4, 9, 10].map((r) => l.stepAt(steps, r))).toEqual([4, 4, 5, 5, 7])
   })
+  it('a pivot that moves one name past the next: the highest rank reached wins, not the file order', () => {
+    // (Claude's F78 review: "associate 5 → 12 with technician at 10" showed technician at 12)
+    const moved = { ...file(), titles: { rookie: 0, pro: 8, vet: 6 }, beats: { start: 0, wild: 9, grow: 4, final: 10 } }
+    const l = createLadder(moved)
+    expect([0, 6, 7, 8, 10].map((r) => l.lastAt('titles', r))).toEqual(['rookie', 'vet', 'vet', 'pro', 'pro'])
+    const steps = [{ beat: 'start', count: 4 }, { beat: 'wild', count: 5 }, { beat: 'grow', count: 6 }]
+    expect([0, 4, 8, 9].map((r) => l.stepAt(steps, r))).toEqual([4, 6, 6, 5])
+  })
   it('grants land on their beat\'s rank; grantsUpTo adds them up', () => {
     const l = createLadder(file())
     expect([0, 4, 10].map((r) => l.grantAt('scraps', r))).toEqual([0, 3, 2])
