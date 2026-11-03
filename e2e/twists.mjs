@@ -1,6 +1,6 @@
 // F39 rank twists in a real shift (Jelly; Particle at 1440). Checks:
 //   twoColourPieces (the ladder beat's rank): a two-colour piece falls (glowing) and locks as two clumps, each cell its own colour
-//   cracksGrow: a crack grows over several cells; covering all but one doesn't plug it (popping there seals nothing);
+//   cracksGrow: a crack grows over several cells, each time a new crack is due (F83: in its place); covering all but one doesn't plug it (popping there seals nothing);
 //            covering every cell plugs it; one pop seals it whole and the quota counts its cell count
 //   wildGoop: a wild piece falls and locks in the wild look; wild goop on a crack of another colour plugs + seals it;
 //            a normal piece landing on a wild clump turns the whole clump its colour; faces never doubled
@@ -44,7 +44,7 @@ async function open(w, h, rank, style = 'Jelly') {
   if (style !== 'Jelly') await page.evaluate((st) => window.__goops.gooStyle.setFromSetting(st), style)
   await page.evaluate(() => {
     const e = window.__goops.engine
-    e.growCracks = () => {} // (the shift's own new cracks — growing ones are twists.ts, still on)
+    e.growCracks = () => {} // (the shift's own new cracks — and so, F83, growing ones: they take a new crack's place)
     e.machines.tick = () => {}
     e.state.cracks.length = 0
     e.setPressure(0.85) // the pop line high, so the test's goop can pop and cracks can grow up
@@ -115,7 +115,9 @@ try {
     {
       const { page, errors } = await open(w, h, GROW_AT)
       await page.evaluate(() => { window.__goops.engine.fallPiece = () => {} }) // the piece hangs at the top
-      await sendTwists(page, { grow: { everyMsMin: 300, everyMsMax: 400, baseChance: 1, leafMult: 1, hopFalloff: 0, minFalloff: 1 } })
+      // F83: a crack grows only when a new crack is due — X = 1 (every due crack grows the old one instead), and a new
+      // crack due every 350 ms (the shift's own crack step back on, its timer pushed)
+      await sendTwists(page, { grow: { extendChance: 1 } })
       const id = await page.evaluate(async () => {
         const { regroup } = await import('/src/engine/groups.ts')
         const e = window.__goops.engine, s = e.state
@@ -123,11 +125,24 @@ try {
         regroup(s, e.book)
         const x = s.spin, y = s.height - 1 // the floor of the middle column
         s.cracks.push({ id: 9300, x, y, color: 1, plugged: false })
+        const step = Object.getPrototypeOf(e).growCracks
+        let wait = 0
+        window.__newCracks = 0
+        e.growCracks = function (dt) {
+          wait += dt
+          if (wait >= 350) { wait = 0; this.crackTimerMs = 1e12 }
+          const before = this.state.cracks.length
+          step.call(this, dt)
+          window.__newCracks += this.state.cracks.length - before
+        }
         return 9300
       })
       check(`${tag} r${GROW_AT}: the crack grows to 3+ cells`, await until(page, (id) => (window.__goops.engine.state.cracks.find((c) => c.id === id)?.cells?.length ?? 1) >= 3, id, 15000))
+      await page.evaluate(() => { window.__goops.engine.growCracks = () => {} }) // stop it there
+      check(`${tag} r${GROW_AT}: … in place of new cracks (X = 1: none formed)`, await page.evaluate(() => window.__newCracks === 0 && window.__goops.engine.state.cracks.length === 1),
+        await page.evaluate(() => `${window.__newCracks} new, ${window.__goops.engine.state.cracks.length} open`))
       await page.evaluate((d) => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'ladder', data: d } })),
-        { ...LADDER, beats: { ...LADDER.beats, cracksGrow: 99 } }) // stop it there (F78: the ladder's beat, moved live)
+        { ...LADDER, beats: { ...LADDER.beats, cracksGrow: 99 } }) // (and the beat moved live past this rank — F78)
       // hold the rules (the Dev Kit's half pause): the test's goop doesn't fall or refill; the looks keep moving
       await page.evaluate(async () => (await import('/src/devkit/gameClock.ts')).setClockPause('half'))
       await page.waitForTimeout(300)
@@ -251,7 +266,7 @@ try {
             const x = (v.x + dx + s.width) % s.width, x2 = (x + Math.sign(dx) + s.width) % s.width, y = v.y
             const free = (cx, cy) => cy < s.height && cy > s.bufferRows && !s.grid[cy * s.width + cx]
             if (!free(x, y) || !free(x2, y) || !free(x2, y - 1)) continue
-            s.cracks.push({ id: 9500, x, y, color: 3, plugged: false, cells: [[x, y], [x2, y], [x2, y - 1]], parent: [-1, 0, 1], growMs: [1e9, 1e9, 1e9] })
+            s.cracks.push({ id: 9500, x, y, color: 3, plugged: false, cells: [[x, y], [x2, y], [x2, y - 1]], parent: [-1, 0, 1] })
             return 9500
           }
           return null

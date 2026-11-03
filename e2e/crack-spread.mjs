@@ -2,6 +2,8 @@
 // feels aesthetically incorrect"). A tank like Muzzy's screenshot (pressure 100%, two low stacks), the rules paused,
 // then 30 cracks placed by each band setting from the live tuning, one shot each → e2e-shots/crack-spread/.
 // Checks: no crack above the pop line; with 'hill', some cracks above the old band's ceiling (no flat band).
+// F83: then 30 due cracks with growing on (twists.json grow.extendChance): some grow an old crack instead, the same 30
+// cells appear, none above the pop line or on goop → grow-f83.png.
 // Port 5291. Run: node e2e/crack-spread.mjs
 import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
@@ -57,6 +59,36 @@ try {
     if (r.aboveLine > 0) { console.log('  ✗ a crack above the pop line'); failed++ }
     if (band === 'hill' && r.aboveOldCeiling === 0) { console.log('  ✗ hill: no crack above the old ceiling (still a flat band)'); failed++ }
   }
+
+  // F83 (Muzzy 2026-11-02): from cracksGrow, a due crack has twists.json grow.extendChance to grow an old crack by a cell
+  // instead, from an uncovered cell only. The same tank, 30 due cracks the engine's way (live X, hill band), one shot.
+  const g = await page.evaluate(async () => {
+    const { spawnCrack, firstPoppableRow } = await import('/src/engine/cracks.ts')
+    const { extendCrack, extendChance, crackCells } = await import('/src/engine/twists.ts')
+    const { createRng } = await import('/src/engine/rng.ts')
+    const config = structuredClone((await import('/content/tuning/shift.json')).default)
+    const twists = structuredClone((await import('/content/tuning/twists.json')).default)
+    const s = window.__goops.engine.state
+    s.cracks.length = 0
+    const rng = createRng(7), events = []
+    const x = extendChance(twists)
+    let made = 0, grew = 0
+    for (let i = 0; i < 30; i++) {
+      if (x > 0 && rng.chance(x) && extendCrack(s, rng, twists, s.pressureRow, events)) { grew++; continue }
+      const c = spawnCrack(s, rng, config, 4, 9100 + i)
+      if (c) { s.cracks.push(c); made++ }
+    }
+    const lineY = firstPoppableRow(s)
+    const cells = s.cracks.flatMap((c) => crackCells(c))
+    return { x, made, grew, events: events.length, cells: cells.length, aboveLine: cells.filter(([, y]) => y < lineY).length,
+      onGoop: cells.filter(([cx, cy]) => s.grid[cy * s.width + cx] !== 0).length, biggest: Math.max(...s.cracks.map((c) => crackCells(c).length)) }
+  })
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: `${OUT}/grow-f83.png` })
+  console.log(`grow (X ${g.x}): ${g.made} new cracks · ${g.grew} grew an old one (${g.events} crackGrow) · ${g.cells} crack cells · biggest ${g.biggest}`)
+  if (g.made + g.grew !== 30 || g.cells !== 30) { console.log('  ✗ the same 30 crack cells should appear (new or grown)'); failed++ }
+  if (g.grew === 0 || g.grew !== g.events) { console.log('  ✗ some due cracks should grow an old one, each with its crackGrow'); failed++ }
+  if (g.aboveLine > 0 || g.onGoop > 0) { console.log(`  ✗ a grown cell above the pop line (${g.aboveLine}) or on goop (${g.onGoop})`); failed++ }
   if (errors.length) { console.log('  ✗ console errors:', errors.join(' | ')); failed++ }
 } finally {
   await browser.close()

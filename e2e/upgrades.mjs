@@ -579,11 +579,11 @@ const measureFrom = (page, snap) => page.evaluate(({ snap, WILD }) => {
   const e = window.__goops.engine, s = e.state, out = {}
   const from = (change) => { const x = structuredClone(snap); change?.(x); e.restore(x); e.takeEvents() }
   // Tougher Tank: integrity lost in 0.5 s with the open cracks there (no new crack, no growth in that time)
-  from((x) => { x.inner.crackTimerMs = 0; for (const c of x.state.cracks) if (c.growMs) c.growMs = c.growMs.map(() => 1e9) })
+  from((x) => { x.inner.crackTimerMs = 0 }) // (F83: a crack grows only when a new one is due)
   { const i0 = s.integrity; e.tick(500); out.wear = i0 - s.integrity }
-  // Slow Cracks: ms from a crack (timer at 0) to the next one
+  // Slow Cracks: ms from a crack (timer at 0) to the next one (F83: from cracksGrow a due crack may grow an old one instead)
   from((x) => { x.inner.crackTimerMs = 0 })
-  { let ms = 0; while (ms < 60000 && !e.takeEvents().some((v) => v.type === 'crack')) { e.tick(10); ms += 10 } out.nextCrackMs = ms }
+  { let ms = 0; while (ms < 60000 && !e.takeEvents().some((v) => v.type === 'crack' || v.type === 'crackGrow')) { e.tick(10); ms += 10 } out.nextCrackMs = ms }
   // Crack Matcher: 12 new pieces (each fast-dropped, the tank spun between), and how many came in the lowest open crack's
   // colour (most of their cells; a wild one doesn't count)
   from()
@@ -668,7 +668,7 @@ async function measureF43() {
   const want = {
     junkSameColorChance: valueAt('junkUniformer', 'junkSameColorChance', 4), swapHoldTimeMult: valueAt('goopSwap', 'swapHoldTimeMult', 4),
     abilityChargePerSealMult: valueAt('sealingBonus', 'abilityChargePerSealMult', 4), integrityDrainMult: valueAt('tougherTank', 'integrityDrainMult', 4),
-    crackEveryMult: valueAt('slowCracks', 'crackEveryMult', 4), crackColorBias: valueAt('crackMatcher', 'crackColorBias', 4),
+    crackEveryMult: valueAt('slowCracks', 'crackEveryMult', 4), growChanceMult: valueAt('slowCracks', 'growChanceMult', 4), crackColorBias: valueAt('crackMatcher', 'crackColorBias', 4),
   }
   for (const [name, value] of Object.entries(want)) check(`F43 max: the running shift's ${name} = ${value}`, Math.abs(mods[name] - value) < 1e-9, String(mods[name]))
   check('Junk Uniformer 4: more of the starting junk shares one colour (same seed)', junk1.cells === junk0.cells && junk1.share > junk0.share,
