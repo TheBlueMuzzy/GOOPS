@@ -35,7 +35,7 @@ import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
 import { type PieceChoice, type PieceFallback, type TrainingCommand, type TrainingRules, OVERFLOW_RAIL_ROWS, TRAINING_START,
   columnTooLow, freeCrackSpot, pieceFromChoice } from './training'
 import { type WhiteGoopConfig, newWhiteGoop, stepWhiteGoop, whiteGoopAt, whiteGoopIn } from './whiteGoop'
-import { type TwistsConfig, crackCells, crackHas, crackSize, growCracks as growCrackCells, growOn } from './twists'
+import { type TwistsConfig, crackCells, crackHas, crackSize, extendChance, extendCrack, growOn } from './twists'
 import { type Color, WILD } from './types'
 import { type FinalShiftConfig, type VetLine, finalNum, finalShiftIn, finalVet, valveStages } from './finalShift'
 import { neighbours } from './tank'
@@ -343,8 +343,6 @@ class Shift implements ShiftEngine {
       if (t && pressure > t.pressureCap) pressure = Math.max(s.pressure, t.pressureCap) // stops at the cap (never pulled down)
       this.setPressure(pressure)
       if (!t || t.cracks) this.growCracks(dt)
-      // F39: from cracksGrow open cracks spread into the cells next to them (twists.ts; never in a lesson)
-      if (!t && growOn(this.options.twists, s.rank)) growCrackCells(s, this.rng, this.options.twists!, dt, s.pressureRow, this.mods.crackEveryMult, this.events)
       this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
       if (!t || t.integrity) this.drainIntegrity(dt)
       if (s.phase === 'playing' && this.breakdownsOn()) this.machines.tick(dt, this.softDrop) // a rupture freezes the meters
@@ -525,11 +523,21 @@ class Shift implements ShiftEngine {
     const s = this.state
     this.crackTimerMs += dt
     const often = this.isFinal ? Math.max(0.1, finalNum(this.options.finalShift!.crackRateMult, 1)) : 1 // (F64)
-    // (F75: in the final shift Slow Cracks slows only the spreading — twists.ts growCracks — not how often cracks come)
+    // (F75: in the final shift Slow Cracks slows only the growing — growChanceMult below — not how often cracks come)
     const slow = this.isFinal ? 1 : this.mods.crackEveryMult
     if (this.crackTimerMs < (crackEveryMs(this.config, s.pressure) * slow) / often) return
     // The low-cracks ability: this crack goes in the bottom rows (if there's no room there, a normal crack instead).
     const low = this.effects.lowCracks
+    // F83 (Muzzy 2026-11-02): from cracksGrow, an X% chance this new crack grows an old one by a cell instead (twists.ts;
+    // never in a lesson, nor while low cracks are promised; X = 0 rolls nothing). No crack can grow → a new one.
+    const tw = this.options.twists
+    if (!this.training && !low && growOn(tw, s.rank)) {
+      const x = extendChance(tw!, this.mods.growChanceMult)
+      if (x > 0 && this.rng.chance(x) && extendCrack(s, this.rng, tw!, s.pressureRow, this.events)) {
+        this.crackTimerMs = 0
+        return
+      }
+    }
     let crack = low ? spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId, low.rows) : null
     const wasLow = !!crack
     crack ??= spawnCrack(s, this.rng, this.config, this.colorCount, this.nextCrackId)

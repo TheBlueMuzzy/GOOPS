@@ -90,7 +90,7 @@ export function readSnapshot(x: unknown): ShiftSnapshot {
 }
 
 /** A new engine that carries on from a snapshot (the game's live tuning + breakdowns + white goop (F63) + rank twists
- *  (F39) + the final shift (F64), the snapshot's own options). (F39's grown cracks ride in state.cracks — cells / parent / growMs — and its
+ *  (F39) + the final shift (F64), the snapshot's own options). (F39's grown cracks ride in state.cracks — cells / parent — and its
  *  two-colour and wild pieces in inner.piece / nextDef, so older snapshots, which have none, still load as they were.) */
 export function restoreShift(config: ShiftConfig, snapshot: unknown, breakdowns?: BreakdownConfig, whiteGoop?: WhiteGoopConfig, twists?: TwistsConfig, finalShift?: FinalShiftConfig): ShiftEngine {
   const snap = readSnapshot(snapshot)

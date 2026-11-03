@@ -400,8 +400,8 @@ describe('upgrades in the final shift (F75)', () => {
     expect(notAimed(dumpColumns(FINAL - 1))).toBe(true)
   })
 
-  it(`Slow Cracks: in the final shift new cracks come as often as without it, but they spread slower; at rank ${FINAL - 1} both slow`, () => {
-    const slow = { crackEveryMult: 1.6 }
+  it(`Slow Cracks: in the final shift new cracks come as often as without it, but fewer grow an old crack; at rank ${FINAL - 1} both slow`, () => {
+    const slow = { crackEveryMult: 1.6, growChanceMult: 0.4 }
     // new cracks in 20 s (cracks every 2 s at any pressure; empty tank, none of them growing: no twists)
     const cracks = (rank: number, modifiers = {}) => {
       const sh = createShift(straightLineCracks(realConfig(), 2000, 2000), { seed: 5, rank, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24), modifiers })
@@ -411,15 +411,17 @@ describe('upgrades in the final shift (F75)', () => {
     }
     expect(cracks(FINAL, slow)).toBe(cracks(FINAL))
     expect(cracks(FINAL - 1, slow)).toBeLessThan(cracks(FINAL - 1) * 0.75)
-    // spreading: cells one crack grows in 30 s (no new cracks; every growth roll a hit)
+    // growing (F83): of the cracks due in 40 s (X = 0.5), how many grew an old crack instead of forming a new one
     const grown = (rank: number, modifiers = {}) => {
       const t = structuredClone(twistsJson)
-      t.grow.baseChance = 1
-      const sh = createShift(quietConfig(), { seed: 5, rank, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24), modifiers, twists: t })
-      sh.state.cracks.push({ id: 1, x: 10, y: 20, color: BLACK, plugged: false })
-      sh.tick(30_000)
-      return sh.state.cracks[0].cells?.length ?? 1
+      t.grow.extendChance = 0.5
+      const sh = createShift(straightLineCracks(realConfig(), 2000, 2000), { seed: 5, rank, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24), modifiers, twists: t })
+      sh.state.cracks.push({ id: 1, x: 10, y: 23, color: BLACK, plugged: false })
+      let n = 0
+      for (let ms = 0; ms < 40_000; ms += 50) { sh.tick(50); n += ofType(sh.takeEvents(), 'crackGrow').length }
+      return n
     }
+    expect(grown(FINAL)).toBeGreaterThan(0)
     expect(grown(FINAL, slow)).toBeLessThan(grown(FINAL))
     expect(grown(FINAL - 1, slow)).toBeLessThan(grown(FINAL - 1))
   })

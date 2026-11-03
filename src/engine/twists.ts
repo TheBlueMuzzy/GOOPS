@@ -1,7 +1,8 @@
 // F39 RANK TWISTS (GDD rank twists, v1's numbers): the goop holds hands (twoColourPieces), wakes up (cracksGrow), then helps you (wildGoop).
 //   - twoColourPieces: two-colour pieces — a share of pieces split into two even halves, each half joined up (4-connected), in two
 //     different colours. They lock as two clumps. (v1 utils/pieceUtils.ts findBestSplit)
-//   - cracksGrow: growing cracks — each uncovered crack cell rolls every few seconds to grow into a cell next to it. A grown
+//   - cracksGrow: growing cracks — when a new crack would form, an X% chance it grows an old crack by one cell instead,
+//     from one of its uncovered cells (F83, Muzzy 2026-11-02; until F83 each uncovered cell rolled on a timer). A grown
 //     crack is ONE crack (one colour) over many cells (Muzzy 2026-10-25): plugged only while EVERY cell is covered by
 //     its colour (or wild), and sealing it counts its cell count toward the quota. Goop covering a cell stops that
 //     cell growing. (v1 PRD "Expanding Cracks")
@@ -19,13 +20,7 @@ import { rankOf } from '../progress/ladder'
 export interface TwistsConfig {
   split: { chance: number }
   grow: {
-    everyMsMin: number
-    everyMsMax: number
-    baseChance: number
-    pressureWeight: number
-    leafMult: number
-    hopFalloff: number
-    minFalloff: number
+    extendChance: number // F83: the chance a new crack grows an old one instead (0..1)
     diagonals: boolean
   }
   wild: { chance: number }
@@ -104,11 +99,14 @@ export function crackPlugged(s: ShiftState, c: Crack): boolean {
   return crackCells(c).every(([x, y]) => plugsCrack(s.grid[y * s.width + x], c.color))
 }
 
-// The growth roll's delay: everyMsMin … everyMsMax (× slowMult: Slow Cracks / crackEveryMult stretches it)
-function rollDelay(rng: Rng, t: TwistsConfig, slowMult: number): number {
-  const lo = num(t.grow.everyMsMin, 5000, 1)
-  const hi = Math.max(lo, num(t.grow.everyMsMax, 10000, 1))
-  return (lo + rng.next() * (hi - lo)) * Math.max(0.1, slowMult)
+// ---------------------------------------------------------------- a new crack grows an old one instead (F83)
+// Muzzy 2026-11-02: "when a new crack would form, there is an X% chance that instead, it extends a crack that exists
+// that isn't covered yet … it can only grow from exposed/uncovered parts of the crack." The same number of crack cells
+// appear as without it; the difficulty is having to cover the whole crack.
+
+/** X: the chance a new crack grows an old one instead (grow.extendChance × `mult`, Slow Cracks' growChanceMult). */
+export function extendChance(t: TwistsConfig, mult = 1): number {
+  return share(num(t.grow.extendChance, 0) * Math.max(0, mult))
 }
 
 // The cells a crack can't grow into: goop, any crack's cell, a sealed spot, the white goop's cell, the hidden rows,
@@ -121,34 +119,21 @@ function takenCells(s: ShiftState): Set<number> {
   return taken
 }
 
-/** Step crack growth by dt ms (rules time). `lineRow` = the highest row a crack may be in (the pressure line);
- *  `slowMult` > 1 slows growth (the Slow Cracks upgrade, crackEveryMult). Pushes a 'crackGrow' event per new cell. */
-export function growCracks(s: ShiftState, rng: Rng, t: TwistsConfig, dt: number, lineRow: number, slowMult: number, events: ShiftEvent[]): void {
-  const g = t.grow
-  const diag = g.diagonals !== false
-  const dirs = diag ? [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]] : [[1, 0], [-1, 0], [0, 1], [0, -1]]
+/** Grow one existing crack by ONE cell, in place of a new crack. `lineRow` = the highest row a crack may be in (the
+ *  pressure line). The pick (seeded): a crack at random among those that can grow, then one of its UNCOVERED cells that
+ *  has a free cell next to it (a covered cell never grows), then one of those free cells (8 round it, or 4 with
+ *  grow.diagonals false). Pushes a 'crackGrow' event. false = no crack anywhere can grow (form a new crack instead). */
+export function extendCrack(s: ShiftState, rng: Rng, t: TwistsConfig, lineRow: number, events: ShiftEvent[]): boolean {
+  const dirs = t.grow.diagonals !== false
+    ? [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]] : [[1, 0], [-1, 0], [0, 1], [0, -1]]
   const top = Math.max(s.bufferRows, lineRow)
-  let taken: Set<number> | null = null
+  const taken = takenCells(s)
+  // every crack that can grow, with each uncovered cell of it that can (and where to)
+  const options: { crack: Crack; from: { k: number; free: number[] }[] }[] = []
   for (const c of s.cracks) {
-    // a crack starts its growth clock the first time growing is on for it
-    const cells: [number, number][] = (c.cells ??= [[c.x, c.y]])
-    if (!c.parent || c.parent.length !== cells.length) c.parent = cells.map((_, k) => (k === 0 ? -1 : 0))
-    if (!c.growMs || c.growMs.length !== cells.length) c.growMs = cells.map(() => rollDelay(rng, t, slowMult))
-    const parent: number[] = c.parent, growMs: number[] = c.growMs
-    const count = cells.length // (cells grown this step don't roll until their own clock runs out)
-    for (let k = 0; k < count; k++) {
-      const x: number = cells[k][0], y: number = cells[k][1]
-      if (s.grid[y * s.width + x] !== 0) continue // covered: this cell doesn't grow (its clock waits)
-      growMs[k] -= dt
-      if (growMs[k] > 0) continue
-      growMs[k] = rollDelay(rng, t, slowMult)
-      const leaf = !parent.includes(k)
-      let hops = 0
-      for (let p = parent[k]; p >= 0 && hops < 1000; p = parent[p]) hops++
-      const chance = (num(g.baseChance, 0.1) + s.pressure * num(g.pressureWeight, 1)) * (leaf ? share(g.leafMult) : 1)
-        * Math.max(share(g.minFalloff), 1 - num(g.hopFalloff, 0.25) * hops)
-      if (!rng.chance(Math.min(1, chance))) continue
-      taken ??= takenCells(s)
+    const from: { k: number; free: number[] }[] = []
+    for (const [k, [x, y]] of crackCells(c).entries()) {
+      if (s.grid[y * s.width + x] !== 0) continue // covered: this cell doesn't grow
       const free: number[] = []
       for (const [dx, dy] of dirs) {
         const row = y + dy
@@ -156,14 +141,19 @@ export function growCracks(s: ShiftState, rng: Rng, t: TwistsConfig, dt: number,
         const i = row * s.width + wrapX(x + dx, s.width)
         if (s.grid[i] === 0 && !taken.has(i)) free.push(i)
       }
-      if (free.length === 0) continue
-      const at = rng.pick(free)
-      const nx = at % s.width, ny = Math.floor(at / s.width)
-      cells.push([nx, ny])
-      parent.push(k)
-      growMs.push(rollDelay(rng, t, slowMult))
-      taken.add(at)
-      events.push({ type: 'crackGrow', crackId: c.id, x: nx, y: ny })
+      if (free.length) from.push({ k, free })
     }
+    if (from.length) options.push({ crack: c, from })
   }
+  if (options.length === 0) return false
+  const { crack, from } = rng.pick(options)
+  const cell = rng.pick(from)
+  const at = rng.pick(cell.free)
+  const nx = at % s.width, ny = Math.floor(at / s.width)
+  const cells = crackCells(crack)
+  // (parent: which cell each grew from, for the seam the tank draws; a crack from before it had none → all from the root)
+  crack.parent = cells.map((_, k) => crack.parent?.[k] ?? (k === 0 ? -1 : 0)).concat(cell.k)
+  crack.cells = [...cells, [nx, ny]]
+  events.push({ type: 'crackGrow', crackId: crack.id, x: nx, y: ny })
+  return true
 }

@@ -36,8 +36,8 @@ export interface Crack {
   // F39 growing cracks (from cracksGrow, twists.ts): a grown crack is ONE crack over many cells. x, y stay its root (where
   // it formed). Unset = a crack that never started growing (just x, y) — older snapshots have none.
   cells?: [number, number][] // every cell of it, root first ([x, y], tank space) — read it with crackCells()
-  parent?: number[] // per cell: the index (in cells) of the cell it grew from; -1 = the root
-  growMs?: number[] // per cell: ms until it next rolls to grow (counts down only while nothing covers the cell)
+  parent?: number[] // per cell: the index (in cells) of the cell it grew from; -1 = the root (the seam drawn between them)
+  // (until F83 also growMs, the old timed growth's per-cell clocks: older snapshots may still carry it, unread)
 }
 
 // Where a crack was sealed (F36, Muzzy 2026-10-18: "no crack can ever form on a sealed spot again"). The tank view

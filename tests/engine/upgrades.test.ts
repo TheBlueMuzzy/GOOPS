@@ -204,6 +204,7 @@ describe('the shop’s upgrades (F34, design/upgrades-map.md "F33 decisions")', 
     grows('sealingBonus', (r) => r.modifiers.abilityChargePerSealMult, 1)
     grows('tougherTank', (r) => r.modifiers.integrityDrainMult, -1)
     grows('slowCracks', (r) => r.modifiers.crackEveryMult, 1)
+    grows('slowCracks', (r) => r.modifiers.growChanceMult, -1) // F83: a new crack grows an old one less often
     grows('crackMatcher', (r) => r.modifiers.crackColorBias, 1)
     grows('quickFix', (r) => r.fewerRepairSteps.laser + r.fewerRepairSteps.visor + r.fewerRepairSteps.controls, 1)
   })
@@ -215,6 +216,7 @@ describe('the shop’s upgrades (F34, design/upgrades-map.md "F33 decisions")', 
     expect(m('sealingBonus', 4).abilityChargePerSealMult).toBeCloseTo(1.6, 9)
     expect(m('tougherTank', 4).integrityDrainMult).toBeCloseTo(0.5, 9)
     expect(m('slowCracks', 4).crackEveryMult).toBeCloseTo(1.6, 9)
+    expect([1, 2, 3, 4].map((n) => m('slowCracks', n).growChanceMult)).toEqual([0.85, 0.7, 0.55, 0.4]) // F83: × X
     expect(m('goopSwap', 4).swapHoldTimeMult).toBeCloseTo(1 / 3, 3)
     // a chance adds from 0 (not from 1 like a multiplier) — owning nothing leaves it at 0
     expect(m('junkUniformer', 0).junkSameColorChance).toBe(0)

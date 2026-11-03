@@ -12,7 +12,7 @@
 //     the engine's openValveStage() is called. The last stage opened = the win.
 //   - Losses end the shift at once (no rupture drain): goop over the top · integrity 0 (F75: only the tank breaking).
 //   - F75 Goop Dump rains into the columns with an open crack here (shift.ts dropDumpCell); Slow Cracks slows only the
-//     spreading here, not how often cracks come (shift.ts growCracks).
+//     growing here (F83: fewer new cracks grow an old one), not how often cracks come (shift.ts growCracks).
 import type { WhiteGoopConfig } from './whiteGoop'
 import { rankOf } from '../progress/ladder'
 

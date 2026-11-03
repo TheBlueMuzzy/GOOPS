@@ -13,6 +13,7 @@ export interface Modifiers {
   ruptureDrainTimeMult: number // × rupture.drainMs — 1.5 = after a rupture, pressure takes 50% longer to drain
   pressureRiseTimeMult: number // × pressure.riseMsToFull — 1.2 = pressure rises 20% slower
   crackEveryMult: number // × the time between cracks — 1.2 = cracks come 20% less often
+  growChanceMult: number // × twists.json grow.extendChance (F83) — 0.7 = a new crack grows an old one 30% less often (Slow Cracks)
   fallSpeedMult: number // × the piece's fall speed — 1.25 = pieces fall 25% faster (fast drop too)
   leftoverPenaltyMult: number // × score.leftoverPerCell — 0.5 = leftover goop costs half
   sealVentMult: number // × cracks.sealRefundMs — 2 = each seal vents twice as much pressure (Muzzy, F27: low by default, an upgrade raises it)
@@ -53,6 +54,7 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   ruptureDrainTimeMult: 1,
   pressureRiseTimeMult: 1,
   crackEveryMult: 1,
+  growChanceMult: 1,
   fallSpeedMult: 1,
   leftoverPenaltyMult: 1,
   sealVentMult: 1,
@@ -74,6 +76,7 @@ const LIMITS: Record<ModifierName, [min: number, max: number]> = {
   ruptureDrainTimeMult: [0.1, 10],
   pressureRiseTimeMult: [0.1, 10],
   crackEveryMult: [0.1, 10],
+  growChanceMult: [0, 10],
   fallSpeedMult: [0.1, 10],
   leftoverPenaltyMult: [0, 10],
   sealVentMult: [0, 10],
