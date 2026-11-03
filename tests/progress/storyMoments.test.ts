@@ -14,17 +14,42 @@ describe('story moments', () => {
   it('a fresh rank-0 device: the rank-0 moment', () => {
     expect(dueMoments(0, none)).toEqual(['0'])
   })
+  // (the ranks that carry moments, lowest first)
+  const storyRanks = () => [...new Set(ladder.group('story').map((m) => m.rank))].sort((a, b) => a - b)
   it('one rank-up: just that rank', () => {
     const r = storyRank('4')
-    expect(dueMoments(r, (id) => storyRank(id) < r)).toEqual(idsAt(r).slice(-storyFile.catchUp))
+    expect(dueMoments(r, (id) => storyRank(id) < r)).toEqual(idsAt(r))
+  })
+  it('F80: a rank-up onto a rank with several moments plays every one of them, in the ladder\'s order', () => {
+    const r = storyRanks().find((x) => idsAt(x).length > storyFile.catchUp)!
+    expect(r, 'a rank with more moments than catchUp').toBeDefined()
+    expect(dueMoments(r, (id) => storyRank(id) < r)).toEqual(idsAt(r))
   })
   it('two rank-ups in one shift: both, oldest first', () => {
     const r = storyRank('4')
-    expect(dueMoments(r + 1, (id) => storyRank(id) < r)).toEqual([...idsAt(r), ...idsAt(r + 1)].slice(-storyFile.catchUp))
+    expect(dueMoments(r + 1, (id) => storyRank(id) < r)).toEqual([...idsAt(r), ...idsAt(r + 1)])
   })
-  it('a device that skipped many: only the newest catchUp of them', () => {
-    const r = storyRank('9'), upTo = ladder.group('story').filter((m) => m.rank <= r).sort((a, b) => a.rank - b.rank).map((m) => m.name)
-    expect(dueMoments(r, none)).toEqual(upTo.slice(-storyFile.catchUp))
+  it('a device that skipped many: only the newest catchUp ranks\' moments', () => {
+    const r = storyRank('9'), ranks = storyRanks().filter((x) => x <= r).slice(-storyFile.catchUp)
+    expect(dueMoments(r, none)).toEqual(ranks.flatMap(idsAt))
+  })
+  it('F80: the story keeps its order — a later moment never plays at an earlier rank', () => {
+    const ids = Object.keys(storyFile.moments).sort((a, b) => Number(a) - Number(b))
+    for (let i = 1; i < ids.length; i++) expect(storyRank(ids[i]), `moment ${ids[i]}`).toBeGreaterThanOrEqual(storyRank(ids[i - 1]))
+    // and on a shared rank they play in that order too
+    for (const r of storyRanks()) expect(idsAt(r)).toEqual([...idsAt(r)].sort((a, b) => Number(a) - Number(b)))
+  })
+  it('F80: the quiet after the capture — no moment between the Veteran\'s capture and the white goop; every other rank has one', () => {
+    const caught = rankOf('veteranCaught'), back = rankOf('whiteGoop')
+    expect(back - caught, 'at least one quiet rank').toBeGreaterThan(1)
+    for (let r = 0; r <= maxRank(); r++) {
+      const quiet = r > caught && r < back
+      expect(idsAt(r).length > 0, `rank ${r}${quiet ? ' (quiet)' : ''}`).toBe(!quiet)
+    }
+    // the capture (moment 30: cut off, then the alarm) plays on the capture rank; the takeover's ranks all carry the story
+    expect(idsAt(caught)).toContain('30')
+    for (const b of ['takeover1', 'takeover2', 'takeover3', 'takeover4']) expect(idsAt(rankOf(b)).length, b).toBeGreaterThan(0)
+    expect(idsAt(rankOf('finalShift'))).toEqual(['50'])
   })
   it('everything seen: nothing', () => {
     expect(dueMoments(maxRank(), () => true)).toEqual([])
