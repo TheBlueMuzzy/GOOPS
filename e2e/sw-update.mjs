@@ -72,10 +72,11 @@ const next = `${first.slice(0, first.lastIndexOf('.'))}.9999`
 // all the XP to reach a rank (progression.json: xpBase + xpPerRank × rank per rank)
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
 // v1's own save (archive/goops-v1 utils/storage.ts) — Goops 2 never reads it
-const V1_SAVE = JSON.stringify({ careerRank: 12, careerScore: 90210, scraps: 4, powerUps: {}, equippedActives: [], unlockedUpgrades: [], firstRunComplete: true,
+const V1_SAVE = JSON.stringify({ careerRank: 12, careerScore: 90210, scraps: 4, powerUps: {}, equippedActives: [], unlockedUpgrades: [], firstRunComplete: true, // tuning-ok: a v1 save's own rank
   milestonesReached: [], tutorialProgress: { completedSteps: [] }, settings: { masterVolume: 50, musicVolume: 80, sfxVolume: 100, invertRotation: false } })
-// the beta v0.2.0.0's save (version 4 then) at rank 7
-const BETA_XP = xpFor(7)
+// the beta v0.2.0.0's save (version 4 then) at BETA_RANK — a frozen build's player, shown by the beta's own code
+const BETA_RANK = 7 // tuning-ok: the beta v0.2.0.0's own save (a frozen build), not the ladder's
+const BETA_XP = xpFor(BETA_RANK)
 const BETA_SAVE = JSON.stringify({ v: 4, totalXp: BETA_XP, scrapsSpent: 0, owned: {}, equipped: [], badge: null, name: 'Beta', careers: 0 })
 
 // The static server: files only, like GitHub Pages (no /__devkit/* — those exist only on the dev server)
@@ -139,8 +140,8 @@ async function betaPlayer({ slow }) {
   const betaWorker = await workerIs(old, '/GOOPS/alpha/sw.js')
   await old.evaluate((save) => localStorage.setItem('goops-progress', save), BETA_SAVE)
   await old.reload()
-  check(`before: the beta (v0.2.0.0) runs under its own worker at /GOOPS/alpha/ and shows rank 7`,
-    betaWorker && (await version(old)) === 'v0.2.0.0' && (await consoleRank(old)) === 7, `${await version(old)}, rank ${await consoleRank(old)}`)
+  check(`before: the beta (v0.2.0.0) runs under its own worker at /GOOPS/alpha/ and shows rank ${BETA_RANK}`,
+    betaWorker && (await version(old)) === 'v0.2.0.0' && (await consoleRank(old)) === BETA_RANK, `${await version(old)}, rank ${await consoleRank(old)}`)
   await old.waitForTimeout(1500) // its precache is complete (it opens from the phone's cache from now on)
   await old.close()
 
@@ -164,7 +165,7 @@ async function betaPlayer({ slow }) {
   if (slow) check(`${as}: the icon opens the old beta from the phone's cache first — the beta's new worker moves it on`, opened === 'the old beta, from its worker\'s cache', opened)
   else console.log(`     (${as}: the first page was ${opened})`)
   check(`${as}: opening /GOOPS/alpha/ lands on Goops 2 at /GOOPS/ (${first})`, beta.url() === ROOT && (await version(beta)) === first, `${beta.url()} ${await version(beta)} · loads: ${bw.loads.join(' → ')}`)
-  check(`${as}: the same rank (7) — the save came along`, (await consoleRank(beta)) === 7 && betaSave?.totalXp === BETA_XP, `rank ${await consoleRank(beta)}, totalXp ${betaSave?.totalXp}`)
+  check(`${as}: the same rank (${BETA_RANK}) — the save came along`, (await consoleRank(beta)) === BETA_RANK && betaSave?.totalXp === BETA_XP, `rank ${await consoleRank(beta)}, totalXp ${betaSave?.totalXp}`)
   check(`${as}: the beta's worker is unregistered and its caches deleted`, !betaAfter.workers.some((r) => r.scope === ALPHA) && !betaAfter.caches.some((k) => k.includes('/GOOPS/alpha/')),
     `${JSON.stringify(betaAfter.workers)} · ${betaAfter.caches.join(', ')}`)
   check(`${as}: settles on /GOOPS/ — no more page loads (no loop)`, bw.loads.length === loadsThen && bw.loads.filter((u) => u === ROOT).length <= 2, bw.loads.join(' → '))

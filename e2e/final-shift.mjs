@@ -1,4 +1,4 @@
-// F64 THE FINAL SHIFT (rank 50, the boss level — design/story.md "The final shift", TDD D26 / D27), in Playwright's own
+// F64 THE FINAL SHIFT (the ladder's beat finalShift, the boss level — design/story.md "The final shift", TDD D26 / D27), in Playwright's own
 // Chromium. Portrait sizes only (Goops never plays sideways): 390x844, 360x780, 1100x1300, 1440x900, 1920x1080.
 // At every size:
 //   his drop-in ("oh! hi!" — all four lines at 390) · every goop, junk and crack galaxy black · the top bar shows the
@@ -12,8 +12,8 @@
 // F75 his wear, at every size: an open crack drains the tank and he shrinks with it (seals free) · worn out → his short
 // line in his bubble where he was ("…sorry, kid. you got this.": in the window, nothing clipped), he's gone from the
 // tank, the shift plays on (no report) · then a stage still fills and opens without him.
-// A long run with REAL keys + taps (and the whispers on) that plays rank 50 until a black crack GROWS (the rank-30+
-// twist) — failing on any page error: the bots never draw, so a view crash only shows here (a grown crack's negative key
+// A long run with REAL keys + taps (and the whispers on) that plays the final shift until a black crack GROWS (the
+// cracksGrow twist) — failing on any page error: the bots never draw, so a view crash only shows here (a grown crack's negative key
 // froze the picture once — SPRINT 22 Notes).
 // Waits are on the game's own clock (the engine's played time) or roomy — never a tight wall-clock wait.
 // Shots: e2e-shots/final-shift/ (valve-<size>, valve-open-<size>, bar-<size>, bar-go-<size>, won-<size>, lost-*).
@@ -22,6 +22,7 @@ import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf, LADDER } from './ladder-ranks.mjs'
 
 const PORT = 6450
 const SHOTS = 'e2e-shots/final-shift'
@@ -33,6 +34,8 @@ const breakdowns = JSON.parse(readFileSync('content/tuning/breakdowns.json', 'ut
 const story = JSON.parse(readFileSync('content/story/moments.json', 'utf8'))
 const V = en.console.valve, F = en.end.final
 const part = (name) => !process.env.FINAL_PART || process.env.FINAL_PART === name
+// F79: the final shift's rank and its story moment's rank are the ladder's (finalShift, story.50)
+const FINAL = rankOf('finalShift'), MOMENT_AT = rankOf('story.50')
 mkdirSync(SHOTS, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -42,10 +45,10 @@ await new Promise((ok, fail) => {
 const browser = await chromium.launch()
 let failed = 0
 const check = (name, ok, detail = '') => { console.log(ok ? '✓' : '✗', name, detail); if (!ok) failed++ }
-// everything a player who reached rank 50 has had (lessons, notes, every story moment) — this script is about the shift
+// everything a player who reached the final shift has had (lessons, notes, every story moment) — this script is about the shift
 const SEEN = ['lesson:first-day', 'lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:visor', 'lesson:laser',
   'lesson:controls', 'consoleNote:1', 'consoleNote:2', 'consoleNote:3', 'consoleNote:4', 'consoleNote:5', 'whisper:cold', 'look:mouths-open',
-  ...Array.from({ length: 51 }, (_, i) => `story:${i}`)]
+  ...Object.keys(LADDER.story).map((id) => `story:${id}`)]
 
 // wait until `test` (a function body over S = the engine's state) holds, counting the time the ENGINE has played (its
 // tick()s) — under check:full's load each frame's step is capped, so the game runs slower than the wall clock. A
@@ -69,7 +72,7 @@ const bubbleSays = (page, words, timeout = 15000) => page.waitForFunction((w) =>
 const topBar = (page) => page.evaluate(() => [...document.querySelectorAll('.kit-hud-text')].map((el) => el.textContent).join(' | '))
 const atConsole = (page) => page.locator('.kit-art-stage').count().then((n) => n > 0)
 
-async function open(w, h, url = `?rank=50&seed=7`) {
+async function open(w, h, url = `?rank=${FINAL}&seed=7`) {
   const context = await browser.newContext({ viewport: { width: w, height: h } })
   const page = await context.newPage()
   const errors = []
@@ -290,7 +293,7 @@ try {
       && flat.includes(F.tryAgain) && await page.getByRole('button', { name: F.again }).count() === 1
       && await page.evaluate((o) => window.__goops.engine.state.final.outcome === o, outcome), flat.slice(0, 160))
     await page.screenshot({ path: `${SHOTS}/lost-${outcome}-${w}x${h}.png` })
-    // Try again = rank 50 again, from his drop-in
+    // Try again = the final shift again, from his drop-in
     await page.getByRole('button', { name: F.again }).click()
     const again = await page.waitForFunction(() => { const s = window.__goops?.engine.state; return s?.status === 'playing' && s.final?.stage === 0 }, null, { timeout: 15000 })
       .then(() => true, () => false)
@@ -299,7 +302,7 @@ try {
     await close()
   }
 
-  // ---------------- rank 50's story moment: Management's line, with the red alarm, before the shift ----------------
+  // ---------------- the final shift's story moment (story.50): Management's line, with the red alarm, before the shift ----------------
   if (part('moment')) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
     const page = await context.newPage()
@@ -308,7 +311,7 @@ try {
     await page.goto(`http://localhost:${PORT}/?seed=7&story`)
     const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
     let xp = 0
-    for (let r = 0; r < 50; r++) xp += prog.xpBase + prog.xpPerRank * r
+    for (let r = 0; r < MOMENT_AT; r++) xp += prog.xpBase + prog.xpPerRank * r
     await page.evaluate(([xp, seen]) => {
       localStorage.setItem('goops-progress', JSON.stringify({ v: 3, totalXp: xp + 10, scrapsSpent: 0, owned: {}, equipped: [], name: null }))
       window.__goopsSeen?.(seen)
@@ -318,16 +321,16 @@ try {
     const says = await page.waitForFunction((w) => document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim() === w, words, { timeout: 15000 })
       .then(() => true, () => false)
     const look = await page.locator('[data-tag="crt"]').getAttribute('data-story-look')
-    check('rank 50: the moment is Management\'s "FINAL PERFORMANCE REVIEW…" with the red alarm', says && look === 'alarm', String(look))
+    check(`rank ${MOMENT_AT}: the moment is Management's "FINAL PERFORMANCE REVIEW…" with the red alarm`, says && look === 'alarm', String(look))
     await page.screenshot({ path: `${SHOTS}/moment50-390x844.png` })
-    check('rank 50 moment: no page errors', errors.length === 0, errors.slice(0, 3).join(' | '))
+    check(`rank ${MOMENT_AT} moment: no page errors`, errors.length === 0, errors.slice(0, 3).join(' | '))
     await context.close()
   }
 
   // ---------------- a long run with real keys + taps until a black crack GROWS — any page error fails ----------------
   if (part('long')) {
     const [w, h] = [390, 844]
-    const { page, errors, close } = await open(w, h, `?rank=50&seed=3&story&whisperAt=12`)
+    const { page, errors, close } = await open(w, h, `?rank=${FINAL}&seed=3&story&whisperAt=12`)
     const keys = ['ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'ArrowDown', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'KeyS', 'Space', 'KeyW']
     let rnd = 3 * 9301 + 49297
     const r = () => { rnd = (rnd * 9301 + 49297) % 233280; return rnd / 233280 }

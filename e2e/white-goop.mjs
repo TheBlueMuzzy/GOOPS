@@ -1,5 +1,5 @@
-// The white goop (F63): the Veteran, gooped — in a real shift from rank 31. Checks:
-//   rank 30: no white goop · rank 31: he drops in at the start and lands · a laser tap on him gives the "ow" bubble
+// The white goop (F63): the Veteran, gooped — in a real shift from the ladder's beat whiteGoop. Checks:
+//   the rank before it: no white goop · whiteGoop's rank: he drops in at the start and lands · a laser tap on him gives the "ow" bubble
 //   (the whisper bubble) and he stays (nothing pops) · he oozes to a crack and seals it (a ring while he does; the crack
 //   is gone and mended) · goop over him: he's behind it (x-ray outline) · the Dev Kit's full pause stops him dead, and
 //   he carries on after · Particle style draws him too.
@@ -11,8 +11,11 @@ import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 6400
+// F79: he's in the tank from the ladder's beat whiteGoop, not the rank before it
+const FROM = rankOf('whiteGoop'), BEFORE = FROM - 1
 const SHOTS = 'e2e-shots/white-goop'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
 mkdirSync(SHOTS, { recursive: true })
@@ -80,9 +83,9 @@ const placeCrack = (page, dx) => page.evaluate((dx) => {
 
 try {
   {
-    const { page, errors } = await open(1440, 900, 30)
-    check('rank 30: no white goop', (await white(page)) === null)
-    check('rank 30: no errors', errors.length === 0, errors.join(' | '))
+    const { page, errors } = await open(1440, 900, BEFORE)
+    check(`rank ${BEFORE}: no white goop`, (await white(page)) === null)
+    check(`rank ${BEFORE}: no errors`, errors.length === 0, errors.join(' | '))
     await page.close()
   }
 
@@ -90,10 +93,10 @@ try {
   const FILE = JSON.parse(rawFile)
   for (const [w, h] of SIZES) {
     const main = w === 1440
-    const { page, errors } = await open(w, h, 31)
+    const { page, errors } = await open(w, h, FROM)
     const tag = `${w}x${h}`
     const first = await white(page)
-    check(`${tag}: rank 31 — he's in the tank, dropping in`, !!first && first.mode === 'drop', first?.mode)
+    check(`${tag}: rank ${FROM} — he's in the tank, dropping in`, !!first && first.mode === 'drop', first?.mode)
     check(`${tag}: he lands`, await until(page, "V.mode !== 'drop'", 15000))
     const landed = await white(page)
     check(`${tag}: he's on the screen (in the visible tank)`, landed.screen[0] > 0 && landed.screen[0] < w && landed.screen[1] > 0 && landed.screen[1] < h, String(landed.screen))
@@ -162,7 +165,7 @@ try {
 
   // Particle style draws him too (his look is on the tank canvas under either goo)
   {
-    const { page, errors } = await open(390, 844, 31, 'Particle')
+    const { page, errors } = await open(390, 844, FROM, 'Particle')
     await until(page, "V.mode !== 'drop'", 15000)
     const style = await page.evaluate(() => document.querySelector('canvas[data-goo]')?.getAttribute('data-goo'))
     check('Particle: the goo style is particle', style === 'particle', style)

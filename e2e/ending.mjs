@@ -16,7 +16,7 @@
 // Once (390): lose the final shift → "New title: One Of Us" on the report and the badge saved; Try again → win with the
 //   Veteran worn out (F75: today's ending — the speaker's last clear line, then quiet) → the badge rewrite crosses out One
 //   Of Us, and The Savior of Goopkind replaces it · F75 today's ending (he's gone) at 1440x900 too, shots looked at · a page opened mid-ending (after the
-//   win) goes straight to the end-game screen · RANK SELECT still works after a new career (rank 7, careers + gold kept).
+//   win) goes straight to the end-game screen · RANK SELECT still works after a new career (a mid rank, careers + gold kept).
 // A page-error watch the whole way. Waits: the ending's own steps (looks clock) with roomy ceilings — never a tight
 // wall-clock wait. Shots: e2e-shots/ending/ (<step>-<size>; every step at 390 + 1440, the end screen + gold console at all).
 // Run: node e2e/ending.mjs  (own dev server on port 6480; ENDING_PART=sizes|lose|gone|resume|rankselect runs one part)
@@ -24,6 +24,7 @@ import { chromium } from 'playwright-core'
 import { checkVersion } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf, LADDER } from './ladder-ranks.mjs'
 
 const PORT = 6480
 const SHOTS = 'e2e-shots/ending'
@@ -43,12 +44,14 @@ await new Promise((ok, fail) => {
 const browser = await chromium.launch()
 let failed = 0
 const check = (name, ok, detail = '') => { console.log(ok ? '✓' : '✗', name, detail); if (!ok) failed++ }
-// everything a player who reached rank 50 has had (lessons, notes, every story moment)
+// everything a player who reached the final shift has had (lessons, notes, every story moment)
 const SEEN = ['lesson:first-day', 'lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:visor', 'lesson:laser',
   'lesson:controls', 'consoleNote:1', 'consoleNote:2', 'consoleNote:3', 'consoleNote:4', 'consoleNote:5', 'whisper:cold', 'look:mouths-open',
-  ...Array.from({ length: 51 }, (_, i) => `story:${i}`)]
-let xp50 = 0
-for (let r = 0; r < 50; r++) xp50 += prog.xpBase + prog.xpPerRank * r
+  ...Object.keys(LADDER.story).map((id) => `story:${id}`)]
+// F79: the final shift's rank, and a rank to pick in RANK SELECT (any past the shop: the ladder's upgrades.focusMode), are the ladder's
+const FINAL = rankOf('finalShift'), PICK = rankOf('upgrades.focusMode')
+let xpFinal = 0
+for (let r = 0; r < FINAL; r++) xpFinal += prog.xpBase + prog.xpPerRank * r
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 const goopSays = (key, name) => fill(E.goop[key], { name: name ?? en.story.sign.fallback, more: (endingJson.paidBy - endingJson.named).toLocaleString('en') })
 const save = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') ?? 'null'))
@@ -56,7 +59,7 @@ const save = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('goop
 // pour took over 20 s of wall time — the waits are conditions, so a roomy cap costs nothing when the PC isn't busy)
 const roomy = { timeout: 60000 }
 
-// a device at the start of rank 50, signed "Muzzy", every lesson + story moment had (badge: an end title already on it)
+// a device at the start of the final shift's rank, signed "Muzzy", every lesson + story moment had (badge: an end title already on it)
 async function open(w, h, { badge = null, careers = 0 } = {}) {
   const context = await browser.newContext({ viewport: { width: w, height: h } })
   const page = await context.newPage()
@@ -67,7 +70,7 @@ async function open(w, h, { badge = null, careers = 0 } = {}) {
   await page.evaluate(([xp, seen, badge, careers]) => {
     localStorage.setItem('goops-progress', JSON.stringify({ v: 4, totalXp: xp, scrapsSpent: 0, owned: {}, equipped: [], badge, name: 'Muzzy', careers }))
     window.__goopsSeen?.(seen)
-  }, [xp50, SEEN, badge, careers])
+  }, [xpFinal, SEEN, badge, careers])
   // (?story: the story moments are on — the new career's rank-0 sign-in is one)
   await page.goto(`http://localhost:${PORT}/?seed=7&story`)
   await checkVersion(page)
@@ -280,7 +283,7 @@ try {
     // the end-game screen: Muzzy's art + the words, each inside its box with room
     await page.waitForTimeout(600)
     const words = (await page.locator(END_SCENE).innerText()).replace(/\s+/g, ' ')
-    const want = [E.endScreen.title, fill(E.endScreen.subtitleNamed, { name: 'Muzzy', title: T.savior }), E.endScreen.rank, '50', E.endScreen.freed,
+    const want = [E.endScreen.title, fill(E.endScreen.subtitleNamed, { name: 'Muzzy', title: T.savior }), E.endScreen.rank, String(FINAL), E.endScreen.freed,
       endingJson.paidBy.toLocaleString('en'), E.endScreen.careers, E.endScreen.stages, '3 / 3', E.endScreen.debt, E.endScreen.debtValue, E.endScreen.tanks, E.endScreen.speaker]
     const missing = want.filter((x) => !words.toUpperCase().includes(x.toUpperCase()))
     const artSrc = await page.locator(`${END_SCENE} img`).first().getAttribute('src')
@@ -404,17 +407,17 @@ try {
     await close()
   }
 
-  // ---------------- RANK SELECT still works after a new career: rank 7, careers + gold kept ----------------
+  // ---------------- RANK SELECT still works after a new career: a mid rank (PICK), careers + gold kept ----------------
   if (part('rankselect')) {
     const { page, errors, close } = await open(1440, 900, { careers: 1 })
     await page.locator('[data-tag="rankSelect"]').click()
-    await page.getByText('Rank 7', { exact: true }).click()
+    await page.getByText(fill(en.console.rankSelect.row, { n: PICK }), { exact: true }).click()
     await page.waitForLoadState('load')
     await page.locator('.kit-art-stage').waitFor(roomy)
     await page.waitForTimeout(800)
     const s = await save(page)
     const gold = await page.locator('.kit-art-stage.career-gold-console').count()
-    check('RANK SELECT 7 after a career: rank 7, no badge, careers kept, still gold-trimmed', s.totalXp > 0 && s.badge === null && s.careers === 1 && gold === 1, JSON.stringify(s))
+    check(`RANK SELECT ${PICK} after a career: rank ${PICK}, no badge, careers kept, still gold-trimmed`, s.totalXp > 0 && s.badge === null && s.careers === 1 && gold === 1, JSON.stringify(s))
     check('rank select: no page errors', errors.length === 0, errors.slice(0, 3).join(' | '))
     await close()
   }

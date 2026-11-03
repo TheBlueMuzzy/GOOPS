@@ -1,5 +1,5 @@
 // REPAIRS AT THE CONSOLE (F24 + F23 task 4), at 9 screen sizes, with a real mouse AND a real finger (CDP touch):
-//   a shift at rank 6 (all three machines unlocked) → the machine bars in the panel under the tank (HUD check: every part over
+//   a shift at the ladder's controlsBreak (all three machines unlocked) → the machine bars in the panel under the tank (HUD check: every part over
 //   the tank, nothing overlapping, the meters clear of the tank) → swipe up / W → the console slides over the tank,
 //   which keeps running SLOWLY (engine ticks > 0, about consoleTimeScale of real time) → break each machine (DEV hook
 //   window.__goops.breakMachine) → its panel lights up → solve it by reading its lamps like a player, half with the
@@ -15,6 +15,7 @@ import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { startShift } from './start.mjs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5267, OUT = 'e2e-shots/repairs'
 mkdirSync(OUT, { recursive: true })
@@ -97,7 +98,7 @@ try {
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
-    await page.goto(`http://localhost:${PORT}/?seed=7&rank=6`)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${rankOf('controlsBreak')}`)
     await page.evaluate(() => document.fonts.ready)
     await startShift(page)
     await page.waitForTimeout(600)

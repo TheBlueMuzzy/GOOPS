@@ -1,6 +1,6 @@
 // F34 — THE UPGRADES SCREEN (the console's shop), with real input in Playwright's own Chromium (never the user's Chrome).
 // A REAL save is seeded (a version-1 save from the alpha, so the save upgrade runs in the browser too), not ?rank=N:
-//   rank 5 — Upgrades opens: "Scraps: 5", one card per upgrade in rank order (F42: up to 38); 6 and up locked with "Opens at
+//   the ladder's upgradesShop — Upgrades opens: "Scraps: N", one card per upgrade in rank order; the later ones locked with "Opens at
 //            rank N" and no buttons; buy a level of Circuit Stabilizer → scraps 4, its pips 1 of 4, the card the same
 //            size, saved (version 2) → reload → still owned, scraps still 4 → take it back → scraps 5, nothing owned;
 //            Cooldown Booster: its switch is off and asleep until a level is bought, then takes it into the shift (saved),
@@ -9,7 +9,7 @@
 //            nothing wider than its box; the list scrolls (a real finger swipe on a card, CDP touch) on a phone
 //   no page errors, no card grew (the kit's fixed-size watch: window.__uiGrowth)
 // Screenshots (looked at by hand): e2e-shots/upgrades/ and ~/Documents/dev/.scratch/goops-upgrades/ at 360x740, 390x844
-// and 1440x900 (portrait only — D11): a fresh rank 5, and a rank 9 save with levels bought + the active equipped
+// and 1440x900 (portrait only — D11): a fresh save at the shop's rank, and one at Pressure Control's (upgrades.pressureControl) with levels bought + the active equipped
 // (top of the list and scrolled to the end).
 // F34 tasks 5–7 (the 'shift' part, first): each of the 8 upgrades MEASURED in a real shift (see "what you own MEASURED"
 // below), Cooldown Booster's HUD charge button (empty / charging / ready shots at the three sizes, F refused while not
@@ -28,6 +28,7 @@ import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { rankOf, maxRank, LADDER } from './ladder-ranks.mjs'
 
 // ports: 5345 (E2E_PORT=… runs it on another)
 const PORT = Number(process.env.E2E_PORT) || 5345, OUT = 'e2e-shots/upgrades', SCRATCH = join(homedir(), 'Documents', 'dev', '.scratch', 'goops-upgrades-2')
@@ -47,10 +48,16 @@ const check = (name, ok, detail = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} 
 // all the XP to reach a rank (progression.json: xpBase + xpPerRank × rank per rank)
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k]))
-const ORDER = ['circuitStabilizer', 'autoPopper', 'capacitorEfficiency', 'cooldownBooster', 'gearLubrication', 'focusMode', 'denseGoop', 'pressureControl',
-  'junkUniformer', 'goopSwap', 'goopDump', 'sealingBonus', 'activeSlot', 'tougherTank', 'goopColorizer', 'quickFix', 'slowCracks', 'focusMode2', 'crackMatcher',
-  'crackDown', 'activeSlot2'] // (F42: the actives and slots of ranks 15–38; F43 / F48: the rest of ranks 10–38; F52: Focus Mode II at 31)
-const ABOVE_9 = ORDER.slice(8) // locked at rank 9 too
+// F79: every rank here is the ladder's (content/tuning/ladder.json) — an upgrade's buy rank is upgrades.<id> there
+const opensAt = (id) => rankOf(`upgrades.${id}`)
+// scraps in hand at a rank with nothing spent (src/progress/progression.ts: scrapsPerRank a rank + the ladder's scraps grants)
+const scrapsAt = (rank) => rank * prog.scrapsPerRank + Object.entries(LADDER.grants?.scraps ?? {}).reduce((a, [beat, n]) => a + (rankOf(beat) <= rank ? n : 0), 0)
+// every upgrade in rank order (the ladder's; a tie keeps the ladder file's order)
+const ORDER = Object.keys(LADDER.upgrades).sort((a, b) => opensAt(a) - opensAt(b))
+const SHOP = rankOf('upgradesShop') // the shop opens: a fresh save there
+const R9 = opensAt('pressureControl') // a save with levels bought, up to Pressure Control (it owns a level of it)
+const ALL_OPEN = Math.max(...ORDER.map(opensAt)) // every upgrade can be bought from here
+const ABOVE_9 = ORDER.filter((id) => opensAt(id) > R9) // locked at R9 too
 
 // a device with this save, on the console
 async function device(save, { width = 390, height = 844, touch = false } = {}) {
@@ -128,13 +135,15 @@ const shot = async (page, name) => {
   await page.screenshot({ path: join(SCRATCH, `${name}.png`) })
 }
 
-const V1_RANK5 = JSON.stringify({ v: 1, totalXp: xpFor(5), scrapsSpent: 0 })
-// rank 9: 9 scraps — Circuit Stabilizer max (4), Capacitor Efficiency 2, Cooldown Booster 1 equipped, Pressure Control 1 → 8 spent
-const RANK9 = JSON.stringify({ v: 2, totalXp: xpFor(9), scrapsSpent: 8,
-  owned: { circuitStabilizer: 4, capacitorEfficiency: 2, cooldownBooster: 1, pressureControl: 1 }, equipped: ['cooldownBooster'] })
+const V1_RANK5 = JSON.stringify({ v: 1, totalXp: xpFor(SHOP), scrapsSpent: 0 })
+const SHOP_SCRAPS = scrapsAt(SHOP)
+// R9: Circuit Stabilizer max (4), Capacitor Efficiency 2, Cooldown Booster 1 equipped, Pressure Control 1 → 8 spent
+const R9_OWNED = { circuitStabilizer: 4, capacitorEfficiency: 2, cooldownBooster: 1, pressureControl: 1 }
+const R9_SPENT = Object.values(R9_OWNED).reduce((a, b) => a + b, 0)
+const RANK9 = JSON.stringify({ v: 2, totalXp: xpFor(R9), scrapsSpent: R9_SPENT, owned: R9_OWNED, equipped: ['cooldownBooster'] })
 
 // ============ F34 tasks 5–7: what you own MEASURED in a real shift ============
-// Two rank-40 saves (enough scraps for everything at once — the same rank, so only the upgrades differ): one owning
+// Two ALL_OPEN saves (every upgrade open, enough scraps for everything at once — the same rank, so only the upgrades differ): one owning
 // nothing, one owning every machine fix at max (4), Auto-Popper 4, Focus Mode + Focus Mode II, Dense Goop 4, Pressure Control 4 and
 // Cooldown Booster 3 equipped. Each change is measured the same way in both shifts and compared:
 //   the modifiers in the running engine's snapshot = upgrades.json's numbers at those levels
@@ -146,10 +155,10 @@ const RANK9 = JSON.stringify({ v: 2, totalXp: xpFor(9), scrapsSpent: 8,
 //   the visor's calm time running → it grows by 50%
 // The measuring runs with the shift held under the pause menu (the frame loop doesn't tick it) and moves the engine
 // by hand (window.__goops.engine.tick): pure and seeded, so both saves see the same shift.
-const XP40 = xpFor(40)
-const NONE = JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: 0, owned: {}, equipped: [] })
+const XP_ALL_OPEN = xpFor(ALL_OPEN)
+const NONE = JSON.stringify({ v: 2, totalXp: XP_ALL_OPEN, scrapsSpent: 0, owned: {}, equipped: [] })
 const ALL_OWNED = { circuitStabilizer: 4, autoPopper: 4, capacitorEfficiency: 4, cooldownBooster: 3, gearLubrication: 4, focusMode: 1, focusMode2: 1, denseGoop: 4, pressureControl: 4 }
-const ALL = JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: Object.values(ALL_OWNED).reduce((a, b) => a + b, 0), owned: ALL_OWNED, equipped: ['cooldownBooster'] })
+const ALL = JSON.stringify({ v: 2, totalXp: XP_ALL_OPEN, scrapsSpent: Object.values(ALL_OWNED).reduce((a, b) => a + b, 0), owned: ALL_OWNED, equipped: ['cooldownBooster'] })
 const LESSONS_SEEN = ['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:laser', 'lesson:visor', 'lesson:controls',
   ...Array.from({ length: 9 }, (_, i) => `consoleNote:${i + 1}`)]
 const upgradesJson = JSON.parse(readFileSync('content/tuning/upgrades.json', 'utf8'))
@@ -372,7 +381,7 @@ async function boosterKey() {
 }
 
 // ============ F42: one charge button per equipped active ============
-// A rank-40 save owning both Active Expansion Slots (3 slots) and all four actives, equipping 1, 2 or 3 — so every
+// An ALL_OPEN save owning both Active Expansion Slots (3 slots) and all four actives, equipping 1, 2 or 3 — so every
 // picture shows: 1 = Cooldown Booster; 2 = Booster + Goop Dump; 3 = Goop Dump, Goop Colorizer, Crack Down. At every
 // portrait size, with the default layout (panelRow: their own row in the bottom panel):
 //   one button per equipped active, in equip order, each with its own picture (data-picture) · all grey while charging,
@@ -384,7 +393,7 @@ async function boosterKey() {
 const F42_SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
 const F42_OWNED = { ...ALL_OWNED, activeSlot: 1, activeSlot2: 1, goopDump: 1, goopColorizer: 1, crackDown: 1 }
 const F42_LOADOUTS = { 1: ['cooldownBooster'], 2: ['cooldownBooster', 'goopDump'], 3: ['goopDump', 'goopColorizer', 'crackDown'] }
-const f42Save = (equipped) => JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: Object.values(F42_OWNED).reduce((a, b) => a + b, 0), owned: F42_OWNED, equipped })
+const f42Save = (equipped) => JSON.stringify({ v: 2, totalXp: XP_ALL_OPEN, scrapsSpent: Object.values(F42_OWNED).reduce((a, b) => a + b, 0), owned: F42_OWNED, equipped })
 // every action the HUD and the tank send the engine from now on (window.__acts)
 const spyActs = (page) => page.evaluate(() => {
   const e = window.__goops.engine, act = e.act.bind(e)
@@ -474,12 +483,12 @@ async function abilityLayouts() {
 
 // the Upgrades card's level as a number beside the pips ("2/4")
 // The top row's WORST case with the charge button in it (game-ui: HUD checks use the widest text a real game shows):
-// the biggest quota (every colour in play + progression.json maxRank 50 = 57) with two-digit seals, quota met with 99
+// the biggest quota (every colour in play + the ladder's maxRank) with two-digit seals, quota met with 99
 // seals, the rupture word — each with a 5-digit score (hud-shots' worst case: a shift's score is its XP, ~16k a rank at
-// rank 50) — at the two phone sizes. The crack count's visible ink (a Range round its
+// the top rank) — at the two phone sizes. The crack count's visible ink (a Range round its
 // words) must stay ≥ 6 px from the score badge and from the charge button's visible edge (its border box), on one line.
 const shiftJson = JSON.parse(readFileSync('content/tuning/shift.json', 'utf8'))
-const MAX_QUOTA = shiftJson.colors.length + 50
+const MAX_QUOTA = shiftJson.colors.length + maxRank()
 async function widestTopRow() {
   const cases = [
     ['count', { sealed: MAX_QUOTA - 1, needed: MAX_QUOTA }], ['quota', { sealed: 99, needed: MAX_QUOTA }], ['rupture', { sealed: 8, needed: MAX_QUOTA, rupture: true }],
@@ -540,15 +549,15 @@ async function levelNumbers() {
 }
 
 // ============ F43 + F48 (Sprint 20): ranks 10–38 MEASURED in a real shift ============
-// Two rank-40 saves that differ only in the F43 passives (both own Cooldown Booster 1, equipped, for Sealing Bonus to
+// Two ALL_OPEN saves that differ only in the F43 passives (both own Cooldown Booster 1, equipped, for Sealing Bonus to
 // charge): BASE owns nothing else, MAX owns Junk Uniformer, Goop Swap, Sealing Bonus, Tougher Tank, Slow Cracks and
 // Crack Matcher at level 4. Same seed (?seed=7), so both shifts start the same. Each measurement starts from ONE moment
 // of the base shift (its snapshot, restored into the other engine — restore keeps an engine's own modifiers), so only
 // the upgrades differ. Shifts held under the pause menu, the engine moved by hand (window.__goops.engine).
 const F43_MAX = { junkUniformer: 4, goopSwap: 4, sealingBonus: 4, tougherTank: 4, slowCracks: 4, crackMatcher: 4 }
-const rank40Save = (owned, equipped = []) => JSON.stringify({ v: 2, totalXp: XP40, scrapsSpent: Object.values(owned).reduce((a, b) => a + b, 0), owned, equipped })
-const F43_BASE_SAVE = rank40Save({ cooldownBooster: 1 }, ['cooldownBooster'])
-const F43_MAX_SAVE = rank40Save({ cooldownBooster: 1, ...F43_MAX }, ['cooldownBooster'])
+const allOpenSave = (owned, equipped = []) => JSON.stringify({ v: 2, totalXp: XP_ALL_OPEN, scrapsSpent: Object.values(owned).reduce((a, b) => a + b, 0), owned, equipped })
+const F43_BASE_SAVE = allOpenSave({ cooldownBooster: 1 }, ['cooldownBooster'])
+const F43_MAX_SAVE = allOpenSave({ cooldownBooster: 1, ...F43_MAX }, ['cooldownBooster'])
 const valueAt = (id, modifier, level) => upgradesJson.upgrades.find((x) => x.id === id).effects.find((e) => e.modifier === modifier).byLevel[level - 1]
 const WILD = 255
 
@@ -690,7 +699,7 @@ async function measureF43() {
 // F48 Quick Fix at the console mid-shift: each machine broken (the DEV hook) → its repair panel's steps
 async function quickFix() {
   const stepsWith = async (owned, name) => {
-    const d = await inShift(rank40Save(owned))
+    const d = await inShift(allOpenSave(owned))
     await d.page.keyboard.press('KeyW')
     await d.page.locator('[data-tag="panel-visor"]').waitFor({ state: 'attached', timeout: 5000 })
     await d.page.waitForTimeout(1200) // (the slide)
@@ -711,18 +720,18 @@ async function quickFix() {
   check('Quick Fix 2 + every machine fix at max: never below 1 step (1 / 1 / 1)', JSON.stringify(all) === JSON.stringify({ laser: 1, visor: 1, controls: 1 }), JSON.stringify(all))
 }
 
-// Every Upgrades card at every portrait size, at rank 40 with levels in the new ones (green cards, max lines, Quick
+// Every Upgrades card at every portrait size, at ALL_OPEN with levels in the new ones (green cards, max lines, Quick
 // Fix's count line): breathing room in every card, nothing wider than its box, no card grew; shots at the top, at the
 // new cards (Junk Uniformer, Tougher Tank, Crack Matcher) and at the end. Then buy / take back a level of each new one
 // (the card keeps its size).
-const F43_SHOP_SAVE = rank40Save({ circuitStabilizer: 4, cooldownBooster: 1, junkUniformer: 2, goopSwap: 4, sealingBonus: 1, tougherTank: 3, quickFix: 2, slowCracks: 1, crackMatcher: 4 }, ['cooldownBooster'])
+const F43_SHOP_SAVE = allOpenSave({ circuitStabilizer: 4, cooldownBooster: 1, junkUniformer: 2, goopSwap: 4, sealingBonus: 1, tougherTank: 3, quickFix: 2, slowCracks: 1, crackMatcher: 4 }, ['cooldownBooster'])
 const F43_SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
 async function shopCardsAt(width, height) {
   const tag = `${width}x${height}`
   const { page, errors, close } = await device(F43_SHOP_SAVE, { width, height })
   await openShop(page)
   const titles = await page.locator('.kit-modal .kit-card-title').allTextContents()
-  check(`${tag}: every upgrade's card, in rank order, none locked at rank 40`, JSON.stringify(titles) === JSON.stringify(ORDER.map((id) => items[id].name)), titles.join(', '))
+  check(`${tag}: every upgrade's card, in rank order, none locked at rank ${ALL_OPEN}`, JSON.stringify(titles) === JSON.stringify(ORDER.map((id) => items[id].name)), titles.join(', '))
   // (the number line: the card's label text with an arrow or "(max)")
   const amount = (id) => card(page, id).locator('.kit-text[data-kind="label"]').filter({ hasText: /→|\(max\)/ }).textContent()
   check(`${tag}: the new cards' number lines — Junk Uniformer "+20% → +30%", Goop Swap "−67% (max)", Quick Fix "2 (max)", Crack Matcher "+100% (max)"`,
@@ -778,17 +787,17 @@ try {
     await levelNumbers()
   }
   if (part !== 'shift' && part !== 'abilities' && part !== 'f43') {
-  // ---------------- rank 5: buy → reload → still owned → take back ----------------
+  // ---------------- the shop's rank (SHOP): buy → reload → still owned → take back ----------------
   {
     const { page, errors, close } = await device(V1_RANK5)
-    check('rank 5 (a version-1 save): the console offers Upgrades with 5 scraps', (await page.locator('[data-tag="upgrades"]').textContent()).includes('5'))
+    check(`rank ${SHOP} (a version-1 save): the console offers Upgrades with ${SHOP_SCRAPS} scraps`, (await page.locator('[data-tag="upgrades"]').textContent()).includes(String(SHOP_SCRAPS)))
     await openShop(page)
-    check('the shop: "Scraps: 5"', await scrapsShown(page, 5) === 1)
+    check(`the shop: "Scraps: ${SHOP_SCRAPS}"`, await scrapsShown(page, SHOP_SCRAPS) === 1)
     const titles = await page.locator('.kit-modal .kit-card-title').allTextContents()
-    const LOCKED5 = ['gearLubrication', 'focusMode', 'denseGoop', 'pressureControl', ...ABOVE_9]
+    const LOCKED5 = ORDER.filter((id) => opensAt(id) > SHOP)
     const want = ORDER.map((id) => LOCKED5.includes(id) ? `${items[id].name} ${w.lockedLabel}` : items[id].name)
     check('one card per upgrade, in rank order (the locked ones read out "… Locked")', JSON.stringify(titles) === JSON.stringify(want), titles.join(', '))
-    for (const [id, rank] of [['gearLubrication', 6], ['focusMode', 7], ['denseGoop', 8], ['pressureControl', 9]]) {
+    for (const [id, rank] of LOCKED5.filter((id) => opensAt(id) <= R9).map((id) => [id, opensAt(id)])) {
       check(`${items[id].name}: locked (kit greyed card), "Opens at rank ${rank}", no buttons`, await card(page, id).getByText(fill(w.locked, { rank })).count() === 1
         && await card(page, id).getByRole('button').count() === 0 && await card(page, id).getAttribute('data-locked') !== null)
     }
@@ -799,26 +808,26 @@ try {
     check('Pressure Control shows 8 pips, the others 4 (Cooldown Booster 3)', await pips(page, 'pressureControl').getAttribute('aria-valuemax') === '8'
       && await pips(page, 'circuitStabilizer').getAttribute('aria-valuemax') === '4' && await pips(page, 'cooldownBooster').getAttribute('aria-valuemax') === '3')
     check('nothing owned: every − is greyed out', await takeBack(page, 'circuitStabilizer').isDisabled() && await takeBack(page, 'cooldownBooster').isDisabled())
-    await shot(page, 'rank5-fresh-390x844')
+    await shot(page, `rank${SHOP}-fresh-390x844`)
     const before = await size(card(page, 'circuitStabilizer'))
     await buy(page, 'circuitStabilizer').click()
     await page.waitForTimeout(200)
-    check('buy a level of Circuit Stabilizer → scraps 4, its pips 1 of 4', await scrapsShown(page, 4) === 1 && await level(page, 'circuitStabilizer') === 1)
+    check(`buy a level of Circuit Stabilizer → scraps ${SHOP_SCRAPS - 1}, its pips 1 of 4`, await scrapsShown(page, SHOP_SCRAPS - 1) === 1 && await level(page, 'circuitStabilizer') === 1)
     check('the card kept its size', (await size(card(page, 'circuitStabilizer'))) === before, `${before} → ${await size(card(page, 'circuitStabilizer'))}`)
     check('a level in it → its card is green (kit tone success), the others not', await card(page, 'circuitStabilizer').getAttribute('data-tone') === 'success'
       && await page.locator('.kit-modal .kit-card[data-tone="success"]').count() === 1)
     await shot(page, 'green-card-390x844')
     const s1 = await saved(page)
-    check('saved at once, as version 5 (XP kept)', s1.v === 5 && s1.owned.circuitStabilizer === 1 && s1.scrapsSpent === 1 && s1.totalXp === xpFor(5), JSON.stringify(s1))
-    check('the console button says 4 scraps too', (await page.locator('[data-tag="upgrades"]').textContent()).includes('4'))
+    check('saved at once, as version 5 (XP kept)', s1.v === 5 && s1.owned.circuitStabilizer === 1 && s1.scrapsSpent === 1 && s1.totalXp === xpFor(SHOP), JSON.stringify(s1))
+    check(`the console button says ${SHOP_SCRAPS - 1} scraps too`, (await page.locator('[data-tag="upgrades"]').textContent()).includes(String(SHOP_SCRAPS - 1)))
     await page.reload()
     await page.getByRole('button', { name: 'Start shift' }).waitFor()
     await openShop(page)
-    check('after a reload: still level 1, scraps still 4', await level(page, 'circuitStabilizer') === 1 && await scrapsShown(page, 4) === 1)
+    check(`after a reload: still level 1, scraps still ${SHOP_SCRAPS - 1}`, await level(page, 'circuitStabilizer') === 1 && await scrapsShown(page, SHOP_SCRAPS - 1) === 1)
     await takeBack(page, 'circuitStabilizer').click()
     await page.waitForTimeout(200)
     const s2 = await saved(page)
-    check('take it back → scraps 5, level 0, nothing owned in the save', await scrapsShown(page, 5) === 1 && await level(page, 'circuitStabilizer') === 0
+    check(`take it back → scraps ${SHOP_SCRAPS}, level 0, nothing owned in the save`, await scrapsShown(page, SHOP_SCRAPS) === 1 && await level(page, 'circuitStabilizer') === 0
       && Object.keys(s2.owned).length === 0 && s2.scrapsSpent === 0, JSON.stringify(s2))
 
     // the active: its switch
@@ -833,10 +842,16 @@ try {
     check('its last level taken back → switched off and asleep, unequipped in the save', await sw.getAttribute('aria-checked') === 'false' && await sw.isDisabled()
       && (await saved(page)).equipped.length === 0)
 
-    // spend everything: the + greys out when a level costs more than you have
-    for (let i = 0; i < 4; i++) await buy(page, 'circuitStabilizer').click()
-    await buy(page, 'capacitorEfficiency').click()
-    check('5 scraps spent → scraps 0, every + greyed out', await scrapsShown(page, 0) === 1 && await buy(page, 'autoPopper').isDisabled()
+    // spend everything: the + greys out when a level costs more than you have — Circuit Stabilizer to max, then
+    // Capacitor Efficiency, then the other open ones, a level (1 scrap) at a time until the shop's scraps are gone
+    // (F79: the scraps are the ladder's — scrapsPerRank a rank + its scraps grants — so this spends whatever they are)
+    const spendOrder = ['circuitStabilizer', 'capacitorEfficiency', ...ORDER.filter((id) => opensAt(id) <= SHOP && id !== 'circuitStabilizer' && id !== 'capacitorEfficiency')]
+    let toSpend = SHOP_SCRAPS
+    for (const id of spendOrder) {
+      const max = upgradesJson.upgrades.find((u) => u.id === id).maxLevel
+      for (let i = 0; i < max && toSpend > 0; i++, toSpend--) await buy(page, id).click()
+    }
+    check(`${SHOP_SCRAPS} scraps spent → scraps 0, every + greyed out`, await scrapsShown(page, 0) === 1 && await buy(page, 'autoPopper').isDisabled()
       && await buy(page, 'capacitorEfficiency').isDisabled() && await buy(page, 'circuitStabilizer').isDisabled())
     check('max level: Circuit Stabilizer 4 of 4', await level(page, 'circuitStabilizer') === 4)
     const room = await roomProblems(page)
@@ -868,14 +883,14 @@ try {
     await page.waitForTimeout(1500)
     check('…then it goes back to its normal colour', await colourOf() === normal, `${await colourOf()} vs ${normal}`)
     const s3 = await saved(page)
-    check('Respec → scraps 5, every level 0, nothing owned or equipped in the save', await scrapsShown(page, 5) === 1 && await level(page, 'circuitStabilizer') === 0
+    check(`Respec → scraps ${SHOP_SCRAPS}, every level 0, nothing owned or equipped in the save`, await scrapsShown(page, SHOP_SCRAPS) === 1 && await level(page, 'circuitStabilizer') === 0
       && await level(page, 'capacitorEfficiency') === 0 && Object.keys(s3.owned).length === 0 && s3.equipped.length === 0 && s3.scrapsSpent === 0, JSON.stringify(s3))
     check('…and the Respec button is gone (nothing to take back)', await respecBtn.count() === 0)
     check('the − buttons are the red (danger) kind', await takeBack(page, 'circuitStabilizer').getAttribute('data-variant') === 'danger')
     await page.keyboard.press('Escape')
     await page.waitForTimeout(300)
     check('Esc closes it, back on the console', await page.getByRole('dialog', { name: w.title }).count() === 0)
-    check('rank 5: no page errors', errors.length === 0, errors.join(' | '))
+    check(`rank ${SHOP}: no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }
 
@@ -897,35 +912,36 @@ try {
     await close()
   }
 
-  // ---------------- the three sizes: fresh rank 5, and rank 9 with levels bought + the active equipped ----------------
+  // ---------------- the three sizes: a fresh SHOP save, and R9 with levels bought + the active equipped ----------------
   for (const [width, height] of [[360, 740], [390, 844], [1440, 900]]) {
     const tag = `${width}x${height}`
     {
       const { page, close } = await device(V1_RANK5, { width, height })
       await openShop(page)
-      await shot(page, `rank5-fresh-${tag}`)
+      await shot(page, `rank${SHOP}-fresh-${tag}`)
       const room = await roomProblems(page)
-      check(`${tag} rank 5: breathing room, nothing wider than its box`, room.length === 0, room.join(' | '))
+      check(`${tag} rank ${SHOP}: breathing room, nothing wider than its box`, room.length === 0, room.join(' | '))
       await close()
     }
     {
       const { page, errors, close } = await device(RANK9, { width, height })
       await openShop(page)
-      check(`${tag} rank 9: "Scraps: 1", Circuit Stabilizer at max, Cooldown Booster switched on, nothing up to rank 9 locked`,
-        await scrapsShown(page, 1) === 1 && await level(page, 'circuitStabilizer') === 4 && await equipSwitch(page, 'cooldownBooster').getAttribute('aria-checked') === 'true'
+      const left = scrapsAt(R9) - R9_SPENT
+      check(`${tag} rank ${R9}: "Scraps: ${left}", Circuit Stabilizer at max, Cooldown Booster switched on, nothing up to rank ${R9} locked`,
+        await scrapsShown(page, left) === 1 && await level(page, 'circuitStabilizer') === 4 && await equipSwitch(page, 'cooldownBooster').getAttribute('aria-checked') === 'true'
         && await page.getByText(/Opens at rank/).count() === ABOVE_9.length)
-      await shot(page, `rank9-bought-${tag}`)
-      await page.evaluate(() => [...document.querySelectorAll('.kit-modal .kit-card')][3].scrollIntoView({ block: 'center' })) // Cooldown Booster: its switch
-      await shot(page, `rank9-active-${tag}`)
+      await shot(page, `rank${R9}-bought-${tag}`)
+      await page.evaluate((i) => [...document.querySelectorAll('.kit-modal .kit-card')][i].scrollIntoView({ block: 'center' }), ORDER.indexOf('cooldownBooster')) // Cooldown Booster: its switch
+      await shot(page, `rank${R9}-active-${tag}`)
       await scrollList(page, 'end')
-      await shot(page, `rank9-bought-end-${tag}`)
+      await shot(page, `rank${R9}-bought-end-${tag}`)
       const room = await roomProblems(page)
-      check(`${tag} rank 9: breathing room, nothing wider than its box`, room.length === 0, room.join(' | '))
+      check(`${tag} rank ${R9}: breathing room, nothing wider than its box`, room.length === 0, room.join(' | '))
       const visible = await page.evaluate(() => {
         const list = document.querySelector('.kit-modal .kit-scroll').getBoundingClientRect(), last = [...document.querySelectorAll('.kit-modal .kit-card')].pop().getBoundingClientRect()
         return last.bottom <= list.bottom + 1 && last.top >= list.top - 1
       })
-      check(`${tag} rank 9: scrolled to the end, the last card shows whole`, visible)
+      check(`${tag} rank ${R9}: scrolled to the end, the last card shows whole`, visible)
       check(`${tag}: no page errors`, errors.length === 0, errors.join(' | '))
       await close()
     }
