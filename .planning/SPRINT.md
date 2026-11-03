@@ -12,7 +12,7 @@ Check: the ladder module's own tests · install-module's checks · check:fast ·
 - [x] 🤖 3. Goops installs it; content/tuning/ladder.json with today's numbers (51 ranks) — content/tuning/ladder.json
 - [x] 🤖 4. Every system asks the ladder: progression (unlocks, titles, maxRank), shift (colours, junk, quota steps), breakdowns, twists, whiteGoop, finalShift, payslip, eyes chorus, art hatch, upgrades' ranks — the old fields removed — src/engine/config.ts
 - [x] 🤖 5. Story moments reach their rank through the ladder (keyed by beat / slot, not a rank number) — content/story/moments.json
-- [ ] 🤖 6. e2e: the Ladder tab + a live move; add to check:full; TDD §1/§3 + Decisions (Muzzy's pivot) — e2e/ladder.mjs
+- [x] 🤖 6. e2e: the Ladder tab + a live move; add to check:full; TDD §1/§3 + Decisions (Muzzy's pivot) — e2e/ladder.mjs (the live move goes through the Tuning tab today; the Ladder tab's own check comes with task 2)
 
 ## F79 🧱 No rank numbers in code or tests
 Done when: src/goo/shared/faces.ts' 10 / 20 / 30 / 40 become ladder beats (faces on, late looks, worried, mouths) · tests, e2e and the bots ask the ladder (`rankOf('wild')`, `?rank=${rankOf('wild')}`) instead of restating ranks (~285 test lines, ~240 e2e lines, ~24 script lines — audit 2026-11-02) · a lint rule refuses a bare rank number in game code, tests and e2e (0 allowed), in the framework lint module · comments that name old rank numbers say the beat instead
