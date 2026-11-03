@@ -43,7 +43,9 @@ const codeOf = (line: string) => {
 }
 
 const N = String.raw`(\d+)(?![\d.]*\s*\*)` // a whole number (not one that's being multiplied: rank * 2)
-const NAME = String.raw`\b\w*[Rr]ank\w*` // rank, toRank, fromRank, progressAtRank, rankAt…
+// a name ending in rank: rank, toRank, fromRank, careerRank, progressAtRank, xpForRank, effectLateRanks (not
+// xpIntoRank: that's XP)
+const NAME = String.raw`\b(?!xpInto)\w*[Rr]anks?\b`
 const PATTERNS: RegExp[] = [
   new RegExp(`${NAME}\\)?\\s*(?:===|!==|==|>=|<=|>|<|=(?![=>]))\\s*${N}`), // rank >= 30 · rank = 40 · ?rank=40
   new RegExp(`\\b${N}\\s*(?:===|!==|==|>=|<=|>|<)\\s*${NAME}`), // 30 <= rank
@@ -80,6 +82,7 @@ describe('no rank numbers in code or tests (F79 — they ask the ladder)', () =>
       'createShift(shift, { rank: 0 })', 'expect(p.rank).toBe(1)', "page.goto(`${URL}?rank=${rankOf('wildGoop')}`)",
       'const seed = 40', 'score: 30', '// the shop opens at rank 5', 'rank: 40, // tuning-ok: a made-up ladder',
       'xp: rank * 30', "it(`rank ${rankOf('wildGoop')} has wild goop`)", 'ranks.length >= 2',
+      'toMatchObject({ xpIntoRank: 2000 })', 'const before = rank3(4000)',
     ]) expect(rankNumbersIn(ok), ok).toEqual([])
   })
 

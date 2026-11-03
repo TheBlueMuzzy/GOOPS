@@ -10,6 +10,7 @@ import { isFewerStepsName, isModifierName } from '../../src/engine/upgrades'
 import { createRng } from '../../src/engine/rng'
 import { upgradeRank } from '../../src/progress/upgradeShop'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, sealACrack, straightLineCracks, tank, tickUntil } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 const book = upgradesJson as UpgradeBook
 const STURDY = 'sturdyTankTest'
@@ -61,7 +62,8 @@ function run(shift: ShiftEngine, ms: number): ShiftEvent[] {
 }
 
 describe('no upgrades = the shift plays exactly as before', () => {
-  for (const [seed, rank] of [[1, 1], [2, 12], [42, 5]]) {
+  // (the first day's next rank, a rank with 5 colours and the most junk, the shop's rank)
+  for (const [seed, rank] of [[1, 1], [2, Math.max(rankOf('fifthColour'), rankOf('junk3'))], [42, rankOf('upgradesShop')]]) {
     it(`seed ${seed}, rank ${rank}: same events, score and tank with or without an empty upgrade set`, () => {
       const plain = playShift(seed, rank)
       const none = resolveUpgrades(book, {})
@@ -141,16 +143,20 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
   })
 })
 
-describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 decisions")', () => {
+describe('the shop’s upgrades (F34, design/upgrades-map.md "F33 decisions")', () => {
   const shop = playableUpgrades(book)
-  it('one upgrade for each rank 2–9, then ranks 10–38 (F42 actives + slots, F43 passives, F48 Quick Fix), in that order, with v1’s max levels', () => {
-    expect(shop.map((u) => [u.id, upgradeRank(u), u.maxLevel])).toEqual([
-      ['circuitStabilizer', 2, 4], ['autoPopper', 3, 4], ['capacitorEfficiency', 4, 4], ['cooldownBooster', 5, 3],
-      ['gearLubrication', 6, 4], ['focusMode', 7, 1], ['denseGoop', 8, 4], ['pressureControl', 9, 8],
-      ['junkUniformer', 10, 4], ['goopSwap', 12, 4], ['goopDump', 15, 3], ['sealingBonus', 18, 4], ['activeSlot', 20, 1],
-      ['tougherTank', 22, 4], ['goopColorizer', 25, 3], ['quickFix', 28, 2], ['slowCracks', 30, 4], ['focusMode2', 31, 1], ['crackMatcher', 32, 4],
-      ['crackDown', 35, 3], ['activeSlot2', 38, 1],
+  it('the shop’s upgrades (F33 the first band, F42 actives + slots, F43 passives, F48 Quick Fix), in that order, with v1’s max levels; each at its rank in the ladder, never going down', () => {
+    expect(shop.map((u) => [u.id, u.maxLevel])).toEqual([
+      ['circuitStabilizer', 4], ['autoPopper', 4], ['capacitorEfficiency', 4], ['cooldownBooster', 3],
+      ['gearLubrication', 4], ['focusMode', 1], ['denseGoop', 4], ['pressureControl', 8],
+      ['junkUniformer', 4], ['goopSwap', 4], ['goopDump', 3], ['sealingBonus', 4], ['activeSlot', 1],
+      ['tougherTank', 4], ['goopColorizer', 3], ['quickFix', 2], ['slowCracks', 4], ['focusMode2', 1], ['crackMatcher', 4],
+      ['crackDown', 3], ['activeSlot2', 1],
     ])
+    // (F79: the ranks are the ladder's upgrades group — content/tuning/ladder.json; the shop lists them in rank order)
+    const ranks = shop.map((u) => upgradeRank(u))
+    expect(ranks).toEqual(shop.map((u) => rankOf(`upgrades.${u.id}`)))
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
   })
 
   it('F42 actives: each level’s numbers reach the shift as the book has them, and v1’s charging (15 / 25 / 30 s to full, +0.25 a seal)', () => {

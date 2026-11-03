@@ -1,4 +1,4 @@
-// F43 (Sprint 20): the ranks 10–38 passives in the engine — Junk Uniformer, Crack Matcher, Sealing Bonus, Tougher Tank,
+// F43 (Sprint 20): the later passives in the engine — Junk Uniformer, Crack Matcher, Sealing Bonus, Tougher Tank,
 // Slow Cracks (design/upgrades-map.md). Goop Swap is the input layer's (tests/input/controls.test.ts), Quick Fix the
 // console's (tests/repairs.test.ts). The two chances must take NO extra random rolls when they're off, so a shift
 // without them plays exactly as before with the same seed.
@@ -10,6 +10,7 @@ import { lowestOpenCrack } from '../../src/engine/cracks'
 import { mainColor, withMainColor, type PieceDef } from '../../src/engine/pieces'
 import { WILD, type Crack } from '../../src/engine/types'
 import { dropPiece, oneShapeConfig, realConfig, sealACrack, straightLineCracks, tickUntil } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 const book = upgradesJson as UpgradeBook
 const mods = (id: string, level: number) => resolveUpgrades(book, { [id]: level }).modifiers
@@ -19,8 +20,14 @@ const mods = (id: string, level: number) => resolveUpgrades(book, { [id]: level 
 // A short busy shift (drops and pops on a fixed rhythm) summed up as a few numbers. GOLDEN holds what the engine made
 // BEFORE F43 (commit 7b8ae0b) for the same seeds — so a roll taken while an upgrade is off would show up here (comparing
 // "off" with "not owned" can't catch it: both run the same new code).
-function goldenRun(seed: number, rank: number, modifiers?: Partial<Modifiers>) {
+// F79: each golden shift's world is PINNED — the colours, floor junk and quota step it was recorded with (then ranks
+// 9 / 12 / 32) — so moving a beat in the ladder can't change it; `rank` is then only the quota's perRank × rank number.
+interface World { colours: number; junk: number; quotaAdd: number }
+function goldenRun(seed: number, rank: number, world: World, modifiers?: Partial<Modifiers>) {
   const config = straightLineCracks(realConfig(), 3000, 1200)
+  config.colorsByBeat = [{ beat: 'firstDay', count: world.colours }]
+  config.junkByBeat = [{ beat: 'firstDay', count: world.junk }]
+  config.quota = { ...config.quota, addByBeat: [{ beat: 'firstDay', count: world.quotaAdd }] }
   const shift = createShift(config, { seed, rank, modifiers })
   const s = shift.state
   for (let i = 0; i < 30 && s.status === 'playing'; i++) {
@@ -40,13 +47,19 @@ const GOLDEN: Record<string, ReturnType<typeof goldenRun>> = {
   '42/32': { score: 2918, sealed: 0, cracks: 7, hash: 3053442205, rng: 112729836 },
 }
 
+const WORLDS: [seed: number, rank: number, world: World][] = [
+  [1, 9, { colours: 4, junk: 11, quotaAdd: 0 }], // tuning-ok: a golden world, pinned (above) — not a ladder rank
+  [2, 12, { colours: 5, junk: 11, quotaAdd: 0 }], // tuning-ok: a golden world, pinned (above) — not a ladder rank
+  [42, 32, { colours: 6, junk: 11, quotaAdd: -6 }], // tuning-ok: a golden world, pinned (above) — not a ladder rank
+]
+
 describe('golden: with every F43 chance off, the same shifts as before F43', () => {
-  for (const [seed, rank] of [[1, 9], [2, 12], [42, 32]]) {
-    it(`seed ${seed}, rank ${rank}`, () => {
+  for (const [seed, rank, world] of WORLDS) {
+    it(`seed ${seed}, ${world.colours} colours, ${world.junk} junk (then rank ${rank})`, () => {
       const off = { junkSameColorChance: 0, crackColorBias: 0, abilityChargePerSealMult: 1, swapHoldTimeMult: 1 }
-      const got = goldenRun(seed, rank, off)
+      const got = goldenRun(seed, rank, world, off)
       expect(got).toEqual(GOLDEN[`${seed}/${rank}`])
-      expect(goldenRun(seed, rank)).toEqual(got)
+      expect(goldenRun(seed, rank, world)).toEqual(got)
     })
   }
 })
@@ -61,21 +74,25 @@ function junkOf(seed: number, rank: number, modifiers?: Partial<Modifiers>) {
   return { shift, junk: row.filter((c) => c !== 0), rng: shift.snapshot().rng, next: s.next }
 }
 
-describe('Junk Uniformer (rank 10, junkSameColorChance)', () => {
+// the most junk (junk3), and with it 5 colours (fifthColour) for the uniformer's share test
+const MOST_JUNK = rankOf('junk3'), JUNK_5 = Math.max(rankOf('junk3'), rankOf('fifthColour'))
+const mostJunk = realConfig().junkByBeat.find((s) => s.beat === 'junk3')!.count
+
+describe(`Junk Uniformer (rank ${rankOf('upgrades.junkUniformer')}, junkSameColorChance)`, () => {
   it('off (0, or not owned): the same junk AND the same random numbers after it — the shift plays as before', () => {
     for (const seed of [1, 2, 3, 99]) {
-      const plain = junkOf(seed, 9)
-      const zero = junkOf(seed, 9, { junkSameColorChance: 0 })
+      const plain = junkOf(seed, MOST_JUNK)
+      const zero = junkOf(seed, MOST_JUNK, { junkSameColorChance: 0 })
       expect(zero.junk).toEqual(plain.junk)
       expect(zero.rng).toBe(plain.rng)
       expect(zero.next).toEqual(plain.next)
-      expect(plain.junk).toHaveLength(11) // (rank 9: 11 junk cells)
+      expect(plain.junk).toHaveLength(mostJunk) // (junk3: 11 junk cells)
     }
   })
 
   it('chance 1: every junk cell is the first one’s colour', () => {
     for (const seed of [1, 2, 3]) {
-      const { junk } = junkOf(seed, 12, { junkSameColorChance: 1 })
+      const { junk } = junkOf(seed, JUNK_5, { junkSameColorChance: 1 })
       expect(junk.length).toBeGreaterThan(1)
       expect(new Set(junk).size).toBe(1)
     }
@@ -87,7 +104,7 @@ describe('Junk Uniformer (rank 10, junkSameColorChance)', () => {
     const share = (modifiers?: Partial<Modifiers>) => {
       let most = 0, total = 0
       for (let seed = 1; seed <= 300; seed++) {
-        const { junk } = junkOf(seed, 12, modifiers)
+        const { junk } = junkOf(seed, JUNK_5, modifiers)
         const counts = new Map<number, number>()
         for (const c of junk) counts.set(c, (counts.get(c) ?? 0) + 1)
         most += Math.max(...counts.values())
@@ -105,14 +122,14 @@ describe('Junk Uniformer (rank 10, junkSameColorChance)', () => {
 
 // ---------------------------------------------------------------- Crack Matcher
 
-// a shift where cracks come often and never wear the tank (so it keeps going), at a rank with 5 colours
+// a shift where cracks come often and never wear the tank (so it keeps going), at a rank with 5 colours (fifthColour)
 function crackyShift(seed: number, modifiers?: Partial<Modifiers>, config: ShiftConfig = straightLineCracks(realConfig(), 1500, 800)) {
   config.integrity.drainPerCrackPerSec = 0
-  return { shift: createShift(config, { seed, rank: 12, modifiers }), config }
+  return { shift: createShift(config, { seed, rank: rankOf('fifthColour'), modifiers }), config }
 }
 const nextColors = (shift: ShiftEngine) => [...new Set(shift.state.next ?? [])]
 
-describe('Crack Matcher (rank 32, crackColorBias)', () => {
+describe(`Crack Matcher (rank ${rankOf('upgrades.crackMatcher')}, crackColorBias)`, () => {
   it('chance 1: every new next piece comes in the lowest open crack’s colour (the next window shows it)', () => {
     const { shift, config } = crackyShift(4, { crackColorBias: 1 })
     const s = shift.state
@@ -203,7 +220,7 @@ function calmConfig(drain = 0): ShiftConfig {
   return config
 }
 
-describe('Sealing Bonus (rank 18, abilityChargePerSealMult)', () => {
+describe(`Sealing Bonus (rank ${rankOf('upgrades.sealingBonus')}, abilityChargePerSealMult)`, () => {
   it('max level: each seal charges an active 1.6× as much (0.5 → 0.8 for the test active); time charge unchanged', () => {
     const abilities = resolveUpgrades(book, { lowCracksTest: 1 }, ['lowCracksTest']).abilities
     const afterOneSeal = (modifiers?: Partial<Modifiers>) => {
@@ -225,7 +242,7 @@ describe('Sealing Bonus (rank 18, abilityChargePerSealMult)', () => {
   }, 30000)
 })
 
-describe('Tougher Tank (rank 22) and Slow Cracks (rank 30): the engine’s ready modifiers', () => {
+describe(`Tougher Tank (rank ${rankOf('upgrades.tougherTank')}) and Slow Cracks (rank ${rankOf('upgrades.slowCracks')}): the engine’s ready modifiers`, () => {
   it('Tougher Tank level 2 (× 0.75): the same cracks, three quarters of the wear', () => {
     const config = calmConfig(0.004)
     const a = createShift(config, { seed: 5, rank: 0 })

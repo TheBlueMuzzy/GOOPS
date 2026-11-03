@@ -7,6 +7,7 @@ import breakdownsJson from '../../content/tuning/breakdowns.json'
 import { createShift, resolveUpgrades } from '../../src/engine'
 import type { BreakdownConfig, MachineId, ShiftConfig, ShiftEngine, UpgradeBook } from '../../src/engine'
 import { ofType, oneShapeConfig, tank, tickUntil } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 const book = upgradesJson as UpgradeBook
 const ID = 'cooldownBooster'
@@ -18,7 +19,8 @@ function calmConfig(): ShiftConfig {
   return config
 }
 
-function boosterShift(level: number, rank = 9) {
+// (at a rank where every machine can break — the ladder's controlsBreak, the last of the three)
+function boosterShift(level: number, rank = rankOf('controlsBreak')) {
   const abilities = resolveUpgrades(book, { [ID]: level }, [ID]).abilities
   const shift = createShift(calmConfig(), { seed: 3, rank, breakdowns: structuredClone(breakdownsJson) as BreakdownConfig,
     startGrid: tank(['12'.repeat(15)]), abilities })
@@ -87,8 +89,8 @@ describe('Cooldown Booster (F34)', () => {
     expect(ofType(shift.takeEvents(), 'reject')).toHaveLength(1)
   })
 
-  it('a locked machine is never boosted (rank 2: only the visor works)', () => {
-    const { shift, m } = boosterShift(1, 2)
+  it('a locked machine is never boosted (at visorBreaks only the visor works)', () => {
+    const { shift, m } = boosterShift(1, rankOf('visorBreaks'))
     chargeFull(shift)
     breakAndRepair(shift, 'visor')
     m.laser.cooldownMs = 5000 // (can't happen in play: a locked machine never gets a cooldown)
@@ -100,7 +102,7 @@ describe('Cooldown Booster (F34)', () => {
     const config = calmConfig()
     config.integrity.drainPerCrackPerSec = 1000 // the first crack ruptures the tank
     const abilities = resolveUpgrades(book, { [ID]: 3 }, [ID]).abilities
-    const shift = createShift(config, { seed: 1, rank: 9, breakdowns: structuredClone(breakdownsJson) as BreakdownConfig, abilities })
+    const shift = createShift(config, { seed: 1, rank: rankOf('controlsBreak'), breakdowns: structuredClone(breakdownsJson) as BreakdownConfig, abilities })
     const s = shift.state
     tickUntil(shift, () => s.phase === 'rupture', 60000, 10)
     const charge = s.abilities![0].charge

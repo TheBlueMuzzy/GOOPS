@@ -118,7 +118,7 @@ describe('hold to swap', () => {
   })
 })
 
-// F43 Goop Swap (rank 12): the hold to swap gets shorter — tank.json holdToSwapMs × the upgrade's swapHoldTimeMult,
+// F43 Goop Swap (from ladder.json upgrades.goopSwap): the hold to swap gets shorter — tank.json holdToSwapMs × the upgrade's swapHoldTimeMult,
 // never under holdToSwapMinMs. Read by the input layer: the key's Swap bar and the finger's ring both follow it.
 describe('Goop Swap: a shorter hold', () => {
   const swapLevels = (upgradesJson as UpgradeBook).upgrades.find((u) => u.id === 'goopSwap')!.effects![0].byLevel

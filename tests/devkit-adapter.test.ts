@@ -6,24 +6,27 @@ import { createShift } from '../src/engine'
 import { session } from '../src/game/session'
 import breakdowns from '../content/tuning/breakdowns.json'
 import shift from '../content/tuning/shift.json'
+import { rankOf } from '../src/progress/ladder'
+
+const EVERY_MACHINE = rankOf('controlsBreak') // (the last machine to break — F79: asked, never restated)
 
 afterEach(() => { session.engine = null; session.inShift = false; session.restore = null })
 
 describe('goopsAdapter', () => {
   it('getState: the running shift as plain JSON, or no shift on the console', () => {
     expect(goopsAdapter.getState()).toEqual({ shift: null })
-    session.engine = createShift(shift, { seed: 7, rank: 6, breakdowns })
+    session.engine = createShift(shift, { seed: 7, rank: EVERY_MACHINE, breakdowns })
     session.inShift = true
     const moment = goopsAdapter.getState() as { shift: { kind: string } }
     expect(moment.shift.kind).toBe('goops-shift')
     expect(JSON.parse(JSON.stringify(moment))).toEqual(moment)
-    expect(goopsAdapter.describe!(moment)).toMatch(/^rank 6 · score 0 · cracks 0\/\d+ · pressure 0% · integrity 100%$/)
+    expect(goopsAdapter.describe!(moment)).toMatch(new RegExp(`^rank ${EVERY_MACHINE} · score 0 · cracks 0/\\d+ · pressure 0% · integrity 100%$`))
     expect(goopsAdapter.describe!({ shift: null })).toMatch(/console/)
   })
   it('setState hands a checked snapshot to App; junk is refused with a plain reason', () => {
     const restore = vi.fn()
     session.restore = restore
-    session.engine = createShift(shift, { seed: 7, rank: 2 })
+    session.engine = createShift(shift, { seed: 7, rank: rankOf('visorBreaks') })
     session.inShift = true
     const moment = JSON.parse(JSON.stringify(goopsAdapter.getState()))
     goopsAdapter.setState(moment)

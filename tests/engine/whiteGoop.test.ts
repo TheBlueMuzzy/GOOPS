@@ -1,4 +1,4 @@
-// F63 the white goop (the Veteran, gooped): in the tank from rank 31, never merges or pops (the laser passes through
+// F63 the white goop (the Veteran, gooped): in the tank from the ladder beat whiteGoop, never merges or pops (the laser passes through
 // him), oozes behind the goop to the crack hardest for you and seals it after sealTime. src/engine/whiteGoop.ts
 import { describe, expect, it } from 'vitest'
 import { createShift, type ShiftEngine, type ShiftEvent, type WhiteGoopConfig } from '../../src/engine'
@@ -8,7 +8,9 @@ import { createRng } from '../../src/engine/rng'
 import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import { idx, ofType, realConfig, straightLineCracks, tank, tickUntil } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
+const WHITE = rankOf('whiteGoop') // the rank he's in the tank from (F79: asked, never restated)
 const whiteGoop = () => structuredClone(whiteGoopJson) as WhiteGoopConfig
 // no cracks of the shift's own (the tests place theirs), pieces hanging still at the top
 function quietConfig() {
@@ -24,28 +26,28 @@ function landed(shift: ShiftEngine) {
 }
 
 describe('the white goop', () => {
-  it('is in the tank from rank 31, not at 30, and never in a lesson', () => {
+  it('is in the tank from the whiteGoop beat, not the rank below, and never in a lesson', () => {
     const cfg = whiteGoop()
-    expect(createShift(realConfig(), { seed: 1, rank: 30, whiteGoop: cfg }).state.vet).toBeNull()
-    expect(createShift(realConfig(), { seed: 1, rank: 31, whiteGoop: cfg }).state.vet).toBeTruthy()
-    expect(createShift(realConfig(), { seed: 1, rank: 31 }).state.vet).toBeNull() // (no tuning handed in: no white goop)
-    expect(createShift(realConfig(), { seed: 1, rank: 35, whiteGoop: cfg, training: {} }).state.vet).toBeNull()
+    expect(createShift(realConfig(), { seed: 1, rank: WHITE - 1, whiteGoop: cfg }).state.vet).toBeNull()
+    expect(createShift(realConfig(), { seed: 1, rank: WHITE, whiteGoop: cfg }).state.vet).toBeTruthy()
+    expect(createShift(realConfig(), { seed: 1, rank: WHITE }).state.vet).toBeNull() // (no tuning handed in: no white goop)
+    expect(createShift(realConfig(), { seed: 1, rank: WHITE, whiteGoop: cfg, training: {} }).state.vet).toBeNull()
   })
 
   it('drops in at the start and lands on the goop under him (he is not a grid cell)', () => {
-    const shift = createShift(quietConfig(), { seed: 2, rank: 31, whiteGoop: whiteGoop(), startGrid: EMPTY })
+    const shift = createShift(quietConfig(), { seed: 2, rank: WHITE, whiteGoop: whiteGoop(), startGrid: EMPTY })
     const v = shift.state.vet!
     expect(v.mode).toBe('drop')
     expect(v.x).toBe(27) // 3 left of the centre column (spin 0)
     expect(landed(shift).y).toBe(23) // the floor of an empty tank
     expect(shift.state.grid.every((c) => c === 0)).toBe(true)
 
-    const onGoop = createShift(quietConfig(), { seed: 2, rank: 31, whiteGoop: whiteGoop(), startGrid: tank(['1', '1'], 27) })
+    const onGoop = createShift(quietConfig(), { seed: 2, rank: WHITE, whiteGoop: whiteGoop(), startGrid: tank(['1', '1'], 27) })
     expect(landed(onGoop).y).toBe(21) // on top of a 2-high stack
   })
 
   it('never pops: the laser passes through him with an "ow", and goop in front of him still pops', () => {
-    const shift = createShift(quietConfig(), { seed: 3, rank: 31, whiteGoop: whiteGoop(), startGrid: EMPTY })
+    const shift = createShift(quietConfig(), { seed: 3, rank: WHITE, whiteGoop: whiteGoop(), startGrid: EMPTY })
     const v = landed(shift)
     shift.takeEvents()
     shift.act({ type: 'pop', x: v.x, y: v.y })
@@ -61,7 +63,7 @@ describe('the white goop', () => {
 
   it('never merges: goop landing in his cell passes in front of him, and pops round him', () => {
     const config = quietConfig()
-    const shift = createShift(config, { seed: 4, rank: 31, whiteGoop: whiteGoop(), startGrid: EMPTY })
+    const shift = createShift(config, { seed: 4, rank: WHITE, whiteGoop: whiteGoop(), startGrid: EMPTY })
     const v = landed(shift)
     shift.state.grid[idx(v.x, v.y)] = 1 // goop sits where he is (put straight in the grid: this isn't a lesson's shift)
     shift.tick(16)
@@ -72,7 +74,7 @@ describe('the white goop', () => {
   it('goes for the crack hardest for you and seals it after sealTime', () => {
     const cfg = whiteGoop()
     cfg.countsForQuota = true // (the switch on: his seal counts — the final shift's valve uses it; normal shifts have it off, F52)
-    const shift = createShift(quietConfig(), { seed: 5, rank: 31, whiteGoop: cfg, startGrid: tank(['2.']) })
+    const shift = createShift(quietConfig(), { seed: 5, rank: WHITE, whiteGoop: cfg, startGrid: tank(['2.']) })
     const s = shift.state
     const easy = { id: 901, x: 1, y: 23, color: 1, plugged: false } // on the floor: nothing to build
     const hard = { id: 902, x: 24, y: 17, color: 1, plugged: false } // 6 rows up in the air
@@ -104,7 +106,7 @@ describe('the white goop', () => {
   it('a wrong colour covering a crack makes it harder; his seals can be set not to count', () => {
     const cfg = whiteGoop()
     cfg.countsForQuota = false
-    const shift = createShift(quietConfig(), { seed: 6, rank: 31, whiteGoop: cfg, startGrid: tank(['2']) })
+    const shift = createShift(quietConfig(), { seed: 6, rank: WHITE, whiteGoop: cfg, startGrid: tank(['2']) })
     const s = shift.state
     const covered = { id: 1, x: 0, y: 23, color: 1, plugged: false }
     expect(crackHardness(s, covered, cfg)).toBe(cfg.coveredHardness)
@@ -119,7 +121,7 @@ describe('the white goop', () => {
   })
 
   it('stands still while the rules clock does (no ticks = no movement)', () => {
-    const shift = createShift(quietConfig(), { seed: 7, rank: 31, whiteGoop: whiteGoop(), startGrid: EMPTY })
+    const shift = createShift(quietConfig(), { seed: 7, rank: WHITE, whiteGoop: whiteGoop(), startGrid: EMPTY })
     shift.state.cracks.push({ id: 5, x: 20, y: 23, color: 1, plugged: false })
     landed(shift)
     shift.tick(300)
@@ -131,7 +133,7 @@ describe('the white goop', () => {
   it('a snapshot keeps him: a restored shift plays on exactly as the original', () => {
     const config = realConfig()
     const cfg = whiteGoop()
-    const original = createShift(config, { seed: 31, rank: 31, breakdowns, whiteGoop: cfg })
+    const original = createShift(config, { seed: 31, rank: WHITE, breakdowns, whiteGoop: cfg })
     const bot = (engine: ShiftEngine, seed: number, ticks: number) => {
       const r = createRng(seed)
       const out: ShiftEvent[] = []

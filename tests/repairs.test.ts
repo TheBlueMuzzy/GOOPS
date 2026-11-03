@@ -28,7 +28,7 @@ describe('repairSteps: how many steps each repair takes (the tuning, minus upgra
     expect(repairSteps('visor', 9)).toBe(1)
     expect(repairSteps('laser', -3)).toBe(4)
   })
-  it('F48 the real Quick Fix (upgrades.json, rank 28) at level 2 + every machine fix at max: 4 / 3 / 4 → 1 / 1 / 1, never below 1', () => {
+  it('F48 the real Quick Fix (upgrades.json; its rank: ladder.json upgrades.quickFix) at level 2 + every machine fix at max: 4 / 3 / 4 → 1 / 1 / 1, never below 1', () => {
     const fewer = resolveUpgrades(upgradesJson as UpgradeBook, { quickFix: 2, circuitStabilizer: 4, capacitorEfficiency: 4, gearLubrication: 4 }).fewerRepairSteps
     expect((['laser', 'visor', 'controls'] as const).map((m) => repairSteps(m, fewer[m]))).toEqual([1, 1, 1])
     const quick = resolveUpgrades(upgradesJson as UpgradeBook, { quickFix: 2 }).fewerRepairSteps
