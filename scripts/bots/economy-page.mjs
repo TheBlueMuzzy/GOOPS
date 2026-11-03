@@ -61,8 +61,8 @@ function beforeAfter(s) {
       + `${cell(b.finalWon, range(finals.map((r) => r.winRate), pct))}</tr>`
   })
   return `<h2>Before / after — F52 — Balance pass</h2>
-<p>Before = ${esc(before.label)}; after = this run. Since then: the rank lock (F74 — a rank-up needs a met quota), a smaller quota with 6 fewer at ranks 30–39 (shift.json), the white goop's seals left out of the quota, console 75% (the final shift 25%), the cooperative final shift (F75: lost only when the tank breaks; the Veteran wears with the tank), Goop Dump's wild rain, and the upgrade changes below.</p>
-<div class="scroll"><table><tr><th>Bot</th><th colspan="2">shifts to the final</th><th colspan="2">quota met, ranks 1–9</th><th colspan="2">quota met, ranks 10–49</th><th colspan="2">final shift won (career upgrades)</th></tr>
+<p>Before = ${esc(before.label)}, on the old 51-rank ladder (its columns were ranks 1–9 and 10–49); after = this run, on today's ladder (the columns above). Since then: the 30-rank ladder (F80), the rank lock (F74 — a rank-up needs a met quota), a smaller quota with 6 fewer at ranks 30–39 (shift.json), the white goop's seals left out of the quota, console 75% (the final shift 25%), the cooperative final shift (F75: lost only when the tank breaks; the Veteran wears with the tank), Goop Dump's wild rain, and the upgrade changes below.</p>
+<div class="scroll"><table><tr><th>Bot</th><th colspan="2">shifts to the final</th><th colspan="2">quota met, ranks ${esc(s.bands[0])}</th><th colspan="2">quota met, ranks ${esc(`${s.bands[1].split('–')[0]}–${s.bands.at(-1).split('–')[1]}`)}</th><th colspan="2">final shift won (career upgrades)</th></tr>
 <tr><th></th>${'<th>before</th><th>after</th>'.repeat(4)}</tr>
 ${rows.join('\n')}</table></div>
 <div class="scroll"><table><tr><th>Upgrade</th><th>before</th><th>after</th></tr>
