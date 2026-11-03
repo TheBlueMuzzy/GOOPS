@@ -10,7 +10,7 @@ Check: check:fast · e2e: ladder, unlocks, story, rank-select, payslip (the +8 n
 - [x] 🤖 2. The grants pay out + the Veteran's emergency-transfer note on the capture payday (en.json words) — src/progress/payslip.ts
 - [x] 🤖 3. Ranks 18–19 quiet: no Veteran lines there; the takeover on 26–29 — content/story/moments.json
 - [x] 🤖 4. The story re-pointed: 51 moments over 31 ranks (a draft mapping in research/ladder-30.md §8; joining lines only where needed) — content/tuning/ladder.json
-- [ ] 🤖 5. The tests/e2e that still assume old numbers ask the ladder; GDD §4/§5/§7 → 30 ranks — tests/progress/storyMoments.test.ts
+- [x] 🤖 5. The tests/e2e that still assume old numbers ask the ladder; GDD §4/§5/§7 → 30 ranks — tests/progress/storyMoments.test.ts
 - [ ] 🙋 6. Muzzy reads the story mapping (research/ladder-30.md §8) and moves any moment he wants — .planning/research/ladder-30.md
 
 ## F83 🎮 Growing cracks take a new crack's place
@@ -39,4 +39,5 @@ Check: unit tests (an extend only from uncovered cells; covered never grows; no 
 - Ask Muzzy: moment 20 ("different colours, holding on — like hands") plays at 14, one rank before two-colour pieces (15) — keep as a foreshadow (Claude's pick) or move it to 15 (then 15 carries four)?
 - Ask Muzzy: the takeover is thin at its start (26 and 27 one moment each, 28 and 29 two) — a slow build (Claude's pick), or pull 42 onto 26?
 - F80 for F82 — Balance on 30 ranks: today's XP formula (xpBase 3500 + 250 a rank) needs 213,750 XP to reach 30 (was 481,250 to 50); the quota's "rank ÷ 10" term and eyes.json's minClump10/eyeChance10/minClump20 field names still read like the 50-rank ladder (names only — they follow the beats).
+- F80 proof (2026-11-03): check:fast green (715 tests) · e2e exit 0: payslip (+ the capture payday's +8 row, his note, 28 scraps on the console), story (run 1 had 380 ok and 0 FAIL, then Chromium crashed in the size loop; the rerun with STORY_FROM=50 passed everything else), ladder, unlocks, rank-select, upgrades, white-goop, final-shift, ending, eyes · first-day, lessons, rank-lock left to main's check:full (main's call) · career skim e2e-shots/ladder30/ (4, 17, 18, 20, 25, 30): each rank's moment on the monitor or speaker, 18 quiet, scraps 7 / 28 / 49 at 4 / 17 / 30.
 - F80 for main (F83's files, not touched): twists.json / upgrades.json Slow Cracks text may still say "rank 30" for growing cracks — check after the merge.
