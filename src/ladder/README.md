@@ -23,7 +23,7 @@ the framework as a module.
 - `has(name)` · `maxRank()` · `beatsAt(rank)` (every name at a rank)
 - `group('titles')` → `[{ name, rank }]` in file order · `lastAt('titles', rank)` → the band a rank is in
 - `stepAt(steps, rank)` — a step table that names beats: `[{ beat: 'firstDay', count: 4 }, { beat: 'fifthColour', count: 5 }]`
-- `grantAt('scraps', rank)` · `grantsUpTo('scraps', rank)`
+- `grantAt('scraps', rank)` · `grantsAt('scraps', rank)` (each entry on that rank, by name) · `grantsUpTo('scraps', rank)`
 - `problems()` — plain-words list of what's wrong (ranks off the ladder, grants on unknown beats); a game's test keeps it empty
 
 ## Live (module contract: the Dev Kit changes the running game)

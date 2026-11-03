@@ -45,6 +45,8 @@ export interface Ladder {
   stepAt(steps: readonly BeatStep[], rank: number): number
   /** A grant (e.g. "scraps") landing exactly on this rank: the sum of its entries whose beat sits here. */
   grantAt(kind: string, rank: number): number
+  /** F80: each grant entry landing exactly on this rank, by name (file order) — e.g. a payday's own row per grant. */
+  grantsAt(kind: string, rank: number): { name: string; amount: number }[]
   /** The same grant summed over every rank from 0 up to this one. */
   grantsUpTo(kind: string, rank: number): number
   /** What's wrong with the file, in plain words (empty = fine): ranks off the ladder, grants on unknown beats… */
@@ -102,6 +104,8 @@ export function createLadder(source: LadderFile | (() => LadderFile), fileName =
       for (const [name, amount] of Object.entries(file().grants?.[kind] ?? {})) if (ladder.rankOf(name) === rank) sum += amount
       return sum
     },
+    grantsAt: (kind, rank) => Object.entries(file().grants?.[kind] ?? {}).filter(([name]) => ladder.rankOf(name) === rank)
+      .map(([name, amount]) => ({ name, amount })),
     grantsUpTo(kind, rank) {
       let sum = 0
       for (const [name, amount] of Object.entries(file().grants?.[kind] ?? {})) if (ladder.rankOf(name) <= rank) sum += amount

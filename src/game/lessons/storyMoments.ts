@@ -50,10 +50,13 @@ export function momentsByRank(file: MomentsFile = storyFile): { id: string; rank
     .sort((a, b) => a.rank - b.rank || a.at - b.at).map(({ id, rank }) => ({ id, rank }))
 }
 
-/** The moments due at this rank: every unseen one whose rank is reached, the newest `catchUp` of them, oldest first. */
+/** The moments due at this rank: every unseen one whose rank is reached, those of the newest `catchUp` RANKS among
+ *  them (F80: a rank may carry two or three moments — a rank-up plays all of its own), oldest first. */
 export function dueMoments(rank: number, seen: (id: string) => boolean, file: MomentsFile = storyFile): string[] {
-  const due = momentsByRank(file).filter((m) => m.rank <= rank && !seen(m.id)).map((m) => m.id)
-  return due.slice(Math.max(0, due.length - Math.max(1, file.catchUp)))
+  const due = momentsByRank(file).filter((m) => m.rank <= rank && !seen(m.id))
+  const ranks = [...new Set(due.map((m) => m.rank))]
+  const keep = new Set(ranks.slice(Math.max(0, ranks.length - Math.max(1, file.catchUp))))
+  return due.filter((m) => keep.has(m.rank)).map((m) => m.id)
 }
 
 /** F65: a moment — in a new career (a career done on this device) its newCareer one when it has one (moment 0's

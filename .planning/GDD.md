@@ -51,27 +51,63 @@
   | Move | drag sideways | A / D | ← / → |
   | Rotate ccw / cw | tap left / right half | Q / E | Right Ctrl / Numpad 0 |
   | Fast drop | drag down | S | ↓ |
-  | Swap (from rank 3) | hold 1.5 s | hold R 1.5 s | hold Right Shift 1.5 s |
+  | Swap (from rank 2 — ladder beat swap) | hold 1.5 s | hold R 1.5 s | hold Right Shift 1.5 s |
   | Console | swipe up | W | ↑ |
-  Swap is **off until rank 3** (F59): before that, holding does nothing — no charging bar, no swap, no "nope".
+  Swap is **off until rank 2** (F59; F80's ladder): before that, holding does nothing — no charging bar, no swap, no "nope".
 - **Touch, finger by finger (Muzzy, 2026-10-20, F10):** one finger at a time is the main way to play, but **every finger is its own gesture**: a second finger does whatever its own touch says, alongside the first — tap = rotate (or zap), hold still = swap, drag sideways = spin, drag down = fast drop, flick up = console (swipe left with one finger and flick up with the other: the tank turns, then the console opens). **A drag that's already in use belongs to its finger** (Muzzy: "if one finger is drag holding left, the other finger can't drag hold right, because drag hold is already being used"): the first finger to drag sideways owns the spin until it lifts — another finger's sideways drag does nothing — and the first to drag down owns the fast drop the same way. Spin and fast drop are different gestures, so one finger can hold the spin while another holds the fast drop ("i can drag hold left and drag hold down at the same time"). Only one hold charges a swap at a time. The **swap timer shows next to the finger** that is holding — a small ring above-left of it (flips side near a screen edge; `hud.json` → `swapRing`); a drag has no marker, so it needs none; a held key keeps the HUD's Swap bar.
 - **Taps are contextual — the same as a mouse click on PC (Muzzy, 2026-10-20):** background → rotate by screen half (left = ccw, right = cw) · the falling piece → rotate by screen half too · landed goop still filling → jiggle + "Still filling" · filled goop under the pressure line → zap · filled goop above the line → jiggle + "Above the pressure line".
-- **Swap = trade with the next piece (Muzzy, 2026-10-19, F59: the held piece is "basically just the 'next piece' now"):** holding swap trades the falling piece with the NEXT one: the next piece comes in where the falling one was (no room there: refused, as before) and the falling piece becomes the next one, so swapping again trades them back. There is no held piece any more, and nothing is held at the start of a shift. Still the 1.5 s hold (`tank.holdToSwapMs`; Goop Swap at rank 12 shortens it to 0.5 s at max — F43). Lesson shifts keep it off.
-- **What each rank unlocks (Muzzy, 2026-10-19, F59)** — `content/tuning/progression.json` → `unlocks` (machines: `breakdowns.json` → `unlockRank`):
+- **Swap = trade with the next piece (Muzzy, 2026-10-19, F59: the held piece is "basically just the 'next piece' now"):** holding swap trades the falling piece with the NEXT one: the next piece comes in where the falling one was (no room there: refused, as before) and the falling piece becomes the next one, so swapping again trades them back. There is no held piece any more, and nothing is held at the start of a shift. Still the 1.5 s hold (`tank.holdToSwapMs`; Goop Swap (rank 10 since F80) shortens it to 0.5 s at max — F43). Lesson shifts keep it off.
+- **What each rank unlocks (Muzzy, 2026-10-19, F59; re-spaced for the 30-rank ladder, F80 2026-11-03)** — each is a beat in `content/tuning/ladder.json` (nextPiece, visorBreaks, swap, laserBreaks, upgradesShop, controlsBreak):
   | Rank | Unlocks |
   |---|---|
-  | 1 | the **next-piece window**: at the left of the bottom panel, tall, with big cells |
-  | 2 | the visor (can break) |
-  | 3 | **swap** (trade the falling piece with the next one) |
-  | 4 | the laser (can break) |
-  | 5 | **upgrading**: the console's Upgrades button opens (scraps bank from rank 1; before rank 5 the button is grey with the count). Alpha has no upgrades yet — it says the first ones arrive in the next update |
-  | 6 | the controls (can break) |
+  | 1 | the **next-piece window**: at the left of the bottom panel, tall, with big cells · the visor (can break) |
+  | 2 | **swap** (trade the falling piece with the next one) · 5 junk cells |
+  | 3 | the laser (can break) |
+  | 4 | **upgrading**: the console's Upgrades button opens (scraps bank from rank 1; before rank 4 the button is grey with the count) · **+3 scraps** (ranks 1–3's upgrades are waiting) |
+  | 5 | the controls (can break) · 8 junk cells |
   The end report's rank-up line names what the new rank unlocked ("Rank up! 3 · New: swap"). The first shift after each tank unlock starts with a one-line lesson that pauses it (window, then swap — one per shift start); upgrading's lesson is at the console: its line on the monitor, the Upgrades button outlined. Once per device each; Settings → Replay lessons plays them again.
 - Full v1 rules and systems: `research/v1-review.md` §1–2 and `research/v1/PRD.md`.
 
 ## 5. Systems
+- **The ladder — 30 ranks (F78 + F80, Muzzy 2026-11-02: "this would help the game not feel so impossibly long"):** ranks 0–30, down from 0–50; nearly every rank-up brings something new. Every rank gate is a named beat in ONE file, `content/tuning/ladder.json` (code and tests ask it by name), so a pivot is numbers there. **The build notes below keep the rank numbers they were built at (the 51-rank ladder) — ladder.json is the truth;** the plan and the old → new table: `research/ladder-30.md` §2, the story's mapping §8.
+  | Rank | Tank change | Upgrade | Story / scraps |
+  |---|---|---|---|
+  | 0 | 4 colours · the first day | — | Management teaches; sign here |
+  | 1 | next-piece window · visor can break | Circuit Stabilizer | |
+  | 2 | swap · junk 5 · "…cold…" once | Auto-Popper | |
+  | 3 | laser can break | Capacitor Efficiency | |
+  | 4 | the Upgrades shop opens | Cooldown Booster | the Veteran first speaks · **+3 scraps** |
+  | 5 | controls can break · junk 8 | Gear Lubrication | |
+  | 6 | — | Focus Mode | |
+  | 7 | whispers (feelings) every shift | Dense Goop | |
+  | 8 | junk 11 | Pressure Control | |
+  | 9 | eyes open in big clumps | Junk Uniformer | |
+  | 10 | **5th colour** · "NO VOICES" | Goop Swap | |
+  | 11 | whispers become words | Goop Dump | |
+  | 12 | — | Sealing Bonus | |
+  | 13 | — | Active Expansion Slot | |
+  | 14 | — | Tougher Tank | three Veteran moments |
+  | 15 | **two-colour pieces** · eyes follow · whispers become names | Goop Colorizer | three Veteran moments |
+  | 16 | — | Quick Fix | three Veteran moments |
+  | 17 | **cracks grow** · **6th colour** · worried eyes | Slow Cracks | the Veteran is caught · **+8 scraps, his emergency transfer, with a note on that payday** |
+  | 18 | — | — | **quiet:** the speaker is silent (fines and paydays go on) |
+  | 19 | — | — | **quiet** |
+  | 20 | **the white goop — he's back, gooped** | Focus Mode II | the goop in your head |
+  | 21 | — | Crack Matcher | |
+  | 22 | — | Crack Down | he tells them your name |
+  | 23 | "Pending retirements" on every report | Active Expansion Slot 2 | |
+  | 24 | — | (open: F50 — Repair bots?) | the speaker's back; the goop speaks |
+  | 25 | **wild goop** · mouths | — | |
+  | 26 | — | — | the takeover · **+2 scraps** |
+  | 27 | — | — | the takeover (Management slips) · **+2** |
+  | 28 | the hatch | — | the takeover (the valve is named) · **+2** |
+  | 29 | every mouth opens at once | — | the takeover ("we go home") · **+2** |
+  | 30 | **7th colour** · **the final shift** | — | |
+  - **Scraps:** 1 a rank (30) + the grants (`ladder.json` `grants.scraps`: 3 + 8 + 4 × 2) = **49** in a full career; maxing everything takes 70, so upgrades stay a loadout you choose. Each grant is its own row on its payday (en.json `payslip.grants`).
+  - **Titles** (11, about every 3 ranks): Intern 0 · Junior Associate 1 · Associate 4 · Technician 7 · Senior Technician 10 · Pressure Specialist 13 · Lead Pressure Specialist 16 · Containment Supervisor 20 · Senior Containment Supervisor 23 · Assistant to the Department Head 26 · Acting Deputy 28 (to 30).
+  - **Not retuned yet:** XP per rank and the crack quota's rank term (both tuned to 50 ranks) — F82 — Balance on 30 ranks (Muzzy's target ~45–50 shifts to the top).
 - **The rank lock (Muzzy, 2026-10-29, F74):** a rank-up = the XP goal + a crack quota met during this rank. While no quota is met the XP stops at the goal (the console's rank meter sits full and says QUOTA NEEDED; extra XP is lost). A met quota stays met until the rank-up; the shift that meets it earns its XP × 2 (`progression.json` `quotaXpMult`); one quota = one rank-up. The end report has a quota row; Management explains the lock on the monitor the first time it holds. The first day and the final shift work as before; saves from before it count the current rank as unlocked. → `design/progression.md` "The rank lock", TDD D31.
-Carried over from v1 (all kept): ranks 0–50 · 20 upgrades + active abilities · three breakdowns (laser, lights, controls) with console repair puzzles · colour and piece unlocks by rank · the garbled intercom · save (the Operator Journal was cut — Muzzy 2026-11-02, §7).
+Carried over from v1 (all kept; F80: on a 0–30 ladder now): ranks · 20 upgrades + active abilities · three breakdowns (laser, lights, controls) with console repair puzzles · colour and piece unlocks by rank · the garbled intercom · save (the Operator Journal was cut — Muzzy 2026-11-02, §7).
 - **Breakdowns (Muzzy, 2026-10-18, F06):** three machines, v1's meters, softer effects, simpler repairs. The tank SLOWS (to 75% since F52 — Balance pass, Muzzy 2026-10-29; Focus Mode (rank 7) → 50%, Focus Mode II (rank 31) → 25% — two 1-point upgrades that multiply, Muzzy 2026-10-30; was 25%; the final shift keeps 25%, `finalShift.json` `consoleTimeScale`, Muzzy 2026-10-30) while you're at the console mid-shift; the pause menu (gear) fully pauses. At the console nothing moves toward breaking (Muzzy, 2026-10-18: "something could break while i'm fixing something and that's not a good feeling"): no visor fade, no heat, no drain, repair cooldowns stand still; cooling and refills keep going.
   | Machine | Meter (v1) | Broken | Repair at the console | Unlock |
   |---|---|---|---|---|
@@ -117,8 +153,8 @@ Retro corporate console (periscope, sliders, dials, buttons) over a dark tank of
 ## 7. Scope
 Decided 2026-10-19 (F07; detail + every item: `research/release-scope.md`; build order: ROADMAP M4–M6). Starting rule kept: everything in v1 is a must — by 1.0.
 - **Alpha — the playable game** (Muzzy: "alpha is playable game"): Muzzy + a few friends, from a private link (v1 stays live). Everything built so far + gesture fixes + "your first day" how-to-play (`research/tutorial.md`) + first-breakdown lessons + placeholder sound + an installable app with a version number (F38: the link was /GOOPS/alpha/ — after the 1.0 switch it's /GOOPS/, and the old link forwards there with the player's rank, F54; "Add to Home screen" opens it full screen, upright, and it works offline after the first visit; a new version arrives the next time it's opened; the version, vX.Y.Z.B, is on the console's footer and in Settings → About; broken-machine messages say "W or ↑ to fix" on a keyboard, "flick up" with a mouse, "swipe up" on a phone). The Dev Kit stays on so friends can send bug files. **No upgrades, no story** in alpha. Readable cracks = should.
-- **Beta — the whole job:** the story ("story is beta" — rank titles, the Employer, the Veteran, fines, ranks 40–50, the takeover), upgrades + active abilities, and **all three v1 rank twists, kept** (multi-colour pieces at 20, expanding cracks at 30, wild goop at 40 — each with a story reason). Numbers can be rough.
-- **1.0 — polished:** balanced 0–50, final sound (no music, a silent intercom — Muzzy 2026-11-02), works offline, credits, replaces v1 at the old address; Dev Kit off.
+- **Beta — the whole job:** the story ("story is beta" — rank titles, the Employer, the Veteran, fines, the takeover), upgrades + active abilities, and **all three v1 rank twists, kept** (multi-colour pieces, expanding cracks, wild goop — each with a story reason; F80: at ranks 15, 17 and 25 of the 30-rank ladder). Numbers can be rough.
+- **1.0 — polished:** balanced 0–30 (F80; F82 — Balance on 30 ranks), final sound (no music, a silent intercom — Muzzy 2026-11-02), works offline, credits, replaces v1 at the old address; Dev Kit off.
 - **Won't (cut):** the Operator Journal (F46 — v1's ? button reference manual that grew with each lesson; the replayable lessons in Settings cover it — Muzzy 2026-11-02: "we don't need that").
 - Claude's calls (change any): sound placeholders are an alpha must (the goo can't be judged silent); the tutorial is in alpha as plain how-to-play (the story voice joins in beta); remake versions stay 0.x until it replaces v1 (F37 settles).
 

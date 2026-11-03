@@ -310,10 +310,12 @@ try {
     await close()
   }
 
-  // ---------------- Settings → Replay lessons plays them again (at the capture's rank: 29, then the capture) ----------------
-  // (assumes 29 and 30 are the newest catchUp moments at moment 30's rank — a pivot that puts another moment on or
-  // between them changes which ones replay, and this check with it)
+  // ---------------- Settings → Replay lessons plays them again (at the capture's rank: the newest catchUp ranks' moments,
+  // oldest first — F80: catchUp counts ranks, every moment of each — ending with 29, then the capture) ----------------
   {
+    const ranksUpTo = [...new Set(ORDER.map(at))].filter((r) => r <= at('30')).sort((a, b) => a - b).slice(-story.catchUp)
+    const REPLAY = ORDER.filter((m) => ranksUpTo.includes(at(m)))
+    const lead = REPLAY.slice(0, REPLAY.indexOf('29')) // (the ones before 29 — played through first)
     const { page, errors, close } = await deviceAt('30')
     await playMoment(page, '30')
     await page.evaluate(() => window.__goopsSeen?.(['lesson:unlock-upgrades']))
@@ -326,8 +328,10 @@ try {
     await page.getByRole('button', { name: 'Replay lessons' }).click()
     await page.locator('.kit-ask').getByRole('button', { name: 'Replay lessons' }).click({ timeout: 3000 })
     for (let i = 0; i < 6 && await page.evaluate(() => document.querySelector('.kit-layer') !== null); i++) { await page.keyboard.press('Escape'); await sleep(300) }
-    const first = await page.waitForFunction((w) => [...document.querySelectorAll('.kit-talk')].some((t) => t.textContent.includes(w)), L.r29.slice(0, 12), { timeout: 6000 }).then(() => true, () => false)
-    check(`Replay lessons at rank ${at('30')}: moment 29 plays again first`, first)
+    const firstWords = L[story.moments[REPLAY[0]].lines[0].words].slice(0, 12)
+    const first = await page.waitForFunction((w) => [...document.querySelectorAll('.kit-talk')].some((t) => t.textContent.includes(w)), firstWords, { timeout: 6000 }).then(() => true, () => false)
+    check(`Replay lessons at rank ${at('30')}: moment ${REPLAY[0]} plays again first (replays ${REPLAY.join(', ')})`, first)
+    for (const id of lead) await playMoment(page, id)
     const seen29 = await playMoment(page, '29')
     const seen30 = await playMoment(page, '30', 'replay-rank30-390x844')
     check('… then the capture again (cut off, then the alarm)', [...seen29, ...seen30].every(([, ok, look]) => ok && look), JSON.stringify([...seen29, ...seen30]))

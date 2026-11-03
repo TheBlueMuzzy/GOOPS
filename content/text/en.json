@@ -292,6 +292,20 @@
     "rankUpNew": "Rank {rank} · New: {what}",
     "newTitle": "New title",
     "pay": "Pay up",
+    "_grants": "F80: the ladder's scraps grants (content/tuning/ladder.json grants.scraps), each its own payday row on the rank it lands on — label by the grant's beat; grantValue = the scraps ({n}). grantNotes = a note from whoever sent it, shown on that payday under the payment message (the Veteran's emergency transfer on his capture rank); {n} in a note = that grant's scraps.",
+    "grants": {
+      "upgradesShop": "Unlogged deposit (your panel)",
+      "veteranCaught": "Emergency transfer — Operator #0001",
+      "takeover1": "Unlogged deposit (source: the tank)",
+      "takeover2": "Unlogged deposit (source: the tank)",
+      "takeover3": "Unlogged deposit (source: the tank)",
+      "takeover4": "Unlogged deposit (source: the tank)"
+    },
+    "grantValue": "+{n} scraps",
+    "grantNote": "Transfer memo: “{note}”",
+    "grantNotes": {
+      "veteranCaught": "kid — wiring you what I had left before they pull my access. {n} scraps. that's thirty years. don't tell the screen."
+    },
     "_afterCaught": "F40: from the rank the Veteran is caught (payslip.json caughtRank) these replace the payday's words above — his debt is now yours.",
     "_pendingRetirements": "F63: the end report's last row from rank 39 (payslip.json pendingRetirementRank): label, then the list — {name} = the name you signed; never signed = noName.",
     "pendingRetirements": {
