@@ -229,6 +229,19 @@ describe('growing cracks (grow.fromRank)', () => {
   })
 })
 
+describe("F83: growing cracks take a new crack's place (Muzzy 2026-11-02)", () => {
+  it('no timed growth: an uncovered crack with no new crack due never grows', () => {
+    const t = twists()
+    // (the old timer's numbers, set as fast as they went: they must do nothing now)
+    Object.assign(t.grow, { everyMsMin: 100, everyMsMax: 100, baseChance: 1, leafMult: 1, hopFalloff: 0, minFalloff: 1, extendChance: 1 })
+    const shift = createShift(quietConfig(), { seed: 21, rank: GROW, twists: t, startGrid: new Uint8Array(30 * 24) })
+    addCrack(shift, crack(500, [[10, 23]]))
+    shift.tick(60_000)
+    expect(crackSize(shift.state.cracks[0])).toBe(1)
+    expect(ofType(shift.takeEvents(), 'crackGrow')).toHaveLength(0)
+  })
+})
+
 describe(`wild goop (rank ${WILD_RANK})`, () => {
   it(`starts at rank ${WILD_RANK}, not ${WILD_RANK - 1}`, () => {
     const config = realConfig()
