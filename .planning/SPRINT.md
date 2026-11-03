@@ -1,0 +1,31 @@
+# Sprint 32 — Thirty ranks, and cracks that grow when they form
+Started 2026-11-03 · Milestone M6 1.0 · Features: F80, F83 · AUTO mode (Muzzy: "yes auto mode again")
+What changes for Muzzy: the climb is ranks 0–30 instead of 0–50 — nearly every rank brings an upgrade or a tank change, the Veteran goes quiet for two ranks after his capture and sends an emergency +8 scraps with a note, the takeover gets ranks 26–29; and a growing crack now grows when a new crack would form (an X% chance it extends an uncovered crack instead), not on a timer. Stays the same: the upgrades themselves, the look, the ending. The XP per rank isn't tuned yet (that's Sprint 33, F82 — Balance on 30 ranks), so the climb's length is rough this sprint.
+
+## F80 🎮 The 30-rank ladder
+Done when: content/tuning/ladder.json is the 0–30 ladder of .planning/research/ladder-30.md §2 (maxRank 30; every beat, upgrade and title placed as in that table) · the scraps grants pay: +3 at the shop's rank (upgradesShop), +8 at the Veteran's capture (veteranCaught) with a note from him on that payday, +2 at each of the four takeover ranks (≈ 49 scraps in a career) · ranks 18–19: the speaker is silent (no Veteran lines; fines go on) · the takeover spans 26–29 · story streamlined 51 moments → 31 ranks: every moment re-pointed through ladder.json `story`, some ranks carrying two (Muzzy: "streamline the story, or allow some ranks to have a little more story than normal") — words unchanged unless a merge needs a joining line · titles re-spaced over 0–30 · the tests/e2e that still assume old numbers (SPRINT 31 notes: story Replay 29/30, next piece at 1, facesOn ≠ lateLooks, ≥ 4 scraps at the shop, economy-page headers) fixed to ask the ladder · GDD §4/§5/§7 say 30 ranks
+why: Muzzy 2026-11-02: "this would help the game not feel so impossibly long" — every rank-up should bring something.
+Check: check:fast · e2e: ladder, unlocks, story, rank-select, payslip (the +8 note), upgrades, twists, white-goop, final-shift, ending, eyes · a career skim with RANK SELECT 0 → 30: each rank's beats show where the table says · check:full
+- [ ] 🤖 1. ladder.json → ranks 0–30 per research/ladder-30.md §2 (beats, upgrades, titles, maxRank, grants) — content/tuning/ladder.json
+- [ ] 🤖 2. The grants pay out + the Veteran's emergency-transfer note on the capture payday (en.json words) — src/progress/payslip.ts
+- [ ] 🤖 3. Ranks 18–19 quiet: no Veteran lines there; the takeover on 26–29 — content/story/moments.json
+- [ ] 🤖 4. The story re-pointed: 51 moments over 31 ranks (a draft mapping in research/ladder-30.md §8; joining lines only where needed) — content/tuning/ladder.json
+- [ ] 🤖 5. The tests/e2e that still assume old numbers ask the ladder; GDD §4/§5/§7 → 30 ranks — tests/progress/storyMoments.test.ts
+- [ ] 🙋 6. Muzzy reads the story mapping (research/ladder-30.md §8) and moves any moment he wants — .planning/research/ladder-30.md
+
+## F83 🎮 Growing cracks take a new crack's place
+Done when: from cracksGrow, each time a new crack would form there's an X% chance (twists.json, live in the Dev Kit) that instead an existing crack that isn't fully covered grows by one cell — from one of its UNCOVERED cells only (a covered cell never grows) into a free neighbour (diagonals per the existing setting) · no crack anywhere to extend → a normal new crack · today's timed growth (each uncovered cell rolling every 5–10 s: grow.everyMsMin/Max, baseChance, pressureWeight, leafMult, hopFalloff, minFalloff) is removed · Slow Cracks lowers X (Muzzy: "reduces that % chance of a crack expanding") · a grown crack still drains per cell, is sealed only when every cell is covered by its colour, counts its cells toward the quota (unchanged) · the growth plays the existing crack.grow sound + look · the Dev Kit select.json lists the new knob on the crack
+why: Muzzy 2026-11-02: two-colour pieces (15) and growing cracks (17) are close together, so growing cracks shouldn't hit as hard — "the same squares of cracks form, but the cracks growing does increase difficulty because you have to cover the whole crack".
+Check: unit tests (an extend only from uncovered cells; covered never grows; no candidate → a new crack; Slow Cracks lowers X; X = 0 = no growth; seeded = repeatable) · e2e/twists + crack-spread · check:full
+- [ ] 🤖 1. The rule: a new crack → X% extend an uncovered crack instead; the timer growth removed — src/engine/twists.ts
+- [ ] 🤖 2. Slow Cracks lowers X (its effect + description) — content/tuning/upgrades.json
+- [ ] 🤖 3. Tests + e2e (twists, crack-spread) + the Dev Kit knob (select.json) — tests/engine/twists.test.ts
+- [ ] 🤖 4. GDD §5 growing cracks + TDD (the rule, Muzzy's idea in Decisions) — .planning/GDD.md
+- [ ] 🤖 5. (tuning) X's starting value — content/tuning/twists.json
+
+## Notes
+- Plan + Muzzy's answers: .planning/research/ladder-30.md (§2 the table, §3 scraps, §7 answers). No save remap (no beta players).
+- Asked of the framework at PLANNING this time (Sprint 31 retro): nothing new this sprint — the Ladder tab + rank lint rule are already with framework-43 (ROADMAP Parking lot).
+- Auto mode: taste calls go in as `Ask Muzzy:` and the work goes on with Claude's pick.
+- Ask Muzzy: the story mapping (F80 task 6) — Claude drafts it in research/ladder-30.md §8; the build uses the draft until he moves anything.
+- Ask Muzzy: X's starting value for F83 (Claude's pick: 25%, so about one in four new cracks grows an old one; F82 — Balance on 30 ranks measures it).
