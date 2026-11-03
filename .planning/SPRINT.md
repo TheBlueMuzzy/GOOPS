@@ -20,7 +20,7 @@ why: so the next sprint's 30-rank ladder (F80 — The 30-rank ladder) changes co
 Check: lint (the new rule) green on Goops · a trial move of one beat in ladder.json (e.g. wild 40 → 41) keeps check:fast green with no test edit, then put back · check:full
 - [x] 🤖 1. (done in F78 — One rank ladder file, ff79394: facesOn / lateLooks / worried / mouths) faces.ts: its rank thresholds → ladder beats — src/goo/shared/faces.ts
 - [x] 🤖 2. A shared rankOf helper for tests + e2e; tests ask it — tests import src/progress/ladder directly (no extra helper); e2e/ladder-ranks.mjs for e2e + bots
-- [ ] 🤖 3. e2e + bots ask it (?rank=…) — e2e/start.mjs
+- [x] 🤖 3. e2e + bots ask it (?rank=…) — e2e/ladder-ranks.mjs
 - [x] 🤖 4. The guard now: a Goops test that refuses a bare rank number in tests / e2e / game code (0 allowed, `// tuning-ok:` escape) — the framework lint rule replaces it when framework-43 ships it — tests/noRankNumbers.test.ts
 - [x] 🤖 5. The trial move (one beat moved, nothing else edited, checks green) + check:full — content/tuning/ladder.json (trial moves done; check:full is main's)
 
