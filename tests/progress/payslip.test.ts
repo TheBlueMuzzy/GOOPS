@@ -136,4 +136,20 @@ describe('payslip', () => {
     expect(sum(split(10, [1, 1, 1]).map((amount) => ({ amount })))).toBe(10)
     expect(split(3, [5, 1, 1]).every((v) => v >= 1)).toBe(true)
   })
+  it('F80: the scraps grants land on their paydays — the Veteran\'s +8 on his capture, with his note; every grant has words', () => {
+    const caught = rankOf('veteranCaught')
+    const reward = rewardShift(at(xpForRank(caught) - 10), 9000, done)
+    const p = makePayslip(reward, NO_FACTS, { firstDay: false, seed: 1, extras })
+    const capture = p.paydays.find((d) => d.to === caught)!
+    expect(capture.grants).toEqual([{ beat: 'veteranCaught', scraps: ladderFile.grants!.scraps.veteranCaught }])
+    expect(ladderFile.grants!.scraps.veteranCaught).toBe(8) // (Muzzy 2026-11-02: "yeah that's fun. feels right." — tuning-ok)
+    expect((en.payslip.grantNotes as Record<string, string>).veteranCaught).toBeTruthy()
+    // a payday with no grant has no rows for one
+    const plain = makePayslip(rewardShift(at(xpForRank(caught + 1) - 10), 9000, done), NO_FACTS, { firstDay: false, seed: 1, extras })
+    expect(plain.paydays.every((d) => d.to === caught || d.grants.length === 0)).toBe(true)
+    for (const beat of Object.keys(ladderFile.grants!.scraps)) expect((en.payslip.grants as Record<string, string>)[beat], beat).toBeTruthy()
+    // the whole career: one a rank + the grants (research/ladder-30.md §3: ≈ 49)
+    const all = Object.values(ladderFile.grants!.scraps).reduce((a, b) => a + b, 0)
+    expect(maxRank() + all).toBeGreaterThanOrEqual(45)
+  })
 })

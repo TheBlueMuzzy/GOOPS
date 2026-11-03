@@ -8,7 +8,7 @@ import tuning from '../../content/tuning/payslip.json'
 import { createRng, type Rng } from '../engine/rng'
 import type { MachineId } from '../engine/types'
 import { xpToNext, type ShiftReward } from './progression'
-import { rankOf } from './ladder'
+import { ladder, rankOf } from './ladder'
 
 export type PayslipTuning = typeof tuning
 
@@ -45,6 +45,9 @@ export interface Payday {
   items: PayLine[] // the bill; adds up to exactly `due`
   debt: number // passage debt after this payday
   interest: number // interest added on this payday
+  // F80: the ladder's scraps grants landing on the rank this payday reaches (ladder.json grants.scraps), one row each —
+  // beat = the grant's beat (its words: en.json payslip.grants.<beat>; a note from whoever sent it: payslip.grantNotes.<beat>)
+  grants: { beat: string; scraps: number }[]
 }
 
 export interface Payslip {
@@ -120,6 +123,9 @@ function paidOffAt(from: number, t: PayslipTuning): number {
   return from + 1 >= rankOf('veteranCaught') ? 0 : Math.round(xpToNext(from) * t.debt.paidShare)
 }
 
+/** F80: the scraps grants that land on reaching this rank (the Veteran's emergency transfer, the goop's gifts…). */
+export const grantsOnPayday = (to: number) => ladder.grantsAt('scraps', to).map((g) => ({ beat: g.name, scraps: g.amount }))
+
 /** Passage debt at a rank: the start, plus every payday's interest, minus what each paid off. */
 export function debtAt(rank: number, t: PayslipTuning = tuning): number {
   let debt = t.debt.start
@@ -137,7 +143,8 @@ export function makePayslip(reward: ShiftReward, facts: ShiftFacts, opts: { firs
   const paydays: Payday[] = []
   for (let from = reward.before.rank; from < reward.after.rank; from++) {
     const due = xpToNext(from)
-    paydays.push({ from, to: from + 1, due, items: paydayItems(due, from, opts.extras, t), debt: debtAt(from + 1, t), interest: interestAt(from, t) })
+    paydays.push({ from, to: from + 1, due, items: paydayItems(due, from, opts.extras, t), debt: debtAt(from + 1, t), interest: interestAt(from, t),
+      grants: grantsOnPayday(from + 1) })
   }
   return { firstDay: opts.firstDay, gross, fines, net, paydays, credits: reward.after.xpIntoRank, due: reward.after.xpToNext, debt: debtAt(reward.after.rank, t),
     pendingRetirement: pendingRetirement(reward.after.rank) }

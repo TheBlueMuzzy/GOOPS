@@ -60,6 +60,9 @@ describe('the ladder module', () => {
     expect([0, 4, 10].map((r) => l.grantAt('scraps', r))).toEqual([0, 3, 2])
     expect([3, 4, 9, 10].map((r) => l.grantsUpTo('scraps', r))).toEqual([0, 3, 3, 5])
     expect(l.grantsUpTo('nothing', 10)).toBe(0)
+    // F80: each entry on its rank, by name (a payday row each)
+    expect(l.grantsAt('scraps', 4)).toEqual([{ name: 'wild', amount: 3 }])
+    expect(l.grantsAt('scraps', 3)).toEqual([])
   })
   it('reads live: an edit to the file (the Dev Kit\'s) shows on the next call', () => {
     const f = file(), l = createLadder(f)

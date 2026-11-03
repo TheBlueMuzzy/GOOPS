@@ -18,6 +18,7 @@ const PORT = Number(process.env.E2E_PORT) || 5348, OUT = 'e2e-shots/payslip'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const P = en.payslip
+const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8'))
 const PAY = JSON.parse(readFileSync('content/tuning/payslip.json', 'utf8'))
 const settle = () => 500 + 8 * PAY.lineMs // a card's entrance, then its rows one at a time (UI kit 0.31.0 reveal)
 const xpToNext = (rank) => prog.xpBase + prog.xpPerRank * rank
@@ -114,6 +115,33 @@ try {
     check('Pay up → the console', await page.locator('.kit-art-stage').count() === 1)
     check('payday: no card grew', (await growth(page)).length === 0, JSON.stringify(await growth(page)))
     check('payday: no page errors', errors.length === 0, errors.join(' | '))
+    await close()
+  }
+
+  // ---------------- F80: the capture's payday (the ladder's veteranCaught): the Veteran's emergency transfer is its own
+  // row (+8 scraps, ladder.json grants.scraps), with his note under the payment message; the scraps reach the console ----------------
+  {
+    const CAUGHT = rankOf('veteranCaught'), grant = LADDER.grants.scraps.veteranCaught
+    const { page, errors, close } = await shiftEnded(xpFor(CAUGHT - 1) + xpToNext(CAUGHT - 1) - 50)
+    await page.getByRole('button', { name: en.end.quit }).click()
+    await page.getByRole('heading', { name: P.paydayTitle }).waitFor({ timeout: 3000 })
+    await page.waitForTimeout(settle())
+    const r = await rowsOf(page, '.kit-modal')
+    const row = r.find(([l]) => l === P.grants.veteranCaught)
+    check(`capture payday: the emergency transfer row (+${grant} scraps)`, !!row && row[1] === P.grantValue.replace('{n}', grant), JSON.stringify(r))
+    const note = P.grantNote.replace('{note}', P.grantNotes.veteranCaught.replace('{n}', grant))
+    check('capture payday: the Veteran\'s note shows', await page.locator('.kit-modal').getByText(note, { exact: true }).count() === 1)
+    check(`capture payday: the rank-up line (rank ${CAUGHT})`, r.some(([l, v]) => l === P.rankUp && v.includes(String(CAUGHT))), JSON.stringify(r))
+    await page.screenshot({ path: `${OUT}/payday-capture-390x844.png` })
+    const box = await page.locator('.kit-modal').first().evaluate((el) => { const q = el.getBoundingClientRect(); return q.top >= 0 && q.bottom <= innerHeight + 0.5 })
+    check('capture payday: the card fits a phone', box)
+    await page.getByRole('button', { name: P.pay }).click()
+    await page.locator('.kit-art-stage').waitFor({ timeout: 4000 })
+    // the console's Upgrades button counts the grants (scrapsPerRank a rank + every grant up to here)
+    const scraps = CAUGHT * prog.scrapsPerRank + Object.entries(LADDER.grants.scraps).reduce((a, [b, n]) => a + (rankOf(b) <= CAUGHT ? n : 0), 0)
+    const upgradesText = await page.locator('[data-tag="upgrades"]').first().innerText().catch(() => '')
+    check(`capture: the console shows ${scraps} scraps`, upgradesText.includes(String(scraps)), JSON.stringify(upgradesText))
+    check('capture payday: no page errors', errors.length === 0, errors.join(' | '))
     await close()
   }
 

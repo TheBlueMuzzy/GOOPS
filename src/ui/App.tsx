@@ -188,6 +188,8 @@ const pendingName = () => {
 // F40: the once-only "Association with a retired employee" fine, kept in the tips memory like the story moments
 const ASSOCIATION_FINED = 'fine:association'
 // F40: a payday's words — from the Veteran's capture on (the ladder beat veteranCaught), his debt is yours (payslip.afterCaught)
+// F80: a grant's note on its payday (en.json payslip.grantNotes, by the grant's beat — none = no note)
+const grantNote = (beat: string): string | undefined => (P.grantNotes as Record<string, string>)[beat]
 const paydayWords = (from: number) => (afterCaught(from) ? { ...P, ...P.afterCaught } : P)
 // A random pick of fines each shift; fixed under scripted checks so e2e is the same every run
 const payslipSeed = () => (import.meta.env.DEV && navigator.webdriver ? 1 : Math.floor(Math.random() * 1e9))
@@ -496,12 +498,16 @@ export function App() {
       return (
         <Modal title={P.paydayTitle} actions={<Button onClick={pay}>{P.pay}</Button>}>
           <Text>{fill(words.paydayMessage, { due: cr(day.due) })}</Text>
+          {/* F80: a note from whoever sent a grant this payday (the Veteran's emergency transfer on his capture rank) */}
+          {day.grants.filter((g) => grantNote(g.beat)).map((g) => <Text key={g.beat}>{fill(P.grantNote, { note: fill(grantNote(g.beat)!, { n: g.scraps }) })}</Text>)}
           {/* (the bill's rows scroll on a short phone — no scroll bar, the edge fades; Pay up stays in view) */}
           {/* (one at a time like the report's rows; a second payday's new rows replay the reveal — UI kit 0.32.0) */}
           <ScrollArea label={P.paydayTitle}>
             <StatList reveal={payslipTuning.lineMs} stats={[
               ...day.items.map((item): Stat => ({ label: payWords(item.key), value: fill(P.minus, { n: cr(item.amount) }), tone: 'danger' })),
               { label: words.debt, value: fill(P.debtValue, { n: cr(day.debt), interest: cr(day.interest) }), tone: 'danger' },
+              // F80: each scraps grant landing on this rank is its own row (the Veteran's +8, the goop's gifts…)
+              ...day.grants.map((g): Stat => ({ label: (P.grants as Record<string, string>)[g.beat] ?? g.beat, value: fill(P.grantValue, { n: g.scraps }), tone: 'success' })),
               { label: P.rankUp, value: what.length ? fill(P.rankUpNew, { rank: day.to, what: what.join(', ') }) : fill(P.rankUpValue, { rank: day.to }), tone: 'success' },
               // F35: a rank that starts a new title band says the new title (story.md "Rank titles")
               // (F65: in a new career rank 0's is Former Employee, so rank 1 says its title too)
