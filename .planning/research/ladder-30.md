@@ -72,3 +72,13 @@ Today (audit 2026-11-02): nearly every rank rule is already in content/, but in 
 
 ## 6. Build order (ROADMAP)
 F78 — One rank ladder file (framework + Goops) → F79 — No rank numbers in code or tests → F80 — The 30-rank ladder (content + story + scraps) → F81 — Saves follow the ladder → F82 — Balance on 30 ranks (+ F49 — Covered cracks drain half? (bot rerun)).
+
+## 7. Muzzy's answers (2026-11-02)
+- **Story:** streamline it, or let some ranks carry a little more story than normal (more than one moment on a rank is fine).
+- **Two-colour (15) → growing cracks (17):** growing cracks become less of a jump by working differently → **F83 — Growing cracks take a new crack's place**: when a new crack would form, an X% chance it extends an existing crack that isn't covered yet, only from its uncovered cells. Same crack cells appear; the difficulty is covering the whole crack. Today's timer growth goes; Slow Cracks needs a new meaning (Claude's pick: it lowers X).
+- **The Veteran's +8:** "yeah that's fun. feels right."
+- **Saves:** "we don't care about this. there are no beta players right now. just me." → F81 cut; the save-remap helper is out of F78. A fresh career after the switch is fine (Muzzy's own save can use RANK SELECT).
+- **Order:** the ladder before F73 — Crisp pixel type.
+- **Length:** ~45–50 shifts to the top (F82 — Balance on 30 ranks finds the XP numbers).
+
+Build order now: F78 — One rank ladder file → F79 — No rank numbers in code or tests → F80 — The 30-rank ladder + F83 — Growing cracks take a new crack's place → F82 — Balance on 30 ranks (+ F49 — Covered cracks drain half? (bot rerun)) → F73 — Crisp pixel type.
