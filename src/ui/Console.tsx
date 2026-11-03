@@ -102,7 +102,7 @@ function SignHere({ onDone }: { onDone(): void }) {
     </form>
   )
 }
-// F65 THE BADGE (the ending, story.md step 5): on the monitor, after its glitch (looks.glitch*, rank 45's not-a-face), the goop
+// F65 THE BADGE (the ending, story.md step 5): on the monitor, after its glitch (looks.glitch*, moment 45's not-a-face), the goop
 // crosses out your title (a line drawn through it, console.strikeAfterSeconds + strikeSeconds — content/tuning/ending.json)
 // and writes The Savior of Goopkind under it in its own colour (galaxy-look.json rim), then the real acronym types out —
 // GRADUAL ONBOARDING OF PERMANENT STAFF. Got it moves on once it's all written.
@@ -182,7 +182,7 @@ function Crt({ hint, lesson, drop, look, badge }: { hint: string; lesson: CrtLin
   )
 }
 
-// F45 THE HATCH under the panels (ranks 46, 47: the release valve is named): from the ladder beat hatch (ladder.json) it's on the
+// F45 THE HATCH under the panels (moments 46, 47: the release valve is named): from the ladder beat hatch (ladder.json) it's on the
 // console's front; while a story line says rattle it rattles (lessons.css, numbers moments.json looks.rattle*) — the
 // key restarts it for each line. Looks clock: the Dev Kit's full pause holds it.
 // F64 (the final shift): while a valve stage waits it's OPEN (art.json console.valve.openFile) and a button that shuts

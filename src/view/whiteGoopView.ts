@@ -31,7 +31,7 @@ export interface WhiteGoopView {
   draw(ctx: CanvasRenderingContext2D, s: ShiftState, view: GooView, style: 'jelly' | 'particle', timeSec: number, still: boolean): void
   /** His cells for the goo's x-ray (see-through over him) while goop covers him: grid indexes, added to view.xray. */
   xrayCells(s: ShiftState, out: number[]): void
-  /** Story (rank 31: "every eye turns to it"): his centre while he drops in and for eyesTurnSec after he lands — the
+  /** Story (moment 31: "every eye turns to it"): his centre while he drops in and for eyesTurnSec after he lands — the
    *  goop's eyes look there instead of their usual focus; null otherwise. */
   eyesOnHim(s: ShiftState, out: TapPoint): TapPoint | null
   /** (dev + tests) how he looks right now */

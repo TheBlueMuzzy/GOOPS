@@ -121,7 +121,7 @@ export function respec(p: Progress): Progress {
 
 /**
  * How many actives can go into a shift at once: progression.json activeSlots (1), plus one for each Active Expansion
- * Slot owned (F42: every feature upgrade on the 'abilitySlots' flag, upgrades.json — 2 at rank 20, 3 at rank 38).
+ * Slot owned (F42: every feature upgrade on the 'abilitySlots' flag, upgrades.json — 2 at upgrades.activeSlot, 3 at upgrades.activeSlot2).
  * No progress given = just the base.
  */
 export function activeSlots(p?: Progress, book: UpgradeBook = upgradeBook, t: ProgressionTuning = tuning): number {

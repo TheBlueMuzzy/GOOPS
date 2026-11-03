@@ -53,7 +53,7 @@ import shiftConfig from '../../content/tuning/shift.json'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import whiteGoop from '../../content/tuning/whiteGoop.json'
 import twists from '../../content/tuning/twists.json' // F39 rank twists (live: the engine reads it as it plays)
-import finalShift from '../../content/tuning/finalShift.json' // F64 the final shift, rank 50 (live, like twists)
+import finalShift from '../../content/tuning/finalShift.json' // F64 the final shift, beat finalShift (live, like twists)
 import hudTuning from '../../content/tuning/hud.json'
 import settingsJson from '../../content/ui/settings.json'
 import text from '../../content/text/en.json'
@@ -125,7 +125,7 @@ const onMessage = (m: Message) => {
   const id = toast(messageWords(m.key, lessonPlay.inputKind()), { variant: m.danger ? 'danger' : 'neutral', seconds: ONE_DAY_S })
   looksClock.after(m.seconds * 1000, () => toasts.dismiss(id))
 }
-// F40: Management answering a whisper in the shift ("THERE ARE NO VOICES IN THE TANK…", rank 12+, Whisper.tsx): the
+// F40: Management answering a whisper in the shift ("THERE ARE NO VOICES IN THE TANK…", from noVoices, Whisper.tsx): the
 // same toast as the in-shift messages — the monitor itself is up out of sight while you're in the tank
 const onMonitor = (words: string, seconds: number) => {
   if (lessonPlay.messageUp()) return
@@ -177,7 +177,7 @@ function payslipStats(p: Payslip, r: ShiftReward): Stat[] {
     ...(p.firstDay ? [{ label: P.firstDay, value: fill(P.minus, { n: 0 }) }]
       : p.fines.map((f): Stat => ({ label: payWords(f.key), value: fill(P.minus, { n: cr(f.amount) }), tone: 'danger' }))),
     { label: P.net, value: rankUpLine(r), tone: 'success' },
-    // F63 (rank 39+): you're on the list — "Pending retirements: Operator #4471 — <your name>"
+    // F63 (from pendingRetirement): you're on the list — "Pending retirements: Operator #4471 — <your name>"
     ...(p.pendingRetirement ? [{ label: P.pendingRetirements.label, value: pendingName() }] : []),
   ]
 }

@@ -3,7 +3,7 @@
 // Field textures: tex0 = colours 1-4, tex1.rgb = colours 5-7, tex2 = r unfilled weight / g ready weight / b white-hot
 // weight (zapped goo, F67).
 // F39: wild goop = colour 8, in tex1.a, shaded with the wild look (src/goo/shared/wildLook.ts).
-// F64: black = colour 7, in tex1.b (only at rank 50), shaded with the galaxy look (src/goo/shared/galaxyLook.ts).
+// F64: black = colour 7, in tex1.b (only from seventhColour), shaded with the galaxy look (src/goo/shared/galaxyLook.ts).
 import { XRAY_GLSL } from '../shared/xray'
 import { WILD_GLSL } from '../shared/wildLook'
 import { GALAXY_GLSL } from '../shared/galaxyLook'

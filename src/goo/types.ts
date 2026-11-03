@@ -29,7 +29,7 @@ export interface GooRenderer {
   dispose(): void
   // (dev + tests) how fast the goo at a cell is moving right now (cells/s) — feel checks read it (e2e: a poke jiggles)
   motion?(cell: number): number
-  // (dev + tests) the goop's faces right now (F62, e2e/eyes.mjs) — empty below rank 10
+  // (dev + tests) the goop's faces right now (F62, e2e/eyes.mjs) — empty before facesOn
   faces?(): FaceReport[]
 }
 

@@ -230,7 +230,7 @@ export class FaceBook {
   private owner = new Map<number, Face>() // grid cell → the face it belonged to (falls move it with the cell)
   private nextOwner: Map<number, Face> | null = null
 
-  // Rank 10+: faces are on. Below that the renderers skip everything (no faces, no cost).
+  // From facesOn: faces are on. Below that the renderers skip everything (no faces, no cost).
   get on() {
     return this.rank >= rankOf('facesOn')
   }
@@ -437,7 +437,7 @@ export class FaceBook {
       if ((this.chorusT += dt) >= L.chorusTime) { this.chorusT = -1; this.chorusDone = true }
       return
     }
-    if (this.chorusDone || this.rank < 40 || !this.built) return
+    if (this.chorusDone || this.rank < rankOf('mouths') || !this.built) return
     let shown = 0
     for (const f of this.faces.values()) if (f.mouth.a >= 1) shown++
     if (shown < L.chorusMouths) return

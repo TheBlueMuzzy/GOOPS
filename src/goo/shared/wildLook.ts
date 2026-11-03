@@ -1,4 +1,4 @@
-// F39 THE WILD GOOP LOOK (rank 40+): ported from the sketch .planning/research/sketches/wild-goop.html (wildBase).
+// F39 THE WILD GOOP LOOK (from wildGoop): ported from the sketch .planning/research/sketches/wild-goop.html (wildBase).
 // Three looks in one shader piece, picked in content/tuning/twists-look.json "wild.look" (live in the Dev Kit):
 //   oil     = a grey-violet body no goop has, with a thin-film rainbow band sliding across it
 //   rainbow = v1: the real goop colours in turn, a wave sliding sideways (it IS red for a moment — kept to compare)

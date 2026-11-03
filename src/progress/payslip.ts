@@ -31,7 +31,7 @@ export const associationDue = (facts: ShiftFacts, rank: number) => rank >= rankO
 /** F40: do the report's words at this rank use the after-capture wording (en.json payslip.afterCaught)? */
 export const afterCaught = (rank: number) => rank >= rankOf('veteranCaught')
 
-/** F63: does the report list you under "Pending retirements" (story.md rank 39: "…your name… is on a list…")? From the
+/** F63: does the report list you under "Pending retirements" (story.md moment 39: "…your name… is on a list…")? From the
  *  shift that reaches the ladder beat pendingRetirement on, every report. */
 export const pendingRetirement = (rankAfter: number) => rankAfter >= rankOf('pendingRetirement')
 

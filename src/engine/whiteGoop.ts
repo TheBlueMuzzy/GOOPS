@@ -1,4 +1,4 @@
-// THE WHITE GOOP (F63): the Veteran, gooped. From the ladder beat whiteGoop (31) one white clump is in the tank. Ported from
+// THE WHITE GOOP (F63): the Veteran, gooped. From the ladder beat whiteGoop one white clump is in the tank. Ported from
 // Muzzy's approved sketch (.planning/research/sketches/white-goop.html — decide(), stepsFrom's ooze branch,
 // hardness(), the seal) with his picks (.planning/research/white-goop/picks.json): he OOZES BEHIND THE GOOP.
 //   - He is NOT a grid cell: never merges, never pops, never holds goop up. Goop passes in front of him.

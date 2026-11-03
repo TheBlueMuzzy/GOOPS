@@ -14,7 +14,7 @@ import { GALAXY_SLOT, galaxyColours, galaxyCrackStars } from '../goo/shared/gala
 export type ColorOf = (c: number) => string
 
 // F64: the colour a line or mark of goop colour c is drawn in on the dark tank — black's would vanish, so black (the
-// galaxy, rank 50) is drawn in its rim glow (galaxy-look.json rim); every other colour as it is
+// galaxy, from seventhColour) is drawn in its rim glow (galaxy-look.json rim); every other colour as it is
 const paintOf = (c: number, colorOf: ColorOf) => (c === GALAXY_SLOT ? galaxyColours().rim : colorOf(c))
 
 /** F39: a wild cell's paint on a 2D canvas — the wild look's body with its sheen band across (x0, y0) → (x1, y1). */
@@ -110,7 +110,7 @@ export function drawTank(ctx: CanvasRenderingContext2D, s: ShiftState, view: Goo
   bubbles?.draw(ctx, s, view, left, right)
   white?.()
 
-  // F39 a two-colour piece glows as it falls (story.md rank 20): a soft glow round each cell in its own colour, under
+  // F39 a two-colour piece glows as it falls (story.md moment 20): a soft glow round each cell in its own colour, under
   // the goo (the jelly is see-through, so it shows round and through the piece). Placed like the ghost, by the spin.
   const two = twoColourGlow()
   if (s.piece && two.glow > 0 && new Set(s.piece.colors).size > 1) {

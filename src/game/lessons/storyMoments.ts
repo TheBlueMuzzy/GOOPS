@@ -12,19 +12,19 @@ import text from '../../../content/text/en.json'
 import { loadCareers, operatorName } from '../../progress/save'
 import { ladder, rankOf } from '../../progress/ladder'
 
-// F63: head = the goop in your head (ranks 31–39) — the whisper bubble over the monitor area; him = the Veteran from
+// F63: head = the goop in your head (moments 31–39) — the whisper bubble over the monitor area; him = the Veteran from
 // inside the white goop is the one talking (35, 37) · F45: goop = the goop through the speaker (41, 43, 48) — the
 // Veteran's bubble place, the goop's look (StoryView.tsx)
 export type Voice = 'mon' | 'spk' | 'head' | 'goop'
 // F40: monitor = what the monitor does while the line is up · crackle = the bubble squelches more often · cut = the line
 // is cut off once typed (the moment moves on by itself) — moments.json _about · F66 sign = the line puts a name box on
 // the monitor (PLEASE SIGN HERE, rank 0): Sign or Skip moves on instead of Got it (Console.tsx) · F45: monitor glitch =
-// for a beat something that isn't a face (45) · rattle = the hatch under the console rattles (46, 47; Console.tsx)
+// for a beat something that isn't a face (moment 45) · rattle = the hatch under the console rattles (moments 46, 47; Console.tsx)
 export type MonitorLook = 'flicker' | 'alarm' | 'glitch'
 export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean; sign?: boolean; him?: boolean; rattle?: boolean }
 type Moment = { look?: string; lines: StoryLine[] }
-// F40: the goop gets better at talking — each stage (from a ladder beat's rank on — F78) has its own words: feelings (8)
-// → single words (15) → names (24). From the beat noVoices, Management answers a whisper (en.json story.lines.noVoices).
+// F40: the goop gets better at talking — each stage (from a ladder beat's rank on — F78) has its own words: feelings (whispersFeelings)
+// → single words (whispersWords) → names (whispersNames). From the beat noVoices, Management answers a whisper (en.json story.lines.noVoices).
 type WhisperStage = { beat: string; say: string[] }
 type Whispers = { stages: WhisperStage[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number
   noVoicesDelaySeconds: number; noVoicesSeconds: number }
@@ -73,7 +73,7 @@ export function whisperStage(rank: number, w: Whispers = storyFile.whispers): { 
 }
 
 /** In-shift whispers (Whisper.tsx): which one this shift gets at this rank (null = none) — one of its stage's words
- *  (feelings from 8, single words from 15, names from 24); before the first stage, "cold" once per device from the ladder beat whisperCold.
+ *  (feelings from whispersFeelings, single words from whispersWords, names from whispersNames); before the first stage, "cold" once per device from the ladder beat whisperCold.
  *  pick = a random 0..1. */
 export const COLD_SEEN = 'whisper:cold'
 /** F45: the shift after story 48 — every mouth opened at once (ShiftStage.tsx, eyes.json chorus*): once per device */

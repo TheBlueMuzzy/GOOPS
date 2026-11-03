@@ -267,7 +267,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       bubbles.step(s, dt, still) // (looks clock: keeps rising in the half pause, stops in the full pause)
       view.still = still // (reduce motion: the zap has no swell and no spray, F67)
       const gooDt = active ? dt * rate : half && pauseTuning.halfPauseGooMoves ? dt : 0
-      // F62 the faces look at the laser's tap while its beam is up, else at the falling piece — and (F63, rank 31: "every
+      // F62 the faces look at the laser's tap while its beam is up, else at the falling piece — and (F63, moment 31: "every
       // eye turns to it") at the white goop while he drops in
       if (laser && (laser.t += gooDt) >= zapLook().beamTime) laser = null
       const focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)

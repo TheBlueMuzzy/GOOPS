@@ -1,4 +1,4 @@
-// THE RELEASE VALVE PANEL (F64 — the final shift, rank 50; Muzzy's mini-game 2026-10-26, built from sketch S11
+// THE RELEASE VALVE PANEL (F64 — the final shift, beat finalShift; Muzzy's mini-game 2026-10-26, built from sketch S11
 // valve-wheels.html). When a valve stage's seals are in, the hatch under the console opens and this panel rises over the
 // repair panels: two wheels with one needle on a dial between them. Turn the wheels until the needle sits in the green
 // and hold it there → the stage opens (onOpen: the App calls engine.openValveStage() and goes back to the tank).

@@ -1,4 +1,4 @@
-// F64 THE FINAL SHIFT (rank 50, the boss level — design/story.md "The final shift"): the shape of
+// F64 THE FINAL SHIFT (beat finalShift, the boss level — design/story.md "The final shift"): the shape of
 // content/tuning/finalShift.json and small lookups on it. The rules themselves live in shift.ts (they touch every part
 // of a shift); this file keeps the numbers' meaning in one place.
 //   - One colour: every piece, junk cell, rain cell and crack is `colour` (galaxy black) — so any goop merges with any

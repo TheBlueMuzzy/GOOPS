@@ -70,7 +70,7 @@ interface Body {
   zap: Zap | null // a zapped ('dying') body's timeline (F67)
   ux: number[] // grid bodies: each cell's unwrapped column + row (the rest shape's coordinates)
   uy: number[]
-  // F62 its face (rank 10+): the face, where its eyes sit in the rest shape (like the highlight), where they are now
+  // F62 its face (from facesOn): the face, where its eyes sit in the rest shape (like the highlight), where they are now
   // (view cells, riding the body's fitted turn + centre) and, once zapped, where they sat at the zap
   face: Face | null
   spotX: number
@@ -178,7 +178,7 @@ export function createJellyRenderer(canvas: HTMLCanvasElement, opts: GooOptions 
   let time = 0
   let zapWhite = 0 // zap.json whiteHot, as of this frame (the final pass's uWhite)
   let S: ShiftState | null = null
-  const book = new FaceBook() // F62 the goop's faces (rank 10+)
+  const book = new FaceBook() // F62 the goop's faces (from facesOn)
   let lastView: GooView | null = null // (for __goops.faces(): where the faces are on the stage)
 
   function reset(state: ShiftState) {

@@ -6,7 +6,7 @@ import type { ActiveEffects } from './abilities'
 
 export type Color = number // 0 = empty; 1.. = index into content/tuning/shift.json "colors"; WILD = wild goop
 
-// F39 wild goop (rank 40+, twists.ts): a colour value of its own, far past the real colours, so the renderers can tell
+// F39 wild goop (from wildGoop, twists.ts): a colour value of its own, far past the real colours, so the renderers can tell
 // it apart (src/goo/shared/palette.ts gooSlot / colorHex). It plugs and seals a crack of ANY colour; a normal piece
 // locking next to a wild clump turns the whole clump that piece's colour.
 export const WILD: Color = 255
@@ -33,7 +33,7 @@ export interface Crack {
   color: Color
   plugged: boolean // matching goop (or wild goop, F39) covers EVERY cell of it (pop that goop to seal)
   drain?: number // × the integrity drain per open cell (the hill's high cracks drain less, unseen); unset = 1
-  // F39 growing cracks (rank 30+, twists.ts): a grown crack is ONE crack over many cells. x, y stay its root (where
+  // F39 growing cracks (from cracksGrow, twists.ts): a grown crack is ONE crack over many cells. x, y stay its root (where
   // it formed). Unset = a crack that never started growing (just x, y) — older snapshots have none.
   cells?: [number, number][] // every cell of it, root first ([x, y], tank space) — read it with crackCells()
   parent?: number[] // per cell: the index (in cells) of the cell it grew from; -1 = the root
@@ -89,8 +89,8 @@ export interface ShiftState {
   effects?: ActiveEffects // abilities' effects still running; the engine always sets it (empty when none) (added by F22)
   machines?: Record<MachineId, MachineState> // the three machines (F23); the engine always sets it
   primed?: number[] // group ids primed by a first zap while the laser is broken (F23); a second zap pops them
-  vet?: WhiteGoop | null // F63 the white goop (the Veteran, gooped) from rank 31; null/unset = not in this shift (whiteGoop.ts)
-  final?: FinalShiftState | null // F64 the final shift (rank 50, finalShift.ts); null/unset = any other shift
+  vet?: WhiteGoop | null // F63 the white goop (the Veteran, gooped) from the beat whiteGoop; null/unset = not in this shift (whiteGoop.ts)
+  final?: FinalShiftState | null // F64 the final shift (beat finalShift, finalShift.ts); null/unset = any other shift
 }
 
 // F64 THE FINAL SHIFT (src/engine/finalShift.ts, content/tuning/finalShift.json): the release valve's stages and how
@@ -158,7 +158,7 @@ export type ShiftEvent =
   | { type: 'drop'; rows: number } // no longer sent (hard drop was removed); kept so the renderers' handlers compile
   | { type: 'lock'; cells: number[]; color: Color; colors?: Color[] } // piece became part of the grid (grid indexes); colors = one per cell (F39 two-colour pieces; the engine always sends it), color = the first
   | { type: 'wildTurn'; cells: number[]; color: Color } // F39: a wild clump a landing piece touched turned that colour
-  | { type: 'crackGrow'; crackId: number; x: number; y: number } // F39: a crack grew into this cell (rank 30+)
+  | { type: 'crackGrow'; crackId: number; x: number; y: number } // F39: a crack grew into this cell (from cracksGrow)
   | { type: 'merge'; groupId: number } // a group grew by joining others
   | { type: 'ready'; groupId: number } // a group finished filling and can pop
   | { type: 'pop'; cells: number[]; color: Color; sealed: number[]; at?: TapPoint } // popped cells (sealed = crack ids sealed by it); at = where the zap hit (F67: the laser point the goop is sucked into — the engine always sends it, other makers of pop events may not)

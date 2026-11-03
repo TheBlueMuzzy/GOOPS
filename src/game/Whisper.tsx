@@ -3,7 +3,7 @@
 // tank somewhere along the goop's height, gone again by itself. Its times are rules time (rulesClock), so the pause
 // menu and the Dev Kit's pauses hold it. Never while a lesson is up. Numbers: content/story/moments.json whispers;
 // words: en.json story.whispers. Scripted checks keep it quiet unless the page has ?story (storyMoments.ts).
-// F40: the words grow with the rank (feelings → single words at 15 → names at 24: whisperFor's stages), and from rank 12
+// F40: the words grow with the rank (feelings → single words at whispersWords → names at whispersNames: whisperFor's stages), and from noVoices
 // Management answers each one — "THERE ARE NO VOICES IN THE TANK…" — a moment after it goes, through onMonitor (App
 // shows it where the in-shift messages show: the monitor itself is up out of sight while you're in the tank).
 import { useEffect, useRef, useState } from 'react'
