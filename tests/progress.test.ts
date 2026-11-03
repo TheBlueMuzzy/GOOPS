@@ -13,24 +13,28 @@ import goldenV4Focus4 from './saves/goops-progress-v4-focus4.json'
 import { clampOwned, maxLevelOf, upgradeBook } from '../src/progress/upgradeShop'
 import type { UpgradeBook } from '../src/engine/upgrades'
 import { createLadder } from '../src/ladder'
-import { maxRank } from '../src/progress/ladder'
+import { ladder, maxRank, rankOf } from '../src/progress/ladder'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
+// the scraps earned by reaching a rank: scrapsPerRank a rank + the ladder's scraps grants on the way (F79: grants move)
+const scrapsTo = (rank: number) => rank * tuning.scrapsPerRank + ladder.grantsUpTo('scraps', rank)
+// (F79) the ranks in the XP and rank-lock tests below are inputs to progression.json's XP formula, not ladder beats:
+// the formula is the same at any rank, so they stay plain numbers (each line says so with tuning-ok)
 
 describe('ranks', () => {
-  it('v1 formula: 3,500 + 250 × rank to the next rank; rank 10 needs 46,250 in all', () => {
+  it('v1 formula: 3,500 + 250 × rank to the next rank; the first 10 ranks need 46,250 in all', () => {
     expect(xpToNext(0)).toBe(3500)
     expect(xpToNext(10)).toBe(6000)
     expect(cumulative(10)).toBe(46250)
     expect(cumulative(50)).toBe(481250)
     expect(rankInfo({ totalXp: 46250, scrapsSpent: 0 }).rank).toBe(10)
-    expect(rankInfo({ totalXp: 46249, scrapsSpent: 0 })).toMatchObject({ rank: 9, xpIntoRank: 46249 - cumulative(9), xpToNext: 5750 })
+    expect(rankInfo({ totalXp: 46249, scrapsSpent: 0 })).toMatchObject({ rank: 9, xpIntoRank: 46249 - cumulative(9), xpToNext: 5750 }) // tuning-ok: the XP formula
   })
 
   it('stops at the max rank', () => {
     const r = rankInfo({ totalXp: 10_000_000, scrapsSpent: 0 })
-    expect(r).toMatchObject({ rank: maxRank(), xpIntoRank: 0, xpToNext: 0, scraps: maxRank() })
+    expect(r).toMatchObject({ rank: maxRank(), xpIntoRank: 0, xpToNext: 0, scraps: scrapsTo(maxRank()) })
   })
 })
 
@@ -51,12 +55,12 @@ describe('rewardShift', () => {
   it('a rank-up earns a scrap per rank', () => {
     const r = rewardShift({ ...freshProgress(), totalXp: cumulative(2) }, xpToNext(2) + 10, { quotaMet: true })
     expect(r.before.rank).toBe(2)
-    expect(r.after).toMatchObject({ rank: 3, scraps: 3 })
+    expect(r.after).toMatchObject({ scraps: scrapsTo(3), rank: 3 }) // tuning-ok: the XP formula
     expect(r.rankUps).toBe(1)
   })
 
   it('spent scraps stay spent', () => {
-    expect(rankInfo({ totalXp: cumulative(4), scrapsSpent: 3 }).scraps).toBe(1)
+    expect(rankInfo({ totalXp: cumulative(4), scrapsSpent: 3 }).scraps).toBe(scrapsTo(4) - 3)
   })
 })
 
@@ -76,8 +80,8 @@ describe('rewardFirstDay (F31)', () => {
   })
 
   it('a replay at a higher rank earns what any shift earns (no top-up)', () => {
-    const rank3 = { ...freshProgress(), totalXp: cumulative(3) + 5 }
-    expect(rewardFirstDay(rank3, 200, { quotaMet: false })).toEqual(rewardShift(rank3, 200, { quotaMet: false }))
+    const later = { ...freshProgress(), totalXp: cumulative(3) + 5 }
+    expect(rewardFirstDay(later, 200, { quotaMet: false })).toEqual(rewardShift(later, 200, { quotaMet: false }))
   })
 })
 
@@ -99,10 +103,11 @@ describe('save', () => {
   // a fresh start, the v1 save left as it is (never read, never written)
   it('a v1 player (Goops 1\'s save, gooptris_save_v3 / _v2) starts fresh; v1\'s save is left alone', () => {
     const s = memory()
-    const v1Save = JSON.stringify({ careerRank: 12, careerScore: 90210, scraps: 4, powerUps: { CIRCUIT_STABILIZER: 2 }, equippedActives: [], firstRunComplete: true,
+    const v1Save = JSON.stringify({ careerRank: 12, // tuning-ok: Goops 1's own save, not this ladder
+      careerScore: 90210, scraps: 4, powerUps: { CIRCUIT_STABILIZER: 2 }, equippedActives: [], firstRunComplete: true,
       settings: { masterVolume: 50, musicVolume: 80, sfxVolume: 100, invertRotation: false } })
     s.m.set('gooptris_save_v3', v1Save)
-    s.m.set('gooptris_save_v2', JSON.stringify({ operatorRank: 3, operatorXP: 500 }))
+    s.m.set('gooptris_save_v2', JSON.stringify({ operatorRank: 3, operatorXP: 500 })) // tuning-ok: Goops 1's own save
     expect(loadProgress(s)).toEqual(freshProgress())
     expect(loadOperatorName(s)).toBeNull()
     saveProgress(loadProgress(s), s)
@@ -148,7 +153,7 @@ describe('save', () => {
     const s = memory()
     s.m.set('goops-progress', JSON.stringify({ v: 4, totalXp: cumulative(7) + xpToNext(7) - 100, scrapsSpent: 0, owned: {}, equipped: [], badge: null, name: null, careers: 0 }))
     const r = rewardShift(loadProgress(s), 900, { quotaMet: false })
-    expect(r.after).toMatchObject({ rank: 8, xpIntoRank: 800, locked: false })
+    expect(r.after).toMatchObject({ rank: 8, xpIntoRank: 800, locked: false }) // tuning-ok: the XP formula
     expect(r.progress.quotaMet).toBe(false) // rank 8 needs its own
   })
 
@@ -169,12 +174,12 @@ describe('save', () => {
     expect(clampOwned(freshProgress(), book)).toEqual(freshProgress())
   })
 
-  it('golden version-5 save loads as it was: the meter held full at rank 9, no quota met (F74)', () => {
+  it('golden version-5 save loads as it was: the meter held full, no quota met (F74)', () => {
     const s = memory()
     s.m.set('goops-progress', golden(5))
     const p = loadProgress(s)
     expect(p).toEqual({ totalXp: 46250, scrapsSpent: 3, owned: { circuitStabilizer: 2, cooldownBooster: 1 }, equipped: ['cooldownBooster'], xpHeld: true })
-    expect(rankInfo(p)).toMatchObject({ rank: 9, xpIntoRank: xpToNext(9), locked: true })
+    expect(rankInfo(p)).toMatchObject({ rank: 9, xpIntoRank: xpToNext(9), locked: true }) // tuning-ok: the golden save's XP
     saveProgress(p, s)
     expect(JSON.parse(s.m.get('goops-progress')!)).toEqual(goldenV5)
   })
@@ -229,13 +234,14 @@ describe('your name', () => {
 
   it('saving the progress keeps the name (and signing keeps the progress)', () => {
     const s = memory()
-    saveProgress(progressAtRank(4), s)
+    const [a, b] = [rankOf('laserBreaks'), rankOf('upgradesShop') + 2] // (any two ranks)
+    saveProgress(progressAtRank(a), s)
     saveOperatorName('  Muzzy ', s)
     expect(loadOperatorName(s)).toBe('Muzzy')
-    expect(rankInfo(loadProgress(s)).rank).toBe(4)
-    saveProgress(progressAtRank(7), s) // (a shift ends: the progress is saved again)
+    expect(rankInfo(loadProgress(s)).rank).toBe(a)
+    saveProgress(progressAtRank(b), s) // (a shift ends: the progress is saved again)
     expect(loadOperatorName(s)).toBe('Muzzy')
-    expect(rankInfo(loadProgress(s)).rank).toBe(7)
+    expect(rankInfo(loadProgress(s)).rank).toBe(b)
   })
 
   it('a fresh device has no name; a broken name in the save is no name', () => {
@@ -278,7 +284,7 @@ describe('rank meter steps (F21: the console meter fills with the XP since it la
   })
   it('no XP gained: no steps; the top rank: stops', () => {
     expect(meterSteps(p(500), p(500))).toEqual([])
-    const top = 481250
+    const top = cumulative(maxRank())
     expect(meterSteps(p(top), p(top + 5000))).toEqual([])
   })
 })
@@ -286,34 +292,36 @@ describe('rank meter steps (F21: the console meter fills with the XP since it la
 // F74 THE RANK LOCK (Muzzy 2026-10-29, TDD D31): rank-up = the XP goal + a quota met this rank
 describe('the rank lock (F74)', () => {
   const missed = { quotaMet: false }, met = { quotaMet: true }
-  const rank3 = (into = 0) => ({ ...freshProgress(), totalXp: cumulative(3) + into })
-  const goal3 = xpToNext(3) // 4250
+  // (the lock works the same at any rank: R is an input to the XP formula, 4,250 to its goal)
+  const R = 3 // tuning-ok: the XP formula, not a ladder beat
+  const atR = (into = 0) => ({ ...freshProgress(), totalXp: cumulative(R) + into })
+  const goalR = xpToNext(R) // 4250
 
   it('the bonus comes from content: quotaXpMult 2', () => {
     expect(tuning.quotaXpMult).toBe(2)
   })
 
   it('no quota met this rank: the XP stops at the goal (the meter sits full, the rest is lost, no rank-up)', () => {
-    const r = rewardShift(rank3(4000), 1000, missed)
+    const r = rewardShift(atR(4000), 1000, missed)
     expect(r.xp).toBe(1000)
     expect(r.rankUps).toBe(0)
-    expect(r.after).toMatchObject({ rank: 3, xpIntoRank: goal3, xpToNext: goal3, locked: true })
+    expect(r.after).toMatchObject({ rank: R, xpIntoRank: goalR, xpToNext: goalR, locked: true })
     expect(r.lostXp).toBe(750)
-    expect(r.progress).toMatchObject({ totalXp: cumulative(4), xpHeld: true, quotaMet: false })
+    expect(r.progress).toMatchObject({ totalXp: cumulative(R + 1), xpHeld: true, quotaMet: false })
     // another missed shift: still full, all of its XP lost
     const again = rewardShift(r.progress, 2000, missed)
-    expect(again.after).toMatchObject({ rank: 3, xpIntoRank: goal3, locked: true })
+    expect(again.after).toMatchObject({ rank: R, xpIntoRank: goalR, locked: true })
     expect(again.lostXp).toBe(2000)
-    expect(again.progress.totalXp).toBe(cumulative(4))
+    expect(again.progress.totalXp).toBe(cumulative(R + 1))
   })
 
   it('a shift that meets its quota earns double — and, at a full meter, ranks up (the overflow fills the next rank)', () => {
-    const held = rewardShift(rank3(4000), 1000, missed).progress
+    const held = rewardShift(atR(4000), 1000, missed).progress
     const r = rewardShift(held, 1000, met)
     expect(r.xp).toBe(2000)
     expect(r.quotaMet).toBe(true)
     expect(r.rankUps).toBe(1)
-    expect(r.after).toMatchObject({ rank: 4, xpIntoRank: 2000, locked: false })
+    expect(r.after).toMatchObject({ rank: R + 1, xpIntoRank: 2000, locked: false })
     expect(r.progress).toMatchObject({ quotaMet: false, xpHeld: false }) // the rank-up used the quota up
   })
 
@@ -325,37 +333,37 @@ describe('the rank lock (F74)', () => {
   })
 
   it('a met quota stays met until the rank-up, over later shifts that miss it', () => {
-    const a = rewardShift(rank3(0), 500, met) // met early: 1000 XP, far from the goal
-    expect(a.after).toMatchObject({ rank: 3, xpIntoRank: 1000 })
+    const a = rewardShift(atR(0), 500, met) // met early: 1000 XP, far from the goal
+    expect(a.after).toMatchObject({ rank: R, xpIntoRank: 1000 })
     expect(a.progress.quotaMet).toBe(true)
     const b = rewardShift(a.progress, 1500, missed) // missed — the key is still in hand
     expect(b.progress.quotaMet).toBe(true)
     const c = rewardShift(b.progress, 2000, missed) // reaches the goal: ranks up
     expect(c.rankUps).toBe(1)
-    expect(c.after).toMatchObject({ rank: 4, xpIntoRank: 1000 + 1500 + 2000 - goal3 })
+    expect(c.after).toMatchObject({ rank: R + 1, xpIntoRank: 1000 + 1500 + 2000 - goalR })
     expect(c.progress.quotaMet).toBe(false)
     expect([a.metEarlier, b.metEarlier, c.metEarlier]).toEqual([false, true, true]) // (the report's "Met earlier")
   })
 
   it('one quota = one rank-up: a huge shift stops full at the next rank goal', () => {
-    const r = rewardShift(rank3(0), 50_000, met)
+    const r = rewardShift(atR(0), 50_000, met)
     expect(r.rankUps).toBe(1)
-    expect(r.after).toMatchObject({ rank: 4, xpIntoRank: xpToNext(4), locked: true })
-    expect(r.lostXp).toBe(100_000 - goal3 - xpToNext(4))
+    expect(r.after).toMatchObject({ rank: R + 1, xpIntoRank: xpToNext(R + 1), locked: true })
+    expect(r.lostXp).toBe(100_000 - goalR - xpToNext(R + 1))
   })
 
   it('the meter fills to full and says locked; the next shift meets the quota → the rank-up steps', () => {
-    const before = rank3(4000)
+    const before = atR(4000)
     const held = rewardShift(before, 1000, missed).progress
-    expect(meterSteps(before, held)).toEqual([{ level: 3, from: 4000, to: goal3, max: goal3 }])
+    expect(meterSteps(before, held)).toEqual([{ level: R, from: 4000, to: goalR, max: goalR }])
     expect(meterSteps(held, rewardShift(held, 900, missed).progress)).toEqual([]) // nothing moved
     const up = rewardShift(held, 300, met).progress
-    expect(meterSteps(held, up)).toEqual([{ level: 3, from: goal3, to: goal3, max: goal3 }, { level: 4, from: 0, to: 600, max: xpToNext(4) }])
+    expect(meterSteps(held, up)).toEqual([{ level: R, from: goalR, to: goalR, max: goalR }, { level: R + 1, from: 0, to: 600, max: xpToNext(R + 1) }])
   })
 
   it('a held flag off a rank boundary (an XP table retuned under an old save) is ignored — no rank taken away', () => {
-    expect(rankInfo({ totalXp: cumulative(4) + 7, scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: 4, xpIntoRank: 7, locked: false })
-    expect(rankInfo({ totalXp: cumulative(4), scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: 3, xpIntoRank: goal3, locked: true, scraps: 3 })
+    expect(rankInfo({ totalXp: cumulative(R + 1) + 7, scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: R + 1, xpIntoRank: 7, locked: false })
+    expect(rankInfo({ totalXp: cumulative(R + 1), scrapsSpent: 0, xpHeld: true })).toMatchObject({ rank: R, xpIntoRank: goalR, locked: true, scraps: scrapsTo(R) })
   })
 
   it('the first day works as before the lock: no quota needed for rank 1, not doubled', () => {
@@ -382,32 +390,36 @@ describe('the rank lock (F74)', () => {
 
 // F59: what each rank unlocks (F78: content/tuning/ladder.json beats)
 describe('unlocks', () => {
-  it('next piece at 1, swap at 3, upgrades at 5 — from that rank on', () => {
-    expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('nextPiece', r))).toEqual([false, true, true, true, true, true, true])
-    expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('swap', r))).toEqual([false, false, false, true, true, true, true])
-    expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('upgrades', r))).toEqual([false, false, false, false, false, true, true])
+  it('next piece, swap, upgrades — each from its beat on (nextPiece / swap / upgradesShop), not the rank before', () => {
+    for (const [unlock, beat] of [['nextPiece', 'nextPiece'], ['swap', 'swap'], ['upgrades', 'upgradesShop']] as const) {
+      const from = rankOf(beat)
+      for (let r = 0; r <= maxRank(); r++) expect(isUnlocked(unlock, r), `${unlock} at ${r}`).toBe(r >= from)
+    }
   })
 
   it('reads the ranks from the ladder file (F78)', () => {
-    const t = createLadder({ maxRank: 50, beats: { nextPiece: 0, swap: 10, upgradesShop: 2 } })
+    const t = createLadder({ maxRank: 50, beats: { nextPiece: 0, swap: 10, upgradesShop: 2 } }) // tuning-ok: a made-up ladder
     expect(isUnlocked('nextPiece', 0, t)).toBe(true)
     expect(isUnlocked('swap', 9, t)).toBe(false)
     expect(isUnlocked('upgrades', 2, t)).toBe(true)
   })
 
   it('names what a rank-up unlocked, in order (none when nothing new)', () => {
-    expect(unlocksBetween(0, 1)).toEqual(['nextPiece'])
-    expect(unlocksBetween(1, 2)).toEqual([])
-    expect(unlocksBetween(2, 3)).toEqual(['swap'])
-    expect(unlocksBetween(0, 6)).toEqual(['nextPiece', 'swap', 'upgrades'])
-    expect(unlocksBetween(5, 5)).toEqual([])
+    // (today nextPiece < swap < upgradesShop, with a quiet rank between the first two)
+    const [next, swap, shop] = [rankOf('nextPiece'), rankOf('swap'), rankOf('upgradesShop')]
+    expect(unlocksBetween(next - 1, next)).toEqual(['nextPiece'])
+    expect(unlocksBetween(next, swap - 1)).toEqual([])
+    expect(unlocksBetween(swap - 1, swap)).toEqual(['swap'])
+    expect(unlocksBetween(0, shop + 1)).toEqual(['nextPiece', 'swap', 'upgrades'])
+    expect(unlocksBetween(shop, shop)).toEqual([])
   })
 })
 describe('rank select (F70: the start of a rank, upgrades refunded; 0 = a fresh save)', () => {
   it('rank N = all the XP to reach it, 0 into it, nothing bought or spent', () => {
-    const p = progressAtRank(7)
-    expect(rankInfo(p)).toMatchObject({ rank: 7, xpIntoRank: 0, scraps: 7 * tuning.scrapsPerRank })
-    expect(p).toEqual({ totalXp: cumulative(7), scrapsSpent: 0, owned: {}, equipped: [] })
+    const r = rankOf('upgradesShop') + 2 // (any rank past the shop)
+    const p = progressAtRank(r)
+    expect(rankInfo(p)).toMatchObject({ rank: r, xpIntoRank: 0, scraps: scrapsTo(r) })
+    expect(p).toEqual({ totalXp: cumulative(r), scrapsSpent: 0, owned: {}, equipped: [] })
     expect(progressAtRank(0)).toEqual(freshProgress())
   })
 
@@ -421,8 +433,8 @@ describe('rank select (F70: the start of a rank, upgrades refunded; 0 = a fresh 
   it('clearProgress forgets the save: the next load is a fresh start', () => {
     const store = new Map<string, string>()
     const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => { store.set(k, v) }, removeItem: (k: string) => { store.delete(k) } }
-    saveProgress(progressAtRank(12), storage)
-    expect(rankInfo(loadProgress(storage)).rank).toBe(12)
+    saveProgress(progressAtRank(rankOf('fifthColour')), storage)
+    expect(rankInfo(loadProgress(storage)).rank).toBe(rankOf('fifthColour'))
     clearProgress(storage)
     expect(loadProgress(storage)).toEqual(freshProgress())
   })
@@ -434,12 +446,12 @@ describe('end titles that stick', () => {
 
   it('the badge: the rank band, unless the career has an end title; Former Employee for a new career at rank 0', () => {
     expect(badgeTitle(0, null, 0)).toBe('intern')
-    expect(badgeTitle(49, null, 0)).toBe('deputy')
-    expect(badgeTitle(50, 'oneOfUs', 0)).toBe('oneOfUs')
-    expect(badgeTitle(50, 'savior', 0)).toBe('savior')
+    expect(badgeTitle(maxRank() - 1, null, 0)).toBe('deputy')
+    expect(badgeTitle(maxRank(), 'oneOfUs', 0)).toBe('oneOfUs')
+    expect(badgeTitle(maxRank(), 'savior', 0)).toBe('savior')
     expect(badgeTitle(0, null, 1)).toBe('formerEmployee')
-    expect(badgeTitle(1, null, 1)).toBe('juniorAssociate') // (it lasts one rank, then the titles as usual)
-    expect(badgeTitle(45, null, 3)).toBe('deputy')
+    expect(badgeTitle(1, null, 1)).toBe(ladder.lastAt('titles', 1)) // (it lasts one rank, then the titles as usual)
+    expect(badgeTitle(rankOf('titles.deputy'), null, 3)).toBe('deputy')
   })
 
   it('lose the final shift → One Of Us until a win; win → The Savior of Goopkind (never taken back by a loss)', () => {
@@ -452,7 +464,7 @@ describe('end titles that stick', () => {
 
   it('the badge and the careers are saved on the device; saving the progress or the name keeps the careers', () => {
     const s = memory()
-    saveProgress({ ...progressAtRank(50), badge: 'oneOfUs' }, s)
+    saveProgress({ ...progressAtRank(maxRank()), badge: 'oneOfUs' }, s)
     expect(loadProgress(s).badge).toBe('oneOfUs')
     saveCareers(1, s)
     saveOperatorName('Muzzy', s)
@@ -464,12 +476,12 @@ describe('end titles that stick', () => {
 
   it('a new career (fresh progress) has no badge; a rank pick (RANK SELECT) drops it too; careers stay', () => {
     const s = memory()
-    saveProgress({ ...progressAtRank(50), badge: 'savior' }, s)
+    saveProgress({ ...progressAtRank(maxRank()), badge: 'savior' }, s)
     saveCareers(2, s)
     saveProgress(freshProgress(), s)
     expect(loadProgress(s).badge).toBeUndefined()
     expect(loadCareers(s)).toBe(2)
-    saveProgress(progressAtRank(12), s)
+    saveProgress(progressAtRank(rankOf('fifthColour')), s)
     expect(loadProgress(s).badge).toBeUndefined()
   })
 
