@@ -8,8 +8,8 @@ why: Muzzy 2026-11-02: "this would help the game not feel so impossibly long" �
 Check: check:fast · e2e: ladder, unlocks, story, rank-select, payslip (the +8 note), upgrades, twists, white-goop, final-shift, ending, eyes · a career skim with RANK SELECT 0 → 30: each rank's beats show where the table says · check:full
 - [x] 🤖 1. ladder.json → ranks 0–30 per research/ladder-30.md §2 (beats, upgrades, titles, maxRank, grants) — content/tuning/ladder.json
 - [x] 🤖 2. The grants pay out + the Veteran's emergency-transfer note on the capture payday (en.json words) — src/progress/payslip.ts
-- [ ] 🤖 3. Ranks 18–19 quiet: no Veteran lines there; the takeover on 26–29 — content/story/moments.json
-- [ ] 🤖 4. The story re-pointed: 51 moments over 31 ranks (a draft mapping in research/ladder-30.md §8; joining lines only where needed) — content/tuning/ladder.json
+- [x] 🤖 3. Ranks 18–19 quiet: no Veteran lines there; the takeover on 26–29 — content/story/moments.json
+- [x] 🤖 4. The story re-pointed: 51 moments over 31 ranks (a draft mapping in research/ladder-30.md §8; joining lines only where needed) — content/tuning/ladder.json
 - [ ] 🤖 5. The tests/e2e that still assume old numbers ask the ladder; GDD §4/§5/§7 → 30 ranks — tests/progress/storyMoments.test.ts
 - [ ] 🙋 6. Muzzy reads the story mapping (research/ladder-30.md §8) and moves any moment he wants — .planning/research/ladder-30.md
 

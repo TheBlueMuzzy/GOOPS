@@ -120,6 +120,8 @@ Muzzy: "it'd be funny if the veteran who was helping us gets caught and turned i
 - **The ending:** when the tank opens, the speaker gives one last clear line in his voice, then goes quiet for good — that's where you finally lose touch with it.
 
 ## Story moments, rank by rank (0–50) — Sprint 13 draft
+> **F80 (2026-11-03): the ladder is 0–30 now.** The "Rank" column below is each moment's id (the rank it was written for); where it plays now is `content/tuning/ladder.json` → `story` — the mapping, with why, is `research/ladder-30.md` §8. Ranks 18–19 are silent after the capture (17).
+
 One moment per rank-up, shown at the console before the next shift (not skippable, so each is short: 1–3 lines, tap to move on). It plays in the voice's own place: **MON** = the top monitor (capitals, typed out) · **SPK** = the speaker (the talking bubble; `──` = static) · **HEAD** = in your head (the blobby bubble, lower case). **Look** = the attention call. Rank titles show on the end report when they change ("New title: …"), not in the moment.
 
 | Rank | Voice | Lines | Look |
