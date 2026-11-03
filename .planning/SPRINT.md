@@ -17,11 +17,11 @@ Check: check:fast · e2e: ladder, unlocks, story, rank-select, payslip (the +8 n
 Done when: from cracksGrow, each time a new crack would form there's an X% chance (twists.json, live in the Dev Kit) that instead an existing crack that isn't fully covered grows by one cell — from one of its UNCOVERED cells only (a covered cell never grows) into a free neighbour (diagonals per the existing setting) · no crack anywhere to extend → a normal new crack · today's timed growth (each uncovered cell rolling every 5–10 s: grow.everyMsMin/Max, baseChance, pressureWeight, leafMult, hopFalloff, minFalloff) is removed · Slow Cracks lowers X (Muzzy: "reduces that % chance of a crack expanding") · a grown crack still drains per cell, is sealed only when every cell is covered by its colour, counts its cells toward the quota (unchanged) · the growth plays the existing crack.grow sound + look · the Dev Kit select.json lists the new knob on the crack
 why: Muzzy 2026-11-02: two-colour pieces (15) and growing cracks (17) are close together, so growing cracks shouldn't hit as hard — "the same squares of cracks form, but the cracks growing does increase difficulty because you have to cover the whole crack".
 Check: unit tests (an extend only from uncovered cells; covered never grows; no candidate → a new crack; Slow Cracks lowers X; X = 0 = no growth; seeded = repeatable) · e2e/twists + crack-spread · check:full
-- [ ] 🤖 1. The rule: a new crack → X% extend an uncovered crack instead; the timer growth removed — src/engine/twists.ts
-- [ ] 🤖 2. Slow Cracks lowers X (its effect + description) — content/tuning/upgrades.json
-- [ ] 🤖 3. Tests + e2e (twists, crack-spread) + the Dev Kit knob (select.json) — tests/engine/twists.test.ts
-- [ ] 🤖 4. GDD §5 growing cracks + TDD (the rule, Muzzy's idea in Decisions) — .planning/GDD.md
-- [ ] 🤖 5. (tuning) X's starting value — content/tuning/twists.json
+- [x] 🤖 1. The rule: a new crack → X% extend an uncovered crack instead; the timer growth removed — src/engine/twists.ts
+- [x] 🤖 2. Slow Cracks lowers X (its effect + description) — content/tuning/upgrades.json
+- [x] 🤖 3. Tests + e2e (twists, crack-spread) + the Dev Kit knob (select.json) — tests/engine/twists.test.ts
+- [x] 🤖 4. GDD §5 growing cracks + TDD (the rule, Muzzy's idea in Decisions) — .planning/GDD.md
+- [x] 🤖 5. (tuning) X's starting value — content/tuning/twists.json
 
 ## Notes
 - Plan + Muzzy's answers: .planning/research/ladder-30.md (§2 the table, §3 scraps, §7 answers). No save remap (no beta players).
@@ -29,3 +29,9 @@ Check: unit tests (an extend only from uncovered cells; covered never grows; no 
 - Auto mode: taste calls go in as `Ask Muzzy:` and the work goes on with Claude's pick.
 - Ask Muzzy: the story mapping (F80 task 6) — Claude drafts it in research/ladder-30.md §8; the build uses the draft until he moves anything.
 - Ask Muzzy: X's starting value for F83 (Claude's pick: 25%, so about one in four new cracks grows an old one; F82 — Balance on 30 ranks measures it).
+- F83 (Claude, auto): which crack grows — a crack at random among those that can grow (at least one uncovered cell with a free cell next to it), then one of its uncovered cells that can, then one of its free cells (src/engine/twists.ts extendCrack). v1's leaf / hops-from-root weighting dropped: it was for a timer on every cell, and the pick by crack keeps it simple. The legal cells are today's: in the tank, not goop / a crack / a mended spot / the white goop, not above the pressure line; diagonals per grow.diagonals.
+- F83 (Claude, auto): the X roll happens once the new-crack timer is due (shift.ts growCracks); a hit grows a crack and resets the timer like a new crack. Not in a lesson, and not while Crack Down's low cracks are promised (those stay new cracks low down). X = 0 rolls nothing (same random numbers as before). If no new crack can be placed either, the timer stays due and it rolls again next step (as before F83: a rare full tank).
+- F83 (Claude, auto): Slow Cracks keeps its F43 effect (new cracks × 1.15–1.6 less often) and adds growChanceMult × 0.85 / 0.7 / 0.55 / 0.4 (X 25% → 21 / 17.5 / 14 / 10%: some growth always left). F75 kept: in the final shift only growChanceMult acts. Card words (en.json): "New cracks come less often, and fewer of them grow an old crack instead. In the final shift: only the growing slows."
+- F83: removed twists.json grow.everyMsMin / everyMsMax / baseChance / pressureWeight / leafMult / hopFalloff / minFalloff and the per-cell growMs clock (Crack.parent stays: the seam the tank draws). The Dev Kit: this game has no content/devkit/select.json, so the knob is the Tuning tab's twists.json grow.extendChance (_help + _ranges) — nothing to list. The bots (scripts/bots) run the real engine, so they follow the new rule with no change.
+- F83 tuning: grow.extendChance 0.25 (Claude's pick, the Ask Muzzy above) — why: about one in four new cracks grows an old one — F82 — Balance on 30 ranks measures it.
+- F83 red-first: tests/engine/twists.test.ts "no timed growth" failed on the old engine (an uncovered crack with no new crack due grew to 180 cells in 60 s), commit 006e4b4; green after.
