@@ -10,17 +10,23 @@
 // refills the laser, so being at the console is never worse than before.
 import type { MachineId, MachineState, ShiftEvent } from './types'
 import type { Modifiers } from './upgrades'
+import { rankOf } from '../progress/ladder'
 
 // The shape of content/tuning/breakdowns.json.
 export interface BreakdownConfig {
   consoleTimeScale?: number // read by the game, not the engine
   cooldown: { maxSeconds: number; minSeconds: number; margin: number }
-  laser: { unlockRank: number; drainPerCell: number; refillPerPiece: number; repairSliders?: number } // repairSliders: the console's, not the engine's
-  visor: { unlockRank: number; graceMs: number; fadeMs: number; breakAt: number; brokenHealth: number; recoverPerSec: number; repairButtons?: number } // repairButtons: the console's
-  controls: { unlockRank: number; heatPerSpin: number; coolDelayMs: number; coolPerSec: number; repairCorners?: number } // repairCorners: the console's
+  laser: { drainPerCell: number; refillPerPiece: number; repairSliders?: number } // repairSliders: the console's, not the engine's
+  visor: { graceMs: number; fadeMs: number; breakAt: number; brokenHealth: number; recoverPerSec: number; repairButtons?: number } // repairButtons: the console's
+  controls: { heatPerSpin: number; coolDelayMs: number; coolPerSec: number; repairCorners?: number } // repairCorners: the console's
 }
 
 export const MACHINE_IDS: readonly MachineId[] = ['laser', 'visor', 'controls']
+
+// F78: the ladder beat each machine can break from (content/tuning/ladder.json)
+export const MACHINE_BEATS: Record<MachineId, string> = { laser: 'laserBreaks', visor: 'visorBreaks', controls: 'controlsBreak' }
+/** The rank a machine can break from (the ladder, read live). */
+export const machineRank = (id: MachineId) => rankOf(MACHINE_BEATS[id])
 
 const EPSILON = 1e-9 // so 25 × 0.04 counts as exactly empty
 
@@ -41,7 +47,7 @@ export class Machines {
     this.emit = emit
     const machine = (id: MachineId): MachineState => ({
       id,
-      unlocked: !!config && rank >= config[id].unlockRank,
+      unlocked: !!config && rank >= machineRank(id),
       health: 1,
       broken: false,
       cooldownMs: 0,
@@ -129,7 +135,7 @@ export class Machines {
     m.broken = false
     m.brokenMs = 0
     m.health = 1
-    const seconds = Math.max(cfg.cooldown.minSeconds, cfg.cooldown.maxSeconds - (this.rank - cfg[id].unlockRank))
+    const seconds = Math.max(cfg.cooldown.minSeconds, cfg.cooldown.maxSeconds - (this.rank - machineRank(id)))
     m.cooldownMs = seconds * 1000 * this.mods.breakdownCooldownMult
     if (id === 'visor') this.visorQuietMs = 0
     if (id === 'controls') this.controlsIdleMs = 0

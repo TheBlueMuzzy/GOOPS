@@ -19,7 +19,8 @@ import { createShift } from '../../src/engine'
 import type { BreakdownConfig, MachineId, ShiftConfig, ShiftEngine, TwistsConfig, UpgradeDef, WhiteGoopConfig } from '../../src/engine'
 import type { FinalShiftConfig } from '../../src/engine/finalShift'
 import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, type Progress } from '../../src/progress/progression'
-import { activeSlots, buyLevel, costOf, levelOf, maxLevelOf, setEquipped, takeBackLevel, upgradeBook, upgradesForShift, whyNotBuy } from '../../src/progress/upgradeShop'
+import { activeSlots, buyLevel, costOf, levelOf, maxLevelOf, setEquipped, takeBackLevel, upgradeBook, upgradeRank, upgradesForShift, whyNotBuy } from '../../src/progress/upgradeShop'
+import { ladder, maxRank } from '../../src/progress/ladder'
 import { playableUpgrades } from '../../src/engine/upgrades'
 import { repairSteps } from '../../src/game/repairs'
 import { swapHoldMs } from '../../src/input/controls'
@@ -222,10 +223,10 @@ export function nextBuy(p: Progress, rank: number, style: BuyStyle, skip: string
   const open = shopUpgrades().filter((u) => !neverBuy.includes(u.id) && whyNotBuy(p, u.id, rank) === null)
   if (!open.length) return null
   // fewest levels (as a share of its max) first, then the older one (lower rank), then file order
-  const evenly = (list: UpgradeDef[]) => [...list].sort((a, b) => levelOf(p, a.id) / maxLevelOf(a) - levelOf(p, b.id) / maxLevelOf(b) || a.rank - b.rank)[0]
+  const evenly = (list: UpgradeDef[]) => [...list].sort((a, b) => levelOf(p, a.id) / maxLevelOf(a) - levelOf(p, b.id) / maxLevelOf(b) || upgradeRank(a) - upgradeRank(b))[0]
   if (style === 'rush') {
-    const newest = Math.max(...open.map((u) => bandOf(u.rank)))
-    return evenly(open.filter((u) => bandOf(u.rank) === newest)).id
+    const newest = Math.max(...open.map((u) => bandOf(upgradeRank(u))))
+    return evenly(open.filter((u) => bandOf(upgradeRank(u)) === newest)).id
   }
   if (style === 'activesFirst') {
     const actives = open.filter((u) => u.type === 'active' || u.feature === 'abilitySlots')
@@ -302,7 +303,7 @@ const shiftSeed = (careerSeed: number, k: number) => careerSeed * 100_000 + k
 export function runCareer(input: CareerInput): CareerResult {
   const maxShifts = input.maxShifts ?? economy.maxShifts
   const maxFinal = input.finalTries ?? economy.finalTries
-  const top = progressionJson.maxRank
+  const top = maxRank()
   const r: CareerResult = { bot: input.bot, style: input.style, seed: input.seed, shifts: [], reachedRank: 0, finalWon: false, finalTries: 0,
     ownedAt: {}, equippedAt: {}, loadout50: null, loadout50Raw: null, scrapsEarned: 0, scrapsSpent: 0, unspentByRank: {} }
   // the first day (a guided training shift) always ends at rank 1 — rewardFirstDay with no score (it needs no quota)
@@ -341,7 +342,7 @@ export function runCareer(input: CareerInput): CareerResult {
     }
   }
   r.reachedRank = rankInfo(p).rank
-  r.scrapsEarned = r.reachedRank * progressionJson.scrapsPerRank
+  r.scrapsEarned = r.reachedRank * progressionJson.scrapsPerRank + ladder.grantsUpTo('scraps', r.reachedRank)
   r.scrapsSpent = p.scrapsSpent
   return r
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { cracksNeededFor, junkCount, paletteSize } from '../../src/engine/config'
 import { createShift } from '../../src/engine'
 import { realConfig } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 import gooColors from '../../content/tuning/goo-colors.json'
 
 const config = realConfig()
@@ -27,7 +28,7 @@ describe('colours by rank (v1)', () => {
 describe('cracks needed (the quota)', () => {
   it('matches the formula with shift.json quota', () => {
     const q = config.quota
-    const add = (rank: number) => (q.addByRank ?? []).filter((s) => rank >= s.rank).at(-1)?.count ?? 0
+    const add = (rank: number) => (q.addByBeat ?? []).filter((s) => rank >= rankOf(s.beat)).at(-1)?.count ?? 0
     const want = (rank: number) => Math.max(1, Math.round(q.base + q.perColour * paletteSize(config, rank) + q.perRank * rank + add(rank)))
     expect(cracksNeededFor(config, 0)).toBe(want(0))
     expect(cracksNeededFor(config, 12)).toBe(want(12))
@@ -39,8 +40,8 @@ describe('cracks needed (the quota)', () => {
     expect(cracksNeededFor(withQuota({ base: 2, perColour: 1, perRank: 0.3 }), 10)).toBe(10) // 2 + 5 colours + 3
     expect(cracksNeededFor(withQuota({ base: 0, perColour: 0, perRank: 0 }), 5)).toBe(1)
   })
-  it('addByRank (F52): a band of ranks asks for more or fewer, from its rank on', () => {
-    const q = { base: 1, perColour: 1, perRank: 0, addByRank: [{ rank: 0, count: 0 }, { rank: 30, count: -4 }, { rank: 40, count: 2 }] }
+  it('addByBeat (F52): a band of ranks asks for more or fewer, from its rank on', () => {
+    const q = { base: 1, perColour: 1, perRank: 0, addByBeat: [{ beat: 'firstDay', count: 0 }, { beat: 'cracksGrow', count: -4 }, { beat: 'quotaEaseEnds', count: 2 }] }
     const at = (rank: number) => cracksNeededFor({ ...config, quota: q }, rank)
     expect([at(29), at(30), at(39), at(40)]).toEqual([1 + 5, 1 + 6 - 4, 1 + 6 - 4, 1 + 6 + 2])
   })

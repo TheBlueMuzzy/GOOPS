@@ -48,7 +48,7 @@ export const art = {
     monitor: layer(scene.layers.monitor),
     // F32: the monitor's screen as the lesson message (its colours and edges) · F45 glitch: the not-a-face (rank 45)
     crt: { ...scene.crt, glitch: url(scene.crt.glitch) },
-    hatch: { src: url(scene.hatch.file), at: rect(scene.hatch.at), fromRank: scene.hatch.fromRank }, // F45: rattles at 46, 47
+    hatch: { src: url(scene.hatch.file), at: rect(scene.hatch.at) }, // F45: rattles at 46, 47; shows from the ladder beat hatch (F78)
     valve: { at: rect(scene.valve.at), hatchOpen: url(scene.valve.openFile) }, // F64: the release valve panel + the open hatch
     career: scene.career, // F65: the new career's gold trim (Console.tsx)
     monitorDrop: scene.monitorDrop, // F35: how much lower the monitor hangs at rest (0 while a lesson shows the periscope)

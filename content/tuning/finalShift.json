@@ -1,7 +1,6 @@
 {
-  "_about": "F64 THE FINAL SHIFT (rank 50, the boss level — design/story.md 'The final shift'). All goop and every crack is one colour (galaxy black): any goop merges with any, any goop seals any crack. Goop falls faster and more often, Management's pressure climbs faster, the Veteran (the white goop) drops in first and seals the cracks you can't reach — his seals are free, but he wears down while the tank is hurt (F75: keep the tank healthy and he lasts; used up, he says a last line and is gone, and the shift goes on). Seals (his too) count toward 3 release-valve stages; while a stage waits for you at the console, seals don't count. Lose (F75: only when the tank breaks): goop over the top · integrity 0 (each ends the shift at once). Win with him alive = the happy ending (ending.json vetLines). Win: the third stage opened. Read by the engine (src/engine/shift.ts, finalShift.ts) at the moment each number is used, on the rules clock — live in the Dev Kit. Times in seconds.",
+  "_about": "F64 THE FINAL SHIFT (rank 50 — content/tuning/ladder.json beat finalShift, F78 — the boss level — design/story.md 'The final shift'). All goop and every crack is one colour (galaxy black): any goop merges with any, any goop seals any crack. Goop falls faster and more often, Management's pressure climbs faster, the Veteran (the white goop) drops in first and seals the cracks you can't reach — his seals are free, but he wears down while the tank is hurt (F75: keep the tank healthy and he lasts; used up, he says a last line and is gone, and the shift goes on). Seals (his too) count toward 3 release-valve stages; while a stage waits for you at the console, seals don't count. Lose (F75: only when the tank breaks): goop over the top · integrity 0 (each ends the shift at once). Win with him alive = the happy ending (ending.json vetLines). Win: the third stage opened. Read by the engine (src/engine/shift.ts, finalShift.ts) at the moment each number is used, on the rules clock — live in the Dev Kit. Times in seconds.",
   "_help": {
-    "rank": "The final shift is played at this rank (50 = the top rank, progression.json maxRank).",
     "colour": "The one colour every goop and crack has in the final shift (a name from shift.json colors — 'black', the 7th, arrives only here).",
     "fallSpeedMult": "Pieces fall this many times faster than in any other shift (fast drop too). 1 = the normal speed.",
     "pressureRiseMult": "Pressure climbs this many times faster ('PRESSURE INCREASED 400%'). 1 = the normal rise (shift.json pressure.riseMsToFull).",
@@ -28,7 +27,6 @@
     "bots.valveSec": "Balance bots only (scripts/bots): a valve stage stands in as this many seconds at the console, where the shift runs at breakdowns.json consoleTimeScale — until Muzzy's valve mini-game (task 5) is built."
   },
   "_ranges": {
-    "rank": [1, 60, 1],
     "fallSpeedMult": [0.5, 4, 0.05],
     "pressureRiseMult": [0.5, 5, 0.05],
     "crackRateMult": [0.5, 4, 0.05],
@@ -50,7 +48,6 @@
     "bots.valveSec": [0, 30, 0.5],
     "consoleTimeScale": [0.05, 1, 0.05]
   },
-  "rank": 50,
   "consoleTimeScale": 0.25,
   "colour": "black",
   "fallSpeedMult": 1.6,

@@ -8,7 +8,7 @@ import { createWhiteGoopView } from '../view/whiteGoopView'
 import whiteGoopLook from '../../content/tuning/whiteGoop.json'
 import finalShiftTuning from '../../content/tuning/finalShift.json'
 import valveTuning from '../../content/tuning/valve.json'
-import eyesLook from '../../content/tuning/eyes.json'
+import { rankOf } from '../progress/ladder'
 import talk from '../../content/tuning/talk.json'
 import text from '../../content/text/en.json'
 import type { GooRenderer, GooView } from '../goo/types'
@@ -165,7 +165,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
     const beam = createZapBeam(zapCanvas.current!) // F67: the zap's beam + laser point (src/view/zapBeam.ts)
     let lastTap: { x: number; y: number; at: TapPoint } | null = null // the last zap tap: stage px + the tank point it sent
     // F62 the goop's faces: told the rank, the pressure and what the eyes look at (one object, refilled every frame)
-    // F45 (story 48 "…we go… home…"): the first shift from eyes.json chorusRank, once per device (tips memory, so Replay
+    // F45 (story 48 "…we go… home…"): the first shift from the ladder beat eyesChorus, once per device (tips memory, so Replay
     // lessons plays it again), every mouth in the tank opens at once — the faces say when it starts
     const chorusSeen = () => tipsMemory().seen(CHORUS_SEEN)
     const story: FaceStory = { rank: 0, pressure: 0, focus: null, onChorus: () => tipsMemory().markSeen(CHORUS_SEEN) }
@@ -273,7 +273,7 @@ export function ShiftStage({ engine, speed, inputOn, panel, side, nextWindow, ab
       const focus = laser ? laser.at : pieceFocus(s, camera, pieceAt)
       white.step(s, events, gooDt, focus)
       story.rank = s.rank
-      if (story.chorus === undefined) story.chorus = s.rank >= eyesLook.chorusRank && !chorusSeen() // (decided once, at the shift's first frame)
+      if (story.chorus === undefined) story.chorus = s.rank >= rankOf('eyesChorus') && !chorusSeen() // (decided once, at the shift's first frame)
       story.pressure = s.pressure
       story.still = still
       story.focus = white.eyesOnHim(s, vetAt) ?? focus

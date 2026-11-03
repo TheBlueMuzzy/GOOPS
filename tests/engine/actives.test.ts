@@ -20,7 +20,7 @@ const colorized = (n: number) => level('goopColorizer', n).pieces
 // never wears out
 function config(): ShiftConfig {
   const c = oneShapeConfig([[0, 0], [1, 0], [0, 1], [1, 1]])
-  c.colorsByRank = [{ rank: 0, count: 4 }]
+  c.colorsByBeat = [{ beat: 'firstDay', count: 4 }]
   c.integrity.drainPerCrackPerSec = 0
   return c
 }

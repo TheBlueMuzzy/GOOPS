@@ -8,6 +8,7 @@ import type { AbilitySpec, ShiftConfig, ShiftEngine, ShiftEvent, ShiftOptions, U
 import { ABILITY_EFFECTS } from '../../src/engine/abilities'
 import { isFewerStepsName, isModifierName } from '../../src/engine/upgrades'
 import { createRng } from '../../src/engine/rng'
+import { upgradeRank } from '../../src/progress/upgradeShop'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, sealACrack, straightLineCracks, tank, tickUntil } from './helpers'
 
 const book = upgradesJson as UpgradeBook
@@ -100,10 +101,10 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
   it('passives multiply ("mul") or add ("add"), then get clamped', () => {
     const test: UpgradeBook = {
       upgrades: [
-        { id: 'a', name: 'a', type: 'passive', rank: 0, maxLevel: 3, effects: [{ modifier: 'fallSpeedMult', op: 'mul', byLevel: [1.1, 1.2, 1.5] }] },
-        { id: 'b', name: 'b', type: 'passive', rank: 0, maxLevel: 2, effects: [{ modifier: 'fallSpeedMult', op: 'add', byLevel: [0.5] }] },
-        { id: 'c', name: 'c', type: 'passive', rank: 0, maxLevel: 1, effects: [{ modifier: 'crackEveryMult', op: 'mul', byLevel: [-4] }] },
-        { id: 'w', name: 'w', type: 'feature', rank: 0, maxLevel: 1, feature: 'nextWindow' },
+        { id: 'a', name: 'a', type: 'passive', maxLevel: 3, effects: [{ modifier: 'fallSpeedMult', op: 'mul', byLevel: [1.1, 1.2, 1.5] }] },
+        { id: 'b', name: 'b', type: 'passive', maxLevel: 2, effects: [{ modifier: 'fallSpeedMult', op: 'add', byLevel: [0.5] }] },
+        { id: 'c', name: 'c', type: 'passive', maxLevel: 1, effects: [{ modifier: 'crackEveryMult', op: 'mul', byLevel: [-4] }] },
+        { id: 'w', name: 'w', type: 'feature', maxLevel: 1, feature: 'nextWindow' },
       ],
     }
     const r = resolveUpgrades(test, { a: 2, b: 2, c: 1, w: 1 })
@@ -115,9 +116,9 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
   it('repair shortcuts ("Quick Fix" hook): whole steps off a repair, summed per machine, rounded down, never negative', () => {
     const test: UpgradeBook = {
       upgrades: [
-        { id: 'q', name: 'q', type: 'passive', rank: 0, maxLevel: 2, effects: [{ modifier: 'laserRepairFewerSteps', op: 'add', byLevel: [1, 2] }] },
-        { id: 'v', name: 'v', type: 'passive', rank: 0, maxLevel: 1, effects: [{ modifier: 'visorRepairFewerSteps', op: 'add', byLevel: [1.7] }] },
-        { id: 'x', name: 'x', type: 'passive', rank: 0, maxLevel: 1, effects: [{ modifier: 'controlsRepairFewerSteps', op: 'add', byLevel: [-3] }] },
+        { id: 'q', name: 'q', type: 'passive', maxLevel: 2, effects: [{ modifier: 'laserRepairFewerSteps', op: 'add', byLevel: [1, 2] }] },
+        { id: 'v', name: 'v', type: 'passive', maxLevel: 1, effects: [{ modifier: 'visorRepairFewerSteps', op: 'add', byLevel: [1.7] }] },
+        { id: 'x', name: 'x', type: 'passive', maxLevel: 1, effects: [{ modifier: 'controlsRepairFewerSteps', op: 'add', byLevel: [-3] }] },
       ],
     }
     expect(resolveUpgrades(test, { q: 1 }).fewerRepairSteps).toEqual({ laser: 1, visor: 0, controls: 0 })
@@ -143,7 +144,7 @@ describe('resolveUpgrades (upgrades.json → modifiers, abilities, features)', (
 describe('the shop’s upgrades (F34: ranks 2–9, design/upgrades-map.md "F33 decisions")', () => {
   const shop = playableUpgrades(book)
   it('one upgrade for each rank 2–9, then ranks 10–38 (F42 actives + slots, F43 passives, F48 Quick Fix), in that order, with v1’s max levels', () => {
-    expect(shop.map((u) => [u.id, u.rank, u.maxLevel])).toEqual([
+    expect(shop.map((u) => [u.id, upgradeRank(u), u.maxLevel])).toEqual([
       ['circuitStabilizer', 2, 4], ['autoPopper', 3, 4], ['capacitorEfficiency', 4, 4], ['cooldownBooster', 5, 3],
       ['gearLubrication', 6, 4], ['focusMode', 7, 1], ['denseGoop', 8, 4], ['pressureControl', 9, 8],
       ['junkUniformer', 10, 4], ['goopSwap', 12, 4], ['goopDump', 15, 3], ['sealingBonus', 18, 4], ['activeSlot', 20, 1],
@@ -445,7 +446,7 @@ describe('Low cracks (test): an active ability', () => {
 
 describe('resolveUpgrades — review fixes', () => {
   const passive = (id: string, op: 'add' | 'mul', v: number) =>
-    ({ id, name: id, type: 'passive', rank: 0, maxLevel: 1, effects: [{ modifier: 'integrityDrainMult', op, byLevel: [v] }] })
+    ({ id, name: id, type: 'passive', maxLevel: 1, effects: [{ modifier: 'integrityDrainMult', op, byLevel: [v] }] })
 
   it('mixing add and mul gives the same answer whatever the JSON order: (1 + adds) × muls', () => {
     const a = { upgrades: [passive('A', 'add', 0.2), passive('B', 'mul', 0.5)] } as unknown as UpgradeBook
@@ -458,7 +459,7 @@ describe('resolveUpgrades — review fixes', () => {
   it('a typo in the file (no maxLevel, no byLevel) is survived, never NaN or a crash', () => {
     const book = { upgrades: [
       { id: 'noMax', name: 'x', type: 'feature', rank: 0 },
-      { id: 'noLevels', name: 'y', type: 'passive', rank: 0, maxLevel: 2, effects: [{ modifier: 'integrityDrainMult', op: 'mul' }] },
+      { id: 'noLevels', name: 'y', type: 'passive', maxLevel: 2, effects: [{ modifier: 'integrityDrainMult', op: 'mul' }] },
     ] } as unknown as UpgradeBook
     const r = resolveUpgrades(book, { noMax: 3, noLevels: 1 })
     expect(r.features.noMax).toBe(1)

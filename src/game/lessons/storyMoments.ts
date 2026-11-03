@@ -2,7 +2,7 @@
 // console between shifts, once per device: Management types on the monitor (voice "mon"), the Veteran talks in his
 // talking bubble over the same monitor area (voice "spk"; a mon line in the middle of his = Management cutting in —
 // Muzzy, 2026-10-24). Not skippable but short: a tap / Enter moves to the next line. Which lines play when:
-// content/story/moments.json; words: en.json story.lines. Seen ones are kept in the kit's tips memory as "story:<rank>",
+// content/story/moments.json; words: en.json story.lines. Seen ones are kept in the kit's tips memory as "story:<moment id>" (F78: a moment's rank is the ladder's — content/tuning/ladder.json story),
 // so Settings → Replay lessons plays them again. App asks atConsole(rank) before the console's lessons (the first day,
 // the upgrades unlock), and those wait while a moment plays.
 import { tipsMemory } from '../../ui/kit'
@@ -10,6 +10,7 @@ import { looksClock } from '../../devkit/gameClock'
 import momentsFile from '../../../content/story/moments.json'
 import text from '../../../content/text/en.json'
 import { loadCareers, operatorName } from '../../progress/save'
+import { ladder, rankOf } from '../../progress/ladder'
 
 // F63: head = the goop in your head (ranks 31–39) — the whisper bubble over the monitor area; him = the Veteran from
 // inside the white goop is the one talking (35, 37) · F45: goop = the goop through the speaker (41, 43, 48) — the
@@ -22,43 +23,57 @@ export type Voice = 'mon' | 'spk' | 'head' | 'goop'
 export type MonitorLook = 'flicker' | 'alarm' | 'glitch'
 export type StoryLine = { voice: Voice; words: string; monitor?: MonitorLook; crackle?: boolean; cut?: boolean; sign?: boolean; him?: boolean; rattle?: boolean }
 type Moment = { look?: string; lines: StoryLine[] }
-// F40: the goop gets better at talking — each stage (from a rank on) has its own words: feelings (8) → single words
-// (15) → names (24). From noVoicesFrom, Management answers a whisper (en.json story.lines.noVoices).
-type WhisperStage = { from: number; say: string[] }
-type Whispers = { coldAt: number; stages: WhisperStage[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number
-  noVoicesFrom: number; noVoicesDelaySeconds: number; noVoicesSeconds: number }
+// F40: the goop gets better at talking — each stage (from a ladder beat's rank on — F78) has its own words: feelings (8)
+// → single words (15) → names (24). From the beat noVoices, Management answers a whisper (en.json story.lines.noVoices).
+type WhisperStage = { beat: string; say: string[] }
+type Whispers = { stages: WhisperStage[]; afterSeconds: [number, number]; showSeconds: number; heightInTank: number
+  noVoicesDelaySeconds: number; noVoicesSeconds: number }
 export type StoryLooks = { flickerSeconds: number; alarmSeconds: number; alarmColour: string; alarmWords: string; crackleEvery: number; cutSeconds: number
   goopOutline: 'wave' | 'plain'; glitchAfterSeconds: number; glitchSeconds: number; glitchColour: string; rattleSeconds: number; rattleShake: number; rattleTimes: number }
 type MomentsFile = { catchUp: number; moments: Record<string, Moment>; newCareer?: Record<string, Moment>; events?: Record<string, Moment>
   whispers: Whispers; looks: StoryLooks }
 
 export const storyFile = momentsFile as unknown as MomentsFile
-const seenId = (rank: number) => `story:${rank}`
+// (a moment's tips-memory id: "story:<moment id>" — the ids are moments.json's keys)
+export const storySeenId = (id: string) => `story:${id}`
 // F74: a moment for something that happened, not a rank — moments.json events. rankLock = the first time the rank lock
 // holds (the meter full, no quota met this rank): Management explains it. Seen as "story:rankLock".
 export const RANK_LOCK_SEEN = 'story:rankLock'
 
-/** The ranks whose moments are due at this rank: every unseen one up to it, the newest `catchUp` of them, oldest first. */
-export function dueRanks(rank: number, seen: (rank: number) => boolean, file: MomentsFile = storyFile): number[] {
-  const due = Object.keys(file.moments).map(Number).filter((r) => r <= rank && !seen(r)).sort((a, b) => a - b)
+/** F78: the rank a moment plays at — the ladder's story group (content/tuning/ladder.json), read live. */
+export const momentRank = (id: string) => rankOf(`story.${id}`)
+
+/** Every moment id with its rank, in rank order (the ladder's order breaks ties: more than one moment on a rank is fine). */
+export function momentsByRank(file: MomentsFile = storyFile): { id: string; rank: number }[] {
+  const order = ladder.group('story').map((m) => m.name)
+  return Object.keys(file.moments).map((id) => ({ id, rank: momentRank(id), at: order.indexOf(id) }))
+    .sort((a, b) => a.rank - b.rank || a.at - b.at).map(({ id, rank }) => ({ id, rank }))
+}
+
+/** The moments due at this rank: every unseen one whose rank is reached, the newest `catchUp` of them, oldest first. */
+export function dueMoments(rank: number, seen: (id: string) => boolean, file: MomentsFile = storyFile): string[] {
+  const due = momentsByRank(file).filter((m) => m.rank <= rank && !seen(m.id)).map((m) => m.id)
   return due.slice(Math.max(0, due.length - Math.max(1, file.catchUp)))
 }
 
-/** F65: a rank's moment — in a new career (a career done on this device) its newCareer one when it has one (rank 0's
+/** F65: a moment — in a new career (a career done on this device) its newCareer one when it has one (moment 0's
  *  "WELCOME BA—" and your title), else the usual. */
-export function momentFor(rank: number, careers: number, file: MomentsFile = storyFile): Moment {
-  return (careers > 0 ? file.newCareer?.[String(rank)] : undefined) ?? file.moments[String(rank)]
+export function momentFor(id: string, careers: number, file: MomentsFile = storyFile): Moment {
+  return (careers > 0 ? file.newCareer?.[id] : undefined) ?? file.moments[id]
 }
 
-/** The whisper stage at this rank: the last one whose `from` it has reached (null = none yet). */
-export function whisperStage(rank: number, w: Whispers = storyFile.whispers): WhisperStage | null {
-  let stage: WhisperStage | null = null
-  for (const s of w.stages) if (rank >= s.from && s.say.length && (!stage || s.from >= stage.from)) stage = s
+/** The whisper stage at this rank: the last one whose beat it has reached (null = none yet), with that beat's rank. */
+export function whisperStage(rank: number, w: Whispers = storyFile.whispers): { from: number; say: string[] } | null {
+  let stage: { from: number; say: string[] } | null = null
+  for (const s of w.stages) {
+    const from = rankOf(s.beat)
+    if (rank >= from && s.say.length && (!stage || from >= stage.from)) stage = { from, say: s.say }
+  }
   return stage
 }
 
 /** In-shift whispers (Whisper.tsx): which one this shift gets at this rank (null = none) — one of its stage's words
- *  (feelings from 8, single words from 15, names from 24); before the first stage, "cold" once per device from coldAt.
+ *  (feelings from 8, single words from 15, names from 24); before the first stage, "cold" once per device from the ladder beat whisperCold.
  *  pick = a random 0..1. */
 export const COLD_SEEN = 'whisper:cold'
 /** F45: the shift after story 48 — every mouth opened at once (ShiftStage.tsx, eyes.json chorus*): once per device */
@@ -66,12 +81,12 @@ export const CHORUS_SEEN = 'look:mouths-open'
 export function whisperFor(rank: number, coldSeen: boolean, pick: number, w: Whispers = storyFile.whispers): string | null {
   const stage = whisperStage(rank, w)
   if (stage) return stage.say[Math.floor(pick * stage.say.length) % stage.say.length]
-  if (rank >= w.coldAt && !coldSeen) return 'cold'
+  if (rank >= rankOf('whisperCold') && !coldSeen) return 'cold'
   return null
 }
 
-/** F40: does Management answer a whisper at this rank? ("THERE ARE NO VOICES IN THE TANK…", story.md, rank 12+) */
-export const monitorDeniesVoices = (rank: number, w: Whispers = storyFile.whispers) => rank >= w.noVoicesFrom
+/** F40: does Management answer a whisper at this rank? ("THERE ARE NO VOICES IN THE TANK…", story.md — the beat noVoices) */
+export const monitorDeniesVoices = (rank: number) => rank >= rankOf('noVoices')
 
 /** The words of a line (its key when en.json has none, so a missing line shows up instead of going quiet).
  *  F63: {name} = your name — the one you signed at rank 0, else "Operator #4471" (en.json story.sign.fallback). */
@@ -104,8 +119,8 @@ export const storyMoments = {
     if (view) return true
     if (quietForChecks()) return false
     const memory = tipsMemory(), careers = loadCareers()
-    queue = dueRanks(rank, (r) => memory.seen(seenId(r)))
-      .map((r) => ({ rank: r, id: seenId(r), moment: momentFor(r, careers) }))
+    queue = dueMoments(rank, (id) => memory.seen(storySeenId(id)))
+      .map((id) => ({ rank: momentRank(id), id: storySeenId(id), moment: momentFor(id, careers) }))
       .filter((m) => m.moment?.lines.length)
     const lock = storyFile.events?.rankLock
     if (locked && lock?.lines.length && !memory.seen(RANK_LOCK_SEEN)) queue.push({ rank, id: RANK_LOCK_SEEN, moment: lock })

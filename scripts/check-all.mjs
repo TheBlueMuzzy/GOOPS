@@ -55,6 +55,7 @@ const E2E = [
   ['rank-select', 'e2e/rank-select.mjs', ''],  // 5351 (F70: version · RANK SELECT · credit; pick 0 / pick 7; every portrait size)
   ['your-name', 'e2e/your-name.mjs', ''],      // 6366 (F66: PLEASE SIGN HERE on rank 0's monitor — sign, reload, the 12 limit, skip, RANK SELECT 0 wipes it; every portrait size)
   ['zap', 'e2e/zap.mjs', ''],                  // 5355 (F67: the pop's tap point · beam top centre → tap · white-hot · spray · Particle · reduce motion; every portrait size)
+  ['ladder', 'e2e/ladder.mjs', ''],            // 5397 (F78: one rank ladder file — beats change the game at their rank, not below (colour, laser, white goop, wild); a live move of beats.wildGoop in the Dev Kit's Tuning tab; 390 + 1440)
   ['twists', 'e2e/twists.mjs', ''],            // 6420 (F39: two-colour pieces at 20, a crack growing + sealed whole at 30, wild goop at 40 + the white goop's ring round a grown crack; every portrait size + Particle)
   ['white-goop', 'e2e/white-goop.mjs', ''],    // 6400 (F63: the white goop — not at 30, drops in at 31, laser "ow", oozes + seals a crack, behind goop, Dev Kit pause; every portrait size + Particle)
   ['ending', 'e2e/ending.mjs', ''],            // 6480 (F65: win → every ending step in order → the end-game screen → the new career (rank 0, Former Employee, gold trim, no first day, the sign-in); lose → One Of Us then a win; resume; RANK SELECT; every portrait size)

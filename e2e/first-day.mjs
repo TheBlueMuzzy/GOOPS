@@ -35,9 +35,10 @@ mkdirSync(OUT, { recursive: true })
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const W = en.lessons['first-day']
 const SHIFT = JSON.parse(readFileSync('content/tuning/shift.json', 'utf8'))
+const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
 const DRAIN_MS = SHIFT.rupture.drainMs
 // day one's quota (rank 0), worked out as config.ts cracksNeededFor does — D3 + E1 seal 2 of it, F1 the rest
-const COLOURS_AT_0 = SHIFT.colorsByRank.filter((c) => c.rank <= 0).at(-1).count
+const COLOURS_AT_0 = SHIFT.colorsByBeat.filter((c) => LADDER.beats[c.beat] <= 0).at(-1).count
 const QUOTA = Math.max(1, Math.round(SHIFT.quota.base + SHIFT.quota.perColour * COLOURS_AT_0))
 const LEFT_AT_F1 = QUOTA - 2
 const words = (id, input) => (typeof W[id] === 'string' ? W[id] : W[id][input])

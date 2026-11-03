@@ -8,6 +8,7 @@ import tuning from '../../content/tuning/payslip.json'
 import { createRng, type Rng } from '../engine/rng'
 import type { MachineId } from '../engine/types'
 import { xpToNext, type ShiftReward } from './progression'
+import { rankOf } from './ladder'
 
 export type PayslipTuning = typeof tuning
 
@@ -23,15 +24,16 @@ export interface ShiftFacts {
 }
 export const NO_FACTS: ShiftFacts = { ruptured: false, broke: [], openCracks: 0, goopLeft: false, refusedZaps: 0, consoleSeconds: 0 }
 
-/** F40: is the once-only fine for knowing the Veteran due on this shift's report? (at or after caughtRank, not had yet) */
-export const associationDue = (facts: ShiftFacts, rank: number, t: PayslipTuning = tuning) => rank >= t.caughtRank && !facts.associationFined
+/** F40: is the once-only fine for knowing the Veteran due on this shift's report? (at or after the ladder beat
+ *  veteranCaught, not had yet) */
+export const associationDue = (facts: ShiftFacts, rank: number) => rank >= rankOf('veteranCaught') && !facts.associationFined
 
 /** F40: do the report's words at this rank use the after-capture wording (en.json payslip.afterCaught)? */
-export const afterCaught = (rank: number, t: PayslipTuning = tuning) => rank >= t.caughtRank
+export const afterCaught = (rank: number) => rank >= rankOf('veteranCaught')
 
 /** F63: does the report list you under "Pending retirements" (story.md rank 39: "…your name… is on a list…")? From the
- *  shift that reaches pendingRetirementRank on, every report. */
-export const pendingRetirement = (rankAfter: number, t: PayslipTuning = tuning) => rankAfter >= t.pendingRetirementRank
+ *  shift that reaches the ladder beat pendingRetirement on, every report. */
+export const pendingRetirement = (rankAfter: number) => rankAfter >= rankOf('pendingRetirement')
 
 // One line on the payslip: what it's for (a key into en.json payslip) and how many credits
 export interface PayLine { key: string; amount: number }
@@ -93,8 +95,8 @@ export function pickFines(net: number, facts: ShiftFacts, rank: number, rng: Rng
   const total = Math.round(net * t.fineShare)
   const lines = Math.min(t.fineLines, total)
   if (lines <= 0) return []
-  const silly = Object.entries(t.sillyFines).filter(([, from]) => rank >= from).map(([key]) => `silly.${key}`)
-  const first = associationDue(facts, rank, t) ? ['fines.association'] : []
+  const silly = Object.entries(t.sillyFines).filter(([, beat]) => rank >= rankOf(beat)).map(([key]) => `silly.${key}`)
+  const first = associationDue(facts, rank) ? ['fines.association'] : []
   const keys = [...first, ...shuffled(realFines(facts, t), rng).map((k) => `fines.${k}`), ...shuffled(silly, rng)].slice(0, lines)
   const amounts = split(total, keys.map(() => 0.5 + rng.next()))
   return keys.map((key, i) => ({ key, amount: amounts[i] }))
@@ -111,11 +113,11 @@ export function paydayItems(due: number, from: number, extras: number, t: Paysli
 function interestAt(from: number, t: PayslipTuning): number {
   const d = t.debt
   const base = d.interestMin + createRng(9001 + from).int(d.interestMax - d.interestMin + 1)
-  return from + 1 >= d.afterRank ? base * d.afterMult : base
+  return from + 1 >= rankOf('veteranCaught') ? base * d.afterMult : base
 }
-// What the payday from rank `from` pays off the debt (nothing from afterRank on: it only grows then)
+// What the payday from rank `from` pays off the debt (nothing from the Veteran's capture on: it only grows then)
 function paidOffAt(from: number, t: PayslipTuning): number {
-  return from + 1 >= t.debt.afterRank ? 0 : Math.round(xpToNext(from) * t.debt.paidShare)
+  return from + 1 >= rankOf('veteranCaught') ? 0 : Math.round(xpToNext(from) * t.debt.paidShare)
 }
 
 /** Passage debt at a rank: the start, plus every payday's interest, minus what each paid off. */
@@ -138,5 +140,5 @@ export function makePayslip(reward: ShiftReward, facts: ShiftFacts, opts: { firs
     paydays.push({ from, to: from + 1, due, items: paydayItems(due, from, opts.extras, t), debt: debtAt(from + 1, t), interest: interestAt(from, t) })
   }
   return { firstDay: opts.firstDay, gross, fines, net, paydays, credits: reward.after.xpIntoRank, due: reward.after.xpToNext, debt: debtAt(reward.after.rank, t),
-    pendingRetirement: pendingRetirement(reward.after.rank, t) }
+    pendingRetirement: pendingRetirement(reward.after.rank) }
 }

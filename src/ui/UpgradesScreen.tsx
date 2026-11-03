@@ -12,7 +12,7 @@ import { useContext, useState } from 'react'
 import { Button, Card, Modal, Pips, Row, ScrollArea, Stack, Text, Toggle, fill, screens, toast } from './kit'
 import { playableUpgrades, type UpgradeDef } from '../engine'
 import { scrapsAt } from '../progress/progression'
-import { buyLevel, costOf, isActive, levelCount, levelOf, levelPercent, maxLevelOf, ownsAny, respec, setEquipped, showsCount, takeBackLevel, upgradeBook, whyNotBuy } from '../progress/upgradeShop'
+import { buyLevel, costOf, isActive, levelCount, levelOf, levelPercent, maxLevelOf, ownsAny, respec, setEquipped, showsCount, takeBackLevel, upgradeBook, upgradeRank, whyNotBuy } from '../progress/upgradeShop'
 import { UpgradeShopContext, type UpgradeShop } from './upgradeShopContext'
 import text from '../../content/text/en.json'
 
@@ -28,8 +28,9 @@ function amountLine(def: UpgradeDef, level: number, max: number) {
   const now = at(level)
   return level >= max ? fill(w.amountMax, { now }) : fill(w.amount, { now, next: at(level + 1) })
 }
-// the shop's list: rank order (the JSON's order breaks ties)
-const SHOP = playableUpgrades(upgradeBook).map((def, i) => ({ def, i })).sort((a, b) => a.def.rank - b.def.rank || a.i - b.i).map(({ def }) => def)
+// the shop's list: rank order (the ladder's, read each time — F78; the JSON's order breaks ties)
+const shopList = () => playableUpgrades(upgradeBook).map((def, i) => ({ def, i, rank: upgradeRank(def) }))
+  .sort((a, b) => a.rank - b.rank || a.i - b.i).map(({ def }) => def)
 
 export function UpgradesScreen() {
   const shop = useContext(UpgradeShopContext)
@@ -55,7 +56,7 @@ export function UpgradesScreen() {
       </Text>
       <ScrollArea label={w.list}>
         <Stack gap="m">
-          {SHOP.map((def) => <UpgradeCard key={def.id} def={def} shop={shop} />)}
+          {shopList().map((def) => <UpgradeCard key={def.id} def={def} shop={shop} />)}
         </Stack>
       </ScrollArea>
     </Modal>
@@ -66,13 +67,13 @@ function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {
   const { progress, rank, onChange } = shop
   const name = nameOf(def)
   const level = levelOf(progress, def.id), max = maxLevelOf(def), cost = costOf(def)
-  const locked = def.rank > rank
+  const opensAt = upgradeRank(def), locked = opensAt > rank
   const active = def.type === 'active'
   const equipped = progress.equipped.includes(def.id)
   const equip = (on: boolean) => {
     const { progress: next, swappedOut } = setEquipped(progress, def.id, on)
     onChange(next)
-    const other = swappedOut && SHOP.find((d) => d.id === swappedOut)
+    const other = swappedOut && playableUpgrades(upgradeBook).find((d) => d.id === swappedOut)
     if (other) toast(fill(w.swapped, { name: nameOf(other) }))
   }
   // green when it has a level in it (Muzzy, 2026-10-22: "noticeably green"); greyed out while above your rank
@@ -95,7 +96,7 @@ function UpgradeCard({ def, shop }: { def: UpgradeDef; shop: UpgradeShop }) {
         <Text kind="caption">{fill(cost === 1 ? w.cost : w.costMany, { n: cost })}</Text>
       </Row>
       {locked
-        ? <Row gap="s" justify="end"><Text kind="label">{fill(w.locked, { rank: def.rank })}</Text></Row>
+        ? <Row gap="s" justify="end"><Text kind="label">{fill(w.locked, { rank: opensAt })}</Text></Row>
         : (
           <Row gap="s" justify="between">
             <Text kind="label" data-tag="amount">{amountLine(def, level, max)}</Text>

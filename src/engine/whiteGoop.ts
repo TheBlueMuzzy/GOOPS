@@ -1,4 +1,4 @@
-// THE WHITE GOOP (F63): the Veteran, gooped. From rank `fromRank` (31) one white clump is in the tank. Ported from
+// THE WHITE GOOP (F63): the Veteran, gooped. From the ladder beat whiteGoop (31) one white clump is in the tank. Ported from
 // Muzzy's approved sketch (.planning/research/sketches/white-goop.html — decide(), stepsFrom's ooze branch,
 // hardness(), the seal) with his picks (.planning/research/white-goop/picks.json): he OOZES BEHIND THE GOOP.
 //   - He is NOT a grid cell: never merges, never pops, never holds goop up. Goop passes in front of him.
@@ -17,10 +17,10 @@
 import type { Crack, ShiftState, TapPoint, WhiteGoop } from './types'
 import { wrapX } from './tank'
 import { crackCells, crackHas, crackSize, plugsCrack } from './twists'
+import { rankOf } from '../progress/ladder'
 
 // The shape of content/tuning/whiteGoop.json the engine reads (the look numbers are the view's)
 export interface WhiteGoopConfig {
-  fromRank: number // he's in the tank from this rank (31)
   dropFromCentre: number // drop-in column: this many columns from the view's centre at the start (− = left)
   dropSecPerCell: number // drop-in: seconds per row as he falls
   secPerCell: number // oozing: seconds per cell through empty tank
@@ -42,7 +42,7 @@ const num = (v: unknown, fallback: number, min = 0) => (typeof v === 'number' &&
 
 /** Is the white goop in this shift? (a normal shift at or above his rank; never in a lesson's training shift) */
 export function whiteGoopIn(cfg: WhiteGoopConfig | undefined, rank: number, training: boolean): boolean {
-  return !!cfg && !training && rank >= num(cfg.fromRank, Infinity)
+  return !!cfg && !training && rank >= rankOf('whiteGoop')
 }
 
 /** Him at the start of a shift: at the top of the visible tank, about to drop in. */

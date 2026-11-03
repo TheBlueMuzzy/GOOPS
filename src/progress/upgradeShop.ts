@@ -7,8 +7,17 @@ import upgradesJson from '../../content/tuning/upgrades.json'
 import tuning from '../../content/tuning/progression.json'
 import { playableUpgrades, resolveUpgrades, type ResolvedUpgrades, type UpgradeBook, type UpgradeDef } from '../engine/upgrades'
 import { scrapsAt, type Progress, type ProgressionTuning } from './progression'
+import { rankOf } from './ladder'
 
 export const upgradeBook = upgradesJson as UpgradeBook
+
+/** F78: the rank an upgrade can be bought from — content/tuning/ladder.json upgrades (read live). A book of its own (a
+ *  test's) can name its upgrades' ranks in `ranks`; test-only upgrades aren't on the ladder: any rank. */
+export function upgradeRank(def: Pick<UpgradeDef, 'id' | 'testOnly'>, book: UpgradeBook = upgradeBook): number {
+  const own = book.ranks?.[def.id]
+  if (typeof own === 'number') return own
+  return def.testOnly ? 0 : rankOf(`upgrades.${def.id}`)
+}
 
 // Why a buy was refused (the screen greys the button out; the words are in en.json upgrades.refused)
 export type BuyRefusal = 'unknown' | 'locked' | 'maxed' | 'scraps'
@@ -56,7 +65,7 @@ function findUpgrade(id: string, book: UpgradeBook): UpgradeDef | undefined {
 export function whyNotBuy(p: Progress, id: string, rank: number, book: UpgradeBook = upgradeBook, t: ProgressionTuning = tuning): BuyRefusal | null {
   const def = findUpgrade(id, book)
   if (!def) return 'unknown'
-  if (def.rank > rank) return 'locked'
+  if (upgradeRank(def, book) > rank) return 'locked'
   if (levelOf(p, id) >= maxLevelOf(def)) return 'maxed'
   if (scrapsAt(rank, p, t) < costOf(def)) return 'scraps'
   return null

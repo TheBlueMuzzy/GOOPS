@@ -25,6 +25,7 @@
     "e2e:text-size": "node e2e/text-size.mjs",
     "e2e:periscope-zoom": "node e2e/periscope-zoom.mjs",
     "e2e:credits": "node e2e/credits.mjs",
+    "e2e:ladder": "node e2e/ladder.mjs",
     "check:devkit": "node src/devkit/check-devkit.mjs",
     "check:framework": "node src/devkit/check-framework.mjs",
     "bots": "node --import ./scripts/bots/ts-register.mjs scripts/bots/run.mjs",

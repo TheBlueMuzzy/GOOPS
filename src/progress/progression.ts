@@ -7,6 +7,8 @@
 // until the rank-up, and the shift that meets it earns its XP × quotaXpMult. Two flags in the save say where that stands
 // (quotaMet, xpHeld) — the rank is still worked out from the XP.
 import tuning from '../../content/tuning/progression.json'
+import type { Ladder } from '../ladder'
+import { ladder, maxRank, type TitleId } from './ladder'
 
 export type ProgressionTuning = typeof tuning
 
@@ -40,59 +42,59 @@ export function xpToNext(rank: number, t: ProgressionTuning = tuning): number {
 
 export function rankInfo(p: XpProgress, t: ProgressionTuning = tuning): RankInfo {
   let rank = 0, left = p.totalXp
-  while (rank < t.maxRank && left >= xpToNext(rank, t)) { left -= xpToNext(rank, t); rank++ }
+  while (rank < maxRank() && left >= xpToNext(rank, t)) { left -= xpToNext(rank, t); rank++ }
   // F74: XP held full at the goal sits exactly where the next rank starts — but that rank isn't reached yet. (Only
   // there: a held flag off a boundary — the XP table retuned under an old save — is ignored, never a rank taken away.)
   if (p.xpHeld && left === 0 && rank > 0) {
     const need = xpToNext(rank - 1, t)
     return { rank: rank - 1, xpIntoRank: need, xpToNext: need, scraps: scrapsAt(rank - 1, p, t), locked: true }
   }
-  const atMax = rank >= t.maxRank
+  const atMax = rank >= maxRank()
   return { rank, xpIntoRank: atMax ? 0 : left, xpToNext: atMax ? 0 : xpToNext(rank, t), scraps: scrapsAt(rank, p, t), locked: false }
 }
 
-// Scraps in hand at a rank: earned by ranking up to it, minus those spent (F59: the console's Upgrades button shows it).
+// Scraps in hand at a rank: earned by ranking up to it (scrapsPerRank a rank, plus the ladder's scraps grants on the
+// ranks up to it — F78, none today), minus those spent (F59: the console's Upgrades button shows it).
 export function scrapsAt(rank: number, p: XpProgress, t: ProgressionTuning = tuning): number {
-  return rank * t.scrapsPerRank - p.scrapsSpent
+  return rank * t.scrapsPerRank + ladder.grantsUpTo('scraps', rank) - p.scrapsSpent
 }
 
-// UNLOCKS (F59): what a rank opens up — content/tuning/progression.json → unlocks (the rank each one needs). The HUD,
+// UNLOCKS (F59): what a rank opens up — F78: each one's rank is a ladder beat (content/tuning/ladder.json). The HUD,
 // the controls and the console all ask isUnlocked; no rank numbers anywhere else.
-export type Unlock = keyof ProgressionTuning['unlocks']
+export type Unlock = 'nextPiece' | 'swap' | 'upgrades'
 export const UNLOCKS: Unlock[] = ['nextPiece', 'swap', 'upgrades'] // (in the order they come)
+export const UNLOCK_BEATS: Record<Unlock, string> = { nextPiece: 'nextPiece', swap: 'swap', upgrades: 'upgradesShop' }
 
 /** Is this part of the game unlocked at this rank? */
-export function isUnlocked(what: Unlock, rank: number, t: ProgressionTuning = tuning): boolean {
-  return rank >= t.unlocks[what]
+export function isUnlocked(what: Unlock, rank: number, l: Ladder = ladder): boolean {
+  return rank >= l.rankOf(UNLOCK_BEATS[what])
 }
 
 /** The rank this unlocks at (words like "opens at rank 5"). */
-export function unlockRank(what: Unlock, t: ProgressionTuning = tuning): number {
-  return t.unlocks[what]
+export function unlockRank(what: Unlock, l: Ladder = ladder): number {
+  return l.rankOf(UNLOCK_BEATS[what])
 }
 
 /** What ranking up from `from` to `to` unlocked (the end report names it), in the order they come. */
-export function unlocksBetween(from: number, to: number, t: ProgressionTuning = tuning): Unlock[] {
-  return UNLOCKS.filter((u) => !isUnlocked(u, from, t) && isUnlocked(u, to, t))
+export function unlocksBetween(from: number, to: number, l: Ladder = ladder): Unlock[] {
+  return UNLOCKS.filter((u) => !isUnlocked(u, from, l) && isUnlocked(u, to, l))
 }
 
 // RANK SELECT (F70, a Dev Kit tool): the START of a rank — all the XP it takes to just reach it (0 XP into it), with
-// nothing bought (every scrap back, as Respec gives them). Clamped to 0…maxRank.
-export const topRank = (t: ProgressionTuning = tuning) => t.maxRank
+// nothing bought (every scrap back, as Respec gives them). Clamped to 0…maxRank (the ladder's top rank).
+export const topRank = () => maxRank()
 export function progressAtRank(rank: number, t: ProgressionTuning = tuning): Progress {
-  const to = Math.max(0, Math.min(t.maxRank, Math.floor(rank)))
+  const to = Math.max(0, Math.min(maxRank(), Math.floor(rank)))
   let totalXp = 0
   for (let r = 0; r < to; r++) totalXp += xpToNext(r, t)
   return { ...freshProgress(), totalXp }
 }
 
-// TITLES (F35): the title a rank carries — the band that starts at or below it (content/tuning/progression.json titles;
+// TITLES (F35): the title a rank carries — the band that starts at or below it (F78: content/tuning/ladder.json titles;
 // words: en.json story.titles). The ids are in rank order in the file.
-export type TitleId = keyof ProgressionTuning['titles']
-export function titleAt(rank: number, t: ProgressionTuning = tuning): TitleId {
-  let id = Object.keys(t.titles)[0] as TitleId
-  for (const [key, from] of Object.entries(t.titles) as [TitleId, number][]) if (rank >= from) id = key
-  return id
+export type { TitleId }
+export function titleAt(rank: number, l: Ladder = ladder): TitleId {
+  return (l.lastAt('titles', rank) ?? l.group('titles')[0].name) as TitleId
 }
 
 // F65 END TITLES (design/story.md "Rank titles"): titles that aren't a rank band — the goop gives them, not Management.
@@ -104,10 +106,10 @@ export type BadgeTitle = TitleId | EndBadge | 'formerEmployee'
 
 /** The title on the badge: an end title if this career has one, else the rank's — Former Employee instead of the first
  *  band once a career is done (careers = how many this device finished). */
-export function badgeTitle(rank: number, badge: EndBadge | null | undefined, careers: number, t: ProgressionTuning = tuning): BadgeTitle {
+export function badgeTitle(rank: number, badge: EndBadge | null | undefined, careers: number, l: Ladder = ladder): BadgeTitle {
   if (badge) return badge
-  const id = titleAt(rank, t)
-  return careers > 0 && id === titleAt(0, t) ? 'formerEmployee' : id
+  const id = titleAt(rank, l)
+  return careers > 0 && id === titleAt(0, l) ? 'formerEmployee' : id
 }
 
 /** The badge after a final shift: the win → savior; a loss → One Of Us (a win already given is never taken back). */
@@ -136,7 +138,7 @@ export function meterSteps(before: XpProgress, after: XpProgress, t: Progression
   const steps: { level: number; from: number; to: number; max: number }[] = []
   if (to.rank < from.rank || (to.rank === from.rank && to.xpIntoRank <= from.xpIntoRank)) return steps // (nothing gained)
   for (let level = from.rank; level <= to.rank; level++) {
-    const max = level >= t.maxRank ? 0 : xpToNext(level, t)
+    const max = level >= maxRank() ? 0 : xpToNext(level, t)
     steps.push({ level, from: level === from.rank ? from.xpIntoRank : 0, to: level === to.rank ? to.xpIntoRank : max, max })
   }
   return steps
@@ -152,7 +154,7 @@ export function rewardShift(p: Progress, finalScore: number, shift: ShiftDone, t
   const earned = Math.max(Math.max(0, Math.round(finalScore)), t.minXp, t.minXpPerRank * before.rank)
   // (only below the top rank: the final shift's win sets quotaMet when the valve opens, but it has no rank to unlock —
   // review 2026-10-29: winning it paid double)
-  const quotaMet = shift.quotaMet && before.rank < t.maxRank
+  const quotaMet = shift.quotaMet && before.rank < maxRank()
   const xp = quotaMet ? Math.round(earned * t.quotaXpMult) : earned
   const progress = addXp(p, xp, quotaMet, t)
   const after = rankInfo(progress, t)
@@ -168,7 +170,7 @@ function addXp(p: Progress, xp: number, metNow: boolean, t: ProgressionTuning): 
   const start = rankInfo(p, t)
   let rank = start.rank, into = start.xpIntoRank, totalXp = p.totalXp, left = xp
   let key = !!p.quotaMet || metNow
-  while (rank < t.maxRank) {
+  while (rank < maxRank()) {
     const room = xpToNext(rank, t) - into
     if (left < room) return { ...p, totalXp: totalXp + left, quotaMet: key, xpHeld: false }
     totalXp += room; left -= room

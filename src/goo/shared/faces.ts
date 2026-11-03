@@ -14,6 +14,7 @@
 import type { TapPoint } from '../../engine/types'
 import eyesFile from '../../../content/tuning/eyes.json' // live: the Dev Kit's edits apply on the next frame
 import { hexToRgb } from './palette'
+import { rankOf } from '../../progress/ladder' // F78: the faces' ranks are ladder beats (facesOn, lateLooks, worried, mouths)
 import type { FaceDrawer } from './faceDraw'
 
 // What the renderer is told about the story each frame (GooView.story)
@@ -231,7 +232,7 @@ export class FaceBook {
 
   // Rank 10+: faces are on. Below that the renderers skip everything (no faces, no cost).
   get on() {
-    return this.rank >= 10
+    return this.rank >= rankOf('facesOn')
   }
 
   // Once a frame, before anything else: the story, the knobs, the focus in view cells (toViewX: tank x → view x)
@@ -350,16 +351,16 @@ export class FaceBook {
   hasEyes(f: Face): boolean {
     if (!this.on) return false
     const L = this.look
-    const late = this.rank >= 20
+    const late = this.rank >= rankOf('lateLooks')
     return f.size >= (late ? L.minClump20 : L.minClump10) && f.eyeRoll < (late ? L.eyeChance20 : L.eyeChance10)
   }
 
   hasMouth(f: Face): boolean {
-    return this.rank >= 40 && this.hasEyes(f) && f.mouthRoll < this.look.mouthChance
+    return this.rank >= rankOf('mouths') && this.hasEyes(f) && f.mouthRoll < this.look.mouthChance
   }
 
   get worried(): boolean {
-    return this.rank >= 30 && this.pressure > 0 && this.pressure >= this.look.worriedAt
+    return this.rank >= rankOf('worried') && this.pressure > 0 && this.pressure >= this.look.worriedAt
   }
 
   // how worried (0-1) a clump looks: grows with pressure past worriedAt, times its own brows' fade-in
@@ -392,7 +393,7 @@ export class FaceBook {
     if (f.eyes.a <= 0) return
     let tx = 0 // look ahead unless following
     let ty = 0
-    if (this.rank >= 20 && this.hasFocus) {
+    if (this.rank >= rankOf('lateLooks') && this.hasFocus) {
       const dx = this.focusX - x
       const dy = this.focusY - y
       const d = Math.hypot(dx, dy)
@@ -405,7 +406,7 @@ export class FaceBook {
     const k = 1 - Math.exp(-L.followSpeed * dt)
     f.gx += (tx - f.gx) * k
     f.gy += (ty - f.gy) * k
-    if (this.rank >= 30) {
+    if (this.rank >= rankOf('worried')) {
       if (f.blinkT >= 0) {
         f.blinkT += dt
         if (f.blinkT >= L.blinkTime) f.blinkT = -1

@@ -5,6 +5,7 @@ import en from '../../content/text/en.json'
 import { freshProgress, rankInfo, rewardFirstDay, rewardShift, xpToNext, type Progress } from '../../src/progress/progression'
 import { NO_FACTS, afterCaught, associationDue, debtAt, makePayslip, pickFines, split, type ShiftFacts } from '../../src/progress/payslip'
 import { createRng } from '../../src/engine/rng'
+import { rankOf } from '../../src/progress/ladder'
 
 const extras = en.payslip.extras.length
 // (a quota met earlier this rank: a full meter ranks up, the shift's XP isn't doubled — these tests are about the slip)
@@ -49,7 +50,8 @@ describe('payslip', () => {
       for (let seed = 0; seed < 300; seed++) for (const f of pickFines(2000, { ...NO_FACTS, associationFined: true }, rank, createRng(seed))) seen.add(f.key)
       return seen
     }
-    for (const [key, from] of Object.entries(tuning.sillyFines)) {
+    for (const [key, beat] of Object.entries(tuning.sillyFines)) {
+      const from = rankOf(beat)
       if (from === 0) continue
       expect(keysAt(from - 1).has(`silly.${key}`), `${key} before ${from}`).toBe(false)
       expect(keysAt(from).has(`silly.${key}`), `${key} at ${from}`).toBe(true)
@@ -58,25 +60,25 @@ describe('payslip', () => {
 
   it('F40: "Association with a retired employee" — the first fine on the first report at the capture rank, once', () => {
     const due = (rank: number, fined: boolean) => pickFines(2000, { ...NO_FACTS, ruptured: true, broke: ['laser', 'visor', 'controls'], associationFined: fined }, rank, createRng(3))
-    expect(due(tuning.caughtRank - 1, false).some((f) => f.key === 'fines.association')).toBe(false)
-    for (const rank of [tuning.caughtRank, tuning.caughtRank + 5]) expect(due(rank, false)[0].key).toBe('fines.association')
-    expect(due(tuning.caughtRank, true).some((f) => f.key === 'fines.association')).toBe(false) // had it already
-    expect(associationDue(NO_FACTS, tuning.caughtRank)).toBe(true)
+    expect(due(rankOf('veteranCaught') - 1, false).some((f) => f.key === 'fines.association')).toBe(false)
+    for (const rank of [rankOf('veteranCaught'), rankOf('veteranCaught') + 5]) expect(due(rank, false)[0].key).toBe('fines.association')
+    expect(due(rankOf('veteranCaught'), true).some((f) => f.key === 'fines.association')).toBe(false) // had it already
+    expect(associationDue(NO_FACTS, rankOf('veteranCaught'))).toBe(true)
   })
 
   it('F40: the payday words change from the capture rank, and the new words exist', () => {
-    expect(afterCaught(tuning.caughtRank - 1)).toBe(false)
-    expect(afterCaught(tuning.caughtRank)).toBe(true)
+    expect(afterCaught(rankOf('veteranCaught') - 1)).toBe(false)
+    expect(afterCaught(rankOf('veteranCaught'))).toBe(true)
     expect(en.payslip.afterCaught.paydayMessage).toContain('{due}')
     expect(en.payslip.afterCaught.debt).toBeTruthy()
   })
 
   it('F63: "Pending retirements" from the shift that reaches rank 39, and its words exist', () => {
     const slip = (rank: number) => makePayslip(rewardShift(at(xpForRank(rank) + 10), 1000, done), NO_FACTS, { firstDay: false, seed: 2, extras })
-    expect(slip(tuning.pendingRetirementRank - 2).pendingRetirement).toBe(false)
-    expect(slip(tuning.pendingRetirementRank).pendingRetirement).toBe(true)
+    expect(slip(rankOf('pendingRetirement') - 2).pendingRetirement).toBe(false)
+    expect(slip(rankOf('pendingRetirement')).pendingRetirement).toBe(true)
     // the shift that ranks up INTO 39 shows it already (the moment at 39 plays right after that report)
-    const into = makePayslip(rewardShift(at(xpForRank(tuning.pendingRetirementRank) - 5), 1000, done), NO_FACTS, { firstDay: false, seed: 2, extras })
+    const into = makePayslip(rewardShift(at(xpForRank(rankOf('pendingRetirement')) - 5), 1000, done), NO_FACTS, { firstDay: false, seed: 2, extras })
     expect(into.pendingRetirement).toBe(true)
     expect(en.payslip.pendingRetirements.value).toContain('{name}')
     expect(en.payslip.pendingRetirements.noName).toBe(en.story.sign.fallback)

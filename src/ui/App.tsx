@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { Bar, Button, GameOver, Hud, HudText, Modal, Pause, Row, Score, ScreenStack, ScrollArea, Settings, Stack, StatList, Text, TimerRing, ToastStack, Victory, screens, tipsMemory, toast, toasts, useScreens, useTips } from './kit'
 import type { SettingsSchema, Stat } from './kit'
-import { clampModifiers, createShift, type FinalShiftState, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
+import { clampModifiers, createShift, machineRank, type FinalShiftState, type MachineId, type ResolvedUpgrades, type ShiftEngine, type ShiftStatus } from '../engine'
 import { upgradesForShift } from '../progress/upgradeShop'
 import { restoreShift, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
@@ -137,7 +137,7 @@ const onMonitor = (words: string, seconds: number) => {
 function gainedBetween(from: number, to: number): string[] {
   const gained: [number, string][] = [
     ...unlocksBetween(from, to).map((u): [number, string] => [unlockRank(u), text.unlocks[u]]),
-    ...MACHINES.filter((id) => breakdowns[id].unlockRank > from && breakdowns[id].unlockRank <= to).map((id): [number, string] => [breakdowns[id].unlockRank, text.unlocks[id]]),
+    ...MACHINES.filter((id) => machineRank(id) > from && machineRank(id) <= to).map((id): [number, string] => [machineRank(id), text.unlocks[id]]),
   ]
   gained.sort((a, b) => a[0] - b[0])
   return gained.map(([, name]) => name)
@@ -187,7 +187,7 @@ const pendingName = () => {
 }
 // F40: the once-only "Association with a retired employee" fine, kept in the tips memory like the story moments
 const ASSOCIATION_FINED = 'fine:association'
-// F40: a payday's words — from the Veteran's capture on (payslip.json caughtRank), his debt is yours (payslip.afterCaught)
+// F40: a payday's words — from the Veteran's capture on (the ladder beat veteranCaught), his debt is yours (payslip.afterCaught)
 const paydayWords = (from: number) => (afterCaught(from) ? { ...P, ...P.afterCaught } : P)
 // A random pick of fines each shift; fixed under scripted checks so e2e is the same every run
 const payslipSeed = () => (import.meta.env.DEV && navigator.webdriver ? 1 : Math.floor(Math.random() * 1e9))
