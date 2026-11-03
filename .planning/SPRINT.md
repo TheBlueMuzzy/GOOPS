@@ -19,9 +19,9 @@ Done when: src/goo/shared/faces.ts' 10 / 20 / 30 / 40 become ladder beats (faces
 why: so the next sprint's 30-rank ladder (F80 — The 30-rank ladder) changes content only — no test or code edits.
 Check: lint (the new rule) green on Goops · a trial move of one beat in ladder.json (e.g. wild 40 → 41) keeps check:fast green with no test edit, then put back · check:full
 - [x] 🤖 1. (done in F78 — One rank ladder file, ff79394: facesOn / lateLooks / worried / mouths) faces.ts: its rank thresholds → ladder beats — src/goo/shared/faces.ts
-- [ ] 🤖 2. A shared rankOf helper for tests + e2e; tests ask it — tests/ladder.ts
+- [x] 🤖 2. A shared rankOf helper for tests + e2e; tests ask it — tests import src/progress/ladder directly (no extra helper); e2e/ladder-ranks.mjs for e2e + bots
 - [ ] 🤖 3. e2e + bots ask it (?rank=…) — e2e/start.mjs
-- [ ] 🤖 4. The guard now: a Goops test that refuses a bare rank number in tests / e2e / game code (0 allowed, `// tuning-ok:` escape) — the framework lint rule replaces it when framework-43 ships it — tests/noRankNumbers.test.ts
+- [x] 🤖 4. The guard now: a Goops test that refuses a bare rank number in tests / e2e / game code (0 allowed, `// tuning-ok:` escape) — the framework lint rule replaces it when framework-43 ships it — tests/noRankNumbers.test.ts
 - [ ] 🤖 5. The trial move (one beat moved, nothing else edited, checks green) + check:full — content/tuning/ladder.json
 
 ## Notes
@@ -45,3 +45,9 @@ Check: lint (the new rule) green on Goops · a trial move of one beat in ladder.
 - framework-43 replied 2026-11-02: both asks (the Dev Kit Ladder tab, the rank lint rule) logged in the framework ROADMAP Ideas, fit OK (the tab via an adapter ladderRows() hook, live re-read, Save writes only the ladder file's keys; the lint rule beside no-tuning-numbers with // tuning-ok:) — NOT started: it asks Muzzy at its next hand-off whether now or after its Glyphtender sprint. Until its "done", Goops keeps building the ladder; send it the extraction number once queued. F78 task 2 + F79 task 4 wait on that.
 - Review (Claude, 2026-11-02, F78 merge b0c6bfa): src/ladder/ladder.ts lastAt + stepAt pick the LAST entry in file order that's reached, not the HIGHEST rank reached — fine with today's ordered file, wrong after a pivot that moves a title / colour step past the next one (e.g. associate 5 → 12 with technician at 10: rank 12 would show technician). Fix after check:full: pick the highest rank ≤ this one (ties: later in file order) + a test that reorders.
 - check:full at 04193a3^ (b0c6bfa merge): 37/39 (41.4 min) — poke (Particle jiggle 'motion at rest', under load) → ALL PASS alone; twists (B004, 1920 r40 wild) → re-run alone. Ladder fix 04193a3: the new pivot test red on the old ladder.ts, green on the fix.
+- F79 calls (Claude, auto mode 2026-11-03):
+  - The guard (tests/noRankNumbers.test.ts) reads src/ (not ui/kit, devkit, ladder), tests/, e2e/, scripts/bots, scripts/check-all.mjs and fails on `rank >= 30` · `30 <= rank` · `rank === 50` · `rank = 40` · `rank: 31` / `toRank: 5` / `"afterRank": 30` · `?rank=40` · `progressAtRank(9)` · `"rank 40"` in a string · `"…Ranks": [45, 50]` — a name ending in rank (not xpIntoRank); 0 and 1 allowed; comments and JSON `_` notes skipped; `// tuning-ok: <why>` allowed. Red on the old code: 257 restated ranks (0573100). It can't see a rank passed by position (`open(w, h, 40)`) — the trial move is the backstop. A framework lint rule replaces it (asked of framework-43).
+  - Tests import src/progress/ladder (rankOf, maxRank, ladder) — no extra helper. e2e + bots: e2e/ladder-ranks.mjs (a 10-line copy of rankOf over ladder.json).
+  - Scraps expectations count the ladder's scraps grants (scrapsTo = rank × scrapsPerRank + grantsUpTo) — F80 adds grants.
+  - Kept as plain numbers with `// tuning-ok:` — the XP-formula ranks in tests/progress.test.ts (the rank lock at "R = 3", golden saves' XP), Goops 1's own saves, tests built on their own made-up ladder/files (tests/ladder.test.ts, livedThrough's files, tests/upgradeShop.test.ts's own book). f43Upgrades' golden shifts: their colours / junk / quota step are PINNED in the test (then ranks 9 / 12 / 32), so a beat move can't change them.
+  - Story-content tests (moments 0–50 by id, voices) stay keyed by moment ID — F80's story edit changes them with the story.
