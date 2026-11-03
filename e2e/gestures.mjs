@@ -4,7 +4,7 @@
 //   taps: left half ↺ · right half ↻ · drag sideways + hold = keeps spinning, back to the start = stops · drag down +
 //   hold = fast drop until the lift · quick flick down = a short fast drop · quick flick up = the console · C-6 fast
 //   sideways drag ending in an upward lift = no console · C-8 drag down then flick up = no console · hold still 1.5 s =
-//   swap with the next piece (rank 3+), nothing at rank 2 · diagonal drag = one axis only (the bigger one at the drag
+//   swap with the next piece (from the ladder's swap beat), nothing the rank before · diagonal drag = one axis only (the bigger one at the drag
 //   lock) · tap a ready group = pops it · tap the falling piece = rotates by screen half (not a zap)
 //   + Muzzy's calls (2026-10-20, F28 task 5): C-1 every finger is its own gesture — a second finger's tap rotates and its
 //   hold swaps while the first drags; the first sideways finger owns the spin (a second one dragging the other way does
@@ -21,8 +21,10 @@ import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { startShift } from './start.mjs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5391
+const SWAP = rankOf('swap') // F79: the ladder's swap beat — the gestures are played there (and the rank before, no swap)
 const tank = JSON.parse(readFileSync('content/tuning/tank.json', 'utf8'))
 const text = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
@@ -46,9 +48,9 @@ try {
   const get = (f, arg) => page.evaluate(f, arg)
 
   // a fresh shift at this rank, with a spy on the engine's controls
-  const fresh = async (rank = 3) => {
+  const fresh = async (rank = SWAP) => {
     await page.goto(`http://localhost:${PORT}/?seed=11&rank=${rank}`)
-    await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break at rank 3: its lesson would stop the controls)
+    await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break from visorBreaks: its lesson would stop the controls)
     await startShift(page)
     await page.waitForTimeout(300)
     await get(() => {
@@ -233,8 +235,8 @@ try {
     check('C-8 …it was a fast drop', r.some((a) => a.type === 'softDrop' && a.on) && (await lastSoftDrop()) === false, '')
   }
 
-  // ═══ 8. hold still 1.5 s at rank 3: the falling piece trades with the next piece (T8) ═══
-  await fresh(3); w = await where()
+  // ═══ 8. hold still 1.5 s at the swap beat: the falling piece trades with the next piece (T8) ═══
+  await fresh(SWAP); w = await where()
   {
     const before = await get(() => { const s = window.__goops.engine.state; return { piece: JSON.stringify(s.piece.colors), next: JSON.stringify(s.next) } })
     const m = await mark()
@@ -244,7 +246,7 @@ try {
     await fingerUp(); await sleep(80)
     const after = await get(() => { const s = window.__goops.engine.state; return { piece: JSON.stringify(s.piece?.colors), next: JSON.stringify(s.next) } })
     const r = await actsSince(m)
-    check(`rank 3: hold still ${tank.holdToSwapMs / 1000} s swaps once`, r.filter((a) => a.type === 'hold').length === 1, JSON.stringify(r.map((a) => a.type)))
+    check(`rank ${SWAP}: hold still ${tank.holdToSwapMs / 1000} s swaps once`, r.filter((a) => a.type === 'hold').length === 1, JSON.stringify(r.map((a) => a.type)))
     check('…the falling piece and the next piece traded', after.next === before.piece && after.piece === before.next, `${JSON.stringify(before)} → ${JSON.stringify(after)}`)
     check('…the swap ring filled beside the finger while it charged', ring.most >= 0.5 && ring.far <= 80, `filled to ${Math.round(ring.most * 100)}% (by ${Math.round(tank.holdToSwapMs * 0.85)} ms) · centre ${ring.far} px from the finger`)
     check('…and NOT the HUD\'s Swap bar (that\'s for a held key)', !ring.bar)
@@ -300,7 +302,7 @@ try {
   // While the first finger drags left and holds: a second finger's tap rotates (by screen half), its hold swaps (with
   // the ring beside IT), and its sideways drag the other way does nothing (the first finger owns the spin).
   // (CDP: every touchMove / touchStart lists the first finger too, where it stays; a touchEnd lifts the fingers it lists.)
-  await fresh(3); w = await where()
+  await fresh(SWAP); w = await where()
   {
     const [x, y] = w.mid, out = px(tank.dragDeadZoneRem) * 3, A = [x - out, y]
     const spins = (r) => r.filter((a) => a.type === 'spin')
@@ -331,7 +333,7 @@ try {
     await touch('touchEnd', [[...B, 1]])
     await sleep(80)
     const r2 = await actsSince(m2)
-    check('C-1 a second finger held still while the first drags: exactly one swap (rank 3), no rotate', r2.filter((a) => a.type === 'hold').length === 1 && !r2.some((a) => a.type === 'rotate'), JSON.stringify(r2.filter((a) => a.type !== 'spin').map((a) => a.type)))
+    check(`C-1 a second finger held still while the first drags: exactly one swap (rank ${SWAP}), no rotate`, r2.filter((a) => a.type === 'hold').length === 1 && !r2.some((a) => a.type === 'rotate'), JSON.stringify(r2.filter((a) => a.type !== 'spin').map((a) => a.type)))
     check('C-1 …the swap ring sat beside the holding (second) finger, not in the HUD', ring.most >= 0.5 && ring.far <= 80 && !ring.bar, JSON.stringify(ring))
     check('C-1 …and the first finger kept spinning all the while', spins(r2).length >= 8, `${spins(r2).length} spins`)
 
@@ -371,16 +373,16 @@ try {
     check('…lifting A stops the spin', spins(await actsSince(m3)) === 0)
   }
 
-  // ═══ 12. rank 2 (swap not unlocked): a hold does nothing, no Swap bar ═══
-  await fresh(2); w = await where()
+  // ═══ 12. the rank before the swap beat (swap not unlocked): a hold does nothing, no Swap bar ═══
+  await fresh(SWAP - 1); w = await where()
   {
     const m = await mark()
     await fingerDown(...w.mid)
     const ring = await swapRing(tank.holdToSwapMs + 300, ...w.mid)
     await fingerUp(); await sleep(80)
     const r = await actsSince(m)
-    check(`rank 2: hold still ${(tank.holdToSwapMs + 300) / 1000} s → no swap, no rotate`, !r.some((a) => a.type === 'hold' || a.type === 'rotate'), JSON.stringify(r.map((a) => a.type)))
-    check('rank 2: …and no swap ring, no Swap bar', ring.most === -1 && !ring.bar)
+    check(`rank ${SWAP - 1}: hold still ${(tank.holdToSwapMs + 300) / 1000} s → no swap, no rotate`, !r.some((a) => a.type === 'hold' || a.type === 'rotate'), JSON.stringify(r.map((a) => a.type)))
+    check(`rank ${SWAP - 1}: …and no swap ring, no Swap bar`, ring.most === -1 && !ring.bar)
   }
 
   // ═══ 13. C-2 — contextual taps (Muzzy 2026-10-20: contextual taps, as PC) ═══
@@ -389,7 +391,7 @@ try {
   await fresh(); w = await where()
   {
     // land the first piece, then hold the rules still with the pressure line at the floor: that goop can't pop
-    // (rank 3 starts with some junk goop: wait for the piece's OWN new group)
+    // (the swap beat's rank can start with some junk goop (junk1): wait for the piece's OWN new group)
     const got = await get(() => { const { engine } = window.__goops, s = engine.state
       const old = new Set(s.groups.keys()), fresh = () => [...s.groups.values()].find((g) => !old.has(g.id))
       for (let t = 0; t < 80 && !fresh(); t++) { engine.act({ type: 'softDrop', on: true }); engine.tick(100) }

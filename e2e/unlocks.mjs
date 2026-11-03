@@ -1,14 +1,14 @@
-// F59 — RANK UNLOCKS (content/tuning/progression.json → unlocks: next piece 1 · swap 3 · upgrades 5), with real input
+// F59 — RANK UNLOCKS (content/tuning/ladder.json beats: nextPiece · swap · upgradesShop), with real input
 // in Playwright's own Chromium (never the user's Chrome). Each rank on a FRESH device (its own browser context), via
 // ?rank=N:
 //   rank 0 — no next-piece window; swap refused (Right Shift / R held: no swap, no charging bar); Upgrades grey with
 //            its scraps; no unlock lesson anywhere
-//   rank 1 — the window shows the next piece (its cells, in the window, with room round them), at the left of the
+//   nextPiece — the window shows the next piece (its cells, in the window, with room round them), at the left of the
 //            bottom panel (Muzzy's mock-up 2026-10-19); the window's unlock lesson pauses the start of the first shift,
 //            its ring round the window and its bubble above it, on screen; Got it → never again on this device
-//   rank 3 — one unlock lesson per shift start: the window's first, swap's at the next shift, then none; swap works
+//   swap   — one unlock lesson per shift start: the window's first, swap's at the next shift, then none; swap works
 //            (held Right Shift: the falling piece and the next one trade places, with the charging bar)
-//   rank 5 — Upgrades opens (the scraps and the shop, F34); its unlock lesson is the
+//   upgradesShop — Upgrades opens (the scraps and the shop, F34); its unlock lesson is the
 //            monitor's line + the button outlined, until Upgrades is opened once; Replay lessons brings it back
 //   the end report — a shift that crosses rank 1 says "Rank up! 1 · New: next piece"
 // Screenshots: e2e-shots/unlocks/ (390x844, 360x780, 1440x900, the short 768x343 window)
@@ -17,9 +17,16 @@ import { chromium } from 'playwright-core'
 import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf, LADDER } from './ladder-ranks.mjs'
 
 const PORT = 5344, OUT = 'e2e-shots/unlocks'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
+const PROG = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
+const NEXT = rankOf('nextPiece'), SWAP = rankOf('swap'), SHOP = rankOf('upgradesShop')
+// the scraps in hand at a rank on a fresh device (src/progress/progression.ts scrapsAt: scrapsPerRank a rank + the
+// ladder's scraps grants up to it)
+const scrapsAt = (rank) => rank * PROG.scrapsPerRank
+  + Object.entries(LADDER.grants?.scraps ?? {}).reduce((sum, [beat, n]) => sum + (rankOf(beat) <= rank ? n : 0), 0)
 mkdirSync(OUT, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -95,7 +102,7 @@ try {
   {
     const { page, errors, close } = await device(0)
     const btn = upgradesButton(page)
-    check('rank 0: the Upgrades button is there, grey, with the scraps count (0)', await btn.isDisabled() && (await btn.textContent()).includes('0'), await btn.textContent())
+    check(`rank 0: the Upgrades button is there, grey, with the scraps count (${scrapsAt(0)})`, await btn.isDisabled() && (await btn.textContent()).includes(String(scrapsAt(0))), await btn.textContent())
     check('rank 0: the monitor says to pull the periscope (no unlock lesson)', (await monitorSays(page)) === en.console.hint)
     await page.screenshot({ path: `${OUT}/rank0-console-390x844.png` })
     await startShift(page, { unlockLessons: true })
@@ -118,58 +125,58 @@ try {
     await close()
   }
 
-  // ---------------- rank 1: the next-piece window ----------------
+  // ---------------- nextPiece: the next-piece window ----------------
   {
-    const { page, errors, close } = await device(1)
-    check('rank 1: Upgrades still grey', await upgradesButton(page).isDisabled())
+    const { page, errors, close } = await device(NEXT)
+    check(`rank ${NEXT}: Upgrades still grey`, await upgradesButton(page).isDisabled())
     await startShift(page, { unlockLessons: true })
     await page.waitForTimeout(600)
-    check('rank 1: the window\'s unlock lesson starts the first shift', (await lessonId(page)) === 'unlock-window', String(await lessonId(page)))
-    check('rank 1: it says what the window is', await page.getByText(en.lessons['unlock-window'].window).count() === 1)
+    check(`rank ${NEXT}: the window's unlock lesson starts the first shift`, (await lessonId(page)) === 'unlock-window', String(await lessonId(page)))
+    check(`rank ${NEXT}: it says what the window is`, await page.getByText(en.lessons['unlock-window'].window).count() === 1)
     const paused = await page.evaluate(async () => { const s = window.__goops.engine.state, y = JSON.stringify(s.piece); await new Promise((r) => setTimeout(r, 700)); return y === JSON.stringify(s.piece) })
-    check('rank 1: the shift waits under it', paused)
+    check(`rank ${NEXT}: the shift waits under it`, paused)
     const cells = await page.evaluate(() => ({ drawn: document.querySelectorAll('.next-window rect').length, piece: window.__goops.engine.state.nextCells.length }))
-    check('rank 1: the window shows the next piece', cells.drawn === cells.piece && cells.drawn > 0, JSON.stringify(cells))
+    check(`rank ${NEXT}: the window shows the next piece`, cells.drawn === cells.piece && cells.drawn > 0, JSON.stringify(cells))
     const at = await pointsAtWindow(page)
-    check('rank 1: the lesson rings the window in the bottom panel, its bubble above it', at.ok, at.why)
-    await page.screenshot({ path: `${OUT}/rank1-lesson-390x844.png` })
+    check(`rank ${NEXT}: the lesson rings the window in the bottom panel, its bubble above it`, at.ok, at.why)
+    await page.screenshot({ path: `${OUT}/rank${NEXT}-lesson-390x844.png` })
     await gotIt(page)
     await page.waitForTimeout(300)
-    check('rank 1: Got it → the lesson is done, seen on this device', (await lessonId(page)) === null && (await seen(page)).includes('lesson:unlock-window'))
-    check('rank 1: swap still refused', await page.evaluate(() => !window.__goops.engine.allows('hold')))
+    check(`rank ${NEXT}: Got it → the lesson is done, seen on this device`, (await lessonId(page)) === null && (await seen(page)).includes('lesson:unlock-window'))
+    check(`rank ${NEXT}: swap still refused`, await page.evaluate(() => !window.__goops.engine.allows('hold')))
     await nextShift(page)
-    check('rank 1: the next shift starts with no lesson', (await lessonId(page)) === null)
-    check('rank 1: no page errors', errors.length === 0, errors.join(' | '))
+    check(`rank ${NEXT}: the next shift starts with no lesson`, (await lessonId(page)) === null)
+    check(`rank ${NEXT}: no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }
 
-  // ---------------- rank 3: one unlock lesson per shift start; swap works ----------------
+  // ---------------- swap: one unlock lesson per shift start; swap works ----------------
   {
-    const { page, errors, close } = await device(3)
-    await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break at rank 3: its own lesson isn't this check)
-    check('rank 3: Upgrades still grey', await upgradesButton(page).isDisabled())
+    const { page, errors, close } = await device(SWAP)
+    await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break from visorBreaks: its own lesson isn't this check)
+    check(`rank ${SWAP}: Upgrades still grey`, await upgradesButton(page).isDisabled())
     await startShift(page, { unlockLessons: true })
     await page.waitForTimeout(600)
-    check('rank 3, fresh device, shift 1: the window\'s lesson (the earliest), not both', (await lessonId(page)) === 'unlock-window', String(await lessonId(page)))
+    check(`rank ${SWAP}, fresh device, shift 1: the window's lesson (the earliest), not both`, (await lessonId(page)) === 'unlock-window', String(await lessonId(page)))
     await gotIt(page)
     await page.waitForTimeout(400)
-    check('rank 3, shift 1: no second lesson straight after', (await lessonId(page)) === null)
+    check(`rank ${SWAP}, shift 1: no second lesson straight after`, (await lessonId(page)) === null)
     await nextShift(page)
-    check('rank 3, shift 2: swap\'s lesson', (await lessonId(page)) === 'unlock-swap', String(await lessonId(page)))
-    check('rank 3: it points at the next-piece window', await page.evaluate(() => JSON.stringify(window.__goops.lessonView().message?.pointer)) === '{"tag":"next-window"}')
-    await page.screenshot({ path: `${OUT}/rank3-swap-lesson-390x844.png` })
+    check(`rank ${SWAP}, shift 2: swap's lesson`, (await lessonId(page)) === 'unlock-swap', String(await lessonId(page)))
+    check(`rank ${SWAP}: it points at the next-piece window`, await page.evaluate(() => JSON.stringify(window.__goops.lessonView().message?.pointer)) === '{"tag":"next-window"}')
+    await page.screenshot({ path: `${OUT}/rank${SWAP}-swap-lesson-390x844.png` })
     await page.keyboard.press('Enter') // (Enter closes it too, once armed)
     await page.waitForTimeout(300)
     if (await lessonId(page)) await gotIt(page)
-    check('rank 3: swap\'s lesson seen', (await seen(page)).includes('lesson:unlock-swap'))
+    check(`rank ${SWAP}: swap's lesson seen`, (await seen(page)).includes('lesson:unlock-swap'))
     const swap = await holdSwap(page)
-    check('rank 3: Right Shift held swaps — the falling piece and the next one trade places, with the charging bar',
+    check(`rank ${SWAP}: Right Shift held swaps — the falling piece and the next one trade places, with the charging bar`,
       swap.swapped === 1 && swap.after.piece === swap.before.next && swap.after.next === swap.before.piece && swap.bar === 1, JSON.stringify(swap))
     const back = await holdSwap(page, 'KeyR')
-    check('rank 3: swapping again (R) trades them back', back.swapped === 1 && back.after.piece === back.before.next && back.after.next === back.before.piece)
+    check(`rank ${SWAP}: swapping again (R) trades them back`, back.swapped === 1 && back.after.piece === back.before.next && back.after.next === back.before.piece)
     await nextShift(page)
-    check('rank 3, shift 3: no lesson', (await lessonId(page)) === null)
-    check('rank 3: no page errors', errors.length === 0, errors.join(' | '))
+    check(`rank ${SWAP}, shift 3: no lesson`, (await lessonId(page)) === null)
+    check(`rank ${SWAP}: no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }
 
@@ -179,7 +186,7 @@ try {
     const page = await context.newPage()
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
-    await page.goto(`http://localhost:${PORT}/?seed=7&rank=3`)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${SWAP}`)
     await page.getByRole('button', { name: 'Start shift' }).waitFor()
     await page.evaluate(() => window.__goopsSeen(['lesson:unlock-window', 'lesson:visor']))
     await page.getByRole('button', { name: 'Start shift' }).tap() // (a touch: the lesson words follow it)
@@ -189,19 +196,20 @@ try {
     const said = await page.locator('.kit-callout').textContent()
     check('phone: it says the phone wording (hold your finger still), not the keys\' or the mouse\'s',
       said.includes(en.lessons['unlock-swap'].swap.phone) && !said.includes('Right Shift'), said)
-    await page.screenshot({ path: `${OUT}/rank3-swap-lesson-phone-390x844.png` })
+    await page.screenshot({ path: `${OUT}/rank${SWAP}-swap-lesson-phone-390x844.png` })
     check('phone swap lesson: no page errors', errors.length === 0, errors.join(' | '))
     await context.close()
   }
 
-  // ---------------- rank 5: upgrading opens ----------------
+  // ---------------- upgradesShop: upgrading opens ----------------
   {
-    const { page, errors, close } = await device(5)
+    const { page, errors, close } = await device(SHOP)
     const btn = upgradesButton(page)
+    const scraps = scrapsAt(SHOP)
     await page.waitForTimeout(600)
-    check('rank 5: the Upgrades button works, with the scraps (5)', !(await btn.isDisabled()) && (await btn.textContent()).includes('5'), await btn.textContent())
-    check('rank 5: the monitor says upgrades are unlocked', (await monitorSays(page)) === en.lessons['unlock-upgrades'].upgrades, await monitorSays(page))
-    await page.screenshot({ path: `${OUT}/rank5-console-lesson-390x844.png` })
+    check(`rank ${SHOP}: the Upgrades button works, with the scraps (${scraps})`, !(await btn.isDisabled()) && (await btn.textContent()).includes(String(scraps)), await btn.textContent())
+    check(`rank ${SHOP}: the monitor says upgrades are unlocked`, (await monitorSays(page)) === en.lessons['unlock-upgrades'].upgrades, await monitorSays(page))
+    await page.screenshot({ path: `${OUT}/rank${SHOP}-console-lesson-390x844.png` })
     // the lesson's pink ring goes round the button (and nothing dims the console: no Got it, nothing paused)
     const outline = await page.evaluate(() => {
       const ring = document.querySelector('.lesson-spot .kit-callout-ring')?.getBoundingClientRect()
@@ -209,21 +217,21 @@ try {
       return { around: !!ring && ring.width > 0 && ring.left <= b.left + 1 && ring.right >= b.right - 1 && ring.top <= b.top + 1 && ring.bottom >= b.bottom - 1,
         dim: !!document.querySelector('.lesson-spot[data-dim]') }
     })
-    check('rank 5: the pink outline goes round the Upgrades button, no dim', outline.around && !outline.dim, JSON.stringify(outline))
+    check(`rank ${SHOP}: the pink outline goes round the Upgrades button, no dim`, outline.around && !outline.dim, JSON.stringify(outline))
     await btn.click()
     const modal = page.getByRole('dialog', { name: en.upgrades.title })
     await modal.waitFor({ timeout: 3000 })
-    check('rank 5: Upgrades opens: the scraps and the shop (F34: its first card, Circuit Stabilizer)',
-      await modal.getByText(en.upgrades.scraps.replace('{n}', '5')).count() === 1 && await modal.getByText(en.upgrades.items.circuitStabilizer.name).count() === 1)
-    await page.screenshot({ path: `${OUT}/rank5-upgrades-390x844.png` })
-    check('rank 5: opening it finishes the lesson (seen)', (await seen(page)).includes('lesson:unlock-upgrades'))
+    check(`rank ${SHOP}: Upgrades opens: the scraps and the shop (F34: its first card, Circuit Stabilizer)`,
+      await modal.getByText(en.upgrades.scraps.replace('{n}', String(scraps))).count() === 1 && await modal.getByText(en.upgrades.items.circuitStabilizer.name).count() === 1)
+    await page.screenshot({ path: `${OUT}/rank${SHOP}-upgrades-390x844.png` })
+    check(`rank ${SHOP}: opening it finishes the lesson (seen)`, (await seen(page)).includes('lesson:unlock-upgrades'))
     await page.keyboard.press('Escape')
     await page.waitForTimeout(400)
-    check('rank 5: back on the console the monitor says to pull the periscope again', (await monitorSays(page)) === en.console.hint, await monitorSays(page))
+    check(`rank ${SHOP}: back on the console the monitor says to pull the periscope again`, (await monitorSays(page)) === en.console.hint, await monitorSays(page))
     await page.reload()
     await page.getByRole('button', { name: 'Start shift' }).waitFor()
     await page.waitForTimeout(600)
-    check('rank 5: not again on this device', (await monitorSays(page)) === en.console.hint)
+    check(`rank ${SHOP}: not again on this device`, (await monitorSays(page)) === en.console.hint)
     // Settings → Replay lessons: it comes back
     await page.getByRole('button', { name: 'Settings' }).click()
     // (a phone: the ◀ ▶ picker instead of the tab bar — step to Gameplay, as e2e/controls.mjs does)
@@ -238,8 +246,8 @@ try {
     await page.reload()
     await page.getByRole('button', { name: 'Start shift' }).waitFor()
     await page.waitForTimeout(600)
-    check('rank 5: after Replay lessons it plays again', (await monitorSays(page)) === en.lessons['unlock-upgrades'].upgrades)
-    check('rank 5: no page errors', errors.length === 0, errors.join(' | '))
+    check(`rank ${SHOP}: after Replay lessons it plays again`, (await monitorSays(page)) === en.lessons['unlock-upgrades'].upgrades)
+    check(`rank ${SHOP}: no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }
 
@@ -261,13 +269,13 @@ try {
 
   // ---------------- shots at the other sizes (looked at by hand) ----------------
   for (const [w, h] of [[360, 780], [1440, 900], [768, 343]]) {
-    const { page, close } = await device(5, w, h)
+    const { page, close } = await device(SHOP, w, h)
     await page.waitForTimeout(800)
-    await page.screenshot({ path: `${OUT}/rank5-console-lesson-${w}x${h}.png` })
+    await page.screenshot({ path: `${OUT}/rank${SHOP}-console-lesson-${w}x${h}.png` })
     await page.evaluate(() => window.__goopsSeen(['lesson:unlock-window']))
     await startShift(page, { unlockLessons: true })
     await page.waitForTimeout(800)
-    await page.screenshot({ path: `${OUT}/rank5-swap-lesson-${w}x${h}.png` })
+    await page.screenshot({ path: `${OUT}/rank${SHOP}-swap-lesson-${w}x${h}.png` })
     check(`${w}x${h}: the swap lesson shows`, (await lessonId(page)) === 'unlock-swap')
     const at = await pointsAtWindow(page)
     check(`${w}x${h}: it rings the next-piece window, its bubble above it`, at.ok, at.why)

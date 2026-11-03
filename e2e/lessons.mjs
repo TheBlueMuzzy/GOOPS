@@ -8,8 +8,12 @@ import { chromium } from 'playwright-core'
 import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5341, OUT = 'e2e-shots/lessons'
+// F79: the ranks asked of the ladder — the visor's own (the first machine that breaks, alone), and the controls' (from
+// there every machine can break: visor, laser, controls)
+const VISOR = rankOf('visorBreaks'), ALL_BREAK = rankOf('controlsBreak')
 mkdirSync(OUT, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -305,11 +309,11 @@ try {
     await page.close()
   }
 
-  // ---------------- F32: the visor's first breakdown in a REAL shift (rank 2), played through by real input ----------------
+  // ---------------- F32: the visor's first breakdown in a REAL shift (at visorBreaks), played through by real input ----------------
   // (Muzzy's first try, 2026-10-19: bubbles only in the tank, with Got it from the first frame, inside the phone column,
   //  on the spotlight's dim; ONE go-to-console message that insists; at the console the words are on the monitor)
   {
-    const { page, errors } = await open(1440, 900, '?seed=7&rank=2')
+    const { page, errors } = await open(1440, 900, `?seed=7&rank=${VISOR}`)
     await spyEngine(page)
     await watchFirstFrame(page)
     // the visor fades and breaks on its own after ~10 s without a fast drop (content/tuning/breakdowns.json visor)
@@ -478,7 +482,7 @@ try {
   // ---------------- F32 bug (Muzzy, 2026-10-19): Replay lessons from the START console's gear did nothing ----------------
   // (that screen stack had no kit confirm screen: Settings closed and nothing was forgotten)
   {
-    const { page, errors } = await open(1440, 900, '?seed=7&rank=6')
+    const { page, errors } = await open(1440, 900, `?seed=7&rank=${ALL_BREAK}`)
     await page.evaluate(() => { // (the kit's key: 'kit-tips:' + the first folder of the page's path — '' here)
       const k = `kit-tips:${location.pathname.split('/').slice(1, -1)[0] ?? ''}`
       localStorage.setItem(k, JSON.stringify({ on: true, seen: ['lesson:visor', 'lesson:laser', 'lesson:controls'] }))
@@ -502,7 +506,7 @@ try {
 
   // ---------------- F32: the tank ruptures mid-lesson → the lesson steps aside, the drain runs ----------------
   {
-    const { page, errors } = await open(1440, 900, '?seed=7&rank=6')
+    const { page, errors } = await open(1440, 900, `?seed=7&rank=${ALL_BREAK}`)
     await page.evaluate(() => window.__goops.breakMachine('visor', true))
     await stepIs(page, 'broke')
     await clickGotIt(page)
@@ -526,7 +530,7 @@ try {
     const side = h < w && h < 500 // a phone on its side: no monitor on screen, the bubbles come back at the console
     for (const machine of ['visor', 'laser', 'controls']) {
       if (side && machine !== 'visor') continue // (on its side: one lesson is enough to see nothing breaks)
-      const { page, errors } = await open(w, h, '?seed=7&rank=6')
+      const { page, errors } = await open(w, h, `?seed=7&rank=${ALL_BREAK}`)
       const name = `${machine}-${w}x${h}`
       const shot = (step) => page.screenshot({ path: `${OUT}/f32-${name}-${step}.png` })
       const looks = []
@@ -610,7 +614,7 @@ try {
     const page = await context.newPage()
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
-    await page.goto(`http://localhost:${PORT}/?seed=7&rank=6`)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${ALL_BREAK}`)
     await page.getByRole('button', { name: 'Start shift' }).waitFor()
     await page.evaluate(() => window.__goopsSeen?.(['lesson:unlock-window', 'lesson:unlock-swap']))
     await page.getByRole('button', { name: 'Start shift' }).tap() // (a touch: the lesson words follow it)
@@ -727,7 +731,7 @@ try {
   for (const [w, h] of [[390, 844], [360, 780], [1440, 900], [1920, 1080]]) {
     const page = await browser.newPage({ viewport: { width: w, height: h } })
     await page.addInitScript(crtLogger)
-    await page.goto(`http://localhost:${PORT}/?seed=7&rank=6`)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${ALL_BREAK}`)
     await page.evaluate(seenAll)
     await page.reload()
     await startShift(page)
@@ -759,7 +763,7 @@ try {
   }
   const laserShake = (page) => page.evaluate(() => document.querySelector('[data-tag="panel-laser"]').parentElement.getAttribute('data-shake') ?? '')
   {
-    const { page, errors } = await open(1440, 900, '?seed=7&rank=6')
+    const { page, errors } = await open(1440, 900, `?seed=7&rank=${ALL_BREAK}`)
     await page.evaluate(() => window.__goops.breakMachine('laser', true))
     await stepIs(page, 'broke')
     await clickGotIt(page)
@@ -787,7 +791,7 @@ try {
   }
   {
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-    await page.goto(`http://localhost:${PORT}/?seed=7&rank=6`)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${ALL_BREAK}`)
     await page.evaluate(seenAll)
     await page.reload()
     await startShift(page)
