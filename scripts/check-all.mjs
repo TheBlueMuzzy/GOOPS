@@ -26,7 +26,8 @@ const FAST = [
 // (red on a short desktop window: the kit's swipe rule — SPRINT 08 Notes; add it back once that's fixed).
 const E2E = [
   ['first-day', 'e2e/first-day.mjs', ''],      // 5347
-  ['eyes', 'e2e/eyes.mjs', ''],                // 6262 (F62: the goop's faces by the ladder's beats (none just before facesOn, then facesOn, lateLooks, worried, mouths) — fade-in one clump at a time, gaze, zap squeeze, brows, mouths; Jelly + Particle; shots at every portrait size)
+  // (e2e/eyes.mjs — the goop's faces by the ladder's beats — is out of check:full: Muzzy 2026-11-03 "it doesn't need
+  // to be in the checker". It still runs by hand: node e2e/eyes.mjs, port 6262.)
   ['sw-update', 'e2e/sw-update.mjs', ''],      // 5462 (F54: the 1.0 switch on a copy of gh-pages — v1 player + installed beta → Goops 2 at /GOOPS/, offline, update; + the Dev Kit in it)
   ['economy-sim', 'scripts/bots/economy.mjs', '--quick'], // no port (F51: bots play short careers headless — they run, gain ranks and repeat; ~20 s)
   ['perf', 'e2e/perf.mjs', ''],                // 5464 (pass line: content/tuning/perf.json — same result 3 runs + beside sw-update)
