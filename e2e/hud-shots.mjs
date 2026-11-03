@@ -33,7 +33,11 @@ const sizes = [['phone', 390, 844], ['small', 360, 780], ['laptop', 1100, 800],
 // rank → how many machine bars the panel shows (F79: the ranks are the ladder's beats — the visor from visorBreaks, the
 // laser from laserBreaks, the controls from controlsBreak; the window from nextPiece)
 const WINDOW_FROM = rankOf('nextPiece'), ALL_BARS = String(rankOf('controlsBreak'))
-const RANKS = { [rankOf('firstDay')]: 0, [WINDOW_FROM]: 0, [rankOf('swap')]: 1, [rankOf('laserBreaks')]: 2, [ALL_BARS]: 3 }
+// (F80: the bars at a rank = the machines whose beat it has reached — counted, not assumed from the old order: on the
+// 30-rank ladder the visor breaks on the next piece's own rank)
+const MACHINE_BEATS = ['visorBreaks', 'laserBreaks', 'controlsBreak']
+const barsAt = (rank) => MACHINE_BEATS.filter((b) => rankOf(b) <= rank).length
+const RANKS = Object.fromEntries(['firstDay', 'nextPiece', 'swap', 'laserBreaks', 'controlsBreak'].map((b) => [rankOf(b), barsAt(rankOf(b))]))
 const ranks = Object.keys(RANKS).filter((r) => !rankFilter || rankFilter.split(',').includes(r))
 
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
