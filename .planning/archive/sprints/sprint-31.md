@@ -59,3 +59,8 @@ Checked: tests/noRankNumbers.test.ts (the guard, until the framework lint rule) 
 - 2026-11-03 04:40 (tiny, outside the sprint's tasks): the save asked to apply shared-setup changes from the other session first (a /define lesson, Glyphtender sprint 33) — ran ~/.claude-config setup.sh, then saved again (v0.2.0.38). No Goops code changed.
 - F78 — One rank ladder file + F79 — No rank numbers in code or tests ✅ approved by Muzzy 2026-11-03 ("1. yes 2. yes": moving a beat felt like one number in one file; close F78 without the chart tab).
 - F79 — No rank numbers in code or tests: done 2026-11-03 (approved with F78 — One rank ladder file; its lint-rule half arrives with the framework's Ladder tab ask).
+
+Retro: (Claude's draft, Muzzy: "your pick", 2026-11-03)
+- went well: Muzzy's pivot idea became one file that's provably safe to change — three trial moves stayed green with no code or test edits, so the 30-rank switch is content only
+- went wrong: the framework session was busy, so the Ladder tab + lint rule couldn't ship with the feature; both helpers went 45+ min quiet during long check runs
+- change: ask the framework session for its pieces when a sprint is PLANNED, not when it starts; helpers send a status line before each long check run
