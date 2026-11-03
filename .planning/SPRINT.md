@@ -18,10 +18,10 @@ Check: the ladder module's own tests · install-module's checks · check:fast ·
 Done when: src/goo/shared/faces.ts' 10 / 20 / 30 / 40 become ladder beats (faces on, late looks, worried, mouths) · tests, e2e and the bots ask the ladder (`rankOf('wild')`, `?rank=${rankOf('wild')}`) instead of restating ranks (~285 test lines, ~240 e2e lines, ~24 script lines — audit 2026-11-02) · a lint rule refuses a bare rank number in game code, tests and e2e (0 allowed), in the framework lint module · comments that name old rank numbers say the beat instead
 why: so the next sprint's 30-rank ladder (F80 — The 30-rank ladder) changes content only — no test or code edits.
 Check: lint (the new rule) green on Goops · a trial move of one beat in ladder.json (e.g. wild 40 → 41) keeps check:fast green with no test edit, then put back · check:full
-- [ ] 🤖 1. faces.ts: its rank thresholds → ladder beats — src/goo/shared/faces.ts
+- [x] 🤖 1. (done in F78 — One rank ladder file, ff79394: facesOn / lateLooks / worried / mouths) faces.ts: its rank thresholds → ladder beats — src/goo/shared/faces.ts
 - [ ] 🤖 2. A shared rankOf helper for tests + e2e; tests ask it — tests/ladder.ts
 - [ ] 🤖 3. e2e + bots ask it (?rank=…) — e2e/start.mjs
-- [ ] 🤖 4. The lint rule (framework lint module), on in Goops — ~/Documents/dev/framework/lint/kit/rules.mjs
+- [ ] 🤖 4. The guard now: a Goops test that refuses a bare rank number in tests / e2e / game code (0 allowed, `// tuning-ok:` escape) — the framework lint rule replaces it when framework-43 ships it — tests/noRankNumbers.test.ts
 - [ ] 🤖 5. The trial move (one beat moved, nothing else edited, checks green) + check:full — content/tuning/ladder.json
 
 ## Notes
@@ -43,3 +43,5 @@ Check: lint (the new rule) green on Goops · a trial move of one beat in ladder.
 - Muzzy 2026-11-02: Slow Cracks (with F83 — Growing cracks take a new crack's place) lowers the chance a new crack extends an old one · Sprint 31 runs in AUTO mode ("auto mode").
 - Auto run 2026-11-02 (Claude's call): the framework session (framework-43) was busy, so per PROJECT-FILES "Game ↔ framework sessions" + "Extraction queue": Goops builds the ladder module-shaped itself (task 1, helper f78-ladder), then queues it with extract.mjs; the Dev Kit Ladder tab (task 2) + the rank lint rule (F79 — No rank numbers in code or tests task 4) were asked of framework-43 by message — install only after it replies done.
 - framework-43 replied 2026-11-02: both asks (the Dev Kit Ladder tab, the rank lint rule) logged in the framework ROADMAP Ideas, fit OK (the tab via an adapter ladderRows() hook, live re-read, Save writes only the ladder file's keys; the lint rule beside no-tuning-numbers with // tuning-ok:) — NOT started: it asks Muzzy at its next hand-off whether now or after its Glyphtender sprint. Until its "done", Goops keeps building the ladder; send it the extraction number once queued. F78 task 2 + F79 task 4 wait on that.
+- Review (Claude, 2026-11-02, F78 merge b0c6bfa): src/ladder/ladder.ts lastAt + stepAt pick the LAST entry in file order that's reached, not the HIGHEST rank reached — fine with today's ordered file, wrong after a pivot that moves a title / colour step past the next one (e.g. associate 5 → 12 with technician at 10: rank 12 would show technician). Fix after check:full: pick the highest rank ≤ this one (ties: later in file order) + a test that reorders.
+- check:full at 04193a3^ (b0c6bfa merge): 37/39 (41.4 min) — poke (Particle jiggle 'motion at rest', under load) → ALL PASS alone; twists (B004, 1920 r40 wild) → re-run alone. Ladder fix 04193a3: the new pivot test red on the old ladder.ts, green on the fix.
