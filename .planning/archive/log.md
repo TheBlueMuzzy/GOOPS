@@ -1,4 +1,5 @@
 # Log archive (newest first)
+- 2026-10-30 — The climb is re-balanced for the rank lock: the quota is smaller and creeps up slowly, so bots meet it about 3 shifts in 4 and a career takes ~65–70 shifts; Pressure Control's first level is felt, Colorizer is a short burst, Goop Dump no longer wipes the score; cracks start growing at rank 31. Waiting on Muzzy's play.
 - 2026-10-29 — Released the beta (v0.2.0): the whole career from rank 0 to the ending — the story, upgrades and abilities, the final shift, and a new career after it.
 - 2026-10-29 — Beta ready to release, waiting on Muzzy. A sim now plays whole careers with bots (rank 0 to the ending) and shows where the ladder is too fast, where the quota is out of reach, and which upgrades do nothing; the console has its tab icon; the settings picker keeps "Accessibility" whole at 200% text.
 - 2026-10-27 — F64 approved. Rank 50 is the boss shift: all galaxy-black goop, the Veteran drops in and gives himself up sealing the cracks you can't reach, and you open the release valve three times at the console by turning two wheels until the needle sits in the green
