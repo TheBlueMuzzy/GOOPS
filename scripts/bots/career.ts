@@ -20,7 +20,7 @@ import type { BreakdownConfig, MachineId, ShiftConfig, ShiftEngine, TwistsConfig
 import type { FinalShiftConfig } from '../../src/engine/finalShift'
 import { freshProgress, isUnlocked, rankInfo, rewardFirstDay, rewardShift, scrapsAt, type Progress } from '../../src/progress/progression'
 import { activeSlots, buyLevel, costOf, levelOf, maxLevelOf, setEquipped, takeBackLevel, upgradeBook, upgradeRank, upgradesForShift, whyNotBuy } from '../../src/progress/upgradeShop'
-import { ladder, maxRank } from '../../src/progress/ladder'
+import { ladder, maxRank, rankOf } from '../../src/progress/ladder'
 import { playableUpgrades } from '../../src/engine/upgrades'
 import { repairSteps } from '../../src/game/repairs'
 import { swapHoldMs } from '../../src/input/controls'
@@ -215,7 +215,8 @@ function fireNow(s: ShiftEngine['state'], id: string): boolean {
 
 const book = upgradeBook
 export const shopUpgrades = (): UpgradeDef[] => playableUpgrades(book)
-const bandOf = (rank: number) => economy.bands.filter((b) => rank >= b).length - 1
+// (economy.json bands names each band's first upgrade; the band starts at its rank on the ladder)
+const bandOf = (rank: number) => economy.bands.map(rankOf).filter((b) => rank >= b).length - 1
 
 /** The next level a buy style wants, or null (nothing it can buy). Only upgrades the shop would sell right now. */
 export function nextBuy(p: Progress, rank: number, style: BuyStyle, skip: string[] = []): string | null {
@@ -262,7 +263,7 @@ export interface CareerInput {
   bot: string
   style: BuyStyle
   seed: number
-  toRank?: number // stop on reaching this rank (the quick mode); default: play the final shift until it's won
+  toRank?: number // stop on reaching this rank (the quick mode: economy.json quick.toBeat's); default: play the final shift until it's won
   maxShifts?: number
   finalTries?: number
 }
@@ -289,7 +290,7 @@ export interface CareerResult {
   reachedRank: number
   finalWon: boolean
   finalTries: number
-  ownedAt: Record<number, Record<string, number>> // what it owned when it reached ranks 10, 20, 30, 40, 50
+  ownedAt: Record<number, Record<string, number>> // what it owned when it reached each report band's end (ownedRanks: today 10, 20 … 50)
   equippedAt: Record<number, string[]>
   loadout50: Progress | null // what it took into its first final shift
   loadout50Raw: Progress | null // the same before leaving out economy.json finalLeaveOut (what it had equipped till then)
@@ -299,6 +300,9 @@ export interface CareerResult {
 }
 
 const shiftSeed = (careerSeed: number, k: number) => careerSeed * 100_000 + k
+// the ranks where a career's loadout is kept for the report: every report band's end (economy.json reportBands equal
+// slices of the ladder's climb — the same sum as economy-summary.mjs ownedRanksOf)
+const ownedRanks = () => Array.from({ length: economy.reportBands }, (_, k) => Math.round((k + 1) * (maxRank() / economy.reportBands)))
 
 export function runCareer(input: CareerInput): CareerResult {
   const maxShifts = input.maxShifts ?? economy.maxShifts
@@ -325,7 +329,7 @@ export function runCareer(input: CareerInput): CareerResult {
     }
     if (rank !== lastRank) {
       r.unspentByRank[rank] = scrapsAt(rank, p)
-      if (rank % 10 === 0 && rank > 0) { r.ownedAt[rank] = { ...p.owned }; r.equippedAt[rank] = [...p.equipped] }
+      if (ownedRanks().includes(rank)) { r.ownedAt[rank] = { ...p.owned }; r.equippedAt[rank] = [...p.equipped] }
       lastRank = rank
     }
     if (rank >= top && !r.loadout50) r.loadout50 = structuredClone(p)

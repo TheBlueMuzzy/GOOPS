@@ -1,4 +1,4 @@
-// F64 one headless FINAL SHIFT (rank 50): the real engine, the real tuning (passed in by final.mjs), one bot — with the
+// F64 one headless FINAL SHIFT (the ladder's finalShift): the real engine, the real tuning (passed in by final.mjs), one bot — with the
 // white goop, the rank twists and the final shift switched on, as the game plays it. Deterministic: same seed + same
 // tuning + same bot = the same shift.
 // The console stand-ins (the bots in runShift never leave the tank):

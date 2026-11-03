@@ -7,11 +7,13 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads'
 import { fileURLToPath } from 'node:url'
+import { rankOf } from '../../e2e/ladder-ranks.mjs'
 
 const root = new URL('../../', import.meta.url)
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, root), 'utf8'))
 
-const RANKS = [0, 2, 4, 6, 10]
+// the ranks played (F79: the ladder's beats — the first day, each machine starting to break, the 5th colour)
+const RANKS = ['firstDay', 'visorBreaks', 'laserBreaks', 'controlsBreak', 'fifthColour'].map(rankOf)
 // Named tuning variants, each a set of changes on top of content/tuning/shift.json (F27, 2026-10-19: drain halved + top bias).
 // 'base' = the file as it is (today's default). The others are for comparison; `--variants base` runs only the file.
 const VARIANTS = {

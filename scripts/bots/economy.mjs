@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import { Worker, isMainThread, parentPort } from 'node:worker_threads'
 import { fileURLToPath } from 'node:url'
+import { rankOf } from '../../e2e/ladder-ranks.mjs'
 
 const root = new URL('../../', import.meta.url)
 const readJson = (path) => JSON.parse(readFileSync(new URL(path, root), 'utf8'))
@@ -69,24 +70,25 @@ async function runPool(jobs, label) {
 async function main() {
   const quick = process.argv.includes('--quick')
   const eco = readJson('scripts/bots/economy.json')
-  // (F78: each upgrade's rank and the top rank are content/tuning/ladder.json's)
-  const ladder = readJson('content/tuning/ladder.json')
-  const upgrades = readJson('content/tuning/upgrades.json').upgrades.filter((u) => !u.testOnly).map((u) => ({ ...u, rank: ladder.upgrades[u.id] }))
+  // (F78: each upgrade's rank and the final shift's are content/tuning/ladder.json's)
+  const finalRank = rankOf('finalShift')
+  const upgrades = readJson('content/tuning/upgrades.json').upgrades.filter((u) => !u.testOnly).map((u) => ({ ...u, rank: rankOf(`upgrades.${u.id}`) }))
   const bots = readJson('scripts/bots/bots.json').bots
   const careerSeeds = Number(arg('--seeds', quick ? eco.quick.careerSeeds : eco.careerSeeds))
   const effectSeeds = Number(arg('--effect-seeds', quick ? eco.quick.effectSeeds : eco.effectSeeds))
   const finalSeeds = quick ? eco.quick.finalSeeds : eco.finalSeeds
   const styles = Object.keys(eco.buyStyles)
+  const quickToRank = rankOf(eco.quick.toBeat) // (F79: the quick careers stop at a ladder beat's rank)
   const started = Date.now()
 
   // 1. careers
   const careerJobs = []
   for (const bot of eco.skills) for (const style of styles) for (let seed = 1; seed <= careerSeeds; seed++) {
-    careerJobs.push({ kind: 'career', input: { bot, style, seed, ...(quick ? { toRank: eco.quick.toRank } : {}) } })
+    careerJobs.push({ kind: 'career', input: { bot, style, seed, ...(quick ? { toRank: quickToRank } : {}) } })
   }
   const careers = await runPool(careerJobs, 'careers')
 
-  // 2. every upgrade on vs off: at the rank it opens and late (effectLateRank), level 1 and max, the same seeds
+  // 2. every upgrade on vs off: at the rank it opens and late (effectLateBeats' ranks), level 1 and max, the same seeds
   const { effectProgress, effectBaseline } = await import('./career.ts')
   const { effectRanks, baselineOf } = await import('./economy-summary.mjs')
   const effectList = quick ? upgrades.filter((u) => eco.quick.effectUpgrades.includes(u.id)) : upgrades
@@ -110,14 +112,14 @@ async function main() {
   careers.forEach((c, ci) => {
     if (!c.loadout50) return
     for (let seed = 1; seed <= finalSeeds; seed++) {
-      finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50, rank: ladder.maxRank } })
+      finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50, rank: finalRank } })
       const raw = JSON.stringify(c.loadout50Raw.equipped) !== JSON.stringify(c.loadout50.equipped)
-      if (raw) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, raw: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50Raw, rank: ladder.maxRank } })
+      if (raw) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, raw: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50Raw, rank: finalRank } })
     }
   })
   const { freshProgress } = await import('../../src/progress/progression.ts')
   for (const bot of eco.skills) for (let seed = 1; seed <= finalSeeds; seed++) {
-    finalJobs.push({ kind: 'shift', key: { bot, with: false }, input: { bot, seed: 9_000_000 + seed, progress: freshProgress(), rank: ladder.maxRank } })
+    finalJobs.push({ kind: 'shift', key: { bot, with: false }, input: { bot, seed: 9_000_000 + seed, progress: freshProgress(), rank: finalRank } })
     finalJobs.push({ kind: 'final', key: { bot, path: 'runFinal' }, bot, seed: 9_000_000 + seed })
   }
   const finalResults = await runPool(finalJobs, 'final shifts')
@@ -136,7 +138,7 @@ async function main() {
   if (quick) {
     const problems = []
     // (F74 — Rank lock: a bot that never meets a quota is held at its rank — economy.json quick.mustClimb names the bots that must climb)
-    for (const c of careers) if (eco.quick.mustClimb.includes(c.bot) && c.reachedRank < eco.quick.toRank) problems.push(`${c.bot}/${c.style} seed ${c.seed} stopped at rank ${c.reachedRank}`)
+    for (const c of careers) if (eco.quick.mustClimb.includes(c.bot) && c.reachedRank < quickToRank) problems.push(`${c.bot}/${c.style} seed ${c.seed} stopped at rank ${c.reachedRank}`)
     const again = await runPool([careerJobs[0]], 'repeat check')
     if (JSON.stringify(again[0]) !== JSON.stringify(careers[0])) problems.push('the same career seed gave a different career the second time')
     if (!effectResults.every((r) => r && r.realMs > 0)) problems.push('an upgrade on/off shift did not play')

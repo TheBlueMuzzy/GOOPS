@@ -26,7 +26,7 @@ const FAST = [
 // (red on a short desktop window: the kit's swipe rule — SPRINT 08 Notes; add it back once that's fixed).
 const E2E = [
   ['first-day', 'e2e/first-day.mjs', ''],      // 5347
-  ['eyes', 'e2e/eyes.mjs', ''],                // 6262 (F62: the goop's faces by rank 9/10/20/30/40 — fade-in one clump at a time, gaze, zap squeeze, brows, mouths; Jelly + Particle; shots at every portrait size)
+  ['eyes', 'e2e/eyes.mjs', ''],                // 6262 (F62: the goop's faces by the ladder's beats (none just before facesOn, then facesOn, lateLooks, worried, mouths) — fade-in one clump at a time, gaze, zap squeeze, brows, mouths; Jelly + Particle; shots at every portrait size)
   ['sw-update', 'e2e/sw-update.mjs', ''],      // 5462 (F54: the 1.0 switch on a copy of gh-pages — v1 player + installed beta → Goops 2 at /GOOPS/, offline, update; + the Dev Kit in it)
   ['economy-sim', 'scripts/bots/economy.mjs', '--quick'], // no port (F51: bots play short careers headless — they run, gain ranks and repeat; ~20 s)
   ['perf', 'e2e/perf.mjs', ''],                // 5464 (pass line: content/tuning/perf.json — same result 3 runs + beside sw-update)
@@ -52,14 +52,14 @@ const E2E = [
   ['periscope-zoom', 'e2e/periscope-zoom.mjs', ''], // 5378 (F56: the tank in the goggles between shifts + mid-shift, the zoom in / out pinned to the glass, its last frame = the tank, a control right after, reduce motion = instant; every portrait size)
   ['text-size', 'e2e/text-size.mjs', ''],      // 5376 (F76/B005: the console at Text size 100–200% — art words in their spots, the meter, the monitor + a lesson line, the gear clear of Upgrades; every portrait size)
   ['credits', 'e2e/credits.mjs', ''],          // 5385 (F55: Settings → About → Credits — the people first, every credits.json entry, fits + scrolls in its card, ‹ back to Settings, mid-shift too; every portrait size)
-  ['rank-select', 'e2e/rank-select.mjs', ''],  // 5351 (F70: version · RANK SELECT · credit; pick 0 / pick 7; every portrait size)
+  ['rank-select', 'e2e/rank-select.mjs', ''],  // 5351 (F70: version · RANK SELECT · credit; pick 0 / pick a mid rank; every portrait size)
   ['your-name', 'e2e/your-name.mjs', ''],      // 6366 (F66: PLEASE SIGN HERE on rank 0's monitor — sign, reload, the 12 limit, skip, RANK SELECT 0 wipes it; every portrait size)
   ['zap', 'e2e/zap.mjs', ''],                  // 5355 (F67: the pop's tap point · beam top centre → tap · white-hot · spray · Particle · reduce motion; every portrait size)
   ['ladder', 'e2e/ladder.mjs', ''],            // 5397 (F78: one rank ladder file — beats change the game at their rank, not below (colour, laser, white goop, wild); a live move of beats.wildGoop in the Dev Kit's Tuning tab; 390 + 1440)
-  ['twists', 'e2e/twists.mjs', ''],            // 6420 (F39: two-colour pieces at 20, a crack growing + sealed whole at 30, wild goop at 40 + the white goop's ring round a grown crack; every portrait size + Particle)
-  ['white-goop', 'e2e/white-goop.mjs', ''],    // 6400 (F63: the white goop — not at 30, drops in at 31, laser "ow", oozes + seals a crack, behind goop, Dev Kit pause; every portrait size + Particle)
+  ['twists', 'e2e/twists.mjs', ''],            // 6420 (F39: two-colour pieces at twoColourPieces, a crack growing + sealed whole at cracksGrow, wild goop at wildGoop (the ladder's beats) + the white goop's ring round a grown crack; every portrait size + Particle)
+  ['white-goop', 'e2e/white-goop.mjs', ''],    // 6400 (F63: the white goop — not the rank before the ladder's whiteGoop, drops in at it, laser "ow", oozes + seals a crack, behind goop, Dev Kit pause; every portrait size + Particle)
   ['ending', 'e2e/ending.mjs', ''],            // 6480 (F65: win → every ending step in order → the end-game screen → the new career (rank 0, Former Employee, gold trim, no first day, the sign-in); lose → One Of Us then a win; resume; RANK SELECT; every portrait size)
-  ['final-shift', 'e2e/final-shift.mjs', ''],  // 6450 (F64: the final shift — black, his drop-in, the valve panel's 3 stages by real keys + a drag, the win, the 3 losses, rank 50's moment; every portrait size; a real keys + taps run until a black crack grows, failing on any page error)
+  ['final-shift', 'e2e/final-shift.mjs', ''],  // 6450 (F64: the final shift — black, his drop-in, the valve panel's 3 stages by real keys + a drag, the win, the 3 losses, the final shift's story moment; every portrait size; a real keys + taps run until a black crack grows, failing on any page error)
 ]
 
 const args = process.argv.slice(2)

@@ -1,5 +1,7 @@
 // F51 the economy sim's numbers: careers, upgrade on/off runs and final shifts → the summary economy-page.mjs draws
 // and results.json keeps. Plain statistics, no game rules (those are in career.ts).
+// F79: every rank here comes from the ladder (content/tuning/ladder.json) — beats by name, the bands from its maxRank.
+import { maxRank, rankOf } from '../../e2e/ladder-ranks.mjs'
 
 const quantile = (xs, q) => {
   if (!xs.length) return null
@@ -16,17 +18,24 @@ const r3 = (n) => (n === null || n === undefined ? null : Math.round(n * 1000) /
 /** Which baseline an upgrade's on/off runs share: owning nothing ('none'), or its own (a slot, or effectCompanions). */
 export const baselineOf = (u, eco) => (u.feature === 'abilitySlots' || eco.effectCompanions[u.id] ? u.id : 'none')
 
-/** The ranks an upgrade's on/off runs play at: the rank it opens, then economy.json effectLateRanks (the final shift = 50). */
-export const effectRanks = (u, eco) => [...new Set([u.rank, ...eco.effectLateRanks.filter((r) => r >= u.rank)])]
+/** The ranks of economy.json effectLateBeats (ladder names: late game, the final shift). */
+export const effectLateRanks = (eco) => eco.effectLateBeats.map(rankOf)
+/** The ranks an upgrade's on/off runs play at: the rank it opens, then the late ranks (effectLateRanks). */
+export const effectRanks = (u, eco) => [...new Set([u.rank, ...effectLateRanks(eco).filter((r) => r >= u.rank)])]
 
-export const BANDS =[[1, 9], [10, 19], [20, 29], [30, 39], [40, 49]]
+// The report's rank bands: economy.json reportBands equal slices of the ladder's climb (the first from rank 1, the last
+// ending just under the top rank) — today 1–9, 10–19 … 40–49. Each band's end + 1 is a checkpoint for "what it owns"
+// (career.ts ownedEvery), and the shifts-to-rank columns are every half band up to the top.
+const bandStep = (eco) => maxRank() / eco.reportBands
+export const bandsOf = (eco) => Array.from({ length: eco.reportBands }, (_, k) => [Math.max(1, Math.round(k * bandStep(eco))), Math.round((k + 1) * bandStep(eco)) - 1])
+export const ownedRanksOf = (eco) => Array.from({ length: eco.reportBands }, (_, k) => Math.round((k + 1) * bandStep(eco)))
+const checkpointsOf = (eco) => Array.from({ length: 2 * eco.reportBands }, (_, k) => Math.round(((k + 1) * bandStep(eco)) / 2))
 const bandName = ([a, b]) => `${a}–${b}`
-const CHECKPOINTS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
 
 // ---------------------------------------------------------------- careers
 
 function stallsOf(c) {
-  // a stall = the same rank lost 3+ shifts in a row (the final shift counts as rank 50)
+  // a stall = the same rank lost 3+ shifts in a row (the final shift counts as its rank, the top)
   const out = []
   let run = 0
   let at = -1
@@ -60,10 +69,10 @@ function careerRow(cs, label, upgrades, eco) {
   return {
     label, n: cs.length,
     reachedFinal: r3(cs.filter((c) => c.loadout50).length / cs.length),
-    shiftsToFinal: r1(median(cs.map((c) => shiftsTo(c, 50)).filter((x) => x !== null))),
-    shiftsToRank: Object.fromEntries(CHECKPOINTS.map((r) => [r, r1(median(cs.map((c) => shiftsTo(c, r)).filter((x) => x !== null)))])),
+    shiftsToFinal: r1(median(cs.map((c) => shiftsTo(c, rankOf('finalShift'))).filter((x) => x !== null))),
+    shiftsToRank: Object.fromEntries(checkpointsOf(eco).map((r) => [r, r1(median(cs.map((c) => shiftsTo(c, r)).filter((x) => x !== null)))])),
     winRate: r3(mean(cs.flatMap((c) => normal(c).map((s) => (s.won ? 1 : 0))))),
-    bands: BANDS.map((b) => {
+    bands: bandsOf(eco).map((b) => {
       const ss = cs.flatMap((c) => normal(c).filter((s) => s.rank >= b[0] && s.rank <= b[1]))
       const perCareer = cs.map((c) => normal(c).filter((s) => s.rank >= b[0] && s.rank <= b[1]).length)
       return { band: bandName(b), shifts: ss.length, shiftsPerRank: r1(median(perCareer) / (b[1] - b[0] + 1)), winRate: r3(mean(ss.map((s) => (s.won ? 1 : 0)))),
@@ -80,9 +89,9 @@ function careerRow(cs, label, upgrades, eco) {
     finalSavedShare: finals.some((s) => s.outcome === 'won') ? r3(finals.filter((s) => s.savedVet).length / finals.filter((s) => s.outcome === 'won').length) : null,
     scraps: {
       earned: r1(mean(cs.map((c) => c.scrapsEarned))), spent: r1(mean(cs.map((c) => c.scrapsSpent))), levelsOffered,
-      unspent: Object.fromEntries(CHECKPOINTS.map((r) => [r, r1(mean(cs.map((c) => c.unspentByRank[r]).filter((x) => x !== undefined)))])),
+      unspent: Object.fromEntries(checkpointsOf(eco).map((r) => [r, r1(mean(cs.map((c) => c.unspentByRank[r]).filter((x) => x !== undefined)))])),
     },
-    owned: { 10: ownedAt(10), 20: ownedAt(20), 30: ownedAt(30), 40: ownedAt(40), 50: ownedAt(50) },
+    owned: Object.fromEntries(ownedRanksOf(eco).map((r) => [r, ownedAt(r)])),
   }
 }
 
@@ -182,7 +191,7 @@ export function summarise(d) {
     made: new Date().toISOString(), quick, seconds: r1(seconds), careerSeeds, effectSeeds, finalSeeds,
     careerCount: careers.length,
     shiftsPlayed: careers.reduce((a, c) => a + c.shifts.length, 0) + d.effectResults.length + d.finalResults.length,
-    settings: eco, bands: BANDS.map(bandName), checkpoints: CHECKPOINTS,
+    settings: eco, bands: bandsOf(eco).map(bandName), checkpoints: checkpointsOf(eco),
     careerRows, effects,
     dead: effects.filter((e) => e.verdict === 'none').map((e) => ({ id: e.id, name: e.name })),
     finalRows: finalRows({ ...d, styles }),
