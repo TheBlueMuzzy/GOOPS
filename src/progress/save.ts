@@ -102,7 +102,7 @@ export function saveCareers(careers: number, storage: Pick<Storage, 'getItem' | 
   writeSave(loadProgress(storage), { name: loadOperatorName(storage), careers: Math.max(0, Math.floor(careers)) }, storage)
 }
 
-/** F63 and later: the player's name for the goop's lines (rank 36, 39's "Pending retirements"), or null — then the
+/** F63 and later: the player's name for the goop's lines (moments 36, 39's "Pending retirements"), or null — then the
  *  words say "Operator #4471" (en.json story.sign.fallback). */
 export const operatorName = (): string | null => loadOperatorName()
 

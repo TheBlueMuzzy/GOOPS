@@ -11,6 +11,7 @@ import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5331, OUT = 'e2e-shots/cracks-look'
 mkdirSync(OUT, { recursive: true })
@@ -100,7 +101,7 @@ try {
     const errors = []
     page.on('pageerror', (e) => errors.push(String(e)))
     page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('favicon')) errors.push(m.text()) })
-    await page.goto(`http://localhost:${PORT}/?rank=4`)
+    await page.goto(`http://localhost:${PORT}/?rank=${rankOf('laserBreaks')}`) // (an early rank: the ladder's beat)
     await startShift(page)
     const scene = await setup(page)
     await page.waitForTimeout(1500) // bubbles rise for a while

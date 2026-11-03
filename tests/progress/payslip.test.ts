@@ -5,7 +5,7 @@ import en from '../../content/text/en.json'
 import { freshProgress, rankInfo, rewardFirstDay, rewardShift, xpToNext, type Progress } from '../../src/progress/progression'
 import { NO_FACTS, afterCaught, associationDue, debtAt, makePayslip, pickFines, split, type ShiftFacts } from '../../src/progress/payslip'
 import { createRng } from '../../src/engine/rng'
-import { rankOf } from '../../src/progress/ladder'
+import { ladderFile, maxRank, rankOf } from '../../src/progress/ladder'
 
 const extras = en.payslip.extras.length
 // (a quota met earlier this rank: a full meter ranks up, the shift's XP isn't doubled — these tests are about the slip)
@@ -13,10 +13,13 @@ const at = (totalXp: number): Progress => ({ ...freshProgress(), totalXp, quotaM
 const done = { quotaMet: false }
 const xpForRank = (rank: number) => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return xp }
 const sum = (lines: { amount: number }[]) => lines.reduce((a, l) => a + l.amount, 0)
+// (F79: ranks asked of the ladder) a rank before any rank-gated silly fine
+const LOW = Math.min(rankOf('fineHearingVoices'), rankOf('fineTalkingToGoop'), rankOf('fineTalkingBack')) - 1
 
 describe('payslip', () => {
   it('net = the real XP and gross − fines = net, for many scores and ranks', () => {
-    for (const rank of [0, 1, 5, 12, 29, 30, 44]) for (const score of [0, 7, 120, 1800, 2900, 9000]) for (const seed of [1, 2, 3]) {
+    const ranks = [0, 1, ...new Set(Object.values(ladderFile.beats).flatMap((r) => [r - 1, r]))].filter((r) => r >= 0 && r <= maxRank())
+    for (const rank of ranks) for (const score of [0, 7, 120, 1800, 2900, 9000]) for (const seed of [1, 2, 3]) {
       const reward = rewardShift(at(xpForRank(rank) + 10), score, done)
       const p = makePayslip(reward, NO_FACTS, { firstDay: false, seed, extras })
       expect(p.net).toBe(reward.xp)
@@ -27,7 +30,7 @@ describe('payslip', () => {
   })
 
   it('fines total about the fine share of the shift', () => {
-    const reward = rewardShift(at(xpForRank(3)), 1800, done)
+    const reward = rewardShift(at(xpForRank(LOW)), 1800, done)
     const p = makePayslip(reward, NO_FACTS, { firstDay: false, seed: 4, extras })
     expect(sum(p.fines)).toBe(Math.round(1800 * tuning.fineShare))
     expect(p.fines).toHaveLength(tuning.fineLines)
@@ -35,16 +38,16 @@ describe('payslip', () => {
 
   it('real events are fined first, then silly ones; rank-gated silly fines wait for their rank', () => {
     const facts: ShiftFacts = { ...NO_FACTS, ruptured: true, broke: ['laser'] }
-    const p = makePayslip(rewardShift(at(xpForRank(3)), 2000, done), facts, { firstDay: false, seed: 5, extras })
+    const p = makePayslip(rewardShift(at(xpForRank(LOW)), 2000, done), facts, { firstDay: false, seed: 5, extras })
     expect(p.fines.slice(0, 2).map((f) => f.key).sort()).toEqual(['fines.laser', 'fines.rupture'])
     expect(p.fines[2].key.startsWith('silly.')).toBe(true)
     for (let seed = 0; seed < 50; seed++) {
-      const low = makePayslip(rewardShift(at(xpForRank(3)), 2000, done), NO_FACTS, { firstDay: false, seed, extras })
+      const low = makePayslip(rewardShift(at(xpForRank(LOW)), 2000, done), NO_FACTS, { firstDay: false, seed, extras })
       expect(low.fines.some((f) => f.key === 'silly.hearingVoices' || f.key === 'silly.talkingBack')).toBe(false)
     }
   })
 
-  it('F40: rank-gated silly fines show only from their rank (12 hearing voices · 15 talking to the goop · 40 talking back)', () => {
+  it('F40: rank-gated silly fines show only from their rank (payslip.json sillyFines: hearing voices · talking to the goop · talking back)', () => {
     const keysAt = (rank: number) => {
       const seen = new Set<string>()
       for (let seed = 0; seed < 300; seed++) for (const f of pickFines(2000, { ...NO_FACTS, associationFined: true }, rank, createRng(seed))) seen.add(f.key)
@@ -73,11 +76,11 @@ describe('payslip', () => {
     expect(en.payslip.afterCaught.debt).toBeTruthy()
   })
 
-  it('F63: "Pending retirements" from the shift that reaches rank 39, and its words exist', () => {
+  it('F63: "Pending retirements" from the shift that reaches the pendingRetirement beat, and its words exist', () => {
     const slip = (rank: number) => makePayslip(rewardShift(at(xpForRank(rank) + 10), 1000, done), NO_FACTS, { firstDay: false, seed: 2, extras })
     expect(slip(rankOf('pendingRetirement') - 2).pendingRetirement).toBe(false)
     expect(slip(rankOf('pendingRetirement')).pendingRetirement).toBe(true)
-    // the shift that ranks up INTO 39 shows it already (the moment at 39 plays right after that report)
+    // the shift that ranks up INTO pendingRetirement shows it already (the moment at that rank plays right after that report)
     const into = makePayslip(rewardShift(at(xpForRank(rankOf('pendingRetirement')) - 5), 1000, done), NO_FACTS, { firstDay: false, seed: 2, extras })
     expect(into.pendingRetirement).toBe(true)
     expect(en.payslip.pendingRetirements.value).toContain('{name}')
@@ -92,11 +95,12 @@ describe('payslip', () => {
   })
 
   it('a payday takes exactly the payment due, in 5 items', () => {
-    const reward = rewardShift(at(xpForRank(3) + 4000), 2900, done) // 4,250 due at rank 3
+    const r = rankOf('swap') // (any rank past the first day: 250 short of its payday, e.g. 4,250 due at rank 3)
+    const reward = rewardShift(at(xpForRank(r) + xpToNext(r) - 250), 2900, done)
     const p = makePayslip(reward, NO_FACTS, { firstDay: false, seed: 6, extras })
     expect(p.paydays).toHaveLength(1)
-    expect(p.paydays[0].due).toBe(xpToNext(3))
-    expect(sum(p.paydays[0].items)).toBe(xpToNext(3))
+    expect(p.paydays[0].due).toBe(xpToNext(r))
+    expect(sum(p.paydays[0].items)).toBe(xpToNext(r))
     expect(p.paydays[0].items).toHaveLength(5)
     expect(p.credits).toBe(reward.after.xpIntoRank)
   })
@@ -119,12 +123,13 @@ describe('payslip', () => {
     expect(p.paydays).toHaveLength(1)
   })
 
-  it('passage debt barely moves before rank 30, then goes up', () => {
-    const d0 = debtAt(0), d29 = debtAt(29), d40 = debtAt(40)
+  it('passage debt barely moves before veteranCaught, then goes up', () => {
+    const caught = rankOf('veteranCaught'), later = Math.min(caught + 10, maxRank())
+    const d0 = debtAt(0), before = debtAt(caught - 1), after = debtAt(later)
     expect(d0).toBe(tuning.debt.start)
-    expect(Math.abs(d29 - d0)).toBeLessThan(d0 * 0.1)
-    for (let r = 30; r < 40; r++) expect(debtAt(r + 1)).toBeGreaterThan(debtAt(r))
-    expect(d40).toBeGreaterThan(d29)
+    expect(Math.abs(before - d0)).toBeLessThan(d0 * 0.1)
+    for (let r = caught; r < later; r++) expect(debtAt(r + 1)).toBeGreaterThan(debtAt(r))
+    expect(after).toBeGreaterThan(before)
   })
 
   it('split keeps whole parts that add up', () => {

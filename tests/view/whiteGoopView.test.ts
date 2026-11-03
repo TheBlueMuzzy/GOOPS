@@ -7,10 +7,11 @@ import { createWhiteGoopView } from '../../src/view/whiteGoopView'
 import finalJson from '../../content/tuning/finalShift.json'
 import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import { realConfig } from '../engine/helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 describe('the white goop view', () => {
   it('shrinks to his size over shrinkSec, and only while the goo clock runs', () => {
-    const shift = createShift(realConfig(), { seed: 1, rank: 50, finalShift: structuredClone(finalJson) as FinalShiftConfig,
+    const shift = createShift(realConfig(), { seed: 1, rank: rankOf('finalShift'), finalShift: structuredClone(finalJson) as FinalShiftConfig,
       whiteGoop: structuredClone(whiteGoopJson) as WhiteGoopConfig })
     const s = shift.state
     const view = createWhiteGoopView()

@@ -2,6 +2,10 @@
 // Written by run.mjs from results.json; `node scripts/bots/page.mjs` rebuilds it from the last results.json.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { rankOf } from '../../e2e/ladder-ranks.mjs'
+
+// the two ranks looked at inside a shift: no machine that breaks, and all three (F79: the ladder's beats)
+const INSIDE = [rankOf('firstDay'), rankOf('controlsBreak')]
 
 const BOTS = ['idle', 'casual', 'focused', 'sharp']
 const LABEL = { idle: 'Idle', casual: 'Casual', focused: 'Focused', sharp: 'Sharp' }
@@ -145,7 +149,7 @@ function baseTable(s, set, title) {
 function crackTable(s) {
   let rows = ''
   for (const b of BOTS) {
-    for (const r of [0, 6]) {
+    for (const r of INSIDE) {
       const g = s.base[b][r]
       rows += `<tr><td>${LABEL[b]}</td><td>${r}</td><td>${g.crackEveryS}</td><td>${g.crackOpenS}</td><td>${num(g.sealS.median)}</td><td>${pct(g.sealedShare)}</td><td>${pct(g.spots.surface)} / ${pct(g.spots.air)} / ${pct(g.spots.under)}</td><td>${pct(g.sealedBySpot.surface)} / ${pct(g.sealedBySpot.air)} / ${pct(g.sealedBySpot.under)}</td><td>${num(g.gap.mean)}</td><td>${pct(g.spots.visible)}</td><td>${pct(g.sealedByVisible.visible)} / ${pct(g.sealedByVisible.offscreen)}</td><td>${g.crackSecondsPerShift}</td><td>${pct(g.crackSecondsShare.neverSealed)}</td><td>${num(g.integrityPerCrackSecond)}</td></tr>`
     }
@@ -201,8 +205,8 @@ ${variantTable(s)}
 <h2>How shifts end</h2>
 ${ruptureChart(s)}
 ${quotaChart(s)}
-<h2>Inside a shift (median of the seeds, rank 0 and rank 6)</h2>
-${[0, 6].map((r) => `<h3>Rank ${r}</h3><div class="grid2">${lineChart(s, r, 'integrity', { title: 'Tank integrity', yMax: 1, yFmt: (v) => `${Math.round(v * 100)}%` })}${lineChart(s, r, 'pressure', { title: 'Pressure', yMax: 1, yFmt: (v) => `${Math.round(v * 100)}%` })}${lineChart(s, r, 'open', { title: 'Open cracks', yFmt: (v) => Math.round(v) })}${lineChart(s, r, 'stack', { title: 'Stack height (rows)', yFmt: (v) => Math.round(v) })}</div>`).join('')}
+<h2>Inside a shift (median of the seeds, ${INSIDE.map((r) => `rank ${r}`).join(' and ')})</h2>
+${INSIDE.map((r) => `<h3>Rank ${r}</h3><div class="grid2">${lineChart(s, r, 'integrity', { title: 'Tank integrity', yMax: 1, yFmt: (v) => `${Math.round(v * 100)}%` })}${lineChart(s, r, 'pressure', { title: 'Pressure', yMax: 1, yFmt: (v) => `${Math.round(v * 100)}%` })}${lineChart(s, r, 'open', { title: 'Open cracks', yFmt: (v) => Math.round(v) })}${lineChart(s, r, 'stack', { title: 'Stack height (rows)', yFmt: (v) => Math.round(v) })}</div>`).join('')}
 <p class="note">Lines stop when fewer than half the seeds are still going (the shift had ended for the rest).</p>
 <h2>Where the integrity goes</h2>
 ${crackTable(s)}

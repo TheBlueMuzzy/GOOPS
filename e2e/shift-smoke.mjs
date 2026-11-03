@@ -5,6 +5,7 @@ import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5250, OUT = 'e2e-shots/smoke'
 mkdirSync(OUT, { recursive: true })
@@ -62,10 +63,11 @@ try {
     console.log(name, JSON.stringify(state), 'end screen:', endShown ? 'yes' : 'NO', errors.length ? 'ERRORS: ' + errors.join(' | ') : 'no errors')
     // F20: the shift's score became XP, saved; a reload keeps it; ?rank= reaches the engine (dev only)
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('goops-progress') || 'null'))
-    await page.goto(`http://localhost:${PORT}/?seed=7&rank=12`)
+    const AT = rankOf('noVoices') // (any rank past the first ones: the ladder's beat)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${AT}`)
     await startShift(page)
     const reloaded = await page.evaluate(() => ({ save: JSON.parse(localStorage.getItem('goops-progress') || 'null'), rank: window.__goops.engine.state.rank }))
-    const xpOk = Number.isInteger(saved?.v) && saved.totalXp >= 100 && reloaded.save?.totalXp === saved.totalXp && reloaded.rank === 12
+    const xpOk = Number.isInteger(saved?.v) && saved.totalXp >= 100 && reloaded.save?.totalXp === saved.totalXp && reloaded.rank === AT
     console.log(name, 'xp saved:', JSON.stringify(saved), 'after reload:', JSON.stringify(reloaded), xpOk ? 'ok' : 'XP PROBLEM')
     if (!xpOk) failed++
     if (!endShown || errors.length) failed++

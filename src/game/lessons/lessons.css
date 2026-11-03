@@ -32,7 +32,7 @@
 .crt-sign { inline-size: 100%; padding-block-end: calc(14 * var(--u)); box-sizing: border-box; }
 /* F40: a story line's monitor look (Console.tsx's Crt, data-story-look; numbers in content/story/moments.json looks).
    flicker = the screen stutters dark a few times, once, as the line comes up ("it heard that") ·
-   alarm = the screen flashes red while the line is up (the Veteran's capture at 30: "UNAUTHORISED BROADCAST LOCATED").
+   alarm = the screen flashes red while the line is up (the Veteran's capture at moment 30: "UNAUTHORISED BROADCAST LOCATED").
    Looks clock: the Dev Kit's full pause holds them. Reduce motion: no flicker; the alarm is a steady red. */
 .crt[data-story-look="flicker"] { animation: story-flicker var(--story-flicker) steps(1) 1; }
 @keyframes story-flicker {

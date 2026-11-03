@@ -8,7 +8,7 @@
 //   F40 line looks: crackle = his bubble squelches more often while it waits (the same squelch, sooner — talk.json's
 //     squelchEvery swapped for moments.json looks.crackleEvery) · cut = he's cut off: once his line has typed out, the
 //     moment moves on by itself after looks.cutSeconds (looks clock: the Dev Kit's full pause holds it; a tap still
-//     works) — at 30 that's Management cutting in. (The monitor's own looks, flicker / alarm: Console.tsx's Crt.)
+//     works) — at moment 30 that's Management cutting in. (The monitor's own looks, flicker / alarm: Console.tsx's Crt.)
 // F45: the goop through the speaker ("goop", 41 / 43 / 48) — his bubble's place, the goop's look (below).
 // Enter moves a Management line on (the bubble takes its own tap / Enter / Space) — not the sign line (F66): there
 // Enter signs the name box (Console.tsx).

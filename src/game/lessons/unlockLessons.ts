@@ -1,11 +1,11 @@
 // UNLOCK LESSONS (F59) — the Goops rules for WHEN the "you unlocked something" lessons play (the lessons themselves
 // are plain data: content/lessons/unlock-*.json; what unlocks at which rank: src/progress/progression.ts):
 //   - in the tank: at the START of a real shift (never a lesson's training shift), the earliest unlock this rank has
-//     that the device hasn't seen yet — the next-piece window (rank 1), then swap (rank 3). An interrupt: the shift waits
+//     that the device hasn't seen yet — the next-piece window (rank 1), then swap (beat swap). An interrupt: the shift waits
 //     under it until Got it. ONE per shift start, never a stack: a player already past both ranks (e.g. ?rank=6 on a
 //     fresh device) gets the window's at this shift and swap's at the next (Claude's call, 2026-10-19: one message at a
 //     time reads better than two in a row before the first piece has even fallen).
-//   - at the console between shifts: upgrading (rank 5) — its line on the monitor, the Upgrades button outlined; done
+//   - at the console between shifts: upgrading (beat upgradesShop) — its line on the monitor, the Upgrades button outlined; done
 //     when the player opens Upgrades.
 // Once per device each (kit tips memory 'lesson:<id>', marked by the runner when the lesson finishes); Settings →
 // Replay lessons clears them with the rest.

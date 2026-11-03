@@ -1,4 +1,5 @@
-// F42 task 3: the three actives from v1 — Goop Dump (rank 15), Goop Colorizer (rank 25), Crack Down (rank 35).
+// F42 task 3: the three actives from v1 — Goop Dump, Goop Colorizer, Crack Down (each from its rank in the ladder's
+// upgrades group).
 // Numbers from content/tuning/upgrades.json. Each one is seeded (the shift's own random numbers), runs on the rules
 // clock (tick), and is refused — charge kept — when it can't act (no falling piece / a wild one / a rupture).
 import { describe, expect, it } from 'vitest'
@@ -8,8 +9,12 @@ import { createShift, WILD, resolveUpgrades } from '../../src/engine'
 import type { ShiftConfig, ShiftEngine, ShiftEvent, ShiftOptions, TwistsConfig, UpgradeBook } from '../../src/engine'
 import { mainColor, type PieceDef } from '../../src/engine/pieces'
 import { dropPiece, ofType, oneShapeConfig, straightLineCracks } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 const book = upgradesJson as UpgradeBook
+// each active's own rank, and the twists' (F79: asked, never restated)
+const DUMP = rankOf('upgrades.goopDump'), COLORIZER = rankOf('upgrades.goopColorizer'), CRACK_DOWN = rankOf('upgrades.crackDown')
+const SPLIT = rankOf('twoColourPieces'), WILD_RANK = rankOf('wildGoop')
 // an active's numbers at a level, read from the book (F52 tunes them: the tests follow)
 const level = (id: string, n: number) => book.upgrades.find((u) => u.id === id)!.ability!.byLevel[n - 1] as Record<string, number>
 const dump = (n: number) => level('goopDump', n)
@@ -27,7 +32,7 @@ function config(): ShiftConfig {
 
 function withActive(id: string, level: number, options: Partial<ShiftOptions> = {}, cfg = config()) {
   const abilities = resolveUpgrades(book, { [id]: level }, [id]).abilities
-  const shift = createShift(cfg, { seed: 7, rank: 15, startGrid: new Uint8Array(30 * 24), abilities, ...options })
+  const shift = createShift(cfg, { seed: 7, rank: DUMP, startGrid: new Uint8Array(30 * 24), abilities, ...options })
   shift.takeEvents()
   return { shift, cfg, s: shift.state, a: () => shift.state.abilities![0] }
 }
@@ -45,7 +50,7 @@ function timed(shift: ShiftEngine, ms: number): { t: number; e: ShiftEvent }[] {
 }
 
 // a shift whose first crack ruptures the tank, ticked until it has
-function ruptured(id: string, rank = 15): ShiftEngine {
+function ruptured(id: string, rank = DUMP): ShiftEngine {
   const cfg = straightLineCracks(config(), 100, 100)
   cfg.integrity.drainPerCrackPerSec = 1000
   const { shift, s } = withActive(id, 1, { rank }, cfg)
@@ -72,7 +77,7 @@ describe('the main colour a piece gives Goop Dump and Goop Colorizer (pieces.ts 
   })
 })
 
-describe('Goop Dump (F42, rank 15)', () => {
+describe(`Goop Dump (F42, rank ${DUMP})`, () => {
   it('charges in 15 s of play (with an abilityReady event)', () => {
     const { shift, a } = withActive('goopDump', 1)
     shift.tick(14_000)
@@ -191,7 +196,7 @@ describe('Goop Dump (F42, rank 15)', () => {
       expect(shift.state.effects!.dump?.color).toBe(WILD)
     }
     fires(withActive('goopDump', 1, { training: {} }).shift) // a lesson-style shift: no piece until told to
-    const wild = withActive('goopDump', 1, { rank: 40, twists: twists((t) => { t.wild.chance = 1 }) })
+    const wild = withActive('goopDump', 1, { rank: WILD_RANK, twists: twists((t) => { t.wild.chance = 1 }) })
     expect(wild.s.piece!.colors[0]).toBe(WILD)
     fires(wild.shift)
     // a rupture
@@ -227,7 +232,7 @@ describe('Goop Dump (F42, rank 15)', () => {
   })
 })
 
-describe('Goop Colorizer (F42, rank 25)', () => {
+describe(`Goop Colorizer (F42, rank ${COLORIZER})`, () => {
   // drop the falling piece and note the colours of every piece that falls after it
   function nextColours(shift: ShiftEngine, cfg: ShiftConfig, count: number): number[][] {
     const out: number[][] = []
@@ -282,7 +287,7 @@ describe('Goop Colorizer (F42, rank 25)', () => {
   })
 
   it('a two-colour falling piece gives its main colour; two-colour pieces coming next turn all one colour; never wild', () => {
-    const { shift, s, cfg } = withActive('goopColorizer', 1, { rank: 20, seed: 5, twists: twists((t) => { t.split.chance = 1 }) })
+    const { shift, s, cfg } = withActive('goopColorizer', 1, { rank: SPLIT, seed: 5, twists: twists((t) => { t.split.chance = 1 }) })
     const colors = s.piece!.colors
     expect(new Set(colors).size).toBe(2) // (every piece splits here)
     const main = mainOfFalling(shift)!
@@ -294,10 +299,10 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     for (const p of nextColours(shift, cfg, colorized(1))) expect(p).toEqual([main, main, main, main])
   })
 
-  it('wild pieces coming next are coloured too (wild only from rank 40)', () => {
+  it(`wild pieces coming next are coloured too (wild only from rank ${WILD_RANK})`, () => {
     // a coloured falling piece first, then every piece after it wild: the colorizer turns them coloured
     const t = twists((x) => { x.wild.chance = 0 })
-    const { shift, cfg } = withActive('goopColorizer', 1, { rank: 40, twists: t })
+    const { shift, cfg } = withActive('goopColorizer', 1, { rank: WILD_RANK, twists: t })
     const color = mainOfFalling(shift)
     t.wild.chance = 1 // (read live: from now on every new piece is wild)
     makeReady(shift)
@@ -322,7 +327,7 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     expect(ofType(none.shift.takeEvents(), 'reject')).toHaveLength(1)
     expect(none.a()).toMatchObject({ charge: 1, ready: true })
 
-    const wild = withActive('goopColorizer', 1, { rank: 40, twists: twists((t) => { t.wild.chance = 1 }) })
+    const wild = withActive('goopColorizer', 1, { rank: WILD_RANK, twists: twists((t) => { t.wild.chance = 1 }) })
     const next = [...wild.s.next!]
     makeReady(wild.shift)
     wild.shift.act({ type: 'ability', id: 'goopColorizer' })
@@ -331,7 +336,7 @@ describe('Goop Colorizer (F42, rank 25)', () => {
     expect(wild.s.next).toEqual(next) // nothing recoloured
 
     // a rupture, like the other actives
-    const rupture = ruptured('goopColorizer', 25)
+    const rupture = ruptured('goopColorizer', COLORIZER)
     Object.assign(rupture.state.abilities![0], { charge: 1, ready: true })
     rupture.act({ type: 'ability', id: 'goopColorizer' })
     expect(ofType(rupture.takeEvents(), 'reject')).toHaveLength(1)
@@ -349,10 +354,10 @@ describe('Goop Colorizer (F42, rank 25)', () => {
   })
 })
 
-describe('Crack Down (F42, rank 35) — the lowCracks effect, made real', () => {
+describe(`Crack Down (F42, rank ${CRACK_DOWN}) — the lowCracks effect, made real`, () => {
   it('charges in 30 s; level 2: the next 5 cracks form in the bottom 4 rows, then it ends', () => {
     const cfg = straightLineCracks(config(), 300, 300)
-    const { shift, s, a } = withActive('crackDown', 2, { rank: 35 }, cfg)
+    const { shift, s, a } = withActive('crackDown', 2, { rank: CRACK_DOWN }, cfg)
     shift.tick(29_000)
     expect(a().ready).toBe(false)
     s.cracks = [] // (cracks made while charging: out of the way)
@@ -371,7 +376,7 @@ describe('Crack Down (F42, rank 35) — the lowCracks effect, made real', () => 
 
   it('level 1 / 3: 3 / 7 cracks', () => {
     for (const [level, cracks] of [[1, 3], [3, 7]]) {
-      const { shift, s } = withActive('crackDown', level, { rank: 35 })
+      const { shift, s } = withActive('crackDown', level, { rank: CRACK_DOWN })
       makeReady(shift)
       shift.act({ type: 'ability', id: 'crackDown' })
       expect(s.effects!.lowCracks!.left).toBe(cracks)
@@ -379,7 +384,7 @@ describe('Crack Down (F42, rank 35) — the lowCracks effect, made real', () => 
   })
 
   it('refused during a rupture (charge kept)', () => {
-    const shift = ruptured('crackDown', 35)
+    const shift = ruptured('crackDown', CRACK_DOWN)
     makeReady(shift)
     shift.act({ type: 'ability', id: 'crackDown' })
     expect(ofType(shift.takeEvents(), 'reject')).toHaveLength(1)
@@ -392,7 +397,7 @@ describe('three actives in one shift (F42: up to 3 slots)', () => {
   it('each charges on its own and fires on its own id', () => {
     const owned = { goopDump: 1, goopColorizer: 1, crackDown: 1 }
     const abilities = resolveUpgrades(book, owned, ['goopDump', 'goopColorizer', 'crackDown']).abilities
-    const shift = createShift(config(), { seed: 2, rank: 35, startGrid: new Uint8Array(30 * 24), abilities })
+    const shift = createShift(config(), { seed: 2, rank: CRACK_DOWN, startGrid: new Uint8Array(30 * 24), abilities })
     const s = shift.state
     shift.tick(15_100)
     expect(s.abilities!.map((x) => x.ready)).toEqual([true, false, false])

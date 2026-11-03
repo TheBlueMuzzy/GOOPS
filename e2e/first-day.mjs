@@ -27,6 +27,7 @@ import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { startShift } from './start.mjs'
+import { rankOf } from './ladder-ranks.mjs'
 
 // ports: 5347 (E2E_PORT=… runs it on another)
 const PORT = Number(process.env.E2E_PORT) || 5347, OUT = 'e2e-shots/first-day'
@@ -35,10 +36,10 @@ mkdirSync(OUT, { recursive: true })
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const W = en.lessons['first-day']
 const SHIFT = JSON.parse(readFileSync('content/tuning/shift.json', 'utf8'))
-const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
+const PROG = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const DRAIN_MS = SHIFT.rupture.drainMs
 // day one's quota (rank 0), worked out as config.ts cracksNeededFor does — D3 + E1 seal 2 of it, F1 the rest
-const COLOURS_AT_0 = SHIFT.colorsByBeat.filter((c) => LADDER.beats[c.beat] <= 0).at(-1).count
+const COLOURS_AT_0 = SHIFT.colorsByBeat.filter((c) => rankOf(c.beat) <= rankOf('firstDay')).at(-1).count
 const QUOTA = Math.max(1, Math.round(SHIFT.quota.base + SHIFT.quota.perColour * COLOURS_AT_0))
 const LEFT_AT_F1 = QUOTA - 2
 const words = (id, input) => (typeof W[id] === 'string' ? W[id] : W[id][input])
@@ -452,7 +453,7 @@ try {
     await page.getByRole('button', { name: 'Start shift' }).waitFor()
     await page.waitForTimeout(2500)
     const after = await page.evaluate(() => ({ progress: JSON.parse(localStorage.getItem('goops-progress')), tips: JSON.parse(localStorage.getItem(Object.keys(localStorage).find((k) => k.startsWith('kit-tips')))) }))
-    check('F3: back at the console at RANK 1, the day remembered', after.progress.totalXp >= 3500 && after.tips.seen.includes('lesson:first-day'), JSON.stringify(after))
+    check('F3: back at the console at RANK 1, the day remembered', after.progress.totalXp >= PROG.xpBase && after.tips.seen.includes('lesson:first-day'), JSON.stringify(after))
     check('F3: the monitor says its own words again', (await monitorSays(page)) === en.console.hint, await monitorSays(page))
     await page.reload()
     await page.getByRole('button', { name: 'Start shift' }).waitFor()
@@ -629,10 +630,11 @@ try {
   }
 
   // ════════════════ 4. F68: "Wrong colour on a crack" at the stack, in a real shift, at every portrait size ════════════════
-  // (a rank-4 device that has had its first day: an open crack put on the floor right under the falling piece, in a
-  // colour the piece isn't — then the piece really falls on it with S held)
+  // (a device past its first day, the next-piece and swap unlocks, the rank before the shop opens (upgradesShop − 1):
+  // an open crack put on the floor right under the falling piece, in a colour the piece isn't — then the piece really
+  // falls on it with S held)
   for (const [w, h] of SIZES) {
-    const { page, context, errors } = await freshDevice(w, h, false, '?seed=7&rank=4&visor=off')
+    const { page, context, errors } = await freshDevice(w, h, false, `?seed=7&rank=${rankOf('upgradesShop') - 1}&visor=off`)
     const name = `${w}x${h}`
     await startShift(page)
     await spy(page)

@@ -39,7 +39,7 @@ export function mirror(cells: Cell[]): Cell[] {
 // Pick a random piece from a size zone ('tetra' | 'penta' | 'hexa'), as v1 does.
 // F39 rank twists (twists.ts), in v1's order: corrupt first (a corrupt piece is never wild or two-colour), then wild
 // (from its rank), then two-colour (from its rank, if not wild). Their rolls come AFTER the old ones and only from each
-// twist's rank, so pieces below rank 20 come out exactly as before. Leave `twists` out = no twists.
+// twist's rank, so pieces before twoColourPieces come out exactly as before. Leave `twists` out = no twists.
 export function randomPiece(rng: Rng, config: ShiftConfig, zone: string, colorCount: number, twists?: { config: TwistsConfig; rank: number }): PieceDef {
   const corrupted = rng.chance(config.pieces.corruptChance)
   const set = shapeSet(config, zone)

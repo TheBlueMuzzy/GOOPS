@@ -3,30 +3,47 @@
 // Portrait only (Goops never plays sideways): 390x844, 360x780, 1100x800, 1440x900, 1920x1080.
 //   the version label on the console = version.json (the framework version module's label, "vX.Y.Z.B")
 //   the bottom row: the three in order left → right, none overlapping, each inside the window and its words inside its box
-//   SELECT RANK: every rank 0…maxRank (progression.json), 0 with the red "Wipe save" badge, yours with the green "You"
-//   pick 7 (from a rank-18 save with upgrades bought) → the console shows rank 7 at its start, every scrap back, no
-//     upgrades, and ?rank is gone from the address (it would override the save)
+//   SELECT RANK: every rank 0…maxRank (ladder.json), 0 with the red "Wipe save" badge, yours with the green "You"
+//   pick a rank past the shop (upgradesShop + 2, from a save well past the upgrades it bought) → the console shows that
+//     rank at its start, every scrap back, no upgrades, and ?rank is gone from the address (it would override the save)
 //   pick 0 → a brand-new device: the first day's first line on the monitor (A1), the pull starts it at B1 with the
 //     lesson's blue goop falling
 //   during the first day's lesson (Muzzy 2026-10-24: "I should be able to click the rank selector even during
-//     tutorial"): RANK SELECT is there under the lesson's dim, a real tap opens it, and picking 7 leaves the day
+//     tutorial"): RANK SELECT is there under the lesson's dim, a real tap opens it, and picking a rank leaves the day
 //   mid-shift (the console over a running shift) it isn't there
+//   a jump to the top rank (maxRank) counts everything below it as lived through, not the top's own story moment
+// Every rank here is asked of the ladder (content/tuning/ladder.json via e2e/ladder-ranks.mjs).
 // Screenshots: e2e-shots/rank-select/ (console-<size>.png, list-<size>.png)
 // Run: node e2e/rank-select.mjs  (own dev server on port 5351)
 import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { checkVersion, expectedVersion, skipFirstDay, startShift } from './start.mjs'
+import { rankOf, maxRank, LADDER } from './ladder-ranks.mjs'
 
 // ports: 5351 (E2E_PORT=… runs it on another)
 const PORT = Number(process.env.E2E_PORT) || 5351, OUT = 'e2e-shots/rank-select'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]] // (portrait phones + desktop windows — never a phone on its side)
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
-const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
 const R = en.console.rankSelect
 const FD = en.lessons['first-day']
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
+// scraps in hand at a rank with none spent (src/progress/progression.ts scrapsAt: scrapsPerRank a rank + the ladder's
+// scraps grants up to it)
+const scrapsAt = (rank) => rank * prog.scrapsPerRank
+  + Object.entries(LADDER.grants?.scraps ?? {}).reduce((sum, [beat, n]) => sum + (rankOf(beat) <= rank ? n : 0), 0)
+// F79: the ranks this script uses, from the ladder
+const TOP = maxRank()
+const YOURS = Math.floor(TOP / 4) // a save a quarter of the way up: the list has to open part-way down to show it
+const PICK = rankOf('upgradesShop') + 2 // a rank past the shop's opening, picked from a higher save
+const OWNED = ['focusMode', 'denseGoop', 'cooldownBooster'] // the upgrades that higher save bought or took in
+const FROM = Math.max(...OWNED.map((u) => rankOf(`upgrades.${u}`))) + 10 // the higher save: well past all of them
+const BEFORE_WIPE = rankOf('upgrades.focusMode') + 2 // a save with Focus Mode bought, before it picks 0
+// the story moments a jump to the top counts as lived through: the first, the last one below the top; the top's own: not
+const momentRanks = Object.entries(LADDER.story)
+const lastBelowTop = momentRanks.filter(([, r]) => r < TOP).sort((a, b) => a[1] - b[1]).at(-1)[0]
+const topMoments = momentRanks.filter(([, r]) => r === TOP).map(([id]) => id)
 mkdirSync(OUT, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -86,7 +103,7 @@ try {
   // ════════════ 1. THE BOTTOM ROW + THE LIST AT EVERY PORTRAIT SIZE ════════════
   for (const [width, height] of SIZES) {
     const size = `${width}x${height}`
-    const { page, errors, close } = await device(width, height, { progress: { totalXp: xpFor(12) + 1000, scrapsSpent: 0, owned: {}, equipped: [] } })
+    const { page, errors, close } = await device(width, height, { progress: { totalXp: xpFor(YOURS) + 1000, scrapsSpent: 0, owned: {}, equipped: [] } })
     if (width === 390) {
       const want = expectedVersion()
       check('the page is version.json\'s build (meta app-version, the version module)', (await checkVersion(page).catch((e) => e.message)) === want, want)
@@ -115,14 +132,14 @@ try {
     await list(page).waitFor()
     await sleep(500)
     const rows = list(page).locator('.kit-listrow')
-    check(`${size}: SELECT RANK lists every rank 0…${LADDER.maxRank}`, (await rows.count()) === LADDER.maxRank + 1, String(await rows.count()))
+    check(`${size}: SELECT RANK lists every rank 0…${TOP}`, (await rows.count()) === TOP + 1, String(await rows.count()))
     if (width === 390) {
       check('rank 0 carries the red "Wipe save" badge', (await rows.nth(0).locator('.kit-badge[data-variant="danger"]').textContent()) === R.wipe)
-      check('your rank (12) carries the green "You" badge — and only it', (await rows.nth(12).locator('.kit-badge[data-variant="success"]').textContent()) === R.yours
+      check(`your rank (${YOURS}) carries the green "You" badge — and only it`, (await rows.nth(YOURS).locator('.kit-badge[data-variant="success"]').textContent()) === R.yours
         && (await list(page).locator('.kit-badge[data-variant="success"]').count()) === 1)
-      check('the rows read "Rank N"', (await rows.nth(7).locator('.kit-listrow-text > span').first().textContent()) === R.row.replace('{n}', '7'))
+      check('the rows read "Rank N"', (await rows.nth(PICK).locator('.kit-listrow-text > span').first().textContent()) === R.row.replace('{n}', String(PICK)))
     }
-    const yours = await rows.nth(12).boundingBox(), card = await list(page).locator('.kit-modal').boundingBox()
+    const yours = await rows.nth(YOURS).boundingBox(), card = await list(page).locator('.kit-modal').boundingBox()
     check(`${size}: the list opens at your rank (its row on screen inside the card)`, !!yours && yours.y >= card.y && yours.y + yours.height <= card.y + card.height, JSON.stringify({ yours, card }))
     // nothing touches the card's edge: rows and badges inside it with room
     const edges = await list(page).evaluate((screen) => {
@@ -142,25 +159,25 @@ try {
     await close()
   }
 
-  // ════════════ 2. PICK 7: the start of rank 7, upgrades refunded, ?rank gone ════════════
+  // ════════════ 2. PICK a rank: the start of it, upgrades refunded, ?rank gone ════════════
   {
     const { page, errors, close } = await device(390, 844, {
-      query: '?seed=7&rank=18', progress: { totalXp: xpFor(18) + 2500, scrapsSpent: 8, owned: { focusMode: 1, denseGoop: 1 }, equipped: ['cooldownBooster'] },
+      query: `?seed=7&rank=${FROM}`, progress: { totalXp: xpFor(FROM) + 2500, scrapsSpent: 8, owned: { focusMode: 1, denseGoop: 1 }, equipped: ['cooldownBooster'] },
     })
-    check('before: the console shows rank 18', (await consoleRank(page)) === 18)
+    check(`before: the console shows rank ${FROM}`, (await consoleRank(page)) === FROM)
     await rankButton(page).click()
     await list(page).waitFor()
-    await list(page).locator('.kit-listrow').nth(7).click()
+    await list(page).locator('.kit-listrow').nth(PICK).click()
     await page.waitForURL((u) => !u.searchParams.has('rank'), { timeout: 10000 }).catch(() => {})
     await page.locator('.kit-art-stage').waitFor()
     await sleep(800)
     const p = await saved(page)
-    check('pick 7 → the save is the START of rank 7 (all the XP to reach it, 0 into it)', p?.totalXp === xpFor(7), JSON.stringify(p))
+    check(`pick ${PICK} → the save is the START of rank ${PICK} (all the XP to reach it, 0 into it)`, p?.totalXp === xpFor(PICK), JSON.stringify(p))
     check('…every upgrade refunded (nothing owned or equipped, no scraps spent)', p && p.scrapsSpent === 0 && !Object.keys(p.owned).length && !p.equipped.length)
     check('…?rank is gone from the address (it would override the save)', !new URL(page.url()).searchParams.has('rank'), page.url())
-    check('…the console shows rank 7', (await consoleRank(page)) === 7, String(await consoleRank(page)))
+    check(`…the console shows rank ${PICK}`, (await consoleRank(page)) === PICK, String(await consoleRank(page)))
     const upgrades = await page.locator('[data-tag="upgrades"] .kit-badge').textContent()
-    check('…with all 7 scraps in hand on the Upgrades button', upgrades === String(7 * prog.scrapsPerRank), upgrades)
+    check(`…with all ${scrapsAt(PICK)} scraps in hand on the Upgrades button`, upgrades === String(scrapsAt(PICK)), upgrades)
     check('…and the version label still = version.json', (await bottomRow(page)).version?.text === expectedVersion())
     // mid-shift: the console over a running shift has no RANK SELECT
     await startShift(page)
@@ -168,17 +185,17 @@ try {
     await page.locator('.kit-art-stage').waitFor({ timeout: 5000 })
     await sleep(900)
     check('mid-shift: the console has no RANK SELECT', !(await rankButton(page).count()))
-    check('pick 7: no page errors', !errors.length, errors.join(' | '))
+    check(`pick ${PICK}: no page errors`, !errors.length, errors.join(' | '))
     await close()
   }
 
   // ════════════ 3. PICK 0: a brand-new device → the first day from its first step ════════════
   {
-    // a player who has had the day, the story moments and the unlock lessons, at rank 9 with upgrades
+    // a player who has had the day, the story moments and the unlock lessons, past Focus Mode with it bought
     const { page, errors, close } = await device(390, 844, { skipDay: false, seen: [...HAD, 'story:0', 'story:1', 'story:5'],
-      progress: { totalXp: xpFor(9) + 100, scrapsSpent: 3, owned: { focusMode: 1 }, equipped: [] } })
+      progress: { totalXp: xpFor(BEFORE_WIPE) + 100, scrapsSpent: 3, owned: { focusMode: 1 }, equipped: [] } })
     const settings = await page.evaluate(() => { const k = Object.keys(localStorage).find((k) => k.startsWith('kit-settings')) ?? 'kit-settings:'; const v = localStorage.getItem(k) ?? '{"masterVolume":40}'; localStorage.setItem(k, v); return [k, v] })
-    check('before: rank 9, the console\'s own words (no lesson)', (await consoleRank(page)) === 9 && (await rankButton(page).count()) === 1)
+    check(`before: rank ${BEFORE_WIPE}, the console's own words (no lesson)`, (await consoleRank(page)) === BEFORE_WIPE && (await rankButton(page).count()) === 1)
     await rankButton(page).click()
     await list(page).waitFor()
     await list(page).locator('.kit-listrow').nth(0).click()
@@ -221,11 +238,11 @@ try {
     if (opened) {
       await sleep(400)
       await page.screenshot({ path: `${OUT}/lesson-list-390x844.png` })
-      await list(page).locator('.kit-listrow').nth(7).click()
+      await list(page).locator('.kit-listrow').nth(PICK).click()
       await page.waitForEvent('load', { timeout: 10000 }).catch(() => {})
       await page.locator('.kit-art-stage').waitFor()
       await sleep(600)
-      check('…picking 7 leaves the day: the console shows rank 7', (await consoleRank(page)) === 7)
+      check(`…picking ${PICK} leaves the day: the console shows rank ${PICK}`, (await consoleRank(page)) === PICK)
     }
     check('during the first day: no page errors', !errors.length, errors.join(' | '))
     await close()
@@ -237,22 +254,22 @@ try {
     const { page, errors, close } = await device(390, 844, { seen: ['lesson:first-day'], progress: { totalXp: 0, scrapsSpent: 0, owned: {}, equipped: [] } })
     await rankButton(page).click()
     await list(page).waitFor()
-    await list(page).locator('.kit-listrow').nth(50).click()
+    await list(page).locator('.kit-listrow').nth(TOP).click()
     await page.waitForEvent('load', { timeout: 10000 }).catch(() => {})
     await page.locator('.kit-art-stage').waitFor()
     await sleep(800)
     const memory = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])))
     const tipsKey = Object.keys(memory).find((k) => k.startsWith('kit-tips'))
     const seen = tipsKey ? JSON.parse(memory[tipsKey]).seen ?? [] : []
-    check('pick 50 on a fresh device → the console shows rank 50', (await consoleRank(page)) === 50, String(await consoleRank(page)))
-    const had = ['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:visor', 'lesson:laser', 'lesson:controls', 'consoleNote:1', 'story:0', 'story:49', 'whisper:cold', 'look:mouths-open']
-    check('…every lesson, console note, story moment and look of ranks 0–49 counts as seen', had.every((id) => seen.includes(id)), JSON.stringify(had.filter((id) => !seen.includes(id))))
-    check("…rank 50's own story moment does not", !seen.includes('story:50'))
+    check(`pick ${TOP} on a fresh device → the console shows rank ${TOP}`, (await consoleRank(page)) === TOP, String(await consoleRank(page)))
+    const had = ['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades', 'lesson:visor', 'lesson:laser', 'lesson:controls', 'consoleNote:1', 'story:0', `story:${lastBelowTop}`, 'whisper:cold', 'look:mouths-open']
+    check(`…every lesson, console note, story moment and look of ranks 0–${TOP - 1} counts as seen`, had.every((id) => seen.includes(id)), JSON.stringify(had.filter((id) => !seen.includes(id))))
+    check(`…rank ${TOP}'s own story moment does not`, topMoments.length > 0 && topMoments.every((id) => !seen.includes(`story:${id}`)), JSON.stringify(topMoments))
     await startShift(page)
     await sleep(6000) // (the shift's opening; a breakdown or unlock lesson would be on screen by now)
     check('…the shift starts with no lesson on screen', !(await page.locator('.lesson-words').count()))
-    await page.screenshot({ path: `${OUT}/jump-50-shift-390x844.png` })
-    check('pick 50: no page errors', !errors.length, errors.join(' | '))
+    await page.screenshot({ path: `${OUT}/jump-${TOP}-shift-390x844.png` })
+    check(`pick ${TOP}: no page errors`, !errors.length, errors.join(' | '))
     await close()
   }
 } catch (e) {

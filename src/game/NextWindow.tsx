@@ -1,7 +1,7 @@
 // THE NEXT-PIECE WINDOW (F59, from rank 1): at the left of the HUD's bottom panel, as tall as the panel's contents
 // (Muzzy's mock-up, 2026-10-19 — first it sat over the tank and was far too small) — the piece that comes after the
 // falling one, big, in its goop colour (content/tuning/goo-colors.json) and the way up it will come in. Swapping (from
-// rank 3) trades the falling piece with this one.
+// the beat swap) trades the falling piece with this one.
 // The window is always the same size (room for the tallest, widest piece: content/tuning/hud.json → nextWindow), so
 // nothing moves when a bigger piece comes up. Inside the frame it wears the reusable CRT look (F60: scan lines over the piece; content/tuning/crt.json
 // use.nextWindow, a Dev Kit dropdown — the second place to wear it, and it took one wrapper + one line of data).

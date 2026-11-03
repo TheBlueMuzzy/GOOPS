@@ -1,6 +1,8 @@
 // F51 the economy sim's results page (e2e-shots/sim/index.html): one self-contained file, plain-word headings,
 // tables with shaded cells and simple bars. Hover a cell or a bar for its exact number.
 import { readFileSync, writeFileSync } from 'node:fs'
+import { rankOf } from '../../e2e/ladder-ranks.mjs'
+import { effectLateRanks } from './economy-summary.mjs'
 
 const esc = (t) => String(t ?? '–').replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const pct = (x) => (x === null || x === undefined ? '–' : `${Math.round(x * 100)}%`)
@@ -113,7 +115,7 @@ ${s.careerRows.map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.stallsPerCare
 <p>${s.careerRows[0]?.scraps.levelsOffered ?? '–'} upgrade levels are on offer${s.settings.neverBuy.length ? ` (not counting ${esc(s.settings.neverBuy.join(', '))}, which no bot buys)` : ''}; a whole career earns ${s.careerRows[0]?.scraps.earned ?? '–'} scraps or fewer.</p>
 <table><tr><th>Bot · buy style</th><th>earned</th><th>spent</th>${s.checkpoints.map((c) => `<th>unspent at ${c}</th>`).join('')}</tr>
 ${s.careerRows.map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.scraps.earned)}</td><td>${esc(r.scraps.spent)}</td>${s.checkpoints.map((c) => `<td>${esc(r.scraps.unspent[c])}</td>`).join('')}</tr>`).join('')}</table>
-${[40, 50].map((at) => {
+${Object.keys(s.careerRows[0]?.owned ?? {}).map(Number).slice(-2).map((at) => {
     const rows = s.careerRows.filter((r) => r.owned[at])
     if (!rows.length) return `<p>No career reached rank ${at} in this run.</p>`
     const ids = Object.keys(rows[0].owned[at].levels)
@@ -125,7 +127,7 @@ ${ids.map((id) => `<tr><td>${esc(id)}</td>${one.map((r) => `<td${shade(r.owned[a
   }).join('')}
 
 <h2>5. What every upgrade really does</h2>
-<p>Each upgrade on vs owning nothing, the same seeds both ways, at the rank it opens and at ranks ${s.settings.effectLateRanks.join(' and ')} (late game; 50 = the final shift, where "won" = the valve opened). "Noticeable" uses a <b>placeholder</b> line until Muzzy calibrates it: ${t.seconds} s longer before the tank breaks, or ${Math.round(t.winRate * 100)}% more shifts won, or ${Math.round(t.quota * 100)}% more of the quota sealed — and bigger than twice the seed-to-seed wobble (any change reshuffles the whole shift, so small differences are just luck). The best bot × rank is shown; hover for the seeds that changed at all. "Tank lasts" is counted on the shift's own clock (time at the console runs slower there), so a quicker repair doesn't look like a shorter-lived tank. Bots fire Colorizer and Goop Dump only while the falling piece matches an open crack; Sealing Bonus is measured with Goop Dump equipped both ways.</p>
+<p>Each upgrade on vs owning nothing, the same seeds both ways, at the rank it opens and at ranks ${effectLateRanks(s.settings).join(' and ')} (late game; ${rankOf('finalShift')} = the final shift, where "won" = the valve opened). "Noticeable" uses a <b>placeholder</b> line until Muzzy calibrates it: ${t.seconds} s longer before the tank breaks, or ${Math.round(t.winRate * 100)}% more shifts won, or ${Math.round(t.quota * 100)}% more of the quota sealed — and bigger than twice the seed-to-seed wobble (any change reshuffles the whole shift, so small differences are just luck). The best bot × rank is shown; hover for the seeds that changed at all. "Tank lasts" is counted on the shift's own clock (time at the console runs slower there), so a quicker repair doesn't look like a shorter-lived tank. Bots fire Colorizer and Goop Dump only while the falling piece matches an open crack; Sealing Bonus is measured with Goop Dump equipped both ways.</p>
 <div class="scroll"><table><tr><th>Upgrade (opens at)</th><th>verdict</th><th>1 level, biggest change: tank lasts</th><th>won</th><th>quota</th><th>XP</th><th>max level, biggest change: tank lasts</th><th>won</th><th>quota</th><th>XP</th><th>shift length (max)</th></tr>
 ${s.effects.map((e) => `<tr><td>${esc(e.name)} (${e.rank})</td><td><span class="tag ${e.verdict}">${esc(VERDICT[e.verdict])}</span></td>${[e.best1, e.bestMax].map((c) => c
     ? `<td title="${c.bot}, rank ${c.rank}: ${pct(c.changed)} of seeds changed">${signed(c.dSurvivedS, ' s')}</td><td>${signedPct(c.dWin)}</td><td>${signedPct(c.dQuota)}</td><td>${signed(c.dXp)}</td>`
@@ -133,7 +135,7 @@ ${s.effects.map((e) => `<tr><td>${esc(e.name)} (${e.rank})</td><td><span class="
 <details><summary>Every bot, rank and level</summary><div class="scroll"><table><tr><th>Upgrade</th><th>rank</th><th>level</th><th>bot</th><th>without: lasts</th><th>won</th><th>quota</th><th>change: lasts</th><th>length</th><th>won</th><th>quota</th><th>XP</th><th>seeds changed</th><th>actives fired</th></tr>
 ${s.effects.flatMap((e) => e.cells.map((c) => `<tr><td>${esc(e.name)}</td><td>${c.rank}</td><td>${c.level}</td><td>${c.bot}</td><td>${c.offSurvivedS} s</td><td>${pct(c.offWin)}</td><td>${pct(c.offQuota)}</td><td>${signed(c.dSurvivedS, ' s')}</td><td>${signed(c.dLengthS, ' s')}</td><td>${signedPct(c.dWin)}</td><td>${signedPct(c.dQuota)}</td><td>${signed(c.dXp)}</td><td>${pct(c.changed)}</td><td>${c.fired}</td></tr>`)).join('')}</table></div></details>
 
-<h2>6. The final shift (rank 50)</h2>
+<h2>6. The final shift (rank ${rankOf('finalShift')})</h2>
 <p>Win rate with the upgrades each career really had when it got there, vs none (the same seeds). The F64 bot row is the old final-shift bot path (no swap hold, no actives) for comparison.</p>
 ${bars(s.finalRows.filter((r) => r.n), (r) => r.winRate, (v) => pct(v), 1)}
 <table><tr><th>Bot · upgrades</th><th>shifts</th><th>won</th><th>valve stages opened (avg)</th></tr>

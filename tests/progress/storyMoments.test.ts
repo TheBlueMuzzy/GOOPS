@@ -3,24 +3,31 @@ import { describe, expect, it } from 'vitest'
 import en from '../../content/text/en.json'
 import { ladder, rankOf } from '../../src/progress/ladder'
 import { dueMoments, monitorDeniesVoices, storyFile, storyWords, whisperFor, whisperStage } from '../../src/game/lessons/storyMoments'
+import { maxRank } from '../../src/progress/ladder'
 import { titleAt } from '../../src/progress/progression'
 
 const none = () => false
+// (F79: ranks asked of the ladder) the story moments at a rank, in the order they play
+const idsAt = (rank: number) => ladder.group('story').filter((m) => m.rank === rank).map((m) => m.name)
+const storyRank = (id: string) => rankOf(`story.${id}`)
 describe('story moments', () => {
   it('a fresh rank-0 device: the rank-0 moment', () => {
     expect(dueMoments(0, none)).toEqual(['0'])
   })
   it('one rank-up: just that rank', () => {
-    expect(dueMoments(4, (id) => rankOf(`story.${id}`) < 4)).toEqual(['4'])
+    const r = storyRank('4')
+    expect(dueMoments(r, (id) => storyRank(id) < r)).toEqual(idsAt(r).slice(-storyFile.catchUp))
   })
   it('two rank-ups in one shift: both, oldest first', () => {
-    expect(dueMoments(5, (id) => rankOf(`story.${id}`) < 4)).toEqual(['4', '5'])
+    const r = storyRank('4')
+    expect(dueMoments(r + 1, (id) => storyRank(id) < r)).toEqual([...idsAt(r), ...idsAt(r + 1)].slice(-storyFile.catchUp))
   })
   it('a device that skipped many: only the newest catchUp of them', () => {
-    expect(dueMoments(9, none)).toEqual(['8', '9'].slice(-storyFile.catchUp))
+    const r = storyRank('9'), upTo = ladder.group('story').filter((m) => m.rank <= r).sort((a, b) => a.rank - b.rank).map((m) => m.name)
+    expect(dueMoments(r, none)).toEqual(upTo.slice(-storyFile.catchUp))
   })
   it('everything seen: nothing', () => {
-    expect(dueMoments(9, () => true)).toEqual([])
+    expect(dueMoments(maxRank(), () => true)).toEqual([])
   })
   it('every rank 0–30 has a moment, and every line has words', () => {
     const lines = en.story.lines as Record<string, string>
@@ -109,36 +116,46 @@ describe('story moments', () => {
     expect(lines[1].monitor).toBe('alarm')
     expect(storyFile.moments['29'].lines[0].cut).toBe(true) // he cuts out mid-word the rank before
   })
-  it('whispers: none before 3, "cold" once at 3–7, a feeling every shift from 8', () => {
-    expect(whisperFor(2, false, 0.5)).toBeNull()
-    expect(whisperFor(3, false, 0.5)).toBe('cold')
-    expect(whisperFor(7, true, 0.5)).toBeNull()
-    for (const pick of [0, 0.4, 0.99]) expect(['warm', 'tight', 'nnn']).toContain(whisperFor(8, true, pick))
+  // the whisper beats (ladder.json): cold once, then feelings, single words, names
+  const [COLD, FEEL, WORDS, NAMES] = ['whisperCold', 'whispersFeelings', 'whispersWords', 'whispersNames'].map((b) => rankOf(b))
+  it('whispers: none before whisperCold, "cold" once from it, a feeling every shift from whispersFeelings', () => {
+    expect(whisperFor(COLD - 1, false, 0.5)).toBeNull()
+    expect(whisperFor(COLD, false, 0.5)).toBe('cold')
+    expect(whisperFor(FEEL - 1, true, 0.5)).toBeNull()
+    for (const pick of [0, 0.4, 0.99]) expect(['warm', 'tight', 'nnn']).toContain(whisperFor(FEEL, true, pick))
   })
-  it('F40 whisper stages: feelings 8–14, single words 15–23, names from 24 (story.md)', () => {
+  it('F40 whisper stages: feelings, then single words, then names (story.md), each from its beat', () => {
     const at = (rank: number) => new Set([0, 0.2, 0.4, 0.6, 0.8, 0.99].map((pick) => whisperFor(rank, true, pick)))
-    for (const r of [8, 14]) expect([...at(r)].every((k) => ['warm', 'tight', 'nnn'].includes(k!))).toBe(true)
-    for (const r of [15, 23]) expect([...at(r)].every((k) => ['dont', 'heavy', 'hold'].includes(k!))).toBe(true)
-    for (const r of [24, 30]) expect([...at(r)].every((k) => ['odile', 'bram', 'ines', 'teodor'].includes(k!))).toBe(true)
-    expect(whisperStage(14)?.from).toBe(8)
-    expect(whisperStage(15)?.from).toBe(15)
-    expect(whisperStage(24)?.from).toBe(24)
-    expect(whisperStage(7)).toBeNull()
+    for (const r of [FEEL, WORDS - 1]) expect([...at(r)].every((k) => ['warm', 'tight', 'nnn'].includes(k!))).toBe(true)
+    for (const r of [WORDS, NAMES - 1]) expect([...at(r)].every((k) => ['dont', 'heavy', 'hold'].includes(k!))).toBe(true)
+    for (const r of [NAMES, maxRank()]) expect([...at(r)].every((k) => ['odile', 'bram', 'ines', 'teodor'].includes(k!))).toBe(true)
+    expect(whisperStage(WORDS - 1)?.from).toBe(FEEL)
+    expect(whisperStage(WORDS)?.from).toBe(WORDS)
+    expect(whisperStage(NAMES)?.from).toBe(NAMES)
+    expect(whisperStage(FEEL - 1)).toBeNull()
     // the stages' order in the file doesn't matter: the highest one reached wins
     const shuffled = { ...storyFile.whispers, stages: [...storyFile.whispers.stages].reverse() }
-    expect(whisperStage(20, shuffled)?.from).toBe(15)
+    expect(whisperStage(NAMES - 1, shuffled)?.from).toBe(WORDS)
     // every whisper has words
     for (const k of [...storyFile.whispers.stages.flatMap((s) => s.say), 'cold']) expect((en.story.whispers as Record<string, string>)[k], k).toBeTruthy()
   })
-  it('F40: Management denies the voices from rank 12, and its line has words', () => {
-    expect(monitorDeniesVoices(11)).toBe(false)
-    expect(monitorDeniesVoices(12)).toBe(true)
-    expect(monitorDeniesVoices(30)).toBe(true)
+  it('F40: Management denies the voices from the noVoices beat, and its line has words', () => {
+    const from = rankOf('noVoices')
+    expect(monitorDeniesVoices(from - 1)).toBe(false)
+    expect(monitorDeniesVoices(from)).toBe(true)
+    expect(monitorDeniesVoices(maxRank())).toBe(true)
     expect((en.story.lines as Record<string, string>).noVoices).toMatch(/NO VOICES/)
   })
   it('titles: the bands from story.md, every one with words', () => {
-    expect([0, 1, 4, 5, 9, 10, 29, 30, 44, 45, 50].map((r) => titleAt(r))).toEqual(
-      ['intern', 'juniorAssociate', 'juniorAssociate', 'associate', 'associate', 'technician', 'leadSpecialist', 'supervisor', 'assistant', 'deputy', 'deputy'])
+    // (story.md's order; each from its rank in ladder.json titles, the one before until then)
+    const order = ['intern', 'juniorAssociate', 'associate', 'technician', 'seniorTechnician', 'specialist', 'leadSpecialist', 'supervisor', 'seniorSupervisor', 'assistant', 'deputy']
+    expect(ladder.group('titles').map((t) => t.name)).toEqual(order)
+    order.forEach((id, i) => {
+      const from = rankOf(`titles.${id}`)
+      expect(titleAt(from), id).toBe(id)
+      if (i > 0) expect(titleAt(from - 1), `before ${id}`).toBe(order[i - 1])
+    })
+    expect(titleAt(maxRank())).toBe('deputy')
     for (const id of ladder.group('titles').map((t) => t.name)) expect((en.story.titles as Record<string, string>)[id]).toBeTruthy()
   })
 })

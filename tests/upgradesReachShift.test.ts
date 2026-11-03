@@ -8,12 +8,13 @@ import { freshProgress, type Progress } from '../src/progress/progression'
 import { upgradesForShift } from '../src/progress/upgradeShop'
 import { repairSteps } from '../src/game/repairs'
 import { realConfig } from './engine/helpers'
+import { rankOf } from '../src/progress/ladder'
 
 const book = upgradesJson as UpgradeBook
 const owning = (owned: Record<string, number>, equipped: string[] = []): Progress => ({ ...freshProgress(), owned, equipped })
 const shiftWith = (p: Progress, training = false) => {
   const up = upgradesForShift(p, training)
-  return { up, shift: createShift(realConfig(), { seed: 5, rank: 9, modifiers: up.modifiers, abilities: up.abilities }) }
+  return { up, shift: createShift(realConfig(), { seed: 5, rank: rankOf('upgradesShop'), modifiers: up.modifiers, abilities: up.abilities }) }
 }
 
 describe('upgrades reach the shift (F34 task 5)', () => {

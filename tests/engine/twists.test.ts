@@ -1,5 +1,5 @@
-// F39 rank twists (src/engine/twists.ts, content/tuning/twists.json): two-colour pieces from rank 20, growing cracks
-// from grow.fromRank (30; one crack over many cells — Muzzy 2026-10-25), wild goop from 40.
+// F39 rank twists (src/engine/twists.ts, content/tuning/twists.json): two-colour pieces from the ladder beat
+// twoColourPieces, growing cracks from cracksGrow (one crack over many cells — Muzzy 2026-10-25), wild goop from wildGoop.
 import { describe, expect, it } from 'vitest'
 import { createShift, WILD, type Crack, type ShiftEngine, type TwistsConfig, type WhiteGoopConfig } from '../../src/engine'
 import { restoreShift } from '../../src/engine/snapshot'
@@ -9,12 +9,14 @@ import { createRng } from '../../src/engine/rng'
 import { bestSplit, crackSize, isConnected } from '../../src/engine/twists'
 import { sealMs } from '../../src/engine/whiteGoop'
 import twistsJson from '../../content/tuning/twists.json'
-import { rankOf } from '../../src/progress/ladder'
+import { maxRank, rankOf } from '../../src/progress/ladder'
 import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, straightLineCracks, tank, tickUntil } from './helpers'
 
 const twists = () => structuredClone(twistsJson) as TwistsConfig
-const GROW = rankOf('cracksGrow') // growing cracks start here (30; the ladder's beat — F78)
+const GROW = rankOf('cracksGrow') // growing cracks start here (the ladder's beat — F78)
+const SPLIT = rankOf('twoColourPieces') // two-colour pieces start here
+const WILD_RANK = rankOf('wildGoop') // wild goop starts here
 // no cracks of the shift's own (the tests place theirs), pieces hanging still at the top
 function quietConfig(colours = 4) {
   const config = straightLineCracks(realConfig(), 1e12, 1e12)
@@ -42,7 +44,7 @@ function popWhenReady(shift: ShiftEngine, x: number, y: number) {
   return shift.takeEvents()
 }
 
-describe('two-colour pieces (rank 20)', () => {
+describe(`two-colour pieces (rank ${SPLIT})`, () => {
   it('splits every piece shape into two joined-up halves, as even as the shape allows', () => {
     const config = realConfig()
     for (const zone of config.pieces.zones) {
@@ -73,7 +75,7 @@ describe('two-colour pieces (rank 20)', () => {
     config.colorsByBeat = [{ beat: 'firstDay', count: 4 }]
     const t = twists()
     t.split.chance = 1
-    const shift = createShift(config, { seed: 5, rank: 20, twists: t, startGrid: new Uint8Array(30 * 24) })
+    const shift = createShift(config, { seed: 5, rank: SPLIT, twists: t, startGrid: new Uint8Array(30 * 24) })
     const s = shift.state
     const colours = [...s.piece!.colors]
     expect(new Set(colours).size).toBe(2)
@@ -93,7 +95,7 @@ describe('two-colour pieces (rank 20)', () => {
     expect(groups.size).toBe(2) // two clumps
   })
 
-  it('starts at rank 20, not 19 — and below it the pieces are exactly as before F39', () => {
+  it(`starts at rank ${SPLIT}, not ${SPLIT - 1} — and below it the pieces are exactly as before F39`, () => {
     const config = realConfig()
     const t = twists()
     t.split.chance = 1
@@ -101,9 +103,9 @@ describe('two-colour pieces (rank 20)', () => {
       const rng = createRng(77)
       return Array.from({ length: 40 }, () => randomPiece(rng, config, 'tetra', 4, tw ? { config: tw, rank } : undefined))
     }
-    expect(roll(19, t)).toEqual(roll(19)) // same rolls, same pieces
-    expect(roll(19, t).some((p) => p.colors)).toBe(false)
-    expect(roll(20, t).filter((p) => !p.corrupted).every((p) => p.colors && new Set(p.colors).size === 2)).toBe(true)
+    expect(roll(SPLIT - 1, t)).toEqual(roll(SPLIT - 1)) // same rolls, same pieces
+    expect(roll(SPLIT - 1, t).some((p) => p.colors)).toBe(false)
+    expect(roll(SPLIT, t).filter((p) => !p.corrupted).every((p) => p.colors && new Set(p.colors).size === 2)).toBe(true)
   })
 })
 
@@ -116,12 +118,12 @@ describe('corrupt and wild pieces never split', () => {
     config.pieces.corruptChance = 1
     const rng = createRng(3)
     for (let i = 0; i < 30; i++) {
-      const p = randomPiece(rng, config, 'tetra', 6, { config: t, rank: 50 })
+      const p = randomPiece(rng, config, 'tetra', 6, { config: t, rank: maxRank() })
       expect(p.corrupted && !p.colors && p.color !== WILD).toBe(true)
     }
     config.pieces.corruptChance = 0
     for (let i = 0; i < 30; i++) {
-      const p = randomPiece(rng, config, 'tetra', 6, { config: t, rank: 50 })
+      const p = randomPiece(rng, config, 'tetra', 6, { config: t, rank: maxRank() })
       expect(p.color).toBe(WILD)
       expect(p.colors).toBeUndefined()
     }
@@ -198,7 +200,7 @@ describe('growing cracks (grow.fromRank)', () => {
     // in a shift: he sits on one cell of a 2-cell crack and seals it all, counting 2
     const sealing = whiteGoopJson.sealTime * 1000
     const white = { ...structuredClone(whiteGoopJson), countsForQuota: true } as WhiteGoopConfig // (counting on, to see the 2)
-    const shift = createShift(quietConfig(), { seed: 6, rank: 31, whiteGoop: white, startGrid: new Uint8Array(30 * 24) })
+    const shift = createShift(quietConfig(), { seed: 6, rank: rankOf('whiteGoop'), whiteGoop: white, startGrid: new Uint8Array(30 * 24) })
     tickUntil(shift, () => shift.state.vet!.mode !== 'drop', 10_000, 5)
     const v = shift.state.vet!
     addCrack(shift, crack(500, [[v.x, v.y], [(v.x + 1) % 30, v.y]]))
@@ -227,15 +229,15 @@ describe('growing cracks (grow.fromRank)', () => {
   })
 })
 
-describe('wild goop (rank 40)', () => {
-  it('starts at rank 40, not 39', () => {
+describe(`wild goop (rank ${WILD_RANK})`, () => {
+  it(`starts at rank ${WILD_RANK}, not ${WILD_RANK - 1}`, () => {
     const config = realConfig()
     config.pieces.corruptChance = 0
     const t = twists()
     t.wild.chance = 1
     const rng = createRng(9)
-    expect(randomPiece(rng, config, 'tetra', 6, { config: t, rank: 39 }).color).not.toBe(WILD)
-    expect(randomPiece(rng, config, 'tetra', 6, { config: t, rank: 40 }).color).toBe(WILD)
+    expect(randomPiece(rng, config, 'tetra', 6, { config: t, rank: WILD_RANK - 1 }).color).not.toBe(WILD)
+    expect(randomPiece(rng, config, 'tetra', 6, { config: t, rank: WILD_RANK }).color).toBe(WILD)
   })
 
   it('plugs and seals a crack of any colour', () => {
@@ -268,7 +270,7 @@ describe('wild goop (rank 40)', () => {
     const t = twists()
     t.wild.chance = 1
     const wildConfig = oneShapeConfig([[0, 0]])
-    const wildShift = createShift(wildConfig, { seed: 12, rank: 40, twists: t, startGrid: tank(['.2'], 0) })
+    const wildShift = createShift(wildConfig, { seed: 12, rank: WILD_RANK, twists: t, startGrid: tank(['.2'], 0) })
     expect(wildShift.state.piece!.colors).toEqual([WILD])
     dropPiece(wildShift, wildConfig)
     expect(wildShift.state.grid[idx(0, 23)]).toBe(WILD)

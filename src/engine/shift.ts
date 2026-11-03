@@ -58,8 +58,8 @@ export interface ShiftOptions {
   swap?: boolean
   // F63 the white goop: content/tuning/whiteGoop.json (read live). Leave it out and he's never in the tank.
   whiteGoop?: WhiteGoopConfig
-  // F39 rank twists: content/tuning/twists.json (read live) — two-colour pieces (20), growing cracks (30), wild goop
-  // (40). Leave it out (or a lesson's training shift) and there are none.
+  // F39 rank twists: content/tuning/twists.json (read live) — two-colour pieces (twoColourPieces), growing cracks
+  // (cracksGrow), wild goop (wildGoop). Leave it out (or a lesson's training shift) and there are none.
   twists?: TwistsConfig
   // F64 the final shift: content/tuning/finalShift.json (read live). Leave it out and no shift is the final one.
   finalShift?: FinalShiftConfig
@@ -168,7 +168,7 @@ class Shift implements ShiftEngine {
       this.state.grid.set(options.startGrid)
       regroup(this.state, this.book)
     } else if (!this.training) this.placeJunk(junkCount(config, options.rank))
-    // F63: from rank 31 the white goop drops in (never in a lesson's shift)
+    // F63: from the ladder beat whiteGoop the white goop drops in (never in a lesson's shift)
     this.state.vet = whiteGoopIn(options.whiteGoop, options.rank, !!this.training) ? newWhiteGoop(this.state, this.vetConfig()!) : null
     // F64: in the final shift he drops in FIRST — the shift waits for his intro (stepIntro); he starts whole
     if (this.isFinal && this.state.vet) {
@@ -343,7 +343,7 @@ class Shift implements ShiftEngine {
       if (t && pressure > t.pressureCap) pressure = Math.max(s.pressure, t.pressureCap) // stops at the cap (never pulled down)
       this.setPressure(pressure)
       if (!t || t.cracks) this.growCracks(dt)
-      // F39: from rank 30 open cracks spread into the cells next to them (twists.ts; never in a lesson)
+      // F39: from cracksGrow open cracks spread into the cells next to them (twists.ts; never in a lesson)
       if (!t && growOn(this.options.twists, s.rank)) growCrackCells(s, this.rng, this.options.twists!, dt, s.pressureRow, this.mods.crackEveryMult, this.events)
       this.chargeAbilities(dt / 1000, 0) // before the drain: a rupture this step stops charging at once
       if (!t || t.integrity) this.drainIntegrity(dt)

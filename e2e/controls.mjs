@@ -1,10 +1,11 @@
 // Controls check with real input: drag sideways spins, tap empty space rotates, tap a ready blob pops it,
-// and every key in the GDD §4 table does its one job (hold-to-swap uses the same 1.5 s as touch). Plays at rank 3,
-// where swap unlocks (F59; before it, e2e/unlocks.mjs checks that the swap keys do nothing).
+// and every key in the GDD §4 table does its one job (hold-to-swap uses the same 1.5 s as touch). Plays at the ladder's
+// beat swap, where swap unlocks (F59; before it, e2e/unlocks.mjs checks that the swap keys do nothing).
 // Run: node e2e/controls.mjs  (own dev server on port 5251)
 import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5251
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
@@ -19,8 +20,8 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: false })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto(`http://localhost:${PORT}/?seed=11&rank=3`)
-  await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break at rank 3: its lesson would pause the keys)
+  await page.goto(`http://localhost:${PORT}/?seed=11&rank=${rankOf('swap')}`)
+  await page.evaluate(() => window.__goopsSeen(['lesson:visor'])) // (the visor can break by then: its lesson would pause the keys)
   await startShift(page)
   await page.waitForTimeout(200)
   const get = (f, arg) => page.evaluate(f, arg)

@@ -1,11 +1,12 @@
 // F74 — THE RANK LOCK (TDD D31): a rank-up needs the XP goal AND a crack quota met during that rank. In Playwright's
 // own Chromium (never the user's Chrome). Portrait only (Goops never plays sideways): 390x844, 360x780, 1100x900,
 // 1440x900, 1920x1080.
-//   locked — 200 XP short of rank 4, a shift that misses its quota: the report's quota row says "Rank locked: meet a
-//            quota", no payday, the console's meter fills to full and says QUOTA NEEDED, the save holds it (xpHeld);
-//            Management explains the lock on the monitor the first time (moments.json events.rankLock), once
+//   locked — 200 XP short of the next rank, a shift that misses its quota: the report's quota row says "Rank locked:
+//            meet a quota", no payday, the console's meter fills to full and says QUOTA NEEDED, the save holds it
+//            (xpHeld); Management explains the lock on the monitor the first time (moments.json events.rankLock), once
 //   unlocked — the next shift meets its quota: its XP doubled (progression.json quotaXpMult), "Quota met — rank
-//            unlocked", the rank-up and its payday, the meter at rank 4
+//            unlocked", the rank-up and its payday, the meter at the next rank
+// The rank it's played at (AT) is an early one from the ladder (the swap beat's — any rank past the first day works).
 //   carried — a quota met early in a rank stays met: a later shift that misses still ranks up ("Met earlier")
 //   every portrait size — the moment, the full meter and the report's quota row on screen, no card grew, no page errors
 // The shift's end is driven through the engine (window.__goops.engine: its score, its quota) like e2e/payslip.mjs.
@@ -15,6 +16,7 @@ import { chromium } from 'playwright-core'
 import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf, LADDER } from './ladder-ranks.mjs'
 
 const PORT = Number(process.env.E2E_PORT) || 6474, OUT = 'e2e-shots/rank-lock'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
@@ -27,8 +29,13 @@ const fmt = (n) => n.toLocaleString('en')
 const num = (s) => Number(String(s).split('·')[0].replace(/[^0-9]/g, ''))
 const fill = (s, vars) => s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''))
 const LOCK_LINES = story.events.rankLock.lines.map((l) => en.story.lines[l.words])
-// a device that has had everything up to here: every rank's story moment, the first day, the unlock + machine lessons
-const HAD = [...Array.from({ length: 51 }, (_, i) => `story:${i}`), 'lesson:first-day', 'lesson:unlock-window', 'lesson:unlock-swap',
+// F79: the rank the lock is played at (an early one, asked of the ladder) and the one it unlocks
+const AT = rankOf('swap'), NEXT = AT + 1
+// a shift's XP floor at AT (progression.json: minXp, minXpPerRank a rank) — what a shift earns once the leftover goop
+// has eaten its score
+const FLOOR = Math.max(prog.minXp, prog.minXpPerRank * AT)
+// a device that has had everything up to here: every story moment, the first day, the unlock + machine lessons
+const HAD = [...Object.keys(LADDER.story).map((id) => `story:${id}`), 'lesson:first-day', 'lesson:unlock-window', 'lesson:unlock-swap',
   'lesson:unlock-upgrades', 'lesson:visor', 'lesson:laser', 'lesson:controls', ...Array.from({ length: 10 }, (_, i) => `consoleNote:${i + 1}`)]
 const save = (fields) => ({ v: 5, totalXp: 0, scrapsSpent: 0, owned: {}, equipped: [], badge: null, quotaMet: false, xpHeld: false, name: null, careers: 0, ...fields })
 
@@ -124,10 +131,10 @@ const meterWordsFit = (page) => page.locator('.kit-level-meter-value').evaluate(
 try {
   // ---------------- locked: the meter fills to full, the rank waits; the next shift meets the quota → rank-up ----------------
   {
-    const start = xpFor(3) + xpToNext(3) - 200 // 200 short of rank 4, no quota met at rank 3
+    const start = xpFor(AT) + xpToNext(AT) - 200 // 200 short of the next rank, no quota met at AT
     const { page, errors, close } = await device(save({ totalXp: start }))
     const s1 = await playShift(page, { score: 1000, meet: false })
-    check('locked: the shift missed its quota (rank 3)', !s1.quotaMet && s1.rank === 3, JSON.stringify(s1))
+    check(`locked: the shift missed its quota (rank ${AT})`, !s1.quotaMet && s1.rank === AT, JSON.stringify(s1))
     const r1 = await rowsOf(page, '.kit-end')
     check(`locked: the report's quota row says "${Q.locked}"`, row(r1, Q.label) === Q.locked, JSON.stringify(r1))
     check('locked: the quota row is right under Cracks sealed', r1.findIndex(([l]) => l === Q.label) === r1.findIndex(([l]) => l === en.end.cracks) + 1, JSON.stringify(r1.map(([l]) => l)))
@@ -136,9 +143,9 @@ try {
     await backToConsole(page)
     check('locked: no payday', await page.getByRole('heading', { name: en.payslip.paydayTitle }).count() === 0)
     check('locked: the meter fills to full and says QUOTA NEEDED', await meterSays(page, en.console.quotaNeeded), await meterText(page))
-    check('locked: still rank 3', (await meterLevel(page)) === `${en.console.rank} 3`, await meterLevel(page))
+    check(`locked: still rank ${AT}`, (await meterLevel(page)) === `${en.console.rank} ${AT}`, await meterLevel(page))
     const p1 = await saved(page)
-    check('locked: saved — the XP stopped at the goal (rank 4\'s start), held, no quota', p1.totalXp === xpFor(4) && p1.xpHeld === true && p1.quotaMet === false && p1.v === 5, JSON.stringify(p1))
+    check(`locked: saved — the XP stopped at the goal (rank ${NEXT}'s start), held, no quota`, p1.totalXp === xpFor(NEXT) && p1.xpHeld === true && p1.quotaMet === false && p1.v === 5, JSON.stringify(p1))
     // Management explains it, the first time (the meter outlined)
     const said = await playLockMoment(page, 'moment-390x844')
     check('locked: Management explains the lock on the monitor, line by line (Got it)', said.every(Boolean), JSON.stringify(said))
@@ -153,25 +160,25 @@ try {
     await playShift(page, { score: 800, meet: false })
     check('still locked: the report says it again', row(await rowsOf(page, '.kit-end'), Q.label) === Q.locked)
     await backToConsole(page)
-    check('still locked: the XP didn\'t move', (await saved(page)).totalXp === xpFor(4))
+    check('still locked: the XP didn\'t move', (await saved(page)).totalXp === xpFor(NEXT))
     // the next shift meets its quota: XP × quotaXpMult, the rank-up, its payday
     const s2 = await playShift(page, { score: 500, meet: true })
     const r2 = await rowsOf(page, '.kit-end')
-    const earned = Math.max(s2.score, prog.minXp, prog.minXpPerRank * 3), doubled = Math.round(earned * prog.quotaXpMult)
+    const earned = Math.max(s2.score, FLOOR), doubled = Math.round(earned * prog.quotaXpMult)
     check(`unlocked: the quota row says "${fill(Q.met, { mult: prog.quotaXpMult })}"`, row(r2, Q.label) === fill(Q.met, { mult: prog.quotaXpMult }), JSON.stringify(r2))
     const net = row(r2, en.payslip.net)
-    check(`unlocked: Net pay = the doubled XP (${fmt(earned)} × ${prog.quotaXpMult} = ${fmt(doubled)}) and the rank-up to 4`, num(net) === doubled && net.includes('Rank up! 4'), net)
+    check(`unlocked: Net pay = the doubled XP (${fmt(earned)} × ${prog.quotaXpMult} = ${fmt(doubled)}) and the rank-up to ${NEXT}`, num(net) === doubled && net.includes(`Rank up! ${NEXT}`), net)
     await page.screenshot({ path: `${OUT}/report-unlocked-390x844.png` })
     await page.getByRole('button', { name: en.end.quit }).click()
     await page.getByRole('heading', { name: en.payslip.paydayTitle }).waitFor({ timeout: 4000 })
     check('unlocked: the payday plays', true)
     await page.getByRole('button', { name: en.payslip.pay }).click()
     await page.locator('.kit-art-stage').waitFor({ timeout: 5000 })
-    const want = `${fmt(doubled)} / ${fmt(xpToNext(4))} ${en.console.xp}`
-    check(`unlocked: the meter at rank 4, ${want}`, await meterSays(page, want) && (await meterLevel(page)) === `${en.console.rank} 4`, `${await meterLevel(page)} · ${await meterText(page)}`)
+    const want = `${fmt(doubled)} / ${fmt(xpToNext(NEXT))} ${en.console.xp}`
+    check(`unlocked: the meter at rank ${NEXT}, ${want}`, await meterSays(page, want) && (await meterLevel(page)) === `${en.console.rank} ${NEXT}`, `${await meterLevel(page)} · ${await meterText(page)}`)
     await consoleShot(page, 'console-unlocked-390x844')
     const p2 = await saved(page)
-    check('unlocked: saved — rank 4, the quota used up, not held', p2.totalXp === xpFor(4) + doubled && p2.quotaMet === false && p2.xpHeld === false, JSON.stringify(p2))
+    check(`unlocked: saved — rank ${NEXT}, the quota used up, not held`, p2.totalXp === xpFor(NEXT) + doubled && p2.quotaMet === false && p2.xpHeld === false, JSON.stringify(p2))
     check('no card grew', (await growth(page)).length === 0, JSON.stringify(await growth(page)))
     check('no page errors', errors.length === 0, errors.join(' | '))
     await close()
@@ -179,9 +186,11 @@ try {
 
   // ---------------- carried: a quota met early stays met until the rank-up ----------------
   {
-    // (800 short of rank 4: the floor's XP — 300 at rank 3, the leftover goop eats the score — doubled to 600 leaves it
-    // 200 short; the next shift's floor crosses it)
-    const { page, errors, close } = await device(save({ totalXp: xpFor(3) + xpToNext(3) - 800 }), { seen: [...HAD, 'story:rankLock'] })
+    // (short of the next rank by the floor's XP doubled plus two thirds of a floor: the floor's XP — the leftover goop
+    // eats the score — doubled leaves it two thirds of a floor short (today 300 → 600 of 800, 200 short); the next
+    // shift's floor crosses it)
+    const short = FLOOR * prog.quotaXpMult + Math.round((FLOOR * 2) / 3)
+    const { page, errors, close } = await device(save({ totalXp: xpFor(AT) + xpToNext(AT) - short }), { seen: [...HAD, 'story:rankLock'] })
     await playShift(page, { score: 300, meet: true })
     const r1 = await rowsOf(page, '.kit-end')
     check('carried: a quota met far from the goal — "Quota met — rank unlocked"', row(r1, Q.label) === fill(Q.met, { mult: prog.quotaXpMult }), JSON.stringify(r1))
@@ -190,25 +199,25 @@ try {
     check('carried: saved with the quota met', (await saved(page)).quotaMet === true)
     await playShift(page, { score: 300, meet: false })
     const r2 = await rowsOf(page, '.kit-end')
-    check(`carried: a later shift that misses still ranks up — "${Q.metEarlier}"`, row(r2, Q.label) === Q.metEarlier && row(r2, en.payslip.net).includes('Rank up! 4'), JSON.stringify(r2))
+    check(`carried: a later shift that misses still ranks up — "${Q.metEarlier}"`, row(r2, Q.label) === Q.metEarlier && row(r2, en.payslip.net).includes(`Rank up! ${NEXT}`), JSON.stringify(r2))
     await page.screenshot({ path: `${OUT}/report-met-earlier-390x844.png` })
     await page.getByRole('button', { name: en.end.quit }).click()
     await page.getByRole('heading', { name: en.payslip.paydayTitle }).waitFor({ timeout: 4000 })
     await page.getByRole('button', { name: en.payslip.pay }).click()
     await page.locator('.kit-art-stage').waitFor({ timeout: 5000 })
     const p = await saved(page)
-    check('carried: saved at rank 4 with the quota used up', p.quotaMet === false && p.xpHeld === false && p.totalXp > xpFor(4), JSON.stringify(p))
+    check(`carried: saved at rank ${NEXT} with the quota used up`, p.quotaMet === false && p.xpHeld === false && p.totalXp > xpFor(NEXT), JSON.stringify(p))
     // a missed shift with the meter not yet full says so
     await playShift(page, { score: 300, meet: false })
-    check(`carried: rank 4, missed, not full — "${Q.missed}"`, row(await rowsOf(page, '.kit-end'), Q.label) === Q.missed)
+    check(`carried: rank ${NEXT}, missed, not full — "${Q.missed}"`, row(await rowsOf(page, '.kit-end'), Q.label) === Q.missed)
     check('carried: no page errors', errors.length === 0, errors.join(' | '))
     await close()
   }
 
   // ---------------- every portrait size: the moment, the full meter, the report's quota row ----------------
   for (const [w, h] of [[390, 844], [360, 780], [1100, 900], [1440, 900], [1920, 1080]]) {
-    const { page, errors, close } = await device(save({ totalXp: xpFor(4), xpHeld: true }), { width: w, height: h })
-    check(`${w}x${h}: a held save loads locked — rank 3, QUOTA NEEDED`, await meterSays(page, en.console.quotaNeeded) && (await meterLevel(page)) === `${en.console.rank} 3`, await meterText(page))
+    const { page, errors, close } = await device(save({ totalXp: xpFor(NEXT), xpHeld: true }), { width: w, height: h })
+    check(`${w}x${h}: a held save loads locked — rank ${AT}, QUOTA NEEDED`, await meterSays(page, en.console.quotaNeeded) && (await meterLevel(page)) === `${en.console.rank} ${AT}`, await meterText(page))
     const said = await playLockMoment(page, `moment-${w}x${h}`)
     check(`${w}x${h}: the lock's moment plays at the console`, said.every(Boolean), JSON.stringify(said))
     const words = await meterWordsFit(page)

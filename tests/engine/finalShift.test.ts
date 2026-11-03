@@ -1,4 +1,4 @@
-// F64 THE FINAL SHIFT (rank 50, the boss level — src/engine/finalShift.ts + shift.ts, content/tuning/finalShift.json):
+// F64 THE FINAL SHIFT (the ladder beat finalShift, the boss level — src/engine/finalShift.ts + shift.ts, content/tuning/finalShift.json):
 // one colour for everything, the onslaught, the Veteran's drop-in and help, the 3 valve stages and the two losses.
 // F75 (cooperative final shift): his seals are free, the tank's lost integrity wears him down, used up = not a loss.
 import { describe, expect, it } from 'vitest'
@@ -11,6 +11,9 @@ import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import twistsJson from '../../content/tuning/twists.json'
 import { idx, ofType, realConfig, straightLineCracks, tickUntil } from './helpers'
 import { GALAXY_SLOT } from '../../src/goo/shared/galaxyLook'
+import { rankOf } from '../../src/progress/ladder'
+
+const FINAL = rankOf('finalShift') // the final shift's rank (F79: asked, never restated)
 
 const BLACK = 7 // shift.json colors: 'black' is the 7th
 const finalCfg = () => {
@@ -32,7 +35,7 @@ function spacedFloor(): Uint8Array {
   return grid
 }
 function finalShift(extra: Partial<ShiftOptions> = {}, final = finalCfg()) {
-  return createShift(quietConfig(), { seed: 1, rank: 50, finalShift: final, startGrid: spacedFloor(), ...extra })
+  return createShift(quietConfig(), { seed: 1, rank: FINAL, finalShift: final, startGrid: spacedFloor(), ...extra })
 }
 // You seal a crack: one under the black clump at column x, then zap that clump
 function playerSeal(shift: ShiftEngine, x: number, id: number): ShiftEvent[] {
@@ -59,13 +62,13 @@ it("the final shift's colour is the slot the galaxy look is drawn on", () => {
   expect(realConfig().colors.indexOf(finalJson.colour) + 1).toBe(GALAXY_SLOT)
 })
 
-describe('the final shift (rank 50)', () => {
-  it('is rank 50 only: not 49, never in a lesson, not without its tuning', () => {
-    expect(createShift(realConfig(), { seed: 1, rank: 50, finalShift: finalCfg() }).state.final).toBeTruthy()
-    expect(createShift(realConfig(), { seed: 1, rank: 49, finalShift: finalCfg() }).state.final ?? null).toBeNull()
-    expect(createShift(realConfig(), { seed: 1, rank: 50, finalShift: finalCfg(), training: {} }).state.final ?? null).toBeNull()
-    expect(createShift(realConfig(), { seed: 1, rank: 50 }).state.final ?? null).toBeNull()
-    const s = createShift(realConfig(), { seed: 1, rank: 50, finalShift: finalCfg() }).state
+describe(`the final shift (rank ${FINAL})`, () => {
+  it(`is rank ${FINAL} only: not ${FINAL - 1}, never in a lesson, not without its tuning`, () => {
+    expect(createShift(realConfig(), { seed: 1, rank: FINAL, finalShift: finalCfg() }).state.final).toBeTruthy()
+    expect(createShift(realConfig(), { seed: 1, rank: FINAL - 1, finalShift: finalCfg() }).state.final ?? null).toBeNull()
+    expect(createShift(realConfig(), { seed: 1, rank: FINAL, finalShift: finalCfg(), training: {} }).state.final ?? null).toBeNull()
+    expect(createShift(realConfig(), { seed: 1, rank: FINAL }).state.final ?? null).toBeNull()
+    const s = createShift(realConfig(), { seed: 1, rank: FINAL, finalShift: finalCfg() }).state
     expect(s.final).toMatchObject({ stage: 0, stages: 3, seals: 0, need: 6, waiting: false, outcome: null, vetAlive: false }) // (no white goop handed in: he isn't there)
     expect(s.cracksNeeded).toBe(24) // 6 + 8 + 10
   })
@@ -74,7 +77,7 @@ describe('the final shift (rank 50)', () => {
     const config = realConfig()
     config.cracks.everyMsAtEmpty = 200 // lots of cracks, quickly
     config.cracks.everyMsAtFull = 200
-    const shift = createShift(config, { seed: 7, rank: 50, finalShift: finalCfg(), twists: structuredClone(twistsJson) })
+    const shift = createShift(config, { seed: 7, rank: FINAL, finalShift: finalCfg(), twists: structuredClone(twistsJson) })
     const s = shift.state
     const colours = new Set<number>()
     for (let t = 0; t < 60_000 && s.status === 'playing'; t += 20) {
@@ -108,7 +111,7 @@ describe('the final shift (rank 50)', () => {
   it('the onslaught: pressure climbs × pressureRiseMult, pieces fall × fallSpeedMult, cracks come × crackRateMult, goop rains in', () => {
     const final = finalCfg()
     const at = (rank: number) => createShift(realConfig(), { seed: 3, rank, finalShift: final, startGrid: new Uint8Array(30 * 24) })
-    const normal = at(49), boss = at(50)
+    const normal = at(FINAL - 1), boss = at(FINAL)
     normal.tick(10_000)
     boss.tick(10_000)
     expect(boss.state.pressure / normal.state.pressure).toBeCloseTo(final.pressureRiseMult, 1)
@@ -120,7 +123,7 @@ describe('the final shift (rank 50)', () => {
       sh.tick(2000)
       return Math.min(...sh.state.piece!.cells.map((c) => c[1])) - y0
     }
-    expect(fall(50) / fall(49)).toBeGreaterThan(final.fallSpeedMult * 0.8)
+    expect(fall(FINAL) / fall(FINAL - 1)).toBeGreaterThan(final.fallSpeedMult * 0.8)
     // cracks: with no other differences, more of them in the same time
     const cracks = (rank: number) => {
       const config = straightLineCracks(realConfig(), 2000, 2000)
@@ -129,7 +132,7 @@ describe('the final shift (rank 50)', () => {
       for (let t = 0; t < 20_000; t += 50) { sh.tick(50); n += ofType(sh.takeEvents(), 'crack').length }
       return n
     }
-    expect(cracks(50) / cracks(49)).toBeCloseTo(final.crackRateMult, 0)
+    expect(cracks(FINAL) / cracks(FINAL - 1)).toBeCloseTo(final.crackRateMult, 0)
     // rain: rain.cells cells every rain.everySec
     final.rain = { everySec: 2, cells: 3 }
     const rain = finalShift({}, final)
@@ -184,13 +187,13 @@ describe('the final shift (rank 50)', () => {
   })
 
   it('a valve stage opens only in the final shift', () => {
-    expect(createShift(quietConfig(), { seed: 1, rank: 49, finalShift: finalCfg() }).openValveStage()).toBe(false)
+    expect(createShift(quietConfig(), { seed: 1, rank: FINAL - 1, finalShift: finalCfg() }).openValveStage()).toBe(false)
   })
 
   it('loses at once when integrity hits 0 (no rupture drain)', () => {
     const config = quietConfig()
     config.integrity.drainPerCrackPerSec = 1
-    const shift = createShift(config, { seed: 1, rank: 50, finalShift: finalCfg(), startGrid: spacedFloor() })
+    const shift = createShift(config, { seed: 1, rank: FINAL, finalShift: finalCfg(), startGrid: spacedFloor() })
     const s = shift.state
     s.cracks.push({ id: 1, x: 1, y: 23, color: BLACK, plugged: false })
     tickUntil(shift, () => s.status !== 'playing', 3000, 10)
@@ -204,7 +207,7 @@ describe('the final shift (rank 50)', () => {
   it('loses at once when the goop goes over the top', () => {
     const config = quietConfig()
     config.fall.msPerRow = 5
-    const shift = createShift(config, { seed: 1, rank: 50, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24) })
+    const shift = createShift(config, { seed: 1, rank: FINAL, finalShift: finalCfg(), startGrid: new Uint8Array(30 * 24) })
     const s = shift.state
     tickUntil(shift, () => s.status !== 'playing', 120_000, 20) // (nobody zaps: the centre column fills to the top)
     expect(s.status).toBe('lost')
@@ -213,7 +216,7 @@ describe('the final shift (rank 50)', () => {
 
   it('the Veteran drops in FIRST: his lines, then he falls, lands ("…oof."), and only then the first piece and the clock', () => {
     const final = finalCfg()
-    const shift = createShift(quietConfig(), { seed: 2, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: new Uint8Array(30 * 24) })
+    const shift = createShift(quietConfig(), { seed: 2, rank: FINAL, finalShift: final, whiteGoop: whiteGoop(), startGrid: new Uint8Array(30 * 24) })
     const s = shift.state
     expect(s.final!.intro).toBe(true)
     expect(s.piece).toBeNull()
@@ -238,7 +241,7 @@ describe('the final shift (rank 50)', () => {
     const final = finalCfg()
     const config = quietConfig()
     config.integrity.drainPerCrackPerSec = 0 // (the tank loses nothing: whatever he loses would be the seal's)
-    const shift = createShift(config, { seed: 5, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: new Uint8Array(30 * 24) })
+    const shift = createShift(config, { seed: 5, rank: FINAL, finalShift: final, whiteGoop: whiteGoop(), startGrid: new Uint8Array(30 * 24) })
     const s = shift.state
     pastIntro(shift)
     const easy = { id: 901, x: 26, y: 23, color: BLACK, plugged: false } // on the floor beside him: you can reach it
@@ -262,7 +265,7 @@ describe('the final shift (rank 50)', () => {
     if (stages) final.valve.stages = stages
     const config = quietConfig()
     config.integrity.drainPerCrackPerSec = drainPerSec
-    const shift = createShift(config, { seed: 6, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: spacedFloor() })
+    const shift = createShift(config, { seed: 6, rank: FINAL, finalShift: final, whiteGoop: whiteGoop(), startGrid: spacedFloor() })
     pastIntro(shift)
     return { shift, s: shift.state, final }
   }
@@ -319,7 +322,7 @@ describe('the final shift (rank 50)', () => {
     final.valve.stages = [1, 1, 1]
     const config = quietConfig()
     config.integrity.drainPerCrackPerSec = 0
-    const shift = createShift(config, { seed: 6, rank: 50, finalShift: final, whiteGoop: whiteGoop(), startGrid: spacedFloor() })
+    const shift = createShift(config, { seed: 6, rank: FINAL, finalShift: final, whiteGoop: whiteGoop(), startGrid: spacedFloor() })
     pastIntro(shift)
     for (let k = 0; k < 3; k++) {
       playerSeal(shift, 2 * k, 50 + k)
@@ -357,7 +360,7 @@ describe('the final shift (rank 50)', () => {
   it('a snapshot keeps the valve and the intro: a restored shift plays on exactly as the original', () => {
     const final = finalCfg()
     final.rain.everySec = 3
-    const opts = { seed: 9, rank: 50, finalShift: final, whiteGoop: whiteGoop() }
+    const opts = { seed: 9, rank: FINAL, finalShift: final, whiteGoop: whiteGoop() }
     const a = createShift(realConfig(), opts)
     a.tick(2000) // mid-intro
     const snap = a.snapshot()
@@ -389,15 +392,15 @@ describe('upgrades in the final shift (F75)', () => {
     return xs
   }
 
-  it('Goop Dump rains wild goop into the columns with an open crack (none: anywhere); at rank 49 anywhere', () => {
-    expect(new Set(dumpColumns(50))).toEqual(new Set([5, 17]))
+  it(`Goop Dump rains wild goop into the columns with an open crack (none: anywhere); at rank ${FINAL - 1} anywhere`, () => {
+    expect(new Set(dumpColumns(FINAL))).toEqual(new Set([5, 17]))
     // (anywhere = not only the two crack columns — the wave is only a few cells, upgrades.json goopDump)
     const notAimed = (xs: number[]) => new Set(xs).size > 2 && xs.some((x) => x !== 5 && x !== 17)
-    expect(notAimed(dumpColumns(50, false))).toBe(true)
-    expect(notAimed(dumpColumns(49))).toBe(true)
+    expect(notAimed(dumpColumns(FINAL, false))).toBe(true)
+    expect(notAimed(dumpColumns(FINAL - 1))).toBe(true)
   })
 
-  it('Slow Cracks: in the final shift new cracks come as often as without it, but they spread slower; at rank 49 both slow', () => {
+  it(`Slow Cracks: in the final shift new cracks come as often as without it, but they spread slower; at rank ${FINAL - 1} both slow`, () => {
     const slow = { crackEveryMult: 1.6 }
     // new cracks in 20 s (cracks every 2 s at any pressure; empty tank, none of them growing: no twists)
     const cracks = (rank: number, modifiers = {}) => {
@@ -406,8 +409,8 @@ describe('upgrades in the final shift (F75)', () => {
       for (let t = 0; t < 20_000; t += 50) { sh.tick(50); n += ofType(sh.takeEvents(), 'crack').length }
       return n
     }
-    expect(cracks(50, slow)).toBe(cracks(50))
-    expect(cracks(49, slow)).toBeLessThan(cracks(49) * 0.75)
+    expect(cracks(FINAL, slow)).toBe(cracks(FINAL))
+    expect(cracks(FINAL - 1, slow)).toBeLessThan(cracks(FINAL - 1) * 0.75)
     // spreading: cells one crack grows in 30 s (no new cracks; every growth roll a hit)
     const grown = (rank: number, modifiers = {}) => {
       const t = structuredClone(twistsJson)
@@ -417,7 +420,7 @@ describe('upgrades in the final shift (F75)', () => {
       sh.tick(30_000)
       return sh.state.cracks[0].cells?.length ?? 1
     }
-    expect(grown(50, slow)).toBeLessThan(grown(50))
-    expect(grown(49, slow)).toBeLessThan(grown(49))
+    expect(grown(FINAL, slow)).toBeLessThan(grown(FINAL))
+    expect(grown(FINAL - 1, slow)).toBeLessThan(grown(FINAL - 1))
   })
 })

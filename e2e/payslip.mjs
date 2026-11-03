@@ -12,6 +12,7 @@ import { chromium } from 'playwright-core'
 import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = Number(process.env.E2E_PORT) || 5348, OUT = 'e2e-shots/payslip'
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
@@ -21,6 +22,9 @@ const PAY = JSON.parse(readFileSync('content/tuning/payslip.json', 'utf8'))
 const settle = () => 500 + 8 * PAY.lineMs // a card's entrance, then its rows one at a time (UI kit 0.31.0 reveal)
 const xpToNext = (rank) => prog.xpBase + prog.xpPerRank * rank
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return xp }
+// F79: the ranks played, asked of the ladder — an early rank-up (FROM → UP: up to laserBreaks), and the shop's rank
+// for the shots at every size
+const UP = rankOf('laserBreaks'), FROM = UP - 1, SHOP = rankOf('upgradesShop')
 const KIT = readFileSync('src/ui/kit/VERSION', 'utf8').split(/\s/)[0]
 const KIT_SCROLLS_STATS = KIT.split('.').map(Number).reduce((a, n) => a * 1000 + n, 0) >= 31000 // 0.31.0
 const num = (s) => Number(String(s).replace(/[^0-9]/g, ''))
@@ -67,7 +71,7 @@ const growth = (page) => page.evaluate(() => window.__uiGrowth ?? [])
 try {
   // ---------------- a normal shift: gross − fines = net = the XP ----------------
   {
-    const before = xpFor(3) + 10
+    const before = xpFor(FROM) + 10
     const { page, errors, close } = await shiftEnded(before)
     const r = await rowsOf(page, '.kit-end')
     const gross = r.find(([l]) => l === P.gross), net = r.find(([l]) => l === P.net)
@@ -87,11 +91,11 @@ try {
     await close()
   }
 
-  // ---------------- a payday: one rank-up ----------------
+  // ---------------- a payday: one rank-up (an early one: up to the ladder's laserBreaks) ----------------
   {
-    const before = xpFor(3) + xpToNext(3) - 50 // 50 short of rank 4: any shift crosses it
+    const before = xpFor(FROM) + xpToNext(FROM) - 50 // 50 short of the next rank: any shift crosses it
     const { page, errors, close } = await shiftEnded(before)
-    check('payday: the report says the rank-up', await page.getByText(/Rank up! 4/).count() === 1)
+    check('payday: the report says the rank-up', await page.getByText(new RegExp(`Rank up! ${UP}`)).count() === 1)
     await page.getByRole('button', { name: en.end.quit }).click()
     await page.getByRole('heading', { name: P.paydayTitle }).waitFor({ timeout: 3000 })
     await page.waitForTimeout(settle())
@@ -101,9 +105,9 @@ try {
     const r = await rowsOf(page, '.kit-modal')
     const bill = r.filter(([l]) => billWords.has(l))
     check('payday: 5 items on the bill', bill.length === 5, JSON.stringify(r))
-    check(`payday: they add up to the payment due (${xpToNext(3)})`, bill.reduce((a, [, v]) => a + num(v), 0) === xpToNext(3))
+    check(`payday: they add up to the payment due (${xpToNext(FROM)})`, bill.reduce((a, [, v]) => a + num(v), 0) === xpToNext(FROM))
     check('payday: the passage debt line', r.some(([l]) => l === P.debt))
-    check('payday: the rank-up line (rank 4)', r.some(([l, v]) => l === P.rankUp && v.includes('4')), JSON.stringify(r))
+    check(`payday: the rank-up line (rank ${UP})`, r.some(([l, v]) => l === P.rankUp && v.includes(String(UP))), JSON.stringify(r))
     await page.screenshot({ path: `${OUT}/payday-390x844.png` })
     await page.getByRole('button', { name: P.pay }).click()
     await page.locator('.kit-art-stage').waitFor({ timeout: 4000 })
@@ -134,7 +138,7 @@ try {
 
   // ---------------- every portrait size: the report and a payday (looked at by hand) ----------------
   for (const [w, h] of [[390, 844], [360, 780], [1100, 900], [1440, 900], [1920, 1080]]) {
-    const { page, errors, close } = await shiftEnded(xpFor(5) + xpToNext(5) - 50, { width: w, height: h })
+    const { page, errors, close } = await shiftEnded(xpFor(SHOP) + xpToNext(SHOP) - 50,{ width: w, height: h })
     await page.screenshot({ path: `${OUT}/report-${w}x${h}.png` })
     // the card is on screen, only its rows scroll (the kit's ScrollArea: no scroll bar, the edge fades — Muzzy: "just
     // obviously hangs off screen"), and every button can be pressed (what's under its centre is it)

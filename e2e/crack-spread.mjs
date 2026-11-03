@@ -7,6 +7,7 @@ import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5291, OUT = 'e2e-shots/crack-spread'
 mkdirSync(OUT, { recursive: true })
@@ -22,7 +23,7 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 })
   page.on('pageerror', (e) => errors.push(String(e)))
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('favicon')) errors.push(m.text()) })
-  await page.goto(`http://localhost:${PORT}/?rank=4`)
+  await page.goto(`http://localhost:${PORT}/?rank=${rankOf('laserBreaks')}`) // (an early rank, every machine but the controls: the ladder's beat)
   await startShift(page)
 
   for (const [name, band] of [['before-halfwayPerColumn', 'halfwayPerColumn'], ['after-hill', 'hill']]) {

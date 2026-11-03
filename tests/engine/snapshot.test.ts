@@ -5,6 +5,7 @@ import { readSnapshot, restoreShift } from '../../src/engine/snapshot'
 import { createRng } from '../../src/engine/rng'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import { realConfig } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 // A simple seeded bot: turns, rotations, fast drop and zaps at the bottom row — the same moves for any engine
 function play(engine: ShiftEngine, botSeed: number, ticks: number): ShiftEvent[] {
@@ -25,7 +26,8 @@ function play(engine: ShiftEngine, botSeed: number, ticks: number): ShiftEvent[]
 const comparable = (e: ShiftEngine) => JSON.parse(JSON.stringify(e.snapshot()))
 
 describe('shift snapshots', () => {
-  for (const [seed, rank] of [[3, 2], [11, 6], [42, 9]]) {
+  // (the visor's rank, every machine's, and the most junk's)
+  for (const [seed, rank] of [[3, rankOf('visorBreaks')], [11, rankOf('controlsBreak')], [42, rankOf('junk3')]]) {
     it(`seed ${seed}, rank ${rank}: a restored shift plays on exactly as the original`, () => {
       const config = realConfig()
       const original = createShift(config, { seed, rank, breakdowns })
@@ -42,7 +44,7 @@ describe('shift snapshots', () => {
   }
 
   it('a snapshot is plain JSON (no Maps, typed arrays or functions)', () => {
-    const e = createShift(realConfig(), { seed: 5, rank: 4, breakdowns })
+    const e = createShift(realConfig(), { seed: 5, rank: rankOf('laserBreaks'), breakdowns })
     play(e, 6, 100)
     const snap = e.snapshot()
     expect(JSON.parse(JSON.stringify(snap))).toEqual(snap)

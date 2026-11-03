@@ -1,6 +1,6 @@
 // F56 — PERISCOPE ZOOM (Muzzy's sketch S13, look B): in Playwright's own Chromium (never the user's Chrome), with the
 // real dev server, at every portrait size (390x844, 360x780, 1100x800, 1440x900, 1920x1080 — never sideways).
-// Each size, a fresh device that has had its first day (and the rank's unlock lessons), a seeded rank-3 shift:
+// Each size, a fresh device that has had its first day (and the rank's unlock lessons), a seeded shift at the ladder's swap:
 //   1. at the console between shifts the goggles are OFF: their painted glass colour (art.json periscopeGlass.inner);
 //      a short drag down → they flicker on (data-power="flicker" → "on") and show the next shift's tank (the pixels are
 //      NOT the painted colour); let go short → the periscope springs back and they're off again
@@ -18,12 +18,13 @@ import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { checkVersion, skipFirstDay } from './start.mjs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = Number(process.env.E2E_PORT) || 5378, OUT = 'e2e-shots/periscope-zoom'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
 const art = JSON.parse(readFileSync('content/ui/art.json', 'utf8'))
 const GLASS = art.console.periscopeGlass
-const URL_ = `http://localhost:${PORT}/?seed=7&rank=3`
+const URL_ = `http://localhost:${PORT}/?seed=7&rank=${rankOf('swap')}` // (an early rank with its unlock lessons: the ladder's beat)
 const SEEN = ['lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades']
 mkdirSync(OUT, { recursive: true })
 

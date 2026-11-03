@@ -1,5 +1,5 @@
-// F64 THE GALAXY-BLACK LOOK (the final shift, rank 50 — design/story.md: "all the goop is galaxy black — black with
-// shimmering stars"). Black is shift.json's 7th colour and only comes at rank 50, so colour slot 7 is always drawn this
+// F64 THE GALAXY-BLACK LOOK (the final shift, beat finalShift — design/story.md: "all the goop is galaxy black — black with
+// shimmering stars"). Black is shift.json's 7th colour and only comes from seventhColour, so colour slot 7 is always drawn this
 // way (like the wild goop's slot 8, wildLook.ts):
 //   - the body: a deep night colour with nebula clouds drifting through it, seen like a window onto space (the clouds and
 //     stars are pinned to the view, not the goop — the goop moves over a still sky, the classic galaxy-texture look)

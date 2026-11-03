@@ -1,4 +1,4 @@
-// F64 balance bots for THE FINAL SHIFT (rank 50): every bot × seed headless on the real engine + the real tuning
+// F64 balance bots for THE FINAL SHIFT (the ladder's finalShift): every bot × seed headless on the real engine + the real tuning
 // (shift, breakdowns, whiteGoop, twists, finalShift.json), console stand-ins as runFinal.ts says. Prints win rate,
 // length and how the bots lose — F75: and how often they save the Veteran (won with him alive = the happy ending);
 // writes e2e-shots/bots/final.json.

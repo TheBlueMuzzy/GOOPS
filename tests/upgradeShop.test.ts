@@ -7,6 +7,7 @@ import { playableUpgrades, type UpgradeBook } from '../src/engine/upgrades'
 import text from '../content/text/en.json'
 import { SAVE_VERSION, loadProgress, saveProgress } from '../src/progress/save'
 import goldenV3 from './saves/goops-progress-v3.json'
+import { ladder, rankOf } from '../src/progress/ladder'
 
 const book: UpgradeBook = { upgrades: [
   { id: 'cheap', name: 'Cheap', type: 'passive', maxLevel: 2, effects: [] },
@@ -16,7 +17,10 @@ const book: UpgradeBook = { upgrades: [
   { id: 'zap2', name: 'Zap 2', type: 'active', maxLevel: 3, ability: { effect: 'x', chargePerSecond: 0, chargePerSeal: 0, byLevel: [] } },
   { id: 'hidden', name: 'Test', type: 'passive', maxLevel: 1, testOnly: true, effects: [] },
 ], ranks: { cheap: 2, pricey: 2, late: 9, zap: 5, zap2: 5, hidden: 0 } } // (F78: a test book names its own ranks)
-const at = (rank: number): Progress => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return { ...freshProgress(), totalXp: xp } }
+// the start of a rank with exactly rank × scrapsPerRank scraps in hand: the ladder's scraps grants count as spent, so
+// the test book's numbers hold wherever a grant lands (F79)
+const grants = (rank: number) => ladder.grantsUpTo('scraps', rank)
+const at = (rank: number): Progress => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return { ...freshProgress(), totalXp: xp, scrapsSpent: grants(rank) } }
 const scraps = (p: Progress, rank: number) => scrapsAt(rank, p)
 
 describe('buying a level', () => {
@@ -51,7 +55,7 @@ describe('buying a level', () => {
     let p = at(5)
     for (let i = 0; i < 20; i++) for (const id of ['cheap', 'pricey', 'zap', 'zap2']) p = buyLevel(p, id, 5, book)
     expect(scraps(p, 5)).toBeGreaterThanOrEqual(0)
-    expect(p.scrapsSpent).toBe(5)
+    expect(p.scrapsSpent - grants(5)).toBe(5)
   })
 })
 
@@ -166,30 +170,32 @@ describe('the card number line (levelPercent): read from the real upgrades.json'
   })
 })
 
-// F42 task 4: Active Expansion Slot (rank 20) and Slot 2 (rank 38), bought with scraps like any upgrade
+// F42 task 4: Active Expansion Slot and Slot 2 (their ranks: ladder.json upgrades), bought with scraps like any upgrade
 describe('active slots: 1 → 2 → 3 with the Active Expansion Slots', () => {
   const rich = (): Progress => ({ ...freshProgress(), totalXp: 1e9 }) // scraps for everything
   const owning = (owned: Record<string, number>, equipped: string[] = []): Progress => ({ ...rich(), owned, equipped })
   const ACTIVES = ['cooldownBooster', 'goopDump', 'goopColorizer', 'crackDown']
   const def = (id: string) => upgradeBook.upgrades.find((u) => u.id === id)!
 
-  it('the slots are upgrades.json feature upgrades at v1’s ranks and price (1 scrap, one level)', () => {
+  const A = rankOf('upgrades.activeSlot'), A2 = rankOf('upgrades.activeSlot2')
+  it('the slots are upgrades.json feature upgrades at their ladder ranks and v1’s price (1 scrap, one level)', () => {
     const slot = def('activeSlot'), slot2 = def('activeSlot2')
-    expect([slot.type, upgradeRank(slot), slot.maxLevel, costOf(slot), slot.feature]).toEqual(['feature', 20, 1, 1, 'abilitySlots'])
-    expect([slot2.type, upgradeRank(slot2), slot2.maxLevel, costOf(slot2), slot2.feature]).toEqual(['feature', 38, 1, 1, 'abilitySlots'])
+    expect([slot.type, upgradeRank(slot), slot.maxLevel, costOf(slot), slot.feature]).toEqual(['feature', A, 1, 1, 'abilitySlots'])
+    expect([slot2.type, upgradeRank(slot2), slot2.maxLevel, costOf(slot2), slot2.feature]).toEqual(['feature', A2, 1, 1, 'abilitySlots'])
   })
 
   it('bought with scraps from their rank (not before), each adds a slot', () => {
-    expect(whyNotBuy(rich(), 'activeSlot', 19)).toBe('locked')
-    let p = buyLevel(rich(), 'activeSlot', 20)
+    expect(whyNotBuy(rich(), 'activeSlot', A - 1)).toBe('locked')
+    let p = buyLevel(rich(), 'activeSlot', A)
     expect(levelOf(p, 'activeSlot')).toBe(1)
     expect(p.scrapsSpent).toBe(1)
     expect(activeSlots(p)).toBe(2)
-    expect(whyNotBuy(p, 'activeSlot2', 37)).toBe('locked')
-    p = buyLevel(p, 'activeSlot2', 38)
+    expect(whyNotBuy(p, 'activeSlot2', A2 - 1)).toBe('locked')
+    p = buyLevel(p, 'activeSlot2', A2)
     expect(activeSlots(p)).toBe(3)
-    expect(whyNotBuy(p, 'activeSlot', 38)).toBe('maxed')
-    expect(whyNotBuy({ ...at(20), scrapsSpent: 20 }, 'activeSlot', 20)).toBe('scraps')
+    expect(whyNotBuy(p, 'activeSlot', A2)).toBe('maxed')
+    const broke = at(A) // (every scrap spent)
+    expect(whyNotBuy({ ...broke, scrapsSpent: broke.scrapsSpent + scraps(broke, A) }, 'activeSlot', A)).toBe('scraps')
   })
 
   it('no slot upgrade = 1 slot; a slot owned but the base raised in progression.json adds on top', () => {

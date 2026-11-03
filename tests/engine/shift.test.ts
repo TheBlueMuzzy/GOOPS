@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { createShift } from '../../src/engine'
 import type { ShiftAction, ShiftEngine } from '../../src/engine'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, tank, tickUntil } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 const SQUARE = [[0, 0], [0, 1], [1, 0], [1, 1]]
 
@@ -173,14 +174,14 @@ describe('swap (hold)', () => {
   const shapeOf = (cells: [number, number][]) => cells.map(([x, y]) => [((x - cells[0][0] + 45) % 30) - 15, y - cells[0][1]])
 
   it('no held piece: a shift starts with only the falling piece and the next one', () => {
-    const shift = createShift(realConfig(), { seed: 7, rank: 3 })
+    const shift = createShift(realConfig(), { seed: 7, rank: rankOf('swap') })
     expect('held' in shift.state).toBe(false)
     expect('heldCells' in shift.state).toBe(false)
     expect(shift.state.next).not.toBeNull()
   })
 
   it('the next piece comes in where the falling one was, and the falling one becomes the next', () => {
-    const shift = createShift(realConfig(), { seed: 7, rank: 3 })
+    const shift = createShift(realConfig(), { seed: 7, rank: rankOf('swap') })
     shift.tick(400) // let it fall a little first: the swapped-in piece keeps its place
     const s = shift.state
     const before = { cells: s.piece!.cells, colors: s.piece!.colors, next: s.next!, nextCells: s.nextCells!, rotation: s.piece!.rotation }
@@ -197,7 +198,7 @@ describe('swap (hold)', () => {
   })
 
   it('swapping again trades them back', () => {
-    const shift = createShift(realConfig(), { seed: 11, rank: 3 })
+    const shift = createShift(realConfig(), { seed: 11, rank: rankOf('swap') })
     const s = shift.state
     const first = { colors: s.piece!.colors, shape: shapeOf(s.piece!.cells), next: s.next }
     shift.act({ type: 'hold' })
@@ -209,7 +210,7 @@ describe('swap (hold)', () => {
 
   it('no room where the falling piece is: refused, nothing changes', () => {
     // a lesson's chosen pieces: a one-column piece falling, a two-column one next
-    const shift = createShift(realConfig(), { seed: 1, rank: 6, training: {} })
+    const shift = createShift(realConfig(), { seed: 1, rank: rankOf('controlsBreak'), training: {} })
     shift.train({ type: 'queue', pieces: [{ shape: 'T_I', color: 1 }, { shape: 'T_O', color: 2 }] })
     shift.train({ type: 'spawn' })
     const s = shift.state
@@ -245,7 +246,7 @@ describe('swap (hold)', () => {
 
   it("a lesson's chosen pieces still all come, in order, after a swap", () => {
     const config = realConfig()
-    const shift = createShift(config, { seed: 1, rank: 6, training: {} })
+    const shift = createShift(config, { seed: 1, rank: rankOf('controlsBreak'), training: {} })
     shift.train({ type: 'queue', pieces: [{ shape: 'T_I', color: 1 }, { shape: 'T_O', color: 2 }, { shape: 'T_L', color: 3 }] })
     shift.train({ type: 'spawn' }) // 1 falling, 2 next
     shift.act({ type: 'hold' }) // 2 falling, 1 next

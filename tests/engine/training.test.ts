@@ -4,10 +4,11 @@ import { createShift } from '../../src/engine'
 import { restoreShift } from '../../src/engine/snapshot'
 import breakdowns from '../../content/tuning/breakdowns.json'
 import { dropPiece, idx, ofType, realConfig, tickUntil } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 const training = (rules = {}, seed = 1) => {
   const config = realConfig()
-  return { config, shift: createShift(config, { seed, rank: 6, breakdowns, training: rules }) }
+  return { config, shift: createShift(config, { seed, rank: rankOf('controlsBreak'), breakdowns, training: rules }) }
 }
 
 describe('a training shift', () => {
@@ -30,7 +31,7 @@ describe('a training shift', () => {
   })
 
   it('a normal shift (no training option) is unchanged: junk on the floor and a piece falling', () => {
-    const shift = createShift(realConfig(), { seed: 1, rank: 6 })
+    const shift = createShift(realConfig(), { seed: 1, rank: rankOf('junk1') })
     expect(shift.state.piece).not.toBeNull()
     expect(shift.state.grid.some((c) => c !== 0)).toBe(true)
     expect(shift.train({ type: 'pressure', value: 0.5 })).toBe(false)

@@ -6,7 +6,7 @@
 // 4) final: strongest colour wins (clean seams), glossy translucent jelly, written as premultiplied colour over the
 //    TRANSPARENT canvas (the tank underneath is the lead's 2D canvas).
 // F39: wild goop gets an 8th channel of its own, tex2.a, and the wild look (src/goo/shared/wildLook.ts).
-// F64: black (colour 7, tex1.b — only at rank 50) is shaded with the galaxy look (src/goo/shared/galaxyLook.ts).
+// F64: black (colour 7, tex1.b — only from seventhColour) is shaded with the galaxy look (src/goo/shared/galaxyLook.ts).
 import { XRAY_GLSL } from '../shared/xray'
 import { WILD_GLSL } from '../shared/wildLook'
 import { GALAXY_GLSL } from '../shared/galaxyLook'

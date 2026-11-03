@@ -3,13 +3,17 @@
 // lessons on top of the final shift).
 import { describe, expect, it } from 'vitest'
 import { livedThrough, type LivedThroughFiles } from '../../src/game/lessons/livedThrough'
+import { maxRank } from '../../src/progress/ladder'
 
+// this test's own made-up files (F79: its ranks are its own, not the game's ladder — the last test reads the real ones)
+const TOP = 50 // tuning-ok: the made-up files' top rank
 const files: LivedThroughFiles = {
   machineRank: { laser: 4, visor: 2, controls: 6 },
   unlockAt: (u) => ({ nextPiece: 1, swap: 3, upgrades: 5 })[u],
   consoleNoteVisits: 2,
   coldAt: 3,
-  chorusRank: 48,
+  chorusRank: 48, // tuning-ok: the made-up files
+  moments: [{ id: '0', rank: 0 }, { id: '49', rank: TOP - 1 }, { id: '50', rank: TOP }],
 }
 
 describe('livedThrough', () => {
@@ -17,8 +21,8 @@ describe('livedThrough', () => {
     expect(livedThrough(0, files)).toEqual([])
   })
 
-  it('rank 50: every lesson, note, story moment 0–49 and look before it', () => {
-    const seen = livedThrough(50, files)
+  it('the top rank: every lesson, note, story moment and look before it', () => {
+    const seen = livedThrough(TOP, files)
     for (const id of ['lesson:first-day', 'lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades',
       'lesson:visor', 'lesson:laser', 'lesson:controls', 'consoleNote:1', 'consoleNote:2', 'whisper:cold', 'look:mouths-open']) {
       expect(seen).toContain(id)
@@ -37,7 +41,7 @@ describe('livedThrough', () => {
   })
 
   it('reads the real content files (every machine and unlock found)', () => {
-    const seen = livedThrough(50)
+    const seen = livedThrough(maxRank())
     for (const id of ['lesson:visor', 'lesson:laser', 'lesson:controls', 'lesson:unlock-upgrades', 'consoleNote:1']) expect(seen).toContain(id)
   })
 

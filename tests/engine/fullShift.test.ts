@@ -6,6 +6,7 @@ import type { ShiftEngine, ShiftEvent, ShiftState } from '../../src/engine'
 import { createRng } from '../../src/engine/rng'
 import { neighbours } from '../../src/engine/tank'
 import { realConfig } from './helpers'
+import { rankOf } from '../../src/progress/ladder'
 
 // Plain checks (not expect) so thousands of ticks stay fast; the first broken rule throws with a reason.
 function checkInvariants(s: ShiftState): void {
@@ -85,7 +86,8 @@ function playShift(seed: number, rank: number, check: boolean): { shift: ShiftEn
 }
 
 describe('a whole shift', () => {
-  for (const [seed, rank] of [[1, 1], [2, 12], [3, 35]]) {
+  // (the first day's next rank, the 5th colour's, the 6th's — F79: the ladder's beats)
+  for (const [seed, rank] of [[1, 1], [2, rankOf('fifthColour')], [3, rankOf('sixthColour')]]) {
     it(`seed ${seed}, rank ${rank}: plays to the end with every invariant holding`, () => {
       const { shift, log } = playShift(seed, rank, true)
       expect(shift.state.status).not.toBe('playing')

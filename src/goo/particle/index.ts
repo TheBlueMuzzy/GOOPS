@@ -134,7 +134,7 @@ export function createParticleRenderer(canvas: HTMLCanvasElement, opts: GooOptio
   let zaps = new Map<number, ZapGroup>()
   let nextZap = 1
   let Z: ZapLook = zapLook() // zap.json as of this frame
-  // F62 the goop's faces (rank 10+): one per engine group, riding the mean of its eye cells' particles
+  // F62 the goop's faces (from facesOn): one per engine group, riding the mean of its eye cells' particles
   const book = new FaceBook()
   let clumpFaces: Face[] = [] // the live clumps' faces
   let faceXY: number[] = [] // where each one's eyes are now (view cells): x, y pairs

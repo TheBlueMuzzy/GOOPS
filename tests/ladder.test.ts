@@ -7,8 +7,9 @@ import momentsJson from '../content/story/moments.json'
 import en from '../content/text/en.json'
 import { ladder } from '../src/progress/ladder'
 
+// (a small made-up ladder of the test's own — F79's guard: tuning-ok)
 const file = (): LadderFile => ({
-  maxRank: 10,
+  maxRank: 10, // tuning-ok: the made-up ladder
   beats: { start: 0, wild: 4, grow: 4, final: 10 },
   titles: { rookie: 0, pro: 5 },
   story: { a: 0, b: 4, c: 4 },
@@ -38,7 +39,7 @@ describe('the ladder module', () => {
   it('maxRank, group, lastAt (a title per band)', () => {
     const l = createLadder(file())
     expect(l.maxRank()).toBe(10)
-    expect(l.group('titles')).toEqual([{ name: 'rookie', rank: 0 }, { name: 'pro', rank: 5 }])
+    expect(l.group('titles')).toEqual([{ name: 'rookie', rank: 0 }, { name: 'pro', rank: 5 }]) // tuning-ok: the made-up ladder
     expect([0, 4, 5, 10].map((r) => l.lastAt('titles', r))).toEqual(['rookie', 'rookie', 'pro', 'pro'])
   })
   it('stepAt: a step table that names beats', () => {
@@ -66,7 +67,7 @@ describe('the ladder module', () => {
     expect(l.rankOf('wild')).toBe(7)
     let current = file()
     const fromFn = createLadder(() => current)
-    current = { ...file(), maxRank: 30 }
+    current = { ...file(), maxRank: 30 } // tuning-ok: the made-up ladder
     expect(fromFn.maxRank()).toBe(30)
   })
   it('problems: ranks off the ladder, grants on unknown beats', () => {
@@ -76,7 +77,7 @@ describe('the ladder module', () => {
     ;(bad.titles as Record<string, number>).pro = -1
     bad.grants = { scraps: { ghost: 1 } }
     const p = createLadder(bad).problems()
-    expect(p.some((s) => s.includes('wild is at rank 11'))).toBe(true)
+    expect(p.some((s) => s.includes('wild is at rank 11'))).toBe(true) // tuning-ok: the made-up ladder
     expect(p.some((s) => s.includes('titles.pro'))).toBe(true)
     expect(p.some((s) => s.includes('ghost'))).toBe(true)
   })

@@ -11,6 +11,7 @@ import type { ShiftEvent, ShiftState } from '../engine'
 import type { RejectReason } from '../engine/types'
 import { readSnapshot, type ShiftSnapshot } from '../engine/snapshot'
 import { session } from '../game/session'
+import { rankOf } from '../progress/ladder'
 import { versionLabel } from '../version'
 import en from '../../content/text/en.json'
 
@@ -74,9 +75,10 @@ export const goopsAdapter: DevKitGame = {
   },
   pauseModes: ['full', 'half'], // (the clocks do the work — see the top)
   // check:framework's play checks (Dev Kit 0.19+): from the console to a running shift, as e2e/start.mjs does it —
-  // rank 6 (all three machines), lessons already seen on this device, tap the periscope, wait for the console to slide away
+  // the ladder's controlsBreak (all three machines), lessons already seen on this device, tap the periscope, wait for
+  // the console to slide away
   conformance: {
-    query: '?rank=6&seed=7',
+    query: `?rank=${rankOf('controlsBreak')}&seed=7`,
     async startPlay() {
       const w = window as unknown as { __goopsSeen?: (ids: string[]) => void }
       const until = async (ok: () => boolean, what: string, ms = 25000) => {

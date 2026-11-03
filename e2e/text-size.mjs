@@ -1,7 +1,7 @@
 // F76 — TEXT SIZE ON THE CONSOLE (B005): Settings → Accessibility → Text size 100 / 125 / 150 / 200% at every portrait
 // size, in Playwright's own Chromium (never the user's Chrome), with the real dev server (a Dev Kit build: RANK SELECT shows).
 // Portrait only (Goops never plays sideways): 390x844, 360x780, 1100x800, 1440x900, 1920x1080.
-// Two saves: rank 0 (the bug's "Operator rank 0 · 3,500 DUE", Upgrades greyed) and rank 12 (wider numbers, Upgrades open).
+// Two saves: rank 0 (the bug's "Operator rank 0 · 3,500 DUE", Upgrades greyed) and the ladder's noVoices (wider numbers, Upgrades open).
 // Each console, checked:
 //   the words drawn on the art (version, credit, RANK SELECT) stay inside their art spots (art.json console.words.*.at),
 //     and the three on the bottom row never touch each other
@@ -19,6 +19,7 @@ import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { checkVersion, skipFirstDay } from './start.mjs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = Number(process.env.E2E_PORT) || 5376, OUT = 'e2e-shots/text-size'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
@@ -28,7 +29,9 @@ const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
 const MONITOR_MIN_REM = JSON.parse(readFileSync('content/ui/art.json', 'utf8')).console.crt.wordsMinRem ?? 1 // F76: the monitor's words at least this
 const HINT = JSON.parse(readFileSync('content/text/en.json', 'utf8')).console.hint // the monitor's words with no lesson up
-const SAVES = [{ rank: 0, totalXp: 0 }, { rank: 12, totalXp: xpFor(12) + 1000 }]
+// (the later save: a two-digit rank past the shop, the ladder's noVoices — F79: asked, not restated)
+const LATER = rankOf('noVoices')
+const SAVES = [{ rank: 0, totalXp: 0 }, { rank: LATER, totalXp: xpFor(LATER) + 1000 }]
 const HAD = ['lesson:first-day', 'lesson:unlock-window', 'lesson:unlock-swap', 'lesson:unlock-upgrades']
 mkdirSync(OUT, { recursive: true })
 
@@ -138,7 +141,7 @@ try {
         await context.close()
       }
     }
-    // a lesson's line on the monitor (the Upgrades unlock, rank 12 not seen yet — it outlines the button): a long line;
+    // a lesson's line on the monitor (the Upgrades unlock, at the later save, not seen yet — it outlines the button): a long line;
     // the reading text grows with Text size, the screen slides down to hold it; its words (and a Got it, if one shows)
     // stay on the screen
     for (const textSize of TEXT_SIZES) {

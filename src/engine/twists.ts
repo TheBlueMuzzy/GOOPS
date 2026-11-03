@@ -1,14 +1,14 @@
-// F39 RANK TWISTS (GDD rank twists, v1's numbers): the goop holds hands (20), wakes up (30), then helps you (40).
-//   - 20: two-colour pieces — a share of pieces split into two even halves, each half joined up (4-connected), in two
+// F39 RANK TWISTS (GDD rank twists, v1's numbers): the goop holds hands (twoColourPieces), wakes up (cracksGrow), then helps you (wildGoop).
+//   - twoColourPieces: two-colour pieces — a share of pieces split into two even halves, each half joined up (4-connected), in two
 //     different colours. They lock as two clumps. (v1 utils/pieceUtils.ts findBestSplit)
-//   - 30: growing cracks — each uncovered crack cell rolls every few seconds to grow into a cell next to it. A grown
+//   - cracksGrow: growing cracks — each uncovered crack cell rolls every few seconds to grow into a cell next to it. A grown
 //     crack is ONE crack (one colour) over many cells (Muzzy 2026-10-25): plugged only while EVERY cell is covered by
 //     its colour (or wild), and sealing it counts its cell count toward the quota. Goop covering a cell stops that
 //     cell growing. (v1 PRD "Expanding Cracks")
-//   - 40: wild goop — a share of pieces are WILD (types.ts): plugs any crack colour; a normal piece locking next to a
+//   - wildGoop: wild goop — a share of pieces are WILD (types.ts): plugs any crack colour; a normal piece locking next to a
 //     wild clump turns the whole clump its colour (shift.ts lockPiece).
 // Numbers: content/tuning/twists.json, read at the moment each is used (live). Randomness only through the shift's
-// seeded rng, and only from each twist's rank — so shifts below rank 20 roll exactly the numbers they did before.
+// seeded rng, and only from each twist's rank — so shifts before twoColourPieces roll exactly the numbers they did before.
 import { type Color, type Crack, type ShiftEvent, type ShiftState, WILD } from './types'
 import type { Rng } from './rng'
 import { wrapX } from './tank'
@@ -41,7 +41,7 @@ export const wildOn = (t: TwistsConfig | undefined, rank: number) => !!t && rank
 export const splitChance = (t: TwistsConfig) => share(t.split.chance)
 export const wildChance = (t: TwistsConfig) => share(t.wild.chance)
 
-// ---------------------------------------------------------------- two-colour pieces (rank 20)
+// ---------------------------------------------------------------- two-colour pieces (twoColourPieces)
 
 type XY = [number, number] | number[]
 
@@ -81,7 +81,7 @@ export function bestSplit(cells: XY[]): boolean[] | null {
   return best
 }
 
-// ---------------------------------------------------------------- cracks over many cells (rank 30)
+// ---------------------------------------------------------------- cracks over many cells (cracksGrow)
 
 /** Every cell of a crack, root first. */
 export function crackCells(c: Crack): [number, number][] {

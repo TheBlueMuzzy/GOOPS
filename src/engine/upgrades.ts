@@ -24,7 +24,7 @@ export interface Modifiers {
   // Read by the GAME, not the engine (F34, Focus Mode): × breakdowns.json consoleTimeScale, how fast the shift runs
   // while you're at the console mid-shift — 0.8 = 20% slower there (the App passes it to the shift's speed)
   consoleTimeScaleMult: number
-  // F43 (ranks 10–38):
+  // F43 (the later upgrades):
   abilityChargePerSealMult: number // × every active's chargePerSeal — 1.6 = each sealed crack charges actives 60% more (Sealing Bonus)
   junkSameColorChance: number // CHANCE 0..1: each starting junk cell after the first copies the first one's colour (Junk Uniformer)
   crackColorBias: number // CHANCE 0..1: a new next piece takes the lowest open crack's colour (Crack Matcher)

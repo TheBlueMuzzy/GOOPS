@@ -16,6 +16,7 @@ import { chromium } from 'playwright-core'
 import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5282, OUT = 'e2e-shots/devkit-live'
 mkdirSync(OUT, { recursive: true })
@@ -39,7 +40,7 @@ const openKit = async (page) => { if (!(await page.locator('aside.devkit').isVis
 const closeKit = async (page) => { if (await page.locator('aside.devkit').isVisible()) { await page.keyboard.press('Escape'); await page.waitForTimeout(300) } }
 const pauseBtn = (page, which) => page.locator(`aside.devkit .devkit-pause-btn[data-pause="${which}"]`)
 
-async function open(w, h, url = '?seed=7&rank=6') {
+async function open(w, h, url = `?seed=7&rank=${rankOf('controlsBreak')}`) { // (all three machines: the ladder's beat)
   const page = await browser.newPage({ viewport: { width: w, height: h } })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))

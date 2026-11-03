@@ -2,7 +2,7 @@
 // row (score · CRACKS x / y · Console button), the tank, the bottom panel (the next-piece window at its left from rank 1,
 // the machine bars in a row over the integrity bar to its right; a column beside the tank on a phone on its side, headed
 // by the crack count), the pressure readout on the pressure line, messages just above the goop — at every size, at
-// ranks 0 / 1 / 3 / 4 / 6 (no machine · the window · + one machine · two · three), with a 5-digit score. Checked in
+// the ladder's firstDay / nextPiece / swap / laserBreaks / controlsBreak (no machine · the window · + one machine · two · three), with a 5-digit score. Checked in
 // each state (playing, quota met, a real rupture):
 //   - every top-row part sits over the HUD column (--kit-hud-w) and inside the screen, in ONE row; nothing overlaps;
 //     no text spills its box; nothing covers the tank; the crack count clear of the score and the Console button
@@ -22,6 +22,7 @@ import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
+import { rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5254, OUT = 'e2e-shots/hud'
 const [rankFilter = '', sizeFilter = ''] = process.argv.slice(2)
@@ -29,8 +30,10 @@ const [rankFilter = '', sizeFilter = ''] = process.argv.slice(2)
 const sizes = [['phone', 390, 844], ['small', 360, 780], ['laptop', 1100, 800],
   ['desktop', 1440, 900], ['hd', 1920, 1080], ['wide', 2000, 1121], ['tall', 1400, 1400], ['narrow', 654, 900], ['monitor', 2560, 1440]]
   .filter(([name]) => !sizeFilter || sizeFilter.split(',').includes(name))
-// rank → how many machine bars the panel shows (visor unlocks at 2, laser at 4, controls at 6; the window at 1)
-const RANKS = { 0: 0, 1: 0, 3: 1, 4: 2, 6: 3 }
+// rank → how many machine bars the panel shows (F79: the ranks are the ladder's beats — the visor from visorBreaks, the
+// laser from laserBreaks, the controls from controlsBreak; the window from nextPiece)
+const WINDOW_FROM = rankOf('nextPiece'), ALL_BARS = String(rankOf('controlsBreak'))
+const RANKS = { [rankOf('firstDay')]: 0, [WINDOW_FROM]: 0, [rankOf('swap')]: 1, [rankOf('laserBreaks')]: 2, [ALL_BARS]: 3 }
 const ranks = Object.keys(RANKS).filter((r) => !rankFilter || rankFilter.split(',').includes(r))
 
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
@@ -104,7 +107,7 @@ function hudProblems(m, bars, rank) {
   // to bottom). (A phone on its side: the score and the Console button beside the tank, the crack count heading the
   // panel column.)
   const sideways = m.dock?.side === 'right'
-  const window = Number(rank) >= 1
+  const window = Number(rank) >= WINDOW_FROM
   // (Muzzy's hud.json topRowPx 19, 2026-10-18: the top row may hang over the tank's top edge, so a top-row part is one
   // that STARTS at or above the tank's top)
   const top = m.hud.filter((r) => sideways ? r.top < m.tank.top + 60 : r.top < m.tank.top + 8).sort((a, b) => a.left - b.left)
@@ -224,7 +227,7 @@ try {
         for (const r of high.hud) if (high.readout && hit(r, high.readout)) p.push(`at 97% the words are under a HUD part ${fmt(high.readout)} × ${fmt(r)}`)
         if (high.readout && !inside(high.readout, high.tank)) p.push(`at 97% the words are outside the tank ${fmt(high.readout)}`)
         if (p.length) fail(name, where, p.join('; '))
-        if (rank === '6' && ['phone', 'landscape', 'desktop'].includes(name)) await page.screenshot({ path: `${dir}/${name}-1r-${direction[0] === 'L' ? 'line' : 'text'}-${position}.png` })
+        if (rank === ALL_BARS && ['phone', 'landscape', 'desktop'].includes(name)) await page.screenshot({ path: `${dir}/${name}-1r-${direction[0] === 'L' ? 'line' : 'text'}-${position}.png` })
       }
       await page.evaluate(() => window.__goops.setReadout({ readoutDirection: 'Line, then text', readoutPosition: 65 }))
 
@@ -256,7 +259,7 @@ try {
       await page.screenshot({ path: `${dir}/${name}-1e-two-messages.png` })
 
       // fast drop held: the drop guide's wave runs faster (a shot to look at)
-      if (rank === '6' && ['phone', 'desktop'].includes(name)) {
+      if (rank === ALL_BARS && ['phone', 'desktop'].includes(name)) {
         await page.evaluate(() => { const { engine } = window.__goops; engine.state.score = 99999; window.__goops.fastDrop(true) })
         await page.waitForTimeout(120)
         await page.screenshot({ path: `${dir}/${name}-1f-fast-drop.png` })

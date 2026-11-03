@@ -20,12 +20,17 @@
 //     glitch45-, slip45-, hatch46-<size>)
 //   fines (F40): the first report at 30 fines "Association with a retired employee" first, once; paydays from 30 say
 //     the after-capture words
-// Screenshots: e2e-shots/story/
-// Run: node e2e/story.mjs  (own dev server on port 5349; E2E_PORT=… to use another)
+// F79: the numbers above are the moments' ids (moments.json — the ranks they were written for). The rank each one
+// plays at is the ladder's (content/tuning/ladder.json story, asked as rankOf('story.36')), and every other rank here
+// is a ladder beat (whisperCold, noVoices, pendingRetirement, veteranCaught, hatch, titles.associate…).
+// Screenshots: e2e-shots/story/ (named by moment id)
+// Run: node e2e/story.mjs  (own dev server on port 5349; E2E_PORT=… to use another; STORY_FROM=<moment id> to skip
+// the earlier moments of the long run)
 import { chromium } from 'playwright-core'
 import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
+import { rankOf, LADDER } from './ladder-ranks.mjs'
 
 const PORT = Number(process.env.E2E_PORT) || 5349, OUT = 'e2e-shots/story'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
@@ -33,7 +38,10 @@ const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const story = JSON.parse(readFileSync('content/story/moments.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const payslip = JSON.parse(readFileSync('content/tuning/payslip.json', 'utf8'))
-const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
+// the rank a story moment plays at (the ladder's story group), and every moment id in the order they play: by rank,
+// the ladder's order breaking ties (src/game/lessons/storyMoments.ts momentsByRank)
+const at = (id) => rankOf(`story.${id}`)
+const ORDER = Object.keys(LADDER.story).sort((a, b) => at(a) - at(b))
 const L = en.story.lines
 const W = en.story.whispers
 const xpToNext = (rank) => prog.xpBase + prog.xpPerRank * rank
@@ -66,11 +74,12 @@ async function device(totalXp, { width = 390, height = 844, name = null } = {}) 
   await page.waitForTimeout(800)
   return { page, errors, close: () => context.close() }
 }
-// …at the start of this rank, with every older moment seen (as a player who had them), so only this rank's is due
+// …at the start of the rank this moment plays at, with every other moment due there seen (as a player who had the
+// older ones), so only this one is due
 // (F45 quick: no settling wait — 45's first line moves on by itself about a second in)
-async function deviceAt(rank, size = {}, { quick = false } = {}) {
-  const d = await device(xpFor(rank) + 10, size)
-  await d.page.evaluate((r) => window.__goopsSeen?.(Array.from({ length: r }, (_, i) => `story:${i}`)), rank)
+async function deviceAt(id, size = {}, { quick = false } = {}) {
+  const d = await device(xpFor(at(id)) + 10, size)
+  await d.page.evaluate((ids) => window.__goopsSeen?.(ids), ORDER.filter((m) => m !== id && at(m) <= at(id)).map((m) => `story:${m}`))
   await d.page.reload(); await d.page.locator('.kit-art-stage').waitFor(); await d.page.waitForTimeout(quick ? 0 : 800)
   return d
 }
@@ -87,9 +96,9 @@ const rattles = (page, line) => page.evaluate(([want, secs, times]) => {
   return !!s && h.hasAttribute('data-rattle') && s.animationName === 'story-rattle' && parseFloat(s.animationDuration) === secs && Number(s.animationIterationCount) === times
 }, [!!line.rattle, story.looks.rattleSeconds, story.looks.rattleTimes])
 // play the moment that's up, line by line, checking each line's voice and look; returns what was seen per line
-async function playMoment(page, rank, shot, name = null) {
+async function playMoment(page, id, shot, name = null) {
   const seen = []
-  for (const [i, line] of story.moments[String(rank)].lines.entries()) {
+  for (const [i, line] of story.moments[String(id)].lines.entries()) {
     const words = L[line.words].replace('{name}', name ?? en.story.sign.fallback) // (F63: 36 says your name)
     if (line.sign) { // F66: PLEASE SIGN HERE — the name box with Sign / Skip instead of Got it (signing: e2e/your-name.mjs)
       const skip = page.locator('[data-tag="crt"]').getByRole('button', { name: en.story.sign.skip })
@@ -119,9 +128,9 @@ async function playMoment(page, rank, shot, name = null) {
       if (line.monitor === 'alarm') { // the alarm's words: looks.alarmWords (Muzzy 2026-10-24: white)
         const ink = await page.locator('[data-tag="crt"] .crt-words').first().evaluate((el) => getComputedStyle(el).color)
         const hex = story.looks.alarmWords.replace('#', ''), want = `rgb(${[0, 2, 4].map((k) => parseInt(hex.slice(k, k + 2), 16)).join(', ')})`
-        check(`rank ${rank}: the alarm's words are ${story.looks.alarmWords}`, ink === want, ink)
+        check(`moment ${id}: the alarm's words are ${story.looks.alarmWords}`, ink === want, ink)
       }
-      if (shot && i === story.moments[String(rank)].lines.length - 1) await page.screenshot({ path: `${OUT}/${shot}.png` })
+      if (shot && i === story.moments[String(id)].lines.length - 1) await page.screenshot({ path: `${OUT}/${shot}.png` })
       await page.waitForTimeout(200)
       await page.locator('[data-tag="crt"]').getByRole('button', { name: en.lessons.gotIt }).click()
     } else {
@@ -168,43 +177,46 @@ async function endShift(page) {
 }
 // the end report's row labels, in order
 const reportLabels = async (page) => (await page.locator('.kit-end .kit-stat-row').allInnerTexts()).map((t) => t.split('\n').map((s) => s.trim()).filter(Boolean)[0])
-const allSeen = (page, more = []) => page.evaluate((m) => window.__goopsSeen?.(Array.from({ length: 51 }, (_, i) => `story:${i}`).concat(m)), more)
+const allSeen = (page, more = []) => page.evaluate((m) => window.__goopsSeen?.(m), ORDER.map((id) => `story:${id}`).concat(more))
 
 try {
-  // ---------------- every rank 0–39: its moment, in its voice, with its look, once ----------------
-  // (STORY_FROM=31 starts at the goop's moments; F63: from 31 the device has signed "Muzzy", so 36 says it back)
-  for (let rank = Number(process.env.STORY_FROM ?? 0); rank <= 49; rank++) {
-    const name = rank >= 31 ? NAME : null
-    const { page, errors, close } = await deviceAt(rank, { name }, { quick: rank === 45 })
-    check(`rank ${rank}: the periscope waits while the moment plays`, await periscopeOff(page))
-    const seen = await playMoment(page, rank, `rank${rank}-390x844`, name)
-    check(`rank ${rank}: every line in its voice, with its words and monitor look`, seen.length && seen.every(([, ok, look]) => ok && look), JSON.stringify(seen))
+  // ---------------- every moment before the final shift's own: its moment, in its voice, with its look, once ----------------
+  // (STORY_FROM=31 starts at the goop's moments (moment ids); F63: from whiteGoop the device has signed "Muzzy", so 36
+  // says it back)
+  const FROM = Number(process.env.STORY_FROM ?? 0)
+  for (const id of ORDER.filter((m) => Number(m) >= FROM && at(m) < rankOf('finalShift'))) {
+    const rank = at(id), tag = `moment ${id} (rank ${rank})`
+    const name = rank >= rankOf('whiteGoop') ? NAME : null
+    const { page, errors, close } = await deviceAt(id, { name }, { quick: id === '45' })
+    check(`${tag}: the periscope waits while the moment plays`, await periscopeOff(page))
+    const seen = await playMoment(page, id, `rank${id}-390x844`, name)
+    check(`${tag}: every line in its voice, with its words and monitor look`, seen.length && seen.every(([, ok, look]) => ok && look), JSON.stringify(seen))
     await page.waitForTimeout(600)
     const after = (await monitorSays(page)).trim()
-    // (rank 5+ on a fresh device: upgrading's unlock lesson hasn't been seen yet, so it follows the moment)
-    if (rank >= 5) check(`rank ${rank}: the upgrades lesson comes right after the moment`, after === en.lessons['unlock-upgrades'].upgrades, after)
-    else check(`rank ${rank}: then the console's own words`, after === en.console.hint, after)
-    check(`rank ${rank}: the monitor look is gone after the moment`, (await monitorLook(page)) === null)
-    // F45: the hatch under the console is there from the ladder beat hatch (46), still once the moment is over
+    // (from upgradesShop on a fresh device: upgrading's unlock lesson hasn't been seen yet, so it follows the moment)
+    if (rank >= rankOf('upgradesShop')) check(`${tag}: the upgrades lesson comes right after the moment`, after === en.lessons['unlock-upgrades'].upgrades, after)
+    else check(`${tag}: then the console's own words`, after === en.console.hint, after)
+    check(`${tag}: the monitor look is gone after the moment`, (await monitorLook(page)) === null)
+    // F45: the hatch under the console is there from the ladder beat hatch, still once the moment is over
     const hatch = await page.locator('[data-tag="hatch"]').count(), still = await rattles(page, {})
-    check(`rank ${rank}: the hatch ${rank >= LADDER.beats.hatch ? 'is on the console, still' : 'is not there yet'}`, (hatch === 1) === (rank >= LADDER.beats.hatch) && still)
+    check(`${tag}: the hatch ${rank >= rankOf('hatch') ? 'is on the console, still' : 'is not there yet'}`, (hatch === 1) === (rank >= rankOf('hatch')) && still)
     await page.reload(); await page.locator('.kit-art-stage').waitFor(); await page.waitForTimeout(1200)
     const again = (await monitorSays(page)).trim()
-    check(`rank ${rank}: once only — after a reload no moment`, !Object.values(L).includes(again) && !(await page.locator('.kit-talk').count()), again)
-    check(`rank ${rank}: no page errors`, errors.length === 0, errors.join(' | '))
+    check(`${tag}: once only — after a reload no moment`, !Object.values(L).includes(again) && !(await page.locator('.kit-talk').count()), again)
+    check(`${tag}: no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }
 
   // ---------------- F63: 36 never signed → "Operator #4471"; the goop's moment (36) at every portrait size ----------------
   {
-    const { page, errors, close } = await deviceAt(36)
-    const seen = await playMoment(page, 36, null, null)
-    check('rank 36, never signed: the goop says "Operator #4471" back', seen.length === 3 && seen.every(([, ok]) => ok), JSON.stringify(seen))
-    check('rank 36 unsigned: no page errors', errors.length === 0, errors.join(' | '))
+    const { page, errors, close } = await deviceAt('36')
+    const seen = await playMoment(page, '36', null, null)
+    check(`moment 36 (rank ${at('36')}), never signed: the goop says "Operator #4471" back`, seen.length === 3 && seen.every(([, ok]) => ok), JSON.stringify(seen))
+    check(`moment 36 (rank ${at('36')}) unsigned: no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }
   for (const [w, h] of SIZES) {
-    const { page, errors, close } = await deviceAt(36, { width: w, height: h, name: NAME })
+    const { page, errors, close } = await deviceAt('36', { width: w, height: h, name: NAME })
     const b = page.locator('.kit-talk').first()
     await b.waitFor({ timeout: 4000 })
     await page.waitForTimeout(typeMs(L.r36a) + 1500)
@@ -213,7 +225,7 @@ try {
     const crt = await page.locator('[data-tag="crt"]').boundingBox(), box = await b.boundingBox()
     check(`${w}x${h}: the goop's bubble (36) is on screen, by the monitor`, inside && box.x < crt.x + crt.width && box.x + box.width > crt.x && box.y > crt.y, JSON.stringify({ crt, box }))
     await page.screenshot({ path: `${OUT}/goop36-${w}x${h}.png` })
-    check(`${w}x${h}: rank 36 no page errors`, errors.length === 0, errors.join(' | '))
+    check(`${w}x${h}: moment 36 no page errors`, errors.length === 0, errors.join(' | '))
     await close()
   }
 
@@ -221,85 +233,89 @@ try {
   const onScreen = (loc) => loc.evaluate((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5 })
   for (const [w, h] of SIZES) {
     { // 41: the goop's bubble, over the monitor, on screen
-      const { page, errors, close } = await deviceAt(41, { width: w, height: h, name: NAME })
+      const { page, errors, close } = await deviceAt('41', { width: w, height: h, name: NAME })
       const b = page.locator('.kit-talk').first()
       await b.waitFor({ timeout: 4000 })
       await page.waitForTimeout(typeMs(L.r41a) + 1500)
       check(`${w}x${h}: the goop through the speaker (41) is on screen`, await onScreen(b))
       await page.screenshot({ path: `${OUT}/goop41-${w}x${h}.png` })
-      check(`${w}x${h}: rank 41 no page errors`, errors.length === 0, errors.join(' | '))
+      check(`${w}x${h}: moment 41 no page errors`, errors.length === 0, errors.join(' | '))
       await close()
     }
     { // 45: the not-a-face shows for a beat (words hidden), then the slip corrects itself
-      const { page, errors, close } = await deviceAt(45, { width: w, height: h }, { quick: true })
+      const { page, errors, close } = await deviceAt('45', { width: w, height: h }, { quick: true })
       const showed = await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-tag="crt"] .crt-glitch') ?? document.body).opacity === '1'
         && document.querySelector('[data-tag="crt"] .crt-glitch'), null, { polling: 'raf', timeout: 4000 }).then(() => true, () => false)
       const face = showed && await onScreen(page.locator('[data-tag="crt"] .crt-glitch'))
       if (showed) await page.screenshot({ path: `${OUT}/glitch45-${w}x${h}.png` })
-      check(`${w}x${h}: rank 45 the monitor glitches — something that isn't a face, on screen`, showed && face)
+      check(`${w}x${h}: moment 45 the monitor glitches — something that isn't a face, on screen`, showed && face)
       const corrected = await page.waitForFunction((t) => document.querySelector('[data-tag="crt"] .crt-read')?.textContent.trim() === t, L.r45b, { timeout: 6000 }).then(() => true, () => false)
       await page.waitForTimeout(typeMs(L.r45b) + 500)
       await page.screenshot({ path: `${OUT}/slip45-${w}x${h}.png` })
       check(`${w}x${h}: …then "*OPERATOR." corrects it`, corrected)
-      check(`${w}x${h}: rank 45 no page errors`, errors.length === 0, errors.join(' | '))
+      check(`${w}x${h}: moment 45 no page errors`, errors.length === 0, errors.join(' | '))
       await close()
     }
     { // 46: the hatch on screen, rattling, outlined
-      const { page, errors, close } = await deviceAt(46, { width: w, height: h })
+      const { page, errors, close } = await deviceAt('46', { width: w, height: h })
       const hatch = page.locator('[data-tag="hatch"]')
       await page.locator('.kit-talk').first().waitFor({ timeout: 4000 })
       const rattling = await rattles(page, { rattle: true })
       await page.waitForTimeout(typeMs(L.r46) + 1500)
-      check(`${w}x${h}: rank 46 the hatch rattles, on screen`, rattling && await onScreen(hatch))
+      check(`${w}x${h}: moment 46 the hatch rattles, on screen`, rattling && await onScreen(hatch))
       await page.screenshot({ path: `${OUT}/hatch46-${w}x${h}.png` })
-      check(`${w}x${h}: rank 46 no page errors`, errors.length === 0, errors.join(' | '))
+      check(`${w}x${h}: moment 46 no page errors`, errors.length === 0, errors.join(' | '))
       await close()
     }
   }
 
-  // ---------------- F63: rank 39's report — "Pending retirements: Operator #4471 — <your name>" ----------------
+  // ---------------- F63: pendingRetirement's report — "Pending retirements: Operator #4471 — <your name>" ----------------
+  const PENDING = rankOf('pendingRetirement')
   for (const [name, want] of [[NAME, en.payslip.pendingRetirements.value.replace('{name}', NAME)], [null, en.payslip.pendingRetirements.noName]]) {
-    const { page, errors, close } = await device(xpFor(LADDER.beats.pendingRetirement) - 50, { name })
+    const { page, errors, close } = await device(xpFor(PENDING) - 50, { name })
     await allSeen(page, ['lesson:unlock-upgrades'])
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
     await endShift(page)
     const rows = await page.locator('.kit-end .kit-stat-row').allInnerTexts()
     const row = rows.find((t) => t.includes(en.payslip.pendingRetirements.label)) ?? ''
-    check(`rank ${LADDER.beats.pendingRetirement} report${name ? '' : ' (never signed)'}: "${en.payslip.pendingRetirements.label}: ${want}" is the last row`,
+    check(`rank ${PENDING} report${name ? '' : ' (never signed)'}: "${en.payslip.pendingRetirements.label}: ${want}" is the last row`,
       row.includes(want) && rows.at(-1) === row, rows.join(' | ').replace(/\n/g, ' '))
     await page.screenshot({ path: `${OUT}/pending-retirements${name ? '' : '-unsigned'}-390x844.png` })
     check('pending retirements: no page errors', errors.length === 0, errors.join(' | '))
     await close()
   }
   {
-    const { page, close } = await device(xpFor(LADDER.beats.pendingRetirement - 2) + 10, { name: NAME })
+    const { page, close } = await device(xpFor(PENDING - 2) + 10, { name: NAME })
     await allSeen(page, ['lesson:unlock-upgrades'])
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
     await endShift(page)
     const rows = await page.locator('.kit-end .kit-stat-row').allInnerTexts()
-    check(`rank ${LADDER.beats.pendingRetirement - 2} report: no pending retirements yet`, !rows.some((t) => t.includes(en.payslip.pendingRetirements.label)))
+    check(`rank ${PENDING - 2} report: no pending retirements yet`, !rows.some((t) => t.includes(en.payslip.pendingRetirements.label)))
     await close()
   }
 
   // ---------------- two unseen at once: the newest catchUp, oldest first ----------------
   {
-    const { page, close } = await device(xpFor(4) + 10)
-    await page.evaluate(() => window.__goopsSeen?.(['story:0', 'story:1', 'story:2']))
+    // (at moment 4's rank, every moment due there seen but 3 and 4)
+    const { page, close } = await device(xpFor(at('4')) + 10)
+    await page.evaluate((ids) => window.__goopsSeen?.(ids), ORDER.filter((m) => m !== '3' && m !== '4' && at(m) <= at('4')).map((m) => `story:${m}`))
     await page.reload(); await page.locator('.kit-art-stage').waitFor(); await page.waitForTimeout(800)
     const first = (await monitorSays(page)).trim()
-    check('two due (3 and 4): rank 3 first', first === L.r3a, first)
-    await playMoment(page, 3)
+    check('two due (3 and 4): moment 3 first', first === L.r3a, first)
+    await playMoment(page, '3')
     const second = (await monitorSays(page)).trim()
-    check('… then rank 4', second === L.r4a, second)
+    check('… then moment 4', second === L.r4a, second)
     await close()
   }
 
-  // ---------------- Settings → Replay lessons plays them again (rank 30: 29, then the capture) ----------------
+  // ---------------- Settings → Replay lessons plays them again (at the capture's rank: 29, then the capture) ----------------
+  // (assumes 29 and 30 are the newest catchUp moments at moment 30's rank — a pivot that puts another moment on or
+  // between them changes which ones replay, and this check with it)
   {
-    const { page, errors, close } = await deviceAt(30)
-    await playMoment(page, 30)
+    const { page, errors, close } = await deviceAt('30')
+    await playMoment(page, '30')
     await page.evaluate(() => window.__goopsSeen?.(['lesson:unlock-upgrades']))
     await page.reload(); await page.locator('.kit-art-stage').waitFor(); await page.waitForTimeout(1000)
     await page.getByRole('button', { name: 'Settings' }).click()
@@ -311,23 +327,23 @@ try {
     await page.locator('.kit-ask').getByRole('button', { name: 'Replay lessons' }).click({ timeout: 3000 })
     for (let i = 0; i < 6 && await page.evaluate(() => document.querySelector('.kit-layer') !== null); i++) { await page.keyboard.press('Escape'); await sleep(300) }
     const first = await page.waitForFunction((w) => [...document.querySelectorAll('.kit-talk')].some((t) => t.textContent.includes(w)), L.r29.slice(0, 12), { timeout: 6000 }).then(() => true, () => false)
-    check('Replay lessons at rank 30: rank 29\'s moment plays again first', first)
-    const seen29 = await playMoment(page, 29)
-    const seen30 = await playMoment(page, 30, 'replay-rank30-390x844')
+    check(`Replay lessons at rank ${at('30')}: moment 29 plays again first`, first)
+    const seen29 = await playMoment(page, '29')
+    const seen30 = await playMoment(page, '30', 'replay-rank30-390x844')
     check('… then the capture again (cut off, then the alarm)', [...seen29, ...seen30].every(([, ok, look]) => ok && look), JSON.stringify([...seen29, ...seen30]))
     check('Replay: no page errors', errors.length === 0, errors.join(' | '))
     await close()
   }
 
-  // ---------------- the capture (30) and a Veteran line (20) at every portrait size ----------------
+  // ---------------- the capture (moment 30) and a Veteran line (moment 20) at every portrait size ----------------
   for (const [w, h] of SIZES) {
-    const { page, errors, close } = await deviceAt(30, { width: w, height: h })
-    await playMoment(page, 30, `capture-${w}x${h}`)
-    const v = await deviceAt(20, { width: w, height: h })
+    const { page, errors, close } = await deviceAt('30', { width: w, height: h })
+    await playMoment(page, '30', `capture-${w}x${h}`)
+    const v = await deviceAt('20', { width: w, height: h })
     await v.page.waitForTimeout(typeMs(L.r20) + 2000)
     await v.page.screenshot({ path: `${OUT}/rank20-${w}x${h}.png` })
     const inside = await v.page.locator('.kit-talk').first().evaluate((el) => { const r = el.getBoundingClientRect(); return r.left >= 0 && r.top >= 0 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5 }).catch(() => false)
-    check(`${w}x${h}: the Veteran's bubble is on screen (rank 20)`, inside)
+    check(`${w}x${h}: the Veteran's bubble is on screen (moment 20)`, inside)
     // F35 S9: a light bubble with dark words (content/tuning/talk.json colours, UI kit 0.33 TalkingBubble colours)
     const paint = await v.page.locator('.kit-talk').first().evaluate((el) => {
       const shape = el.querySelector('.kit-talk-shape')
@@ -342,7 +358,7 @@ try {
 
   // ---------------- a payday that reaches a new title says it ----------------
   {
-    const { page, close } = await device(xpFor(5) - 50)
+    const { page, close } = await device(xpFor(rankOf('titles.associate')) - 50)
     await allSeen(page)
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
@@ -351,21 +367,22 @@ try {
     await page.getByRole('heading', { name: en.payslip.paydayTitle }).waitFor({ timeout: 3000 })
     await page.waitForTimeout(500 + 10 * payslip.lineMs)
     const card = await page.locator('.kit-modal').innerText()
-    check('payday to rank 5: "New title: Tank Associate"', card.includes(en.story.titles.associate), card.replace(/\n/g, ' | '))
+    check(`payday to rank ${rankOf('titles.associate')}: "New title: Tank Associate"`, card.includes(en.story.titles.associate), card.replace(/\n/g, ' | '))
     check('payday before the capture: the usual words', card.includes(en.payslip.debt) && !card.includes(en.payslip.afterCaught.debt))
     await page.screenshot({ path: `${OUT}/payday-new-title-390x844.png` })
     await close()
   }
 
-  // ---------------- F40 fines: the first report at 30 fines YOU for knowing him, once; paydays from 30 change words ----------------
+  // ---------------- F40 fines: the first report from veteranCaught fines YOU for knowing him, once; paydays from there change words ----------------
+  const CAUGHT = rankOf('veteranCaught')
   {
-    const { page, errors, close } = await device(xpFor(LADDER.beats.veteranCaught + 1) - 50)
+    const { page, errors, close } = await device(xpFor(CAUGHT + 1) - 50)
     await allSeen(page, ['lesson:unlock-upgrades'])
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
     await endShift(page)
     const labels = await reportLabels(page)
-    check(`rank ${LADDER.beats.veteranCaught} report: "${en.payslip.fines.association}" is the first fine (right after Gross pay)`,
+    check(`rank ${CAUGHT} report: "${en.payslip.fines.association}" is the first fine (right after Gross pay)`,
       labels.indexOf(en.payslip.fines.association) === labels.indexOf(en.payslip.gross) + 1, labels.join(' | '))
     await page.screenshot({ path: `${OUT}/fine-association-390x844.png` })
     await page.getByRole('button', { name: en.end.quit }).click()
@@ -373,7 +390,7 @@ try {
     await page.waitForTimeout(500 + 10 * payslip.lineMs)
     const card = await page.locator('.kit-modal').innerText()
     const message = en.payslip.afterCaught.paydayMessage.split('{due}')[1].trim().slice(0, 30)
-    check(`payday from ${LADDER.beats.veteranCaught}: the after-capture words`, card.includes(message) && card.includes(en.payslip.afterCaught.debt), card.replace(/\n/g, ' | '))
+    check(`payday from ${CAUGHT}: the after-capture words`, card.includes(message) && card.includes(en.payslip.afterCaught.debt), card.replace(/\n/g, ' | '))
     await page.screenshot({ path: `${OUT}/payday-after-capture-390x844.png` })
     await page.getByRole('button', { name: en.payslip.pay }).click()
     await page.getByRole('button', { name: 'Start shift' }).waitFor({ timeout: 6000 })
@@ -386,14 +403,13 @@ try {
     await close()
   }
 
-  // ---------------- in-shift whispers by stage; Management's "no voices" from 12 ----------------
-  const stage = (from) => story.whispers.stages.find((s) => LADDER.beats[s.beat] === from).say.map((k) => W[k])
-  for (const [rank, want, again, denies] of [
-    [3, [W.cold], false, false],
-    [8, stage(8), true, false],
-    [12, stage(8), true, true],
-    [15, stage(15), true, true],
-    [24, stage(24), true, true],
+  // ---------------- in-shift whispers by stage; Management's "no voices" from noVoices ----------------
+  // (the whispers a rank says: the last stage whose beat it has reached)
+  const stageAt = (rank) => story.whispers.stages.filter((s) => rankOf(s.beat) <= rank).at(-1).say.map((k) => W[k])
+  const denies = (rank) => rank >= rankOf('noVoices')
+  for (const [rank, want, again, deny] of [
+    [rankOf('whisperCold'), [W.cold], false, denies(rankOf('whisperCold'))],
+    ...['whispersFeelings', 'noVoices', 'whispersWords', 'whispersNames'].map((beat) => [rankOf(beat), stageAt(rankOf(beat)), true, denies(rankOf(beat))]),
   ]) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
     const page = await context.newPage()
@@ -415,7 +431,7 @@ try {
         const denied = await page.waitForFunction((t) => [...document.querySelectorAll('.kit-toast')].some((el) => el.textContent.includes(t)), L.noVoices, { timeout: wait })
           .then(() => true, () => false)
         if (denied) await page.screenshot({ path: `${OUT}/no-voices-rank${rank}-390x844.png` })
-        check(`rank ${rank}: Management ${denies ? 'says' : 'does not say'} "there are no voices"`, denied === denies)
+        check(`rank ${rank}: Management ${deny ? 'says' : 'does not say'} "there are no voices"`, denied === deny)
       } else check(`rank ${rank}: the next shift ${again ? 'whispers again' : 'stays quiet ("cold" was once)'}`, said.length > 0 === again, JSON.stringify(said))
     }
     check(`rank ${rank} whispers: no page errors`, errors.length === 0, errors.join(' | '))
@@ -427,7 +443,7 @@ try {
     const context = await browser.newContext({ viewport: { width: w, height: h } })
     const page = await context.newPage()
     await skipFirstDay(page)
-    await page.goto(`http://localhost:${PORT}/?seed=7&story&rank=24&whisperAt=1`)
+    await page.goto(`http://localhost:${PORT}/?seed=7&story&rank=${rankOf('whispersNames')}&whisperAt=1`)
     await allSeen(page, ['lesson:unlock-upgrades'])
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
