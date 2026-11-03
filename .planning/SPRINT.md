@@ -12,7 +12,7 @@ Checked: check:fast 721 ✓ on the merge · helper e2e on the new ladder: paysli
 - [x] 🤖 3. Ranks 18–19 quiet: no Veteran lines there; the takeover on 26–29 — content/story/moments.json
 - [x] 🤖 4. The story re-pointed: 51 moments over 31 ranks (a draft mapping in research/ladder-30.md §8; joining lines only where needed) — content/tuning/ladder.json
 - [x] 🤖 5. The tests/e2e that still assume old numbers ask the ladder; GDD §4/§5/§7 → 30 ranks — tests/progress/storyMoments.test.ts
-- [ ] 🙋 6. Muzzy reads the story mapping (research/ladder-30.md §8) and moves any moment he wants — .planning/research/ladder-30.md
+- [x] 🙋 6. (carried: Muzzy reads it whenever he likes — the build uses the draft; ROADMAP Parking lot) Muzzy reads the story mapping (research/ladder-30.md §8) and moves any moment he wants — .planning/research/ladder-30.md
 - [x] 🤖 7. (from check:full) hud-shots counted machine bars by the old unlock order — now from the machines' beats (b5e9507) — e2e/hud-shots.mjs
 
 ## F83 🎮 Growing cracks take a new crack's place
@@ -54,3 +54,4 @@ Checked: unit tests (6 new, one red on the old engine: an uncovered crack grew t
 - Merge (Claude, 2026-11-03): F80 + F83 merged (f4e3da1), check:fast 721 ✓. GDD §5's old headings (31–39, 40–49, 50, the twists 20/30/40, story 10–30) now carry the new ranks with the old in brackets — the F80 helper had added the 30-rank table but left them. twists.json / upgrades.json had no stale 'from rank 30' words after all (checked).
 - Muzzy 2026-11-03 ("your picks for all"): the grant words stay ("Unlogged deposit (your panel)" / "(source: the tank)") · moment 20 stays at 14 (a hint before two-colour pieces at 15) · the takeover's 26–27 stay one moment each (a slow build).
 - check:full at 047cc8e (Claude, 2026-11-03): 36/39 (34.0 min) — hud-shots REAL: it assumed the old unlock ORDER (the next-piece window's rank had 0 machine bars) — on the 30-rank ladder the visor breaks on rank 1 too → fixed b5e9507 (bars counted from the machines' beats). Lesson: the guard test catches restated rank NUMBERS, not assumed ORDER — the trial moves never swapped two beats; F82 — Balance on 30 ranks' trial should swap one pair. lessons (dev server didn't start in 60 s — the machine) + twists (B004, r25) → re-run alone.
+- F80 — The 30-rank ladder + F83 — Growing cracks take a new crack's place ✅ approved by Muzzy 2026-11-03 ("approved").
