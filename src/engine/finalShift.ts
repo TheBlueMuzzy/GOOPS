@@ -14,9 +14,10 @@
 //   - F75 Goop Dump rains into the columns with an open crack here (shift.ts dropDumpCell); Slow Cracks slows only the
 //     spreading here, not how often cracks come (shift.ts growCracks).
 import type { WhiteGoopConfig } from './whiteGoop'
+import { rankOf } from '../progress/ladder'
 
+// (F78: the rank it's played at is the ladder beat finalShift — content/tuning/ladder.json, read live)
 export interface FinalShiftConfig {
-  rank: number
   consoleTimeScale: number // read by the game (App) and the bots, not the engine: the shift's speed at the console here
   colour: string // a name from shift.json colors
   fallSpeedMult: number
@@ -37,7 +38,7 @@ const num = (v: unknown, fallback: number, min = 0) => (typeof v === 'number' &&
 
 /** Is this shift the final shift? (a normal shift at its rank or above; never a lesson's training shift) */
 export function finalShiftIn(cfg: FinalShiftConfig | undefined, rank: number, training: boolean): boolean {
-  return !!cfg && !training && rank >= num(cfg.rank, Infinity)
+  return !!cfg && !training && rank >= rankOf('finalShift')
 }
 
 /** The seals each valve stage needs (broken entries count as 1). */

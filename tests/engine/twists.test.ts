@@ -9,16 +9,17 @@ import { createRng } from '../../src/engine/rng'
 import { bestSplit, crackSize, isConnected } from '../../src/engine/twists'
 import { sealMs } from '../../src/engine/whiteGoop'
 import twistsJson from '../../content/tuning/twists.json'
+import { rankOf } from '../../src/progress/ladder'
 import whiteGoopJson from '../../content/tuning/whiteGoop.json'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, straightLineCracks, tank, tickUntil } from './helpers'
 
 const twists = () => structuredClone(twistsJson) as TwistsConfig
-const GROW = twistsJson.grow.fromRank // growing cracks start here (30)
+const GROW = rankOf('cracksGrow') // growing cracks start here (30; the ladder's beat — F78)
 // no cracks of the shift's own (the tests place theirs), pieces hanging still at the top
 function quietConfig(colours = 4) {
   const config = straightLineCracks(realConfig(), 1e12, 1e12)
   config.fall.msPerRow = 1e9
-  config.colorsByRank = [{ rank: 0, count: colours }]
+  config.colorsByBeat = [{ beat: 'firstDay', count: colours }]
   return config
 }
 // growth every 100 ms, always succeeding (so a test sees it at once)
@@ -69,7 +70,7 @@ describe('two-colour pieces (rank 20)', () => {
 
   it('a two-colour piece keeps a colour per cell through falling, turning, swapping and the next window, and locks as two clumps', () => {
     const config = oneShapeConfig([[0, -1], [0, 0], [0, 1], [0, 2]])
-    config.colorsByRank = [{ rank: 0, count: 4 }]
+    config.colorsByBeat = [{ beat: 'firstDay', count: 4 }]
     const t = twists()
     t.split.chance = 1
     const shift = createShift(config, { seed: 5, rank: 20, twists: t, startGrid: new Uint8Array(30 * 24) })

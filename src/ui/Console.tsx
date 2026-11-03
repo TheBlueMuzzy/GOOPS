@@ -14,6 +14,7 @@ import { ArtLayer, ArtStage, Badge, Button, LevelMeter, PullHandle, Row, Screen,
 import { cleanName, loadOperatorName, nameMaxLength, saveOperatorName } from '../progress/save'
 import type { FewerRepairSteps, MachineId } from '../engine'
 import { meterSteps, rankInfo, type BadgeTitle, type Progress } from '../progress/progression'
+import { rankOf } from '../progress/ladder'
 import { ending as endingSteps, type EndingStepId } from '../game/ending'
 import endingTuning from '../../content/tuning/ending.json'
 import galaxy from '../../content/tuning/galaxy-look.json'
@@ -181,7 +182,7 @@ function Crt({ hint, lesson, drop, look, badge }: { hint: string; lesson: CrtLin
   )
 }
 
-// F45 THE HATCH under the panels (ranks 46, 47: the release valve is named): from art.json hatch.fromRank it's on the
+// F45 THE HATCH under the panels (ranks 46, 47: the release valve is named): from the ladder beat hatch (ladder.json) it's on the
 // console's front; while a story line says rattle it rattles (lessons.css, numbers moments.json looks.rattle*) — the
 // key restarts it for each line. Looks clock: the Dev Kit's full pause holds it.
 // F64 (the final shift): while a valve stage waits it's OPEN (art.json console.valve.openFile) and a button that shuts
@@ -329,7 +330,7 @@ export function Console({ progress, shownFrom, phase, onPull, onSlideEnd, onSett
         <ControlsPanel key={key('controls')} live={live('controls')} onRepair={repair('controls')} fewerSteps={fewer('controls')} showcase={showcase('controls')} outlined={outlined} />
         <VisorPanel key={key('visor')} live={live('visor')} onRepair={repair('visor')} fewerSteps={fewer('visor')} showcase={showcase('visor')} outlined={outlined} />
         {valveUp && <ValvePanel key={valve.stage} stage={valve.stage} stages={valve.stages} live={!leaving} onOpen={valve.onOpen} />}
-        {(now.rank >= a.hatch.fromRank || valve) && <Hatch rattle={story?.line.rattle ? `${story.rank}:${story.line.words}` : null}
+        {(now.rank >= rankOf('hatch') || valve) && <Hatch rattle={story?.line.rattle ? `${story.rank}:${story.line.words}` : null}
           valve={valve && { up: valveUp, onToggle: () => setShutAt(valveUp ? valve.stage : null) }} />}
         <ArtLayer data-version-spot="main-menu" {...a.words.version} tone="muted" align="start">{versionLabel}</ArtLayer>
         {rankSelect && <ArtLayer {...a.words.rankSelect} align="center"><RankSelectButton /></ArtLayer>}

@@ -29,12 +29,12 @@ describe('the new career', () => {
   })
 
   it('rank 0 asks your name again (the sign-in), after the monitor slips: "WELCOME BA—" — only in a new career', () => {
-    const career = momentFor(0, 1)
+    const career = momentFor('0', 1)
     expect(career.lines[0]).toMatchObject({ voice: 'mon', words: 'r0back', cut: true })
     expect(career.lines.some((l) => l.sign)).toBe(true)
     expect(career.lines.map((l) => l.words)).toContain('r0former')
-    expect(momentFor(0, 0)).toEqual(moments.moments['0'])
-    expect(momentFor(5, 1)).toEqual(moments.moments['5']) // (other ranks: the usual moments)
+    expect(momentFor('0', 0)).toEqual(moments.moments['0'])
+    expect(momentFor('5', 1)).toEqual(moments.moments['5']) // (other ranks: the usual moments)
   })
 
   it('the gold trim (a look only) starts with the first career done, on the console and the periscope', () => {

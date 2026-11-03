@@ -12,6 +12,8 @@ import goldenV5 from './saves/goops-progress-v5.json'
 import goldenV4Focus4 from './saves/goops-progress-v4-focus4.json'
 import { clampOwned, maxLevelOf, upgradeBook } from '../src/progress/upgradeShop'
 import type { UpgradeBook } from '../src/engine/upgrades'
+import { createLadder } from '../src/ladder'
+import { maxRank } from '../src/progress/ladder'
 
 // sum of every rank's XP up to (not including) rank n
 const cumulative = (n: number) => { let s = 0; for (let r = 0; r < n; r++) s += xpToNext(r); return s }
@@ -28,7 +30,7 @@ describe('ranks', () => {
 
   it('stops at the max rank', () => {
     const r = rankInfo({ totalXp: 10_000_000, scrapsSpent: 0 })
-    expect(r).toMatchObject({ rank: tuning.maxRank, xpIntoRank: 0, xpToNext: 0, scraps: tuning.maxRank })
+    expect(r).toMatchObject({ rank: maxRank(), xpIntoRank: 0, xpToNext: 0, scraps: maxRank() })
   })
 })
 
@@ -367,18 +369,18 @@ describe('the rank lock (F74)', () => {
   })
 
   it('the final shift (the top rank) works as before: nothing to fill, never locked', () => {
-    const top = progressAtRank(tuning.maxRank)
+    const top = progressAtRank(maxRank())
     const r = rewardShift(top, 900, missed)
-    expect(r.after).toMatchObject({ rank: tuning.maxRank, xpToNext: 0, locked: false })
+    expect(r.after).toMatchObject({ rank: maxRank(), xpToNext: 0, locked: false })
     expect(r.rankUps).toBe(0)
     // and reaching it takes a quota like any rank
-    const at49 = { ...progressAtRank(tuning.maxRank - 1), totalXp: cumulative(tuning.maxRank) - 100 }
-    expect(rewardShift(at49, 500, missed).after).toMatchObject({ rank: tuning.maxRank - 1, locked: true })
-    expect(rewardShift(at49, 500, met).after.rank).toBe(tuning.maxRank)
+    const at49 = { ...progressAtRank(maxRank() - 1), totalXp: cumulative(maxRank()) - 100 }
+    expect(rewardShift(at49, 500, missed).after).toMatchObject({ rank: maxRank() - 1, locked: true })
+    expect(rewardShift(at49, 500, met).after.rank).toBe(maxRank())
   })
 })
 
-// F59: what each rank unlocks (content/tuning/progression.json → unlocks)
+// F59: what each rank unlocks (F78: content/tuning/ladder.json beats)
 describe('unlocks', () => {
   it('next piece at 1, swap at 3, upgrades at 5 — from that rank on', () => {
     expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('nextPiece', r))).toEqual([false, true, true, true, true, true, true])
@@ -386,8 +388,8 @@ describe('unlocks', () => {
     expect([0, 1, 2, 3, 4, 5, 6].map((r) => isUnlocked('upgrades', r))).toEqual([false, false, false, false, false, true, true])
   })
 
-  it('reads the ranks from the tuning file', () => {
-    const t = { ...tuning, unlocks: { nextPiece: 0, swap: 10, upgrades: 2 } }
+  it('reads the ranks from the ladder file (F78)', () => {
+    const t = createLadder({ maxRank: 50, beats: { nextPiece: 0, swap: 10, upgradesShop: 2 } })
     expect(isUnlocked('nextPiece', 0, t)).toBe(true)
     expect(isUnlocked('swap', 9, t)).toBe(false)
     expect(isUnlocked('upgrades', 2, t)).toBe(true)
@@ -411,8 +413,8 @@ describe('rank select (F70: the start of a rank, upgrades refunded; 0 = a fresh 
 
   it('every rank 0…maxRank lands on itself; outside that it clamps', () => {
     for (let r = 0; r <= topRank(); r++) expect(rankInfo(progressAtRank(r)).rank).toBe(r)
-    expect(topRank()).toBe(tuning.maxRank)
-    expect(rankInfo(progressAtRank(topRank() + 5)).rank).toBe(tuning.maxRank)
+    expect(topRank()).toBe(maxRank())
+    expect(rankInfo(progressAtRank(topRank() + 5)).rank).toBe(maxRank())
     expect(progressAtRank(-3)).toEqual(freshProgress())
   })
 

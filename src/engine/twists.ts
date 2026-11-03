@@ -12,12 +12,13 @@
 import { type Color, type Crack, type ShiftEvent, type ShiftState, WILD } from './types'
 import type { Rng } from './rng'
 import { wrapX } from './tank'
+import { rankOf } from '../progress/ladder'
 
-// The shape of content/tuning/twists.json
+// The shape of content/tuning/twists.json (F78: the rank each twist starts at is a ladder beat — content/tuning/ladder.json
+// twoColourPieces / cracksGrow / wildGoop — read live)
 export interface TwistsConfig {
-  split: { fromRank: number; chance: number }
+  split: { chance: number }
   grow: {
-    fromRank: number
     everyMsMin: number
     everyMsMax: number
     baseChance: number
@@ -27,16 +28,16 @@ export interface TwistsConfig {
     minFalloff: number
     diagonals: boolean
   }
-  wild: { fromRank: number; chance: number }
+  wild: { chance: number }
 }
 
 const num = (v: unknown, fallback: number, min = 0) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(min, v) : fallback)
 const share = (v: unknown) => Math.min(1, num(v, 0))
 
-/** Is this twist on at this rank? (no twists file handed in = no twists, as before F39) */
-export const splitOn = (t: TwistsConfig | undefined, rank: number) => !!t && rank >= num(t.split?.fromRank, Infinity)
-export const growOn = (t: TwistsConfig | undefined, rank: number) => !!t && rank >= num(t.grow?.fromRank, Infinity)
-export const wildOn = (t: TwistsConfig | undefined, rank: number) => !!t && rank >= num(t.wild?.fromRank, Infinity)
+/** Is this twist on at this rank? (no twists file handed in = no twists, as before F39; the rank: the ladder's beat) */
+export const splitOn = (t: TwistsConfig | undefined, rank: number) => !!t && rank >= rankOf('twoColourPieces')
+export const growOn = (t: TwistsConfig | undefined, rank: number) => !!t && rank >= rankOf('cracksGrow')
+export const wildOn = (t: TwistsConfig | undefined, rank: number) => !!t && rank >= rankOf('wildGoop')
 export const splitChance = (t: TwistsConfig) => share(t.split.chance)
 export const wildChance = (t: TwistsConfig) => share(t.wild.chance)
 

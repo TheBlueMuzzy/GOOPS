@@ -69,8 +69,9 @@ async function runPool(jobs, label) {
 async function main() {
   const quick = process.argv.includes('--quick')
   const eco = readJson('scripts/bots/economy.json')
-  const upgrades = readJson('content/tuning/upgrades.json').upgrades.filter((u) => !u.testOnly)
-  const progression = readJson('content/tuning/progression.json')
+  // (F78: each upgrade's rank and the top rank are content/tuning/ladder.json's)
+  const ladder = readJson('content/tuning/ladder.json')
+  const upgrades = readJson('content/tuning/upgrades.json').upgrades.filter((u) => !u.testOnly).map((u) => ({ ...u, rank: ladder.upgrades[u.id] }))
   const bots = readJson('scripts/bots/bots.json').bots
   const careerSeeds = Number(arg('--seeds', quick ? eco.quick.careerSeeds : eco.careerSeeds))
   const effectSeeds = Number(arg('--effect-seeds', quick ? eco.quick.effectSeeds : eco.effectSeeds))
@@ -109,21 +110,21 @@ async function main() {
   careers.forEach((c, ci) => {
     if (!c.loadout50) return
     for (let seed = 1; seed <= finalSeeds; seed++) {
-      finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50, rank: progression.maxRank } })
+      finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50, rank: ladder.maxRank } })
       const raw = JSON.stringify(c.loadout50Raw.equipped) !== JSON.stringify(c.loadout50.equipped)
-      if (raw) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, raw: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50Raw, rank: progression.maxRank } })
+      if (raw) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, raw: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50Raw, rank: ladder.maxRank } })
     }
   })
   const { freshProgress } = await import('../../src/progress/progression.ts')
   for (const bot of eco.skills) for (let seed = 1; seed <= finalSeeds; seed++) {
-    finalJobs.push({ kind: 'shift', key: { bot, with: false }, input: { bot, seed: 9_000_000 + seed, progress: freshProgress(), rank: progression.maxRank } })
+    finalJobs.push({ kind: 'shift', key: { bot, with: false }, input: { bot, seed: 9_000_000 + seed, progress: freshProgress(), rank: ladder.maxRank } })
     finalJobs.push({ kind: 'final', key: { bot, path: 'runFinal' }, bot, seed: 9_000_000 + seed })
   }
   const finalResults = await runPool(finalJobs, 'final shifts')
 
   const seconds = (Date.now() - started) / 1000
   const { summarise } = await import('./economy-summary.mjs')
-  const summary = summarise({ eco, upgrades, progression, bots, careers, effectJobs, effectResults, finalJobs, finalResults, quick, careerSeeds, effectSeeds, finalSeeds, seconds })
+  const summary = summarise({ eco, upgrades, bots, careers, effectJobs, effectResults, finalJobs, finalResults, quick, careerSeeds, effectSeeds, finalSeeds, seconds })
   const out = new URL('e2e-shots/sim/', root)
   mkdirSync(out, { recursive: true })
   writeFileSync(new URL('results.json', out), JSON.stringify(summary, null, 1))

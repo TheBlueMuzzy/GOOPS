@@ -10,6 +10,7 @@ import { createShift } from '../../src/engine'
 import type { BreakdownConfig, MachineId, ShiftConfig, TwistsConfig, WhiteGoopConfig } from '../../src/engine'
 import type { FinalShiftConfig } from '../../src/engine/finalShift'
 import { Bot, type BotSkill } from './bot'
+import { rankOf } from '../../src/progress/ladder'
 
 export interface FinalInput {
   bot: string
@@ -47,7 +48,7 @@ const MACHINES: MachineId[] = ['laser', 'visor', 'controls']
 
 export function runFinal(input: FinalInput): FinalResult {
   const engine = createShift(input.shift, {
-    seed: input.seed, rank: input.finalShift.rank, breakdowns: input.breakdowns, whiteGoop: input.whiteGoop, twists: input.twists, finalShift: input.finalShift,
+    seed: input.seed, rank: rankOf('finalShift'), breakdowns: input.breakdowns, whiteGoop: input.whiteGoop, twists: input.twists, finalShift: input.finalShift,
   })
   const s = engine.state
   const bot = new Bot(input.skill)

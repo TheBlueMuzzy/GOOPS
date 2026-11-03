@@ -2,20 +2,20 @@
 import { describe, expect, it } from 'vitest'
 import tuning from '../content/tuning/progression.json'
 import { freshProgress, scrapsAt, xpToNext, type Progress } from '../src/progress/progression'
-import { activeSlots, buyLevel, costOf, levelCount, levelOf, levelPercent, ownsAny, respec, setEquipped, showsCount, takeBackLevel, upgradeBook, upgradesForShift, whyNotBuy } from '../src/progress/upgradeShop'
+import { activeSlots, buyLevel, costOf, levelCount, levelOf, levelPercent, ownsAny, respec, setEquipped, showsCount, takeBackLevel, upgradeBook, upgradeRank, upgradesForShift, whyNotBuy } from '../src/progress/upgradeShop'
 import { playableUpgrades, type UpgradeBook } from '../src/engine/upgrades'
 import text from '../content/text/en.json'
 import { SAVE_VERSION, loadProgress, saveProgress } from '../src/progress/save'
 import goldenV3 from './saves/goops-progress-v3.json'
 
 const book: UpgradeBook = { upgrades: [
-  { id: 'cheap', name: 'Cheap', type: 'passive', rank: 2, maxLevel: 2, effects: [] },
-  { id: 'pricey', name: 'Pricey', type: 'passive', rank: 2, maxLevel: 4, cost: 3, effects: [] },
-  { id: 'late', name: 'Late', type: 'passive', rank: 9, maxLevel: 4, effects: [] },
-  { id: 'zap', name: 'Zap', type: 'active', rank: 5, maxLevel: 3, ability: { effect: 'x', chargePerSecond: 0, chargePerSeal: 0, byLevel: [] } },
-  { id: 'zap2', name: 'Zap 2', type: 'active', rank: 5, maxLevel: 3, ability: { effect: 'x', chargePerSecond: 0, chargePerSeal: 0, byLevel: [] } },
-  { id: 'hidden', name: 'Test', type: 'passive', rank: 0, maxLevel: 1, testOnly: true, effects: [] },
-] }
+  { id: 'cheap', name: 'Cheap', type: 'passive', maxLevel: 2, effects: [] },
+  { id: 'pricey', name: 'Pricey', type: 'passive', maxLevel: 4, cost: 3, effects: [] },
+  { id: 'late', name: 'Late', type: 'passive', maxLevel: 4, effects: [] },
+  { id: 'zap', name: 'Zap', type: 'active', maxLevel: 3, ability: { effect: 'x', chargePerSecond: 0, chargePerSeal: 0, byLevel: [] } },
+  { id: 'zap2', name: 'Zap 2', type: 'active', maxLevel: 3, ability: { effect: 'x', chargePerSecond: 0, chargePerSeal: 0, byLevel: [] } },
+  { id: 'hidden', name: 'Test', type: 'passive', maxLevel: 1, testOnly: true, effects: [] },
+], ranks: { cheap: 2, pricey: 2, late: 9, zap: 5, zap2: 5, hidden: 0 } } // (F78: a test book names its own ranks)
 const at = (rank: number): Progress => { let xp = 0; for (let r = 0; r < rank; r++) xp += xpToNext(r); return { ...freshProgress(), totalXp: xp } }
 const scraps = (p: Progress, rank: number) => scrapsAt(rank, p)
 
@@ -175,8 +175,8 @@ describe('active slots: 1 → 2 → 3 with the Active Expansion Slots', () => {
 
   it('the slots are upgrades.json feature upgrades at v1’s ranks and price (1 scrap, one level)', () => {
     const slot = def('activeSlot'), slot2 = def('activeSlot2')
-    expect([slot.type, slot.rank, slot.maxLevel, costOf(slot), slot.feature]).toEqual(['feature', 20, 1, 1, 'abilitySlots'])
-    expect([slot2.type, slot2.rank, slot2.maxLevel, costOf(slot2), slot2.feature]).toEqual(['feature', 38, 1, 1, 'abilitySlots'])
+    expect([slot.type, upgradeRank(slot), slot.maxLevel, costOf(slot), slot.feature]).toEqual(['feature', 20, 1, 1, 'abilitySlots'])
+    expect([slot2.type, upgradeRank(slot2), slot2.maxLevel, costOf(slot2), slot2.feature]).toEqual(['feature', 38, 1, 1, 'abilitySlots'])
   })
 
   it('bought with scraps from their rank (not before), each adds a slot', () => {

@@ -26,7 +26,7 @@ export function oneShapeConfig(cells: number[][], options: { msPerRow?: number; 
   config.pieces.only = { normal: [shape], corrupted: [shape] }
   config.pieces.corruptChance = 0
   config.pieces.mirrorChance = 0
-  config.colorsByRank = [{ rank: 0, count: 1 }]
+  config.colorsByBeat = [{ beat: 'firstDay', count: 1 }]
   config.fall.msPerRow = options.msPerRow ?? 1e9
   return config
 }

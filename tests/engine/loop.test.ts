@@ -90,7 +90,7 @@ describe('cracks', () => {
     // Lumpy goop of colours 2-4 (it never moves: pieces hang at the top).
     const rows = ['..2...3.....4', '.22..33...444.', '2222333.444442']
     const config = calmConfig()
-    config.colorsByRank = [{ rank: 0, count: 4 }]
+    config.colorsByBeat = [{ beat: 'firstDay', count: 4 }]
     const shift = createShift(config, { seed: 9, rank: 0, startGrid: tank(rows, 4) })
     let seen = 0
     for (let t = 0; t < 70000; t += 10) {

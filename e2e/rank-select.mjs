@@ -23,6 +23,7 @@ const PORT = Number(process.env.E2E_PORT) || 5351, OUT = 'e2e-shots/rank-select'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]] // (portrait phones + desktop windows — never a phone on its side)
 const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
+const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
 const R = en.console.rankSelect
 const FD = en.lessons['first-day']
 const xpFor = (rank) => { let xp = 0; for (let r = 0; r < rank; r++) xp += prog.xpBase + prog.xpPerRank * r; return xp }
@@ -114,7 +115,7 @@ try {
     await list(page).waitFor()
     await sleep(500)
     const rows = list(page).locator('.kit-listrow')
-    check(`${size}: SELECT RANK lists every rank 0…${prog.maxRank}`, (await rows.count()) === prog.maxRank + 1, String(await rows.count()))
+    check(`${size}: SELECT RANK lists every rank 0…${LADDER.maxRank}`, (await rows.count()) === LADDER.maxRank + 1, String(await rows.count()))
     if (width === 390) {
       check('rank 0 carries the red "Wipe save" badge', (await rows.nth(0).locator('.kit-badge[data-variant="danger"]').textContent()) === R.wipe)
       check('your rank (12) carries the green "You" badge — and only it', (await rows.nth(12).locator('.kit-badge[data-variant="success"]').textContent()) === R.yours

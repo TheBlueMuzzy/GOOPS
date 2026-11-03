@@ -12,17 +12,17 @@ export interface ShapeSet {
   corrupted: ShapeDef[] // cells only touch at corners; parts fall apart when they land
 }
 
-export interface RankStep {
-  rank: number
-  count: number
-}
+import { ladder, type BeatStep } from '../progress/ladder'
+
+// A step table that names ladder beats (content/tuning/ladder.json): the count from that beat's rank on (F78)
+export type RankStep = BeatStep
 
 export interface ShiftConfig {
   tank: { width: number; height: number; bufferRows: number; visibleWidth: number }
   colors: string[] // colour names; Color 1 = colors[0]
-  colorsByRank: RankStep[] // how many colours are in play from each rank
-  junkByRank: RankStep[] // single goop cells on the floor at shift start
-  quota: { base: number; perColour: number; perRank: number; addByRank?: RankStep[] } // cracks to seal (cracksNeededFor)
+  colorsByBeat: RankStep[] // how many colours are in play from each beat's rank on (F78: the beats are in ladder.json)
+  junkByBeat: RankStep[] // single goop cells on the floor at shift start
+  quota: { base: number; perColour: number; perRank: number; addByBeat?: RankStep[] } // cracks to seal (cracksNeededFor)
   pressure: { riseMsToFull: number } // pressure goes 0 → 1 in this long (if nothing vents it)
   integrity: {
     drainPerCrackPerSec: number // tank integrity lost per open crack per second (1 = full tank)
@@ -74,28 +74,24 @@ export interface ShiftConfig {
   }
 }
 
-// The value of the last step whose rank is at or below `rank`.
-function stepFor(steps: RankStep[], rank: number): number {
-  let count = 0
-  for (const step of steps) if (rank >= step.rank) count = step.count
-  return count
-}
+// The value of the last step whose beat's rank is at or below `rank` (the ladder, read live).
+const stepFor = (steps: RankStep[], rank: number): number => ladder.stepAt(steps, rank)
 
 // Colours in play at this rank: 1..n
 export function paletteSize(config: ShiftConfig, rank: number): number {
-  return Math.min(stepFor(config.colorsByRank, rank), config.colors.length)
+  return Math.min(stepFor(config.colorsByBeat, rank), config.colors.length)
 }
 
 export function junkCount(config: ShiftConfig, rank: number): number {
-  return stepFor(config.junkByRank, rank)
+  return stepFor(config.junkByBeat, rank)
 }
 
-// cracks to seal = base + perColour × colours in play + perRank × rank + addByRank's step for the rank (shift.json quota;
-// v1 = colours + rank). F52: addByRank lets a band of ranks ask for more or fewer (a 0s rank's big change, e.g. growing
-// cracks at 30, makes cracks harder to seal) — steps like colorsByRank
+// cracks to seal = base + perColour × colours in play + perRank × rank + addByBeat's step for the rank (shift.json quota;
+// v1 = colours + rank). F52: addByBeat lets a band of ranks ask for more or fewer (a big change, e.g. growing cracks,
+// makes cracks harder to seal) — steps like colorsByBeat
 export function cracksNeededFor(config: ShiftConfig, rank: number): number {
   const q = config.quota
-  const add = q.addByRank ? stepFor(q.addByRank, rank) : 0
+  const add = q.addByBeat ? stepFor(q.addByBeat, rank) : 0
   return Math.max(1, Math.round(q.base + q.perColour * paletteSize(config, rank) + q.perRank * rank + add))
 }
 

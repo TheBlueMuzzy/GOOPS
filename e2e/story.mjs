@@ -33,7 +33,7 @@ const en = JSON.parse(readFileSync('content/text/en.json', 'utf8'))
 const story = JSON.parse(readFileSync('content/story/moments.json', 'utf8'))
 const prog = JSON.parse(readFileSync('content/tuning/progression.json', 'utf8'))
 const payslip = JSON.parse(readFileSync('content/tuning/payslip.json', 'utf8'))
-const art = JSON.parse(readFileSync('content/ui/art.json', 'utf8'))
+const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
 const L = en.story.lines
 const W = en.story.whispers
 const xpToNext = (rank) => prog.xpBase + prog.xpPerRank * rank
@@ -185,9 +185,9 @@ try {
     if (rank >= 5) check(`rank ${rank}: the upgrades lesson comes right after the moment`, after === en.lessons['unlock-upgrades'].upgrades, after)
     else check(`rank ${rank}: then the console's own words`, after === en.console.hint, after)
     check(`rank ${rank}: the monitor look is gone after the moment`, (await monitorLook(page)) === null)
-    // F45: the hatch under the console is there from art.json hatch.fromRank (46), still once the moment is over
+    // F45: the hatch under the console is there from the ladder beat hatch (46), still once the moment is over
     const hatch = await page.locator('[data-tag="hatch"]').count(), still = await rattles(page, {})
-    check(`rank ${rank}: the hatch ${rank >= art.console.hatch.fromRank ? 'is on the console, still' : 'is not there yet'}`, (hatch === 1) === (rank >= art.console.hatch.fromRank) && still)
+    check(`rank ${rank}: the hatch ${rank >= LADDER.beats.hatch ? 'is on the console, still' : 'is not there yet'}`, (hatch === 1) === (rank >= LADDER.beats.hatch) && still)
     await page.reload(); await page.locator('.kit-art-stage').waitFor(); await page.waitForTimeout(1200)
     const again = (await monitorSays(page)).trim()
     check(`rank ${rank}: once only — after a reload no moment`, !Object.values(L).includes(again) && !(await page.locator('.kit-talk').count()), again)
@@ -259,27 +259,27 @@ try {
 
   // ---------------- F63: rank 39's report — "Pending retirements: Operator #4471 — <your name>" ----------------
   for (const [name, want] of [[NAME, en.payslip.pendingRetirements.value.replace('{name}', NAME)], [null, en.payslip.pendingRetirements.noName]]) {
-    const { page, errors, close } = await device(xpFor(payslip.pendingRetirementRank) - 50, { name })
+    const { page, errors, close } = await device(xpFor(LADDER.beats.pendingRetirement) - 50, { name })
     await allSeen(page, ['lesson:unlock-upgrades'])
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
     await endShift(page)
     const rows = await page.locator('.kit-end .kit-stat-row').allInnerTexts()
     const row = rows.find((t) => t.includes(en.payslip.pendingRetirements.label)) ?? ''
-    check(`rank ${payslip.pendingRetirementRank} report${name ? '' : ' (never signed)'}: "${en.payslip.pendingRetirements.label}: ${want}" is the last row`,
+    check(`rank ${LADDER.beats.pendingRetirement} report${name ? '' : ' (never signed)'}: "${en.payslip.pendingRetirements.label}: ${want}" is the last row`,
       row.includes(want) && rows.at(-1) === row, rows.join(' | ').replace(/\n/g, ' '))
     await page.screenshot({ path: `${OUT}/pending-retirements${name ? '' : '-unsigned'}-390x844.png` })
     check('pending retirements: no page errors', errors.length === 0, errors.join(' | '))
     await close()
   }
   {
-    const { page, close } = await device(xpFor(payslip.pendingRetirementRank - 2) + 10, { name: NAME })
+    const { page, close } = await device(xpFor(LADDER.beats.pendingRetirement - 2) + 10, { name: NAME })
     await allSeen(page, ['lesson:unlock-upgrades'])
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
     await endShift(page)
     const rows = await page.locator('.kit-end .kit-stat-row').allInnerTexts()
-    check(`rank ${payslip.pendingRetirementRank - 2} report: no pending retirements yet`, !rows.some((t) => t.includes(en.payslip.pendingRetirements.label)))
+    check(`rank ${LADDER.beats.pendingRetirement - 2} report: no pending retirements yet`, !rows.some((t) => t.includes(en.payslip.pendingRetirements.label)))
     await close()
   }
 
@@ -359,13 +359,13 @@ try {
 
   // ---------------- F40 fines: the first report at 30 fines YOU for knowing him, once; paydays from 30 change words ----------------
   {
-    const { page, errors, close } = await device(xpFor(payslip.caughtRank + 1) - 50)
+    const { page, errors, close } = await device(xpFor(LADDER.beats.veteranCaught + 1) - 50)
     await allSeen(page, ['lesson:unlock-upgrades'])
     await page.reload(); await page.locator('.kit-art-stage').waitFor()
     await startShift(page)
     await endShift(page)
     const labels = await reportLabels(page)
-    check(`rank ${payslip.caughtRank} report: "${en.payslip.fines.association}" is the first fine (right after Gross pay)`,
+    check(`rank ${LADDER.beats.veteranCaught} report: "${en.payslip.fines.association}" is the first fine (right after Gross pay)`,
       labels.indexOf(en.payslip.fines.association) === labels.indexOf(en.payslip.gross) + 1, labels.join(' | '))
     await page.screenshot({ path: `${OUT}/fine-association-390x844.png` })
     await page.getByRole('button', { name: en.end.quit }).click()
@@ -373,7 +373,7 @@ try {
     await page.waitForTimeout(500 + 10 * payslip.lineMs)
     const card = await page.locator('.kit-modal').innerText()
     const message = en.payslip.afterCaught.paydayMessage.split('{due}')[1].trim().slice(0, 30)
-    check(`payday from ${payslip.caughtRank}: the after-capture words`, card.includes(message) && card.includes(en.payslip.afterCaught.debt), card.replace(/\n/g, ' | '))
+    check(`payday from ${LADDER.beats.veteranCaught}: the after-capture words`, card.includes(message) && card.includes(en.payslip.afterCaught.debt), card.replace(/\n/g, ' | '))
     await page.screenshot({ path: `${OUT}/payday-after-capture-390x844.png` })
     await page.getByRole('button', { name: en.payslip.pay }).click()
     await page.getByRole('button', { name: 'Start shift' }).waitFor({ timeout: 6000 })
@@ -387,7 +387,7 @@ try {
   }
 
   // ---------------- in-shift whispers by stage; Management's "no voices" from 12 ----------------
-  const stage = (from) => story.whispers.stages.find((s) => s.from === from).say.map((k) => W[k])
+  const stage = (from) => story.whispers.stages.find((s) => LADDER.beats[s.beat] === from).say.map((k) => W[k])
   for (const [rank, want, again, denies] of [
     [3, [W.cold], false, false],
     [8, stage(8), true, false],

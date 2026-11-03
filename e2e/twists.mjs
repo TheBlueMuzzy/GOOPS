@@ -1,6 +1,6 @@
 // F39 rank twists in a real shift (Jelly; Particle at 1440). Checks:
 //   rank 20: a two-colour piece falls (glowing) and locks as two clumps, each cell its own colour
-//   rank 30 (grow.fromRank): a crack grows over several cells; covering all but one doesn't plug it (popping there seals nothing);
+//   rank 30 (the ladder beat cracksGrow): a crack grows over several cells; covering all but one doesn't plug it (popping there seals nothing);
 //            covering every cell plugs it; one pop seals it whole and the quota counts its cell count
 //   rank 40: a wild piece falls and locks in the wild look; wild goop on a crack of another colour plugs + seals it;
 //            a normal piece landing on a wild clump turns the whole clump its colour; faces never doubled
@@ -18,6 +18,7 @@ const SHOTS = 'e2e-shots/twists'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]].filter(([w]) => !process.env.ONLY || process.env.ONLY === String(w)) // (ONLY=1440: one size)
 const WILD = 255
 const TWISTS = JSON.parse(readFileSync('content/tuning/twists.json', 'utf8'))
+const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
 mkdirSync(SHOTS, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -110,7 +111,7 @@ try {
 
     // ---------------- rank 30: a crack grows; sealed only when every cell is covered; counts its size
     {
-      const { page, errors } = await open(w, h, TWISTS.grow.fromRank)
+      const { page, errors } = await open(w, h, LADDER.beats.cracksGrow)
       await page.evaluate(() => { window.__goops.engine.fallPiece = () => {} }) // the piece hangs at the top
       await sendTwists(page, { grow: { everyMsMin: 300, everyMsMax: 400, baseChance: 1, leafMult: 1, hopFalloff: 0, minFalloff: 1 } })
       const id = await page.evaluate(async () => {
@@ -123,7 +124,8 @@ try {
         return 9300
       })
       check(`${tag} r30: the crack grows to 3+ cells`, await until(page, (id) => (window.__goops.engine.state.cracks.find((c) => c.id === id)?.cells?.length ?? 1) >= 3, id, 15000))
-      await sendTwists(page, { grow: { fromRank: 99 } }) // stop it there
+      await page.evaluate((d) => window.dispatchEvent(new CustomEvent('devkit:tuning', { detail: { file: 'ladder', data: d } })),
+        { ...LADDER, beats: { ...LADDER.beats, cracksGrow: 99 } }) // stop it there (F78: the ladder's beat, moved live)
       // hold the rules (the Dev Kit's half pause): the test's goop doesn't fall or refill; the looks keep moving
       await page.evaluate(async () => (await import('/src/devkit/gameClock.ts')).setClockPause('half'))
       await page.waitForTimeout(300)

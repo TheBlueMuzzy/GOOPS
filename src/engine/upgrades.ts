@@ -126,7 +126,6 @@ export interface UpgradeDef {
   name: string
   desc?: string
   type: string // 'passive' | 'active' | 'feature'
-  rank: number // unlocks at this rank
   maxLevel: number
   cost?: number // scraps per level (F34; missing = 1, v1's price for every level)
   testOnly?: boolean // for tests only: the game never lists or grants it
@@ -138,6 +137,9 @@ export interface UpgradeDef {
 
 export interface UpgradeBook {
   upgrades: UpgradeDef[]
+  // F78: the rank each upgrade can be bought from is the ladder's (content/tuning/ladder.json upgrades); a book of its
+  // own (a test's) names its upgrades' ranks here instead
+  ranks?: Record<string, number>
 }
 
 // Upgrades the game may show and sell (never the test-only ones).

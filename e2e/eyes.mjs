@@ -4,7 +4,7 @@
 //   gaze swings toward the falling piece (moved left, then right) · a zap squeezes the neighbours' eyes shut (and the
 //   zapped clump's) · the eyes are drawn in the goo's own picture (eye-white pixels where the faces are, none at rank 9)
 //   · rank 10: only clumps of minClump10+ cells have eyes, fewer than at 20 · rank 30: brows only once pressure passes
-//   worriedAt, then worried brows; they blink · rank 40: mouths, shut most of the time · F45 rank 48 (chorusRank): once
+//   worriedAt, then worried brows; they blink · rank 40: mouths, shut most of the time · F45 rank 48 (the ladder beat eyesChorus): once
 //   chorusMouths mouths show, every mouth opens at once, then shuts; kept as seen, so the next shift doesn't (shots:
 //   <style>-rank48-mouths-open-<size>.png).
 // The board is set up by hand and the rules held still (the piece hangs where it's put), so the faces are on known clumps.
@@ -22,6 +22,7 @@ const SHOTS = 'e2e-shots/eyes'
 const SIZES = [[390, 844], [360, 780], [1100, 800], [1440, 900], [1920, 1080]]
 const STYLES = (process.env.STYLES ?? 'Jelly,Particle').split(',') // (STYLES=Jelly: one style only; SHOTS=0: no shots)
 const EYES = JSON.parse(readFileSync('content/tuning/eyes.json', 'utf8'))
+const LADDER = JSON.parse(readFileSync('content/tuning/ladder.json', 'utf8')) // F78: every rank gate
 mkdirSync(SHOTS, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {
@@ -245,28 +246,28 @@ try {
     await page.close()
   }
 
-  // --- F45 (story 48): the first shift from chorusRank, every mouth opens at once — once per device ---
+  // --- F45 (story 48): the first shift from the ladder beat eyesChorus, every mouth opens at once — once per device ---
   // (every eyed clump gets a mouth and they show at once: mouthChance 1, appearSpread 0, sent like a Dev Kit edit)
   for (const style of STYLES) {
     for (const [w, h] of [[390, 844], [1440, 900]]) {
-      const { page, errors } = await openShift(w, h, style, EYES.chorusRank)
+      const { page, errors } = await openShift(w, h, style, LADDER.beats.eyesChorus)
       await sendEyes(page, { ...EYES, appearSpread: 0, mouthChance: 1, talkEvery: 30 })
-      await setRank(page, EYES.chorusRank)
+      await setRank(page, LADDER.beats.eyesChorus)
       const sang = await until(page, `F.filter((f) => f.mouth >= 0.99).length >= ${EYES.chorusMouths} && F.filter((f) => f.mouth >= 0.99).every((f) => f.chorus > 0.9)`, 15000)
-      if (sang) await page.screenshot({ path: `${SHOTS}/${style.toLowerCase()}-rank${EYES.chorusRank}-mouths-open-${w}x${h}.png` })
-      check(`${style} ${w}x${h} rank ${EYES.chorusRank}: once ${EYES.chorusMouths}+ mouths show, every mouth opens at once`, sang, '')
+      if (sang) await page.screenshot({ path: `${SHOTS}/${style.toLowerCase()}-rank${LADDER.beats.eyesChorus}-mouths-open-${w}x${h}.png` })
+      check(`${style} ${w}x${h} rank ${LADDER.beats.eyesChorus}: once ${EYES.chorusMouths}+ mouths show, every mouth opens at once`, sang, '')
       // (the chorus runs on the game's clock — under check:full load that's slower than wall time, so a roomy wait)
       const shut = await until(page, 'F.every((f) => f.chorus === 0)', 15000)
       check(`${style} ${w}x${h}: …then they shut again`, shut, '')
       check(`${style} ${w}x${h}: it's kept as seen on the device`, await page.evaluate(() => JSON.stringify(localStorage).includes('look:mouths-open')), '')
       if (w === 390) { // the next shift: not again
-        await page.goto(`http://localhost:${PORT}/?seed=7&visor=off&rank=${EYES.chorusRank}`)
+        await page.goto(`http://localhost:${PORT}/?seed=7&visor=off&rank=${LADDER.beats.eyesChorus}`)
         await startShift(page)
         await page.evaluate((st) => window.__goops.gooStyle.setFromSetting(st), style)
         await sleep(400)
         await setup(page, BOARD)
         await sendEyes(page, { ...EYES, appearSpread: 0, mouthChance: 1, talkEvery: 30 })
-        await setRank(page, EYES.chorusRank)
+        await setRank(page, LADDER.beats.eyesChorus)
         await until(page, `F.filter((f) => f.mouth >= 0.99).length >= ${EYES.chorusMouths}`, 10000)
         let again = false
         for (let t = Date.now(); Date.now() - t < 3000; await sleep(100)) if ((await faces(page)).some((f) => f.chorus > 0)) again = true
