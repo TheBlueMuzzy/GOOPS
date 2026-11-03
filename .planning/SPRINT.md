@@ -13,6 +13,7 @@ Checked: check:fast 721 ✓ on the merge · helper e2e on the new ladder: paysli
 - [x] 🤖 4. The story re-pointed: 51 moments over 31 ranks (a draft mapping in research/ladder-30.md §8; joining lines only where needed) — content/tuning/ladder.json
 - [x] 🤖 5. The tests/e2e that still assume old numbers ask the ladder; GDD §4/§5/§7 → 30 ranks — tests/progress/storyMoments.test.ts
 - [ ] 🙋 6. Muzzy reads the story mapping (research/ladder-30.md §8) and moves any moment he wants — .planning/research/ladder-30.md
+- [x] 🤖 7. (from check:full) hud-shots counted machine bars by the old unlock order — now from the machines' beats (b5e9507) — e2e/hud-shots.mjs
 
 ## F83 🎮 Growing cracks take a new crack's place
 Done when: from cracksGrow, each time a new crack would form there's an X% chance (twists.json, live in the Dev Kit) that instead an existing crack that isn't fully covered grows by one cell — from one of its UNCOVERED cells only (a covered cell never grows) into a free neighbour (diagonals per the existing setting) · no crack anywhere to extend → a normal new crack · today's timed growth (each uncovered cell rolling every 5–10 s: grow.everyMsMin/Max, baseChance, pressureWeight, leafMult, hopFalloff, minFalloff) is removed · Slow Cracks lowers X (Muzzy: "reduces that % chance of a crack expanding") · a grown crack still drains per cell, is sealed only when every cell is covered by its colour, counts its cells toward the quota (unchanged) · the growth plays the existing crack.grow sound + look · the Dev Kit select.json lists the new knob on the crack
