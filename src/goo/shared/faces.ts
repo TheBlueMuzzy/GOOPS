@@ -38,10 +38,10 @@ export interface EyesLook {
   pupilColor: [number, number, number]
   mouthColor: [number, number, number]
   hex: [string, string, string] // the three colours as the file had them when they were last turned into numbers
-  minClump10: number
-  eyeChance10: number
-  minClump20: number
-  eyeChance20: number
+  minClumpFaces: number
+  eyeChanceFaces: number
+  minClumpLate: number
+  eyeChanceLate: number
   followSpeed: number
   followRange: number
   blinkEvery: number
@@ -83,10 +83,10 @@ export function readEyesLook(out?: EyesLook): EyesLook {
   if (L.hex[0] !== hex(f.eyeColor)) { L.hex[0] = hex(f.eyeColor); L.eyeColor = hexToRgb(L.hex[0]) }
   if (L.hex[1] !== hex(f.pupilColor)) { L.hex[1] = hex(f.pupilColor); L.pupilColor = hexToRgb(L.hex[1]) }
   if (L.hex[2] !== hex(f.mouthColor)) { L.hex[2] = hex(f.mouthColor); L.mouthColor = hexToRgb(L.hex[2]) }
-  L.minClump10 = num(f.minClump10, 1)
-  L.eyeChance10 = num(f.eyeChance10, 0)
-  L.minClump20 = num(f.minClump20, 1)
-  L.eyeChance20 = num(f.eyeChance20, 0)
+  L.minClumpFaces = num(f.minClumpFaces, 1)
+  L.eyeChanceFaces = num(f.eyeChanceFaces, 0)
+  L.minClumpLate = num(f.minClumpLate, 1)
+  L.eyeChanceLate = num(f.eyeChanceLate, 0)
   L.followSpeed = num(f.followSpeed, 0)
   L.followRange = num(f.followRange, 0)
   L.blinkEvery = num(f.blinkEvery, 0.05)
@@ -352,7 +352,7 @@ export class FaceBook {
     if (!this.on) return false
     const L = this.look
     const late = this.rank >= rankOf('lateLooks')
-    return f.size >= (late ? L.minClump20 : L.minClump10) && f.eyeRoll < (late ? L.eyeChance20 : L.eyeChance10)
+    return f.size >= (late ? L.minClumpLate : L.minClumpFaces) && f.eyeRoll < (late ? L.eyeChanceLate : L.eyeChanceFaces)
   }
 
   hasMouth(f: Face): boolean {

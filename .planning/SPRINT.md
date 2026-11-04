@@ -17,10 +17,10 @@ why: Muzzy 2026-11-02: "this would help the game not feel so impossibly long". F
 Check: sim:economy full before + after · bots:final · check:fast · check:full · Muzzy plays and judges the pace
 - [x] 🤖 1. Baseline: a full sim:economy run BEFORE F49 — Covered cracks drain half? (bot rerun), numbers saved — .planning/research/economy-sim.md
 - [x] 🤖 2. A full run with F49 — Covered cracks drain half? (bot rerun) in: its effect on its own — .planning/research/economy-sim.md
-- [ ] 🤖 3. Read quota per band; fix only what the numbers show (15 → 17, white goop at 20) — content/tuning/shift.json
+- [x] 🤖 3. Read quota per band; fix only what the numbers show (15 → 17, white goop at 20) — content/tuning/shift.json
 - [ ] 🤖 4. The trial: swap two beats in the ladder, check:fast + e2e, put them back; fix what it finds (Sprint 32 retro) — content/tuning/ladder.json
-- [ ] 🤖 5. Settings + help text still on 50 ranks (eyes.json minClump10 etc., quota / progression / white goop notes, career.ts loadout50) — content/tuning/eyes.json
-- [ ] 🤖 6. (tuning) XP per rank → Sharp ~45–50 shifts — content/tuning/progression.json
+- [x] 🤖 5. Settings + help text still on 50 ranks (eyes.json minClump10 etc., quota / progression / white goop notes, career.ts loadout50) — content/tuning/eyes.json
+- [x] 🤖 6. (tuning) XP per rank → Sharp ~45–50 shifts — content/tuning/progression.json
 - [x] 🤖 7. (tuning) The final shift after half wear: the Veteran saved about half — content/tuning/finalShift.json
 - [ ] 🙋 8. Muzzy plays a few shifts and judges the pace (the bots have never been compared with his real play) — content/tuning/progression.json
 
@@ -40,4 +40,5 @@ Check: sim:economy full before + after · bots:final · check:fast · check:full
   - Trial 3, trial 2 + Crack Down chargePerSeal 0.25 → 0.1: no change in pace, every shift still won from 22.
   - Trial 4, trial 2 + the bots never buy Crack Down: Sharp 49–63, Focused 58–82; ranks 25–29 won 13–29% of shifts (24 wins in 83–183 shifts per rank), longest losing run up to 20.
   - Finding: Crack Down (unlocks at 22) IS the step. With it every Sharp shift from 22 on is won; without it those ranks are a wall. The XP goal never bites at the top: 62–121k XP a shift against a need of ~10k.
-- Ask Muzzy: Crack Down's power vs the quota (the sprint plan said upgrades stay the same, so this is his call).
+- Muzzy 2026-11-03 on Crack Down + the pace: "If the sharp bot is better than a human, i'm confident coming in under 45-50 is fine, as a human will probably take far more. the results are good. I think we can move forward as is." → no quota, XP or Crack Down change; Sharp 34.5–37 stands. Tasks 3 + 6 closed with no change. His play (task 8) is the human check.
+- F82 task 5: eyes.json minClump10 / eyeChance10 / minClump20 / eyeChance20 → minClumpFaces / eyeChanceFaces / minClumpLate / eyeChanceLate (they follow the facesOn and lateLooks beats); career.ts loadout50 → loadoutFinal; help notes name beats, not 50-ladder ranks.

@@ -110,11 +110,11 @@ async function main() {
   // 3. the final shift with each career's own upgrades (the loadout it took into its first final shift), and with none
   const finalJobs = []
   careers.forEach((c, ci) => {
-    if (!c.loadout50) return
+    if (!c.loadoutFinal) return
     for (let seed = 1; seed <= finalSeeds; seed++) {
-      finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50, rank: finalRank } })
-      const raw = JSON.stringify(c.loadout50Raw.equipped) !== JSON.stringify(c.loadout50.equipped)
-      if (raw) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, raw: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadout50Raw, rank: finalRank } })
+      finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, with: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadoutFinal, rank: finalRank } })
+      const raw = JSON.stringify(c.loadoutFinalRaw.equipped) !== JSON.stringify(c.loadoutFinal.equipped)
+      if (raw) finalJobs.push({ kind: 'shift', key: { ci, bot: c.bot, style: c.style, raw: true }, input: { bot: c.bot, seed: 9_000_000 + seed, progress: c.loadoutFinalRaw, rank: finalRank } })
     }
   })
   const { freshProgress } = await import('../../src/progress/progression.ts')

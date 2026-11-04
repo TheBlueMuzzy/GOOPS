@@ -5,7 +5,7 @@
 **Results page:** `e2e-shots/sim/index.html` (open the file; raw numbers in `results.json` beside it). Made by the run, stays on this machine (e2e-shots is git-ignored). Re-run: `npm run sim:economy` (~13 min on this PC) · `npm run sim:economy -- --quick` (~20 s, a check — it's in check:full).
 **Same seeds = the same numbers** (tested: tests/economySim.test.ts).
 
-## On 30 ranks: F82 — Balance on 30 ranks (2026-11-03, work in progress)
+## On 30 ranks: F82 — Balance on 30 ranks (2026-11-03; Muzzy kept "Today" as is)
 **Baseline, today's tuning on the 30-rank ladder (72 careers, 1,572 s):** shifts to the final shift, Sharp 34.5–37, Focused 32.5–33.5 (Muzzy's target: Sharp ~45–50). Casual doesn't get there.
 - **Half wear (F49 — Covered cracks drain half? (bot rerun), 31,522 shifts):** the pace didn't move.
 - **The Veteran after half wear:** finalShift.json vet.wearPerIntegrity 3.5 → 4.5. Saved him on fresh seeds 9001–9200: Focused 62%, Sharp 45% (at 3.5, seeds 8001–8200: 73% / 56%).

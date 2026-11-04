@@ -3,7 +3,7 @@
 //   just below facesOn: no faces at all · lateLooks: eyes fade in one clump at a time (not all at once), in most clumps,
 //   and their gaze swings toward the falling piece (moved left, then right) · a zap squeezes the neighbours' eyes shut
 //   (and the zapped clump's) · the eyes are drawn in the goo's own picture (eye-white pixels where the faces are, none
-//   below facesOn) · facesOn: only clumps of minClump10+ cells have eyes, fewer than at lateLooks · worried: brows only
+//   below facesOn) · facesOn: only clumps of minClumpFaces+ cells have eyes, fewer than at lateLooks · worried: brows only
 //   once pressure passes worriedAt, then worried brows; they blink · mouths: mouths, shut most of the time · F45
 //   eyesChorus: once chorusMouths mouths show, every mouth opens at once, then shuts; kept as seen, so the next shift
 //   doesn't (shots: <style>-rank<eyesChorus>-mouths-open-<size>.png).
@@ -140,9 +140,9 @@ try {
     const spread = times.length ? times[times.length - 1] - times[0] : 0
     check(`${style} rank ${LATE}: eyes fade in one clump at a time (not all at once)`, times.length >= 3 && spread > 500,
       `${times.length} clumps opened their eyes over ${(spread / 1000).toFixed(1)} s: ${times.map((t) => (t / 1000).toFixed(1)).join(', ')}`)
-    const big = all.filter((f) => f.size >= EYES.minClump20)
+    const big = all.filter((f) => f.size >= EYES.minClumpLate)
     const eyed20 = big.filter((f) => f.eyes >= 0.99)
-    check(`${style} rank ${LATE}: eyes in most clumps`, eyed20.length >= big.length / 2 && eyed20.length >= 3, `${eyed20.length} of ${big.length} clumps of ${EYES.minClump20}+ cells`)
+    check(`${style} rank ${LATE}: eyes in most clumps`, eyed20.length >= big.length / 2 && eyed20.length >= 3, `${eyed20.length} of ${big.length} clumps of ${EYES.minClumpLate}+ cells`)
 
     // --- lateLooks: they follow the falling piece ---
     const lookingAt = async (k) => {
@@ -214,12 +214,12 @@ try {
     const t10 = Date.now()
     while (Date.now() - t10 < 30000) {
       const F = await faces(page)
-      small = Math.max(small, F.filter((f) => f.eyes > 0 && f.size < EYES.minClump10).length)
+      small = Math.max(small, F.filter((f) => f.eyes > 0 && f.size < EYES.minClumpFaces).length)
       if (Date.now() - t10 > 500 && settled(F)) break
       await sleep(100)
     }
     const eyed10 = (await faces(page)).filter((f) => f.eyes >= 0.99)
-    check(`${style} rank ${FACES}: a few eyes, only in clumps of ${EYES.minClump10}+ cells`, small === 0 && eyed10.length >= 1 && eyed10.length < eyed20.length,
+    check(`${style} rank ${FACES}: a few eyes, only in clumps of ${EYES.minClumpFaces}+ cells`, small === 0 && eyed10.length >= 1 && eyed10.length < eyed20.length,
       `${eyed10.length} eyed clumps (sizes ${eyed10.map((f) => f.size).join(', ')}) · at ${LATE} there were ${eyed20.length}`)
 
     // --- worried: worried only at high pressure; they blink ---

@@ -290,10 +290,10 @@ export interface CareerResult {
   reachedRank: number
   finalWon: boolean
   finalTries: number
-  ownedAt: Record<number, Record<string, number>> // what it owned when it reached each report band's end (ownedRanks: today 10, 20 … 50)
+  ownedAt: Record<number, Record<string, number>> // what it owned when it reached each report band's end (ownedRanks: equal slices of the ladder)
   equippedAt: Record<number, string[]>
-  loadout50: Progress | null // what it took into its first final shift
-  loadout50Raw: Progress | null // the same before leaving out economy.json finalLeaveOut (what it had equipped till then)
+  loadoutFinal: Progress | null // what it took into its first final shift
+  loadoutFinalRaw: Progress | null // the same before leaving out economy.json finalLeaveOut (what it had equipped till then)
   scrapsEarned: number
   scrapsSpent: number
   unspentByRank: Record<number, number> // scraps left in hand after shopping, at the start of each rank
@@ -309,7 +309,7 @@ export function runCareer(input: CareerInput): CareerResult {
   const maxFinal = input.finalTries ?? economy.finalTries
   const top = maxRank()
   const r: CareerResult = { bot: input.bot, style: input.style, seed: input.seed, shifts: [], reachedRank: 0, finalWon: false, finalTries: 0,
-    ownedAt: {}, equippedAt: {}, loadout50: null, loadout50Raw: null, scrapsEarned: 0, scrapsSpent: 0, unspentByRank: {} }
+    ownedAt: {}, equippedAt: {}, loadoutFinal: null, loadoutFinalRaw: null, scrapsEarned: 0, scrapsSpent: 0, unspentByRank: {} }
   // the first day (a guided training shift) always ends at rank 1 — rewardFirstDay with no score (it needs no quota)
   let p = rewardFirstDay(freshProgress(), 0, { quotaMet: false }).progress
   r.shifts.push({ rank: 0, won: true, xp: p.totalXp, survivedS: 0, quota: 1, scraps: 0, spent: 0, fired: 0, repairs: 0 })
@@ -320,7 +320,7 @@ export function runCareer(input: CareerInput): CareerResult {
     p = shop(p, rank, input.style)
     if (rank >= top) {
       // the final shift: a player who has lost to the dump's rain leaves it at home (economy.json finalLeaveOut)
-      if (!r.loadout50Raw) r.loadout50Raw = structuredClone(p)
+      if (!r.loadoutFinalRaw) r.loadoutFinalRaw = structuredClone(p)
       // …and takes back what slows it there (economy.json finalTakeBack: Dense Goop), spending the scraps elsewhere
       const takeBack: string[] = economy.finalTakeBack
       for (const id of takeBack) while (levelOf(p, id) > 0) p = takeBackLevel(p, id)
@@ -332,7 +332,7 @@ export function runCareer(input: CareerInput): CareerResult {
       if (ownedRanks().includes(rank)) { r.ownedAt[rank] = { ...p.owned }; r.equippedAt[rank] = [...p.equipped] }
       lastRank = rank
     }
-    if (rank >= top && !r.loadout50) r.loadout50 = structuredClone(p)
+    if (rank >= top && !r.loadoutFinal) r.loadoutFinal = structuredClone(p)
     const o = playShift({ bot: input.bot, seed: shiftSeed(input.seed, k), progress: p })
     const reward = rewardShift(p, o.score, { quotaMet: o.won }) // F74 — Rank lock: a rank-up needs a quota met this rank
     r.shifts.push({ rank, won: o.won, xp: reward.xp, survivedS: Math.round(o.survivedMs / 100) / 10, quota: Math.round(o.quota * 1000) / 1000,

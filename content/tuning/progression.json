@@ -7,7 +7,7 @@
   "scrapsPerRank": 1,
   "_quotaXpMult": "F74 — Rank lock (Muzzy 2026-10-29): a rank-up needs the XP goal AND a crack quota met during that rank; until one is met the XP stops at the goal (the meter sits full, extra XP is lost). The shift that meets its quota earns its XP × this (2 = double). The first day and the final shift don't use it.",
   "quotaXpMult": 2,
-  "_activeSlots": "F34: how many active upgrades (Cooldown Booster…) can be taken into a shift at once. v1: 1, then 2 with Active Expansion Slot (rank 20) and 3 with the second (rank 38).",
+  "_activeSlots": "F34: how many active upgrades (Cooldown Booster…) can be taken into a shift at once. 1, then 2 with Active Expansion Slot and 3 with the second (their ranks: ladder.json upgrades).",
   "activeSlots": 1,
   "_ranks": "F78: the top rank, what each rank unlocks and each title's rank are in content/tuning/ladder.json (maxRank; beats nextPiece / swap / upgradesShop; titles)."
 }

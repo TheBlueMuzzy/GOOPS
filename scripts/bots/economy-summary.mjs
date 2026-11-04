@@ -68,7 +68,7 @@ function careerRow(cs, label, upgrades, eco) {
   const finals = cs.flatMap((c) => c.shifts.filter((s) => s.outcome !== undefined))
   return {
     label, n: cs.length,
-    reachedFinal: r3(cs.filter((c) => c.loadout50).length / cs.length),
+    reachedFinal: r3(cs.filter((c) => c.loadoutFinal).length / cs.length),
     shiftsToFinal: r1(median(cs.map((c) => shiftsTo(c, rankOf('finalShift'))).filter((x) => x !== null))),
     shiftsToRank: Object.fromEntries(checkpointsOf(eco).map((r) => [r, r1(median(cs.map((c) => shiftsTo(c, r)).filter((x) => x !== null)))])),
     winRate: r3(mean(cs.flatMap((c) => normal(c).map((s) => (s.won ? 1 : 0))))),
@@ -82,7 +82,7 @@ function careerRow(cs, label, upgrades, eco) {
     stallsPerCareer: r1(stalls.length / cs.length),
     stallRanks: Object.entries(stalls.reduce((a, s) => ({ ...a, [s.rank]: (a[s.rank] ?? 0) + 1 }), {})).map(([rank, count]) => ({ rank: Number(rank), count })).sort((a, b) => a.rank - b.rank),
     longestLosingRun: r1(median(cs.map(longestLosingRun))),
-    finalWonShare: cs.some((c) => c.loadout50) ? r3(cs.filter((c) => c.finalWon).length / cs.filter((c) => c.loadout50).length) : null,
+    finalWonShare: cs.some((c) => c.loadoutFinal) ? r3(cs.filter((c) => c.finalWon).length / cs.filter((c) => c.loadoutFinal).length) : null,
     finalTries: r1(median(cs.filter((c) => c.finalWon).map((c) => c.finalTries))),
     finalOutcomes: finals.reduce((a, s) => ({ ...a, [s.outcome]: (a[s.outcome] ?? 0) + 1 }), {}),
     // F75: of the final shifts won, the share with the Veteran still alive (the happy ending)
