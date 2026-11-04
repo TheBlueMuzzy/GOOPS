@@ -14,7 +14,7 @@
 | Trial (Focused + Sharp careers, 8 seeds) | Sharp shifts | Focused shifts | Sharp's ranks 17–21 | Ranks 22+ |
 |---|---|---|---|---|
 | Today (−6 quota at 17–24) | 34.5–37 | 32.5–33.5 | quota discount: 18–23 all won | every shift won |
-| 1. No discount | 43–48.5 | 43.5–48.5 | 25–41% won | every shift won |
+| 1. No discount | 43–48.5 | 43.5–48.5 | 24–41% won | every shift won |
 | 2. −2 at 17–24, +3 from 25 | 37–39 | 34.5–37.5 | 53–71% won | every shift won |
 | 3. Trial 2 + Crack Down charge per seal 0.25 → 0.1 | 37–39 | 34.5–37.5 | as trial 2 | every shift won |
 | 4. Trial 2, bots never buy Crack Down | 49–63 | 58–82 | as trial 2 | ranks 25–29: 13–29% won |
