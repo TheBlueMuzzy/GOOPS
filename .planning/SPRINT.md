@@ -24,7 +24,7 @@ Checked: sim:economy 72 careers before + after F49 — Covered cracks drain half
 - [x] 🤖 5. Settings + help text still on 50 ranks (eyes.json minClump10 etc., quota / progression / white goop notes, career.ts loadout50) — content/tuning/eyes.json
 - [x] 🤖 6. (tuning) XP per rank → Sharp ~45–50 shifts — content/tuning/progression.json
 - [x] 🤖 7. (tuning) The final shift after half wear: the Veteran saved about half — content/tuning/finalShift.json
-- [ ] 🙋 8. Muzzy plays a few shifts and judges the pace (the bots have never been compared with his real play) — content/tuning/progression.json
+- [x] 🙋 8. (carried: Muzzy approved first and plays later; ROADMAP Parking lot) Muzzy plays a few shifts and judges the pace (the bots have never been compared with his real play) — content/tuning/progression.json
 
 ## Notes
 - Asked of the framework at PLANNING (Sprint 31 retro): nothing new; the Ladder tab + rank lint rule stay with framework-43 (ROADMAP Parking lot).
@@ -46,3 +46,9 @@ Checked: sim:economy 72 careers before + after F49 — Covered cracks drain half
 - F82 task 5: eyes.json minClump10 / eyeChance10 / minClump20 / eyeChance20 → minClumpFaces / eyeChanceFaces / minClumpLate / eyeChanceLate (they follow the facesOn and lateLooks beats); career.ts loadout50 → loadoutFinal; help notes name beats, not 50-ladder ranks.
 - F82 trial swap (2026-11-04): laserBreaks 3 ↔ controlsBreak 5 and twoColourPieces 15 ↔ cracksGrow 17, then put back (ladder.json has no diff). No game code broke: ladder, unlocks, hud-shots, twists passed as they were. It found tests that used "the controls' rank" to mean "every machine is on": 6 unit tests (breakdowns, cooldownBooster) + e2e repairs (9 problems). Fixed: src/progress/ladder.ts + e2e/ladder-ranks.mjs allMachinesRank() (the latest of the three beats), also used by devkit-live, hud-shots, lessons, devkit-adapter. Three breakdowns tests stay on CONTROLS: their cooldown numbers depend on that machine's own rank. Rerun with the swap in: check:fast 726 ✓, repairs ✓. The swap didn't run the e2e scripts beyond those five.
 - check:full at bbcd4e4 (Claude, 2026-11-04): 36/38, 34.9 min. zap (Particle 390x844: droplets spray out, 0 px) + twists (r25 wild piece, the B004 kind) failed under load, ALL PASS alone. The code-review helper returned nothing in 14 s, so Claude read the src diff: nothing found.
+- F49 — Covered cracks drain half? (bot rerun) + F82 — Balance on 30 ranks ✅ approved by Muzzy 2026-11-04 ("approved, then we'll stop"). He has not played them yet; the human check is in the ROADMAP Parking lot.
+
+Retro: (Claude's draft, Muzzy stopped for the night and hasn't read it; his words win, 2026-11-04)
+- went well: the bot trials found the real shape of the climb (Crack Down at 22, the quota discount) in one evening, and the swap trial caught order assumptions before they could bite
+- went wrong: Claude said "found the cause" before testing it, then corrected it; a trial's weakening did nothing; the balance call came before the 8 → 3 quota jump was shown to Muzzy
+- change: show the actual numbers a player meets (quota per rank) when asking for a balance call, and say "points to" until a trial has proved the cause
