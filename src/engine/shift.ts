@@ -35,7 +35,7 @@ import { SNAPSHOT_KIND, SNAPSHOT_VERSION, type ShiftSnapshot } from './snapshot'
 import { type PieceChoice, type PieceFallback, type TrainingCommand, type TrainingRules, OVERFLOW_RAIL_ROWS, TRAINING_START,
   columnTooLow, freeCrackSpot, pieceFromChoice } from './training'
 import { type WhiteGoopConfig, newWhiteGoop, stepWhiteGoop, whiteGoopAt, whiteGoopIn } from './whiteGoop'
-import { type TwistsConfig, crackCells, crackHas, crackSize, extendChance, extendCrack, growOn } from './twists'
+import { type TwistsConfig, cellCovered, crackCells, crackHas, crackSize, extendChance, extendCrack, growOn } from './twists'
 import { type Color, WILD } from './types'
 import { type FinalShiftConfig, type VetLine, finalNum, finalShiftIn, finalVet, valveStages } from './finalShift'
 import { neighbours } from './tank'
@@ -557,8 +557,14 @@ class Shift implements ShiftEngine {
   // Every open (unsealed) crack wears the tank down a little each second. Sealing one gives a little back (pop).
   private drainIntegrity(dt: number): void {
     const s = this.state
-    // a high hill crack counts for less (cracks.ts); a grown crack drains per cell (F39: it gets more urgent as it grows)
-    const open = s.cracks.reduce((sum, c) => sum + (c.drain ?? 1) * crackSize(c), 0)
+    // a high hill crack counts for less (cracks.ts); a grown crack drains per cell (F39: it gets more urgent as it grows);
+    // goop of any colour on a cell lowers that cell's wear (F49, integrity.coveredDrainMult)
+    const coveredMult = this.config.integrity.coveredDrainMult
+    const open = s.cracks.reduce((sum, c) => {
+      let cells = 0
+      for (const [x, y] of crackCells(c)) cells += cellCovered(s, x, y) ? coveredMult : 1
+      return sum + (c.drain ?? 1) * cells
+    }, 0)
     const drain = open * this.config.integrity.drainPerCrackPerSec * this.mods.integrityDrainMult * (dt / 1000)
     const before = s.integrity
     s.integrity = Math.max(this.training?.integrityFloor ?? 0, s.integrity - drain)

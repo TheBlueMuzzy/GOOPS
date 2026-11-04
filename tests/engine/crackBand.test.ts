@@ -161,6 +161,55 @@ describe('integrity: lower drain and the seal refund', () => {
     expect(shift.state.integrity).toBeCloseTo(before - config.integrity.drainPerCrackPerSec, 9)
   })
 
+  // F49 (Muzzy, 2026-11-02 + 2026-11-03: per cell): goop on a crack cell halves that cell's wear. Any colour counts.
+  describe('covered crack cells wear the tank less (F49)', () => {
+    // One crack along a free row; colours[i] = the goop on cell i (0 = open). Returns the wear in 1 s.
+    function wearOver1s(colours: number[], mult?: number) {
+      const config = oneShapeConfig([[0, 0]])
+      if (mult !== undefined) config.integrity.coveredDrainMult = mult
+      const shift = createShift(config, { seed: 4, rank: 0, startGrid: tank([FLOOR, FLOOR]) })
+      tickUntil(shift, () => shift.state.cracks.length === 1)
+      const s = shift.state
+      const crack = s.cracks[0]
+      const cells = colours.map((_, i): [number, number] => [(crack.x + i) % s.width, crack.y])
+      crack.cells = cells
+      crack.parent = cells.map((_, i) => i - 1)
+      cells.forEach(([x, y], i) => { s.grid[y * s.width + x] = colours[i] })
+      const before = s.integrity
+      shift.tick(1000)
+      return { wear: before - s.integrity, perCell: config.integrity.drainPerCrackPerSec, mult: config.integrity.coveredDrainMult, colour: crack.color }
+    }
+
+    it('the tuning file: covered cells wear less than open ones, but still wear', () => {
+      const { mult } = wearOver1s([0])
+      expect(mult).toBeGreaterThan(0)
+      expect(mult).toBeLessThan(1)
+    })
+
+    it('an open cell wears in full; a covered cell wears × coveredDrainMult', () => {
+      const open = wearOver1s([0])
+      expect(open.wear).toBeCloseTo(open.perCell, 9)
+      const covered = wearOver1s([1])
+      expect(covered.wear).toBeCloseTo(covered.perCell * covered.mult, 9)
+    })
+
+    it('the wrong colour counts as covered, the same as the right one', () => {
+      const right = wearOver1s([0]).colour
+      const wrong = right === 1 ? 2 : 1
+      expect(wearOver1s([wrong]).wear).toBeCloseTo(wearOver1s([right]).wear, 9)
+    })
+
+    it('per cell: half of a grown crack covered wears between the two', () => {
+      const { wear, perCell, mult } = wearOver1s([1, 0])
+      expect(wear).toBeCloseTo(perCell * (1 + mult), 9)
+    })
+
+    it('the setting is live: a different coveredDrainMult changes the wear', () => {
+      const { wear, perCell } = wearOver1s([1], 0.25)
+      expect(wear).toBeCloseTo(perCell * 0.25, 9)
+    })
+  })
+
   // Plug the first crack that sits on goop and wait until it can be zapped. Returns the crack.
   function plugged(shift: ShiftEngine, config: ShiftConfig) {
     const s = shift.state

@@ -86,6 +86,9 @@ export function crackCells(c: Crack): [number, number][] {
 /** How many cells a crack covers (1 until it grows). */
 export const crackSize = (c: Crack) => c.cells?.length ?? 1
 
+/** Is there goop of any colour on this crack cell? (F49: halves its wear; the bubbles and the x-ray ask the same.) */
+export const cellCovered = (s: ShiftState, x: number, y: number) => s.grid[y * s.width + x] !== 0
+
 /** Is (x, y) one of this crack's cells? */
 export function crackHas(c: Crack, x: number, y: number): boolean {
   return crackCells(c).some(([cx, cy]) => cx === x && cy === y)

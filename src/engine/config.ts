@@ -26,6 +26,7 @@ export interface ShiftConfig {
   pressure: { riseMsToFull: number } // pressure goes 0 → 1 in this long (if nothing vents it)
   integrity: {
     drainPerCrackPerSec: number // tank integrity lost per open crack per second (1 = full tank)
+    coveredDrainMult: number // × that wear for a crack cell with goop of any colour on it (F49: 0.5 = half)
     sealRefund: number // integrity given back per crack sealed (0.03 = 3%), capped at full; none during a rupture
   }
   rupture: { drainMs: number } // after a rupture, pressure falls by 1 (100%) in this long

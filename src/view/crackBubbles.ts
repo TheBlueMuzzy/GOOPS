@@ -5,7 +5,7 @@
 // Moves on the looks clock: the frame loop's dt (keeps going in the Dev Kit's half pause, stops in the full pause).
 // Knobs: content/tuning/cracks-look.json → bubbles (read live, every frame).
 import type { ShiftState } from '../engine/types'
-import { crackCells, plugsCrack } from '../engine/twists'
+import { cellCovered, crackCells, plugsCrack } from '../engine/twists'
 import type { GooView } from '../goo/types'
 import { screenColumn } from '../goo/types'
 import look from '../../content/tuning/cracks-look.json'
@@ -24,7 +24,7 @@ export interface CrackBubbles {
 // An open crack: nothing on it (no goop of any colour). A covered one (any colour on it) gets the x-ray box and leaks
 // at bubbles.covered × the rate, its bubbles rising up through the goop (Muzzy, 2026-10-19: "bubbles always leak from
 // open cracks, but half as much from covered cracks, and not at all from sealed cracks" — sealed ones leave s.cracks).
-export const crackIsOpen = (s: ShiftState, c: { x: number; y: number }) => s.grid[c.y * s.width + c.x] === 0
+export const crackIsOpen = (s: ShiftState, c: { x: number; y: number }) => !cellCovered(s, c.x, c.y)
 
 // F39 growing cracks: a grown crack is one crack over many cells — the views draw, x-ray and bubble EACH cell. One
 // spot per cell of every open crack: its crack's id + colour, the cell, `key` (unique per cell, for per-cell

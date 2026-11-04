@@ -202,6 +202,11 @@ flowchart LR
 
 ## 8. Decisions log
 ```
+D38 · 2026-11-03 · Covered crack cells wear half (F49)
+  Proposed by: Muzzy (2026-11-02); per cell was Claude's pick, Muzzy OK'd (2026-11-03).
+  Decision: wear is decided per cell by "goop of any colour on it" (twists.ts cellCovered, shared with the bubbles and
+  x-ray), not by crack.plugged, which means matching goop on every cell. Knob: shift.json integrity.coveredDrainMult.
+
 D37 · 2026-11-03 · Growing cracks take a new crack's place (F83)
   Proposed by: Muzzy (2026-11-02): "when a new crack would form, there is an X% chance that instead, it extends a crack
   that exists that isn't covered yet. this way, the same squares of cracks form, but the cracks growing does increase

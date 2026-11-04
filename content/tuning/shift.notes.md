@@ -14,6 +14,7 @@ All values are v1's as shipped (from the v1 code, which wins over the v1 docs) u
 
 **integrity** — the arc (Muzzy, 2026-10-18: lower drain + gentler cracks, pressure must reach 100%, integrity is the fail point; worked out by maths, not a sim — `.planning/research/balance-arc.md`)
 - `drainPerCrackPerSec` 0.0005: every open (unsealed) crack wears the tank down 0.05% per second. At 0 the tank ruptures. (0.004 → 0.002 → 0.001 → 0.0005, Muzzy 2026-10-18: "I want drain to be lower so players have more time to reach the cracks up high"; halved again 2026-10-19 together with `cracks.topBias` — cracks now float higher, so reaching them takes longer.)
+- `coveredDrainMult` 0.5: a crack cell with goop of any colour on it wears the tank at this share of the rate, per cell, so a half-covered crack wears 75% (F49, Muzzy 2026-11-02). Its bubbles are a separate looks knob (cracks-look.json bubbles.covered).
 - `sealRefund` 0.02: sealing a crack gives 2% integrity back, never past 100%. Nothing comes back during a rupture (the seal still counts for the quota). At 0.0005 drain, 2% = 40 crack-seconds — more than a sealed crack costs while it's open, so sealing always pays.
 
 **rupture** — `drainMs` 5000: after a rupture, pressure drains from 100% to 0 in this long (the pop line sinks with it). Pieces keep coming and you can still zap; no new cracks. At 0 the shift ends — won if the quota was met. A piece with no room to spawn also ruptures the tank (and ends the shift at once if it has already ruptured).
