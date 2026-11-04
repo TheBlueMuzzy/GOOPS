@@ -56,3 +56,8 @@ Checked: unit tests (6 new, one red on the old engine: an uncovered crack grew t
 - check:full at 047cc8e (Claude, 2026-11-03): 36/39 (34.0 min) — hud-shots REAL: it assumed the old unlock ORDER (the next-piece window's rank had 0 machine bars) — on the 30-rank ladder the visor breaks on rank 1 too → fixed b5e9507 (bars counted from the machines' beats). Lesson: the guard test catches restated rank NUMBERS, not assumed ORDER — the trial moves never swapped two beats; F82 — Balance on 30 ranks' trial should swap one pair. lessons (dev server didn't start in 60 s — the machine) + twists (B004, r25) → re-run alone.
 - F80 — The 30-rank ladder + F83 — Growing cracks take a new crack's place ✅ approved by Muzzy 2026-11-03 ("approved").
 - F83 — Growing cracks take a new crack's place: done 2026-11-03 (approved with F80 — The 30-rank ladder; X = 25% stays until F82 — Balance on 30 ranks measures it).
+
+Retro: (Claude's draft, Muzzy: "yes", 2026-11-03)
+- went well: the one-file ladder paid off — going from 51 ranks to 31 was almost all content edits, and Muzzy's new crack-growth rule replaced the old timer cleanly
+- went wrong: the rank-number guard test only catches old rank numbers, not assumptions about unlock order, so hud-shots broke and only the 34-minute check:full caught it (lessons + twists also failed there but passed alone)
+- change: F82 — Balance on 30 ranks' trial swaps two beats, not just moves them, so order assumptions show up early
