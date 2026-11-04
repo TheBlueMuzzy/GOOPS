@@ -1,4 +1,5 @@
 # Log archive (newest first)
+- 2026-10-30 — Muzzy's answers in: the white goop's seals no longer count toward your quota, growing cracks are back at rank 30 (with 6 fewer cracks asked at ranks 30–39), and the final shift's console runs at 25%. Bot careers ~70 shifts.
 - 2026-10-30 — The climb is re-balanced for the rank lock: the quota is smaller and creeps up slowly, so bots meet it about 3 shifts in 4 and a career takes ~65–70 shifts; Pressure Control's first level is felt, Colorizer is a short burst, Goop Dump no longer wipes the score; cracks start growing at rank 31. Waiting on Muzzy's play.
 - 2026-10-29 — Released the beta (v0.2.0): the whole career from rank 0 to the ending — the story, upgrades and abilities, the final shift, and a new career after it.
 - 2026-10-29 — Beta ready to release, waiting on Muzzy. A sim now plays whole careers with bots (rank 0 to the ending) and shows where the ladder is too fast, where the quota is out of reach, and which upgrades do nothing; the console has its tab icon; the settings picker keeps "Accessibility" whole at 200% text.

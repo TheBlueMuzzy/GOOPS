@@ -1,5 +1,5 @@
 ## ▶ RESUME HERE
-2026-11-04 01:05 — **Sprint 33: F49 — Covered cracks drain half? (bot rerun) + F82 — Balance on 30 ranks built, checked, read — waiting on Muzzy's play + "approved".** Half wear per covered cell; Veteran wear 4.5; Muzzy kept the pace as is (Sharp 34.5–37 shifts; a person takes longer). Old-ladder names gone; tests ask allMachinesRank(). **Next: Muzzy plays (F82 task 8) → approved → both done → Sprint 33 retro → then Muzzy wants to talk BMUZ recursive improvement + /checkup.** NEVER deploy (the 1.0 /deliver).
+2026-11-04 01:15 — **Sprint 33: F49 — Covered cracks drain half? (bot rerun) + F82 — Balance on 30 ranks are built and checked — stable, parked until Muzzy plays.** He is working on framework + BMUZ audits in another CLI, so don't push him. Covered crack cells wear half (per cell); Veteran wear 4.5; pace as is (Sharp bot 34.5–37 shifts); the quota stays 8 at rank 16 → 3 at 17–24 → 10 at 25–29 (Muzzy: "i'll trust it and play it later"; if 3 feels wrong, a discount of 2 is one number in shift.json, numbers in research/economy-sim.md). **Muzzy's to-do: play ranks 16, 17, 22, 25 (F82 task 8) → "approved" → both features done → Sprint 33 retro → archive. Then: BMUZ recursive improvement + /checkup.** NEVER deploy (the 1.0 /deliver).
 
 ## Where we are
 Stage: develop · Milestone: M6 1.0 (M5 Beta ✅ released 2026-10-29) · Sprint: 33 (F49, F82) · Doing: waiting on Muzzy's play · Branch: dev/m6-1-0 · Version: 0.2.0.0 (version.json — shown on the console as v0.0.0.0) · v1 was 1.1.13
@@ -87,6 +87,7 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 **Remote:** github.com/TheBlueMuzzy/GOOPS
 
 ## Log
+- 2026-11-04: Covering a crack with any goop now wears the tank half as fast; the Veteran wears a bit faster to keep saving him about a coin flip; the climb stays as is. Waiting on Muzzy's play.
 - 2026-11-03 — Goops is 30 ranks now (0–30): nearly every rank-up brings an upgrade or a tank change, the Veteran wires you 8 scraps with a memo when he's caught, then goes silent for two ranks; cracks now grow only when a new one would form.
 - 2026-11-03 — Every rank rule in Goops now lives in one file (content/tuning/ladder.json): move a beat there (or in the Dev Kit's Tuning tab) and the game follows; nothing else plays differently yet.
 - 2026-11-02 — The 14 silent moments (goggles, zoom, cracks spreading, abilities, the Veteran, the valve, the ending, rank-up) make sounds now (stand-ins until Muzzy's), and Settings → About → Credits lists who made Goops.
@@ -96,4 +97,3 @@ NOT built yet: upgrades (engine ready), story, tutorial.
 - 2026-10-30 — The final shift is teamwork now: you only lose if the tank breaks; keep it healthy and the Veteran makes it — then he heads for Earth to see his family. Goop Dump rains wild goop.
 - 2026-10-30 — F52 — Balance pass approved ("feels good"): the climb takes ~70 shifts and every quota you meet is the key to the next rank. Next: the cooperative final shift (F75).
 - 2026-10-30 — Focus Mode split in two: Focus Mode at rank 7 (console 50%) and Focus Mode II at rank 31 (25%). Next up after Muzzy's play: the cooperative final shift (F75).
-- 2026-10-30 — Muzzy's answers in: the white goop's seals no longer count toward your quota, growing cracks are back at rank 30 (with 6 fewer cracks asked at ranks 30–39), and the final shift's console runs at 25%. Bot careers ~70 shifts.
