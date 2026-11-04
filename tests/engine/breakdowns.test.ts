@@ -7,11 +7,11 @@ import { createShift } from '../../src/engine'
 import type { BreakdownConfig, MachineId, Modifiers, ShiftConfig, ShiftEngine, ShiftEvent, ShiftOptions } from '../../src/engine'
 import { createRng } from '../../src/engine/rng'
 import { dropPiece, idx, ofType, oneShapeConfig, realConfig, tank } from './helpers'
-import { maxRank, rankOf } from '../../src/progress/ladder'
+import { allMachinesRank, maxRank, rankOf } from '../../src/progress/ladder'
 
 const breakdowns = () => structuredClone(breakdownsJson) as BreakdownConfig
 // the rank each machine can break from (the ladder's beats — F79: asked, never restated); the tests need visor < laser < controls
-const VISOR = rankOf('visorBreaks'), LASER = rankOf('laserBreaks'), CONTROLS = rankOf('controlsBreak')
+const VISOR = rankOf('visorBreaks'), LASER = rankOf('laserBreaks'), CONTROLS = rankOf('controlsBreak'), ALL_ON = allMachinesRank()
 
 // One-cell colour-1 pieces hanging at the top; the tank never wears out (no integrity drain).
 function calmConfig(): ShiftConfig {
@@ -58,19 +58,20 @@ describe('unlock ranks', () => {
       const m = machineShift(rank).m
       return (['laser', 'visor', 'controls'] as MachineId[]).filter((id) => m[id].unlocked)
     }
+    // (asked per machine: the three beats can sit in any order on the ladder)
+    const reachedAt = (rank: number) => (['laser', 'visor', 'controls'] as MachineId[])
+      .filter((id) => rank >= { laser: LASER, visor: VISOR, controls: CONTROLS }[id])
     expect(unlocked(0)).toEqual([])
-    expect(unlocked(VISOR - 1)).toEqual([])
-    expect(unlocked(VISOR)).toEqual(['visor'])
-    expect(unlocked(LASER)).toEqual(['laser', 'visor'])
-    expect(unlocked(CONTROLS)).toEqual(['laser', 'visor', 'controls'])
+    for (const rank of [VISOR - 1, VISOR, LASER - 1, LASER, CONTROLS - 1, CONTROLS]) expect(unlocked(rank), `rank ${rank}`).toEqual(reachedAt(rank))
+    expect(unlocked(ALL_ON)).toEqual(['laser', 'visor', 'controls'])
   })
 
   it('every machine starts fine: health 1, not broken, no cooldown', () => {
-    const { m } = machineShift(CONTROLS)
+    const { m } = machineShift(ALL_ON)
     for (const id of ['laser', 'visor', 'controls'] as MachineId[]) {
       expect(m[id]).toEqual({ id, unlocked: true, health: 1, broken: false, cooldownMs: 0, brokenMs: 0 })
     }
-    expect(machineShift(CONTROLS).shift.state.primed).toEqual([])
+    expect(machineShift(ALL_ON).shift.state.primed).toEqual([])
   })
 
   it('without the breakdowns tuning every machine stays locked', () => {
@@ -234,7 +235,7 @@ describe('visor (signal)', () => {
 
 describe('controls (heat)', () => {
   it('each spin adds 0.05 heat; after 200 ms idle it cools at 0.5/s', () => {
-    const { shift, m } = machineShift(CONTROLS)
+    const { shift, m } = machineShift(ALL_ON)
     spins(shift, 10)
     expect(m.controls.health).toBeCloseTo(0.5)
     run(shift, 192, 16)
@@ -246,7 +247,7 @@ describe('controls (heat)', () => {
   })
 
   it('breaks at full heat (20 spins), and spins are NOT slowed by the engine', () => {
-    const { shift, m } = machineShift(CONTROLS)
+    const { shift, m } = machineShift(ALL_ON)
     const events = spins(shift, 25)
     expect(ofType(events, 'breakdown')).toEqual([{ type: 'breakdown', machine: 'controls' }])
     expect(ofType(events, 'spin')).toHaveLength(25)
@@ -254,7 +255,7 @@ describe('controls (heat)', () => {
   })
 
   it('controlsCoolMult speeds the cooling (Gear Lubrication)', () => {
-    const { shift, m } = machineShift(CONTROLS, { modifiers: { controlsCoolMult: 2 } })
+    const { shift, m } = machineShift(ALL_ON, { modifiers: { controlsCoolMult: 2 } })
     spins(shift, 10)
     run(shift, 400, 16)
     expect(m.controls.health).toBeCloseTo(0.7)
@@ -296,7 +297,7 @@ describe('repair and cooldown', () => {
   })
 
   it('during the cooldown the meter moves but stays above its break point; after it, it can break again', () => {
-    const { shift, m } = machineShift(CONTROLS)
+    const { shift, m } = machineShift(ALL_ON)
     spins(shift, 20)
     shift.act({ type: 'repair', machine: 'controls' })
     shift.takeEvents()
@@ -337,7 +338,7 @@ describe('repair and cooldown', () => {
 
 describe('at the console mid-shift: break-progress pauses (Muzzy, 2026-10-18)', () => {
   it('the visor does not fade over a long stay, and fades again as normal once back', () => {
-    const { shift, m } = machineShift(CONTROLS)
+    const { shift, m } = machineShift(ALL_ON)
     run(shift, 4000) // 4 s of its 5 s grace used
     shift.act({ type: 'console', on: true })
     run(shift, 60000)
@@ -348,7 +349,7 @@ describe('at the console mid-shift: break-progress pauses (Muzzy, 2026-10-18)', 
   })
 
   it('heat does not build at the console; the controls still cool', () => {
-    const { shift, m } = machineShift(CONTROLS)
+    const { shift, m } = machineShift(ALL_ON)
     spins(shift, 10) // heat 0.5
     shift.act({ type: 'console', on: true })
     spins(shift, 30) // (input is off there anyway — but even if a turn got through, no heat)
@@ -361,7 +362,7 @@ describe('at the console mid-shift: break-progress pauses (Muzzy, 2026-10-18)', 
   })
 
   it('zaps do not drain the laser at the console; back at the tank they do', () => {
-    const { shift, m } = machineShift(CONTROLS)
+    const { shift, m } = machineShift(ALL_ON)
     run(shift, 400)
     shift.act({ type: 'console', on: true })
     zapFloor(shift, 3)
@@ -385,7 +386,7 @@ describe('at the console mid-shift: break-progress pauses (Muzzy, 2026-10-18)', 
   })
 
   it('pressure, cracks and falling still run at the console (only the machines pause)', () => {
-    const a = machineShift(CONTROLS), b = machineShift(CONTROLS)
+    const a = machineShift(ALL_ON), b = machineShift(ALL_ON)
     b.shift.act({ type: 'console', on: true })
     run(a.shift, 8000); run(b.shift, 8000)
     expect(b.shift.state.pressure).toBe(a.shift.state.pressure)
@@ -396,7 +397,7 @@ describe('at the console mid-shift: break-progress pauses (Muzzy, 2026-10-18)', 
 
 describe('several machines', () => {
   it('can be broken at once', () => {
-    const { shift, m } = machineShift(CONTROLS)
+    const { shift, m } = machineShift(ALL_ON)
     run(shift, 400)
     const events = [...zapFloor(shift, 25), ...spins(shift, 20), ...run(shift, 10000)]
     expect(ofType(events, 'breakdown').map((e) => e.machine)).toEqual(['laser', 'controls', 'visor'])
@@ -418,7 +419,7 @@ describe('during a rupture', () => {
   }
 
   it('meters freeze and nothing new breaks; repairs still work', () => {
-    const { shift, m } = machineShift(CONTROLS, {}, ruptureConfig())
+    const { shift, m } = machineShift(ALL_ON, {}, ruptureConfig())
     run(shift, 400)
     zapFloor(shift, 20) // laser 0.2
     let events = run(shift, 12000) // the visor breaks at ~10 s, then the tank ruptures
@@ -483,7 +484,7 @@ describe('no upgrades, ranks 0–1: exactly as before breakdowns', () => {
 describe('each breakdown modifier changes only its own value', () => {
   // A scripted stretch at the controls' rank that moves every meter and repairs the controls once.
   function scenario(modifiers: Partial<Modifiers> = {}) {
-    const { shift, m } = machineShift(CONTROLS, { modifiers })
+    const { shift, m } = machineShift(ALL_ON, { modifiers })
     spins(shift, 20) // controls break
     shift.act({ type: 'repair', machine: 'controls' })
     spins(shift, 10) // heat 0.5, during the cooldown

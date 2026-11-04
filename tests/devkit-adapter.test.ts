@@ -6,9 +6,9 @@ import { createShift } from '../src/engine'
 import { session } from '../src/game/session'
 import breakdowns from '../content/tuning/breakdowns.json'
 import shift from '../content/tuning/shift.json'
-import { rankOf } from '../src/progress/ladder'
+import { allMachinesRank, rankOf } from '../src/progress/ladder'
 
-const EVERY_MACHINE = rankOf('controlsBreak') // (the last machine to break — F79: asked, never restated)
+const EVERY_MACHINE = allMachinesRank() // (F79: asked, never restated)
 
 afterEach(() => { session.engine = null; session.inShift = false; session.restore = null })
 

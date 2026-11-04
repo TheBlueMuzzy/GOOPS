@@ -19,5 +19,8 @@ export function rankOf(name) {
   return r
 }
 
+/** The first rank where all three machines can break — whichever of their beats comes last (never assume which). */
+export const allMachinesRank = () => Math.max(rankOf('visorBreaks'), rankOf('laserBreaks'), rankOf('controlsBreak'))
+
 /** The top rank (the final shift's rank is its own beat, finalShift). */
 export const maxRank = () => LADDER.maxRank

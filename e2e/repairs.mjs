@@ -15,7 +15,7 @@ import { chromium } from 'playwright-core'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { startShift } from './start.mjs'
-import { rankOf } from './ladder-ranks.mjs'
+import { allMachinesRank, rankOf } from './ladder-ranks.mjs'
 
 const PORT = 5267, OUT = 'e2e-shots/repairs'
 mkdirSync(OUT, { recursive: true })
@@ -98,7 +98,7 @@ try {
     const errors = []
     page.on('pageerror', (e) => errors.push(e.message))
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
-    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${rankOf('controlsBreak')}`)
+    await page.goto(`http://localhost:${PORT}/?seed=7&rank=${allMachinesRank()}`)
     await page.evaluate(() => document.fonts.ready)
     await startShift(page)
     await page.waitForTimeout(600)

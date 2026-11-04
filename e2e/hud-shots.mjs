@@ -22,7 +22,7 @@ import { chromium } from 'playwright-core'
 import { startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync } from 'node:fs'
-import { rankOf } from './ladder-ranks.mjs'
+import { rankOf, allMachinesRank } from './ladder-ranks.mjs'
 
 const PORT = 5254, OUT = 'e2e-shots/hud'
 const [rankFilter = '', sizeFilter = ''] = process.argv.slice(2)
@@ -32,7 +32,7 @@ const sizes = [['phone', 390, 844], ['small', 360, 780], ['laptop', 1100, 800],
   .filter(([name]) => !sizeFilter || sizeFilter.split(',').includes(name))
 // rank → how many machine bars the panel shows (F79: the ranks are the ladder's beats — the visor from visorBreaks, the
 // laser from laserBreaks, the controls from controlsBreak; the window from nextPiece)
-const WINDOW_FROM = rankOf('nextPiece'), ALL_BARS = String(rankOf('controlsBreak'))
+const WINDOW_FROM = rankOf('nextPiece'), ALL_BARS = String(allMachinesRank())
 // (F80: the bars at a rank = the machines whose beat it has reached — counted, not assumed from the old order: on the
 // 30-rank ladder the visor breaks on the next piece's own rank)
 const MACHINE_BEATS = ['visorBreaks', 'laserBreaks', 'controlsBreak']

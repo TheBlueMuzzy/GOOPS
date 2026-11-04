@@ -8,12 +8,12 @@ import { chromium } from 'playwright-core'
 import { skipFirstDay, startShift } from './start.mjs'
 import { spawn } from 'node:child_process'
 import { mkdirSync, readFileSync } from 'node:fs'
-import { rankOf } from './ladder-ranks.mjs'
+import { rankOf, allMachinesRank } from './ladder-ranks.mjs'
 
 const PORT = 5341, OUT = 'e2e-shots/lessons'
 // F79: the ranks asked of the ladder — the visor's own (the first machine that breaks, alone), and the controls' (from
 // there every machine can break: visor, laser, controls)
-const VISOR = rankOf('visorBreaks'), ALL_BREAK = rankOf('controlsBreak')
+const VISOR = rankOf('visorBreaks'), ALL_BREAK = allMachinesRank()
 mkdirSync(OUT, { recursive: true })
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--port', String(PORT), '--strictPort'], { stdio: 'pipe' })
 await new Promise((ok, fail) => {

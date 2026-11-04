@@ -12,6 +12,8 @@ export type { BeatStep }
 export const rankOf = (name: string) => ladder.rankOf(name)
 /** The top rank (the final shift's rank is its own beat, finalShift). */
 export const maxRank = () => ladder.maxRank()
+/** The first rank where all three machines can break — whichever of their beats comes last (never assume which). */
+export const allMachinesRank = () => Math.max(rankOf('visorBreaks'), rankOf('laserBreaks'), rankOf('controlsBreak'))
 /** Is this rank at or past the beat? */
 export const reached = (rank: number, beat: string) => rank >= ladder.rankOf(beat)
 

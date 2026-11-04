@@ -7,7 +7,7 @@ import breakdownsJson from '../../content/tuning/breakdowns.json'
 import { createShift, resolveUpgrades } from '../../src/engine'
 import type { BreakdownConfig, MachineId, ShiftConfig, ShiftEngine, UpgradeBook } from '../../src/engine'
 import { ofType, oneShapeConfig, tank, tickUntil } from './helpers'
-import { rankOf } from '../../src/progress/ladder'
+import { allMachinesRank, rankOf } from '../../src/progress/ladder'
 
 const book = upgradesJson as UpgradeBook
 const ID = 'cooldownBooster'
@@ -19,8 +19,8 @@ function calmConfig(): ShiftConfig {
   return config
 }
 
-// (at a rank where every machine can break — the ladder's controlsBreak, the last of the three)
-function boosterShift(level: number, rank = rankOf('controlsBreak')) {
+// (at a rank where every machine can break)
+function boosterShift(level: number, rank = allMachinesRank()) {
   const abilities = resolveUpgrades(book, { [ID]: level }, [ID]).abilities
   const shift = createShift(calmConfig(), { seed: 3, rank, breakdowns: structuredClone(breakdownsJson) as BreakdownConfig,
     startGrid: tank(['12'.repeat(15)]), abilities })
