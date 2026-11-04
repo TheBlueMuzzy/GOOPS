@@ -5,6 +5,22 @@
 **Results page:** `e2e-shots/sim/index.html` (open the file; raw numbers in `results.json` beside it). Made by the run, stays on this machine (e2e-shots is git-ignored). Re-run: `npm run sim:economy` (~13 min on this PC) · `npm run sim:economy -- --quick` (~20 s, a check — it's in check:full).
 **Same seeds = the same numbers** (tested: tests/economySim.test.ts).
 
+## On 30 ranks: F82 — Balance on 30 ranks (2026-11-03, work in progress)
+**Baseline, today's tuning on the 30-rank ladder (72 careers, 1,572 s):** shifts to the final shift, Sharp 34.5–37, Focused 32.5–33.5 (Muzzy's target: Sharp ~45–50). Casual doesn't get there.
+- **Half wear (F49 — Covered cracks drain half? (bot rerun), 31,522 shifts):** the pace didn't move.
+- **The Veteran after half wear:** finalShift.json vet.wearPerIntegrity 3.5 → 4.5. Saved him on fresh seeds 9001–9200: Focused 62%, Sharp 45% (at 3.5, seeds 8001–8200: 73% / 56%).
+- **Crack Down is the step in the climb.** It unlocks at rank 22, and from there the Sharp bot wins every shift. Without it, with the quota below, ranks 25–29 are won 13–29% of the time.
+
+| Trial (Focused + Sharp careers, 8 seeds) | Sharp shifts | Focused shifts | Sharp's ranks 17–21 | Ranks 22+ |
+|---|---|---|---|---|
+| Today (−6 quota at 17–24) | 34.5–37 | 32.5–33.5 | quota discount: 18–23 all won | every shift won |
+| 1. No discount | 43–48.5 | 43.5–48.5 | 25–41% won | every shift won |
+| 2. −2 at 17–24, +3 from 25 | 37–39 | 34.5–37.5 | 53–71% won | every shift won |
+| 3. Trial 2 + Crack Down charge per seal 0.25 → 0.1 | 37–39 | 34.5–37.5 | as trial 2 | every shift won |
+| 4. Trial 2, bots never buy Crack Down | 49–63 | 58–82 | as trial 2 | ranks 25–29: 13–29% won |
+
+**Caveat:** bots fire an ability the moment it's ready, and they've never been compared with Muzzy's real play.
+
 ## After F75 — Cooperative final shift (full re-run 2026-10-30 20:05, 72 careers, 32,852 shifts, 1,365 s)
 **Changed since F52:** the final shift is lost only when the tank breaks; the Veteran's seals are free and he wears by the integrity lost (finalShift.json vet.wearPerIntegrity 3.5) · Goop Dump rains WILD goop, 4 cells a wave (in the final shift into the crack columns) · Slow Cracks slows only spreading in the final shift.
 - **Pace:** Focused **61–65**, Sharp **60–62** shifts to the final shift (target 60–80; at 8 wild cells a wave it was 56–60).

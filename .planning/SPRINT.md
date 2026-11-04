@@ -16,12 +16,12 @@ Done when: a full sim:economy run shows the Sharp bot reaching the top in ~45–
 why: Muzzy 2026-11-02: "this would help the game not feel so impossibly long". F52 — Balance pass tuned everything to 50 ranks.
 Check: sim:economy full before + after · bots:final · check:fast · check:full · Muzzy plays and judges the pace
 - [x] 🤖 1. Baseline: a full sim:economy run BEFORE F49 — Covered cracks drain half? (bot rerun), numbers saved — .planning/research/economy-sim.md
-- [ ] 🤖 2. A full run with F49 — Covered cracks drain half? (bot rerun) in: its effect on its own — .planning/research/economy-sim.md
+- [x] 🤖 2. A full run with F49 — Covered cracks drain half? (bot rerun) in: its effect on its own — .planning/research/economy-sim.md
 - [ ] 🤖 3. Read quota per band; fix only what the numbers show (15 → 17, white goop at 20) — content/tuning/shift.json
 - [ ] 🤖 4. The trial: swap two beats in the ladder, check:fast + e2e, put them back; fix what it finds (Sprint 32 retro) — content/tuning/ladder.json
 - [ ] 🤖 5. Settings + help text still on 50 ranks (eyes.json minClump10 etc., quota / progression / white goop notes, career.ts loadout50) — content/tuning/eyes.json
 - [ ] 🤖 6. (tuning) XP per rank → Sharp ~45–50 shifts — content/tuning/progression.json
-- [ ] 🤖 7. (tuning) The final shift after half wear: the Veteran saved about half — content/tuning/finalShift.json
+- [x] 🤖 7. (tuning) The final shift after half wear: the Veteran saved about half — content/tuning/finalShift.json
 - [ ] 🙋 8. Muzzy plays a few shifts and judges the pace (the bots have never been compared with his real play) — content/tuning/progression.json
 
 ## Notes
@@ -32,3 +32,12 @@ Check: sim:economy full before + after · bots:final · check:fast · check:full
 - F82 baseline (2026-11-03, commit 6c1df66, before F49 — Covered cracks drain half? (bot rerun); 72 careers, 31,525 shifts, 1,572 s): shifts to the final — Sharp 34.5–37, Focused 32.5–33.5; Casual never gets there (won 1%). Ranks 18–29 are one shift a rank at 98–100% won; ranks 24–29 shifts last 260–436 s and pay 51–112k XP against a need of ~10k. Ranks 12–17 are the only slow band (Sharp 1.3–1.6 shifts a rank, 65–77% won). So XP per rank alone can't add the shifts where the climb is flat — task 3 / 6 read this. Final shift (career upgrades): Focused 100%, Sharp 70%.
 - F49 red first: tests/engine/crackBand.test.ts — 4 of 5 new tests failed on the old engine (the wrong-colour one passes on both, by design), green after; all 726 unit tests pass.
 - F49 for the record: `cellCovered` (src/engine/twists.ts) is now the one "goop on this cell?" test; the view's crackIsOpen asks it.
+- F82 run with F49 — Covered cracks drain half? (bot rerun) in (0e97ffa; 31,522 shifts): pace unchanged (Sharp 34.5–37, Focused 32.5–33.5), shift length +0–3 s early, up to +11 s late. Half wear barely moves careers because the bots rarely lose to wear alone.
+- Tuning: finalShift.json vet.wearPerIntegrity 3.5 → 4.5 — why: half wear let the bots save the Veteran too often (seeds 8001–8200: Focused 73%, Sharp 56% at 3.5). Swept 3.5 / 4 / 4.5 / 5 / 5.5; result at 4.5: Focused 55%, Sharp 48%; fresh seeds 9001–9200 in research/economy-sim.md. Muzzy's target: about half.
+- F82 trials (Focused + Sharp careers, 8 seeds, effect-seeds 1; none kept, shift.json + upgrades.json back as they were):
+  - Trial 1, quota discount removed (cracksGrow −6 → 0): Sharp 43–48.5 shifts, Focused 43.5–48.5. Sharp wins 38–40% at 18–23, longest losing run 5–6, then every shift from 22.
+  - Trial 2, cracksGrow −2, quotaEaseEnds +3: Sharp 37–39, Focused 34.5–37.5. Every shift still won from 22.
+  - Trial 3, trial 2 + Crack Down chargePerSeal 0.25 → 0.1: no change in pace, every shift still won from 22.
+  - Trial 4, trial 2 + the bots never buy Crack Down: Sharp 49–63, Focused 58–82; ranks 25–29 won 13–29% of shifts (24 wins in 83–183 shifts per rank), longest losing run up to 20.
+  - Finding: Crack Down (unlocks at 22) IS the step. With it every Sharp shift from 22 on is won; without it those ranks are a wall. The XP goal never bites at the top: 62–121k XP a shift against a need of ~10k.
+- Ask Muzzy: Crack Down's power vs the quota (the sprint plan said upgrades stay the same, so this is his call).

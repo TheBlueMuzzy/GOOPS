@@ -62,7 +62,7 @@
     "dropSecPerCell": 0.12,
     "targetBy": "outOfReach",
     "reachRows": 3,
-    "wearPerIntegrity": 3.5,
+    "wearPerIntegrity": 4.5,
     "countsForQuota": true
   },
   "goneLineSec": 4.5,
